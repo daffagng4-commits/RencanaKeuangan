@@ -71,6 +71,8 @@ td.z{color:var(--ln)}
 .xr{display:grid;grid-template-columns:minmax(150px,220px) 1fr;gap:10px;align-items:center;margin-bottom:10px}
 .xr button{text-align:left}
 .chip.n{background:var(--bg);color:var(--mut);border:1px solid var(--ln)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.it2{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--ln)}
 @media(max-width:560px){.xr{grid-template-columns:1fr;gap:4px}}
 textarea{height:200px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
 .row2{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
@@ -89,11 +91,11 @@ textarea{height:200px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
 <body>
 <div class="w">
 <header>
-  <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" id="sbs"></div></div>
+  <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div></div>
   <div class="ctl">
     <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
     <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"></div>
-    <button id="lgb">Masuk</button><button id="bk">Impor / Ekspor</button>
+    <button id="bk">Impor / Ekspor</button>
   </div>
 </header>
 <nav role="tablist">
@@ -115,6 +117,7 @@ textarea{height:200px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
         <div class="every"><input id="f-n" type="number" min="1" value="1"><select id="f-unit">
           <option value="bulan">bulan</option><option value="tahun">tahun</option><option value="minggu">minggu</option><option value="hari">hari</option><option value="sekali">sekali saja</option></select></div></div>
       <div><label for="f-start">Mulai tanggal</label><input id="f-start" type="date"></div>
+      <div class="full" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><label for="f-stop">Berhenti</label><select id="f-stop"><option value="none">Tidak berhenti</option><option value="date">Sampai tanggal</option><option value="cnt">Setelah beberapa kali bayar</option></select></div><div id="w-end" hidden><label for="f-end">Pembayaran terakhir paling lambat</label><input id="f-end" type="date"></div><div id="w-cnt" hidden><label for="f-cnt">Total jumlah kali bayar</label><input id="f-cnt" type="number" min="1" placeholder="mis. 12"><div class="sub" style="margin-top:4px">Dihitung sejak tanggal mulai, termasuk tahun-tahun sebelumnya.</div></div></div>
       <div class="full prev" id="prev"></div>
     </div>
     <div class="err" id="err"></div>
@@ -124,6 +127,7 @@ textarea{height:200px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
 </section>
 </div>
 
+<div class="modal" id="pm" hidden><div class="card"><h2 id="pmt">Ubah harga</h2><p class="sub" id="pmi"></p><div class="g2"><div><label for="pp">Harga baru</label><input id="pp" placeholder="250k atau 250.000"></div><div><label for="pdt">Berlaku mulai tanggal</label><input id="pdt" type="date"></div></div><div class="err" id="pme"></div><div class="row2"><button class="p" id="pps">Simpan harga</button><button id="pcl">Tutup</button></div><div class="h3">Riwayat perubahan harga</div><div id="phl"></div></div></div>
 <div class="modal" id="m" hidden><div class="card">
   <h2>Impor &amp; Ekspor data</h2><div class="h3">Ekspor</div><div id="exb"><div class="xr"><button class="p" data-ex="json">Cadangan lengkap (.json)</button><span class="sub"><span class="chip">Bisa diimpor</span> Semua tahun, item, saldo, dan status lunas. Untuk pindah perangkat atau memulihkan data.</span></div><div class="xr"><button data-ex="items">Item tahun ini (.csv)</button><span class="sub"><span class="chip">Bisa diimpor</span> Daftar item tahun yang aktif (nama, harga, tiap berapa, mulai). Bisa diedit di Excel.</span></div><div class="xr"><button data-ex="hist">Riwayat pembayaran (.csv)</button><span class="sub"><span class="chip n">Hanya laporan</span> Satu baris per tagihan: tanggal, item, jumlah, status Lunas/Belum.</span></div><div class="xr"><button data-ex="bulan">Rincian bulanan (.csv)</button><span class="sub"><span class="chip n">Hanya laporan</span> Saldo awal, pengeluaran, dan saldo akhir tiap bulan.</span></div></div><div class="h3">Impor</div><div class="row2" style="margin-top:0"><input type="file" id="fi" accept=".json,.csv,text/csv,application/json" style="flex:1;min-width:200px"><select id="im" style="width:auto"><option value="merge">Gabungkan dengan data sekarang</option><option value="replace">Timpa (hapus data sekarang)</option></select></div><div class="sub" style="margin-top:6px"><b>.json</b> = hasil Cadangan lengkap. <b>.csv</b> = hasil Item tahun ini (kolom: Nama; Harga; Tiap; Satuan; Mulai), hanya untuk tahun yang sedang aktif. CSV Riwayat pembayaran dan Rincian bulanan tidak bisa diimpor.<br><b>Gabungkan</b>: menambah yang belum ada, aman diulang. <b>Timpa</b>: mengganti data sekarang (JSON: semua tahun, CSV: item tahun aktif).</div><div class="err" id="xm"></div><details id="dt"><summary class="sub" style="cursor:pointer">Cara teks (salin / tempel)</summary>
   <p class="sub">Data tersimpan otomatis di browser ini. Salin teks di bawah untuk cadangan, atau tempel cadangan lama lalu tekan Muat.</p>
@@ -132,9 +136,6 @@ textarea{height:200px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
   <div class="row2"><button class="p" id="cp">Salin</button><button id="ld">Muat dari teks</button><button id="rs" class="d">Pulihkan contoh</button></div></details><div class="row2" style="justify-content:flex-end"><button id="cl">Tutup</button></div>
 </div></div>
 
-<div class="modal" id="lg" hidden><div class="card"><h2>Masuk untuk sinkron</h2><p class="sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p><label for="le">Email</label><input id="le" type="email" autocomplete="email"><label for="lp" style="margin-top:10px">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="err" id="lm"></div><div class="row2"><button class="p" id="lin">Masuk</button><button id="lup">Daftar</button><button id="lgc">Tutup</button></div></div></div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 var MON=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],KEY='rencana-keuangan-v1';
 var UN={hari:'hari',minggu:'minggu',bulan:'bulan',tahun:'tahun'};
@@ -144,9 +145,9 @@ s(1,'Vidio',200000,3,'bulan','2027-03-01'),s(2,'TorBox',450000,1,'tahun','2027-1
 s(4,'BPJS',150000,1,'bulan','2027-01-01'),s(5,'Strong IPTV',325000,6,'bulan','2027-03-01'),s(6,'Kuota',50000,28,'hari','2026-10-21'),
 s(7,'Saham',620000,1,'bulan','2027-01-01'),s(8,'Facial',160000,1,'bulan','2027-01-01'),s(9,'BTC',420000,1,'bulan','2027-01-01'),
 s(10,'Vitamin D3 + K2',135000,2,'bulan','2027-01-01'),s(11,'Magnesium Glycinate',300000,5,'bulan','2027-01-01'),s(12,'Blackmores Omega',450000,3,'bulan','2027-01-01')]}}
-var S,ALL,lastData='',pushT=null,openRows={},editId=null,lastSaved=false;
+var S,ALL,openRows={},editId=null,lastSaved=false;
 try{var r=localStorage.getItem(KEY);ALL=r?JSON.parse(r):null}catch(e){ALL=null}
-ALL=norm(ALL);S=ALL.data[ALL.year];lastData=JSON.stringify(ALL.data);
+ALL=norm(ALL);S=ALL.data[ALL.year];
 var $=function(i){return document.getElementById(i)};
 function esc(t){return String(t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function rp(n){return 'Rp '+Math.round(n).toLocaleString('id-ID')}
@@ -161,18 +162,18 @@ function at(it,k){var p=it.start.split('-').map(Number),n=Math.max(1,+it.n||1),u
  if(u==='minggu')return Date.UTC(p[0],p[1]-1,p[2]+k*n*7);
  var tm=p[1]-1+k*n*(u==='tahun'?12:1),y=p[0]+Math.floor(tm/12),m=tm%12,
  dd=Math.min(p[2],new Date(Date.UTC(y,m+1,0)).getUTCDate());return Date.UTC(y,m,dd)}
-function occ(it,y){var out=[],end=Date.UTC(y,11,31);
- for(var k=0;k<4000;k++){var t=at(it,k);if(t>end)break;if(new Date(t).getUTCFullYear()===y)out.push(t);if(it.unit==='sekali')break}
+function occ(it,y){var out=[],end=Date.UTC(y,11,31),lim=it.end?Date.parse(it.end+'T00:00:00Z'):0,cn=+it.cnt||0;
+ for(var k=0;k<4000;k++){if(cn&&k>=cn)break;var t=at(it,k);if(t>end)break;if(lim&&t>lim)break;if(new Date(t).getUTCFullYear()===y)out.push(t);if(it.unit==='sekali')break}
  return out}
-function nextDates(it,c){var o=[];for(var k=0;k<c;k++){o.push(at(it,k));if(it.unit==='sekali')break}return o}
-function every(it){return it.unit==='sekali'?'sekali saja':'tiap '+(it.n>1?it.n+' ':'')+it.unit}
+function nextDates(it,c){var o=[],lim=it.end?Date.parse(it.end+'T00:00:00Z'):0,cn=+it.cnt||0;for(var k=0;k<c;k++){if(cn&&k>=cn)break;var t=at(it,k);if(lim&&t>lim)break;o.push(t);if(it.unit==='sekali')break}return o}
+function every(it){return (it.unit==='sekali'?'sekali saja':'tiap '+(it.n>1?it.n+' ':'')+it.unit)+(it.cnt?', '+it.cnt+' kali':it.end?', sampai '+fd(Date.parse(it.end+'T00:00:00Z')):'')}
 function calc(){var y=+S.year,occs={},cnt=[],sp=[],i,m;
  for(m=0;m<12;m++){cnt.push([]);sp.push(0)}
- var sm=+S.startMonth||0,from=Date.UTC(y,sm,1);S.items.forEach(function(it){var o=occ(it,y).filter(function(t){return t>=from});occs[it.id]=o;o.forEach(function(t){var mm=new Date(t).getUTCMonth();cnt[mm].push({it:it,t:t});sp[mm]+=it.price})});
+ var sm=+S.startMonth||0,from=Date.UTC(y,sm,1);S.items.forEach(function(it){var o=occ(it,y).filter(function(t){return t>=from});occs[it.id]=o;o.forEach(function(t){var mm=new Date(t).getUTCMonth();cnt[mm].push({it:it,t:t});sp[mm]+=priceAt(it,t)})});
  var bal=+S.saldo||0,rows=[];
  for(m=sm;m<12;m++){rows.push({m:m,aw:bal,sp:sp[m],ak:bal-sp[m],ev:cnt[m]});bal-=sp[m]}
  return{rows:rows,occs:occs,total:sp.reduce(function(a,b){return a+b},0),end:bal}}
-function save(){try{ALL.data[S.year]=S;ALL.year=S.year;var dj=JSON.stringify(ALL.data);if(dj!==lastData){lastData=dj;ALL.rev=Date.now();schedPush()}localStorage.setItem(KEY,JSON.stringify(ALL));lastSaved=true;
+function save(){try{ALL.data[S.year]=S;ALL.year=S.year;localStorage.setItem(KEY,JSON.stringify(ALL));lastSaved=true;
  var d=new Date();$('status').textContent='Tersimpan otomatis '+d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}
  catch(e){$('status').textContent='Penyimpanan browser tidak tersedia. Gunakan Cadangan agar data aman.'}}
 function renderRincian(){var c=calc(),y=S.year,R=c.rows,mx=Math.max.apply(null,R.map(function(r){return r.sp}).concat([1])),
@@ -188,31 +189,31 @@ function renderRincian(){var c=calc(),y=S.year,R=c.rows,mx=Math.max.apply(null,R
  R.forEach(function(r){var chips={};r.ev.forEach(function(e){var i=e.it;if(i.unit!=='bulan'||i.n!==1)chips[i.id]=(chips[i.id]||{n:i.name,c:0}),chips[i.id].c++});
   h+='<tr class="row" data-m="'+r.m+'"><td><b>'+MON[r.m]+' '+y+'</b></td><td>'+rp(r.aw)+'</td><td>'+rp(r.sp)+'</td><td class="'+(r.ak<0?'neg':'')+'">'+rp(r.ak)+'</td><td class="l">'+
   Object.keys(chips).map(function(k){return '<span class="chip">'+esc(chips[k].n)+(chips[k].c>1?' ×'+chips[k].c:'')+'</span>'}).join('')+'</td></tr>';
-  if(openRows[r.m])h+=r.ev.slice().sort(function(a,b){return a.t-b.t}).map(function(e){return '<tr class="det"><td>'+(S.paid[e.it.id+'|'+new Date(e.t).toISOString().slice(0,10)]?'✓ ':'')+fd(e.t,{day:'numeric',month:'short'})+'</td><td class="l" colspan="2">'+esc(e.it.name)+'</td><td colspan="2" class="l">'+rp(e.it.price)+'</td></tr>'}).join('')||'<tr class="det"><td colspan="5">Tidak ada pembayaran.</td></tr>'});
+  if(openRows[r.m])h+=r.ev.slice().sort(function(a,b){return a.t-b.t}).map(function(e){return '<tr class="det"><td>'+(S.paid[e.it.id+'|'+new Date(e.t).toISOString().slice(0,10)]?'✓ ':'')+fd(e.t,{day:'numeric',month:'short'})+'</td><td class="l" colspan="2">'+esc(e.it.name)+'</td><td colspan="2" class="l">'+rp(priceAt(e.it,e.t))+'</td></tr>'}).join('')||'<tr class="det"><td colspan="5">Tidak ada pembayaran.</td></tr>'});
  h+='<tr class="tot"><td>Total</td><td></td><td>'+rp(c.total)+'</td><td>'+rp(c.end)+'</td><td></td></tr></tbody></table></div></div>';
  $('v-rincian').innerHTML=h}
-function renderJadwal(){var c=calc(),y=S.year,h='<div class="card"><h2>Jadwal pembayaran '+y+'</h2><div class="sub" style="margin-bottom:8px">Klik tanggal untuk menandai tagihan sudah dibayar (✓), klik lagi untuk membatalkan.'+(S.startMonth?' Bulan sebelum '+MON[S.startMonth]+' tidak dihitung.':'')+'</div><div class="tw"><table><thead><tr><th>Item</th><th>Biaya</th>'+MON.map(function(m){return '<th>'+m+'</th>'}).join('')+'<th>Total</th></tr></thead><tbody>';
+function renderJadwal(){var c=calc(),y=S.year,h='<div class="card"><h2>Jadwal pembayaran '+y+'</h2><div class="sub" style="margin-bottom:8px">Klik tanggal untuk menandai tagihan sudah dibayar (✓), klik lagi untuk membatalkan. Pakai "Ubah harga" untuk harga baru mulai tanggal tertentu.'+(S.startMonth?' Bulan sebelum '+MON[S.startMonth]+' tidak dihitung.':'')+'</div><div class="tw"><table><thead><tr><th>Item</th><th>Biaya</th>'+MON.map(function(m){return '<th>'+m+'</th>'}).join('')+'<th>Total</th></tr></thead><tbody>';
  S.items.forEach(function(it){var o=c.occs[it.id],by=[];for(var m=0;m<12;m++)by.push([]);o.forEach(function(t){by[new Date(t).getUTCMonth()].push(t)});
-  h+='<tr><td><b>'+esc(it.name)+'</b><div class="sub">'+every(it)+'</div></td><td>'+rp(it.price)+'</td>'+by.map(function(d){return d.length?'<td class="cell">'+d.map(function(t){var k=it.id+'|'+new Date(t).toISOString().slice(0,10),on=S.paid[k];return '<button class="pd'+(on?' on':'')+'" data-pk="'+k+'" title="'+fd(t)+(on?' (sudah dibayar)':' (belum dibayar)')+'" aria-pressed="'+(on?'true':'false')+'">'+(on?'✓ ':'')+new Date(t).getUTCDate()+'</button>'}).join('')+'</td>':'<td class="z">0</td>'}).join('')+'<td><b>'+rp(it.price*o.length)+'</b><div class="sub">'+o.filter(function(t){return S.paid[it.id+'|'+new Date(t).toISOString().slice(0,10)]}).length+'/'+o.length+' lunas</div></td></tr>'});
+  h+='<tr><td><b>'+esc(it.name)+'</b><div class="sub">'+every(it)+'</div><button class="g" data-pm="'+it.id+'">&#9998; Ubah harga</button></td><td>'+pcell(it)+'</td>'+by.map(function(d){return d.length?'<td class="cell">'+d.map(function(t){var k=it.id+'|'+new Date(t).toISOString().slice(0,10),on=S.paid[k];return '<button class="pd'+(on?' on':'')+'" data-pk="'+k+'" title="'+fd(t)+' - '+rp(priceAt(it,t))+(on?' (sudah dibayar)':' (belum dibayar)')+'" aria-pressed="'+(on?'true':'false')+'">'+(on?'✓ ':'')+new Date(t).getUTCDate()+'</button>'}).join('')+'</td>':'<td class="z">0</td>'}).join('')+'<td><b>'+rp(sumP(it,o))+'</b><div class="sub">'+o.filter(function(t){return S.paid[it.id+'|'+new Date(t).toISOString().slice(0,10)]}).length+'/'+o.length+' lunas</div></td></tr>'});
  if(!S.items.length)h+='<tr><td colspan="15" class="empty">Belum ada item. Tambahkan di tab Kelola Item.</td></tr>';
  h+='<tr class="tot"><td>Total per bulan</td><td></td>'+MON.map(function(_,m){var r=c.rows.filter(function(x){return x.m===m})[0];return '<td>'+(r?(r.sp/1000).toLocaleString('id-ID')+'rb':'0')+'</td>'}).join('')+'<td>'+rp(c.total)+'</td></tr></tbody></table></div></div>';
- var tp=0,np=0,cp=0,cn=0;S.items.forEach(function(it){(c.occs[it.id]||[]).forEach(function(t){tp+=it.price;cn++;if(S.paid[it.id+'|'+new Date(t).toISOString().slice(0,10)]){np+=it.price;cp++}})});h='<div class="card stats"><div><span>Sudah dibayar</span><b>'+rp(np)+'</b><span>'+cp+' dari '+cn+' tagihan</span></div><div><span>Belum dibayar</span><b>'+rp(tp-np)+'</b><span>'+(cn-cp)+' tagihan</span></div></div>'+h;$('v-jadwal').innerHTML=h}
+ var tp=0,np=0,cp=0,cn=0;S.items.forEach(function(it){(c.occs[it.id]||[]).forEach(function(t){var pr=priceAt(it,t);tp+=pr;cn++;if(S.paid[it.id+'|'+new Date(t).toISOString().slice(0,10)]){np+=pr;cp++}})});h='<div class="card stats"><div><span>Sudah dibayar</span><b>'+rp(np)+'</b><span>'+cp+' dari '+cn+' tagihan</span></div><div><span>Belum dibayar</span><b>'+rp(tp-np)+'</b><span>'+(cn-cp)+' tagihan</span></div></div>'+h;$('v-jadwal').innerHTML=h}
 function renderList(){var c=calc(),h='';
  S.items.forEach(function(it){var o=c.occs[it.id],nx=o[0]!=null?fd(o[0]):'tidak ada di '+S.year;
-  h+='<div class="it"><div><b>'+esc(it.name)+'</b><small>'+rp(it.price)+' · '+every(it)+'</small></div><div class="cell"><small>Mulai</small>'+fd(Date.parse(it.start+'T00:00:00Z'))+'</div>'+
-  '<div class="cell"><small>Total '+S.year+'</small><b>'+rp(it.price*o.length)+'</b><small>'+o.length+'× bayar</small></div><div><button class="g" data-ed="'+it.id+'">Ubah</button><button class="g d" data-del="'+it.id+'">Hapus</button></div></div>'});
- $('ly').textContent=S.year;var oy=Object.keys(ALL.data).filter(function(k){return +k!==S.year&&ALL.data[k].items.length});$('cprow').innerHTML=oy.length?'<select id="cy" style="width:auto">'+oy.map(function(k){return '<option>'+k+'</option>'}).join('')+'</select><button id="cyb">Salin item ke '+S.year+'</button>':'';$('list').innerHTML=h||'<div class="empty">Belum ada item. Isi formulir di atas untuk menambah.</div>'}
-function norm(a){var y,d;if(a&&a.data&&typeof a.data==='object'){y=+a.year||2027;if(!a.data[y])a.data[y]={saldo:0,items:[]}}else if(a&&Array.isArray(a.items)){y=+a.year||2027;d={};d[y]=a;a={year:y,data:d}}else{var s0=seed();y=s0.year;d={};d[y]=s0;a={year:y,data:d}}a.year=y;Object.keys(a.data).forEach(function(k){var s=a.data[k];s.year=+k;s.saldo=+s.saldo||0;s.startMonth=Math.min(11,Math.max(0,+s.startMonth||0));s.items=(Array.isArray(s.items)?s.items:[]).map(function(x,i){x=x||{};return{id:x.id||Date.now()+i,name:String(x.name||'Item'),price:+x.price||0,n:Math.max(1,+x.n||1),unit:['hari','minggu','bulan','tahun','sekali'].indexOf(x.unit)>=0?x.unit:'bulan',start:/^\d{4}-\d{2}-\d{2}$/.test(x.start)?x.start:s.year+'-01-01'}});s.paid=s.paid&&typeof s.paid==='object'?s.paid:{}});return a}
-function renderYears(){var ks=Object.keys(ALL.data).map(Number).sort(function(a,b){return a-b});$('yb').innerHTML='<span class="sub">Data tahun:</span>'+ks.map(function(k){return '<button class="yp'+(k===S.year?' on':'')+'" data-y="'+k+'" aria-pressed="'+(k===S.year)+'">'+k+'</button>'}).join('')+'<span class="sub">Tiap tahun punya item, saldo, dan status bayar sendiri. Ketik tahun baru di kolom Tahun.</span>'}
+  h+='<div class="it"><div><b>'+esc(it.name)+'</b><small>'+pdesc(it)+' · '+every(it)+'</small></div><div class="cell"><small>Mulai</small>'+fd(Date.parse(it.start+'T00:00:00Z'))+'</div>'+
+  '<div class="cell"><small>Total '+S.year+'</small><b>'+rp(sumP(it,o))+'</b><small>'+o.length+'× bayar</small></div><div><button class="g" data-ed="'+it.id+'">Ubah</button><button class="g d" data-del="'+it.id+'">Hapus</button></div></div>'});
+ $('ly').textContent=S.year;var oy=Object.keys(ALL.data).filter(function(k){return +k!==S.year&&ALL.data[k].items.length});var pri=oy.map(Number).filter(function(k){return k<S.year}).sort(function(a,b){return a-b}).pop();$('cprow').innerHTML=oy.length?'<div class="h3" style="width:100%;margin:6px 0 0">Bawa jadwal tagihan dari tahun lain</div><select id="cy" style="width:auto">'+oy.map(function(k){return '<option'+(+k===pri?' selected':'')+'>'+k+'</option>'}).join('')+'</select><button id="cyb">Bawa ke '+S.year+'</button><label style="display:flex;gap:8px;align-items:center;margin:0;width:100%;font-weight:500"><input type="checkbox" id="cs" style="width:auto;min-height:0">Jadikan saldo akhir tahun itu sebagai saldo awal '+S.year+'</label><div class="sub" style="width:100%">Item sekali bayar atau yang sudah selesai (lewat tanggal/jumlah berhenti) tidak ikut dibawa. Perubahan harga ikut terbawa. Status lunas tidak dibawa.</div>':'';$('list').innerHTML=h||'<div class="empty">Belum ada item. Isi formulir di atas untuk menambah.</div>'}
+function norm(a){var y,d;if(a&&a.data&&typeof a.data==='object'){y=+a.year||2027;if(!a.data[y])a.data[y]={saldo:0,items:[]}}else if(a&&Array.isArray(a.items)){y=+a.year||2027;d={};d[y]=a;a={year:y,data:d}}else{var s0=seed();y=s0.year;d={};d[y]=s0;a={year:y,data:d}}a.year=y;Object.keys(a.data).forEach(function(k){var s=a.data[k];s.year=+k;s.saldo=+s.saldo||0;s.startMonth=Math.min(11,Math.max(0,+s.startMonth||0));s.items=(Array.isArray(s.items)?s.items:[]).map(function(x,i){x=x||{};return{id:x.id||Date.now()+i,name:String(x.name||'Item'),price:+x.price||0,n:Math.max(1,+x.n||1),unit:['hari','minggu','bulan','tahun','sekali'].indexOf(x.unit)>=0?x.unit:'bulan',start:/^\d{4}-\d{2}-\d{2}$/.test(x.start)?x.start:s.year+'-01-01',end:/^\d{4}-\d{2}-\d{2}$/.test(x.end)?x.end:'',cnt:Math.max(0,+x.cnt||0),pc:(Array.isArray(x.pc)?x.pc:[]).filter(function(q){return q&&/^\d{4}-\d{2}-\d{2}$/.test(q.d)&&+q.p>0}).map(function(q){return{d:q.d,p:+q.p}}).sort(function(a,b){return a.d<b.d?-1:a.d>b.d?1:0})}});s.paid=s.paid&&typeof s.paid==='object'?s.paid:{}});return a}
+function renderYears(){var ks=Object.keys(ALL.data).map(Number).sort(function(a,b){return a-b});$('yb').innerHTML='<span class="sub">Data tahun:</span>'+ks.map(function(k){return '<button class="yp'+(k===S.year?' on':'')+'" data-y="'+k+'" aria-pressed="'+(k===S.year)+'">'+k+'</button>'}).join('')+'<button class="g d" data-dy="1" title="Hapus semua data tahun ini">Hapus tahun '+S.year+'</button><span class="sub">Tiap tahun punya item, saldo, dan status bayar sendiri. Ketik tahun baru di kolom Tahun.</span>'}
 function syncUI(){$('saldo').value=(+S.saldo||0).toLocaleString('id-ID');$('year').value=S.year;$('sm').value=S.startMonth;openRows={};renderAll();resetForm()}
 function finishLoad(){syncUI();$('m').hidden=true}
 function switchYear(v){save();var n=ALL.data[v];if(!n)n=ALL.data[v]={year:v,saldo:0,startMonth:0,items:[],paid:{}};S=n;ALL.year=v;save();syncUI()}
 function renderAll(){renderYears();renderRincian();renderJadwal();renderList()}
-function fItem(){return{name:$('f-name').value.trim(),price:parseRp($('f-price').value),n:Math.max(1,parseInt($('f-n').value,10)||1),unit:$('f-unit').value,start:$('f-start').value}}
+function fItem(){var st=$('f-stop').value;return{name:$('f-name').value.trim(),price:parseRp($('f-price').value),n:Math.max(1,parseInt($('f-n').value,10)||1),unit:$('f-unit').value,start:$('f-start').value,end:st==='date'?$('f-end').value:'',cnt:st==='cnt'?Math.max(0,parseInt($('f-cnt').value,10)||0):0}}
 function preview(){var f=fItem(),p=$('prev');$('f-n').disabled=f.unit==='sekali';
  if(!f.start){p.textContent='Isi tanggal mulai untuk melihat jadwal pembayaran.';return}
- var d=nextDates(f,f.unit==='sekali'?1:5);p.textContent='Jadwal bayar: '+d.map(function(t){return fd(t)}).join(' → ')+(f.unit==='sekali'?'':' …')}
-function resetForm(){editId=null;$('ft').textContent='Tambah item untuk tahun '+S.year;$('f-name').value='';$('f-price').value='';$('f-n').value=1;$('f-unit').value='bulan';$('f-start').value=S.year+'-01-01';$('cancel').hidden=true;$('err').textContent='';preview()}
+ var d=nextDates(f,f.unit==='sekali'?1:5);var tail=f.unit==='sekali'?'':(d.length>=5&&!(+f.cnt&&+f.cnt<=5)?' …':'');p.textContent='Jadwal bayar: '+d.map(function(t){return fd(t)}).join(' → ')+tail+(+f.cnt?' (total '+f.cnt+' kali, lalu berhenti)':f.end?' (berhenti setelah '+fd(Date.parse(f.end+'T00:00:00Z'))+')':'')}
+function resetForm(){editId=null;$('ft').textContent='Tambah item untuk tahun '+S.year;$('f-name').value='';$('f-price').value='';$('f-n').value=1;$('f-unit').value='bulan';$('f-start').value=S.year+'-01-01';$('f-stop').value='none';$('f-end').value='';$('f-cnt').value='';stopUI();$('cancel').hidden=true;$('err').textContent='';preview()}
 function tab(t){document.querySelectorAll('nav button').forEach(function(b){b.setAttribute('aria-selected',b.dataset.t===t)});
  ['rincian','jadwal','item'].forEach(function(x){$('v-'+x).hidden=x!==t})}
 document.querySelectorAll('nav button').forEach(function(b){b.onclick=function(){tab(b.dataset.t)}});
@@ -222,7 +223,9 @@ $('save').onclick=function(){var f=fItem(),e=$('err');
  if(!f.name)return e.textContent='Nama item belum diisi.';
  if(f.price<=0)return e.textContent='Harga belum valid. Contoh: 200k, 200rb, atau 200.000.';
  if(!/^\d{4}-\d{2}-\d{2}$/.test(f.start))return e.textContent='Tanggal mulai belum dipilih.';
- if(editId){S.items=S.items.map(function(x){return x.id===editId?Object.assign({id:editId},f):x})}
+ if($('f-stop').value==='date'&&(!f.end||f.end<f.start))return e.textContent='Tanggal berhenti harus sama atau sesudah tanggal mulai.';
+ if($('f-stop').value==='cnt'&&f.cnt<1)return e.textContent='Isi jumlah kali bayar (minimal 1).';
+ if(editId){S.items=S.items.map(function(x){return x.id===editId?Object.assign({id:editId,pc:x.pc||[]},f):x})}
  else S.items.push(Object.assign({id:Date.now()},f));
  save();renderAll();resetForm();$('status').textContent+=' · item disimpan'};
 $('cancel').onclick=resetForm;
@@ -231,7 +234,7 @@ $('v-jadwal').onclick=function(e){var b=e.target.closest('button[data-pk]');if(!
 $('cprow').onclick=function(e){if(e.target.id!=='cyb')return;var f=ALL.data[$('cy').value];if(!f)return;f.items.forEach(function(it,i){S.items.push({id:Date.now()+i,name:it.name,price:it.price,n:it.n,unit:it.unit,start:it.start})});save();renderAll()};
 $('list').onclick=function(e){var b=e.target.closest('button');if(!b)return;
  if(b.dataset.ed){var it=S.items.filter(function(x){return x.id==b.dataset.ed})[0];editId=it.id;$('ft').textContent='Ubah item';
-  $('f-name').value=it.name;$('f-price').value=it.price.toLocaleString('id-ID');$('f-n').value=it.n;$('f-unit').value=it.unit;$('f-start').value=it.start;$('cancel').hidden=false;preview();$('f-name').scrollIntoView({block:'center'});$('f-name').focus()}
+  $('f-name').value=it.name;$('f-price').value=it.price.toLocaleString('id-ID');$('f-n').value=it.n;$('f-unit').value=it.unit;$('f-start').value=it.start;$('f-stop').value=it.cnt?'cnt':it.end?'date':'none';$('f-end').value=it.end||'';$('f-cnt').value=it.cnt||'';stopUI();$('cancel').hidden=false;preview();$('f-name').scrollIntoView({block:'center'});$('f-name').focus()}
  if(b.dataset.del){if(b.dataset.arm){S.items=S.items.filter(function(x){return x.id!=b.dataset.del});Object.keys(S.paid).forEach(function(k){if(k.split('|')[0]==b.dataset.del)delete S.paid[k]});save();renderAll()}
   else{b.dataset.arm=1;b.textContent='Yakin hapus?';setTimeout(function(){b.dataset.arm='';b.textContent='Hapus'},2500)}}};
 for(var y=2026;y<=2032;y++){var o=document.createElement('option');o.value=o.textContent=y;$('yl').appendChild(o)}
@@ -255,14 +258,14 @@ var DL=null;
 try{claude.use('downloads').then(function(d){DL=d}).catch(function(){})}catch(e){}
 function setX(t,ok){var e=$('xm');e.textContent=t;e.style.color=ok?'var(--ac)':'var(--wr)'}
 function isoD(t){return new Date(t).toISOString().slice(0,10)}
-function sameItem(a,b){return a.name===b.name&&a.price===b.price&&a.n===b.n&&a.unit===b.unit&&a.start===b.start}
+function sameItem(a,b){return a.name===b.name&&a.price===b.price&&a.n===b.n&&a.unit===b.unit&&a.start===b.start&&(a.end||'')===(b.end||'')&&(+a.cnt||0)===(+b.cnt||0)}
 function csvEsc(v){v=String(v);return /[;",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
 function toCSV(rows){return '\uFEFF'+rows.map(function(r){return r.map(csvEsc).join(';')}).join('\r\n')}
-function exportFile(name,data){if(!DL){try{var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'text/plain;charset=utf-8'}));a.download=name;document.body.appendChild(a);a.click();a.remove();setX('File diunduh: '+name,1)}catch(e){$('ta').value=data;$('dt').open=true;setX('Unduh file gagal. Isinya ada di kolom teks di bawah, silakan salin.',0)}return}DL.save({filename:name,data:data}).then(function(){setX('File dikirim: '+name,1)}).catch(function(e){setX(e&&e.code==='declined'?'Unduhan dibatalkan.':'Gagal menyimpan file ('+(e&&e.code||'error')+').',0)})}
+function exportFile(name,data){if(!DL){$('ta').value=data;$('dt').open=true;$('ta').focus();$('ta').select();$('ta').scrollIntoView({block:'center'});setX('Unduh langsung tidak didukung di tampilan ini. Isi file sudah dipilih di kolom teks di bawah: tekan Salin, tempel ke Catatan/Notepad, lalu simpan sebagai '+name+'.',0);return}DL.save({filename:name,data:data}).then(function(){setX('File dikirim: '+name,1)}).catch(function(e){setX(e&&e.code==='declined'?'Unduhan dibatalkan.':'Gagal menyimpan file ('+(e&&e.code||'error')+').',0)})}
 function doExport(kind){var y=S.year,c=calc(),rows,name;
  if(kind==='json'){ALL.data[S.year]=S;ALL.year=S.year;return exportFile('rencana-keuangan-cadangan-'+isoD(Date.now())+'.json',JSON.stringify(ALL,null,1))}
- if(kind==='items'){rows=[['Nama','Harga','Tiap','Satuan','Mulai']];S.items.forEach(function(it){rows.push([it.name,it.price,it.n,it.unit,it.start])});name='item-'+y}
- if(kind==='hist'){rows=[['Tanggal','Item','Jumlah','Status']];var ev=[];S.items.forEach(function(it){(c.occs[it.id]||[]).forEach(function(t){ev.push({t:t,it:it})})});ev.sort(function(a,b){return a.t-b.t});ev.forEach(function(e){rows.push([isoD(e.t),e.it.name,e.it.price,S.paid[e.it.id+'|'+isoD(e.t)]?'Lunas':'Belum'])});name='riwayat-pembayaran-'+y}
+ if(kind==='items'){rows=[['Nama','Harga','Tiap','Satuan','Mulai','Sampai','Jumlah kali']];S.items.forEach(function(it){rows.push([it.name,it.price,it.n,it.unit,it.start,it.end||'',it.cnt||''])});name='item-'+y}
+ if(kind==='hist'){rows=[['Tanggal','Item','Jumlah','Status']];var ev=[];S.items.forEach(function(it){(c.occs[it.id]||[]).forEach(function(t){ev.push({t:t,it:it})})});ev.sort(function(a,b){return a.t-b.t});ev.forEach(function(e){rows.push([isoD(e.t),e.it.name,priceAt(e.it,e.t),S.paid[e.it.id+'|'+isoD(e.t)]?'Lunas':'Belum'])});name='riwayat-pembayaran-'+y}
  if(kind==='bulan'){rows=[['Bulan','Saldo awal','Pengeluaran','Saldo akhir']];c.rows.forEach(function(r){rows.push([MON[r.m]+' '+y,r.aw,r.sp,r.ak])});name='rincian-bulanan-'+y}
  exportFile(name+'.csv',toCSV(rows))}
 function parseCSV(t){var fl=t.split(/\r?\n/)[0],sc=(fl.match(/;/g)||[]).length,cc=(fl.match(/,/g)||[]).length,dl=sc>0&&sc>=cc?';':fl.indexOf('\t')>=0?'\t':',',rows=[],row=[],f='',q=false,i,ch;
@@ -281,10 +284,10 @@ function csvItems(rows){var ok=[],bad=0,U={hari:1,minggu:1,bulan:1,tahun:1,sekal
  rows.forEach(function(r,i){if(i===0&&!/\d/.test(r[1]||''))return;
   var nm=(r[0]||'').trim(),pr=parseRp(r[1]||''),n=Math.max(1,parseInt(r[2],10)||1),u=(r[3]||'bulan').trim().toLowerCase(),d=normDate(r[4]);
   if(!nm||pr<=0||!U[u]||!d){bad++;return}
-  ok.push({name:nm,price:pr,n:n,unit:u,start:d})});return{ok:ok,bad:bad}}
+  ok.push({name:nm,price:pr,n:n,unit:u,start:d,end:normDate(r[5]),cnt:Math.max(0,parseInt(r[6],10)||0)})});return{ok:ok,bad:bad}}
 function mergeAll(inc){var n=norm(inc),cnt=0,yrs=0;Object.keys(n.data).forEach(function(k){var src=n.data[k],dst=ALL.data[k];
   if(!dst){ALL.data[k]=src;yrs++;cnt+=src.items.length;return}
-  var map={};src.items.forEach(function(it,i){var ex=dst.items.filter(function(x){return sameItem(x,it)})[0];if(ex){map[it.id]=ex.id;return}var id=Date.now()+i+Math.floor(Math.random()*1e4);map[it.id]=id;dst.items.push({id:id,name:it.name,price:it.price,n:it.n,unit:it.unit,start:it.start});cnt++});
+  var map={};src.items.forEach(function(it,i){var ex=dst.items.filter(function(x){return sameItem(x,it)})[0];if(ex){map[it.id]=ex.id;return}var id=Date.now()+i+Math.floor(Math.random()*1e4);map[it.id]=id;dst.items.push(cloneItem(it,id));cnt++});
   Object.keys(src.paid).forEach(function(pk){var p=pk.split('|'),m=map[p[0]];if(m!=null)dst.paid[m+'|'+p[1]]=1})});
  return{items:cnt,years:yrs}}
 function doImport(text){var mode=$('im').value,t=String(text||'').replace(/^\uFEFF/,'').trim();
@@ -302,43 +305,49 @@ function doImport(text){var mode=$('im').value,t=String(text||'').replace(/^\uFE
 $('exb').onclick=function(e){var b=e.target.closest('button[data-ex]');if(b)doExport(b.dataset.ex)};
 $('fi').onchange=function(){var f=this.files&&this.files[0];if(!f)return;var rd=new FileReader();rd.onload=function(){doImport(rd.result)};rd.onerror=function(){setX('Gagal membaca file.',0)};rd.readAsText(f);this.value=''};
 $('ld').onclick=function(){doImport($('ta').value)};
-resetForm();renderAll();save();
 
-/* ===== Supabase sync ===== */
-var SB_URL='https://hjvdkwpoamgkommotzab.supabase.co',SB_KEY='sb_publishable_U68PnX2KeFMxWJ3Tjbeiqw_1K0iMbeC';/* isi dari Supabase > Project Settings > API (Project URL dan anon/publishable key) */
-var sb=null,sbUser=null;
-function sbStat(t,bad){var e=$('sbs');e.textContent=t;e.style.color=bad?'var(--wr)':'var(--mut)'}
-function clock(){return new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}
-function sbInit(){if(!SB_URL||!SB_KEY||!window.supabase){$('lgb').hidden=true;sbStat('Mode lokal (Supabase belum diisi)');return}
- var u0;try{u0=new URL(SB_URL.trim()).origin}catch(e){$('lgb').hidden=true;sbStat('SB_URL tidak valid. Harus berbentuk https://xxxx.supabase.co',1);return}
- sb=supabase.createClient(u0,SB_KEY.trim());sbStat('Belum masuk. Data tersimpan lokal.');
- sb.auth.getSession().then(function(r){setUser(r.data.session)});
- sb.auth.onAuthStateChange(function(_e,s){setUser(s)})}
-function setUser(s){var u=s&&s.user||null;if((u&&u.id)===(sbUser&&sbUser.id))return;sbUser=u;$('lgb').textContent=u?'Keluar':'Masuk';
- if(u){sbStat('Menyinkronkan...');pull()}else sbStat('Belum masuk. Data tersimpan lokal.')}
-function schedPush(){if(!sb||!sbUser)return;sbStat('Menyimpan ke cloud...');clearTimeout(pushT);pushT=setTimeout(push,1200)}
-function push(){pushT=null;if(!sb||!sbUser)return Promise.resolve();
- return sb.from('rk_state').upsert({user_id:sbUser.id,data:ALL,rev:ALL.rev||0,updated_at:new Date().toISOString()}).then(function(r){r.error?sbStat('Gagal simpan ke cloud: '+r.error.message,1):sbStat('Tersinkron '+clock())})}
-function pull(){if(!sb||!sbUser)return Promise.resolve();
- return sb.from('rk_state').select('data,rev').eq('user_id',sbUser.id).maybeSingle().then(function(r){
-  if(r.error){sbStat('Gagal sinkron: '+r.error.message,1);return}
-  var row=r.data;if(!row)return push();
-  var rr=+row.rev||0,lr=+ALL.rev||0;
-  if(rr>lr){try{localStorage.setItem('rk-backup',JSON.stringify(ALL))}catch(e){}
-   ALL=norm(row.data);ALL.rev=rr;S=ALL.data[ALL.year];lastData=JSON.stringify(ALL.data);
-   try{localStorage.setItem(KEY,JSON.stringify(ALL))}catch(e){}syncUI();sbStat('Tersinkron '+clock()+' (data cloud dimuat)')}
-  else if(rr<lr)return push();
-  else sbStat('Tersinkron '+clock())})}
-document.addEventListener('visibilitychange',function(){if(!document.hidden&&sbUser&&!pushT)pull()});
-$('lgb').onclick=function(){if(sbUser){sb.auth.signOut();return}$('lm').textContent='';$('lg').hidden=false};
-$('lgc').onclick=function(){$('lg').hidden=true};
-function auth(kind){var e=$('le').value.trim(),p=$('lp').value;if(!e||p.length<6){$('lm').textContent='Isi email dan password (min. 6 karakter).';return}
- (kind==='up'?sb.auth.signUp({email:e,password:p}):sb.auth.signInWithPassword({email:e,password:p})).then(function(r){
-  if(r.error){$('lm').textContent=r.error.message;return}
-  if(kind==='up'&&!r.data.session){$('lm').textContent='Cek email untuk konfirmasi, lalu masuk.';return}
-  $('lg').hidden=true;$('lp').value=''})}
-$('lin').onclick=function(){auth('in')};$('lup').onclick=function(){auth('up')};
-sbInit();
+/* ===== fitur: harga per tanggal, berhenti, bawa jadwal, hapus tahun ===== */
+function priceAt(it,t){var d=isoD(t),p=it.price;(it.pc||[]).forEach(function(x){if(x.d<=d)p=x.p});return p}
+function sumP(it,o){return o.reduce(function(a,t){return a+priceAt(it,t)},0)}
+function fmtD(d){return fd(Date.parse(d+'T00:00:00Z'))}
+function pdesc(it){var l=(it.pc||[]).slice(-1)[0];return rp(it.price)+(l?' → '+rp(l.p):'')}
+function pcell(it){var l=(it.pc||[]).slice(-1)[0];return rp(it.price)+(l?'<div class="sub">→ '+rp(l.p)+' mulai '+fmtD(l.d)+'</div>':'')}
+function item(id){return S.items.filter(function(x){return x.id==id})[0]}
+function cloneItem(it,id){return{id:id,name:it.name,price:it.price,n:it.n,unit:it.unit,start:it.start,end:it.end||'',cnt:+it.cnt||0,pc:(it.pc||[]).map(function(q){return{d:q.d,p:q.p}})}}
+function lastOcc(it){var lim=it.end?Date.parse(it.end+'T00:00:00Z'):0,cn=+it.cnt||0;if(!lim&&!cn)return null;var last=null;for(var k=0;k<4000;k++){if(cn&&k>=cn)break;var t=at(it,k);if(lim&&t>lim)break;last=t;if(it.unit==='sekali')break}return last}
+function stopUI(){var v=$('f-stop').value;$('w-end').hidden=v!=='date';$('w-cnt').hidden=v!=='cnt'}
+$('f-stop').onchange=function(){stopUI();preview()};
+['f-end','f-cnt'].forEach(function(i){$(i).oninput=preview;$(i).onchange=preview});
+var pmId=null;
+function pmMsg(t,ok){var e=$('pme');e.textContent=t;e.style.color=ok?'var(--ac)':'var(--wr)'}
+function renderPm(){var it=item(pmId);if(!it)return;$('pmi').textContent='Harga awal '+rp(it.price)+' (sejak '+fmtD(it.start)+'). Harga baru hanya berlaku untuk tagihan pada tanggal itu dan sesudahnya; tagihan sebelumnya tidak berubah.';
+ $('phl').innerHTML=(it.pc||[]).map(function(x,i){return '<div class="it2"><span>'+fmtD(x.d)+' &rarr; <b>'+rp(x.p)+'</b></span><button class="g d" data-pdel="'+i+'">Hapus</button></div>'}).join('')||'<div class="sub">Belum ada perubahan harga.</div>'}
+function openPm(id){var it=item(id);if(!it)return;pmId=it.id;$('pmt').textContent='Ubah harga: '+it.name;
+ var nx=occ(it,S.year).filter(function(t){return !S.paid[it.id+'|'+isoD(t)]})[0];$('pdt').value=isoD(nx!=null?nx:Date.now());$('pp').value='';pmMsg('');renderPm();$('pm').hidden=false}
+$('pp').addEventListener('input',function(){fmtLive(this)});
+$('pcl').onclick=function(){$('pm').hidden=true};
+$('pps').onclick=function(){var it=item(pmId),p=parseRp($('pp').value),d=$('pdt').value;if(!it)return;
+ if(p<=0)return pmMsg('Harga baru belum valid. Contoh: 250k atau 250.000.');
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return pmMsg('Pilih tanggal mulai berlaku.');
+ it.pc=(it.pc||[]).filter(function(q){return q.d!==d});it.pc.push({d:d,p:p});it.pc.sort(function(a,b){return a.d<b.d?-1:a.d>b.d?1:0});
+ save();renderAll();renderPm();$('pp').value='';pmMsg('Tersimpan: '+rp(p)+' mulai '+fmtD(d)+'.',1)};
+$('phl').onclick=function(e){var b=e.target.closest('button[data-pdel]');if(!b)return;var it=item(pmId);it.pc.splice(+b.dataset.pdel,1);save();renderAll();renderPm()};
+$('v-jadwal').onclick=function(e){var m=e.target.closest('button[data-pm]');if(m){openPm(m.dataset.pm);return}
+ var b=e.target.closest('button[data-pk]');if(!b)return;var k=b.dataset.pk;if(S.paid[k])delete S.paid[k];else S.paid[k]=1;save();renderJadwal();renderRincian()};
+function delYear(){var y=S.year,ks=Object.keys(ALL.data).map(Number).filter(function(k){return k!==y}).sort(function(a,b){return a-b}),n;
+ delete ALL.data[y];
+ if(ks.length){n=ks.filter(function(k){return k<y}).pop();if(n==null)n=ks[0]}else{n=new Date().getFullYear();ALL.data[n]={year:n,saldo:0,startMonth:0,items:[],paid:{}}}
+ S=ALL.data[n];ALL.year=n;save();syncUI();$('status').textContent='Tahun '+y+' dihapus.'}
+$('yb').onclick=function(e){var b=e.target.closest('button');if(!b)return;if(b.dataset.y){switchYear(+b.dataset.y);return}
+ if(b.dataset.dy){if(b.dataset.arm){delYear()}else{var yy=S.year;b.dataset.arm=1;b.textContent='Yakin hapus '+yy+' ('+S.items.length+' item)?';setTimeout(function(){if(b.isConnected){b.dataset.arm='';b.textContent='Hapus tahun '+yy}},3000)}}};
+$('cprow').onclick=function(e){if(e.target.id!=='cyb')return;var sy=+$('cy').value,src=ALL.data[sy];if(!src)return;
+ var y=S.year,from=Date.UTC(y,0,1),add=0,skip=0;
+ src.items.forEach(function(it,i){var ex=lastOcc(it);if(it.unit==='sekali'||(ex!==null&&ex<from)){skip++;return}
+  var c=cloneItem(it,Date.now()+i);if(S.items.some(function(x){return sameItem(x,c)}))return;S.items.push(c);add++});
+ var msg='Dibawa '+add+' item dari '+sy+(skip?' ('+skip+' dilewati: sekali bayar/sudah selesai)':'')+'.';
+ if($('cs').checked){var keep=S;S=src;var c2=calc();S=keep;S.saldo=c2.end;$('saldo').value=S.saldo.toLocaleString('id-ID');msg+=' Saldo awal '+y+' = '+rp(S.saldo)+'.'}
+ save();renderAll();$('status').textContent=msg};
+resetForm();renderAll();save();
 </script>
 </body>
 </html>
