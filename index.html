@@ -99,7 +99,7 @@ textarea{height:200px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
 <body>
 <div class="w">
 <header>
-  <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r6 · 11 Okt 2026</div><div class="sub" id="sbs"></div></div>
+  <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r7 · 11 Okt 2026</div><div class="sub" id="sbs"></div></div>
   <div class="ctl">
     <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
     <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"></div>
@@ -139,9 +139,10 @@ textarea{height:200px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
 <div class="g2"><div><label for="pdt">Berlaku mulai tanggal</label><input id="pdt" type="date"></div><div><label for="pp">Harga per bayar</label><input id="pp" inputmode="numeric" placeholder="300k atau 300.000"></div></div>
 <div id="pcad" style="margin-top:12px"><label>Siklus pembayaran</label><div class="every2"><span class="sub">tiap</span><input id="pn" type="number" min="1"><select id="pu"><option value="bulan">bulan</option><option value="tahun">tahun</option><option value="minggu">minggu</option><option value="hari">hari</option></select></div><div style="margin-top:12px"><label for="pa">Tanggal bayar</label><select id="pa"><option value="keep">Tetap seperti jadwal sekarang</option><option value="restart">Mulai ulang jadwal dari tanggal di atas</option></select><div class="sub" style="margin-top:4px" id="pah"></div></div></div>
 <div class="g2" style="margin-top:12px"><div><label for="pw">Berlaku</label><select id="pw"><option value="forever">Seterusnya</option><option value="until">Sementara, lalu kembali ke awal</option></select></div><div id="pwt" hidden><label for="pto">Sampai tanggal (termasuk)</label><input id="pto" type="date"></div></div>
+<div id="pcw" style="margin-top:12px"><label for="pcut">Tagihan sebelum tanggal ini</label><select id="pcut"><option value="keep">Tetap (tidak berubah)</option><option value="drop">Hapus (jadwal baru mulai dari tanggal ini)</option></select></div>
 <div class="prev" id="ppv" style="margin-top:12px"></div><div class="err" id="pme"></div>
 <div class="row2"><button class="p" id="pps">Simpan perubahan</button><button id="pcl">Tutup</button></div>
-<details style="margin-top:10px"><summary class="sub" style="cursor:pointer">Contoh pemakaian</summary><div class="sub" style="margin-top:6px">&bull; Harga naik jadi 300k mulai 1 Jul: isi tanggal 1 Jul, harga 300k, siklus dibiarkan, Berlaku &quot;Seterusnya&quot;.<br>&bull; Jadi tiap 3 bulan: ubah siklus ke 3 bulan.<br>&bull; Harga beda hanya 1 Jan sampai 1 Mar: isi harga baru, pilih &quot;Sementara&quot;, sampai 1 Mar. Sesudahnya kembali ke pengaturan awal.<br>&bull; Ingin kembali ke pengaturan awal: isi harga dan siklus awal.</div></details>
+<details style="margin-top:10px"><summary class="sub" style="cursor:pointer">Contoh pemakaian</summary><div class="sub" style="margin-top:6px">&bull; Harga naik jadi 300k mulai 1 Jul: isi tanggal 1 Jul, harga 300k, siklus dibiarkan, Berlaku &quot;Seterusnya&quot;.<br>&bull; Jadi tiap 3 bulan: ubah siklus ke 3 bulan.<br>&bull; Harga beda hanya 1 Jan sampai 1 Mar: isi harga baru, pilih &quot;Sementara&quot;, sampai 1 Mar. Sesudahnya kembali ke pengaturan awal.<br>&bull; Jadwal lama diganti total mulai tanggal tertentu (mis. jadi tiap 6 bulan mulai 16 Mar): pilih &quot;Tagihan sebelum tanggal ini: Hapus&quot;.<br>&bull; Ingin kembali ke pengaturan awal: isi harga dan siklus awal.</div></details>
 <div class="h3">Perubahan yang sudah ada</div><div id="phl"></div></div></div>
 <div class="modal" id="m" hidden><div class="card">
   <h2>Impor &amp; Ekspor data</h2><div class="h3">Ekspor</div><div id="exb"><div class="xr"><button class="p" data-ex="json">Cadangan lengkap (.json)</button><span class="sub"><span class="chip">Bisa diimpor</span> Semua tahun, item, saldo, dan status lunas. Untuk pindah perangkat atau memulihkan data.</span></div><div class="xr"><button data-ex="items">Item tahun ini (.csv)</button><span class="sub"><span class="chip">Bisa diimpor</span> Daftar item tahun yang aktif (nama, harga, tiap berapa, mulai). Bisa diedit di Excel.</span></div><div class="xr"><button data-ex="hist">Riwayat pembayaran (.csv)</button><span class="sub"><span class="chip n">Hanya laporan</span> Satu baris per tagihan: tanggal, item, jumlah, status Lunas/Belum.</span></div><div class="xr"><button data-ex="bulan">Rincian bulanan (.csv)</button><span class="sub"><span class="chip n">Hanya laporan</span> Saldo awal, pengeluaran, dan saldo akhir tiap bulan.</span></div></div><div class="h3">Impor</div><div class="row2" style="margin-top:0"><input type="file" id="fi" accept=".json,.csv,text/csv,application/json" style="flex:1;min-width:200px"><select id="im" style="width:auto"><option value="merge">Gabungkan dengan data sekarang</option><option value="replace">Timpa (hapus data sekarang)</option></select></div><div class="sub" style="margin-top:6px"><b>.json</b> = hasil Cadangan lengkap. <b>.csv</b> = hasil Item tahun ini (kolom: Nama; Harga; Tiap; Satuan; Mulai), hanya untuk tahun yang sedang aktif. CSV Riwayat pembayaran dan Rincian bulanan tidak bisa diimpor.<br><b>Gabungkan</b>: menambah yang belum ada, aman diulang. <b>Timpa</b>: mengganti data sekarang (JSON: semua tahun, CSV: item tahun aktif).</div><div class="err" id="xm"></div><details id="dt"><summary class="sub" style="cursor:pointer">Cara teks (salin / tempel)</summary>
@@ -186,7 +187,7 @@ function series(it,endMs){var out=[],k,t,s;
  (it.ch||[]).forEach(function(g){if(!g.n&&!g.unit)return;var sub={start:g.from,n:g.n||it.n,unit:g.unit||it.unit},lim=g.to?Date.parse(g.to+'T00:00:00Z'):endMs;
   for(k=0;k<4000;k++){t=at(sub,k);if(t>endMs||t>lim)break;if(segAt(it,isoD(t))===g)out.push(t);if(sub.unit==='sekali')break}});
  out.sort(function(a,b){return a-b});out=out.filter(function(t,i){return i===0||t!==out[i-1]});
- var cn=+it.cnt||0,le=it.end?Date.parse(it.end+'T00:00:00Z'):0;if(cn)out=out.slice(0,cn);if(le)out=out.filter(function(t){return t<=le});return out}
+ var cut=0;(it.ch||[]).forEach(function(g){if(g.cut){var cf=Date.parse(g.from+'T00:00:00Z');if(cf>cut)cut=cf}});if(cut)out=out.filter(function(t){return t>=cut});var cn=+it.cnt||0,le=it.end?Date.parse(it.end+'T00:00:00Z'):0;if(cn)out=out.slice(0,cn);if(le)out=out.filter(function(t){return t<=le});return out}
 function occ(it,y){return series(it,Date.UTC(y,11,31)).filter(function(t){return new Date(t).getUTCFullYear()===y})}
 function nextDates(it,c){return series(it,Date.UTC(+it.start.slice(0,4)+40,11,31)).slice(0,c)}
 function every(it){return (it.unit==='sekali'?'sekali saja':'tiap '+(it.n>1?it.n+' ':'')+it.unit)+(it.cnt?', '+it.cnt+' kali':it.end?', sampai '+fd(Date.parse(it.end+'T00:00:00Z')):'')}
@@ -217,13 +218,13 @@ function renderRincian(){var c=calc(),y=S.year,R=c.rows,mx=Math.max.apply(null,R
  $('v-rincian').innerHTML=h}
 function renderJadwal(){var c=calc(),y=S.year,h='<div class="card"><h2>Jadwal pembayaran '+y+'</h2><div class="sub" style="margin-bottom:8px">Klik tanggal untuk menandai tagihan sudah dibayar (✓), klik lagi untuk membatalkan. Pakai "Ubah harga / jadwal" untuk mengubah harga atau siklus mulai tanggal tertentu. Tagihan yang harganya beda dari harga awal diberi garis putus-putus dan label harga kecil.'+(S.startMonth?' Bulan sebelum '+MON[S.startMonth]+' tidak dihitung.':'')+'</div><div class="tw"><table><thead><tr><th>Item</th><th>Biaya</th>'+MON.map(function(m){return '<th>'+m+'</th>'}).join('')+'<th>Total</th></tr></thead><tbody>';
  S.items.forEach(function(it){var o=c.occs[it.id],by=[];for(var m=0;m<12;m++)by.push([]);o.forEach(function(t){by[new Date(t).getUTCMonth()].push(t)});
-  h+='<tr data-r="'+it.id+'"><td><b>'+esc(it.name)+'</b><div class="sub">'+every(it)+'</div><button class="g" data-pm="'+it.id+'">&#9998; Ubah harga / jadwal</button></td><td>'+pcell(it,o)+'</td>'+by.map(function(d){return d.length?'<td class="cell">'+d.map(function(t){var k=it.id+'|'+new Date(t).toISOString().slice(0,10),on=S.paid[k];return '<button class="pd'+(on?' on':'')+(priceAt(it,t)!==it.price?' chg':'')+'" data-pk="'+k+'" title="'+fd(t)+' - '+rp(priceAt(it,t))+(on?' (sudah dibayar)':' (belum dibayar)')+'" aria-pressed="'+(on?'true':'false')+'">'+(on?'✓ ':'')+new Date(t).getUTCDate()+(priceAt(it,t)!==it.price?'<span class="cp">'+shortP(priceAt(it,t))+'</span>':'')+'</button>'}).join('')+'</td>':'<td class="z">0</td>'}).join('')+'<td><b>'+rp(sumP(it,o))+'</b><div class="sub">'+o.filter(function(t){return S.paid[it.id+'|'+new Date(t).toISOString().slice(0,10)]}).length+'/'+o.length+' lunas</div></td></tr>'});
+  h+='<tr data-r="'+it.id+'"><td><b>'+esc(it.name)+'</b><div class="sub">'+every(it)+'</div>'+chSub(it)+'<button class="g" data-pm="'+it.id+'">&#9998; Ubah harga / jadwal</button></td><td>'+pcell(it,o)+'</td>'+by.map(function(d){return d.length?'<td class="cell">'+d.map(function(t){var k=it.id+'|'+new Date(t).toISOString().slice(0,10),on=S.paid[k];return '<button class="pd'+(on?' on':'')+(priceAt(it,t)!==it.price?' chg':'')+'" data-pk="'+k+'" title="'+fd(t)+' - '+rp(priceAt(it,t))+(on?' (sudah dibayar)':' (belum dibayar)')+'" aria-pressed="'+(on?'true':'false')+'">'+(on?'✓ ':'')+new Date(t).getUTCDate()+(priceAt(it,t)!==it.price?'<span class="cp">'+shortP(priceAt(it,t))+'</span>':'')+'</button>'}).join('')+'</td>':'<td class="z">0</td>'}).join('')+'<td><b>'+rp(sumP(it,o))+'</b><div class="sub">'+o.filter(function(t){return S.paid[it.id+'|'+new Date(t).toISOString().slice(0,10)]}).length+'/'+o.length+' lunas</div></td></tr>'});
  if(!S.items.length)h+='<tr><td colspan="15" class="empty">Belum ada item. Tambahkan di tab Kelola Item.</td></tr>';
  h+='<tr class="tot"><td>Total per bulan</td><td></td>'+MON.map(function(_,m){var r=c.rows.filter(function(x){return x.m===m})[0];return '<td>'+(r?(r.sp/1000).toLocaleString('id-ID')+'rb':'0')+'</td>'}).join('')+'<td>'+rp(c.total)+'</td></tr></tbody></table></div></div>';
  var tp=0,np=0,cp=0,cn=0;S.items.forEach(function(it){(c.occs[it.id]||[]).forEach(function(t){var pr=priceAt(it,t);tp+=pr;cn++;if(S.paid[it.id+'|'+new Date(t).toISOString().slice(0,10)]){np+=pr;cp++}})});h='<div class="card stats"><div><span>Sudah dibayar</span><b>'+rp(np)+'</b><span>'+cp+' dari '+cn+' tagihan</span></div><div><span>Belum dibayar</span><b>'+rp(tp-np)+'</b><span>'+(cn-cp)+' tagihan</span></div></div>'+h;$('v-jadwal').innerHTML=h}
 function renderList(){var c=calc(),h='';
  S.items.forEach(function(it){var o=c.occs[it.id],nx=o[0]!=null?fd(o[0]):'tidak ada di '+S.year;
-  h+='<div class="it"><div><b>'+esc(it.name)+'</b><small>'+pdesc(it)+' · '+every(it)+'</small></div><div class="cell"><small>Mulai</small>'+fd(Date.parse(it.start+'T00:00:00Z'))+'</div>'+
+  h+='<div class="it"><div><b>'+esc(it.name)+'</b><small>'+pdesc(it)+' · '+every(it)+'</small>'+chSub(it)+'</div><div class="cell"><small>Mulai</small>'+fd(Date.parse(it.start+'T00:00:00Z'))+'</div>'+
   '<div class="cell"><small>Total '+S.year+'</small><b>'+rp(sumP(it,o))+'</b><small>'+o.length+'× bayar</small></div><div><button class="g" data-ed="'+it.id+'">Ubah</button><button class="g d" data-del="'+it.id+'">Hapus</button></div></div>'});
  $('ly').textContent=S.year;var oy=Object.keys(ALL.data).filter(function(k){return +k!==S.year&&ALL.data[k].items.length});var pri=oy.map(Number).filter(function(k){return k<S.year}).sort(function(a,b){return a-b}).pop();$('cprow').innerHTML=oy.length?'<div class="h3" style="width:100%;margin:6px 0 0">Bawa jadwal tagihan dari tahun lain</div><select id="cy" style="width:auto">'+oy.map(function(k){return '<option'+(+k===pri?' selected':'')+'>'+k+'</option>'}).join('')+'</select><button id="cyb">Bawa ke '+S.year+'</button><label style="display:flex;gap:8px;align-items:center;margin:0;width:100%;font-weight:500"><input type="checkbox" id="cs" style="width:auto;min-height:0">Jadikan saldo akhir tahun itu sebagai saldo awal '+S.year+'</label><div class="sub" style="width:100%">Item sekali bayar atau yang sudah selesai (lewat tanggal/jumlah berhenti) tidak ikut dibawa. Perubahan harga ikut terbawa. Status lunas tidak dibawa.</div>':'';$('list').innerHTML=h||'<div class="empty">Belum ada item. Isi formulir di atas untuk menambah.</div>'}
 function norm(a){var y,d;if(a&&a.data&&typeof a.data==='object'){y=+a.year||2027;if(!a.data[y])a.data[y]={saldo:0,items:[]}}else if(a&&Array.isArray(a.items)){y=+a.year||2027;d={};d[y]=a;a={year:y,data:d}}else{var s0=seed();y=s0.year;d={};d[y]=s0;a={year:y,data:d}}a.year=y;Object.keys(a.data).forEach(function(k){var s=a.data[k];s.year=+k;s.saldo=+s.saldo||0;s.startMonth=Math.min(11,Math.max(0,+s.startMonth||0));s.items=(Array.isArray(s.items)?s.items:[]).map(function(x,i){x=x||{};return{id:x.id||Date.now()+i,name:String(x.name||'Item'),price:+x.price||0,n:Math.max(1,+x.n||1),unit:['hari','minggu','bulan','tahun','sekali'].indexOf(x.unit)>=0?x.unit:'bulan',start:/^\d{4}-\d{2}-\d{2}$/.test(x.start)?x.start:s.year+'-01-01',end:/^\d{4}-\d{2}-\d{2}$/.test(x.end)?x.end:'',cnt:Math.max(0,+x.cnt||0),ch:chNorm(x)}});s.paid=s.paid&&typeof s.paid==='object'?s.paid:{}});return a}
@@ -333,6 +334,8 @@ $('ld').onclick=function(){doImport($('ta').value)};
 function priceAt(it,t){var s=segAt(it,isoD(t));return s&&s.price!=null?s.price:it.price}
 function sumP(it,o){return o.reduce(function(a,t){return a+priceAt(it,t)},0)}
 function fmtD(d){return fd(Date.parse(d+'T00:00:00Z'))}
+function chSub(it){var L=(it.ch||[]).filter(function(g){return g.n||g.unit||g.cut}).map(function(g){return '&#8627; mulai '+fmtD(g.from)+(g.to?' s/d '+fmtD(g.to):'')+((g.n||g.unit)?': tiap '+(g.n||it.n)+' '+(g.unit||it.unit):'')+(g.cut?' (tagihan sebelumnya dihapus)':'')});
+ return L.slice(-2).map(function(x){return '<div class="sub">'+x+'</div>'}).join('')+(L.length>2?'<div class="sub">+'+(L.length-2)+' perubahan lain</div>':'')}
 function pdesc(it){var n=(it.ch||[]).length;return rp(it.price)+(n?' ('+n+' perubahan)':'')}
 function shortP(p){return p>=1e6?(p/1e6).toLocaleString('id-ID',{maximumFractionDigits:2})+'jt':p>=1000?Math.round(p/1000)+'rb':String(p)}
 function pcell(it,o){o=o||[];var n=(it.ch||[]).length,p0=o.length?priceAt(it,o[0]):it.price,pl=o.length?priceAt(it,o[o.length-1]):p0,s=[];
@@ -341,11 +344,11 @@ function pcell(it,o){o=o||[];var n=(it.ch||[]).length,p0=o.length?priceAt(it,o[0
  if(n)s.push(n+' perubahan');
  return rp(p0)+(s.length?'<div class="sub">'+s.join('<br>')+'</div>':'')}
 function item(id){return S.items.filter(function(x){return x.id==id})[0]}
-function cloneItem(it,id){return{id:id,name:it.name,price:it.price,n:it.n,unit:it.unit,start:it.start,end:it.end||'',cnt:+it.cnt||0,ch:(it.ch||[]).map(function(q){return{from:q.from,to:q.to||'',price:q.price,n:q.n,unit:q.unit}})}}
+function cloneItem(it,id){return{id:id,name:it.name,price:it.price,n:it.n,unit:it.unit,start:it.start,end:it.end||'',cnt:+it.cnt||0,ch:(it.ch||[]).map(function(q){return{from:q.from,to:q.to||'',price:q.price,n:q.n,unit:q.unit,cut:!!q.cut}})}}
 function lastOcc(it){if(!it.end&&!(+it.cnt))return null;var s=series(it,Date.UTC(+it.start.slice(0,4)+60,11,31));return s.length?s[s.length-1]:null}
 function cmpFrom(a,b){return a.from<b.from?-1:a.from>b.from?1:0}
 function chNorm(x){var D=/^\d{4}-\d{2}-\d{2}$/,U=['hari','minggu','bulan','tahun'],out=[];
- (Array.isArray(x.ch)?x.ch:[]).forEach(function(q){if(!q||!D.test(q.from))return;out.push({from:q.from,to:D.test(q.to)&&q.to>=q.from?q.to:'',price:+q.price>0?+q.price:null,n:q.n?Math.max(1,parseInt(q.n,10)||1):null,unit:U.indexOf(q.unit)>=0?q.unit:null})});
+ (Array.isArray(x.ch)?x.ch:[]).forEach(function(q){if(!q||!D.test(q.from))return;out.push({from:q.from,to:D.test(q.to)&&q.to>=q.from?q.to:'',price:+q.price>0?+q.price:null,n:q.n?Math.max(1,parseInt(q.n,10)||1):null,unit:U.indexOf(q.unit)>=0?q.unit:null,cut:!!q.cut})});
  (Array.isArray(x.pc)?x.pc:[]).forEach(function(q){if(q&&D.test(q.d)&&+q.p>0)out.push({from:q.d,to:'',price:+q.p,n:null,unit:null})});
  return out.sort(cmpFrom)}
 function stopUI(){var v=$('f-stop').value;$('w-end').hidden=v!=='date';$('w-cnt').hidden=v!=='cnt'}
@@ -355,7 +358,7 @@ var pmId=null,pmInit=null;
 function pmMsg(t,ok){var e=$('pme');e.textContent=t;e.style.color=ok?'var(--ac)':'var(--wr)'}
 function pmCur(){var it=item(pmId),sek=it&&it.unit==='sekali';return{P:parseRp($('pp').value),n:sek?it.n:Math.max(1,parseInt($('pn').value,10)||1),u:sek?it.unit:$('pu').value}}
 function descCh(it,c){var p=[];if(c.price!=null)p.push(rp(c.price));if(c.n||c.unit)p.push('tiap '+(c.n||it.n)+' '+(c.unit||it.unit));
- return '<b>'+fmtD(c.from)+(c.to?' &ndash; '+fmtD(c.to):' &rarr; seterusnya')+'</b><br><span class="sub">'+(p.join(' &middot; ')||'Kembali ke pengaturan awal')+(c.to?' (lalu kembali ke awal)':'')+'</span>'}
+ return '<b>'+fmtD(c.from)+(c.to?' &ndash; '+fmtD(c.to):' &rarr; seterusnya')+'</b><br><span class="sub">'+(p.join(' &middot; ')||'Kembali ke pengaturan awal')+(c.to?' (lalu kembali ke awal)':'')+(c.cut?' &middot; tagihan sebelumnya dihapus':'')+'</span>'}
 function renderPm(){var it=item(pmId);if(!it)return;$('pmi').textContent='Pengaturan awal: '+rp(it.price)+' · '+every(it)+' · mulai '+fmtD(it.start)+'.';
  $('phl').innerHTML=(it.ch||[]).map(function(c,i){return '<div class="it2"><div>'+descCh(it,c)+'</div><button class="g d" data-pdel="'+i+'">Hapus</button></div>'}).join('')||'<div class="sub">Belum ada perubahan.</div>'}
 function pmDraft(){var it=item(pmId);if(!it)return{err:'Item tidak ditemukan.'};
@@ -363,25 +366,28 @@ function pmDraft(){var it=item(pmId);if(!it)return{err:'Item tidak ditemukan.'};
  if(!/^\d{4}-\d{2}-\d{2}$/.test(from))return{err:'Pilih tanggal mulai berlaku.'};
  if(P<=0)return{err:'Isi harga. Contoh: 300k atau 300.000.'};
  if(un&&(!to||to<from))return{err:'Isi tanggal "sampai" (sama atau sesudah tanggal mulai).'};
- var rs=$('pa').value==='restart';
- if(pmInit&&P===pmInit.P&&n===pmInit.n&&u===pmInit.u&&!rs)return{err:'Belum ada yang diubah. Ubah harga atau siklus, atau pilih "Mulai ulang jadwal" untuk menggeser tanggal bayar.'};
+ var rs=$('pa').value==='restart',drop=$('pw').value==='forever'&&$('pcut').value==='drop';
+ if(pmInit&&P===pmInit.P&&n===pmInit.n&&u===pmInit.u&&!rs&&!drop)return{err:'Belum ada yang diubah. Ubah harga atau siklus, pilih "Mulai ulang jadwal" untuk menggeser tanggal bayar, atau hapus tagihan sebelum tanggal ini.'};
  var c={from:from,to:to,price:P!==it.price?P:null,n:null,unit:null};
  if(it.unit!=='sekali'&&(rs||n!==it.n||u!==it.unit)){c.n=n;c.unit=u}
+ if(drop)c.cut=true;
  return{c:c,it:it}}
 function pmPrev(){var d=pmDraft(),p=$('ppv'),it0=item(pmId),cu=pmCur();
  if(it0&&it0.unit!=='sekali')$('pah').textContent=(cu.n!==it0.n||cu.u!==it0.unit)?'Siklus berbeda dari awal: pembayaran pertama siklus baru jatuh di tanggal mulai berlaku.':$('pa').value==='restart'?'Pembayaran pertama jatuh di tanggal mulai berlaku, lalu mengikuti siklus.':'Tanggal bayar mengikuti jadwal sekarang. Pilih "Mulai ulang" jika ingin menggeser tanggalnya.';
  if(d.err){p.className='sub';p.textContent=d.err;return}
  var tmp=Object.assign({},d.it,{ch:(d.it.ch||[]).filter(function(q){return !(q.from===d.c.from&&q.to===d.c.to)}).concat([d.c]).sort(cmpFrom)}),
  f=Date.parse(d.c.from+'T00:00:00Z'),l=series(tmp,Date.UTC(+d.c.from.slice(0,4)+8,11,31)).filter(function(t){return t>=f}).slice(0,6);
- p.className='prev';p.textContent=l.length?'Tagihan sesudah perubahan: '+l.map(function(t){return fd(t)+' ('+rp(priceAt(tmp,t))+')'}).join(', ')+(l.length>=6?' …':''):'Tidak ada tagihan pada rentang ini.'}
+ var tmp2=Object.assign({},tmp,{ch:tmp.ch.map(function(g){return g===d.c?Object.assign({},g,{cut:false}):g})}),
+ bf=series(tmp2,Date.UTC(+d.c.from.slice(0,4)+8,11,31)).filter(function(t){return t<f}).slice(-3);
+ p.className='prev';p.innerHTML=(l.length?'Tagihan sesudah perubahan: '+l.map(function(t){return fd(t)+' ('+rp(priceAt(tmp,t))+')'}).join(', ')+(l.length>=6?' &hellip;':''):'Tidak ada tagihan pada rentang ini.')+(bf.length?'<br>Sebelum '+fd(f)+': '+bf.map(function(t){return fd(t)}).join(', ')+(d.c.cut?' (dihapus)':' (tidak berubah)'):'')}
 function openPm(id){var it=item(id);if(!it)return;pmId=it.id;$('pmt').textContent='Ubah harga / jadwal: '+it.name;
  var nx=occ(it,S.year).filter(function(t){return !S.paid[it.id+'|'+isoD(t)]})[0],iso=isoD(nx!=null?nx:Date.now()),sg=segAt(it,iso);
  $('pdt').value=iso;$('pp').value=(sg&&sg.price!=null?sg.price:it.price).toLocaleString('id-ID');
  $('pn').value=(sg&&sg.n)||it.n;$('pu').value=(sg&&sg.unit)||(it.unit==='sekali'?'bulan':it.unit);
- $('pw').value='forever';$('pa').value='keep';$('pto').value='';$('pwt').hidden=true;$('pcad').hidden=it.unit==='sekali';
+ $('pw').value='forever';$('pa').value='keep';$('pcut').value='keep';$('pcw').hidden=false;$('pto').value='';$('pwt').hidden=true;$('pcad').hidden=it.unit==='sekali';
  pmInit=pmCur();pmMsg('');renderPm();pmPrev();$('pm').hidden=false}
-['pdt','pp','pn','pu','pto','pa'].forEach(function(i){$(i).oninput=pmPrev;$(i).onchange=pmPrev});
-$('pw').onchange=function(){$('pwt').hidden=this.value!=='until';pmPrev()};
+['pdt','pp','pn','pu','pto','pa','pcut'].forEach(function(i){$(i).oninput=pmPrev;$(i).onchange=pmPrev});
+$('pw').onchange=function(){$('pwt').hidden=this.value!=='until';$('pcw').hidden=this.value==='until';pmPrev()};
 $('pp').addEventListener('input',function(){fmtLive(this)});
 $('pcl').onclick=function(){$('pm').hidden=true};
 $('pps').onclick=function(){var d=pmDraft();if(d.err)return pmMsg(d.err);var it=d.it;
