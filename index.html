@@ -91,11 +91,11 @@ textarea{height:200px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
 <body>
 <div class="w">
 <header>
-  <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div></div>
+  <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" id="sbs"></div></div>
   <div class="ctl">
     <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
     <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"></div>
-    <button id="bk">Impor / Ekspor</button>
+    <button id="lgb">Masuk</button><button id="bk">Impor / Ekspor</button>
   </div>
 </header>
 <nav role="tablist">
@@ -136,6 +136,9 @@ textarea{height:200px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
   <div class="row2"><button class="p" id="cp">Salin</button><button id="ld">Muat dari teks</button><button id="rs" class="d">Pulihkan contoh</button></div></details><div class="row2" style="justify-content:flex-end"><button id="cl">Tutup</button></div>
 </div></div>
 
+<div class="modal" id="lg" hidden><div class="card"><h2>Masuk untuk sinkron</h2><p class="sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p><label for="le">Email</label><input id="le" type="email" autocomplete="email"><label for="lp" style="margin-top:10px">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="err" id="lm"></div><div class="row2"><button class="p" id="lin">Masuk</button><button id="lup">Daftar</button><button id="lgc">Tutup</button></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 var MON=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],KEY='rencana-keuangan-v1';
 var UN={hari:'hari',minggu:'minggu',bulan:'bulan',tahun:'tahun'};
@@ -145,9 +148,9 @@ s(1,'Vidio',200000,3,'bulan','2027-03-01'),s(2,'TorBox',450000,1,'tahun','2027-1
 s(4,'BPJS',150000,1,'bulan','2027-01-01'),s(5,'Strong IPTV',325000,6,'bulan','2027-03-01'),s(6,'Kuota',50000,28,'hari','2026-10-21'),
 s(7,'Saham',620000,1,'bulan','2027-01-01'),s(8,'Facial',160000,1,'bulan','2027-01-01'),s(9,'BTC',420000,1,'bulan','2027-01-01'),
 s(10,'Vitamin D3 + K2',135000,2,'bulan','2027-01-01'),s(11,'Magnesium Glycinate',300000,5,'bulan','2027-01-01'),s(12,'Blackmores Omega',450000,3,'bulan','2027-01-01')]}}
-var S,ALL,openRows={},editId=null,lastSaved=false;
+var S,ALL,lastData='',pushT=null,openRows={},editId=null,lastSaved=false;
 try{var r=localStorage.getItem(KEY);ALL=r?JSON.parse(r):null}catch(e){ALL=null}
-ALL=norm(ALL);S=ALL.data[ALL.year];
+ALL=norm(ALL);S=ALL.data[ALL.year];lastData=JSON.stringify(ALL.data);
 var $=function(i){return document.getElementById(i)};
 function esc(t){return String(t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function rp(n){return 'Rp '+Math.round(n).toLocaleString('id-ID')}
@@ -173,7 +176,7 @@ function calc(){var y=+S.year,occs={},cnt=[],sp=[],i,m;
  var bal=+S.saldo||0,rows=[];
  for(m=sm;m<12;m++){rows.push({m:m,aw:bal,sp:sp[m],ak:bal-sp[m],ev:cnt[m]});bal-=sp[m]}
  return{rows:rows,occs:occs,total:sp.reduce(function(a,b){return a+b},0),end:bal}}
-function save(){try{ALL.data[S.year]=S;ALL.year=S.year;localStorage.setItem(KEY,JSON.stringify(ALL));lastSaved=true;
+function save(){try{ALL.data[S.year]=S;ALL.year=S.year;var dj=JSON.stringify(ALL.data);if(dj!==lastData){lastData=dj;ALL.rev=Date.now();schedPush()}localStorage.setItem(KEY,JSON.stringify(ALL));lastSaved=true;
  var d=new Date();$('status').textContent='Tersimpan otomatis '+d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}
  catch(e){$('status').textContent='Penyimpanan browser tidak tersedia. Gunakan Cadangan agar data aman.'}}
 function renderRincian(){var c=calc(),y=S.year,R=c.rows,mx=Math.max.apply(null,R.map(function(r){return r.sp}).concat([1])),
@@ -261,7 +264,7 @@ function isoD(t){return new Date(t).toISOString().slice(0,10)}
 function sameItem(a,b){return a.name===b.name&&a.price===b.price&&a.n===b.n&&a.unit===b.unit&&a.start===b.start&&(a.end||'')===(b.end||'')&&(+a.cnt||0)===(+b.cnt||0)}
 function csvEsc(v){v=String(v);return /[;",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v}
 function toCSV(rows){return '\uFEFF'+rows.map(function(r){return r.map(csvEsc).join(';')}).join('\r\n')}
-function exportFile(name,data){if(!DL){$('ta').value=data;$('dt').open=true;$('ta').focus();$('ta').select();$('ta').scrollIntoView({block:'center'});setX('Unduh langsung tidak didukung di tampilan ini. Isi file sudah dipilih di kolom teks di bawah: tekan Salin, tempel ke Catatan/Notepad, lalu simpan sebagai '+name+'.',0);return}DL.save({filename:name,data:data}).then(function(){setX('File dikirim: '+name,1)}).catch(function(e){setX(e&&e.code==='declined'?'Unduhan dibatalkan.':'Gagal menyimpan file ('+(e&&e.code||'error')+').',0)})}
+function exportFile(name,data){if(!DL){try{var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'text/plain;charset=utf-8'}));a.download=name;document.body.appendChild(a);a.click();a.remove();setX('File diunduh: '+name,1)}catch(e){$('ta').value=data;$('dt').open=true;setX('Unduh file gagal. Isinya ada di kolom teks di bawah, silakan salin.',0)}return}DL.save({filename:name,data:data}).then(function(){setX('File dikirim: '+name,1)}).catch(function(e){setX(e&&e.code==='declined'?'Unduhan dibatalkan.':'Gagal menyimpan file ('+(e&&e.code||'error')+').',0)})}
 function doExport(kind){var y=S.year,c=calc(),rows,name;
  if(kind==='json'){ALL.data[S.year]=S;ALL.year=S.year;return exportFile('rencana-keuangan-cadangan-'+isoD(Date.now())+'.json',JSON.stringify(ALL,null,1))}
  if(kind==='items'){rows=[['Nama','Harga','Tiap','Satuan','Mulai','Sampai','Jumlah kali']];S.items.forEach(function(it){rows.push([it.name,it.price,it.n,it.unit,it.start,it.end||'',it.cnt||''])});name='item-'+y}
@@ -348,6 +351,42 @@ $('cprow').onclick=function(e){if(e.target.id!=='cyb')return;var sy=+$('cy').val
  if($('cs').checked){var keep=S;S=src;var c2=calc();S=keep;S.saldo=c2.end;$('saldo').value=S.saldo.toLocaleString('id-ID');msg+=' Saldo awal '+y+' = '+rp(S.saldo)+'.'}
  save();renderAll();$('status').textContent=msg};
 resetForm();renderAll();save();
+
+/* ===== Supabase sync ===== */
+var SB_URL='https://hjvdkwpoamgkommotzab.supabase.co',SB_KEY='sb_publishable_U68PnX2KeFMxWJ3Tjbeiqw_1K0iMbeC';/* isi dari Supabase > Project Settings > API (Project URL dan anon/publishable key) */
+var sb=null,sbUser=null;
+function sbStat(t,bad){var e=$('sbs');e.textContent=t;e.style.color=bad?'var(--wr)':'var(--mut)'}
+function clock(){return new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}
+function sbInit(){if(!SB_URL||!SB_KEY||!window.supabase){$('lgb').hidden=true;sbStat('Mode lokal (Supabase belum diisi)');return}
+ var u0;try{u0=new URL(SB_URL.trim()).origin}catch(e){$('lgb').hidden=true;sbStat('SB_URL tidak valid. Harus berbentuk https://xxxx.supabase.co',1);return}
+ sb=supabase.createClient(u0,SB_KEY.trim());sbStat('Belum masuk. Data tersimpan lokal.');
+ sb.auth.getSession().then(function(r){setUser(r.data.session)});
+ sb.auth.onAuthStateChange(function(_e,s){setUser(s)})}
+function setUser(s){var u=s&&s.user||null;if((u&&u.id)===(sbUser&&sbUser.id))return;sbUser=u;$('lgb').textContent=u?'Keluar':'Masuk';
+ if(u){sbStat('Menyinkronkan...');pull()}else sbStat('Belum masuk. Data tersimpan lokal.')}
+function schedPush(){if(!sb||!sbUser)return;sbStat('Menyimpan ke cloud...');clearTimeout(pushT);pushT=setTimeout(push,1200)}
+function push(){pushT=null;if(!sb||!sbUser)return Promise.resolve();
+ return sb.from('rk_state').upsert({user_id:sbUser.id,data:ALL,rev:ALL.rev||0,updated_at:new Date().toISOString()}).then(function(r){r.error?sbStat('Gagal simpan ke cloud: '+r.error.message,1):sbStat('Tersinkron '+clock())})}
+function pull(){if(!sb||!sbUser)return Promise.resolve();
+ return sb.from('rk_state').select('data,rev').eq('user_id',sbUser.id).maybeSingle().then(function(r){
+  if(r.error){sbStat('Gagal sinkron: '+r.error.message,1);return}
+  var row=r.data;if(!row)return push();
+  var rr=+row.rev||0,lr=+ALL.rev||0;
+  if(rr>lr){try{localStorage.setItem('rk-backup',JSON.stringify(ALL))}catch(e){}
+   ALL=norm(row.data);ALL.rev=rr;S=ALL.data[ALL.year];lastData=JSON.stringify(ALL.data);
+   try{localStorage.setItem(KEY,JSON.stringify(ALL))}catch(e){}syncUI();sbStat('Tersinkron '+clock()+' (data cloud dimuat)')}
+  else if(rr<lr)return push();
+  else sbStat('Tersinkron '+clock())})}
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&sbUser&&!pushT)pull()});
+$('lgb').onclick=function(){if(sbUser){sb.auth.signOut();return}$('lm').textContent='';$('lg').hidden=false};
+$('lgc').onclick=function(){$('lg').hidden=true};
+function auth(kind){var e=$('le').value.trim(),p=$('lp').value;if(!e||p.length<6){$('lm').textContent='Isi email dan password (min. 6 karakter).';return}
+ (kind==='up'?sb.auth.signUp({email:e,password:p}):sb.auth.signInWithPassword({email:e,password:p})).then(function(r){
+  if(r.error){$('lm').textContent=r.error.message;return}
+  if(kind==='up'&&!r.data.session){$('lm').textContent='Cek email untuk konfirmasi, lalu masuk.';return}
+  $('lg').hidden=true;$('lp').value=''})}
+$('lin').onclick=function(){auth('in')};$('lup').onclick=function(){auth('up')};
+sbInit();
 </script>
 </body>
 </html>
