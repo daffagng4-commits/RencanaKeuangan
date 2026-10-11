@@ -78,6 +78,7 @@ td.z{color:var(--ln)}
 .pd.on .cp{color:var(--ac)}
 @keyframes fl{from{background:var(--acs)}to{background:transparent}}
 tr.flash td{animation:fl 2.6s ease-out}
+.chip.chg{background:var(--wrs);color:var(--wr)}
 @media(max-width:480px){.g2{grid-template-columns:1fr}}
 .it2{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--ln)}
 @media(max-width:560px){.xr{grid-template-columns:1fr;gap:4px}}
@@ -98,7 +99,7 @@ textarea{height:200px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
 <body>
 <div class="w">
 <header>
-  <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" id="sbs"></div></div>
+  <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r6 · 11 Okt 2026</div><div class="sub" id="sbs"></div></div>
   <div class="ctl">
     <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
     <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"></div>
@@ -207,11 +208,11 @@ function renderRincian(){var c=calc(),y=S.year,R=c.rows,mx=Math.max.apply(null,R
  '<div><span>Bulan terberat</span><b>'+rp(hv.sp)+'</b><span>'+MON[hv.m]+'</span></div><div><span>Bulan teringan</span><b>'+rp(mn.sp)+'</b><span>'+MON[mn.m]+'</span></div>'+
  '<div><span>Jatah jajan per bulan</span><b>'+rp(pos/R.length)+'</b></div><div><span>Jatah jajan per hari</span><b>'+rp(pos/days)+'</b></div></div></div>';
  h+='<div class="card"><h2>Pengeluaran per bulan</h2><div class="bars">'+R.map(function(r){return '<div title="'+rp(r.sp)+'"><i style="height:'+Math.round(r.sp/mx*85)+'%"></i>'+MON[r.m]+'</div>'}).join('')+'</div></div>';
- h+='<div class="card"><h2>Rincian arus kas '+y+'</h2><div class="sub" style="margin-bottom:8px">Klik baris untuk melihat tanggal dan rincian tiap pembayaran.</div><div class="tw"><table><thead><tr><th>Bulan</th><th>Saldo awal</th><th>Pengeluaran</th><th>Saldo akhir</th><th class="l">Item berkala</th></tr></thead><tbody>';
- R.forEach(function(r){var chips={};r.ev.forEach(function(e){var i=e.it;if(i.unit!=='bulan'||i.n!==1)chips[i.id]=(chips[i.id]||{n:i.name,c:0}),chips[i.id].c++});
+ h+='<div class="card"><h2>Rincian arus kas '+y+'</h2><div class="sub" style="margin-bottom:8px">Klik baris untuk melihat tanggal dan rincian tiap pembayaran. Label merah (▲/▼) = harga berbeda dari harga awal.</div><div class="tw"><table><thead><tr><th>Bulan</th><th>Saldo awal</th><th>Pengeluaran</th><th>Saldo akhir</th><th class="l">Item berkala</th></tr></thead><tbody>';
+ R.forEach(function(r){var chips={};r.ev.forEach(function(e){var i=e.it;var pc=priceAt(i,e.t),chg=pc!==i.price;if(i.unit!=='bulan'||i.n!==1||(i.ch||[]).some(function(g){return g.n||g.unit})||chg){var q=chips[i.id]=chips[i.id]||{n:i.name,c:0,p:null,u:''};q.c++;if(chg){q.p=pc;q.u=pc>i.price?'&#9650;':'&#9660;'}}});
   h+='<tr class="row" data-m="'+r.m+'"><td><b>'+MON[r.m]+' '+y+'</b></td><td>'+rp(r.aw)+'</td><td>'+rp(r.sp)+'</td><td class="'+(r.ak<0?'neg':'')+'">'+rp(r.ak)+'</td><td class="l">'+
-  Object.keys(chips).map(function(k){return '<span class="chip">'+esc(chips[k].n)+(chips[k].c>1?' ×'+chips[k].c:'')+'</span>'}).join('')+'</td></tr>';
-  if(openRows[r.m])h+=r.ev.slice().sort(function(a,b){return a.t-b.t}).map(function(e){return '<tr class="det"><td>'+(S.paid[e.it.id+'|'+new Date(e.t).toISOString().slice(0,10)]?'✓ ':'')+fd(e.t,{day:'numeric',month:'short'})+'</td><td class="l" colspan="2">'+esc(e.it.name)+'</td><td colspan="2" class="l">'+rp(priceAt(e.it,e.t))+'</td></tr>'}).join('')||'<tr class="det"><td colspan="5">Tidak ada pembayaran.</td></tr>'});
+  Object.keys(chips).map(function(k){var q=chips[k],up=q.p!=null;return '<span class="chip'+(up?' chg':'')+'">'+esc(q.n)+(q.c>1?' ×'+q.c:'')+(up?' '+q.u+' '+shortP(q.p):'')+'</span>'}).join('')+'</td></tr>';
+  if(openRows[r.m])h+=r.ev.slice().sort(function(a,b){return a.t-b.t}).map(function(e){return '<tr class="det"><td>'+(S.paid[e.it.id+'|'+new Date(e.t).toISOString().slice(0,10)]?'✓ ':'')+fd(e.t,{day:'numeric',month:'short'})+'</td><td class="l" colspan="2">'+esc(e.it.name)+'</td><td colspan="2" class="l">'+rp(priceAt(e.it,e.t))+(priceAt(e.it,e.t)!==e.it.price?' <span class="sub">(harga awal '+rp(e.it.price)+')</span>':'')+'</td></tr>'}).join('')||'<tr class="det"><td colspan="5">Tidak ada pembayaran.</td></tr>'});
  h+='<tr class="tot"><td>Total</td><td></td><td>'+rp(c.total)+'</td><td>'+rp(c.end)+'</td><td></td></tr></tbody></table></div></div>';
  $('v-rincian').innerHTML=h}
 function renderJadwal(){var c=calc(),y=S.year,h='<div class="card"><h2>Jadwal pembayaran '+y+'</h2><div class="sub" style="margin-bottom:8px">Klik tanggal untuk menandai tagihan sudah dibayar (✓), klik lagi untuk membatalkan. Pakai "Ubah harga / jadwal" untuk mengubah harga atau siklus mulai tanggal tertentu. Tagihan yang harganya beda dari harga awal diberi garis putus-putus dan label harga kecil.'+(S.startMonth?' Bulan sebelum '+MON[S.startMonth]+' tidak dihitung.':'')+'</div><div class="tw"><table><thead><tr><th>Item</th><th>Biaya</th>'+MON.map(function(m){return '<th>'+m+'</th>'}).join('')+'<th>Total</th></tr></thead><tbody>';
