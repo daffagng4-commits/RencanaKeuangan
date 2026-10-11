@@ -305,7 +305,7 @@ $('ld').onclick=function(){doImport($('ta').value)};
 resetForm();renderAll();save();
 
 /* ===== Supabase sync ===== */
-var SB_URL='',SB_KEY='';/* isi dari Supabase > Project Settings > API (Project URL dan anon/publishable key) */
+var SB_URL='https://hjvdkwpoamgkommotzab.supabase.co/rest/v1/',SB_KEY='sb_publishable_U68PnX2KeFMxWJ3Tjbeiqw_1K0iMbeC';/* isi dari Supabase > Project Settings > API (Project URL dan anon/publishable key) */
 var sb=null,sbUser=null;
 function sbStat(t,bad){var e=$('sbs');e.textContent=t;e.style.color=bad?'var(--wr)':'var(--mut)'}
 function clock(){return new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}
