@@ -72,6 +72,14 @@ td.z{color:var(--ln)}
 .xr button{text-align:left}
 .chip.n{background:var(--bg);color:var(--mut);border:1px solid var(--ln)}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sc{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sc button{text-align:left;padding:10px 12px;min-height:68px;border-radius:12px}
+.sc button b{display:block;font-size:14px}
+.sc button span{display:block;font-weight:400;font-size:12.5px;color:var(--mut);margin-top:2px}
+.sc button.on{border-color:var(--ac);background:var(--acs)}
+.sc button[hidden]{display:none}
+.sc .wide{grid-column:1/-1;min-height:0}
+@media(max-width:480px){.sc{grid-template-columns:1fr}}
 .every2{display:grid;grid-template-columns:auto 90px 1fr;gap:8px;align-items:center}
 .pd.chg{border-color:var(--bl);border-style:dashed}
 .pd .cp{display:block;font-size:10px;line-height:1.1;font-weight:700;color:var(--bl)}
@@ -110,7 +118,7 @@ textarea{height:200px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
 <body>
 <div class="w">
 <header>
-  <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r9 · 12 Okt 2026</div><div class="sub" id="sbs"></div></div>
+  <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r10 · 12 Okt 2026</div><div class="sub" id="sbs"></div></div>
   <div class="ctl">
     <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
     <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"></div>
@@ -148,13 +156,24 @@ textarea{height:200px;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace}
 
 <div class="cm" id="cm" hidden></div>
 <div class="modal" id="pm" hidden><div class="card"><h2 id="pmt">Ubah harga / jadwal</h2><p class="sub" id="pmi"></p>
-<div class="g2"><div><label for="pdt">Berlaku mulai tanggal</label><input id="pdt" type="date"></div><div><label for="pp">Harga per bayar</label><input id="pp" inputmode="numeric" placeholder="300k atau 300.000"></div></div>
-<div id="pcad" style="margin-top:12px"><label>Siklus pembayaran</label><div class="every2"><span class="sub">tiap</span><input id="pn" type="number" min="1"><select id="pu"><option value="bulan">bulan</option><option value="tahun">tahun</option><option value="minggu">minggu</option><option value="hari">hari</option></select></div><div style="margin-top:12px"><label for="pa">Tanggal bayar</label><select id="pa"><option value="keep">Tetap seperti jadwal sekarang</option><option value="restart">Mulai ulang jadwal dari tanggal di atas</option></select><div class="sub" style="margin-top:4px" id="pah"></div></div></div>
-<div class="g2" style="margin-top:12px"><div><label for="pw">Berlaku</label><select id="pw"><option value="forever">Seterusnya</option><option value="until">Sementara, lalu kembali ke awal</option></select></div><div id="pwt" hidden><label for="pto">Sampai tanggal (termasuk)</label><input id="pto" type="date"></div></div>
-<div id="pcw" style="margin-top:12px"><label for="pcut">Tagihan sebelum tanggal ini</label><select id="pcut"><option value="keep">Tetap (tidak berubah)</option><option value="drop">Hapus (jadwal baru mulai dari tanggal ini)</option></select></div>
+<div class="h3" style="margin-top:10px">Apa yang mau diubah?</div>
+<div class="sc" id="psc">
+<button type="button" data-sc="harga"><b>Harga berubah</b><span>Contoh: naik jadi 300k mulai Juli</span></button>
+<button type="button" data-sc="sementara"><b>Harga beda sementara</b><span>Contoh: 150k hanya Jan sampai Mar, lalu normal lagi</span></button>
+<button type="button" data-sc="siklus"><b>Ganti seberapa sering bayar</b><span>Contoh: dari tiap bulan jadi tiap 3 bulan</span></button>
+<button type="button" data-sc="geser"><b>Geser tanggal bayar</b><span>Contoh: dari tanggal 1 jadi tanggal 15</span></button>
+<button type="button" data-sc="manual" class="wide"><b>Atur manual</b><span>Semua pilihan sekaligus (untuk kombinasi lain)</span></button>
+</div>
+<div id="pform" hidden>
+<p class="sub" id="phint" style="margin:12px 0 0"></p>
+<div class="g2" style="margin-top:10px"><div><label for="pdt" id="l-pdt">Mulai tanggal</label><input id="pdt" type="date"></div><div id="g-to" hidden><label for="pto">Sampai tanggal (termasuk)</label><input id="pto" type="date"></div></div>
+<div id="g-price" style="margin-top:12px"><label for="pp" id="l-pp">Harga per bayar</label><input id="pp" inputmode="numeric" placeholder="300k atau 300.000"></div>
+<div id="pcad" style="margin-top:12px" hidden><label>Seberapa sering bayar</label><div class="every2"><span class="sub">tiap</span><input id="pn" type="number" min="1"><select id="pu"><option value="bulan">bulan</option><option value="tahun">tahun</option><option value="minggu">minggu</option><option value="hari">hari</option></select></div></div>
+<div id="pman" hidden><div style="margin-top:12px"><label for="pa">Tanggal bayar</label><select id="pa"><option value="keep">Tetap seperti jadwal sekarang</option><option value="restart">Mulai ulang jadwal dari tanggal di atas</option></select><div class="sub" style="margin-top:4px" id="pah"></div></div><div style="margin-top:12px"><label for="pw">Berlaku</label><select id="pw"><option value="forever">Seterusnya</option><option value="until">Sementara, lalu kembali ke awal</option></select></div></div>
+<div id="pcw" style="margin-top:12px" hidden><label for="pcut">Tagihan sebelum tanggal ini</label><select id="pcut"><option value="keep">Biarkan seperti semula</option><option value="drop">Hapus (jadwal lama diganti total)</option></select></div>
 <div class="prev" id="ppv" style="margin-top:12px"></div><div class="err" id="pme"></div>
-<div class="row2"><button class="p" id="pps">Simpan perubahan</button><button id="pcl">Tutup</button></div>
-<details style="margin-top:10px"><summary class="sub" style="cursor:pointer">Contoh pemakaian</summary><div class="sub" style="margin-top:6px">&bull; Harga naik jadi 300k mulai 1 Jul: isi tanggal 1 Jul, harga 300k, siklus dibiarkan, Berlaku &quot;Seterusnya&quot;.<br>&bull; Jadi tiap 3 bulan: ubah siklus ke 3 bulan.<br>&bull; Harga beda hanya 1 Jan sampai 1 Mar: isi harga baru, pilih &quot;Sementara&quot;, sampai 1 Mar. Sesudahnya kembali ke pengaturan awal.<br>&bull; Jadwal lama diganti total mulai tanggal tertentu (mis. jadi tiap 6 bulan mulai 16 Mar): pilih &quot;Tagihan sebelum tanggal ini: Hapus&quot;.<br>&bull; Ingin kembali ke pengaturan awal: isi harga dan siklus awal.</div></details>
+</div>
+<div class="row2"><button class="p" id="pps" hidden>Simpan perubahan</button><button id="pcl">Tutup</button></div>
 <div class="h3">Perubahan yang sudah ada</div><div id="phl"></div></div></div>
 <div class="modal" id="m" hidden><div class="card">
   <h2>Impor &amp; Ekspor data</h2><div class="h3">Ekspor</div><div id="exb"><div class="xr"><button class="p" data-ex="json">Cadangan lengkap (.json)</button><span class="sub"><span class="chip">Bisa diimpor</span> Semua tahun, item, saldo, dan status lunas. Untuk pindah perangkat atau memulihkan data.</span></div><div class="xr"><button data-ex="items">Item tahun ini (.csv)</button><span class="sub"><span class="chip">Bisa diimpor</span> Daftar item tahun yang aktif (nama, harga, tiap berapa, mulai). Bisa diedit di Excel.</span></div><div class="xr"><button data-ex="hist">Riwayat pembayaran (.csv)</button><span class="sub"><span class="chip n">Hanya laporan</span> Satu baris per tagihan: tanggal, item, jumlah, status Lunas/Belum.</span></div><div class="xr"><button data-ex="bulan">Rincian bulanan (.csv)</button><span class="sub"><span class="chip n">Hanya laporan</span> Saldo awal, pengeluaran, dan saldo akhir tiap bulan.</span></div></div><div class="h3">Impor</div><div class="row2" style="margin-top:0"><input type="file" id="fi" accept=".json,.csv,text/csv,application/json" style="flex:1;min-width:200px"><select id="im" style="width:auto"><option value="merge">Gabungkan dengan data sekarang</option><option value="replace">Timpa (hapus data sekarang)</option></select></div><div class="sub" style="margin-top:6px"><b>.json</b> = hasil Cadangan lengkap. <b>.csv</b> = hasil Item tahun ini (kolom: Nama; Harga; Tiap; Satuan; Mulai), hanya untuk tahun yang sedang aktif. CSV Riwayat pembayaran dan Rincian bulanan tidak bisa diimpor.<br><b>Gabungkan</b>: menambah yang belum ada, aman diulang. <b>Timpa</b>: mengganti data sekarang (JSON: semua tahun, CSV: item tahun aktif).</div><div class="err" id="xm"></div><details id="dt"><summary class="sub" style="cursor:pointer">Cara teks (salin / tempel)</summary>
@@ -379,7 +398,7 @@ function pmDraft(){var it=item(pmId);if(!it)return{err:'Item tidak ditemukan.'};
  if(P<=0)return{err:'Isi harga. Contoh: 300k atau 300.000.'};
  if(un&&(!to||to<from))return{err:'Isi tanggal "sampai" (sama atau sesudah tanggal mulai).'};
  var rs=$('pa').value==='restart',drop=$('pw').value==='forever'&&$('pcut').value==='drop';
- if(pmInit&&P===pmInit.P&&n===pmInit.n&&u===pmInit.u&&!rs&&!drop)return{err:'Belum ada yang diubah. Ubah harga atau siklus, pilih "Mulai ulang jadwal" untuk menggeser tanggal bayar, atau hapus tagihan sebelum tanggal ini.'};
+ if(pmInit&&P===pmInit.P&&n===pmInit.n&&u===pmInit.u&&!rs&&!drop)return{err:noopMsg()};
  var c={from:from,to:to,price:P!==it.price?P:null,n:null,unit:null};
  if(it.unit!=='sekali'&&(rs||n!==it.n||u!==it.unit)){c.n=n;c.unit=u}
  if(drop)c.cut=true;
@@ -391,15 +410,39 @@ function pmPrev(){var d=pmDraft(),p=$('ppv'),it0=item(pmId),cu=pmCur();
  f=Date.parse(d.c.from+'T00:00:00Z'),l=series(tmp,Date.UTC(+d.c.from.slice(0,4)+8,11,31)).filter(function(t){return t>=f}).slice(0,6);
  var tmp2=Object.assign({},tmp,{ch:tmp.ch.map(function(g){return g===d.c?Object.assign({},g,{cut:false}):g})}),
  bf=series(tmp2,Date.UTC(+d.c.from.slice(0,4)+8,11,31)).filter(function(t){return t<f}).slice(-3);
- p.className='prev';p.innerHTML=(l.length?'Tagihan sesudah perubahan: '+l.map(function(t){return fd(t)+' ('+rp(priceAt(tmp,t))+')'}).join(', ')+(l.length>=6?' &hellip;':''):'Tidak ada tagihan pada rentang ini.')+(bf.length?'<br>Sebelum '+fd(f)+': '+bf.map(function(t){return fd(t)}).join(', ')+(d.c.cut?' (dihapus)':' (tidak berubah)'):'')}
-function openPm(id){var it=item(id);if(!it)return;pmId=it.id;$('pmt').textContent='Ubah harga / jadwal: '+it.name;
- var nx=occ(it,S.year).filter(function(t){return !S.paid[it.id+'|'+isoD(t)]&&!S.skip[it.id+'|'+isoD(t)]})[0],iso=isoD(nx!=null?nx:Date.now()),sg=segAt(it,iso);
- $('pdt').value=iso;$('pp').value=(sg&&sg.price!=null?sg.price:it.price).toLocaleString('id-ID');
+ p.className='prev';p.innerHTML='<b>'+pmSum(d)+'</b><br>'+(l.length?'Tagihan sesudah perubahan: '+l.map(function(t){return fd(t)+' ('+rp(priceAt(tmp,t))+')'}).join(', ')+(l.length>=6?' &hellip;':''):'Tidak ada tagihan pada rentang ini.')+(bf.length?'<br>Sebelum '+fd(f)+': '+bf.map(function(t){return fd(t)}).join(', ')+(d.c.cut?' (dihapus)':' (tidak berubah)'):'')}
+var pmScen=null;
+function noopMsg(){return pmScen==='harga'||pmScen==='sementara'?'Harga yang diisi sama dengan harga sekarang. Isi harga yang berbeda.':pmScen==='siklus'?'Siklusnya sama dengan sekarang. Ubah angka atau satuannya.':'Belum ada yang diubah. Ubah harga atau siklus, atau pilih "Mulai ulang jadwal" / hapus tagihan sebelumnya.'}
+function pmSum(d){var c=d.c,it=d.it,f=fmtD(c.from),P=c.price!=null?c.price:it.price;
+ if(c.to)return 'Dari '+f+' sampai '+fmtD(c.to)+', harga jadi '+rp(P)+', setelah itu kembali ke harga awal '+rp(it.price)+'.';
+ var s='Mulai '+f+': ';if(c.n||c.unit)s+='bayar tiap '+(c.n||it.n)+' '+(c.unit||it.unit)+', ';
+ s+='harga '+rp(P)+(P!==it.price?' (awal '+rp(it.price)+')':'');if(c.cut)s+='. Tagihan sebelum tanggal ini dihapus';return s+'.'}
+function pmPrefill(it){var nx=occ(it,S.year).filter(function(t){return !S.paid[it.id+'|'+isoD(t)]&&!S.skip[it.id+'|'+isoD(t)]})[0],iso=isoD(nx!=null?nx:Date.now()),sg=segAt(it,iso);
+ $('pdt').value=iso;$('pto').value='';$('pp').value=(sg&&sg.price!=null?sg.price:it.price).toLocaleString('id-ID');
  $('pn').value=(sg&&sg.n)||it.n;$('pu').value=(sg&&sg.unit)||(it.unit==='sekali'?'bulan':it.unit);
- $('pw').value='forever';$('pa').value='keep';$('pcut').value='keep';$('pcw').hidden=false;$('pto').value='';$('pwt').hidden=true;$('pcad').hidden=it.unit==='sekali';
- pmInit=pmCur();pmMsg('');renderPm();pmPrev();$('pm').hidden=false}
+ $('pw').value='forever';$('pa').value='keep';$('pcut').value='keep';pmInit=pmCur()}
+var PH={harga:'Tagihan sebelum tanggal ini tidak berubah. Harga baru berlaku untuk tagihan pada tanggal ini dan sesudahnya.',sementara:'Hanya tagihan dalam rentang tanggal ini yang berubah harganya. Sesudahnya kembali ke harga awal.',siklus:'Pembayaran pertama dengan siklus baru jatuh di tanggal mulai. Pilih apakah tagihan lama sebelum tanggal itu dibiarkan atau dihapus.',geser:'Tagihan berikutnya jatuh tepat di tanggal ini, lalu lanjut sesuai siklus. Tagihan sebelumnya tidak berubah.',manual:'Atur semua pilihan sendiri. Lihat pratinjau di bawah sebelum menyimpan.'};
+var LB={harga:['Mulai tanggal','Harga baru'],sementara:['Dari tanggal','Harga selama periode itu'],siklus:['Mulai tanggal','Harga (biarkan jika tidak berubah)'],geser:['Tanggal bayar pertama yang baru','Harga per bayar'],manual:['Berlaku mulai tanggal','Harga per bayar']};
+function pmSc(sc){var it=item(pmId);if(!it)return;pmScen=sc;pmPrefill(it);
+ if(sc==='sementara')$('pw').value='until';if(sc==='geser')$('pa').value='restart';
+ var until=$('pw').value==='until';
+ $('pform').hidden=!sc;$('pps').hidden=!sc;
+ $('g-to').hidden=!(sc==='sementara'||(sc==='manual'&&until));
+ $('g-price').hidden=sc==='geser';
+ $('pcad').hidden=!((sc==='siklus'||sc==='manual')&&it.unit!=='sekali');
+ $('pcw').hidden=!(sc==='siklus'||sc==='geser'||(sc==='manual'&&!until));
+ $('pman').hidden=sc!=='manual';
+ if(sc){$('l-pdt').textContent=LB[sc][0];$('l-pp').textContent=LB[sc][1];$('phint').textContent=PH[sc]}
+ Array.prototype.forEach.call(document.querySelectorAll('#psc button'),function(b){b.classList.toggle('on',b.dataset.sc===sc)});
+ pmMsg('');if(sc)pmPrev()}
+function openPm(id){var it=item(id);if(!it)return;pmId=it.id;$('pmt').textContent='Ubah harga / jadwal: '+it.name;
+ Array.prototype.forEach.call(document.querySelectorAll('#psc button'),function(b){b.hidden=it.unit==='sekali'&&(b.dataset.sc==='siklus'||b.dataset.sc==='geser')});
+ pmPrefill(it);pmScen=null;$('pform').hidden=true;$('pps').hidden=true;
+ Array.prototype.forEach.call(document.querySelectorAll('#psc button'),function(b){b.classList.remove('on')});
+ pmMsg('');renderPm();$('pm').hidden=false;var cd=$('pm').querySelector('.card');if(cd)cd.scrollTop=0}
+$('psc').onclick=function(e){var b=e.target.closest('button[data-sc]');if(b)pmSc(b.dataset.sc)};
 ['pdt','pp','pn','pu','pto','pa','pcut'].forEach(function(i){$(i).oninput=pmPrev;$(i).onchange=pmPrev});
-$('pw').onchange=function(){$('pwt').hidden=this.value!=='until';$('pcw').hidden=this.value==='until';pmPrev()};
+$('pw').onchange=function(){$('g-to').hidden=this.value!=='until';$('pcw').hidden=this.value==='until';pmPrev()};
 $('pp').addEventListener('input',function(){fmtLive(this)});
 $('pcl').onclick=function(){$('pm').hidden=true};
 $('pps').onclick=function(){var d=pmDraft();if(d.err)return pmMsg(d.err);var it=d.it;
