@@ -1,0 +1,16 @@
+{
+  "name": "rencana-keuangan",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Perencana keuangan berbasis jadwal tagihan (GitHub Pages + Supabase)",
+  "scripts": {
+    "build": "node build.js",
+    "test": "node build.js && node tests/run-unit.js && node tests/run-e2e.js",
+    "test:unit": "node tests/run-unit.js",
+    "test:e2e": "node build.js && node tests/run-e2e.js",
+    "test:browser": "node build.js && node tests/browser/smoke.js"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  }
+}

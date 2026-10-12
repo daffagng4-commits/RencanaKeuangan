@@ -1,0 +1,23 @@
+[
+ "js/config.js",
+ "js/core/util.js",
+ "js/core/schedule.js",
+ "js/core/state.js",
+ "js/core/items.js",
+ "js/core/calc.js",
+ "js/core/csv.js",
+ "js/ui/dom.js",
+ "js/ui/render.js",
+ "js/ui/rincian.js",
+ "js/ui/jadwal.js",
+ "js/ui/items.js",
+ "js/ui/years.js",
+ "js/ui/header.js",
+ "js/ui/adjust.js",
+ "js/ui/price-modal.js",
+ "js/ui/io.js",
+ "js/ui/backup.js",
+ "js/ui/diag.js",
+ "js/sync.js",
+ "js/app.js"
+]
