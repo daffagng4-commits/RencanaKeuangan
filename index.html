@@ -961,12 +961,14 @@ nav {
 <div id="pform" hidden>
 <p class="sub" id="phint" style="margin:12px 0 0"></p>
 <div id="pdw" style="margin-top:10px">
+<div id="pgw" hidden style="margin:0 0 12px"><label for="pgm">Bulan mana yang digeser?</label><select id="pgm"><option value="satu">Hanya satu bulan (yang lain tidak berubah)</option><option value="semua" selected>Bulan ini dan semua bulan sesudahnya</option><option value="pilih">Pilih sendiri beberapa bulan</option></select></div>
 <label id="l-pdt">Tanggal tagihan</label>
 <div class="dchips" id="pdc"></div>
 <div class="sub" id="pdh" style="margin:6px 0 6px"></div>
 <label id="lgs" for="pdt" hidden style="margin-top:8px">Ganti jadi tanggal</label>
-<div class="dcus"><input id="pdt" type="date" aria-label="Tanggal kustom"><button type="button" id="pda">+ Tambah</button></div>
+<div class="dcus" id="pdcus"><input id="pdt" type="date" aria-label="Tanggal kustom"><button type="button" id="pda">+ Tambah</button></div>
 <div class="dsel" id="pds"></div>
+<div id="pgdw" hidden style="margin-top:8px"><label for="pgd">Pindah ke tanggal (1-31)</label><input id="pgd" type="number" min="1" max="31" inputmode="numeric" placeholder="mis. 10"><div class="sub" style="margin-top:4px">Semua bulan yang dipilih dipindah ke tanggal ini.</div></div>
 <div id="phmw" style="margin-top:12px" hidden><label for="phm">Berlaku</label><select id="phm"><option value="seterusnya">Mulai tanggal pertama terpilih dan seterusnya</option><option value="terpilih">Hanya tanggal yang dipilih</option></select></div>
 <label id="prgw" class="chk" hidden><input type="checkbox" id="prg" checked>Isi semua tagihan di antara tanggal pertama dan terakhir</label>
 </div>
@@ -1092,6 +1094,7 @@ function segAt(it, iso) {
     s;
   for (i = c.length - 1; i >= 0; i--) {
     s = c[i];
+    if (s.mv) continue;
     if (s.dates) {
       if (s.dates.indexOf(iso) >= 0) return s;
     } else if (s.from <= iso && (!s.to || iso <= s.to)) return s;
@@ -1129,6 +1132,28 @@ function series(it, endMs) {
   out = out.filter(function (t, i) {
     return i === 0 || t !== out[i - 1];
   });
+  var mvs = {},
+    add = [];
+  (it.ch || []).forEach(function (g) {
+    if (g.mv)
+      Object.keys(g.mv).forEach(function (k) {
+        mvs[k] = g.mv[k];
+      });
+  });
+  if (Object.keys(mvs).length) {
+    out = out.filter(function (t) {
+      var d = isoD(t);
+      if (!mvs[d]) return true;
+      add.push(Date.parse(mvs[d] + 'T00:00:00Z'));
+      return false;
+    });
+    out = out.concat(add).sort(function (a, b) {
+      return a - b;
+    });
+    out = out.filter(function (t, i) {
+      return i === 0 || t !== out[i - 1];
+    });
+  }
   var cut = 0;
   (it.ch || []).forEach(function (g) {
     if (g.cut) {
@@ -1170,9 +1195,19 @@ function every(it) {
   );
 }
 
+/** Tanggal asli sebuah tagihan yang sudah digeser satu per satu (mv); bila tidak digeser, tanggalnya sendiri. */
+function origDate(it, iso) {
+  var c = it.ch || [],
+    i,
+    k;
+  for (i = c.length - 1; i >= 0; i--)
+    if (c[i].mv) for (k in c[i].mv) if (c[i].mv[k] === iso) return k;
+  return iso;
+}
+
 /** Harga item pada tanggal t (ms), memperhitungkan perubahan harga. */
 function priceAt(it, t) {
-  var s = segAt(it, isoD(t));
+  var s = segAt(it, origDate(it, isoD(t)));
   return s && s.price != null ? s.price : it.price;
 }
 
@@ -1376,6 +1411,14 @@ function chNorm(x) {
       seg.unit = null;
       seg.cut = false;
     }
+    // Geser per tagihan: {tanggal asli: tanggal baru}; tidak mengubah harga/siklus.
+    var mv = {};
+    if (q.mv && typeof q.mv === 'object')
+      Object.keys(q.mv).forEach(function (k) {
+        if (D.test(k) && D.test(q.mv[k]) && k !== q.mv[k]) mv[k] = q.mv[k];
+      });
+    var mk = Object.keys(mv).sort();
+    if (mk.length) seg = { from: mk[0], to: mk[mk.length - 1], price: null, n: null, unit: null, cut: false, mv: mv };
     out.push(seg);
   });
   (Array.isArray(x.pc) ? x.pc : []).forEach(function (q) {
@@ -1571,6 +1614,7 @@ function cloneItem(it, id) {
       var c = { from: q.from, to: q.to || '', price: q.price, n: q.n, unit: q.unit, cut: !!q.cut };
       if (q.dates) c.dates = q.dates.slice();
       if (q.anchor) c.anchor = q.anchor;
+      if (q.mv) c.mv = Object.assign({}, q.mv);
       return c;
     }),
   };
@@ -2286,7 +2330,7 @@ function monthChips(r) {
       it.unit !== 'bulan' ||
       it.n !== 1 ||
       (it.ch || []).some(function (g) {
-        return g.n || g.unit;
+        return g.n || g.unit || g.mv;
       });
     if (!cadence && !changed) return;
     var q = (chips[it.id] = chips[it.id] || { n: it.name, c: 0, p: null, u: '' });
@@ -2615,9 +2659,10 @@ function renderJadwal() {
 function chSub(it) {
   var L = (it.ch || [])
     .filter(function (g) {
-      return g.n || g.unit || g.cut;
+      return g.n || g.unit || g.cut || g.mv;
     })
     .map(function (g) {
+      if (g.mv) return '&#8627; ' + Object.keys(g.mv).length + ' tagihan digeser ke tanggal lain';
       return (
         '&#8627; ' +
         (g.anchor ? 'tagihan ' + fmtD(g.from) + ' digeser ke ' + fmtD(g.anchor) : 'mulai ' + fmtD(g.from)) +
@@ -3503,7 +3548,7 @@ var PH = {
   siklus:
     "Pilih satu tanggal dari jadwal atau ketik tanggal kustom. Pembayaran pertama dengan siklus baru jatuh di tanggal itu. Pilih apakah tagihan lama sebelum tanggal itu dibiarkan atau dihapus.",
   geser:
-    'Pilih tagihan yang mau digeser, lalu isi "Ganti jadi tanggal". Tagihan sebelum itu tidak berubah. Tagihan itu dan sesudahnya mengikuti tanggal baru dengan siklus yang sama (mis. 10 Agu, 10 Sep, 10 Okt).',
+    'Pilih apakah hanya satu bulan, bulan ini dan sesudahnya, atau beberapa bulan pilihan sendiri. Lalu ketuk tagihannya dan isi tanggal barunya.',
   manual:
     "Atur semua pilihan sendiri. Lihat pratinjau di bawah sebelum menyimpan.",
 };
@@ -3556,6 +3601,22 @@ function chSig(c) {
 /** Deskripsi satu perubahan untuk daftar riwayat. */
 function descCh(it, c) {
   var p = [];
+  if (c.mv) {
+    var ks = Object.keys(c.mv).sort();
+    return (
+      '<b>' +
+      ks
+        .slice(0, 3)
+        .map(function (k) {
+          return dShort(k) + ' &rarr; ' + dShort(c.mv[k]);
+        })
+        .join(', ') +
+      (ks.length > 3 ? ', &hellip; (+' + (ks.length - 3) + ')' : '') +
+      '</b><br><span class="sub">Hanya ' +
+      (ks.length > 1 ? ks.length + ' tagihan ini' : 'tagihan ini') +
+      ' yang digeser</span>'
+    );
+  }
   if (c.price != null) p.push(rp(c.price));
   if (c.n || c.unit)
     p.push("tiap " + (c.n || it.n) + " " + (c.unit || it.unit));
@@ -3621,7 +3682,7 @@ function renderPm() {
 
 /** Mode yang boleh memilih banyak tanggal. */
 function pmMulti() {
-  return pmScen === "harga" || pmScen === "sementara";
+  return pmScen === "harga" || pmScen === "sementara" || (pmScen === "geser" && $("pgm").value === "pilih");
 }
 
 /** Daftar tanggal tagihan item pada tahun aktif (ISO, unik, terurut). */
@@ -3691,11 +3752,17 @@ function pmLayout() {
   );
   $("phmw").hidden = sc !== "harga";
   $("prgw").hidden = !(sc === "sementara" && n >= 2);
-  $("pda").hidden = !pmMulti();
-  $("lgs").hidden = sc !== "geser";
+  var gp = sc === "geser" && $("pgm").value === "pilih";
+  $("pgw").hidden = sc !== "geser";
+  $("pgdw").hidden = !gp;
+  $("pdcus").hidden = gp;
+  $("pda").hidden = !pmMulti() || sc === "geser";
+  $("lgs").hidden = sc !== "geser" || gp;
   if (sc === "harga" && !phmTouched)
     $("phm").value = n > 1 ? "terpilih" : "seterusnya";
-  $("pdh").textContent = pmMulti()
+  $("pdh").textContent = gp
+    ? "Ketuk semua tagihan yang mau digeser, lalu isi tanggal barunya (angka 1-31)."
+    : pmMulti()
     ? 'Ketuk tanggal untuk memilih (boleh lebih dari satu). Tanggal kustom: pilih di kotak lalu tekan "+ Tambah".'
     : sc === "geser"
       ? "Ketuk tagihan yang mau digeser, lalu isi tanggal barunya."
@@ -3803,6 +3870,7 @@ function pmDraftShift(it) {
   var from = pmDates[0],
     to = $("pdt").value;
   if (!from) return { err: "Pilih tagihan yang mau digeser." };
+  if ($("pgm").value === "pilih") return pmDraftMulti(it);
   if (!ISO_RE.test(to))
     return { err: 'Isi tanggal baru di "Ganti jadi tanggal".' };
   if (to === from)
@@ -3817,6 +3885,15 @@ function pmDraftShift(it) {
       err:
         "Tanggal baru harus sesudah tagihan sebelumnya (" + fmtD(prev) + ").",
     };
+  if ($("pgm").value === "satu") {
+    var nx = sched[i + 1];
+    if (nx && to >= nx)
+      return { err: "Tanggal baru harus sebelum tagihan berikutnya (" + fmtD(nx) + ")." };
+    var ko = origDate(it, from),
+      c1 = { from: ko, to: ko, price: null, n: null, unit: null, cut: false, mv: {} };
+    c1.mv[ko] = to;
+    return { c: c1, cs: [c1], it: it };
+  }
   var sg = segAt(it, from),
     eff = priceAt(it, Date.parse(from + "T00:00:00Z")),
     c = {
@@ -3827,6 +3904,32 @@ function pmDraftShift(it) {
       n: (sg && sg.n) || it.n,
       unit: (sg && sg.unit) || it.unit,
     };
+  return { c: c, cs: [c], it: it };
+}
+
+/** Mode geser "pilih sendiri": tiap tagihan terpilih dipindah ke tanggal (1-31) yang sama di bulannya masing-masing. */
+function pmDraftMulti(it) {
+  var day = parseInt($("pgd").value, 10);
+  if (!(day >= 1 && day <= 31)) return { err: "Isi tanggal baru (angka 1-31)." };
+  var sched = pmScheduleDates(it),
+    mv = {},
+    nw = {};
+  pmDates.forEach(function (d) {
+    var p = d.split("-"),
+      dim = new Date(Date.UTC(+p[0], +p[1], 0)).getUTCDate(),
+      nd = p[0] + "-" + p[1] + "-" + pad2(Math.min(day, dim));
+    if (nd !== d) {
+      mv[origDate(it, d)] = nd;
+      nw[d] = nd;
+    }
+  });
+  var ks = Object.keys(mv).sort();
+  if (!ks.length) return { err: "Tanggal barunya sama dengan tanggal tagihan. Pilih tanggal yang berbeda." };
+  var bad = Object.keys(nw).filter(function (d) {
+    return sched.indexOf(nw[d]) >= 0 && !nw[nw[d]];
+  });
+  if (bad.length) return { err: "Tanggal baru bentrok dengan tagihan lain (" + fmtD(nw[bad[0]]) + ")." };
+  var c = { from: ks[0], to: ks[ks.length - 1], price: null, n: null, unit: null, cut: false, mv: mv };
   return { c: c, cs: [c], it: it };
 }
 
@@ -3950,6 +4053,12 @@ function pmSum(d) {
   var c = d.c,
     it = d.it,
     P = c.price != null ? c.price : it.price;
+  if (c.mv) {
+    var ks = Object.keys(c.mv).sort();
+    return ks.length === 1
+      ? 'Hanya tagihan ' + fmtD(ks[0]) + ' yang digeser ke ' + fmtD(c.mv[ks[0]]) + '. Tagihan lain tidak berubah.'
+      : ks.length + ' tagihan digeser (' + ks.map(function (k) { return dShort(k) + ' → ' + dShort(c.mv[k]); }).join(', ') + '). Tagihan lain tidak berubah.';
+  }
   if (c.dates)
     return (
       "Hanya " +
@@ -4028,6 +4137,10 @@ function pmSc(sc) {
   var it = item(pmId);
   if (!it) return;
   pmScen = sc;
+  if (sc === "geser") {
+    $("pgm").value = "semua";
+    $("pgd").value = "";
+  }
   pmPrefill(it);
   if (sc === "sementara") $("pw").value = "until";
   if (sc === "geser") $("pdt").value = "";
@@ -4135,6 +4248,10 @@ function bindPrice() {
     var b = e.target.closest("button[data-sc]");
     if (b) pmSc(b.dataset.sc);
   };
+  $("pgm").onchange = function () {
+    setDates(this.value === "pilih" ? pmDates : pmDates.slice(0, 1), false, true);
+  };
+  $("pgd").oninput = pmPrev;
   ["pp", "pn", "pu", "pto", "pa", "pcut"].forEach(function (i) {
     $(i).oninput = pmPrev;
     $(i).onchange = pmPrev;
@@ -4162,7 +4279,7 @@ function bindPrice() {
     var b = e.target.closest("button[data-d]");
     if (!b) return;
     var d = b.dataset.d;
-    if (pmScen === "geser") return setDates([d], false, true);
+    if (pmScen === "geser" && !pmMulti()) return setDates([d], false, true);
     if (!pmMulti()) return setDates([d], true);
     setDates(
       pmDates.indexOf(d) >= 0
