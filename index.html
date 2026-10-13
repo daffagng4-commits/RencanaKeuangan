@@ -864,12 +864,19 @@ nav {
   #pm .row2 button { padding: 8px 10px; font-size: 14px; flex: 1 1 auto; }
 }
 
+
+/* ===== Catatan Kas ===== */
+.kp { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+.kt { display: flex; gap: 8px; }
+.kf { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.kin { color: var(--ac); }
+.kch { width: 100%; height: 130px; display: block; }
 </style>
 </head>
 <body>
 <div class="w">
 <header>
-  <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r15 · 13 Okt 2026</div><div class="sub" id="sbs"></div></div>
+  <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r16 · 13 Okt 2026</div><div class="sub" id="sbs"></div></div>
   <div class="ctl">
     <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
     <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub" id="adjs" style="margin-top:4px"></div></div><button id="adjb">&plusmn; Tambah / kurangi saldo</button>
@@ -880,12 +887,14 @@ nav {
   <button role="tab" data-t="rincian" aria-selected="true">Rincian Bulanan</button>
   <button role="tab" data-t="jadwal" aria-selected="false">Jadwal Bayar</button>
   <button role="tab" data-t="item" aria-selected="false">Kelola Item</button>
+  <button role="tab" data-t="kas" aria-selected="false">Catatan Kas</button>
 </nav>
 
 <div class="yb" id="yb"></div>
 <button type="button" class="rem" id="rem" hidden></button>
 <section id="v-rincian"></section>
 <section id="v-jadwal" hidden></section>
+<section id="v-kas" hidden></section>
 <section id="v-item" hidden>
   <div class="card">
     <h2 id="ft">Tambah item</h2>
@@ -907,6 +916,10 @@ nav {
 </section>
 </div>
 
+<div class="modal" id="kpm" hidden><div class="card"><h2 id="kpt">Profil baru</h2>
+<label for="kpn">Nama profil</label><input id="kpn" maxlength="30" placeholder="mis. Liburan Bali">
+<div style="margin-top:12px"><label for="kps">Saldo awal (Rp)</label><input id="kps" inputmode="numeric" placeholder="3.000.000"></div>
+<div class="err" id="kpe"></div><div class="row2"><button class="p" id="kpsv">Simpan</button><button id="kpc">Tutup</button></div></div></div>
 <div class="modal" id="am" hidden><div class="card"><h2>Tambah / kurangi saldo</h2><p class="sub" id="ami"></p>
 <div class="sc" id="atp" style="grid-template-columns:1fr 1fr"><button type="button" data-t="+" class="on"><b>Tambah saldo</b><span>Pemasukan, gaji, top up</span></button><button type="button" data-t="-"><b>Kurangi saldo</b><span>Penarikan, koreksi</span></button></div>
 <div style="margin-top:12px"><label for="aa">Jumlah</label><input id="aa" inputmode="numeric" placeholder="500k atau 500.000"></div>
@@ -1297,7 +1310,36 @@ function norm(a) {
       })
       .map(normAdj);
   });
+  a.kas = normKas(a.kas);
   return a;
+}
+
+/** Catatan Kas: {pr:{[id]:{id,name,saldo,tx:[{id,d,t,amt,cat,note}]}}}. Selalu ada minimal satu profil. */
+function normKas(k) {
+  var pr = {};
+  if (k && k.pr && typeof k.pr === 'object')
+    Object.keys(k.pr).forEach(function (id) {
+      var p = k.pr[id] || {};
+      pr[id] = {
+        id: id,
+        name: String(p.name || 'Profil').slice(0, 30),
+        saldo: +p.saldo || 0,
+        tx: (Array.isArray(p.tx) ? p.tx : [])
+          .filter(function (x) {
+            return x && +x.amt > 0 && (x.t === '+' || x.t === '-') && ISO_RE.test(x.d);
+          })
+          .map(function (x, i) {
+            return { id: String(x.id || 't' + i), d: x.d, t: x.t, amt: +x.amt, cat: String(x.cat || '').slice(0, 30), note: String(x.note || '').slice(0, 80) };
+          }),
+      };
+    });
+  if (!Object.keys(pr).length) pr.utama = { id: 'utama', name: 'Utama', saldo: 0, tx: [] };
+  return { pr: pr };
+}
+
+/** Tanda tangan data (tahun + Catatan Kas) untuk mendeteksi perubahan yang perlu disinkronkan. */
+function dsig() {
+  return JSON.stringify(ALL.data) + JSON.stringify(ALL.kas ? ALL.kas.pr : null);
 }
 
 /** Bersihkan daftar perubahan harga/jadwal (ch) item; format lama pc diubah menjadi ch. */
@@ -1348,7 +1390,7 @@ function save() {
   try {
     ALL.data[S.year] = S;
     ALL.year = S.year;
-    var dj = JSON.stringify(ALL.data);
+    var dj = dsig();
     if (dj !== lastData) {
       lastData = dj;
       ALL.rev = Date.now();
@@ -1455,6 +1497,22 @@ function mergeAll(inc) {
         dst.adj.push(a);
     });
   });
+  Object.keys(n.kas.pr).forEach(function (id) {
+    var sp = n.kas.pr[id],
+      dp = ALL.kas.pr[id];
+    if (!dp) {
+      ALL.kas.pr[id] = sp;
+      return;
+    }
+    sp.tx.forEach(function (x) {
+      if (
+        !dp.tx.some(function (y) {
+          return y.id === x.id;
+        })
+      )
+        dp.tx.push(x);
+    });
+  });
   return { items: cnt, years: yrs };
 }
 
@@ -1469,7 +1527,7 @@ function loadState() {
   }
   ALL = norm(raw);
   S = ALL.data[ALL.year];
-  lastData = JSON.stringify(ALL.data);
+  lastData = dsig();
 }
 
 /* ===== js/core/items.js ===== */
@@ -2002,9 +2060,10 @@ function tab(t) {
   document.querySelectorAll('nav button').forEach(function (b) {
     b.setAttribute('aria-selected', b.dataset.t === t);
   });
-  ['rincian', 'jadwal', 'item'].forEach(function (x) {
+  ['rincian', 'jadwal', 'item', 'kas'].forEach(function (x) {
     $('v-' + x).hidden = x !== t;
   });
+  $('yb').style.display = t === 'kas' ? 'none' : '';
 }
 
 /** Tampilkan pesan singkat; bila ada `undo`, muncul tombol Urungkan selama 10 detik. */
@@ -2063,6 +2122,7 @@ function renderAll() {
   renderRincian();
   renderJadwal();
   renderList();
+  renderKas();
 }
 
 /** Segarkan semua kontrol dan tampilan dari state (setelah ganti tahun, muat data, dsb). */
@@ -5034,7 +5094,7 @@ function push() {
 
 /** Tanda tangan isi data (untuk membandingkan lokal vs cloud). */
 function dataSig(a) {
-  return JSON.stringify(a.data);
+  return JSON.stringify(a.data) + JSON.stringify((a.kas || {}).pr || null);
 }
 
 /** Apakah data lokal masih data contoh yang belum diubah. */
@@ -5049,7 +5109,7 @@ function applyRemote(row, label) {
   ALL = norm(JSON.parse(JSON.stringify(row.data)));
   ALL.rev = rr;
   S = ALL.data[ALL.year];
-  lastData = JSON.stringify(ALL.data);
+  lastData = dsig();
   try {
     localStorage.setItem(KEY, JSON.stringify(ALL));
   } catch (e) {}
@@ -5243,6 +5303,427 @@ function bindSync() {
   };
 }
 
+/* ===== js/ui/kas.js ===== */
+/**
+ * Tab Catatan Kas: pencatatan uang masuk/keluar per profil (mis. "Utama", "Liburan Bali"),
+ * dengan dashboard sendiri. Terpisah dari Rencana Keuangan; ikut cadangan dan sinkron.
+ */
+var kasAct = (function () {
+    try {
+      return localStorage.getItem('rk-kas') || '';
+    } catch (e) {
+      return '';
+    }
+  })(),
+  kasPer = 'all',
+  kasEdit = null,
+  kasT = '-',
+  kpMode = 'new';
+var KAS_IN = ['Gaji', 'Transfer', 'Lainnya'],
+  KAS_OUT = ['Makanan', 'Transport', 'Belanja', 'Hiburan', 'Penginapan', 'Lainnya'];
+
+/** Profil aktif. */
+function kas() {
+  if (!ALL.kas.pr[kasAct]) kasAct = Object.keys(ALL.kas.pr)[0];
+  return ALL.kas.pr[kasAct];
+}
+function kasSet(id) {
+  kasAct = id;
+  kasPer = 'all';
+  kasEdit = null;
+  try {
+    localStorage.setItem('rk-kas', id);
+  } catch (e) {}
+}
+function kasIn(x, per) {
+  return per === 'all' || x.d.slice(0, 7) === per;
+}
+/** Jumlah masuk (i), keluar (o), dan banyaknya transaksi (n) pada periode. */
+function kasSum(tx, per) {
+  var r = { i: 0, o: 0, n: 0 };
+  tx.forEach(function (x) {
+    if (!kasIn(x, per)) return;
+    r.n++;
+    if (x.t === '+') r.i += x.amt;
+    else r.o += x.amt;
+  });
+  return r;
+}
+function kasPrevMonth(per) {
+  var p = per.split('-').map(Number),
+    m = p[1] - 2;
+  return p[0] + Math.floor(m / 12) + '-' + pad2(((m % 12) + 12) % 12 + 1);
+}
+
+/** Grafik garis saldo per tanggal transaksi pada periode terpilih. */
+function kasChart(asc) {
+  var bal = kas().saldo,
+    pts = [];
+  asc.forEach(function (x) {
+    bal += x.t === '+' ? x.amt : -x.amt;
+    if (!kasIn(x, kasPer)) return;
+    var q = pts[pts.length - 1];
+    if (q && q.d === x.d) q.b = bal;
+    else pts.push({ d: x.d, b: bal });
+  });
+  if (pts.length < 2) return '';
+  var bs = pts.map(function (p) {
+      return p.b;
+    }),
+    mn = Math.min.apply(null, bs),
+    mx = Math.max.apply(null, bs),
+    r = mx - mn || 1,
+    d =
+      'M' +
+      pts
+        .map(function (p, i) {
+          return ((i * 600) / (pts.length - 1)).toFixed(1) + ' ' + (122 - ((p.b - mn) / r) * 108).toFixed(1);
+        })
+        .join(' L');
+  return (
+    '<div class="card"><h2>Saldo dari waktu ke waktu</h2><svg class="kch" viewBox="0 0 600 130" preserveAspectRatio="none" role="img" aria-label="Grafik saldo"><path d="' +
+    d +
+    ' L600 130 L0 130Z" style="fill:var(--acs)"></path><path d="' +
+    d +
+    '" style="fill:none;stroke:var(--ac);stroke-width:2.5;vector-effect:non-scaling-stroke"></path></svg><div class="sub" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>' +
+    dShort(pts[0].d) +
+    '</span><span>terendah ' +
+    rp(mn) +
+    ' &middot; tertinggi ' +
+    rp(mx) +
+    '</span><span>' +
+    dShort(pts[pts.length - 1].d) +
+    '</span></div></div>'
+  );
+}
+
+/** Render seluruh tab Catatan Kas. */
+function renderKas() {
+  var P = kas(),
+    K = ALL.kas,
+    asc = P.tx.slice().sort(function (a, b) {
+      return a.d < b.d ? -1 : a.d > b.d ? 1 : 0;
+    }),
+    A = kasSum(asc, 'all'),
+    bal = P.saldo + A.i - A.o,
+    mo = {};
+  asc.forEach(function (x) {
+    mo[x.d.slice(0, 7)] = 1;
+  });
+  mo[todayISO().slice(0, 7)] = 1;
+  var ms = Object.keys(mo).sort().reverse();
+  if (kasPer !== 'all' && !mo[kasPer]) kasPer = 'all';
+  var R = kasSum(asc, kasPer),
+    L = asc
+      .filter(function (x) {
+        return kasIn(x, kasPer);
+      })
+      .reverse(),
+    E = kasEdit
+      ? asc.filter(function (x) {
+          return x.id === kasEdit;
+        })[0]
+      : null;
+  if (E) kasT = E.t;
+  var stat = function (l, v, s) {
+    return '<div><span>' + l + '</span><b>' + v + '</b>' + (s ? '<span>' + s + '</span>' : '') + '</div>';
+  };
+  var prev = '';
+  if (kasPer !== 'all') {
+    var pv = kasSum(asc, kasPrevMonth(kasPer));
+    if (pv.o) prev = stat('Keluar bulan sebelumnya', rp(pv.o), (R.o >= pv.o ? 'naik ' : 'turun ') + rp(Math.abs(R.o - pv.o)));
+  }
+  var bar =
+    '<div class="kp">' +
+    Object.keys(K.pr)
+      .map(function (id) {
+        return '<button class="yp' + (id === P.id ? ' on' : '') + '" data-kp="' + id + '">' + esc(K.pr[id].name) + '</button>';
+      })
+      .join('') +
+    '<button class="g" data-kn="1">+ Profil baru</button><button class="g" data-ke="1">Ubah profil</button><button class="g d" data-kd="1">Hapus profil</button></div>';
+  var hero =
+    '<div class="hero"><div class="card" style="margin:0"><div class="sub">Saldo &quot;' +
+    esc(P.name) +
+    '&quot; sekarang</div><div class="big' +
+    (bal < 0 ? ' neg' : '') +
+    '">' +
+    rp(bal) +
+    '</div><div class="sub">saldo awal ' +
+    rp(P.saldo) +
+    ' + masuk ' +
+    rp(A.i) +
+    ' &minus; keluar ' +
+    rp(A.o) +
+    '</div></div><div class="card stats" style="margin:0">' +
+    stat('Masuk', rp(R.i)) +
+    stat('Keluar', rp(R.o)) +
+    stat('Selisih', R.i === R.o ? rp(0) : signed(R.i - R.o)) +
+    stat('Transaksi', R.n) +
+    prev +
+    '</div></div>';
+  var per =
+    '<div class="row2" style="margin:0 0 12px;align-items:center"><label for="kper" style="margin:0">Periode</label><select id="kper" style="width:auto"><option value="all">Semua waktu</option>' +
+    ms
+      .map(function (m) {
+        var p = m.split('-');
+        return '<option value="' + m + '"' + (m === kasPer ? ' selected' : '') + '>' + MON[p[1] - 1] + ' ' + p[0] + '</option>';
+      })
+      .join('') +
+    '</select></div>';
+  var cats = KAS_IN.concat(KAS_OUT),
+    seen = {};
+  P.tx.forEach(function (x) {
+    if (x.cat) cats.push(x.cat);
+  });
+  var dl = cats
+    .filter(function (c) {
+      return !seen[c] && (seen[c] = 1);
+    })
+    .map(function (c) {
+      return '<option value="' + esc(c) + '">';
+    })
+    .join('');
+  var form =
+    '<div class="card"><h2>' +
+    (E ? 'Ubah transaksi' : 'Catat transaksi') +
+    '</h2><div class="kt" style="margin-bottom:12px"><button type="button" class="yp' +
+    (kasT === '+' ? ' on' : '') +
+    '" data-kt="+">+ Masuk</button><button type="button" class="yp' +
+    (kasT === '-' ? ' on' : '') +
+    '" data-kt="-">&minus; Keluar</button></div><div class="kf"><div><label for="ka">Jumlah</label><input id="ka" inputmode="numeric" placeholder="50k atau 50.000" value="' +
+    (E ? E.amt.toLocaleString('id-ID') : '') +
+    '"></div><div><label for="kd">Tanggal</label><input id="kd" type="date" value="' +
+    (E ? E.d : todayISO()) +
+    '"></div><div><label for="kc">Kategori</label><input id="kc" list="kcl" maxlength="30" value="' +
+    (E ? esc(E.cat) : '') +
+    '"><datalist id="kcl">' +
+    dl +
+    '</datalist></div><div><label for="kn">Catatan</label><input id="kn" maxlength="80" value="' +
+    (E ? esc(E.note) : '') +
+    '"></div></div><div class="err" id="ke"></div><div class="row2"><button class="p" id="ks">' +
+    (E ? 'Simpan perubahan' : 'Simpan') +
+    '</button>' +
+    (E ? '<button id="kx">Batal</button>' : '') +
+    '</div></div>';
+  var bc = {};
+  L.forEach(function (x) {
+    if (x.t === '-') {
+      var k = x.cat || 'Tanpa kategori';
+      bc[k] = (bc[k] || 0) + x.amt;
+    }
+  });
+  var cl = Object.keys(bc).sort(function (a, b) {
+      return bc[b] - bc[a];
+    }),
+    catH = '';
+  if (cl.length)
+    catH =
+      '<div class="card"><h2>Pengeluaran per kategori</h2>' +
+      cl
+        .map(function (k, i) {
+          var pc = (bc[k] / R.o) * 100,
+            c = CAT_COLORS[i % CAT_COLORS.length];
+          return (
+            '<div class="catrow"><div class="cathd"><span><i class="dot" style="background:' +
+            c +
+            '"></i>' +
+            esc(k) +
+            '</span><b>' +
+            rp(bc[k]) +
+            ' <span class="sub">' +
+            (pc < 1 ? '<1' : Math.round(pc)) +
+            '%</span></b></div><div class="catbar"><i style="width:' +
+            pc.toFixed(1) +
+            '%;background:' +
+            c +
+            '"></i></div></div>'
+          );
+        })
+        .join('') +
+      '</div>';
+  var lst =
+    '<div class="card"><h2>Riwayat transaksi</h2>' +
+    (L.slice(0, 200)
+      .map(function (x) {
+        return (
+          '<div class="it2"><div><b class="' +
+          (x.t === '-' ? 'neg' : 'kin') +
+          '">' +
+          (x.t === '-' ? '&minus; ' : '+ ') +
+          rp(x.amt) +
+          '</b> <span class="sub">' +
+          fmtD(x.d) +
+          (x.cat ? ' &middot; ' + esc(x.cat) : '') +
+          '</span>' +
+          (x.note ? '<br><span class="sub">' + esc(x.note) + '</span>' : '') +
+          '</div><div><button class="g" data-ked="' +
+          x.id +
+          '">Ubah</button><button class="g d" data-kdel="' +
+          x.id +
+          '">Hapus</button></div></div>'
+        );
+      })
+      .join('') || '<div class="empty">Belum ada transaksi di periode ini.</div>') +
+    (L.length > 200 ? '<div class="sub">+ ' + (L.length - 200) + ' lainnya. Pilih periode yang lebih sempit.</div>' : '') +
+    '</div>';
+  $('v-kas').innerHTML = bar + hero + per + form + kasChart(asc) + catH + lst;
+}
+
+function kasErr(t) {
+  $('ke').textContent = t;
+}
+
+/** Simpan transaksi baru atau perubahan transaksi. */
+function kasSave() {
+  var a = parseRp($('ka').value),
+    d = $('kd').value;
+  if (a <= 0) return kasErr('Isi jumlah yang valid. Contoh: 50k atau 50.000.');
+  if (!ISO_RE.test(d)) return kasErr('Pilih tanggal transaksi.');
+  var P = kas(),
+    o = {
+      id: kasEdit || 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+      d: d,
+      t: kasT,
+      amt: a,
+      cat: $('kc').value.trim().slice(0, 30),
+      note: $('kn').value.trim().slice(0, 80),
+    };
+  if (kasEdit)
+    P.tx = P.tx.map(function (x) {
+      return x.id === kasEdit ? o : x;
+    });
+  else P.tx.push(o);
+  kasEdit = null;
+  save();
+  renderKas();
+  $('status').textContent += ' · transaksi disimpan';
+}
+
+function kasDelTx(id) {
+  var sn = snap('Sebelum menghapus transaksi'),
+    P = kas();
+  P.tx = P.tx.filter(function (x) {
+    return x.id !== id;
+  });
+  if (kasEdit === id) kasEdit = null;
+  save();
+  renderKas();
+  toast('Transaksi dihapus.', function () {
+    restoreSnap(sn.t);
+  });
+}
+
+/** Hapus profil aktif (tekan dua kali). Bisa diurungkan. */
+function kasDelProfile(b) {
+  if (Object.keys(ALL.kas.pr).length < 2) {
+    toast('Minimal harus ada satu profil.');
+    return;
+  }
+  if (!b.dataset.arm) {
+    b.dataset.arm = 1;
+    b.textContent = 'Yakin hapus "' + kas().name + '"?';
+    setTimeout(function () {
+      if (b.isConnected) {
+        b.dataset.arm = '';
+        b.textContent = 'Hapus profil';
+      }
+    }, 3000);
+    return;
+  }
+  var sn = snap('Sebelum menghapus profil ' + kas().name);
+  delete ALL.kas.pr[kasAct];
+  kasSet(Object.keys(ALL.kas.pr)[0]);
+  save();
+  renderKas();
+  toast('Profil dihapus.', function () {
+    restoreSnap(sn.t);
+  });
+}
+
+function kasOpenPm(m) {
+  var P = kas();
+  kpMode = m;
+  $('kpt').textContent = m === 'new' ? 'Profil baru' : 'Ubah profil';
+  $('kpn').value = m === 'new' ? '' : P.name;
+  $('kps').value = m === 'new' ? '' : P.saldo.toLocaleString('id-ID');
+  $('kpe').textContent = '';
+  $('kpm').hidden = false;
+  $('kpn').focus();
+}
+
+function kasSavePm() {
+  var n = $('kpn').value.trim().slice(0, 30),
+    s = parseRp($('kps').value);
+  if (!n) {
+    $('kpe').textContent = 'Nama profil belum diisi.';
+    return;
+  }
+  var dup = Object.keys(ALL.kas.pr).some(function (id) {
+    return ALL.kas.pr[id].name.toLowerCase() === n.toLowerCase() && !(kpMode === 'edit' && id === kasAct);
+  });
+  if (dup) {
+    $('kpe').textContent = 'Nama profil sudah dipakai.';
+    return;
+  }
+  if (kpMode === 'new') {
+    var id = 'p' + Date.now().toString(36);
+    ALL.kas.pr[id] = { id: id, name: n, saldo: s, tx: [] };
+    kasSet(id);
+  } else {
+    var P = kas();
+    P.name = n;
+    P.saldo = s;
+  }
+  save();
+  $('kpm').hidden = true;
+  renderKas();
+}
+
+/** Pasang event listener tab ini. */
+function bindKas() {
+  $('v-kas').onclick = function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    var d = b.dataset;
+    if (d.kt) {
+      kasT = d.kt;
+      Array.prototype.forEach.call(b.parentNode.children, function (x) {
+        x.classList.toggle('on', x === b);
+      });
+    } else if (d.kp) {
+      kasSet(d.kp);
+      renderKas();
+    } else if (d.kn) kasOpenPm('new');
+    else if (d.ke) kasOpenPm('edit');
+    else if (d.kd) kasDelProfile(b);
+    else if (b.id === 'ks') kasSave();
+    else if (b.id === 'kx') {
+      kasEdit = null;
+      renderKas();
+    } else if (d.ked) {
+      kasEdit = d.ked;
+      renderKas();
+      $('ka').scrollIntoView({ block: 'center' });
+    } else if (d.kdel) kasDelTx(d.kdel);
+  };
+  $('v-kas').onchange = function (e) {
+    if (e.target.id === 'kper') {
+      kasPer = e.target.value;
+      renderKas();
+    }
+  };
+  $('v-kas').addEventListener('input', function (e) {
+    if (e.target.id === 'ka') fmtLive(e.target);
+  });
+  $('kps').addEventListener('input', function () {
+    fmtLive(this);
+  });
+  $('kpsv').onclick = kasSavePm;
+  $('kpc').onclick = function () {
+    $('kpm').hidden = true;
+  };
+}
+
 /* ===== js/app.js ===== */
 /**
  * Titik masuk aplikasi. Urutan: muat data -> pasang listener -> render -> sinkron.
@@ -5262,6 +5743,7 @@ function main() {
   bindDiag();
   bindReminders();
   bindSkipRange();
+  bindKas();
   resetForm();
   renderAll();
   save();
