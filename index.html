@@ -907,11 +907,26 @@ button.gdt {
 }
 button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--ln); }
 .gdc[hidden] { display: none; }
+/* ===== Perjalanan ===== */
+.itm { display: grid; grid-template-columns: 52px 1fr auto; gap: 10px; padding: 10px 0; border-top: 1px solid var(--ln); align-items: start; }
+.itm .tm { font-variant-numeric: tabular-nums; color: var(--mut); font-size: 12.5px; font-weight: 700; text-align: right; line-height: 1.3; }
+.itm .ttl { font-weight: 700; }
+.itm .co { text-align: right; font-weight: 700; white-space: nowrap; }
+.itm .ac { display: flex; flex-wrap: wrap; gap: 2px; justify-content: flex-end; margin-top: 4px; }
+.chp { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; margin: 0 4px 2px 0; background: var(--acs); color: var(--ink); }
+.chp.on { background: var(--bls); color: var(--bl); }
+.chp.cash { background: var(--wrs); color: var(--wr); }
+.lnk { font-size: 12px; font-weight: 700; margin-right: 8px; color: var(--ac); text-decoration: none; }
+.dh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.dh h2 { margin: 0; }
+.dti { width: 100%; font-size: 13px; margin: 2px 0 8px; }
+.pgrp { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+@media (max-width: 480px) { .itm { grid-template-columns: 44px 1fr; } .itm .co { grid-column: 2; text-align: left; } .itm .ac { justify-content: flex-start; } }
 </style>
 </head>
 <body>
 <div class="w">
-<div style="display:flex;justify-content:flex-end;margin:0 0 8px"><button type="button" id="thm" title="Ketuk untuk ganti tema">◐ Tema: Otomatis</button></div>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px"><div class="kt" id="mdbar"><button type="button" class="yp on" data-md="rencana">Rencana Keuangan</button><button type="button" class="yp" data-md="trip">Perjalanan</button></div><button type="button" id="thm" title="Ketuk untuk ganti tema">◐ Tema: Otomatis</button></div>
 <header>
   <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r16 · 13 Okt 2026</div><div class="sub" id="sbs"></div></div>
   <div class="ctl">
@@ -920,7 +935,6 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
     <button id="lgb">Masuk</button><button id="bk">Impor / Ekspor</button>
   </div>
 </header>
-<div class="kp" id="pbar"></div>
 <nav role="tablist">
   <button role="tab" data-t="kas" aria-selected="false">Catatan Kas</button>
   <button role="tab" data-t="rincian" aria-selected="true">Rincian Bulanan</button>
@@ -933,6 +947,7 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 <section id="v-rincian"></section>
 <section id="v-jadwal" hidden></section>
 <section id="v-kas" hidden></section>
+<section id="v-trip" hidden></section>
 <section id="v-item" hidden>
   <div class="card">
     <h2 id="ft">Tambah item</h2>
@@ -954,10 +969,11 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 </section>
 </div>
 
-<div class="modal" id="kpm" hidden><div class="card"><h2 id="kpt">Profil baru</h2>
-<label for="kpn">Nama profil</label><input id="kpn" maxlength="30" placeholder="mis. Liburan Bali">
-<div style="margin-top:12px"><label for="kpl">Gabung dengan Rencana Keuangan?</label><select id="kpl"><option value="0">Tidak (catatan kas berdiri sendiri)</option><option value="1">Ya (menyatu dengan Rincian Bulanan)</option></select><div class="sub" style="margin-top:4px">Hanya satu profil yang bisa tergabung. Memilih Ya memindahkan Rencana ke profil ini, dan Tahun / Bulan saldo / Saldo awal muncul di sini.</div></div>
-<div style="margin-top:12px" id="kpsw"><label for="kps">Saldo awal (Rp)</label><input id="kps" inputmode="numeric" placeholder="3.000.000"></div>
+<div class="modal" id="kpm" hidden><div class="card"><h2 id="kpt">Perjalanan baru</h2>
+<label for="kpn">Nama perjalanan</label><input id="kpn" maxlength="30" placeholder="mis. Tokyo - Osaka 9D8N">
+<div class="kf" style="margin-top:12px"><div><label for="kpa">Mulai</label><input id="kpa" type="date"></div><div><label for="kpb">Selesai</label><input id="kpb" type="date"></div></div>
+<div class="kf" style="margin-top:12px"><div><label for="kpg">Anggaran total (Rp)</label><input id="kpg" inputmode="numeric" placeholder="25.000.000"></div><div><label for="kps">Dana awal (Rp)</label><input id="kps" inputmode="numeric" placeholder="3.000.000"></div></div>
+<div class="kf" style="margin-top:12px"><div><label for="kpu">Mata uang asing (opsional)</label><input id="kpu" maxlength="3" placeholder="JPY" style="text-transform:uppercase"></div><div><label for="kpk">Kurs: Rp per 1 mata uang</label><input id="kpk" type="number" step="0.01" min="0" inputmode="decimal" placeholder="119.4"></div></div>
 <div class="err" id="kpe"></div><div class="row2"><button class="p" id="kpsv">Simpan</button><button id="kpc">Tutup</button></div></div></div>
 <div class="modal" id="cf" hidden><div class="card"><h2>Data berbeda di cloud dan di perangkat ini</h2>
 <p class="sub">Pilih data yang dipakai. Data yang tidak dipilih disimpan sebagai cadangan otomatis, jadi masih bisa dipulihkan.</p>
@@ -1401,6 +1417,11 @@ function norm(a) {
   return a;
 }
 
+/** URL http(s) yang aman dipakai sebagai tautan. */
+function okUrl(u) {
+  return /^https?:\/\/[^\s"'<>]+$/i.test(u || '');
+}
+
 /** Catatan Kas: {pr:{[id]:{id,name,saldo,tx:[{id,d,t,amt,cat,note}]}}}. Selalu ada minimal satu profil. */
 function normKas(k) {
   var pr = {};
@@ -1412,6 +1433,74 @@ function normKas(k) {
         name: String(p.name || 'Profil').slice(0, 30),
         saldo: +p.saldo || 0,
         link: !!p.link,
+        start: ISO_RE.test(p.start) ? p.start : '',
+        end: ISO_RE.test(p.end) ? p.end : '',
+        budget: +p.budget > 0 ? +p.budget : 0,
+        cur: /^[A-Za-z]{3}$/.test(p.cur || '') ? String(p.cur).toUpperCase() : '',
+        rate: +p.rate > 0 ? +p.rate : 0,
+        dt: (function () {
+          var o = {};
+          if (p.dt && typeof p.dt === 'object')
+            Object.keys(p.dt).forEach(function (k) {
+              if (ISO_RE.test(k) && p.dt[k]) o[k] = String(p.dt[k]).slice(0, 60);
+            });
+          return o;
+        })(),
+        it: (Array.isArray(p.it) ? p.it : [])
+          .filter(function (x) {
+            return x && ISO_RE.test(x.day) && x.place;
+          })
+          .map(function (x, i) {
+            return {
+              id: String(x.id || 'i' + i),
+              day: x.day,
+              time: /^\d{2}:\d{2}$/.test(x.time) ? x.time : '',
+              time2: /^\d{2}:\d{2}$/.test(x.time2) ? x.time2 : '',
+              place: String(x.place).slice(0, 120),
+              cat: String(x.cat || '').slice(0, 20),
+              est: +x.est > 0 ? +x.est : 0,
+              fx: !!x.fx,
+              pay: /^(ic|on|cash)$/.test(x.pay) ? x.pay : '',
+              link: okUrl(x.link) ? String(x.link).slice(0, 400) : '',
+              note: String(x.note || '').slice(0, 200),
+              done: !!x.done,
+              rec: String(x.rec || ''),
+            };
+          }),
+        bk: (Array.isArray(p.bk) ? p.bk : [])
+          .filter(function (x) {
+            return x && x.title;
+          })
+          .map(function (x, i) {
+            return {
+              id: String(x.id || 'b' + i),
+              title: String(x.title).slice(0, 120),
+              cat: String(x.cat || 'Lainnya').slice(0, 20),
+              amt: +x.amt > 0 ? +x.amt : 0,
+              fx: !!x.fx,
+              pay: /^(ic|on|cash)$/.test(x.pay) ? x.pay : '',
+              link: okUrl(x.link) ? String(x.link).slice(0, 400) : '',
+              a: ISO_RE.test(x.a) ? x.a : '',
+              b: ISO_RE.test(x.b) ? x.b : '',
+              paid: !!x.paid,
+              rec: String(x.rec || ''),
+            };
+          }),
+        lk: (Array.isArray(p.lk) ? p.lk : [])
+          .filter(function (x) {
+            return x && x.title && okUrl(x.url);
+          })
+          .map(function (x, i) {
+            return { id: String(x.id || 'l' + i), title: String(x.title).slice(0, 80), url: String(x.url).slice(0, 400) };
+          }),
+        ck: (Array.isArray(p.ck) ? p.ck : [])
+          .filter(function (x) {
+            return x && x.text;
+          })
+          .map(function (x, i) {
+            return { id: String(x.id || 'c' + i), text: String(x.text).slice(0, 60), done: !!x.done };
+          }),
+        note: String(p.note || '').slice(0, 2000),
         tx: (Array.isArray(p.tx) ? p.tx : [])
           .filter(function (x) {
             return x && +x.amt > 0 && (x.t === '+' || x.t === '-') && ISO_RE.test(x.d);
@@ -1610,6 +1699,19 @@ function mergeAll(inc) {
       ALL.kas.pr[id] = sp;
       return;
     }
+    Object.keys(sp.dt || {}).forEach(function (k) {
+      if (!dp.dt[k]) dp.dt[k] = sp.dt[k];
+    });
+    ['it', 'ck', 'bk', 'lk'].forEach(function (k) {
+      (sp[k] || []).forEach(function (x) {
+        if (
+          !dp[k].some(function (y) {
+            return y.id === x.id;
+          })
+        )
+          dp[k].push(x);
+      });
+    });
     sp.tx.forEach(function (x) {
       if (
         !dp.tx.some(function (y) {
@@ -2177,13 +2279,14 @@ function fmtLive(el) {
 
 /** Tampilkan tab tertentu (rincian | jadwal | item). */
 function tab(t) {
+  curTab = t;
   document.querySelectorAll('nav button').forEach(function (b) {
     b.setAttribute('aria-selected', b.dataset.t === t);
   });
   ['rincian', 'jadwal', 'item', 'kas'].forEach(function (x) {
     $('v-' + x).hidden = x !== t;
   });
-  $('yb').style.display = kas().link ? '' : 'none';
+  $('yb').style.display = '';
 }
 
 /** Tampilkan pesan singkat; bila ada `undo`, muncul tombol Urungkan selama 10 detik. */
@@ -2242,7 +2345,9 @@ function renderAll() {
   renderRincian();
   renderJadwal();
   renderList();
+  renderTrip();
   renderKas();
+  modeUi();
 }
 
 /** Segarkan semua kontrol dan tampilan dari state (setelah ganti tahun, muat data, dsb). */
@@ -5345,18 +5450,13 @@ var kasAct = (function () {
 var KAS_IN = ['Gaji', 'Transfer', 'Lainnya'],
   KAS_OUT = ['Makanan', 'Transport', 'Belanja', 'Hiburan', 'Penginapan', 'Lainnya'];
 
-/** Profil aktif. */
+/** Profil yang sedang dipakai: perjalanan terpilih (mode Perjalanan) atau profil Rencana. */
 function kas() {
-  if (!ALL.kas.pr[kasAct]) kasAct = Object.keys(ALL.kas.pr)[0];
-  return ALL.kas.pr[kasAct];
+  return (mode === 'trip' && tp()) || kasLinked();
 }
-function kasSet(id) {
-  kasAct = id;
-  kasPer = 'all';
-  kasEdit = null;
-  try {
-    localStorage.setItem('rk-kas', id);
-  } catch (e) {}
+/** Tempat Catatan Kas digambar. */
+function kasEl() {
+  return mode === 'trip' ? $('v-tcash') : $('v-kas');
 }
 function kasIn(x, per) {
   return per === 'all' || x.d.slice(0, 7) === per;
@@ -5453,22 +5553,11 @@ function kasRows(P) {
     })
     .concat(kasDerived());
 }
-/** Profil tergabung: tampilkan kontrol Tahun/Saldo dan tab Rencana. Profil terpisah: hanya Catatan Kas. */
-function kasLinkUi() {
-  var L = !!kas().link;
-  ['year', 'sm', 'saldo'].forEach(function (id) {
-    $(id).parentNode.style.display = L ? '' : 'none';
-  });
-  $('rem').style.display = L ? '' : 'none';
-  ['rincian', 'jadwal', 'item'].forEach(function (t) {
-    document.querySelector('nav [data-t="' + t + '"]').style.display = L ? '' : 'none';
-  });
-  $('yb').style.display = L ? '' : 'none';
-  if (!L && $('v-kas').hidden) tab('kas');
-}
-
 /** Render seluruh tab Catatan Kas. */
 function renderKas() {
+  var el = kasEl();
+  if (!el) return;
+  if (mode === 'trip') $('v-kas').innerHTML = '';
   var P = kas(),
     K = ALL.kas,
     asc = kasRows(P).sort(function (a, b) {
@@ -5508,14 +5597,6 @@ function renderKas() {
     var pv = kasSum(asc, kasPrevMonth(kasPer));
     if (pv.o) prev = stat('Keluar bulan sebelumnya', rp(pv.o), (R.o >= pv.o ? 'naik ' : 'turun ') + rp(Math.abs(R.o - pv.o)));
   }
-  var bar =
-    '<div class="kp">' +
-    Object.keys(K.pr)
-      .map(function (id) {
-        return '<button class="yp' + (id === P.id ? ' on' : '') + '" data-kp="' + id + '">' + esc(K.pr[id].name) + (K.pr[id].link ? ' &#8644;' : '') + '</button>';
-      })
-      .join('') +
-    '<button class="g" data-kn="1">+ Profil baru</button><button class="g" data-ke="1">Ubah profil</button><button class="g d" data-kd="1">Hapus profil</button></div>';
   var hero =
     '<div class="hero"><div class="card" style="margin:0"><div class="sub">Saldo &quot;' +
     esc(P.name) +
@@ -5566,9 +5647,11 @@ function renderKas() {
     (kasT === '+' ? ' on' : '') +
     '" data-kt="+">+ Masuk</button><button type="button" class="yp' +
     (kasT === '-' ? ' on' : '') +
-    '" data-kt="-">&minus; Keluar</button></div><div class="kf"><div><label for="ka">Jumlah</label><input id="ka" inputmode="numeric" placeholder="50k atau 50.000" value="' +
+    '" data-kt="-">&minus; Keluar</button></div><div class="kf"><div><label for="ka">Jumlah</label><div style="display:flex;gap:6px"><input id="ka" inputmode="numeric" placeholder="50k atau 50.000" value="' +
     (E ? E.amt.toLocaleString('id-ID') : '') +
-    '"></div><div><label for="kd">Tanggal</label><input id="kd" type="date" value="' +
+    '">' +
+    (mode === 'trip' && P.cur && P.rate ? '<select id="kcu" style="width:auto"><option value="idr">Rp</option><option value="fx">' + P.cur + '</option></select>' : '') +
+    '</div></div><div><label for="kd">Tanggal</label><input id="kd" type="date" value="' +
     (E ? E.d : todayISO()) +
     '"></div><div><label for="kc">Kategori</label><input id="kc" list="kcl" maxlength="30" value="' +
     (E ? esc(E.cat) : '') +
@@ -5642,13 +5725,11 @@ function renderKas() {
       .join('') || '<div class="empty">Belum ada transaksi di periode ini.</div>') +
     (L.length > 200 ? '<div class="sub">+ ' + (L.length - 200) + ' lainnya. Pilih periode yang lebih sempit.</div>' : '') +
     '</div>';
-  $('pbar').innerHTML = bar;
-  $('v-kas').innerHTML =
+  el.innerHTML =
     (P.link
       ? '<div class="sub" style="margin-bottom:10px">&#8644; Tergabung dengan Rencana Keuangan tahun ' + S.year + '. Tagihan lunas dan penyesuaian saldo otomatis tercatat di sini; catatan masuk/keluar Anda memengaruhi Rincian Bulanan.</div>'
       : '') +
     hero + per + form + kasChart(asc) + catH + lst;
-  kasLinkUi();
 }
 
 function kasErr(t) {
@@ -5663,6 +5744,11 @@ function kasSave() {
   if (!ISO_RE.test(d)) return kasErr('Pilih tanggal transaksi.');
   if (kas().link && +d.slice(0, 4) !== +S.year)
     return kasErr('Profil ini tergabung dengan Rencana tahun ' + S.year + '. Pilih tanggal di tahun itu, atau ganti Tahun di atas.');
+  var fxn = '';
+  if ($('kcu') && $('kcu').value === 'fx' && kas().rate) {
+    fxn = kas().cur + ' ' + a.toLocaleString('id-ID') + ' \u00b7 ';
+    a = Math.round(a * kas().rate);
+  }
   var P = kas(),
     o = {
       id: kasEdit || 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
@@ -5670,7 +5756,7 @@ function kasSave() {
       t: kasT,
       amt: a,
       cat: $('kc').value.trim().slice(0, 30),
-      note: $('kn').value.trim().slice(0, 80),
+      note: (fxn + $('kn').value.trim()).slice(0, 80),
     };
   if (kasEdit)
     P.tx = P.tx.map(function (x) {
@@ -5697,91 +5783,9 @@ function kasDelTx(id) {
   });
 }
 
-/** Hapus profil aktif (tekan dua kali). Bisa diurungkan. */
-function kasDelProfile(b) {
-  if (Object.keys(ALL.kas.pr).length < 2) {
-    toast('Minimal harus ada satu profil.');
-    return;
-  }
-  if (kas().link) {
-    toast('Profil ini tergabung dengan Rencana. Pindahkan Rencana ke profil lain dulu (Ubah profil > Gabung: Ya di profil lain).');
-    return;
-  }
-  if (!b.dataset.arm) {
-    b.dataset.arm = 1;
-    b.textContent = 'Yakin hapus "' + kas().name + '"?';
-    setTimeout(function () {
-      if (b.isConnected) {
-        b.dataset.arm = '';
-        b.textContent = 'Hapus profil';
-      }
-    }, 3000);
-    return;
-  }
-  var sn = snap('Sebelum menghapus profil ' + kas().name);
-  delete ALL.kas.pr[kasAct];
-  kasSet(Object.keys(ALL.kas.pr)[0]);
-  save();
-  renderAll();
-  toast('Profil dihapus.', function () {
-    restoreSnap(sn.t);
-  });
-}
-
-function kasOpenPm(m) {
-  var P = kas();
-  kpMode = m;
-  $('kpt').textContent = m === 'new' ? 'Profil baru' : 'Ubah profil';
-  $('kpn').value = m === 'new' ? '' : P.name;
-  $('kps').value = m === 'new' ? '' : P.saldo.toLocaleString('id-ID');
-  $('kpe').textContent = '';
-  $('kpl').value = m === 'new' ? '0' : P.link ? '1' : '0';
-  $('kpsw').hidden = $('kpl').value === '1';
-  $('kpm').hidden = false;
-  $('kpn').focus();
-}
-
-function kasSavePm() {
-  var n = $('kpn').value.trim().slice(0, 30),
-    s = parseRp($('kps').value);
-  if (!n) {
-    $('kpe').textContent = 'Nama profil belum diisi.';
-    return;
-  }
-  var lk = $('kpl').value === '1';
-  if (kpMode === 'edit' && kas().link && !lk) {
-    $('kpe').textContent = 'Minimal satu profil harus tergabung dengan Rencana. Untuk memindahkannya, pilih Ya di profil lain.';
-    return;
-  }
-  var dup = Object.keys(ALL.kas.pr).some(function (id) {
-    return ALL.kas.pr[id].name.toLowerCase() === n.toLowerCase() && !(kpMode === 'edit' && id === kasAct);
-  });
-  if (dup) {
-    $('kpe').textContent = 'Nama profil sudah dipakai.';
-    return;
-  }
-  if (lk)
-    Object.keys(ALL.kas.pr).forEach(function (i) {
-      ALL.kas.pr[i].link = false;
-    });
-  if (kpMode === 'new') {
-    var id = 'p' + Date.now().toString(36);
-    ALL.kas.pr[id] = { id: id, name: n, saldo: s, tx: [], link: lk };
-    kasSet(id);
-  } else {
-    var P = kas();
-    P.name = n;
-    if (!lk) P.saldo = s;
-    P.link = lk;
-  }
-  save();
-  $('kpm').hidden = true;
-  renderAll();
-}
-
 /** Pasang event listener tab ini. */
 function bindKas() {
-  $('pbar').onclick = $('v-kas').onclick = function (e) {
+  $('v-kas').onclick = function (e) {
     var b = e.target.closest('button');
     if (!b) return;
     var d = b.dataset;
@@ -5790,13 +5794,7 @@ function bindKas() {
       Array.prototype.forEach.call(b.parentNode.children, function (x) {
         x.classList.toggle('on', x === b);
       });
-    } else if (d.kp) {
-      kasSet(d.kp);
-      renderKas();
-    } else if (d.kn) kasOpenPm('new');
-    else if (d.ke) kasOpenPm('edit');
-    else if (d.kd) kasDelProfile(b);
-    else if (b.id === 'ks') kasSave();
+    } else if (b.id === 'ks') kasSave();
     else if (b.id === 'kx') {
       kasEdit = null;
       renderKas();
@@ -5819,12 +5817,622 @@ function bindKas() {
     fmtLive(this);
   });
   $('kpsv').onclick = kasSavePm;
-  $('kpl').onchange = function () {
-    $('kpsw').hidden = this.value === '1';
-  };
   $('kpc').onclick = function () {
     $('kpm').hidden = true;
   };
+}
+
+/* ===== js/ui/trip.js ===== */
+/**
+ * Mode Perjalanan: lembar terpisah dari Rencana Keuangan. Tiap perjalanan = satu profil kas terpisah (link=false)
+ * berisi anggaran, itinerary per hari (jam, tautan, biaya, metode bayar), pemesanan, checklist, tautan, catatan,
+ * dan catatan kas masuk/keluar sendiri. Mendukung satu mata uang asing dengan kurs manual.
+ */
+var mode = (function () {
+    try {
+      return localStorage.getItem('rk-mode') === 'trip' ? 'trip' : 'rencana';
+    } catch (e) {
+      return 'rencana';
+    }
+  })(),
+  tripAct = (function () {
+    try {
+      return localStorage.getItem('rk-trip') || '';
+    } catch (e) {
+      return '';
+    }
+  })(),
+  tripTab = 'ring',
+  itEdit = null,
+  bkEdit = null,
+  kpMode = 'new',
+  curTab = 'rincian',
+  noteTimer = null,
+  WD = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
+  ICAT = ['Makan', 'Transport', 'Tiket & Tour', 'Belanja', 'Lainnya'],
+  BCAT = ['Transport', 'Penginapan', 'Tiket & Tour', 'Persiapan', 'Lainnya'],
+  PAYL = { ic: 'Kartu IC', on: 'Online', cash: 'Cash' },
+  CK_STD = ['Paspor / KTP', 'Tiket transportasi', 'Booking penginapan', 'Uang tunai', 'Kartu ATM / kartu kredit', 'Charger dan power bank', 'Obat pribadi', 'Pakaian', 'Perlengkapan mandi', 'Asuransi perjalanan'];
+
+function kid(p) {
+  return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+}
+function trips() {
+  var pr = ALL.kas.pr;
+  return Object.keys(pr)
+    .filter(function (i) {
+      return !pr[i].link;
+    })
+    .map(function (i) {
+      return pr[i];
+    });
+}
+/** Perjalanan yang sedang dibuka (atau null). */
+function tp() {
+  var P = ALL.kas.pr[tripAct];
+  return P && !P.link ? P : null;
+}
+function remember(k, v) {
+  try {
+    localStorage.setItem(k, v);
+  } catch (e) {}
+}
+function setMode(m) {
+  mode = m;
+  remember('rk-mode', m);
+  renderAll();
+}
+function setTrip(id) {
+  tripAct = id;
+  tripTab = 'ring';
+  itEdit = bkEdit = null;
+  kasPer = 'all';
+  kasEdit = null;
+  remember('rk-trip', id);
+  renderAll();
+}
+function dayNo(a, b) {
+  return Math.round((Date.parse(a + 'T00:00:00Z') - Date.parse(b + 'T00:00:00Z')) / 864e5);
+}
+/** Semua tanggal perjalanan: dari Mulai sampai Selesai ditambah tanggal item itinerary. */
+function tripDays(P) {
+  var set = {};
+  if (P.start && P.end && P.end >= P.start)
+    for (var t = Date.parse(P.start + 'T00:00:00Z'), n = 0; t <= Date.parse(P.end + 'T00:00:00Z') && n < 60; t += 864e5, n++) set[isoD(t)] = 1;
+  P.it.forEach(function (x) {
+    set[x.day] = 1;
+  });
+  return Object.keys(set).sort();
+}
+function dayLabel(P, d) {
+  return (P.start && d >= P.start ? 'Hari ' + (dayNo(d, P.start) + 1) + ' · ' : '') + WD[new Date(d + 'T00:00:00Z').getUTCDay()] + ', ' + fmtD(d);
+}
+function tripSum(P) {
+  var r = kasSum(P.tx, 'all');
+  r.bal = P.saldo + r.i - r.o;
+  return r;
+}
+/** Nilai dalam rupiah: v dalam mata uang asing (fx) dikali kurs. */
+function val(P, v, fx) {
+  return fx && P.rate ? v * P.rate : v;
+}
+function fxs(P, n) {
+  return P.cur + ' ' + Math.round(n).toLocaleString('id-ID');
+}
+/** Teks jumlah: "Rp ..." dan, bila asing, "JPY ... " di belakangnya. */
+function amtTxt(P, v, fx) {
+  return fx && P.cur ? fxs(P, v) + (P.rate ? ' <span class="sub">&asymp; ' + rp(val(P, v, fx)) + '</span>' : '') : rp(v);
+}
+function lnk(u) {
+  if (!okUrl(u)) return '';
+  return '<a class="lnk" href="' + esc(u) + '" target="_blank" rel="noopener noreferrer">' + (/maps|goo\.gl/i.test(u) ? 'Peta' : /youtu/i.test(u) ? 'Video' : 'Buka') + ' &#8599;</a>';
+}
+function pchip(p) {
+  return p ? '<span class="chp ' + p + '">' + PAYL[p] + '</span>' : '';
+}
+function bar(v, mx) {
+  var pc = mx ? Math.min(100, (v / mx) * 100) : 0;
+  return '<div class="catbar" style="margin:8px 0 4px"><i style="width:' + pc.toFixed(1) + '%;background:' + (v > mx ? 'var(--wr)' : 'var(--ac)') + '"></i></div>';
+}
+function opts(L, sel, lab) {
+  return L.map(function (o) {
+    var v = Array.isArray(o) ? o[0] : o;
+    return '<option value="' + esc(v) + '"' + (v === sel ? ' selected' : '') + '>' + esc(Array.isArray(o) ? o[1] : o) + '</option>';
+  }).join('');
+}
+function itRec(P, x) {
+  return !!x.rec && P.tx.some(function (t) { return t.id === x.rec; });
+}
+/** Rencana biaya: pemesanan + estimasi harian (item itinerary yang bukan "Online", karena yang online dicatat di Pemesanan). */
+function tripPlan(P) {
+  var r = { b: 0, d: 0, paid: 0, cash: {} };
+  P.bk.forEach(function (x) {
+    var v = val(P, x.amt, x.fx);
+    r.b += v;
+    if (x.paid) r.paid += v;
+  });
+  P.it.forEach(function (x) {
+    if (x.pay === 'on' || !x.est) return;
+    r.d += val(P, x.est, x.fx);
+    var k = (x.pay ? PAYL[x.pay] : 'Lainnya') + ' · ' + (x.cat || 'Lainnya'),
+      c = r.cash[k] || (r.cash[k] = { fx: 0, idr: 0 });
+    if (x.fx) c.fx += x.est;
+    else c.idr += x.est;
+  });
+  r.t = r.b + r.d;
+  return r;
+}
+
+function tripList() {
+  var L = trips();
+  return (
+    '<div class="kp"><button class="p" data-tnew="1">+ Perjalanan baru</button></div>' +
+    (L.map(function (P) {
+      var s = tripSum(P), pl = tripPlan(P);
+      return (
+        '<div class="card" data-trip="' + P.id + '" style="cursor:pointer"><h2>' + esc(P.name) + '</h2><div class="sub">' +
+        (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) + ' · ' + (dayNo(P.end, P.start) + 1) + ' hari' : 'Tanggal belum diisi') + '</div>' +
+        (P.budget ? bar(s.o, P.budget) + '<div class="sub">Terpakai ' + rp(s.o) + ' dari anggaran ' + rp(P.budget) + '</div>' : '<div class="sub">Terpakai ' + rp(s.o) + '</div>') +
+        (pl.t ? '<div class="sub">Rencana biaya ' + rp(pl.t) + '</div>' : '') + '</div>'
+      );
+    }).join('') || '<div class="card"><div class="empty">Belum ada perjalanan. Buat satu untuk mencatat itinerary, pemesanan, anggaran, checklist, dan pengeluaran.</div></div>')
+  );
+}
+
+function tripRing(P) {
+  var s = tripSum(P), pl = tripPlan(P), td = todayISO(), left = P.budget - s.o, N = 0, no = 0, rest = 0, bc = {}, byDay = {};
+  P.tx.forEach(function (x) {
+    if (x.t === '-') bc[x.cat || 'Tanpa kategori'] = (bc[x.cat || 'Tanpa kategori'] || 0) + x.amt;
+  });
+  P.it.forEach(function (x) {
+    if (x.pay !== 'on' && x.est) byDay[x.day] = (byDay[x.day] || 0) + val(P, x.est, x.fx);
+  });
+  if (P.start && P.end && P.end >= P.start) {
+    N = dayNo(P.end, P.start) + 1;
+    if (td >= P.start && td <= P.end) {
+      no = dayNo(td, P.start) + 1;
+      rest = N - no + 1;
+    }
+  }
+  var st = function (l, v, n) {
+    return '<div><span>' + l + '</span><b>' + v + '</b>' + (n ? '<span>' + n + '</span>' : '') + '</div>';
+  };
+  var cells = P.budget
+    ? st('Anggaran', rp(P.budget)) + st('Terpakai', rp(s.o)) + st('Sisa anggaran', rp(left)) + st('Rencana vs anggaran', rp(P.budget - pl.t), 'rencana ' + rp(pl.t))
+    : st('Pengeluaran', rp(s.o)) + st('Total rencana', rp(pl.t));
+  if (no) cells += st('Hari ke', no + ' dari ' + N) + st('Rata-rata per hari', rp(s.o / no)) + (P.budget ? st('Batas aman per hari', rp(Math.max(0, left) / rest), 'sisa ' + rest + ' hari') : '');
+  else if (N && td < P.start) cells += st('Mulai dalam', dayNo(P.start, td) + ' hari');
+  var cl = Object.keys(bc).sort(function (a, b) { return bc[b] - bc[a]; }),
+    ck = Object.keys(pl.cash).sort(),
+    dk = Object.keys(byDay).sort(),
+    dmax = 0;
+  dk.forEach(function (d) { if (byDay[d] > dmax) dmax = byDay[d]; });
+  var catRow = function (k, v, mx, c, extra) {
+    var pc = mx ? (v / mx) * 100 : 0;
+    return '<div class="catrow"><div class="cathd"><span>' + (c ? '<i class="dot" style="background:' + c + '"></i>' : '') + k + '</span><b>' + extra + '</b></div><div class="catbar"><i style="width:' + pc.toFixed(1) + '%;background:' + (c || 'var(--ac)') + '"></i></div></div>';
+  };
+  return (
+    '<div class="hero"><div class="card" style="margin:0"><div class="sub">Saldo dana sekarang</div><div class="big' + (s.bal < 0 ? ' neg' : '') + '">' + rp(s.bal) +
+    '</div><div class="sub">dana awal ' + rp(P.saldo) + ' + masuk ' + rp(s.i) + ' &minus; keluar ' + rp(s.o) + '</div>' + (P.budget ? bar(s.o, P.budget) : '') +
+    '</div><div class="card stats" style="margin:0">' + cells + '</div></div>' +
+    '<div class="card"><h2>Rencana biaya</h2><div class="stats"><div><span>Pemesanan</span><b>' + rp(pl.b) + '</b><span>sudah dibayar ' + rp(pl.paid) + '</span></div><div><span>Estimasi harian</span><b>' + rp(pl.d) + '</b><span>di luar yang online</span></div><div><span>Total rencana</span><b>' + rp(pl.t) + '</b></div></div>' +
+    (pl.t ? bar(s.o, pl.t) + '<div class="sub">Realisasi ' + rp(s.o) + ' dari rencana ' + rp(pl.t) + '</div>' : '<div class="sub">Isi Pemesanan dan biaya di Itinerary untuk melihat rencana biaya.</div>') + '</div>' +
+    (ck.length
+      ? '<div class="card"><h2>Siapkan tunai / kartu</h2>' +
+        ck.map(function (k) {
+          var c = pl.cash[k];
+          return '<div class="it2"><div>' + esc(k) + '</div><div><b>' + (c.fx ? fxs(P, c.fx) + (c.idr ? ' + ' + rp(c.idr) : '') : rp(c.idr)) + '</b>' + (c.fx && P.rate ? ' <span class="sub">&asymp; ' + rp(c.idr + c.fx * P.rate) + '</span>' : '') + '</div></div>';
+        }).join('') + '</div>'
+      : '') +
+    (dk.length
+      ? '<div class="card"><h2>Estimasi per hari</h2>' + dk.map(function (d) { return catRow(esc(dayLabel(P, d)), byDay[d], dmax, '', rp(byDay[d])); }).join('') + '</div>'
+      : '') +
+    (cl.length
+      ? '<div class="card"><h2>Pengeluaran per kategori</h2>' + cl.map(function (k, i) { return catRow(esc(k), bc[k], s.o, CAT_COLORS[i % CAT_COLORS.length], rp(bc[k]) + ' <span class="sub">' + Math.round((bc[k] / s.o) * 100) + '%</span>'); }).join('') + '</div>'
+      : '') +
+    '<div class="card"><h2>Ambil dana dari Rencana</h2><div class="row2"><input id="trf" inputmode="numeric" placeholder="mis. 3.000.000"><button class="p" data-trf="1">Pindahkan</button></div><div class="err" id="trfe"></div><div class="sub">Tercatat sebagai pengeluaran di Rencana Keuangan dan pemasukan di perjalanan ini.</div></div>'
+  );
+}
+
+/** Kotak biaya: jumlah + pilihan mata uang (Rp / asing). */
+function amtField(P, id, uid, v, fx) {
+  return '<div style="display:flex;gap:6px"><input id="' + id + '" inputmode="numeric" placeholder="0" value="' + (v ? v.toLocaleString('id-ID') : '') + '">' +
+    (P.cur ? '<select id="' + uid + '" style="width:auto"><option value="idr">Rp</option><option value="fx"' + (fx ? ' selected' : '') + '>' + P.cur + '</option></select>' : '') + '</div>';
+}
+
+function tripItin(P) {
+  var E = itEdit ? P.it.filter(function (x) { return x.id === itEdit; })[0] : null,
+    days = tripDays(P),
+    td = todayISO(),
+    form =
+      '<div class="card"><h2>' + (E ? 'Ubah kegiatan' : 'Tambah kegiatan') + '</h2><div class="kf"><div><label for="itd">Tanggal</label><input id="itd" type="date" value="' + (E ? E.day : days[0] || td) +
+      '"></div><div><label for="itt">Mulai</label><input id="itt" type="time" value="' + (E ? E.time : '') + '"></div><div><label for="itt2">Selesai</label><input id="itt2" type="time" value="' + (E ? E.time2 : '') +
+      '"></div><div style="grid-column:1/-1"><label for="itp">Kegiatan</label><input id="itp" maxlength="120" placeholder="mis. Senso-ji Temple" value="' + (E ? esc(E.place) : '') +
+      '"></div><div><label for="itk">Kategori</label><select id="itk">' + opts(ICAT, E ? E.cat : 'Transport') + '</select></div><div><label for="ite">Biaya</label>' + amtField(P, 'ite', 'itu', E ? E.est : 0, E && E.fx) +
+      '</div><div><label for="itm">Pembayaran</label><select id="itm">' + opts([['', 'Belum ditentukan'], ['ic', 'Kartu IC / e-money'], ['on', 'Online (dicatat di Pemesanan)'], ['cash', 'Cash']], E ? E.pay : '') +
+      '</select></div><div style="grid-column:1/-1"><label for="itl">Tautan (peta / tiket)</label><input id="itl" inputmode="url" placeholder="https://maps.app.goo.gl/..." value="' + (E ? esc(E.link) : '') +
+      '"></div><div style="grid-column:1/-1"><label for="itn">Catatan</label><input id="itn" maxlength="200" value="' + (E ? esc(E.note) : '') + '"></div></div><div class="err" id="iter"></div><div class="row2"><button class="p" data-its="1">' +
+      (E ? 'Simpan perubahan' : 'Tambah') + '</button>' + (E ? '<button data-itx="1">Batal</button>' : '') + '</div></div>';
+  return (
+    form +
+    (days.map(function (d) {
+      var L = P.it.filter(function (x) { return x.day === d; }).sort(function (a, b) { return a.time < b.time ? -1 : a.time > b.time ? 1 : 0; }),
+        tot = 0, fxm = {},
+        stay = P.bk.filter(function (b) { return b.cat === 'Penginapan' && b.a && b.b && d >= b.a && d < b.b; });
+      L.forEach(function (x) {
+        if (x.pay === 'on' || !x.est) return;
+        tot += val(P, x.est, x.fx);
+        if (x.fx) fxm[x.cat || 'Lainnya'] = (fxm[x.cat || 'Lainnya'] || 0) + x.est;
+      });
+      return (
+        '<div class="card"><div class="dh"><h2>' + esc(dayLabel(P, d)) + '</h2>' + (d === td ? '<span class="chp ic">Hari ini</span>' : '') + '</div>' +
+        '<input class="dti" data-dt="' + d + '" maxlength="60" placeholder="Judul hari, mis. Jakarta – Tokyo" value="' + esc(P.dt[d] || '') + '">' +
+        (stay.length ? '<div class="sub" style="margin-bottom:6px">&#127976; Menginap: ' + stay.map(function (b) { return esc(b.title); }).join(', ') + '</div>' : '') +
+        (tot ? '<div class="sub" style="margin-bottom:4px">Estimasi hari ini <b>' + rp(tot) + '</b>' + (Object.keys(fxm).length ? ' · ' + Object.keys(fxm).map(function (k) { return k + ' ' + fxs(P, fxm[k]); }).join(' · ') : '') + '</div>' : '') +
+        (L.map(function (x) {
+          return (
+            '<div class="itm"><div class="tm">' + (x.time || '') + (x.time2 ? '<br>' + x.time2 : '') + '</div><div><div class="ttl"' + (x.done ? ' style="text-decoration:line-through;opacity:.6"' : '') + '>' + esc(x.place) + '</div><div>' +
+            (x.cat ? '<span class="chp" style="background:transparent;border:1px solid var(--ln)">' + esc(x.cat) + '</span>' : '') + pchip(x.pay) + lnk(x.link) + '</div>' + (x.note ? '<div class="sub">' + esc(x.note) + '</div>' : '') +
+            '<div class="ac"><button class="g" data-itdone="' + x.id + '" aria-label="Tandai selesai">' + (x.done ? '&#9745; Selesai' : '&#9744; Selesai') + '</button>' +
+            (x.est && !itRec(P, x) ? '<button class="g" data-itkas="' + x.id + '">+ Kas</button>' : '') + '<button class="g" data-ited="' + x.id + '">Ubah</button><button class="g d" data-itdel="' + x.id + '">Hapus</button></div></div>' +
+            '<div class="co">' + (x.est ? amtTxt(P, x.est, x.fx) + (itRec(P, x) ? '<div class="sub">&#10003; di kas</div>' : '') : '') + '</div></div>'
+          );
+        }).join('') || '<div class="sub">Belum ada kegiatan.</div>') + '</div>'
+      );
+    }).join('') || '<div class="card"><div class="empty">Isi tanggal Mulai dan Selesai (tombol Ubah) atau tambah kegiatan bertanggal.</div></div>')
+  );
+}
+
+function tripBook(P) {
+  var E = bkEdit ? P.bk.filter(function (x) { return x.id === bkEdit; })[0] : null, pl = tripPlan(P),
+    form =
+      '<div class="card"><h2>' + (E ? 'Ubah pemesanan' : 'Tambah pemesanan') + '</h2><div class="kf"><div style="grid-column:1/-1"><label for="bkt">Nama (tiket, hotel, tour)</label><input id="bkt" maxlength="120" placeholder="mis. Tiket pesawat CGK-HND" value="' + (E ? esc(E.title) : '') +
+      '"></div><div><label for="bkc">Kategori</label><select id="bkc">' + opts(BCAT, E ? E.cat : 'Transport') + '</select></div><div><label for="bke">Jumlah</label>' + amtField(P, 'bke', 'bku', E ? E.amt : 0, E && E.fx) +
+      '</div><div><label for="bkm">Pembayaran</label><select id="bkm">' + opts([['on', 'Online'], ['cash', 'Cash'], ['ic', 'Kartu IC / e-money'], ['', 'Belum ditentukan']], E ? E.pay : 'on') +
+      '</select></div><div><label for="bka">Mulai / check-in</label><input id="bka" type="date" value="' + (E ? E.a : '') + '"></div><div><label for="bkb">Selesai / check-out</label><input id="bkb" type="date" value="' + (E ? E.b : '') +
+      '"></div><div style="grid-column:1/-1"><label for="bkl">Tautan</label><input id="bkl" inputmode="url" placeholder="https://..." value="' + (E ? esc(E.link) : '') + '"></div></div><div class="err" id="bker"></div><div class="row2"><button class="p" data-bks="1">' +
+      (E ? 'Simpan perubahan' : 'Tambah') + '</button>' + (E ? '<button data-bkx="1">Batal</button>' : '') + '</div></div>',
+    cats = BCAT.concat(P.bk.map(function (x) { return x.cat; })).filter(function (c, i, a) { return a.indexOf(c) === i; });
+  return (
+    '<div class="card"><h2>Ringkasan pemesanan</h2><div class="stats"><div><span>Total</span><b>' + rp(pl.b) + '</b></div><div><span>Sudah dibayar</span><b>' + rp(pl.paid) + '</b></div><div><span>Belum dibayar</span><b>' + rp(pl.b - pl.paid) + '</b></div></div></div>' +
+    form +
+    (cats.map(function (c) {
+      var L = P.bk.filter(function (x) { return x.cat === c; }), sum = 0;
+      if (!L.length) return '';
+      L.forEach(function (x) { sum += val(P, x.amt, x.fx); });
+      return (
+        '<div class="card"><div class="pgrp"><h2 style="margin:0">' + esc(c) + '</h2><b>' + rp(sum) + '</b></div>' +
+        L.map(function (x) {
+          return (
+            '<div class="itm" style="grid-template-columns:1fr auto"><div><div class="ttl">' + esc(x.title) + '</div><div>' + pchip(x.pay) + (x.a ? '<span class="sub">' + dShort(x.a) + (x.b ? ' – ' + dShort(x.b) : '') + '</span> ' : '') + lnk(x.link) +
+            '</div><div class="ac" style="justify-content:flex-start"><button class="g" data-bkpay="' + x.id + '">' + (x.paid ? '&#9745; Lunas' : '&#9744; Tandai lunas') + '</button><button class="g" data-bked="' + x.id + '">Ubah</button><button class="g d" data-bkdel="' + x.id + '">Hapus</button></div></div>' +
+            '<div class="co">' + amtTxt(P, x.amt, x.fx) + '</div></div>'
+          );
+        }).join('') + '</div>'
+      );
+    }).join('') || '<div class="card"><div class="empty">Belum ada pemesanan. Catat tiket pesawat, hotel, dan tour di sini.</div></div>')
+  );
+}
+
+function tripCek(P) {
+  var n = P.ck.filter(function (x) { return x.done; }).length;
+  return (
+    '<div class="card"><h2>Checklist barang bawaan</h2><div class="sub" style="margin-bottom:8px">' + n + ' dari ' + P.ck.length + ' siap</div>' +
+    (P.ck.length ? bar(n, P.ck.length).replace('var(--wr)', 'var(--ac)') : '') +
+    '<div class="row2" style="margin:10px 0"><input id="ckn" maxlength="60" placeholder="mis. Topi, Sunscreen"><button class="p" data-cka="1">Tambah</button></div>' +
+    (P.ck.map(function (x) {
+      return '<div class="it2"><div><button class="g" data-cktog="' + x.id + '">' + (x.done ? '&#9745;' : '&#9744;') + '</button><span' + (x.done ? ' style="text-decoration:line-through;opacity:.6"' : '') + '>' + esc(x.text) + '</span></div><div><button class="g d" data-ckdel="' + x.id + '">Hapus</button></div></div>';
+    }).join('') || '<div class="sub">Belum ada barang.</div>') +
+    (P.ck.length ? '' : '<div class="row2"><button data-ckstd="1">Isi daftar standar</button></div>') + '</div>'
+  );
+}
+
+function tripCat(P) {
+  return (
+    '<div class="card"><h2>Tautan berguna</h2><div class="sub" style="margin-bottom:8px">Video panduan, situs tiket, peta, dan lainnya.</div><div class="kf"><div><input id="lkt" maxlength="80" placeholder="Judul, mis. Cara bayar bus pakai IC card"></div><div><input id="lku" inputmode="url" placeholder="https://..."></div></div>' +
+    '<div class="err" id="lker"></div><div class="row2" style="margin-bottom:8px"><button class="p" data-lka="1">Tambah</button></div>' +
+    P.lk.map(function (x) { return '<div class="it2"><div>' + esc(x.title) + '</div><div>' + lnk(x.url) + '<button class="g d" data-lkdel="' + x.id + '">Hapus</button></div></div>'; }).join('') + '</div>' +
+    '<div class="card"><h2>Catatan penting</h2><div class="sub" style="margin-bottom:8px">Kode booking, alamat, kontak darurat. Tersimpan otomatis.</div><textarea id="tnote" maxlength="2000" placeholder="mis. Hotel: ... Kode booking: ...">' + esc(P.note) + '</textarea></div>'
+  );
+}
+
+function renderTrip() {
+  var el = $('v-trip');
+  if (mode !== 'trip') {
+    el.innerHTML = '';
+    return;
+  }
+  var P = tp();
+  if (!P) {
+    el.innerHTML = tripList();
+    return;
+  }
+  var tabs = [['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['kas', 'Kas'], ['cek', 'Checklist'], ['cat', 'Catatan']];
+  el.innerHTML =
+    '<div class="kp"><button class="g" data-tback="1">&larr; Semua perjalanan</button><button class="g" data-ted="1">Ubah</button><button class="g d" data-tdel="1">Hapus</button></div><h2 style="margin:0 0 2px">' + esc(P.name) + '</h2><div class="sub" style="margin-bottom:12px">' +
+    (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) : 'Tanggal belum diisi') + (P.cur && P.rate ? ' · 1 ' + P.cur + ' = ' + rp(P.rate) : '') + '</div><div class="kt" style="flex-wrap:wrap;margin-bottom:14px">' +
+    tabs.map(function (t) { return '<button type="button" class="yp' + (tripTab === t[0] ? ' on' : '') + '" data-tt="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
+    (tripTab === 'itin' ? tripItin(P) : tripTab === 'book' ? tripBook(P) : tripTab === 'cek' ? tripCek(P) : tripTab === 'cat' ? tripCat(P) : tripTab === 'kas' ? '<div id="v-tcash"></div>' : tripRing(P));
+}
+
+/** Tampilan sesuai mode: Rencana (tab + kontrol tahun) atau Perjalanan (lembar sendiri). */
+function modeUi() {
+  var T = mode === 'trip';
+  document.querySelectorAll('#mdbar [data-md]').forEach(function (b) {
+    b.classList.toggle('on', b.dataset.md === mode);
+  });
+  $('v-trip').hidden = !T;
+  document.querySelector('nav').style.display = T ? 'none' : '';
+  ['year', 'sm', 'saldo'].forEach(function (id) {
+    $(id).parentNode.style.display = T ? 'none' : '';
+  });
+  $('rem').style.display = T ? 'none' : '';
+  document.querySelector('h1').textContent = T ? 'Perjalanan' : 'Rencana Keuangan';
+  if (T) {
+    ['rincian', 'jadwal', 'item', 'kas'].forEach(function (x) {
+      $('v-' + x).hidden = true;
+    });
+    $('yb').style.display = 'none';
+  } else tab(curTab);
+}
+
+function kasOpenPm(m) {
+  var P = m === 'new' ? null : tp();
+  kpMode = m;
+  $('kpt').textContent = P ? 'Ubah perjalanan' : 'Perjalanan baru';
+  $('kpn').value = P ? P.name : '';
+  $('kpa').value = P ? P.start : '';
+  $('kpb').value = P ? P.end : '';
+  $('kpg').value = P && P.budget ? P.budget.toLocaleString('id-ID') : '';
+  $('kps').value = P && P.saldo ? P.saldo.toLocaleString('id-ID') : '';
+  $('kpu').value = P ? P.cur : '';
+  $('kpk').value = P && P.rate ? P.rate : '';
+  $('kpe').textContent = '';
+  $('kpm').hidden = false;
+  $('kpn').focus();
+}
+
+function kasSavePm() {
+  var n = $('kpn').value.trim().slice(0, 30),
+    a = $('kpa').value,
+    b = $('kpb').value,
+    cu = $('kpu').value.trim().toUpperCase(),
+    rt = parseFloat($('kpk').value) || 0,
+    err = function (t) {
+      $('kpe').textContent = t;
+    };
+  if (!n) return err('Nama perjalanan belum diisi.');
+  if (a && b && b < a) return err('Tanggal selesai harus sama atau sesudah tanggal mulai.');
+  if (cu && !/^[A-Z]{3}$/.test(cu)) return err('Mata uang terdiri dari 3 huruf, mis. JPY.');
+  if (cu && !(rt > 0)) return err('Isi kurs: berapa rupiah untuk 1 ' + cu + '.');
+  var dup = trips().some(function (x) {
+    return x.name.toLowerCase() === n.toLowerCase() && !(kpMode === 'edit' && x.id === tripAct);
+  });
+  if (dup) return err('Nama perjalanan sudah dipakai.');
+  var bg = parseRp($('kpg').value) || 0,
+    sd = parseRp($('kps').value) || 0,
+    P;
+  if (kpMode === 'new') {
+    var id = 'p' + Date.now().toString(36);
+    P = ALL.kas.pr[id] = { id: id, name: n, saldo: 0, link: false, start: '', end: '', budget: 0, cur: '', rate: 0, dt: {}, tx: [], it: [], bk: [], lk: [], ck: [], note: '' };
+    tripAct = id;
+    tripTab = 'ring';
+    remember('rk-trip', id);
+  } else P = tp();
+  P.name = n;
+  P.start = a;
+  P.end = b;
+  P.budget = bg;
+  P.saldo = sd;
+  P.cur = cu;
+  P.rate = cu ? rt : 0;
+  save();
+  $('kpm').hidden = true;
+  renderAll();
+}
+
+function itSave() {
+  var P = tp(), d = $('itd').value, pl = $('itp').value.trim(), l = $('itl').value.trim(), err = function (t) { $('iter').textContent = t; };
+  if (!ISO_RE.test(d)) return err('Pilih tanggal.');
+  if (!pl) return err('Isi nama kegiatan.');
+  if (l && !okUrl(l)) return err('Tautan harus diawali http:// atau https://');
+  var o = { day: d, time: $('itt').value || '', time2: $('itt2').value || '', place: pl.slice(0, 120), cat: $('itk').value, est: parseRp($('ite').value) || 0, fx: !!$('itu') && $('itu').value === 'fx', pay: $('itm').value, link: l, note: $('itn').value.trim().slice(0, 200) };
+  if (itEdit)
+    P.it = P.it.map(function (x) { return x.id === itEdit ? Object.assign({}, x, o) : x; });
+  else P.it.push(Object.assign({ id: kid('i'), done: false, rec: '' }, o));
+  itEdit = null;
+  save();
+  renderTrip();
+}
+function bkSave() {
+  var P = tp(), t = $('bkt').value.trim(), l = $('bkl').value.trim(), a = $('bka').value, b = $('bkb').value, err = function (m) { $('bker').textContent = m; };
+  if (!t) return err('Isi nama pemesanan.');
+  if (l && !okUrl(l)) return err('Tautan harus diawali http:// atau https://');
+  if (a && b && b < a) return err('Tanggal selesai harus sama atau sesudah tanggal mulai.');
+  var o = { title: t.slice(0, 120), cat: $('bkc').value, amt: parseRp($('bke').value) || 0, fx: !!$('bku') && $('bku').value === 'fx', pay: $('bkm').value, link: l, a: a, b: b };
+  if (bkEdit)
+    P.bk = P.bk.map(function (x) { return x.id === bkEdit ? Object.assign({}, x, o) : x; });
+  else P.bk.push(Object.assign({ id: kid('b'), paid: false, rec: '' }, o));
+  bkEdit = null;
+  save();
+  renderTrip();
+}
+/** Tandai lunas = mencatat pengeluaran di kas perjalanan; batal lunas = menghapus catatan itu. */
+function bkPay(id) {
+  var P = tp(), x = P.bk.filter(function (b) { return b.id === id; })[0];
+  if (x.paid) {
+    P.tx = P.tx.filter(function (t) { return t.id !== x.rec; });
+    x.paid = false;
+    x.rec = '';
+  } else {
+    var t = { id: kid('t'), d: x.a || todayISO(), t: '-', amt: Math.round(val(P, x.amt, x.fx)), cat: x.cat, note: x.title.slice(0, 80) };
+    if (t.amt > 0) P.tx.push(t);
+    x.paid = true;
+    x.rec = t.id;
+  }
+  save();
+  renderTrip();
+}
+function itFind(id) {
+  return tp().it.filter(function (x) { return x.id === id; })[0];
+}
+function tripTransfer() {
+  var a = parseRp($('trf').value), P = tp(), U = kasLinked(), d = todayISO();
+  if (!(a > 0)) {
+    $('trfe').textContent = 'Isi jumlah yang valid. Contoh: 3jt atau 3.000.000.';
+    return;
+  }
+  var sn = snap('Sebelum memindahkan dana ke ' + P.name);
+  P.tx.push({ id: kid('t'), d: d, t: '+', amt: a, cat: 'Dana dari Rencana', note: 'Diambil dari saldo Rencana' });
+  U.tx.push({ id: kid('t'), d: d, t: '-', amt: a, cat: 'Dana perjalanan', note: 'Perjalanan: ' + P.name });
+  save();
+  renderAll();
+  toast(rp(a) + ' dipindahkan ke perjalanan ini.', function () {
+    restoreSnap(sn.t);
+  });
+}
+function tripDelete(b) {
+  if (!b.dataset.arm) {
+    b.dataset.arm = 1;
+    b.textContent = 'Yakin hapus?';
+    setTimeout(function () {
+      if (b.isConnected) {
+        b.dataset.arm = '';
+        b.textContent = 'Hapus';
+      }
+    }, 3000);
+    return;
+  }
+  var sn = snap('Sebelum menghapus perjalanan ' + tp().name);
+  delete ALL.kas.pr[tripAct];
+  tripAct = '';
+  save();
+  renderAll();
+  toast('Perjalanan dihapus.', function () {
+    restoreSnap(sn.t);
+  });
+}
+/** Hapus satu elemen dari daftar perjalanan (kunci k) dengan opsi urungkan. */
+function tripRemove(k, id, msg) {
+  var P = tp(), sn = snap('Sebelum menghapus ' + msg);
+  P[k] = P[k].filter(function (x) { return x.id !== id; });
+  save();
+  renderTrip();
+  toast(msg + ' dihapus.', function () { restoreSnap(sn.t); });
+}
+
+function bindTrip() {
+  var kasClick = $('v-kas').onclick,
+    kasChange = $('v-kas').onchange,
+    V = $('v-trip');
+  $('mdbar').onclick = function (e) {
+    var b = e.target.closest('[data-md]');
+    if (b) setMode(b.dataset.md);
+  };
+  V.onclick = function (e) {
+    if (e.target.closest('#v-tcash')) return kasClick(e);
+    var b = e.target.closest('button,[data-trip]');
+    if (!b) return;
+    var d = b.dataset, P = tp(), x, v;
+    if (d.trip) setTrip(d.trip);
+    else if (d.tnew) kasOpenPm('new');
+    else if (d.tback) setTrip('');
+    else if (d.ted) kasOpenPm('edit');
+    else if (d.tdel) tripDelete(b);
+    else if (d.tt) {
+      tripTab = d.tt;
+      itEdit = bkEdit = null;
+      renderTrip();
+      renderKas();
+    } else if (d.trf) tripTransfer();
+    else if (d.its) itSave();
+    else if (d.itx) {
+      itEdit = null;
+      renderTrip();
+    } else if (d.ited) {
+      itEdit = d.ited;
+      renderTrip();
+      $('itp').scrollIntoView({ block: 'center' });
+    } else if (d.itdel) tripRemove('it', d.itdel, 'Kegiatan');
+    else if (d.itdone) {
+      x = itFind(d.itdone);
+      x.done = !x.done;
+      save();
+      renderTrip();
+    } else if (d.itkas) {
+      x = itFind(d.itkas);
+      v = { id: kid('t'), d: x.day, t: '-', amt: Math.round(val(P, x.est, x.fx)), cat: x.cat || 'Itinerary', note: ((x.fx ? fxs(P, x.est) + ' · ' : '') + x.place).slice(0, 80) };
+      P.tx.push(v);
+      x.rec = v.id;
+      x.done = true;
+      save();
+      renderTrip();
+      toast('Dicatat ke kas perjalanan.');
+    } else if (d.bks) bkSave();
+    else if (d.bkx) {
+      bkEdit = null;
+      renderTrip();
+    } else if (d.bked) {
+      bkEdit = d.bked;
+      renderTrip();
+      $('bkt').scrollIntoView({ block: 'center' });
+    } else if (d.bkdel) tripRemove('bk', d.bkdel, 'Pemesanan');
+    else if (d.bkpay) bkPay(d.bkpay);
+    else if (d.lka) {
+      v = $('lku').value.trim();
+      if (!$('lkt').value.trim() || !okUrl(v)) {
+        $('lker').textContent = 'Isi judul dan tautan yang diawali http:// atau https://';
+        return;
+      }
+      P.lk.push({ id: kid('l'), title: $('lkt').value.trim().slice(0, 80), url: v.slice(0, 400) });
+      save();
+      renderTrip();
+    } else if (d.lkdel) tripRemove('lk', d.lkdel, 'Tautan');
+    else if (d.cka) {
+      v = $('ckn').value.trim();
+      if (v) {
+        P.ck.push({ id: kid('c'), text: v.slice(0, 60), done: false });
+        save();
+        renderTrip();
+        $('ckn').focus();
+      }
+    } else if (d.ckstd) {
+      CK_STD.forEach(function (tx) { P.ck.push({ id: kid('c'), text: tx, done: false }); });
+      save();
+      renderTrip();
+    } else if (d.cktog) {
+      P.ck.forEach(function (c) { if (c.id === d.cktog) c.done = !c.done; });
+      save();
+      renderTrip();
+    } else if (d.ckdel) P.ck = P.ck.filter(function (c) { return c.id !== d.ckdel; }), save(), renderTrip();
+  };
+  V.onchange = function (e) {
+    if (e.target.closest('#v-tcash')) return kasChange(e);
+    if (e.target.dataset.dt) {
+      var P = tp(), t = e.target.value.trim().slice(0, 60);
+      if (t) P.dt[e.target.dataset.dt] = t;
+      else delete P.dt[e.target.dataset.dt];
+      save();
+    }
+  };
+  V.addEventListener('input', function (e) {
+    var id = e.target.id;
+    if (id === 'ka' || id === 'ite' || id === 'bke' || id === 'trf') fmtLive(e.target);
+    if (id === 'tnote') {
+      tp().note = e.target.value.slice(0, 2000);
+      clearTimeout(noteTimer);
+      noteTimer = setTimeout(save, 600);
+    }
+  });
+  V.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.id === 'ckn') {
+      e.preventDefault();
+      V.querySelector('[data-cka]').click();
+    }
+  });
+  $('kpg').addEventListener('input', function () {
+    fmtLive(this);
+  });
 }
 
 /* ===== js/app.js ===== */
@@ -5847,6 +6455,7 @@ function main() {
   bindSkipRange();
   bindUi();
   bindKas();
+  bindTrip();
   resetForm();
   renderAll();
   save();
