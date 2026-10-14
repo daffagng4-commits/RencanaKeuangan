@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rencana Keuangan</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('rk-theme');
+    if (/^(light|dark|bw|bwd)$/.test(t || '')) document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
 <style>
 :root {
   --bg: #eef1ed;
@@ -872,10 +880,41 @@ nav {
 .kf { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
 .kin { color: var(--ac); }
 .kch { width: 100%; height: 130px; display: block; }
+
+/* ===== Tema hitam-putih & panduan ===== */
+:root[data-theme="bw"] {
+  --bg: #ffffff; --sf: #ffffff; --ink: #000000; --mut: #555555; --ln: #a8a8a8;
+  --ac: #000000; --acs: #ececec; --wr: #000000; --wrs: #e2e2e2; --bl: #222222; --bls: #f0f0f0;
+}
+:root[data-theme="bwd"] {
+  --bg: #000000; --sf: #0e0e0e; --ink: #ffffff; --mut: #a6a6a6; --ln: #444444;
+  --ac: #ffffff; --acs: #262626; --wr: #ffffff; --wrs: #2c2c2c; --bl: #dddddd; --bls: #1e1e1e;
+}
+:root[data-theme="bw"], :root[data-theme="bwd"] { filter: grayscale(1); }
+:root[data-theme="bw"] button.p { color: #fff; }
+:root[data-theme="bwd"] button.p { color: #000; }
+.gdb { margin: 0 0 8px; }
+button.gdt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 7px 14px;
+  margin-bottom: 8px;
+  border: 1.5px solid var(--ac);
+  border-radius: 999px;
+  background: var(--acs);
+  color: var(--ink);
+  cursor: pointer;
+}
+button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--ln); }
+.gdc[hidden] { display: none; }
 </style>
 </head>
 <body>
 <div class="w">
+<div style="display:flex;justify-content:flex-end;margin:0 0 8px"><button type="button" id="thm" title="Ketuk untuk ganti tema">◐ Tema: Otomatis</button></div>
 <header>
   <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r16 · 13 Okt 2026</div><div class="sub" id="sbs"></div></div>
   <div class="ctl">
@@ -884,11 +923,12 @@ nav {
     <button id="lgb">Masuk</button><button id="bk">Impor / Ekspor</button>
   </div>
 </header>
+<div class="kp" id="pbar"></div>
 <nav role="tablist">
+  <button role="tab" data-t="kas" aria-selected="false">Catatan Kas</button>
   <button role="tab" data-t="rincian" aria-selected="true">Rincian Bulanan</button>
   <button role="tab" data-t="jadwal" aria-selected="false">Jadwal Bayar</button>
   <button role="tab" data-t="item" aria-selected="false">Kelola Item</button>
-  <button role="tab" data-t="kas" aria-selected="false">Catatan Kas</button>
 </nav>
 
 <div class="yb" id="yb"></div>
@@ -919,7 +959,8 @@ nav {
 
 <div class="modal" id="kpm" hidden><div class="card"><h2 id="kpt">Profil baru</h2>
 <label for="kpn">Nama profil</label><input id="kpn" maxlength="30" placeholder="mis. Liburan Bali">
-<div style="margin-top:12px"><label for="kps">Saldo awal (Rp)</label><input id="kps" inputmode="numeric" placeholder="3.000.000"></div>
+<div style="margin-top:12px"><label for="kpl">Gabung dengan Rencana Keuangan?</label><select id="kpl"><option value="0">Tidak (catatan kas berdiri sendiri)</option><option value="1">Ya (menyatu dengan Rincian Bulanan)</option></select><div class="sub" style="margin-top:4px">Hanya satu profil yang bisa tergabung. Memilih Ya memindahkan Rencana ke profil ini, dan Tahun / Bulan saldo / Saldo awal muncul di sini.</div></div>
+<div style="margin-top:12px" id="kpsw"><label for="kps">Saldo awal (Rp)</label><input id="kps" inputmode="numeric" placeholder="3.000.000"></div>
 <div class="err" id="kpe"></div><div class="row2"><button class="p" id="kpsv">Simpan</button><button id="kpc">Tutup</button></div></div></div>
 <div class="modal" id="am" hidden><div class="card"><h2>Tambah / kurangi saldo</h2><p class="sub" id="ami"></p>
 <div class="sc" id="atp" style="grid-template-columns:1fr 1fr"><button type="button" data-t="+" class="on"><b>Tambah saldo</b><span>Pemasukan, gaji, top up</span></button><button type="button" data-t="-"><b>Kurangi saldo</b><span>Penarikan, koreksi</span></button></div>
@@ -983,7 +1024,7 @@ nav {
 <div class="row2"><button id="pbk2" hidden>&larr; Kembali</button><button class="p" id="pps" hidden>Simpan perubahan</button><button id="pcl">Tutup</button></div>
 <div class="h3">Perubahan yang sudah ada</div><div id="phl"></div></div></div>
 <div class="modal" id="m" hidden><div class="card">
-  <h2>Impor &amp; Ekspor data</h2><div class="h3">Ekspor</div><div id="exb"><div class="xr"><button class="p" data-ex="json">Cadangan lengkap (.json)</button><span class="sub"><span class="chip">Bisa diimpor</span> Semua tahun, item, saldo, dan status lunas. Untuk pindah perangkat atau memulihkan data.</span></div><div class="xr"><button data-ex="items">Item tahun ini (.csv)</button><span class="sub"><span class="chip">Bisa diimpor</span> Daftar item tahun yang aktif (nama, harga, tiap berapa, mulai). Bisa diedit di Excel.</span></div><div class="xr"><button data-ex="hist">Riwayat pembayaran (.csv)</button><span class="sub"><span class="chip n">Hanya laporan</span> Satu baris per tagihan: tanggal, item, jumlah, status Lunas/Belum.</span></div><div class="xr"><button data-ex="bulan">Rincian bulanan (.csv)</button><span class="sub"><span class="chip n">Hanya laporan</span> Saldo awal, pengeluaran, dan saldo akhir tiap bulan.</span></div></div><div class="h3">Impor</div><div class="row2" style="margin-top:0"><input type="file" id="fi" accept=".json,.csv,text/csv,application/json" style="flex:1;min-width:200px"><select id="im" style="width:auto"><option value="merge">Gabungkan dengan data sekarang</option><option value="replace">Timpa (hapus data sekarang)</option></select></div><div class="sub" style="margin-top:6px"><b>.json</b> = hasil Cadangan lengkap. <b>.csv</b> = hasil Item tahun ini (kolom: Nama; Harga; Tiap; Satuan; Mulai), hanya untuk tahun yang sedang aktif. CSV Riwayat pembayaran dan Rincian bulanan tidak bisa diimpor.<br><b>Gabungkan</b>: menambah yang belum ada, aman diulang. <b>Timpa</b>: mengganti data sekarang (JSON: semua tahun, CSV: item tahun aktif).</div><div class="err" id="xm"></div><div class="h3">Cadangan otomatis (5 terakhir)</div><div id="sl"></div><div class="h3">Cek sistem</div><div class="row2" style="margin-top:0"><button id="dgb">Jalankan cek sistem</button><button id="dgd">Tes unduh file</button></div><div id="dgr"></div><details id="dt"><summary class="sub" style="cursor:pointer">Cara teks (salin / tempel)</summary>
+  <h2>Impor &amp; Ekspor data</h2><div class="h3">Ekspor</div><div id="exb"><div class="xr"><button class="p" data-ex="json">Cadangan lengkap (.json)</button><span class="sub"><span class="chip">Bisa diimpor</span> Semua tahun, item, saldo, dan status lunas. Untuk pindah perangkat atau memulihkan data.</span></div><div class="xr"><button data-ex="items">Item tahun ini (.csv)</button><span class="sub"><span class="chip">Bisa diimpor</span> Daftar item tahun yang aktif (nama, harga, tiap berapa, mulai). Bisa diedit di Excel.</span></div><div class="xr"><button data-ex="hist">Riwayat pembayaran (.csv)</button><span class="sub"><span class="chip n">Hanya laporan</span> Satu baris per tagihan: tanggal, item, jumlah, status Lunas/Belum.</span></div><div class="xr"><button data-ex="bulan">Rincian bulanan (.csv)</button><span class="sub"><span class="chip n">Hanya laporan</span> Saldo awal, pengeluaran, dan saldo akhir tiap bulan.</span></div></div><div class="h3">Impor</div><div class="row2" style="margin-top:0"><input type="file" id="fi" accept=".json,.csv,text/csv,application/json" style="flex:1;min-width:200px"><select id="im" style="width:auto"><option value="merge">Gabungkan dengan data sekarang</option><option value="replace">Timpa (hapus data sekarang)</option></select></div><div class="gdb"><button type="button" class="g gdt" data-gd="impor"></button><div class="gdc"><div class="sub" style="margin-top:6px"><b>.json</b> = hasil Cadangan lengkap. <b>.csv</b> = hasil Item tahun ini (kolom: Nama; Harga; Tiap; Satuan; Mulai), hanya untuk tahun yang sedang aktif. CSV Riwayat pembayaran dan Rincian bulanan tidak bisa diimpor.<br><b>Gabungkan</b>: menambah yang belum ada, aman diulang. <b>Timpa</b>: mengganti data sekarang (JSON: semua tahun, CSV: item tahun aktif).</div></div></div><div class="err" id="xm"></div><div class="h3">Cadangan otomatis (5 terakhir)</div><div id="sl"></div><div class="h3">Cek sistem</div><div class="row2" style="margin-top:0"><button id="dgb">Jalankan cek sistem</button><button id="dgd">Tes unduh file</button></div><div id="dgr"></div><details id="dt"><summary class="sub" style="cursor:pointer">Cara teks (salin / tempel)</summary>
   <p class="sub">Data tersimpan otomatis di browser ini. Salin teks di bawah untuk cadangan, atau tempel cadangan lama lalu tekan Muat.</p>
   <textarea id="ta" spellcheck="false"></textarea>
   <div class="err" id="merr"></div>
@@ -1359,6 +1400,7 @@ function normKas(k) {
         id: id,
         name: String(p.name || 'Profil').slice(0, 30),
         saldo: +p.saldo || 0,
+        link: !!p.link,
         tx: (Array.isArray(p.tx) ? p.tx : [])
           .filter(function (x) {
             return x && +x.amt > 0 && (x.t === '+' || x.t === '-') && ISO_RE.test(x.d);
@@ -1368,7 +1410,16 @@ function normKas(k) {
           }),
       };
     });
-  if (!Object.keys(pr).length) pr.utama = { id: 'utama', name: 'Utama', saldo: 0, tx: [] };
+  if (!Object.keys(pr).length) pr.utama = { id: 'utama', name: 'Utama', saldo: 0, tx: [], link: true };
+  var ids = Object.keys(pr),
+    lk = null;
+  ids.forEach(function (id) {
+    if (pr[id].link) {
+      if (lk) pr[id].link = false;
+      else lk = id;
+    }
+  });
+  if (!lk) pr[pr.utama ? 'utama' : ids[0]].link = true;
   return { pr: pr };
 }
 
@@ -1544,6 +1595,7 @@ function mergeAll(inc) {
     var sp = n.kas.pr[id],
       dp = ALL.kas.pr[id];
     if (!dp) {
+      sp.link = false;
       ALL.kas.pr[id] = sp;
       return;
     }
@@ -1836,6 +1888,19 @@ function calc() {
       }
     });
   });
+
+  var KL = kasLinked();
+  if (KL)
+    KL.tx.forEach(function (x) {
+      if (+x.d.slice(0, 4) !== y) return;
+      var mm = +x.d.slice(5, 7) - 1,
+        v = x.t === '-' ? -x.amt : x.amt;
+      if (mm <= sm) adjIn += v;
+      else {
+        adjLate += v;
+        adjM[mm] += v;
+      }
+    });
 
   var bal = (+S.saldo || 0) + adjIn,
     open = bal,
@@ -2482,6 +2547,11 @@ var LEGEND_HTML =
   '<span><button class="pd skp" type="button" tabindex="-1" disabled>10</button>Dilewati (tidak dibayar, tidak dihitung)</span>' +
   '<span><b style="color:var(--mut)">0</b>Tidak ada tagihan bulan itu</span></div>';
 
+/** Kotak panduan yang bisa disembunyikan / ditampilkan (pilihan diingat per kotak). */
+function gdBox(key, html) {
+  return '<div class="gdb"><button type="button" class="g gdt" data-gd="' + key + '"></button><div class="gdc">' + html + '</div></div>';
+}
+
 /** Chip satu tanggal tagihan (tombol yang membuka menu status). */
 function chipHtml(it, t, today) {
   var d = isoD(t),
@@ -2623,12 +2693,14 @@ function renderJadwal() {
   var head =
     '<div class="card"><h2>Jadwal pembayaran ' +
     y +
-    '</h2><div class="sub" style="margin-bottom:8px">' +
-    'Klik tanggal untuk memilih: sudah dibayar, dilewati (tidak bayar), atau belum dibayar. ' +
-    'Pakai "Ubah harga / jadwal" untuk mengubah harga atau siklus mulai tanggal tertentu.' +
-    (S.startMonth ? ' Bulan sebelum ' + MON[S.startMonth] + ' tidak dihitung.' : '') +
-    '</div>' +
-    LEGEND_HTML +
+    '</h2>' +
+    (S.startMonth ? '<div class="sub" style="margin-bottom:8px">Bulan sebelum ' + MON[S.startMonth] + ' tidak dihitung.</div>' : '') +
+    gdBox(
+      'jadwal',
+      '<div class="sub" style="margin-bottom:8px">Klik tanggal untuk memilih: sudah dibayar, dilewati (tidak bayar), atau belum dibayar. ' +
+        'Pakai "Ubah harga / jadwal" untuk mengubah harga atau siklus mulai tanggal tertentu.</div>' +
+        LEGEND_HTML
+    ) +
     '<div class="tw"><table><thead><tr><th>Item</th><th>Biaya</th>' +
     MON.map(function (m) {
       return '<th>' + m + '</th>';
@@ -2654,6 +2726,7 @@ function renderJadwal() {
     rp(c.total) +
     '</td></tr></tbody></table></div></div>';
   $('v-jadwal').innerHTML = jadwalSummary(c) + head + rows + foot;
+  gdApply($('v-jadwal'));
 }
 
 /** Baris kecil di bawah nama item: ringkasan perubahan siklus. */
@@ -5420,6 +5493,58 @@ function bindSync() {
   };
 }
 
+/* ===== js/ui/theme.js ===== */
+/** Tombol tema: tiap diketuk berganti Otomatis > Terang > Gelap > Hitam-putih > Hitam-putih gelap. Diingat di perangkat. */
+function bindUi() {
+  var de = document.documentElement,
+    T = ['auto', 'light', 'dark', 'bw', 'bwd'],
+    N = { auto: 'Otomatis', light: 'Terang', dark: 'Gelap', bw: 'Hitam-putih', bwd: 'Hitam-putih gelap' },
+    btn = $('thm');
+  function cur() {
+    var t = de.getAttribute('data-theme');
+    return T.indexOf(t) > 0 ? t : 'auto';
+  }
+  function show() {
+    btn.textContent = '◐ Tema: ' + N[cur()];
+  }
+  btn.onclick = function () {
+    var n = T[(T.indexOf(cur()) + 1) % T.length];
+    if (n === 'auto') de.removeAttribute('data-theme');
+    else de.setAttribute('data-theme', n);
+    try {
+      localStorage.setItem('rk-theme', n);
+    } catch (x) {}
+    show();
+  };
+  show();
+  gdApply();
+  document.addEventListener('click', function (e) {
+    var g = e.target.closest('[data-gd]');
+    if (!g) return;
+    try {
+      localStorage.setItem('rk-gd-' + g.dataset.gd, g.nextElementSibling.hidden ? '1' : '0');
+    } catch (x) {}
+    gdApply(g.parentNode);
+  });
+}
+
+/** Panduan terbuka? Bila belum pernah dipilih: tampil di layar lebar, tersembunyi di HP. */
+function gdOpen(k) {
+  var v = null;
+  try {
+    v = localStorage.getItem('rk-gd-' + k);
+  } catch (e) {}
+  return v ? v === '1' : !matchMedia('(max-width:640px)').matches;
+}
+function gdApply(root) {
+  (root || document).querySelectorAll('[data-gd]').forEach(function (b) {
+    var o = gdOpen(b.dataset.gd);
+    b.nextElementSibling.hidden = !o;
+    b.setAttribute('aria-expanded', o);
+    b.textContent = o ? 'ⓘ Sembunyikan panduan  ▲' : 'ⓘ Tampilkan panduan  ▼';
+  });
+}
+
 /* ===== js/ui/kas.js ===== */
 /**
  * Tab Catatan Kas: pencatatan uang masuk/keluar per profil (mis. "Utama", "Liburan Bali"),
@@ -5474,7 +5599,7 @@ function kasPrevMonth(per) {
 
 /** Grafik garis saldo per tanggal transaksi pada periode terpilih. */
 function kasChart(asc) {
-  var bal = kas().saldo,
+  var bal = kasBase(kas()),
     pts = [];
   asc.forEach(function (x) {
     bal += x.t === '+' ? x.amt : -x.amt;
@@ -5514,15 +5639,71 @@ function kasChart(asc) {
   );
 }
 
+/** Profil yang tergabung dengan Rencana (selalu tepat satu). */
+function kasLinked() {
+  var pr = ALL.kas.pr;
+  for (var id in pr) if (pr[id].link) return pr[id];
+  return null;
+}
+/** Saldo awal profil: untuk profil tergabung memakai Saldo awal Rencana (satu angka yang sama). */
+function kasBase(P) {
+  return P.link ? +S.saldo || 0 : P.saldo;
+}
+/** Baris turunan (hanya baca) untuk profil tergabung: tagihan yang sudah lunas dan penyesuaian saldo tahun aktif. */
+function kasDerived() {
+  var y = +S.year,
+    out = [];
+  S.items.forEach(function (it) {
+    occ(it, y).forEach(function (t) {
+      var d = isoD(t),
+        k = it.id + '|' + d;
+      if (S.paid[k] && !S.skip[k])
+        out.push({ id: 'b' + k, d: d, t: '-', amt: priceAt(it, t), cat: it.cat || 'Tagihan', note: it.name + ' (lunas)', ro: 'tagihan' });
+    });
+  });
+  (S.adj || []).forEach(function (a) {
+    adjMonths(a).forEach(function (mm) {
+      var d =
+        mm == null && /^\d{4}-\d{2}-\d{2}/.test(a.at || '') && +a.at.slice(0, 4) === y
+          ? a.at.slice(0, 10)
+          : y + '-' + pad2((mm == null ? 0 : mm) + 1) + '-01';
+      out.push({ id: 'a' + a.id + d, d: d, t: a.t, amt: a.amt, cat: 'Penyesuaian saldo', note: a.note || '', ro: 'saldo' });
+    });
+  });
+  return out;
+}
+/** Semua baris yang tampil untuk profil P. */
+function kasRows(P) {
+  if (!P.link) return P.tx.slice();
+  return P.tx
+    .filter(function (x) {
+      return +x.d.slice(0, 4) === +S.year;
+    })
+    .concat(kasDerived());
+}
+/** Profil tergabung: tampilkan kontrol Tahun/Saldo dan tab Rencana. Profil terpisah: hanya Catatan Kas. */
+function kasLinkUi() {
+  var L = !!kas().link;
+  ['year', 'sm', 'saldo'].forEach(function (id) {
+    $(id).parentNode.style.display = L ? '' : 'none';
+  });
+  $('adjb').style.display = L ? '' : 'none';
+  $('rem').style.display = L ? '' : 'none';
+  ['rincian', 'jadwal', 'item'].forEach(function (t) {
+    document.querySelector('nav [data-t="' + t + '"]').style.display = L ? '' : 'none';
+  });
+  if (!L && $('v-kas').hidden) tab('kas');
+}
+
 /** Render seluruh tab Catatan Kas. */
 function renderKas() {
   var P = kas(),
     K = ALL.kas,
-    asc = P.tx.slice().sort(function (a, b) {
+    asc = kasRows(P).sort(function (a, b) {
       return a.d < b.d ? -1 : a.d > b.d ? 1 : 0;
     }),
     A = kasSum(asc, 'all'),
-    bal = P.saldo + A.i - A.o,
+    bal = kasBase(P) + A.i - A.o,
     mo = {};
   asc.forEach(function (x) {
     mo[x.d.slice(0, 7)] = 1;
@@ -5554,7 +5735,7 @@ function renderKas() {
     '<div class="kp">' +
     Object.keys(K.pr)
       .map(function (id) {
-        return '<button class="yp' + (id === P.id ? ' on' : '') + '" data-kp="' + id + '">' + esc(K.pr[id].name) + '</button>';
+        return '<button class="yp' + (id === P.id ? ' on' : '') + '" data-kp="' + id + '">' + esc(K.pr[id].name) + (K.pr[id].link ? ' &#8644;' : '') + '</button>';
       })
       .join('') +
     '<button class="g" data-kn="1">+ Profil baru</button><button class="g" data-ke="1">Ubah profil</button><button class="g d" data-kd="1">Hapus profil</button></div>';
@@ -5565,8 +5746,9 @@ function renderKas() {
     (bal < 0 ? ' neg' : '') +
     '">' +
     rp(bal) +
-    '</div><div class="sub">saldo awal ' +
-    rp(P.saldo) +
+    '</div><div class="sub">' +
+    (P.link ? 'saldo awal Rencana ' : 'saldo awal ') +
+    rp(kasBase(P)) +
     ' + masuk ' +
     rp(A.i) +
     ' &minus; keluar ' +
@@ -5673,17 +5855,23 @@ function renderKas() {
           (x.cat ? ' &middot; ' + esc(x.cat) : '') +
           '</span>' +
           (x.note ? '<br><span class="sub">' + esc(x.note) + '</span>' : '') +
-          '</div><div><button class="g" data-ked="' +
-          x.id +
-          '">Ubah</button><button class="g d" data-kdel="' +
-          x.id +
-          '">Hapus</button></div></div>'
+          '</div><div>' +
+          (x.ro
+            ? '<span class="sub">dari ' + (x.ro === 'tagihan' ? 'Jadwal Bayar' : 'Tambah/kurangi saldo') + '</span>'
+            : '<button class="g" data-ked="' + x.id + '">Ubah</button><button class="g d" data-kdel="' + x.id + '">Hapus</button>') +
+          '</div></div>'
         );
       })
       .join('') || '<div class="empty">Belum ada transaksi di periode ini.</div>') +
     (L.length > 200 ? '<div class="sub">+ ' + (L.length - 200) + ' lainnya. Pilih periode yang lebih sempit.</div>' : '') +
     '</div>';
-  $('v-kas').innerHTML = bar + hero + per + form + kasChart(asc) + catH + lst;
+  $('pbar').innerHTML = bar;
+  $('v-kas').innerHTML =
+    (P.link
+      ? '<div class="sub" style="margin-bottom:10px">&#8644; Tergabung dengan Rencana Keuangan tahun ' + S.year + '. Tagihan lunas dan penyesuaian saldo otomatis tercatat di sini; catatan masuk/keluar Anda memengaruhi Rincian Bulanan.</div>'
+      : '') +
+    hero + per + form + kasChart(asc) + catH + lst;
+  kasLinkUi();
 }
 
 function kasErr(t) {
@@ -5696,6 +5884,8 @@ function kasSave() {
     d = $('kd').value;
   if (a <= 0) return kasErr('Isi jumlah yang valid. Contoh: 50k atau 50.000.');
   if (!ISO_RE.test(d)) return kasErr('Pilih tanggal transaksi.');
+  if (kas().link && +d.slice(0, 4) !== +S.year)
+    return kasErr('Profil ini tergabung dengan Rencana tahun ' + S.year + '. Pilih tanggal di tahun itu, atau ganti Tahun di atas.');
   var P = kas(),
     o = {
       id: kasEdit || 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
@@ -5712,7 +5902,7 @@ function kasSave() {
   else P.tx.push(o);
   kasEdit = null;
   save();
-  renderKas();
+  renderAll();
   $('status').textContent += ' · transaksi disimpan';
 }
 
@@ -5724,7 +5914,7 @@ function kasDelTx(id) {
   });
   if (kasEdit === id) kasEdit = null;
   save();
-  renderKas();
+  renderAll();
   toast('Transaksi dihapus.', function () {
     restoreSnap(sn.t);
   });
@@ -5734,6 +5924,10 @@ function kasDelTx(id) {
 function kasDelProfile(b) {
   if (Object.keys(ALL.kas.pr).length < 2) {
     toast('Minimal harus ada satu profil.');
+    return;
+  }
+  if (kas().link) {
+    toast('Profil ini tergabung dengan Rencana. Pindahkan Rencana ke profil lain dulu (Ubah profil > Gabung: Ya di profil lain).');
     return;
   }
   if (!b.dataset.arm) {
@@ -5751,7 +5945,7 @@ function kasDelProfile(b) {
   delete ALL.kas.pr[kasAct];
   kasSet(Object.keys(ALL.kas.pr)[0]);
   save();
-  renderKas();
+  renderAll();
   toast('Profil dihapus.', function () {
     restoreSnap(sn.t);
   });
@@ -5764,6 +5958,8 @@ function kasOpenPm(m) {
   $('kpn').value = m === 'new' ? '' : P.name;
   $('kps').value = m === 'new' ? '' : P.saldo.toLocaleString('id-ID');
   $('kpe').textContent = '';
+  $('kpl').value = m === 'new' ? '0' : P.link ? '1' : '0';
+  $('kpsw').hidden = $('kpl').value === '1';
   $('kpm').hidden = false;
   $('kpn').focus();
 }
@@ -5775,6 +5971,11 @@ function kasSavePm() {
     $('kpe').textContent = 'Nama profil belum diisi.';
     return;
   }
+  var lk = $('kpl').value === '1';
+  if (kpMode === 'edit' && kas().link && !lk) {
+    $('kpe').textContent = 'Minimal satu profil harus tergabung dengan Rencana. Untuk memindahkannya, pilih Ya di profil lain.';
+    return;
+  }
   var dup = Object.keys(ALL.kas.pr).some(function (id) {
     return ALL.kas.pr[id].name.toLowerCase() === n.toLowerCase() && !(kpMode === 'edit' && id === kasAct);
   });
@@ -5782,23 +5983,28 @@ function kasSavePm() {
     $('kpe').textContent = 'Nama profil sudah dipakai.';
     return;
   }
+  if (lk)
+    Object.keys(ALL.kas.pr).forEach(function (i) {
+      ALL.kas.pr[i].link = false;
+    });
   if (kpMode === 'new') {
     var id = 'p' + Date.now().toString(36);
-    ALL.kas.pr[id] = { id: id, name: n, saldo: s, tx: [] };
+    ALL.kas.pr[id] = { id: id, name: n, saldo: s, tx: [], link: lk };
     kasSet(id);
   } else {
     var P = kas();
     P.name = n;
-    P.saldo = s;
+    if (!lk) P.saldo = s;
+    P.link = lk;
   }
   save();
   $('kpm').hidden = true;
-  renderKas();
+  renderAll();
 }
 
 /** Pasang event listener tab ini. */
 function bindKas() {
-  $('v-kas').onclick = function (e) {
+  $('pbar').onclick = $('v-kas').onclick = function (e) {
     var b = e.target.closest('button');
     if (!b) return;
     var d = b.dataset;
@@ -5836,6 +6042,9 @@ function bindKas() {
     fmtLive(this);
   });
   $('kpsv').onclick = kasSavePm;
+  $('kpl').onchange = function () {
+    $('kpsw').hidden = this.value === '1';
+  };
   $('kpc').onclick = function () {
     $('kpm').hidden = true;
   };
@@ -5860,6 +6069,7 @@ function main() {
   bindDiag();
   bindReminders();
   bindSkipRange();
+  bindUi();
   bindKas();
   resetForm();
   renderAll();
