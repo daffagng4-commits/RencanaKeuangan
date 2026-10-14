@@ -737,9 +737,6 @@ nav {
     padding: 6px 8px;
     font-size: 13px;
   }
-  #adjb {
-    flex: 2 1 48%;
-  }
   .yb > .sub:last-child {
     display: none;
   }
@@ -919,7 +916,7 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
   <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r16 · 13 Okt 2026</div><div class="sub" id="sbs"></div></div>
   <div class="ctl">
     <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
-    <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub" id="adjs" style="margin-top:4px"></div></div><button id="adjb">&plusmn; Tambah / kurangi saldo</button>
+    <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub" id="adjs" style="margin-top:4px"></div></div>
     <button id="lgb">Masuk</button><button id="bk">Impor / Ekspor</button>
   </div>
 </header>
@@ -962,16 +959,6 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 <div style="margin-top:12px"><label for="kpl">Gabung dengan Rencana Keuangan?</label><select id="kpl"><option value="0">Tidak (catatan kas berdiri sendiri)</option><option value="1">Ya (menyatu dengan Rincian Bulanan)</option></select><div class="sub" style="margin-top:4px">Hanya satu profil yang bisa tergabung. Memilih Ya memindahkan Rencana ke profil ini, dan Tahun / Bulan saldo / Saldo awal muncul di sini.</div></div>
 <div style="margin-top:12px" id="kpsw"><label for="kps">Saldo awal (Rp)</label><input id="kps" inputmode="numeric" placeholder="3.000.000"></div>
 <div class="err" id="kpe"></div><div class="row2"><button class="p" id="kpsv">Simpan</button><button id="kpc">Tutup</button></div></div></div>
-<div class="modal" id="am" hidden><div class="card"><h2>Tambah / kurangi saldo</h2><p class="sub" id="ami"></p>
-<div class="sc" id="atp" style="grid-template-columns:1fr 1fr"><button type="button" data-t="+" class="on"><b>Tambah saldo</b><span>Pemasukan, gaji, top up</span></button><button type="button" data-t="-"><b>Kurangi saldo</b><span>Penarikan, koreksi</span></button></div>
-<div style="margin-top:12px"><label for="aa">Jumlah</label><input id="aa" inputmode="numeric" placeholder="500k atau 500.000"></div>
-<div style="margin-top:12px"><label for="an">Catatan (opsional)</label><input id="an" maxlength="60" placeholder="mis. Gaji Oktober"></div>
-<div class="g2" style="margin-top:12px"><div><label for="aw">Berlaku</label><select id="aw"><option value="open">Gabung ke saldo awal</option><option value="month">Mulai bulan tertentu</option></select></div><div id="amw" hidden><label for="amo">Mulai bulan</label><select id="amo"></select></div></div>
-<div style="margin-top:12px"><label for="ar">Ulangi (opsional)</label><select id="ar"><option value="0">Tidak berulang</option><option value="1">Tiap bulan</option><option value="2">Tiap 2 bulan</option><option value="3">Tiap 3 bulan</option><option value="6">Tiap 6 bulan</option><option value="12">Tiap tahun</option></select></div>
-<div id="arw" style="margin-top:12px" hidden><label for="arn">Berhenti setelah berapa kali (kosongkan jika tidak berhenti)</label><input id="arn" type="number" min="1" placeholder="mis. 12"></div>
-<div class="prev" id="apv" style="margin-top:12px"></div><div class="err" id="aer"></div>
-<div class="row2"><button class="p" id="aps">Simpan</button><button id="acl">Tutup</button></div>
-<div class="h3">Riwayat penyesuaian</div><div id="ahl"></div></div></div>
 <div class="modal" id="cf" hidden><div class="card"><h2>Data berbeda di cloud dan di perangkat ini</h2>
 <p class="sub">Pilih data yang dipakai. Data yang tidak dipilih disimpan sebagai cadangan otomatis, jadi masih bisa dipulihkan.</p>
 <div class="g2"><div class="cfc" id="cf-l"></div><div class="cfc" id="cf-r"></div></div>
@@ -1387,6 +1374,30 @@ function norm(a) {
       .map(normAdj);
   });
   a.kas = normKas(a.kas);
+  // Penyesuaian saldo lama dipindah menjadi catatan kas profil tergabung (id tetap, jadi aman digabung/sinkron).
+  var KLm = null;
+  Object.keys(a.kas.pr).forEach(function (id) {
+    if (a.kas.pr[id].link) KLm = a.kas.pr[id];
+  });
+  Object.keys(a.data).forEach(function (yk) {
+    var Y = a.data[yk];
+    (Y.adj || []).forEach(function (ad) {
+      adjMonths(ad).forEach(function (mm) {
+        var d =
+          mm == null && /^\d{4}-\d{2}-\d{2}/.test(ad.at || '') && +ad.at.slice(0, 4) === +yk
+            ? ad.at.slice(0, 10)
+            : yk + '-' + pad2((mm == null ? 0 : mm) + 1) + '-01';
+        var id = 'adj' + ad.id + '-' + d;
+        if (
+          !KLm.tx.some(function (x) {
+            return x.id === id;
+          })
+        )
+          KLm.tx.push({ id: id, d: d, t: ad.t, amt: ad.amt, cat: 'Penyesuaian saldo', note: ad.note || '' });
+      });
+    });
+    Y.adj = [];
+  });
   return a;
 }
 
@@ -2172,7 +2183,7 @@ function tab(t) {
   ['rincian', 'jadwal', 'item', 'kas'].forEach(function (x) {
     $('v-' + x).hidden = x !== t;
   });
-  $('yb').style.display = t === 'kas' ? 'none' : '';
+  $('yb').style.display = kas().link ? '' : 'none';
 }
 
 /** Tampilkan pesan singkat; bila ada `undo`, muncul tombol Urungkan selama 10 detik. */
@@ -2894,7 +2905,7 @@ function carryHtml() {
     '<label style="display:flex;gap:8px;align-items:center;margin:0;width:100%;font-weight:500"><input type="checkbox" id="cs" style="width:auto;min-height:0">Jadikan saldo akhir tahun itu sebagai saldo awal ' +
     S.year +
     '</label>' +
-    '<div class="sub" style="width:100%">Item sekali bayar atau yang sudah selesai (lewat tanggal/jumlah berhenti) tidak ikut dibawa. Perubahan harga dan pemasukan berulang ikut terbawa. Status lunas tidak dibawa.</div>'
+    '<div class="sub" style="width:100%">Item sekali bayar atau yang sudah selesai (lewat tanggal/jumlah berhenti) tidak ikut dibawa. Perubahan harga ikut terbawa. Status lunas tidak dibawa.</div>'
   );
 }
 
@@ -3345,17 +3356,8 @@ function bindHeader() {
 }
 
 /* ===== js/ui/adjust.js ===== */
-/**
- * Jendela Tambah / kurangi saldo. Penyesuaian bisa digabung ke saldo awal, dimulai di bulan tertentu,
- * atau (opsional) berulang tiap N bulan (mis. gaji bulanan).
- */
+/** Ringkasan di bawah Saldo awal. Penyesuaian saldo kini dicatat lewat tab Catatan Kas. */
 
-var adjT = '+';
-
-/** Daftar penyesuaian saldo tahun aktif. */
-function adjList() {
-  return S.adj || (S.adj = []);
-}
 
 /** Ringkasan di bawah kolom Saldo awal. */
 function renderAdj() {
@@ -3375,227 +3377,6 @@ function renderAdj() {
         (c.adjLate > 0 ? '+ ' : '&minus; ') +
         rp(Math.abs(c.adjLate))
       : '');
-}
-
-/** Teks "tiap bulan mulai Jan, 12 kali" untuk penyesuaian berulang. */
-function repText(a) {
-  return (
-    'tiap ' +
-    (a.rep.n === 1 ? 'bulan' : a.rep.n + ' bulan') +
-    ' mulai ' +
-    MON[a.m] +
-    (a.rep.cnt ? ', ' + a.rep.cnt + ' kali' : '')
-  );
-}
-
-/** Isi bagian atas dan riwayat di jendela penyesuaian. */
-function renderAm() {
-  var c = calc();
-  $('ami').innerHTML =
-    'Saldo awal sekarang <b>' +
-    rp(S.saldo) +
-    '</b>' +
-    (c.adjIn
-      ? ' ' + (c.adjIn > 0 ? '+' : '&minus;') + ' ' + rp(Math.abs(c.adjIn)) + ' = <b>' + rp(c.open) + '</b>'
-      : '') +
-    '. Penyesuaian dihitung bersama saldo awal.';
-  $('ahl').innerHTML =
-    adjList()
-      .slice()
-      .reverse()
-      .map(function (a) {
-        var when = a.rep ? repText(a) : a.m == null ? 'gabung ke saldo awal' : 'mulai ' + MON[a.m];
-        return (
-          '<div class="it2"><div><b' +
-          (a.t === '-' ? ' class="neg"' : '') +
-          '>' +
-          (a.t === '-' ? '&minus; ' : '+ ') +
-          rp(a.amt) +
-          '</b> <span class="sub">' +
-          when +
-          (a.at ? ' &middot; ' + fmtD(a.at) : '') +
-          '</span>' +
-          (a.note ? '<br><span class="sub">' + esc(a.note) + '</span>' : '') +
-          '</div><button class="g d" data-adel="' +
-          a.id +
-          '">Hapus</button></div>'
-        );
-      })
-      .join('') || '<div class="sub">Belum ada penyesuaian.</div>';
-}
-
-/** Pengulangan terpilih: {n, cnt} atau null. */
-function adjRepeat() {
-  var n = +$('ar').value;
-  return n > 0 ? { n: n, cnt: Math.max(0, parseInt($('arn').value, 10) || 0) } : null;
-}
-
-/** Bulan mulai terpilih (0-11) atau null (= gabung ke saldo awal). */
-function adjStartMonth() {
-  return $('aw').value === 'month' ? +$('amo').value : null;
-}
-
-/** Pratinjau hasil sebelum disimpan. */
-function amPrev() {
-  var P = parseRp($('aa').value),
-    sg = adjT === '-' ? -1 : 1,
-    c = calc(),
-    sm = +S.startMonth || 0,
-    m = adjStartMonth(),
-    p = $('apv');
-  if (P <= 0) {
-    p.className = 'sub';
-    p.textContent = 'Isi jumlah untuk melihat hasilnya.';
-    return;
-  }
-  p.className = 'prev';
-  var rep = adjRepeat();
-  if (rep) {
-    var months = adjMonths({ m: m, rep: rep });
-    p.innerHTML =
-      '<b>' +
-      (sg > 0 ? '+ ' : '&minus; ') +
-      rp(P) +
-      '</b> ' +
-      repText({ m: m, rep: rep }) +
-      ': ' +
-      months.length +
-      '&times; = <b>' +
-      (sg > 0 ? '+ ' : '&minus; ') +
-      rp(P * months.length) +
-      '</b> sampai Des ' +
-      S.year +
-      '. Lanjut ke tahun berikutnya lewat "Bawa jadwal".';
-    return;
-  }
-  p.innerHTML =
-    m == null || m <= sm
-      ? 'Saldo awal jadi <b>' + rp(c.open + sg * P) + '</b> (dari ' + rp(c.open) + ').'
-      : 'Mulai ' +
-        MON[m] +
-        ', saldo awal bulan itu ' +
-        (sg > 0 ? 'bertambah' : 'berkurang') +
-        ' ' +
-        rp(P) +
-        '.';
-}
-
-/** Atur ulang isian saat jendela dibuka. */
-function openAdjust() {
-  adjT = '+';
-  Array.prototype.forEach.call($('atp').querySelectorAll('button'), function (b) {
-    b.classList.toggle('on', b.dataset.t === '+');
-  });
-  $('aa').value = '';
-  $('an').value = '';
-  $('aw').value = 'open';
-  $('aw').disabled = false;
-  $('amw').hidden = true;
-  $('ar').value = '0';
-  $('arn').value = '';
-  $('arw').hidden = true;
-  $('aer').textContent = '';
-  if (!$('amo').options.length)
-    MON.forEach(function (n, i) {
-      var o = document.createElement('option');
-      o.value = i;
-      o.textContent = n;
-      $('amo').appendChild(o);
-    });
-  Array.prototype.forEach.call($('amo').options, function (o) {
-    o.textContent = MON[o.value] + ' ' + S.year;
-  });
-  renderAm();
-  amPrev();
-  $('am').hidden = false;
-  $('aa').focus();
-}
-
-/** Saat "Ulangi" dipilih: pengulangan selalu dimulai dari bulan tertentu. */
-function onRepeatChange() {
-  var on = +$('ar').value > 0;
-  $('arw').hidden = !on;
-  $('aw').disabled = on;
-  if (on) {
-    $('aw').value = 'month';
-    $('amw').hidden = false;
-    if (!$('amo').dataset.touched)
-      $('amo').value = S.year === new Date().getFullYear() ? new Date().getMonth() : 0;
-  }
-  amPrev();
-}
-
-/** Simpan penyesuaian dari isian jendela. */
-function saveAdjust() {
-  var P = parseRp($('aa').value);
-  if (P <= 0) {
-    $('aer').textContent = 'Isi jumlah yang valid. Contoh: 500k atau 500.000.';
-    return;
-  }
-  adjList().push({
-    id: Date.now(),
-    t: adjT,
-    amt: P,
-    note: $('an').value.trim().slice(0, 60),
-    m: adjStartMonth(),
-    rep: adjRepeat(),
-    at: new Date().toISOString().slice(0, 10),
-  });
-  save();
-  $('am').hidden = true;
-  renderAll();
-  $('status').textContent = (adjT === '-' ? 'Saldo dikurangi ' : 'Saldo ditambah ') + rp(P) + '.';
-  var s = $('adjs');
-  s.classList.remove('flashb');
-  void s.offsetWidth;
-  s.classList.add('flashb');
-}
-
-/** Pasang event listener halaman ini. */
-function bindAdjust() {
-  $('adjb').onclick = openAdjust;
-  $('atp').onclick = function (e) {
-    var b = e.target.closest('button[data-t]');
-    if (!b) return;
-    adjT = b.dataset.t;
-    Array.prototype.forEach.call(this.querySelectorAll('button'), function (x) {
-      x.classList.toggle('on', x === b);
-    });
-    amPrev();
-  };
-  $('aa').addEventListener('input', function () {
-    fmtLive(this);
-    amPrev();
-  });
-  $('aw').onchange = function () {
-    $('amw').hidden = this.value !== 'month';
-    amPrev();
-  };
-  $('amo').onchange = function () {
-    this.dataset.touched = 1;
-    amPrev();
-  };
-  $('ar').onchange = onRepeatChange;
-  $('arn').oninput = amPrev;
-  $('acl').onclick = function () {
-    $('am').hidden = true;
-  };
-  $('aps').onclick = saveAdjust;
-  $('ahl').onclick = function (e) {
-    var b = e.target.closest('button[data-adel]');
-    if (!b) return;
-    var sn = snap('Sebelum hapus penyesuaian');
-    S.adj = adjList().filter(function (a) {
-      return String(a.id) !== b.dataset.adel;
-    });
-    save();
-    renderAll();
-    renderAm();
-    amPrev();
-    toast('Penyesuaian dihapus.', function () {
-      restoreSnap(sn.t);
-    });
-  };
 }
 
 /* ===== js/ui/price-modal.js ===== */
@@ -5661,15 +5442,6 @@ function kasDerived() {
         out.push({ id: 'b' + k, d: d, t: '-', amt: priceAt(it, t), cat: it.cat || 'Tagihan', note: it.name + ' (lunas)', ro: 'tagihan' });
     });
   });
-  (S.adj || []).forEach(function (a) {
-    adjMonths(a).forEach(function (mm) {
-      var d =
-        mm == null && /^\d{4}-\d{2}-\d{2}/.test(a.at || '') && +a.at.slice(0, 4) === y
-          ? a.at.slice(0, 10)
-          : y + '-' + pad2((mm == null ? 0 : mm) + 1) + '-01';
-      out.push({ id: 'a' + a.id + d, d: d, t: a.t, amt: a.amt, cat: 'Penyesuaian saldo', note: a.note || '', ro: 'saldo' });
-    });
-  });
   return out;
 }
 /** Semua baris yang tampil untuk profil P. */
@@ -5687,11 +5459,11 @@ function kasLinkUi() {
   ['year', 'sm', 'saldo'].forEach(function (id) {
     $(id).parentNode.style.display = L ? '' : 'none';
   });
-  $('adjb').style.display = L ? '' : 'none';
   $('rem').style.display = L ? '' : 'none';
   ['rincian', 'jadwal', 'item'].forEach(function (t) {
     document.querySelector('nav [data-t="' + t + '"]').style.display = L ? '' : 'none';
   });
+  $('yb').style.display = L ? '' : 'none';
   if (!L && $('v-kas').hidden) tab('kas');
 }
 
@@ -5702,7 +5474,12 @@ function renderKas() {
     asc = kasRows(P).sort(function (a, b) {
       return a.d < b.d ? -1 : a.d > b.d ? 1 : 0;
     }),
-    A = kasSum(asc, 'all'),
+    A = kasSum(
+      asc.filter(function (x) {
+        return x.d <= todayISO();
+      }),
+      'all'
+    ),
     bal = kasBase(P) + A.i - A.o,
     mo = {};
   asc.forEach(function (x) {
@@ -5857,7 +5634,7 @@ function renderKas() {
           (x.note ? '<br><span class="sub">' + esc(x.note) + '</span>' : '') +
           '</div><div>' +
           (x.ro
-            ? '<span class="sub">dari ' + (x.ro === 'tagihan' ? 'Jadwal Bayar' : 'Tambah/kurangi saldo') + '</span>'
+            ? '<span class="sub">dari Jadwal Bayar</span>'
             : '<button class="g" data-ked="' + x.id + '">Ubah</button><button class="g d" data-kdel="' + x.id + '">Hapus</button>') +
           '</div></div>'
         );
@@ -6062,7 +5839,6 @@ function main() {
   bindItems();
   bindYears();
   bindHeader();
-  bindAdjust();
   bindPrice();
   bindIo();
   bindBackup();
