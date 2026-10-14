@@ -6042,8 +6042,8 @@ function fxPrev(a, u) {
 /** Kotak biaya: jumlah + pilihan mata uang (Rp / asing). */
 function amtField(P, id, uid, v, fx) {
   return (
-    '<div style="display:flex;gap:6px"><input id="' + id + '" inputmode="numeric" placeholder="0" style="flex:1;min-width:0" value="' + (v ? v.toLocaleString('id-ID') : '') + '">' +
-    '<select id="' + uid + '" style="width:auto" aria-label="Mata uang"><option value="idr">Rp (IDR)</option>' + (P.cur ? '<option value="fx"' + (fx ? ' selected' : '') + '>' + esc(P.cur) + '</option>' : '') + '</select></div>' +
+    '<div style="display:flex;gap:6px"><input id="' + id + '" inputmode="numeric" placeholder="0" style="flex:1;min-width:0;font-size:17px;font-weight:600" value="' + (v ? v.toLocaleString('id-ID') : '') + '">' +
+    '<select id="' + uid + '" style="width:auto;min-width:112px;flex:none;font-weight:600" aria-label="Mata uang"><option value="idr">Rp (IDR)</option>' + (P.cur ? '<option value="fx"' + (fx ? ' selected' : '') + '>' + esc(P.cur) + '</option>' : '') + '</select></div>' +
     '<div class="sub" id="' + id + 'h" style="margin-top:4px">' + (P.cur ? '' : 'Ingin mata uang asing? Isi di tombol Ubah perjalanan.') + '</div>'
   );
 }
@@ -6056,7 +6056,7 @@ function tripItin(P) {
       '<div class="card"><h2>' + (E ? 'Ubah kegiatan' : 'Tambah kegiatan') + '</h2><div class="kf"><div><label for="itd">Tanggal</label><input id="itd" type="date" value="' + (E ? E.day : days[0] || td) +
       '"></div><div><label for="itt">Mulai</label><input id="itt" inputmode="numeric" maxlength="5" placeholder="14.00" value="' + tmShow(E ? E.time : '') + '"></div><div><label for="itt2">Selesai</label><input id="itt2" inputmode="numeric" maxlength="5" placeholder="16.30" value="' + tmShow(E ? E.time2 : '') +
       '"></div><div style="grid-column:1/-1"><label for="itp">Kegiatan</label><input id="itp" maxlength="120" placeholder="mis. Senso-ji Temple" value="' + (E ? esc(E.place) : '') +
-      '"></div><div><label for="itk">Kategori</label><select id="itk">' + opts(ICAT, E ? E.cat : 'Transport') + '</select></div><div><label for="ite">Biaya</label>' + amtField(P, 'ite', 'itu', E ? E.est : 0, E && E.fx) +
+      '"></div><div><label for="itk">Kategori</label><select id="itk">' + opts(ICAT, E ? E.cat : 'Transport') + '</select></div><div style="grid-column:1/-1"><label for="ite">Biaya</label>' + amtField(P, 'ite', 'itu', E ? E.est : 0, E && E.fx) +
       '</div><div><label for="itm">Pembayaran</label><select id="itm">' + opts([['', 'Belum ditentukan'], ['ic', 'Kartu IC / e-money'], ['on', 'Online (dicatat di Pemesanan)'], ['cash', 'Cash']], E ? E.pay : '') +
       '</select></div><div style="grid-column:1/-1"><label for="itl">Tautan (peta / tiket)</label><input id="itl" inputmode="url" placeholder="https://maps.app.goo.gl/..." value="' + (E ? esc(E.link) : '') +
       '"></div><div style="grid-column:1/-1"><label for="itn">Catatan</label><input id="itn" maxlength="200" value="' + (E ? esc(E.note) : '') + '"></div></div><div class="err" id="iter"></div><div class="row2"><button class="p" data-its="1">' +
@@ -6095,7 +6095,7 @@ function tripBook(P) {
   var E = bkEdit ? P.bk.filter(function (x) { return x.id === bkEdit; })[0] : null, pl = tripPlan(P),
     form =
       '<div class="card"><h2>' + (E ? 'Ubah pemesanan' : 'Tambah pemesanan') + '</h2><div class="kf"><div style="grid-column:1/-1"><label for="bkt">Nama (tiket, hotel, tour)</label><input id="bkt" maxlength="120" placeholder="mis. Tiket pesawat CGK-HND" value="' + (E ? esc(E.title) : '') +
-      '"></div><div><label for="bkc">Kategori</label><select id="bkc">' + opts(BCAT, E ? E.cat : 'Transport') + '</select></div><div><label for="bke">Jumlah</label>' + amtField(P, 'bke', 'bku', E ? E.amt : 0, E && E.fx) +
+      '"></div><div><label for="bkc">Kategori</label><select id="bkc">' + opts(BCAT, E ? E.cat : 'Transport') + '</select></div><div style="grid-column:1/-1"><label for="bke">Jumlah</label>' + amtField(P, 'bke', 'bku', E ? E.amt : 0, E && E.fx) +
       '</div><div><label for="bkm">Pembayaran</label><select id="bkm">' + opts([['on', 'Online'], ['cash', 'Cash'], ['ic', 'Kartu IC / e-money'], ['', 'Belum ditentukan']], E ? E.pay : 'on') +
       '</select></div><div><label for="bka">Mulai / check-in</label><input id="bka" type="date" value="' + (E ? E.a : '') + '"></div><div><label for="bkb">Selesai / check-out</label><input id="bkb" type="date" value="' + (E ? E.b : '') +
       '"></div><div style="grid-column:1/-1"><label for="bkl">Tautan</label><input id="bkl" inputmode="url" placeholder="https://..." value="' + (E ? esc(E.link) : '') + '"></div></div><div class="err" id="bker"></div><div class="row2"><button class="p" data-bks="1">' +
