@@ -922,6 +922,8 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 .dti { width: 100%; font-size: 13px; margin: 2px 0 8px; }
 .pgrp { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
 @media (max-width: 480px) { .itm { grid-template-columns: 44px 1fr; } .itm .co { grid-column: 2; text-align: left; } .itm .ac { justify-content: flex-start; } }
+.tbk { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; padding: 9px 16px; border: 1.5px solid var(--ac); border-radius: 999px; background: var(--acs); color: var(--ink); cursor: pointer; box-shadow: 0 3px 0 var(--ln), 0 6px 14px rgba(0, 0, 0, .14); }
+.tbk:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ln); }
 </style>
 </head>
 <body>
@@ -972,7 +974,8 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 <div class="modal" id="kpm" hidden><div class="card"><h2 id="kpt">Perjalanan baru</h2>
 <label for="kpn">Nama perjalanan</label><input id="kpn" maxlength="30" placeholder="mis. Tokyo - Osaka 9D8N">
 <div class="kf" style="margin-top:12px"><div><label for="kpa">Mulai</label><input id="kpa" type="date"></div><div><label for="kpb">Selesai</label><input id="kpb" type="date"></div></div>
-<div class="kf" style="margin-top:12px"><div><label for="kpg">Anggaran total (Rp)</label><input id="kpg" inputmode="numeric" placeholder="25.000.000"></div><div><label for="kps">Dana awal (Rp)</label><input id="kps" inputmode="numeric" placeholder="3.000.000"></div></div>
+<div style="margin-top:12px"><label for="kpgm">Anggaran</label><select id="kpgm"><option value="0">Belum menentukan anggaran</option><option value="1">Tetapkan anggaran</option></select></div>
+<div id="kpgw" style="margin-top:8px" hidden><label for="kpg">Anggaran total (Rp)</label><input id="kpg" inputmode="numeric" placeholder="25.000.000"></div>
 <div class="kf" style="margin-top:12px"><div><label for="kpu">Mata uang asing (opsional)</label><input id="kpu" maxlength="3" placeholder="JPY" style="text-transform:uppercase"></div><div><label for="kpk">Kurs: Rp per 1 mata uang</label><input id="kpk" type="number" step="0.01" min="0" inputmode="decimal" placeholder="119.4"></div></div>
 <div class="err" id="kpe"></div><div class="row2"><button class="p" id="kpsv">Simpan</button><button id="kpc">Tutup</button></div></div></div>
 <div class="modal" id="cf" hidden><div class="card"><h2>Data berbeda di cloud dan di perangkat ini</h2>
@@ -5072,6 +5075,8 @@ function sbStat(t, bad) {
   var e = $('sbs');
   e.textContent = t;
   e.style.color = bad ? 'var(--wr)' : 'var(--mut)';
+  var ts = $('tsync');
+  if (ts) ts.textContent = '\u2601 ' + t;
 }
 
 /** Jam sekarang (HH.MM). */
@@ -5452,11 +5457,11 @@ var KAS_IN = ['Gaji', 'Transfer', 'Lainnya'],
 
 /** Profil yang sedang dipakai: perjalanan terpilih (mode Perjalanan) atau profil Rencana. */
 function kas() {
-  return (mode === 'trip' && tp()) || kasLinked();
+  return kasLinked();
 }
 /** Tempat Catatan Kas digambar. */
 function kasEl() {
-  return mode === 'trip' ? $('v-tcash') : $('v-kas');
+  return $('v-kas');
 }
 function kasIn(x, per) {
   return per === 'all' || x.d.slice(0, 7) === per;
@@ -5557,7 +5562,6 @@ function kasRows(P) {
 function renderKas() {
   var el = kasEl();
   if (!el) return;
-  if (mode === 'trip') $('v-kas').innerHTML = '';
   var P = kas(),
     K = ALL.kas,
     asc = kasRows(P).sort(function (a, b) {
@@ -5813,9 +5817,6 @@ function bindKas() {
   $('v-kas').addEventListener('input', function (e) {
     if (e.target.id === 'ka') fmtLive(e.target);
   });
-  $('kps').addEventListener('input', function () {
-    fmtLive(this);
-  });
   $('kpsv').onclick = kasSavePm;
   $('kpc').onclick = function () {
     $('kpm').hidden = true;
@@ -5907,11 +5908,6 @@ function tripDays(P) {
 function dayLabel(P, d) {
   return (P.start && d >= P.start ? 'Hari ' + (dayNo(d, P.start) + 1) + ' · ' : '') + WD[new Date(d + 'T00:00:00Z').getUTCDay()] + ', ' + fmtD(d);
 }
-function tripSum(P) {
-  var r = kasSum(P.tx, 'all');
-  r.bal = P.saldo + r.i - r.o;
-  return r;
-}
 /** Nilai dalam rupiah: v dalam mata uang asing (fx) dikali kurs. */
 function val(P, v, fx) {
   return fx && P.rate ? v * P.rate : v;
@@ -5940,9 +5936,6 @@ function opts(L, sel, lab) {
     return '<option value="' + esc(v) + '"' + (v === sel ? ' selected' : '') + '>' + esc(Array.isArray(o) ? o[1] : o) + '</option>';
   }).join('');
 }
-function itRec(P, x) {
-  return !!x.rec && P.tx.some(function (t) { return t.id === x.rec; });
-}
 /** Rencana biaya: pemesanan + estimasi harian (item itinerary yang bukan "Online", karena yang online dicatat di Pemesanan). */
 function tripPlan(P) {
   var r = { b: 0, d: 0, paid: 0, cash: {} };
@@ -5966,45 +5959,45 @@ function tripPlan(P) {
 function tripList() {
   var L = trips();
   return (
-    '<div class="kp"><button class="p" data-tnew="1">+ Perjalanan baru</button></div>' +
+    '<div class="kp"><button class="p" data-tnew="1">+ Perjalanan baru</button></div><div class="sub" id="tsync" style="margin-bottom:10px">&#9729; ' + esc($('sbs').textContent) + '</div>' +
     (L.map(function (P) {
-      var s = tripSum(P), pl = tripPlan(P);
+      var pl = tripPlan(P);
       return (
         '<div class="card" data-trip="' + P.id + '" style="cursor:pointer"><h2>' + esc(P.name) + '</h2><div class="sub">' +
         (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) + ' · ' + (dayNo(P.end, P.start) + 1) + ' hari' : 'Tanggal belum diisi') + '</div>' +
-        (P.budget ? bar(s.o, P.budget) + '<div class="sub">Terpakai ' + rp(s.o) + ' dari anggaran ' + rp(P.budget) + '</div>' : '<div class="sub">Terpakai ' + rp(s.o) + '</div>') +
-        (pl.t ? '<div class="sub">Rencana biaya ' + rp(pl.t) + '</div>' : '') + '</div>'
+        (P.budget ? bar(pl.t, P.budget) + '<div class="sub">Rencana biaya ' + rp(pl.t) + ' dari anggaran ' + rp(P.budget) + '</div>' : '<div class="sub">Rencana biaya ' + rp(pl.t) + ' · anggaran belum ditentukan</div>') + '</div>'
       );
-    }).join('') || '<div class="card"><div class="empty">Belum ada perjalanan. Buat satu untuk mencatat itinerary, pemesanan, anggaran, checklist, dan pengeluaran.</div></div>')
+    }).join('') || '<div class="card"><div class="empty">Belum ada perjalanan. Buat satu untuk mencatat itinerary, pemesanan, checklist, dan rencana biaya.</div></div>')
   );
 }
 
 function tripRing(P) {
-  var s = tripSum(P), pl = tripPlan(P), td = todayISO(), left = P.budget - s.o, N = 0, no = 0, rest = 0, bc = {}, byDay = {};
-  P.tx.forEach(function (x) {
-    if (x.t === '-') bc[x.cat || 'Tanpa kategori'] = (bc[x.cat || 'Tanpa kategori'] || 0) + x.amt;
+  var pl = tripPlan(P), td = todayISO(), N = 0, no = 0, byDay = {}, bcat = {};
+  P.bk.forEach(function (x) {
+    var c = x.cat || 'Lainnya';
+    bcat[c] = (bcat[c] || 0) + val(P, x.amt, x.fx);
   });
   P.it.forEach(function (x) {
-    if (x.pay !== 'on' && x.est) byDay[x.day] = (byDay[x.day] || 0) + val(P, x.est, x.fx);
+    if (x.pay === 'on' || !x.est) return;
+    var v = val(P, x.est, x.fx), c = x.cat || 'Lainnya';
+    byDay[x.day] = (byDay[x.day] || 0) + v;
+    bcat[c] = (bcat[c] || 0) + v;
   });
   if (P.start && P.end && P.end >= P.start) {
     N = dayNo(P.end, P.start) + 1;
-    if (td >= P.start && td <= P.end) {
-      no = dayNo(td, P.start) + 1;
-      rest = N - no + 1;
-    }
+    if (td >= P.start && td <= P.end) no = dayNo(td, P.start) + 1;
   }
   var st = function (l, v, n) {
     return '<div><span>' + l + '</span><b>' + v + '</b>' + (n ? '<span>' + n + '</span>' : '') + '</div>';
   };
-  var cells = P.budget
-    ? st('Anggaran', rp(P.budget)) + st('Terpakai', rp(s.o)) + st('Sisa anggaran', rp(left)) + st('Rencana vs anggaran', rp(P.budget - pl.t), 'rencana ' + rp(pl.t))
-    : st('Pengeluaran', rp(s.o)) + st('Total rencana', rp(pl.t));
-  if (no) cells += st('Hari ke', no + ' dari ' + N) + st('Rata-rata per hari', rp(s.o / no)) + (P.budget ? st('Batas aman per hari', rp(Math.max(0, left) / rest), 'sisa ' + rest + ' hari') : '');
+  var left = P.budget - pl.t,
+    cells = (P.budget ? st('Anggaran', rp(P.budget)) + st(left >= 0 ? 'Sisa anggaran' : 'Melebihi anggaran', rp(Math.abs(left))) : '') + st('Sudah dibayar', rp(pl.paid), 'pemesanan') + st('Belum dibayar', rp(pl.b - pl.paid), 'pemesanan');
+  if (no) cells += st('Hari ke', no + ' dari ' + N);
   else if (N && td < P.start) cells += st('Mulai dalam', dayNo(P.start, td) + ' hari');
-  var cl = Object.keys(bc).sort(function (a, b) { return bc[b] - bc[a]; }),
-    ck = Object.keys(pl.cash).sort(),
+  if (N) cells += st('Rencana per hari', rp(pl.t / N));
+  var ck = Object.keys(pl.cash).sort(),
     dk = Object.keys(byDay).sort(),
+    cl = Object.keys(bcat).sort(function (a, b) { return bcat[b] - bcat[a]; }),
     dmax = 0;
   dk.forEach(function (d) { if (byDay[d] > dmax) dmax = byDay[d]; });
   var catRow = function (k, v, mx, c, extra) {
@@ -6012,32 +6005,47 @@ function tripRing(P) {
     return '<div class="catrow"><div class="cathd"><span>' + (c ? '<i class="dot" style="background:' + c + '"></i>' : '') + k + '</span><b>' + extra + '</b></div><div class="catbar"><i style="width:' + pc.toFixed(1) + '%;background:' + (c || 'var(--ac)') + '"></i></div></div>';
   };
   return (
-    '<div class="hero"><div class="card" style="margin:0"><div class="sub">Saldo dana sekarang</div><div class="big' + (s.bal < 0 ? ' neg' : '') + '">' + rp(s.bal) +
-    '</div><div class="sub">dana awal ' + rp(P.saldo) + ' + masuk ' + rp(s.i) + ' &minus; keluar ' + rp(s.o) + '</div>' + (P.budget ? bar(s.o, P.budget) : '') +
-    '</div><div class="card stats" style="margin:0">' + cells + '</div></div>' +
-    '<div class="card"><h2>Rencana biaya</h2><div class="stats"><div><span>Pemesanan</span><b>' + rp(pl.b) + '</b><span>sudah dibayar ' + rp(pl.paid) + '</span></div><div><span>Estimasi harian</span><b>' + rp(pl.d) + '</b><span>di luar yang online</span></div><div><span>Total rencana</span><b>' + rp(pl.t) + '</b></div></div>' +
-    (pl.t ? bar(s.o, pl.t) + '<div class="sub">Realisasi ' + rp(s.o) + ' dari rencana ' + rp(pl.t) + '</div>' : '<div class="sub">Isi Pemesanan dan biaya di Itinerary untuk melihat rencana biaya.</div>') + '</div>' +
+    '<div class="hero"><div class="card" style="margin:0"><div class="sub">Total rencana biaya</div><div class="big">' + rp(pl.t) + '</div><div class="sub">pemesanan ' + rp(pl.b) + ' + estimasi harian ' + rp(pl.d) + '</div>' +
+    (P.budget ? bar(pl.t, P.budget) + '<div class="sub">dari anggaran ' + rp(P.budget) + '</div>' : '<div class="sub">Anggaran belum ditentukan (atur lewat tombol Ubah).</div>') +
+    (P.cur && P.rate ? '<div class="sub">Kurs 1 ' + esc(P.cur) + ' = ' + rp(P.rate) + '</div>' : '') + '</div><div class="card stats" style="margin:0">' + cells + '</div></div>' +
     (ck.length
-      ? '<div class="card"><h2>Siapkan tunai / kartu</h2>' +
-        ck.map(function (k) {
+      ? '<div class="card"><h2>Siapkan tunai / kartu</h2>' + ck.map(function (k) {
           var c = pl.cash[k];
           return '<div class="it2"><div>' + esc(k) + '</div><div><b>' + (c.fx ? fxs(P, c.fx) + (c.idr ? ' + ' + rp(c.idr) : '') : rp(c.idr)) + '</b>' + (c.fx && P.rate ? ' <span class="sub">&asymp; ' + rp(c.idr + c.fx * P.rate) + '</span>' : '') + '</div></div>';
         }).join('') + '</div>'
       : '') +
-    (dk.length
-      ? '<div class="card"><h2>Estimasi per hari</h2>' + dk.map(function (d) { return catRow(esc(dayLabel(P, d)), byDay[d], dmax, '', rp(byDay[d])); }).join('') + '</div>'
-      : '') +
-    (cl.length
-      ? '<div class="card"><h2>Pengeluaran per kategori</h2>' + cl.map(function (k, i) { return catRow(esc(k), bc[k], s.o, CAT_COLORS[i % CAT_COLORS.length], rp(bc[k]) + ' <span class="sub">' + Math.round((bc[k] / s.o) * 100) + '%</span>'); }).join('') + '</div>'
-      : '') +
-    '<div class="card"><h2>Ambil dana dari Rencana</h2><div class="row2"><input id="trf" inputmode="numeric" placeholder="mis. 3.000.000"><button class="p" data-trf="1">Pindahkan</button></div><div class="err" id="trfe"></div><div class="sub">Tercatat sebagai pengeluaran di Rencana Keuangan dan pemasukan di perjalanan ini.</div></div>'
+    (dk.length ? '<div class="card"><h2>Estimasi per hari</h2>' + dk.map(function (d) { return catRow(esc(dayLabel(P, d)), byDay[d], dmax, '', rp(byDay[d])); }).join('') + '</div>' : '') +
+    (cl.length ? '<div class="card"><h2>Rencana biaya per kategori</h2>' + cl.map(function (k, i) { return catRow(esc(k), bcat[k], pl.t, CAT_COLORS[i % CAT_COLORS.length], rp(bcat[k]) + ' <span class="sub">' + Math.round((bcat[k] / pl.t) * 100) + '%</span>'); }).join('') + '</div>' : '')
   );
 }
 
+/** Jam 24 jam: tampil 14.00, disimpan HH:MM. */
+function tmShow(v) {
+  return v ? String(v).replace(':', '.') : '';
+}
+/** Baca isian jam (14.00, 14:00, 1400, 9.30). Kosong -> '', salah -> null. */
+function tmParse(v) {
+  v = String(v || '').trim();
+  if (!v) return '';
+  var m = /^(\d{1,2})[.:]?(\d{2})$/.exec(v) || /^(\d{1,2})$/.exec(v);
+  if (!m) return null;
+  var h = +m[1], mi = m[2] ? +m[2] : 0;
+  return h > 23 || mi > 59 ? null : pad2(h) + ':' + pad2(mi);
+}
+/** Pratinjau rupiah saat biaya diisi dalam mata uang asing. */
+function fxPrev(a, u) {
+  var P = tp(), h = $(a + 'h');
+  if (!h || !P || !P.cur || !P.rate) return;
+  var v = parseRp($(a).value) || 0;
+  h.textContent = $(u).value === 'fx' && v ? '\u2248 ' + rp(val(P, v, true)) + ' (kurs 1 ' + P.cur + ' = ' + rp(P.rate) + ')' : '';
+}
 /** Kotak biaya: jumlah + pilihan mata uang (Rp / asing). */
 function amtField(P, id, uid, v, fx) {
-  return '<div style="display:flex;gap:6px"><input id="' + id + '" inputmode="numeric" placeholder="0" value="' + (v ? v.toLocaleString('id-ID') : '') + '">' +
-    (P.cur ? '<select id="' + uid + '" style="width:auto"><option value="idr">Rp</option><option value="fx"' + (fx ? ' selected' : '') + '>' + P.cur + '</option></select>' : '') + '</div>';
+  return (
+    '<div style="display:flex;gap:6px"><input id="' + id + '" inputmode="numeric" placeholder="0" style="flex:1;min-width:0" value="' + (v ? v.toLocaleString('id-ID') : '') + '">' +
+    '<select id="' + uid + '" style="width:auto" aria-label="Mata uang"><option value="idr">Rp (IDR)</option>' + (P.cur ? '<option value="fx"' + (fx ? ' selected' : '') + '>' + esc(P.cur) + '</option>' : '') + '</select></div>' +
+    '<div class="sub" id="' + id + 'h" style="margin-top:4px">' + (P.cur ? '' : 'Ingin mata uang asing? Isi di tombol Ubah perjalanan.') + '</div>'
+  );
 }
 
 function tripItin(P) {
@@ -6046,7 +6054,7 @@ function tripItin(P) {
     td = todayISO(),
     form =
       '<div class="card"><h2>' + (E ? 'Ubah kegiatan' : 'Tambah kegiatan') + '</h2><div class="kf"><div><label for="itd">Tanggal</label><input id="itd" type="date" value="' + (E ? E.day : days[0] || td) +
-      '"></div><div><label for="itt">Mulai</label><input id="itt" type="time" value="' + (E ? E.time : '') + '"></div><div><label for="itt2">Selesai</label><input id="itt2" type="time" value="' + (E ? E.time2 : '') +
+      '"></div><div><label for="itt">Mulai</label><input id="itt" inputmode="numeric" maxlength="5" placeholder="14.00" value="' + tmShow(E ? E.time : '') + '"></div><div><label for="itt2">Selesai</label><input id="itt2" inputmode="numeric" maxlength="5" placeholder="16.30" value="' + tmShow(E ? E.time2 : '') +
       '"></div><div style="grid-column:1/-1"><label for="itp">Kegiatan</label><input id="itp" maxlength="120" placeholder="mis. Senso-ji Temple" value="' + (E ? esc(E.place) : '') +
       '"></div><div><label for="itk">Kategori</label><select id="itk">' + opts(ICAT, E ? E.cat : 'Transport') + '</select></div><div><label for="ite">Biaya</label>' + amtField(P, 'ite', 'itu', E ? E.est : 0, E && E.fx) +
       '</div><div><label for="itm">Pembayaran</label><select id="itm">' + opts([['', 'Belum ditentukan'], ['ic', 'Kartu IC / e-money'], ['on', 'Online (dicatat di Pemesanan)'], ['cash', 'Cash']], E ? E.pay : '') +
@@ -6071,11 +6079,11 @@ function tripItin(P) {
         (tot ? '<div class="sub" style="margin-bottom:4px">Estimasi hari ini <b>' + rp(tot) + '</b>' + (Object.keys(fxm).length ? ' · ' + Object.keys(fxm).map(function (k) { return k + ' ' + fxs(P, fxm[k]); }).join(' · ') : '') + '</div>' : '') +
         (L.map(function (x) {
           return (
-            '<div class="itm"><div class="tm">' + (x.time || '') + (x.time2 ? '<br>' + x.time2 : '') + '</div><div><div class="ttl"' + (x.done ? ' style="text-decoration:line-through;opacity:.6"' : '') + '>' + esc(x.place) + '</div><div>' +
+            '<div class="itm"><div class="tm">' + tmShow(x.time) + (x.time2 ? '<br>' + tmShow(x.time2) : '') + '</div><div><div class="ttl"' + (x.done ? ' style="text-decoration:line-through;opacity:.6"' : '') + '>' + esc(x.place) + '</div><div>' +
             (x.cat ? '<span class="chp" style="background:transparent;border:1px solid var(--ln)">' + esc(x.cat) + '</span>' : '') + pchip(x.pay) + lnk(x.link) + '</div>' + (x.note ? '<div class="sub">' + esc(x.note) + '</div>' : '') +
             '<div class="ac"><button class="g" data-itdone="' + x.id + '" aria-label="Tandai selesai">' + (x.done ? '&#9745; Selesai' : '&#9744; Selesai') + '</button>' +
-            (x.est && !itRec(P, x) ? '<button class="g" data-itkas="' + x.id + '">+ Kas</button>' : '') + '<button class="g" data-ited="' + x.id + '">Ubah</button><button class="g d" data-itdel="' + x.id + '">Hapus</button></div></div>' +
-            '<div class="co">' + (x.est ? amtTxt(P, x.est, x.fx) + (itRec(P, x) ? '<div class="sub">&#10003; di kas</div>' : '') : '') + '</div></div>'
+            '<button class="g" data-ited="' + x.id + '">Ubah</button><button class="g d" data-itdel="' + x.id + '">Hapus</button></div></div>' +
+            '<div class="co">' + (x.est ? amtTxt(P, x.est, x.fx) : '') + '</div></div>'
           );
         }).join('') || '<div class="sub">Belum ada kegiatan.</div>') + '</div>'
       );
@@ -6147,12 +6155,16 @@ function renderTrip() {
     el.innerHTML = tripList();
     return;
   }
-  var tabs = [['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['kas', 'Kas'], ['cek', 'Checklist'], ['cat', 'Catatan']];
+  var tabs = [['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['cek', 'Checklist'], ['cat', 'Catatan']];
   el.innerHTML =
-    '<div class="kp"><button class="g" data-tback="1">&larr; Semua perjalanan</button><button class="g" data-ted="1">Ubah</button><button class="g d" data-tdel="1">Hapus</button></div><h2 style="margin:0 0 2px">' + esc(P.name) + '</h2><div class="sub" style="margin-bottom:12px">' +
-    (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) : 'Tanggal belum diisi') + (P.cur && P.rate ? ' · 1 ' + P.cur + ' = ' + rp(P.rate) : '') + '</div><div class="kt" style="flex-wrap:wrap;margin-bottom:14px">' +
+    '<div class="kp"><button class="tbk" data-tback="1">&larr; Semua perjalanan</button><button class="g" data-ted="1">Ubah</button><button class="g d" data-tdel="1">Hapus</button></div><h2 style="margin:0 0 2px">' + esc(P.name) + '</h2><div class="sub" style="margin-bottom:12px">' +
+    (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) : 'Tanggal belum diisi') + (P.cur && P.rate ? ' · 1 ' + P.cur + ' = ' + rp(P.rate) : '') + '</div><div class="sub" id="tsync" style="margin:-6px 0 10px">&#9729; ' + esc($('sbs').textContent) + '</div><div class="kt" style="flex-wrap:wrap;margin-bottom:14px">' +
     tabs.map(function (t) { return '<button type="button" class="yp' + (tripTab === t[0] ? ' on' : '') + '" data-tt="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
-    (tripTab === 'itin' ? tripItin(P) : tripTab === 'book' ? tripBook(P) : tripTab === 'cek' ? tripCek(P) : tripTab === 'cat' ? tripCat(P) : tripTab === 'kas' ? '<div id="v-tcash"></div>' : tripRing(P));
+    (tripTab === 'itin' ? tripItin(P) : tripTab === 'book' ? tripBook(P) : tripTab === 'cek' ? tripCek(P) : tripTab === 'cat' ? tripCat(P) : tripRing(P));
+  if (P.cur) {
+    fxPrev('ite', 'itu');
+    fxPrev('bke', 'bku');
+  }
 }
 
 /** Tampilan sesuai mode: Rencana (tab + kontrol tahun) atau Perjalanan (lembar sendiri). */
@@ -6183,8 +6195,9 @@ function kasOpenPm(m) {
   $('kpn').value = P ? P.name : '';
   $('kpa').value = P ? P.start : '';
   $('kpb').value = P ? P.end : '';
+  $('kpgm').value = P && P.budget > 0 ? '1' : '0';
+  $('kpgw').hidden = $('kpgm').value !== '1';
   $('kpg').value = P && P.budget ? P.budget.toLocaleString('id-ID') : '';
-  $('kps').value = P && P.saldo ? P.saldo.toLocaleString('id-ID') : '';
   $('kpu').value = P ? P.cur : '';
   $('kpk').value = P && P.rate ? P.rate : '';
   $('kpe').textContent = '';
@@ -6198,20 +6211,21 @@ function kasSavePm() {
     b = $('kpb').value,
     cu = $('kpu').value.trim().toUpperCase(),
     rt = parseFloat($('kpk').value) || 0,
+    useB = $('kpgm').value === '1',
+    bg = useB ? parseRp($('kpg').value) || 0 : 0,
     err = function (t) {
       $('kpe').textContent = t;
     };
   if (!n) return err('Nama perjalanan belum diisi.');
   if (a && b && b < a) return err('Tanggal selesai harus sama atau sesudah tanggal mulai.');
+  if (useB && !(bg > 0)) return err('Isi jumlah anggaran, atau pilih "Belum menentukan anggaran".');
   if (cu && !/^[A-Z]{3}$/.test(cu)) return err('Mata uang terdiri dari 3 huruf, mis. JPY.');
   if (cu && !(rt > 0)) return err('Isi kurs: berapa rupiah untuk 1 ' + cu + '.');
   var dup = trips().some(function (x) {
     return x.name.toLowerCase() === n.toLowerCase() && !(kpMode === 'edit' && x.id === tripAct);
   });
   if (dup) return err('Nama perjalanan sudah dipakai.');
-  var bg = parseRp($('kpg').value) || 0,
-    sd = parseRp($('kps').value) || 0,
-    P;
+  var P;
   if (kpMode === 'new') {
     var id = 'p' + Date.now().toString(36);
     P = ALL.kas.pr[id] = { id: id, name: n, saldo: 0, link: false, start: '', end: '', budget: 0, cur: '', rate: 0, dt: {}, tx: [], it: [], bk: [], lk: [], ck: [], note: '' };
@@ -6223,7 +6237,6 @@ function kasSavePm() {
   P.start = a;
   P.end = b;
   P.budget = bg;
-  P.saldo = sd;
   P.cur = cu;
   P.rate = cu ? rt : 0;
   save();
@@ -6235,8 +6248,10 @@ function itSave() {
   var P = tp(), d = $('itd').value, pl = $('itp').value.trim(), l = $('itl').value.trim(), err = function (t) { $('iter').textContent = t; };
   if (!ISO_RE.test(d)) return err('Pilih tanggal.');
   if (!pl) return err('Isi nama kegiatan.');
+  var t1 = tmParse($('itt').value), t2 = tmParse($('itt2').value);
+  if (t1 === null || t2 === null) return err('Jam memakai format 24 jam, mis. 14.00 atau 09.30.');
   if (l && !okUrl(l)) return err('Tautan harus diawali http:// atau https://');
-  var o = { day: d, time: $('itt').value || '', time2: $('itt2').value || '', place: pl.slice(0, 120), cat: $('itk').value, est: parseRp($('ite').value) || 0, fx: !!$('itu') && $('itu').value === 'fx', pay: $('itm').value, link: l, note: $('itn').value.trim().slice(0, 200) };
+  var o = { day: d, time: t1, time2: t2, place: pl.slice(0, 120), cat: $('itk').value, est: parseRp($('ite').value) || 0, fx: !!$('itu') && $('itu').value === 'fx', pay: $('itm').value, link: l, note: $('itn').value.trim().slice(0, 200) };
   if (itEdit)
     P.it = P.it.map(function (x) { return x.id === itEdit ? Object.assign({}, x, o) : x; });
   else P.it.push(Object.assign({ id: kid('i'), done: false, rec: '' }, o));
@@ -6257,39 +6272,15 @@ function bkSave() {
   save();
   renderTrip();
 }
-/** Tandai lunas = mencatat pengeluaran di kas perjalanan; batal lunas = menghapus catatan itu. */
+/** Tandai pemesanan lunas / belum lunas. */
 function bkPay(id) {
-  var P = tp(), x = P.bk.filter(function (b) { return b.id === id; })[0];
-  if (x.paid) {
-    P.tx = P.tx.filter(function (t) { return t.id !== x.rec; });
-    x.paid = false;
-    x.rec = '';
-  } else {
-    var t = { id: kid('t'), d: x.a || todayISO(), t: '-', amt: Math.round(val(P, x.amt, x.fx)), cat: x.cat, note: x.title.slice(0, 80) };
-    if (t.amt > 0) P.tx.push(t);
-    x.paid = true;
-    x.rec = t.id;
-  }
+  var x = tp().bk.filter(function (b) { return b.id === id; })[0];
+  x.paid = !x.paid;
   save();
   renderTrip();
 }
 function itFind(id) {
   return tp().it.filter(function (x) { return x.id === id; })[0];
-}
-function tripTransfer() {
-  var a = parseRp($('trf').value), P = tp(), U = kasLinked(), d = todayISO();
-  if (!(a > 0)) {
-    $('trfe').textContent = 'Isi jumlah yang valid. Contoh: 3jt atau 3.000.000.';
-    return;
-  }
-  var sn = snap('Sebelum memindahkan dana ke ' + P.name);
-  P.tx.push({ id: kid('t'), d: d, t: '+', amt: a, cat: 'Dana dari Rencana', note: 'Diambil dari saldo Rencana' });
-  U.tx.push({ id: kid('t'), d: d, t: '-', amt: a, cat: 'Dana perjalanan', note: 'Perjalanan: ' + P.name });
-  save();
-  renderAll();
-  toast(rp(a) + ' dipindahkan ke perjalanan ini.', function () {
-    restoreSnap(sn.t);
-  });
 }
 function tripDelete(b) {
   if (!b.dataset.arm) {
@@ -6322,15 +6313,12 @@ function tripRemove(k, id, msg) {
 }
 
 function bindTrip() {
-  var kasClick = $('v-kas').onclick,
-    kasChange = $('v-kas').onchange,
-    V = $('v-trip');
+  var V = $('v-trip');
   $('mdbar').onclick = function (e) {
     var b = e.target.closest('[data-md]');
     if (b) setMode(b.dataset.md);
   };
   V.onclick = function (e) {
-    if (e.target.closest('#v-tcash')) return kasClick(e);
     var b = e.target.closest('button,[data-trip]');
     if (!b) return;
     var d = b.dataset, P = tp(), x, v;
@@ -6343,9 +6331,7 @@ function bindTrip() {
       tripTab = d.tt;
       itEdit = bkEdit = null;
       renderTrip();
-      renderKas();
-    } else if (d.trf) tripTransfer();
-    else if (d.its) itSave();
+    } else if (d.its) itSave();
     else if (d.itx) {
       itEdit = null;
       renderTrip();
@@ -6359,15 +6345,6 @@ function bindTrip() {
       x.done = !x.done;
       save();
       renderTrip();
-    } else if (d.itkas) {
-      x = itFind(d.itkas);
-      v = { id: kid('t'), d: x.day, t: '-', amt: Math.round(val(P, x.est, x.fx)), cat: x.cat || 'Itinerary', note: ((x.fx ? fxs(P, x.est) + ' · ' : '') + x.place).slice(0, 80) };
-      P.tx.push(v);
-      x.rec = v.id;
-      x.done = true;
-      save();
-      renderTrip();
-      toast('Dicatat ke kas perjalanan.');
     } else if (d.bks) bkSave();
     else if (d.bkx) {
       bkEdit = null;
@@ -6407,7 +6384,13 @@ function bindTrip() {
     } else if (d.ckdel) P.ck = P.ck.filter(function (c) { return c.id !== d.ckdel; }), save(), renderTrip();
   };
   V.onchange = function (e) {
-    if (e.target.closest('#v-tcash')) return kasChange(e);
+    var tid = e.target.id,
+      FX = { ite: ['ite', 'itu'], itu: ['ite', 'itu'], bke: ['bke', 'bku'], bku: ['bke', 'bku'] };
+    if (tid === 'itt' || tid === 'itt2') {
+      var pt = tmParse(e.target.value);
+      if (pt !== null) e.target.value = tmShow(pt);
+    }
+    if (FX[tid]) fxPrev(FX[tid][0], FX[tid][1]);
     if (e.target.dataset.dt) {
       var P = tp(), t = e.target.value.trim().slice(0, 60);
       if (t) P.dt[e.target.dataset.dt] = t;
@@ -6417,7 +6400,13 @@ function bindTrip() {
   };
   V.addEventListener('input', function (e) {
     var id = e.target.id;
-    if (id === 'ka' || id === 'ite' || id === 'bke' || id === 'trf') fmtLive(e.target);
+    if (id === 'ite' || id === 'bke') fmtLive(e.target);
+    if (id === 'itt' || id === 'itt2') {
+      var tv = e.target.value.replace(/[^\d.:]/g, '');
+      if (/^\d{4}$/.test(tv)) tv = tv.slice(0, 2) + '.' + tv.slice(2);
+      if (tv !== e.target.value) e.target.value = tv;
+    }
+    if (id === 'ite' || id === 'bke') fxPrev(id, id === 'ite' ? 'itu' : 'bku');
     if (id === 'tnote') {
       tp().note = e.target.value.slice(0, 2000);
       clearTimeout(noteTimer);
@@ -6433,6 +6422,9 @@ function bindTrip() {
   $('kpg').addEventListener('input', function () {
     fmtLive(this);
   });
+  $('kpgm').onchange = function () {
+    $('kpgw').hidden = this.value !== '1';
+  };
 }
 
 /* ===== js/app.js ===== */
