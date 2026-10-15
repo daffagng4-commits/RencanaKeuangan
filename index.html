@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rencana Keuangan</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1f6f5c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Rencana">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <script>
 (function () {
@@ -928,7 +934,7 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 </head>
 <body>
 <div class="w">
-<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px"><div class="kt" id="mdbar"><button type="button" class="yp on" data-md="rencana">Rencana Keuangan</button><button type="button" class="yp" data-md="trip">Perjalanan</button></div><button type="button" id="thm" title="Ketuk untuk ganti tema">◐ Tema: Otomatis</button></div>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px"><div class="kt" id="mdbar"><button type="button" class="yp on" data-md="rencana">Rencana Keuangan</button><button type="button" class="yp" data-md="trip">Perjalanan</button></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span id="offl" class="chp cash" hidden>Offline &middot; data tersimpan di perangkat</span><button type="button" id="pwa" hidden>Pasang aplikasi</button><button type="button" id="thm" title="Ketuk untuk ganti tema">&#9680; Tema: Otomatis</button></div></div>
 <header>
   <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r16 · 13 Okt 2026</div><div class="sub" id="sbs"></div></div>
   <div class="ctl">
@@ -942,6 +948,7 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
   <button role="tab" data-t="rincian" aria-selected="true">Rincian Bulanan</button>
   <button role="tab" data-t="jadwal" aria-selected="false">Jadwal Bayar</button>
   <button role="tab" data-t="item" aria-selected="false">Kelola Item</button>
+  <button role="tab" data-t="sim" aria-selected="false">Simulasi</button>
 </nav>
 
 <div class="yb" id="yb"></div>
@@ -949,6 +956,7 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 <section id="v-rincian"></section>
 <section id="v-jadwal" hidden></section>
 <section id="v-kas" hidden></section>
+<section id="v-sim" hidden></section>
 <section id="v-trip" hidden></section>
 <section id="v-item" hidden>
   <div class="card">
@@ -971,6 +979,15 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 </section>
 </div>
 
+<input type="file" id="xlf" accept=".xlsx,.xls,.csv" hidden>
+<div class="modal" id="xlm" hidden><div class="card"><h2>Impor dari Excel</h2><div class="sub" id="xls" style="margin-bottom:10px"></div>
+<label for="xln">Nama perjalanan</label><input id="xln" maxlength="30">
+<div class="kf" style="margin-top:12px"><div><label for="xlu">Mata uang asing</label><input id="xlu" maxlength="3" placeholder="JPY"></div><div><label for="xlk">Kurs (Rp per 1)</label><input id="xlk" inputmode="decimal" placeholder="119,4"></div></div>
+<div class="err" id="xle"></div><div class="row2"><button class="p" id="xlok">Impor</button><button id="xlc">Batal</button></div></div></div>
+<div class="modal" id="shm" hidden><div class="card"><h2>Bagikan itinerary</h2>
+<label style="display:flex;gap:8px;align-items:center;margin:4px 0 12px"><input type="checkbox" id="shc" style="width:auto"> Sertakan biaya</label>
+<div class="acts"><button class="p" data-sh="wa">Kirim teks (WhatsApp)</button><button data-sh="copy">Salin teks</button><button data-sh="pdf">Cetak / simpan PDF</button></div>
+<div class="sub" id="shs" style="margin:10px 0"></div><div class="row2"><button id="shx">Tutup</button></div></div></div>
 <div class="modal" id="kpm" hidden><div class="card"><h2 id="kpt">Perjalanan baru</h2>
 <label for="kpn">Nama perjalanan</label><input id="kpn" maxlength="30" placeholder="mis. Tokyo - Osaka 9D8N">
 <div class="kf" style="margin-top:12px"><div><label for="kpa">Mulai</label><input id="kpa" type="date"></div><div><label for="kpb">Selesai</label><input id="kpb" type="date"></div></div>
@@ -1504,6 +1521,10 @@ function normKas(k) {
             return { id: String(x.id || 'c' + i), text: String(x.text).slice(0, 60), done: !!x.done };
           }),
         note: String(p.note || '').slice(0, 2000),
+        goal: (function (g) {
+          if (!g || typeof g !== 'object' || !(+g.per > 0) || !/^\d{4}-\d{2}$/.test(g.from) || !/^\d{4}-\d{2}$/.test(g.to) || g.to < g.from) return null;
+          return { t: +g.t > 0 ? +g.t : 0, s0: +g.s0 > 0 ? +g.s0 : 0, from: g.from, to: g.to, per: +g.per };
+        })(p.goal),
         tx: (Array.isArray(p.tx) ? p.tx : [])
           .filter(function (x) {
             return x && +x.amt > 0 && (x.t === '+' || x.t === '-') && ISO_RE.test(x.d);
@@ -2018,6 +2039,16 @@ function calc() {
       }
     });
 
+  kasGoals().forEach(function (g) {
+    goalMonthsIn(g, y).forEach(function (mm) {
+      if (mm <= sm) adjIn -= g.per;
+      else {
+        adjLate -= g.per;
+        adjM[mm] -= g.per;
+      }
+    });
+  });
+
   var bal = (+S.saldo || 0) + adjIn,
     open = bal,
     rows = [];
@@ -2283,10 +2314,11 @@ function fmtLive(el) {
 /** Tampilkan tab tertentu (rincian | jadwal | item). */
 function tab(t) {
   curTab = t;
+  if (t === 'sim') renderSim();
   document.querySelectorAll('nav button').forEach(function (b) {
     b.setAttribute('aria-selected', b.dataset.t === t);
   });
-  ['rincian', 'jadwal', 'item', 'kas'].forEach(function (x) {
+  ['rincian', 'jadwal', 'item', 'kas', 'sim'].forEach(function (x) {
     $('v-' + x).hidden = x !== t;
   });
   $('yb').style.display = '';
@@ -5547,6 +5579,11 @@ function kasDerived() {
         out.push({ id: 'b' + k, d: d, t: '-', amt: priceAt(it, t), cat: it.cat || 'Tagihan', note: it.name + ' (lunas)', ro: 'tagihan' });
     });
   });
+  kasGoals().forEach(function (g) {
+    goalMonths(g).forEach(function (k) {
+      if (+k.slice(0, 4) === y) out.push({ id: 'g' + g.id + k, d: k + '-01', t: '-', amt: g.per, cat: 'Tabungan perjalanan', note: g.name, ro: 'tabungan' });
+    });
+  });
   return out;
 }
 /** Semua baris yang tampil untuk profil P. */
@@ -5721,7 +5758,7 @@ function renderKas() {
           (x.note ? '<br><span class="sub">' + esc(x.note) + '</span>' : '') +
           '</div><div>' +
           (x.ro
-            ? '<span class="sub">dari Jadwal Bayar</span>'
+            ? '<span class="sub">dari ' + (x.ro === 'tabungan' ? 'Target tabungan' : 'Jadwal Bayar') + '</span>'
             : '<button class="g" data-ked="' + x.id + '">Ubah</button><button class="g d" data-kdel="' + x.id + '">Hapus</button>') +
           '</div></div>'
         );
@@ -5845,6 +5882,9 @@ var mode = (function () {
   })(),
   tripTab = 'ring',
   itEdit = null,
+  gEdit = false,
+  SIM = [],
+  simK = 'out',
   bkEdit = null,
   kpMode = 'new',
   curTab = 'rincian',
@@ -5881,11 +5921,13 @@ function remember(k, v) {
 function setMode(m) {
   mode = m;
   remember('rk-mode', m);
+  autoTrip();
   renderAll();
 }
 function setTrip(id) {
   tripAct = id;
-  tripTab = 'ring';
+  tripTab = tp() && tripActive(tp()) ? 'now' : 'ring';
+  gEdit = false;
   itEdit = bkEdit = null;
   kasPer = 'all';
   kasEdit = null;
@@ -5956,14 +5998,19 @@ function tripPlan(P) {
   return r;
 }
 
+function tripBadge(P) {
+  var T = tripToday(P), x = T.L[T.cur >= 0 ? T.cur : T.nxt];
+  return '<div style="margin-bottom:4px"><span class="chp on">Sedang berlangsung &middot; Hari ' + (dayNo(todayISO(), P.start) + 1) + '/' + (dayNo(P.end, P.start) + 1) + '</span></div>' +
+    (x ? '<div class="sub" style="margin-bottom:4px">' + (T.cur >= 0 ? 'Sekarang' : 'Berikutnya') + ': <b>' + (tmShow(x.time) ? tmShow(x.time) + ' ' : '') + esc(x.place) + '</b></div>' : '');
+}
 function tripList() {
   var L = trips();
   return (
-    '<div class="kp"><button class="p" data-tnew="1">+ Perjalanan baru</button></div><div class="sub" id="tsync" style="margin-bottom:10px">&#9729; ' + esc($('sbs').textContent) + '</div>' +
+    '<div class="kp"><button class="p" data-tnew="1">+ Perjalanan baru</button><button data-xl="1">Impor Excel</button><button class="g" data-xlt="1">Template Excel</button></div><div class="sub" id="tsync" style="margin-bottom:10px">&#9729; ' + esc($('sbs').textContent) + '</div>' +
     (L.map(function (P) {
       var pl = tripPlan(P);
       return (
-        '<div class="card" data-trip="' + P.id + '" style="cursor:pointer"><h2>' + esc(P.name) + '</h2><div class="sub">' +
+        '<div class="card" data-trip="' + P.id + '" style="cursor:pointer"><h2>' + esc(P.name) + '</h2>' + (tripActive(P) ? tripBadge(P) : '') + '<div class="sub">' +
         (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) + ' · ' + (dayNo(P.end, P.start) + 1) + ' hari' : 'Tanggal belum diisi') + '</div>' +
         (P.budget ? bar(pl.t, P.budget) + '<div class="sub">Rencana biaya ' + rp(pl.t) + ' dari anggaran ' + rp(P.budget) + '</div>' : '<div class="sub">Rencana biaya ' + rp(pl.t) + ' · anggaran belum ditentukan</div>') + '</div>'
       );
@@ -6008,6 +6055,7 @@ function tripRing(P) {
     '<div class="hero"><div class="card" style="margin:0"><div class="sub">Total rencana biaya</div><div class="big">' + rp(pl.t) + '</div><div class="sub">pemesanan ' + rp(pl.b) + ' + estimasi harian ' + rp(pl.d) + '</div>' +
     (P.budget ? bar(pl.t, P.budget) + '<div class="sub">dari anggaran ' + rp(P.budget) + '</div>' : '<div class="sub">Anggaran belum ditentukan (atur lewat tombol Ubah).</div>') +
     (P.cur && P.rate ? '<div class="sub">Kurs 1 ' + esc(P.cur) + ' = ' + rp(P.rate) + '</div>' : '') + '</div><div class="card stats" style="margin:0">' + cells + '</div></div>' +
+    goalCard(P, pl) +
     (ck.length
       ? '<div class="card"><h2>Siapkan tunai / kartu</h2>' + ck.map(function (k) {
           var c = pl.cash[k];
@@ -6155,16 +6203,18 @@ function renderTrip() {
     el.innerHTML = tripList();
     return;
   }
-  var tabs = [['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['cek', 'Checklist'], ['cat', 'Catatan']];
+  if (tripTab === 'now' && !tripActive(P)) tripTab = 'ring';
+  var tabs = (tripActive(P) ? [['now', 'Hari ini']] : []).concat([['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['cek', 'Checklist'], ['cat', 'Catatan']]);
   el.innerHTML =
-    '<div class="kp"><button class="tbk" data-tback="1">&larr; Semua perjalanan</button><button class="g" data-ted="1">Ubah</button><button class="g d" data-tdel="1">Hapus</button></div><h2 style="margin:0 0 2px">' + esc(P.name) + '</h2><div class="sub" style="margin-bottom:12px">' +
+    '<div class="kp"><button class="tbk" data-tback="1">&larr; Semua perjalanan</button><button class="g" data-tshare="1">Bagikan</button><button class="g" data-ted="1">Ubah</button><button class="g d" data-tdel="1">Hapus</button></div><h2 style="margin:0 0 2px">' + esc(P.name) + '</h2><div class="sub" style="margin-bottom:12px">' +
     (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) : 'Tanggal belum diisi') + (P.cur && P.rate ? ' · 1 ' + P.cur + ' = ' + rp(P.rate) : '') + '</div><div class="sub" id="tsync" style="margin:-6px 0 10px">&#9729; ' + esc($('sbs').textContent) + '</div><div class="kt" style="flex-wrap:wrap;margin-bottom:14px">' +
     tabs.map(function (t) { return '<button type="button" class="yp' + (tripTab === t[0] ? ' on' : '') + '" data-tt="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
-    (tripTab === 'itin' ? tripItin(P) : tripTab === 'book' ? tripBook(P) : tripTab === 'cek' ? tripCek(P) : tripTab === 'cat' ? tripCat(P) : tripRing(P));
+    (tripTab === 'now' ? tripNow(P) : tripTab === 'itin' ? tripItin(P) : tripTab === 'book' ? tripBook(P) : tripTab === 'cek' ? tripCek(P) : tripTab === 'cat' ? tripCat(P) : tripRing(P));
   if (P.cur) {
     fxPrev('ite', 'itu');
     fxPrev('bke', 'bku');
   }
+  if ($('gprev')) goalPrev();
 }
 
 /** Tampilan sesuai mode: Rencana (tab + kontrol tahun) atau Perjalanan (lembar sendiri). */
@@ -6181,7 +6231,7 @@ function modeUi() {
   $('rem').style.display = T ? 'none' : '';
   document.querySelector('h1').textContent = T ? 'Perjalanan' : 'Rencana Keuangan';
   if (T) {
-    ['rincian', 'jadwal', 'item', 'kas'].forEach(function (x) {
+    ['rincian', 'jadwal', 'item', 'kas', 'sim'].forEach(function (x) {
       $('v-' + x).hidden = true;
     });
     $('yb').style.display = 'none';
@@ -6279,6 +6329,271 @@ function bkPay(id) {
   save();
   renderTrip();
 }
+/* ===== Target tabungan perjalanan ===== */
+/** Target tabungan semua perjalanan (dipakai mesin perhitungan Rincian). */
+function kasGoals() {
+  return Object.keys(ALL.kas.pr)
+    .map(function (i) { return ALL.kas.pr[i]; })
+    .filter(function (P) { return !P.link && P.goal; })
+    .map(function (P) { return Object.assign({ id: P.id, name: P.name }, P.goal); });
+}
+/** Daftar bulan 'YYYY-MM' dari a sampai b (inklusif). */
+function monthList(a, b) {
+  var r = [], y = +a.slice(0, 4), m = +a.slice(5) - 1;
+  while (r.length < 60) {
+    var k = y + '-' + pad2(m + 1);
+    if (k > b) break;
+    r.push(k);
+    if (++m > 11) { m = 0; y++; }
+  }
+  return r;
+}
+function goalMonths(g) {
+  return monthList(g.from, g.to);
+}
+function goalMonthsIn(g, y) {
+  return goalMonths(g).filter(function (k) { return +k.slice(0, 4) === y; }).map(function (k) { return +k.slice(5) - 1; });
+}
+function monthLbl(k) {
+  return MON[+k.slice(5) - 1] + ' ' + k.slice(0, 4);
+}
+function goalSel(id, opts, v) {
+  return '<select id="' + id + '">' + opts.map(function (k) { return '<option value="' + k + '"' + (k === v ? ' selected' : '') + '>' + monthLbl(k) + '</option>'; }).join('') + '</select>';
+}
+function goalOpts(P) {
+  return monthList(todayISO().slice(0, 7), P.start.slice(0, 7));
+}
+function goalCard(P, pl) {
+  var g = P.goal;
+  if (!P.start) return '<div class="card"><h2>Target tabungan</h2><div class="sub">Isi tanggal mulai perjalanan (tombol Ubah) untuk menghitung tabungan per bulan.</div></div>';
+  var opts = goalOpts(P);
+  if (g && !gEdit) {
+    var cm = todayISO().slice(0, 7), ms = goalMonths(g), el = ms.filter(function (k) { return k <= cm; }).length, got = Math.min(g.t, g.s0 + g.per * el), C = calc(),
+      neg = C.rows.filter(function (r) { return r.ak < 0; }), low = C.rows.reduce(function (a, r) { return !a || r.ak < a.ak ? r : a; }, null);
+    return (
+      '<div class="card"><h2>Target tabungan</h2><div class="sub">Terkumpul <b>' + rp(got) + '</b> dari ' + rp(g.t) + '</div>' + bar(got, g.t) +
+      '<div class="sub">Sisihkan <b>' + rp(g.per) + '</b> per bulan &middot; ' + monthLbl(g.from) + ' – ' + monthLbl(g.to) + ' &middot; bulan ke ' + Math.min(el, ms.length) + ' dari ' + ms.length + '</div>' +
+      '<div class="sub" style="margin-top:6px">Tabungan ini otomatis dihitung sebagai pengeluaran bulanan di <b>Rincian Bulanan</b>.</div>' +
+      (!goalMonthsIn(g, +S.year).length
+        ? '<div style="margin-top:8px" class="chp ic">Bulan menabung ada di tahun ' + Object.keys(ms.reduce(function (o, k) { o[k.slice(0, 4)] = 1; return o; }, {})).join(' & ') + '. Ganti Tahun di mode Rencana untuk melihat dampaknya.</div>'
+        : '') +
+      (low && goalMonthsIn(g, +S.year).length ? '<div style="margin-top:8px" class="chp ' + (neg.length ? 'cash' : 'on') + '">' + (neg.length ? 'Saldo Rencana ' + S.year + ' negatif di ' + neg.map(function (r) { return MON[r.m]; }).join(', ') : 'Saldo Rencana ' + S.year + ' tetap positif (terendah ' + rp(low.ak) + ' di ' + MON[low.m] + ')') + '</div>' : '') +
+      '<div class="acts" style="margin-top:8px"><button class="g" data-gedit="1">Ubah target</button><button class="g d" data-gdel="1">Hapus target</button></div></div>'
+    );
+  }
+  if (!opts.length) return '<div class="card"><h2>Target tabungan</h2><div class="sub">Perjalanan ini sudah dimulai, jadi tidak ada bulan tersisa untuk menabung.</div></div>';
+  var t0 = g ? g.t : Math.ceil(pl.t / 1000) * 1000, last = opts[opts.length - 1], before = opts.length > 1 ? opts[opts.length - 2] : last;
+  return (
+    '<div class="card"><h2>Target tabungan</h2><div class="sub" style="margin-bottom:8px">Hitung berapa yang perlu disisihkan tiap bulan sebelum berangkat.</div><div class="kf"><div><label for="gt">Target (Rp)</label><input id="gt" inputmode="numeric" value="' + (t0 ? t0.toLocaleString('id-ID') : '') +
+    '"></div><div><label for="gs">Sudah terkumpul (Rp)</label><input id="gs" inputmode="numeric" placeholder="0" value="' + (g && g.s0 ? g.s0.toLocaleString('id-ID') : '') + '"></div><div><label for="gf">Mulai menabung</label>' + goalSel('gf', opts, g ? g.from : opts[0]) +
+    '</div><div><label for="gz">Terakhir menabung</label>' + goalSel('gz', opts, g ? g.to : before) + '</div></div><div class="sub" id="gprev" style="margin:8px 0"></div><div class="err" id="gerr"></div><div class="row2"><button class="p" data-gset="1">Simpan target</button>' + (g ? '<button data-gcancel="1">Batal</button>' : '') + '</div></div>'
+  );
+}
+function goalCalc() {
+  var t = parseRp($('gt').value) || 0, s0 = parseRp($('gs').value) || 0, a = $('gf').value, b = $('gz').value, n = a && b && b >= a ? monthList(a, b).length : 0;
+  return { t: t, s0: s0, from: a, to: b, n: n, per: n && t > s0 ? Math.ceil((t - s0) / n / 1000) * 1000 : 0 };
+}
+function goalPrev() {
+  var c = goalCalc();
+  $('gprev').innerHTML = !c.n ? 'Bulan terakhir tidak boleh sebelum bulan mulai.' : !c.per ? 'Target sudah tercapai dengan dana yang terkumpul.' : 'Sisihkan <b>' + rp(c.per) + '</b> per bulan &times; ' + c.n + ' bulan (' + monthLbl(c.from) + ' – ' + monthLbl(c.to) + ').';
+}
+function goalSave() {
+  var c = goalCalc();
+  if (!(c.t > 0)) { $('gerr').textContent = 'Isi target tabungan.'; return; }
+  if (!c.n) { $('gerr').textContent = 'Bulan terakhir tidak boleh sebelum bulan mulai.'; return; }
+  if (!c.per) { $('gerr').textContent = 'Dana yang terkumpul sudah mencapai target.'; return; }
+  tp().goal = { t: c.t, s0: c.s0, from: c.from, to: c.to, per: c.per };
+  gEdit = false;
+  save();
+  renderAll();
+  toast('Target tabungan disimpan. Rincian Bulanan ikut menghitungnya.');
+}
+function goalDel() {
+  var sn = snap('Sebelum menghapus target tabungan');
+  tp().goal = null;
+  save();
+  renderAll();
+  toast('Target tabungan dihapus.', function () { restoreSnap(sn.t); });
+}
+
+/* ===== Simulasi "bagaimana jika" ===== */
+function simMonths(x) {
+  var e = x.rep === 'sekali' ? x.m : x.rep === 'n' ? Math.min(11, x.m + Math.max(1, x.n) - 1) : 11, r = [];
+  for (var m = x.m; m <= e; m++) r.push(m);
+  return r;
+}
+/** Hitung Rincian dengan skenario diterapkan sementara; data asli tidak berubah. */
+function simCalc(list) {
+  var keepS = S, KL = kasLinked(), keepTx = KL.tx, extra = [], C = JSON.parse(JSON.stringify(S)), y = +S.year;
+  list.forEach(function (x) {
+    if (x.k === 'in' || x.k === 'out') simMonths(x).forEach(function (mm) { extra.push({ d: y + '-' + pad2(mm + 1) + '-01', t: x.k === 'in' ? '+' : '-', amt: x.amt }); });
+    else
+      C.items.forEach(function (it) {
+        if (it.id != x.id) return;
+        if (x.k === 'stop') { it.end = isoD(Date.UTC(y, x.m, 0)); it.cnt = 0; }
+        else it.ch = (it.ch || []).concat([{ from: y + '-' + pad2(x.m + 1) + '-01', to: '', price: x.amt, n: null, unit: null, cut: false }]);
+      });
+  });
+  S = C;
+  KL.tx = keepTx.concat(extra);
+  try { return calc(); } finally { S = keepS; KL.tx = keepTx; }
+}
+function simName(id) {
+  var it = S.items.filter(function (x) { return x.id == id; })[0];
+  return it ? it.name : '(item dihapus)';
+}
+function simDesc(x) {
+  var m = MON[x.m];
+  if (x.k === 'stop') return 'Hentikan <b>' + esc(simName(x.id)) + '</b> mulai ' + m;
+  if (x.k === 'price') return 'Harga <b>' + esc(simName(x.id)) + '</b> jadi ' + rp(x.amt) + ' mulai ' + m;
+  return (x.k === 'in' ? 'Pemasukan ' : 'Pengeluaran ') + '<b>' + esc(x.name) + '</b> ' + rp(x.amt) + ' ' + (x.rep === 'sekali' ? 'sekali di ' + m : x.rep === 'n' ? x.n + ' kali mulai ' + m : 'tiap bulan mulai ' + m + ' sampai Des');
+}
+function simChart(A, B) {
+  var n = A.rows.length;
+  if (n < 2) return '';
+  var all = A.rows.map(function (r) { return r.ak; }).concat(B.rows.map(function (r) { return r.ak; })), mn = Math.min.apply(null, all.concat([0])), mx = Math.max.apply(null, all), r = mx - mn || 1,
+    pt = function (rows) { return rows.map(function (q, i) { return ((i * 600) / (n - 1)).toFixed(1) + ',' + (130 - ((q.ak - mn) / r) * 116).toFixed(1); }).join(' '); }, z = (130 - ((0 - mn) / r) * 116).toFixed(1);
+  return '<svg class="kch" viewBox="0 0 600 140" preserveAspectRatio="none" role="img" aria-label="Saldo akhir per bulan: asli dan simulasi"><line x1="0" x2="600" y1="' + z + '" y2="' + z + '" style="stroke:var(--ln);stroke-dasharray:4 4"></line><polyline points="' + pt(A.rows) +
+    '" style="fill:none;stroke:var(--mut);stroke-width:2;vector-effect:non-scaling-stroke"></polyline><polyline points="' + pt(B.rows) + '" style="fill:none;stroke:var(--ac);stroke-width:3;vector-effect:non-scaling-stroke"></polyline></svg><div class="sub" style="display:flex;gap:14px;flex-wrap:wrap"><span><i class="dot" style="background:var(--mut)"></i> Asli</span><span><i class="dot" style="background:var(--ac)"></i> Simulasi</span><span>' + MON[A.rows[0].m] + ' – ' + MON[A.rows[n - 1].m] + '</span></div>';
+}
+function renderSim() {
+  var el = $('v-sim');
+  if (mode === 'trip') { el.innerHTML = ''; return; }
+  var mo = MON.map(function (m, i) { return '<option value="' + i + '">' + m + '</option>'; }).join(''), items = S.items.map(function (it) { return '<option value="' + it.id + '">' + esc(it.name) + '</option>'; }).join(''),
+    two = simK === 'in' || simK === 'out',
+    form =
+      '<div class="card"><h2>Simulasi &quot;bagaimana jika&quot; &middot; ' + S.year + '</h2><div class="sub" style="margin-bottom:10px">Coba perubahan tanpa mengubah data. Hasilnya langsung terlihat di grafik.</div><div class="kf"><div style="grid-column:1/-1"><label for="smk">Skenario</label><select id="smk">' +
+      [['out', 'Tambah pengeluaran / cicilan'], ['in', 'Tambah pemasukan'], ['stop', 'Hentikan item'], ['price', 'Ubah harga item']].map(function (o) { return '<option value="' + o[0] + '"' + (simK === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
+      (two ? '<div style="grid-column:1/-1"><label for="smn">Nama</label><input id="smn" maxlength="30" placeholder="mis. Cicilan motor"></div>' : '<div style="grid-column:1/-1"><label for="smi">Item</label><select id="smi">' + items + '</select></div>') +
+      '<div><label for="sma">' + (simK === 'stop' ? 'Jumlah (tidak dipakai)' : simK === 'price' ? 'Harga baru (Rp)' : 'Jumlah (Rp)') + '</label><input id="sma" inputmode="numeric" placeholder="0"' + (simK === 'stop' ? ' disabled' : '') + '></div><div><label for="smm">Mulai bulan</label><select id="smm">' + mo + '</select></div>' +
+      (two ? '<div><label for="smr">Berapa kali</label><select id="smr"><option value="bulan">Tiap bulan sampai Des</option><option value="sekali">Sekali saja</option><option value="n">Sekian kali</option></select></div><div id="smcw" hidden><label for="smc">Jumlah bulan</label><input id="smc" type="number" min="1" max="12" value="3"></div>' : '') +
+      '</div><div class="err" id="smerr"></div><div class="row2"><button class="p" data-smadd="1">Tambah ke simulasi</button></div></div>';
+  var out = form;
+  if (!SIM.length) {
+    el.innerHTML = out + '<div class="card"><div class="empty">Belum ada skenario. Tambahkan satu di atas untuk melihat dampaknya pada saldo.</div></div>';
+    return;
+  }
+  var A = calc(), B = simCalc(SIM), lo = function (C) { return C.rows.reduce(function (a, r) { return !a || r.ak < a.ak ? r : a; }, null); }, la = lo(A), lb = lo(B), d = B.end - A.end,
+    negs = function (C) { return C.rows.filter(function (r) { return r.ak < 0; }).map(function (r) { return MON[r.m]; }); }, nb = negs(B);
+  out +=
+    '<div class="card"><h2>Skenario aktif</h2>' + SIM.map(function (x, i) { return '<div class="it2"><div>' + simDesc(x) + '</div><div><button class="g d" data-smdel="' + i + '" aria-label="Hapus skenario">&#10005;</button></div></div>'; }).join('') +
+    '<div class="acts" style="margin-top:8px"><button class="p" data-smapply="1">Terapkan ke data</button><button class="g d" data-smclear="1">Buang semua</button></div></div>' +
+    '<div class="card"><h2>Dampak</h2><div class="hero" style="margin:0"><div class="card" style="margin:0"><div class="sub">Saldo akhir Des ' + S.year + '</div><div class="big' + (B.end < 0 ? ' neg' : '') + '">' + rp(B.end) + '</div><div class="sub">asli ' + rp(A.end) + ' &middot; <b>' + (d >= 0 ? 'naik ' : 'turun ') + rp(Math.abs(d)) + '</b></div></div><div class="card stats" style="margin:0"><div><span>Saldo terendah asli</span><b>' + rp(la.ak) + '</b><span>' + MON[la.m] +
+    '</span></div><div><span>Saldo terendah simulasi</span><b>' + rp(lb.ak) + '</b><span>' + MON[lb.m] + '</span></div></div></div>' + '<div class="chp ' + (nb.length ? 'cash' : 'on') + '" style="margin:10px 0 6px">' + (nb.length ? 'Saldo negatif di ' + nb.join(', ') : 'Saldo tetap positif sepanjang tahun') + '</div>' + simChart(A, B) + '</div>' +
+    '<div class="card"><h2>Per bulan</h2>' + B.rows.map(function (r, i) { var a = A.rows[i].ak, df = r.ak - a; return '<div class="it2"><div><b>' + MON[r.m] + '</b> <span class="sub">asli ' + rp(a) + '</span></div><div><b' + (r.ak < 0 ? ' style="color:var(--wr)"' : '') + '>' + rp(r.ak) + '</b> <span class="sub">' + (df === 0 ? '' : (df > 0 ? '+' : '&minus;') + rp(Math.abs(df))) + '</span></div></div>'; }).join('') + '</div>';
+  el.innerHTML = out;
+}
+/** Terapkan semua skenario ke data asli (dengan cadangan agar bisa diurungkan). */
+function simApply() {
+  var sn = snap('Sebelum menerapkan simulasi'), y = +S.year, KL = kasLinked(), n = 0;
+  SIM.forEach(function (x) {
+    if (x.k === 'out') S.items.push({ id: Date.now() + n++, name: x.name, price: x.amt, n: 1, unit: x.rep === 'sekali' ? 'sekali' : 'bulan', start: y + '-' + pad2(x.m + 1) + '-01', end: x.rep === 'bulan' ? y + '-12-31' : '', cnt: x.rep === 'n' ? x.n : 0, cat: 'Simulasi', ch: [] });
+    else if (x.k === 'in') simMonths(x).forEach(function (mm) { KL.tx.push({ id: kid('s'), d: y + '-' + pad2(mm + 1) + '-01', t: '+', amt: x.amt, cat: 'Simulasi', note: x.name, pay: '' }); });
+    else
+      S.items.forEach(function (it) {
+        if (it.id != x.id) return;
+        if (x.k === 'stop') { it.end = isoD(Date.UTC(y, x.m, 0)); it.cnt = 0; }
+        else (it.ch = it.ch || []).push({ from: y + '-' + pad2(x.m + 1) + '-01', to: '', price: x.amt, n: null, unit: null, cut: false });
+      });
+  });
+  SIM = [];
+  save();
+  renderAll();
+  tab('sim');
+  toast('Simulasi diterapkan ke data.', function () { restoreSnap(sn.t); });
+}
+function simAdd() {
+  var x = { k: simK, m: +$('smm').value }, err = function (t) { $('smerr').textContent = t; };
+  if (simK === 'in' || simK === 'out') {
+    x.name = $('smn').value.trim().slice(0, 30);
+    x.amt = parseRp($('sma').value) || 0;
+    x.rep = $('smr').value;
+    x.n = Math.max(1, Math.min(12, parseInt($('smc').value, 10) || 1));
+    if (!x.name) return err('Isi nama.');
+    if (!(x.amt > 0)) return err('Isi jumlah yang valid.');
+  } else {
+    x.id = $('smi').value;
+    if (!x.id) return err('Belum ada item. Tambahkan item dulu di Kelola Item.');
+    if (simK === 'price') {
+      x.amt = parseRp($('sma').value) || 0;
+      if (!(x.amt > 0)) return err('Isi harga baru.');
+    }
+  }
+  SIM.push(x);
+  renderSim();
+}
+function bindSim() {
+  var V = $('v-sim');
+  V.onclick = function (e) {
+    var b = e.target.closest('button');
+    if (!b) return;
+    var d = b.dataset;
+    if (d.smadd) simAdd();
+    else if (d.smdel) { SIM.splice(+d.smdel, 1); renderSim(); }
+    else if (d.smclear) { SIM = []; renderSim(); }
+    else if (d.smapply) simApply();
+  };
+  V.onchange = function (e) {
+    if (e.target.id === 'smk') { simK = e.target.value; renderSim(); }
+    else if (e.target.id === 'smr') $('smcw').hidden = e.target.value !== 'n';
+  };
+  V.addEventListener('input', function (e) {
+    if (e.target.id === 'sma') fmtLive(e.target);
+  });
+}
+
+/** Perjalanan sedang berlangsung (hari ini ada di antara Mulai dan Selesai)? */
+function tripActive(P) {
+  var td = todayISO();
+  return !!(P.start && P.end && td >= P.start && td <= P.end);
+}
+function nowHM() {
+  var d = new Date();
+  return pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+}
+function byTime(a, b) {
+  return (a.time || '99') < (b.time || '99') ? -1 : (a.time || '99') > (b.time || '99') ? 1 : 0;
+}
+/** Kegiatan hari ini + penanda "sedang berlangsung" dan "berikutnya" menurut jam sekarang. */
+function tripToday(P) {
+  var hm = nowHM(), r = { L: P.it.filter(function (x) { return x.day === todayISO(); }).sort(byTime), cur: -1, nxt: -1 };
+  r.L.forEach(function (x, i) {
+    if (x.done) return;
+    if (x.time && x.time2 && x.time <= hm && hm <= x.time2) r.cur = i;
+    else if (r.nxt < 0 && (!x.time || x.time > hm)) r.nxt = i;
+  });
+  return r;
+}
+function tripNow(P) {
+  var td = todayISO(), T = tripToday(P), N = dayNo(P.end, P.start) + 1, no = dayNo(td, P.start) + 1, tm = isoD(Date.parse(td + 'T00:00:00Z') + 864e5),
+    B = P.it.filter(function (x) { return x.day === tm; }).sort(byTime), done = T.L.filter(function (x) { return x.done; }).length;
+  return (
+    '<div class="card"><div class="sub">Hari ' + no + ' dari ' + N + ' &middot; sekarang ' + tmShow(nowHM()) + '</div><h2 style="margin:2px 0 4px">' + esc(P.dt[td] || dayLabel(P, td)) + '</h2><div class="sub">' + esc(dayLabel(P, td)) + (T.L.length ? ' &middot; ' + done + '/' + T.L.length + ' selesai' : '') + '</div></div>' +
+    '<div class="card"><h2>Hari ini</h2>' +
+    (T.L.map(function (x, i) {
+      var mk = i === T.cur ? '<span class="chp on">Sedang berlangsung</span>' : i === T.nxt ? '<span class="chp ic">Berikutnya</span>' : '';
+      return (
+        '<div class="itm"><div class="tm">' + tmShow(x.time) + (x.time2 ? '<br>' + tmShow(x.time2) + '' : '') + '</div><div><div class="ttl"' + (x.done ? ' style="text-decoration:line-through;opacity:.6"' : '') + '>' + esc(x.place) + '</div><div>' + mk +
+        (x.cat ? '<span class="chp" style="background:transparent;border:1px solid var(--ln)">' + esc(x.cat) + '</span>' : '') + pchip(x.pay) + lnk(x.link) + '</div>' + (x.note ? '<div class="sub">' + esc(x.note) + '</div>' : '') +
+        '<div class="ac" style="justify-content:flex-start"><button class="g" data-itdone="' + x.id + '">' + (x.done ? '&#9745; Selesai' : '&#9744; Tandai selesai') + '</button></div></div><div class="co">' + (x.est ? amtTxt(P, x.est, x.fx) : '') + '</div></div>'
+      );
+    }).join('') || '<div class="sub">Belum ada kegiatan untuk hari ini. Tambahkan di tab Itinerary.</div>') + '</div>' +
+    (B.length
+      ? '<div class="card"><h2>Besok</h2>' + (P.dt[tm] ? '<div class="sub" style="margin:-6px 0 6px">' + esc(P.dt[tm]) + '</div>' : '') +
+        B.slice(0, 5).map(function (x) { return '<div class="it2"><div><b>' + (tmShow(x.time) || '–') + '</b> ' + esc(x.place) + '</div><div>' + lnk(x.link) + '</div></div>'; }).join('') + (B.length > 5 ? '<div class="sub">+ ' + (B.length - 5) + ' kegiatan lagi</div>' : '') + '</div>'
+      : '')
+  );
+}
+/** Buka otomatis perjalanan yang sedang berlangsung bila hanya ada satu. */
+function autoTrip() {
+  if (mode !== 'trip' || tp()) return;
+  var a = trips().filter(tripActive);
+  if (a.length === 1) {
+    tripAct = a[0].id;
+    tripTab = 'now';
+    remember('rk-trip', tripAct);
+  }
+}
 function itFind(id) {
   return tp().it.filter(function (x) { return x.id === id; })[0];
 }
@@ -6330,7 +6645,22 @@ function bindTrip() {
     else if (d.tt) {
       tripTab = d.tt;
       itEdit = bkEdit = null;
+      gEdit = false;
       renderTrip();
+    } else if (d.gedit) {
+      gEdit = true;
+      renderTrip();
+      goalPrev();
+    } else if (d.gdel) goalDel();
+    else if (d.gset) goalSave();
+    else if (d.gcancel) {
+      gEdit = false;
+      renderTrip();
+    } else if (d.xl) $('xlf').click();
+    else if (d.xlt) xlTemplate();
+    else if (d.tshare) {
+      $('shs').textContent = '';
+      $('shm').hidden = false;
     } else if (d.its) itSave();
     else if (d.itx) {
       itEdit = null;
@@ -6391,6 +6721,7 @@ function bindTrip() {
       if (pt !== null) e.target.value = tmShow(pt);
     }
     if (FX[tid]) fxPrev(FX[tid][0], FX[tid][1]);
+    if (tid === 'gf' || tid === 'gz') goalPrev();
     if (e.target.dataset.dt) {
       var P = tp(), t = e.target.value.trim().slice(0, 60);
       if (t) P.dt[e.target.dataset.dt] = t;
@@ -6400,6 +6731,10 @@ function bindTrip() {
   };
   V.addEventListener('input', function (e) {
     var id = e.target.id;
+    if (id === 'gt' || id === 'gs') {
+      fmtLive(e.target);
+      goalPrev();
+    }
     if (id === 'ite' || id === 'bke') fmtLive(e.target);
     if (id === 'itt' || id === 'itt2') {
       var tv = e.target.value.replace(/[^\d.:]/g, '');
@@ -6427,6 +6762,374 @@ function bindTrip() {
   };
 }
 
+/* ===== Impor Excel ===== */
+var XL_URL = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+  xlData = null,
+  BLN = { januari: 1, jan: 1, februari: 2, feb: 2, maret: 3, mar: 3, april: 4, apr: 4, mei: 5, juni: 6, jun: 6, juli: 7, jul: 7, agustus: 8, agu: 8, agt: 8, ags: 8, september: 9, sep: 9, sept: 9, oktober: 10, okt: 10, november: 11, nov: 11, nopember: 11, desember: 12, des: 12, january: 1, february: 2, march: 3, may: 5, june: 6, july: 7, august: 8, october: 10, oct: 10, aug: 8, dec: 12, december: 12 };
+
+/** Muat pustaka Excel (SheetJS) hanya saat dibutuhkan. */
+function loadXlsx() {
+  return new Promise(function (ok, no) {
+    if (window.XLSX) return ok(window.XLSX);
+    var sc = document.createElement('script');
+    sc.src = XL_URL;
+    sc.onload = function () { ok(window.XLSX); };
+    sc.onerror = function () { no(new Error('Pustaka Excel gagal dimuat. Periksa koneksi internet.')); };
+    document.head.appendChild(sc);
+  });
+}
+function xlDate(v) {
+  if (v instanceof Date && !isNaN(v)) {
+    var d = new Date(v.getTime() + 432e5);
+    return d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate());
+  }
+  if (typeof v === 'number' && v > 30000 && v < 80000) return isoD(Date.UTC(1899, 11, 30) + Math.round(v) * 864e5);
+  var t = String(v == null ? '' : v).trim(), m;
+  if ((m = /^(\d{4})-(\d{2})-(\d{2})/.exec(t))) return m[1] + '-' + m[2] + '-' + m[3];
+  if ((m = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/.exec(t))) return m[3] + '-' + pad2(+m[2]) + '-' + pad2(+m[1]);
+  if ((m = /(\d{1,2})\s+([A-Za-z]+)\.?\s+(\d{4})/.exec(t)) && BLN[m[2].toLowerCase()]) return m[3] + '-' + pad2(BLN[m[2].toLowerCase()]) + '-' + pad2(+m[1]);
+  return '';
+}
+function xlHM(h, m) {
+  h = +h;
+  m = +m;
+  return h > 23 || m > 59 ? '' : pad2(h) + ':' + pad2(m);
+}
+/** Baca jam: "20.00-21.50", "14.10-", "5 pagi", "9 malam". */
+function xlTime(v) {
+  var t = String(v == null ? '' : v).trim().toLowerCase(), m;
+  if ((m = /(\d{1,2})[.:](\d{2})\s*(?:[-–—~]|s\/d|sampai)?\s*(?:(\d{1,2})[.:](\d{2}))?/.exec(t))) return { a: xlHM(m[1], m[2]), b: m[3] ? xlHM(m[3], m[4]) : '' };
+  if ((m = /^(\d{1,2})\s*(pagi|siang|sore|malam)/.exec(t))) {
+    var h = +m[1];
+    if (m[2] === 'malam') h = h === 12 ? 0 : h < 12 ? h + 12 : h;
+    else if ((m[2] === 'sore' || m[2] === 'siang') && h < 12) h += 12;
+    return { a: xlHM(h, 0), b: '' };
+  }
+  return { a: '', b: '' };
+}
+function xlNum(v) {
+  if (typeof v === 'number') return v;
+  var t = String(v == null ? '' : v).toLowerCase();
+  if (/jalan|gratis|free/.test(t)) return 0;
+  var m = t.replace(/rp|idr|yen|¥|jpy/g, '').replace(/\s/g, '').match(/[\d.,]+/);
+  if (!m) return 0;
+  t = m[0];
+  if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+  else if (/^\d{1,3}(,\d{3})+$/.test(t)) t = t.replace(/,/g, '');
+  else t = t.replace(',', '.');
+  return parseFloat(t) || 0;
+}
+function xlPay(v) {
+  var t = String(v == null ? '' : v).toLowerCase();
+  return /suica|icoca|pasmo|\bic\b|kartu ic/.test(t) ? 'ic' : /online|trip\.com|tiket|klook|traveloka|agoda|booking|\bby /.test(t) ? 'on' : /cash|tunai/.test(t) ? 'cash' : '';
+}
+function xlCat(t) {
+  t = t.toLowerCase();
+  if (/makan|sarapan|resto|ramen|sushi|cafe|kafe|family ?mart|lawson|7[- ]?eleven|konbini|bento|kuliner|jajan|dinner|lunch/.test(t)) return 'Makan';
+  if (/belanja|shopping|uniqlo|don ?quijote|donki|souvenir|oleh-oleh|mall|outlet/.test(t)) return 'Belanja';
+  if (/\bke |naik|bus|kereta|train|shinkansen|\bjr\b|subway|metro|bandara|airport|pesawat|station|stasiun|taksi|taxi|haneda|narita|imigrasi|immigration|[a-z]{3}-[a-z]{3}/.test(t)) return 'Transport';
+  if (/tiket|tour|museum|admission|kuil|temple|castle|taman|park|observatory|aquarium|tower|masuk/.test(t)) return 'Tiket & Tour';
+  return 'Lainnya';
+}
+function xlBcat(t) {
+  t = String(t || '').toLowerCase();
+  return /transport|pesawat|bus\b|kereta|shinkansen|\bjr\b/.test(t) ? 'Transport' : /akomodasi|hotel|penginapan|hostel/.test(t) ? 'Penginapan' : /persiapan|perlengkapan|visa|asuransi|internet|pasport|paspor|jaket|heatech|koper|simcard|esim|telkomsel/.test(t) ? 'Persiapan' : /admission|tiket|tour|wisata|gondola|klook/.test(t) ? 'Tiket & Tour' : 'Lainnya';
+}
+/** Cari baris judul kolom: Tanggal/Jam/Kegiatan (itinerary) atau Nama/Jumlah (pemesanan). */
+function xlHeader(rows, name) {
+  var A = { dateC: /^(date|tanggal|tgl|hari)$/, timeC: /^(jam|waktu|time)/, textC: /(keterangan|kegiatan|aktivitas|activity|agenda|acara)/, costC: /(biaya|harga|cost|nominal)/, curC: /(mata ?uang|currency)/, payC: /(bayar|metode|payment)/, catC: /(kategori|category)/, linkC: /(link|tautan|url)/, noteC: /(catatan|note)/, nameC: /^(nama|item|pemesanan|booking)/, amtC: /^(jumlah|harga|amount|biaya)/, paidC: /(lunas|status)/ };
+  for (var r = 0; r < Math.min(rows.length, 40); r++) {
+    var h = { row: r };
+    (rows[r] || []).forEach(function (c, i) {
+      var t = String(c == null ? '' : c).trim().toLowerCase();
+      if (!t) return;
+      for (var k in A) if (h[k] == null && A[k].test(t)) { h[k] = i; break; }
+    });
+    if (h.textC != null && (h.timeC != null || h.dateC != null)) { h.kind = 'it'; return h; }
+    if (h.nameC != null && h.amtC != null) { h.kind = 'bk'; return h; }
+    var pc = (rows[r] || []).map(function (c) { return String(c == null ? '' : c).trim().toLowerCase(); }).indexOf('pengeluaran');
+    if (pc >= 0) return { row: r, kind: 'bk', free: true, nameC: pc, catC: pc - 1, idrC: pc + 1, fxC: pc + 2 };
+  }
+  return null;
+}
+function xlItin(rows, h, out) {
+  var day = '', n = out.it.length;
+  for (var r = h.row + 1; r < rows.length; r++) {
+    var row = rows[r] || [], dv = h.dateC != null ? xlDate(row[h.dateC]) : '', txt = String(row[h.textC] == null ? '' : row[h.textC]).trim(),
+      tm = h.timeC != null ? xlTime(row[h.timeC]) : { a: '', b: '' }, cost = h.costC != null ? row[h.costC] : row[h.textC + 1], dm = /^day\s*\d+\s*[:\-–]?\s*(.*)$/i.exec(txt);
+    if (dv) day = dv;
+    if (dm && !tm.a && !xlNum(cost)) {
+      var nx = '';
+      for (var j = r + 1; j < Math.min(rows.length, r + 4) && !nx; j++) nx = h.dateC != null ? xlDate((rows[j] || [])[h.dateC]) : '';
+      var tg = nx && nx !== day ? nx : day;
+      if (tg && dm[1].trim()) out.dt[tg] = dm[1].trim().replace(/\s+/g, ' ').slice(0, 40);
+      continue;
+    }
+    if (/^total$/i.test(txt) && !tm.a) {
+      xlBlock(rows, h, r, out);
+      break;
+    }
+    if (!txt || !day || /^(sub)?total\b/i.test(txt)) continue;
+    var urls = txt.match(/https?:\/\/\S+/g) || [], place = txt.replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim(), payRaw = h.payC != null ? row[h.payC] : row[h.textC + 2], pay = xlPay(payRaw), amt = xlNum(cost), fx = false;
+    if (h.curC != null) {
+      var cu = String(row[h.curC] || '').trim().toUpperCase();
+      if (cu && !/^(IDR|RP)$/.test(cu)) { fx = true; out.cur = out.cur || cu.slice(0, 3); }
+    } else if (amt) fx = amt >= 100000 && !/yen|¥|jpy/i.test(String(cost) + String(payRaw)) ? false : pay === 'ic' || pay === 'cash' || /yen|¥|jpy/i.test(String(cost) + String(payRaw)) ? true : pay === 'on' ? false : !!out.hintFx && amt < 100000;
+    if (!fx && amt >= 100000 && h.curC == null && (!pay || pay === 'ic')) pay = 'on';
+    if (fx && amt) out.fx = true;
+    var note = h.noteC != null ? String(row[h.noteC] || '').trim() : '';
+    if (place.length > 60) {
+      note = (place + (note ? ' · ' + note : '')).slice(0, 120);
+      place = place.slice(0, 57) + '…';
+    }
+    if (!place) place = urls[0] ? 'Lokasi (peta)' : txt.slice(0, 60);
+    var ct = h.catC != null ? xlBcat(row[h.catC]) : '';
+    out.it.push({ id: 'i' + ++n, day: day, time: tm.a, time2: tm.b, place: place, cat: ct === 'Persiapan' || ct === 'Penginapan' || !ct ? (h.catC != null && /makan/i.test(row[h.catC]) ? 'Makan' : xlCat(txt)) : ct, est: Math.round(amt), fx: fx && amt > 0, pay: pay, link: h.linkC != null && /^https?:/.test(row[h.linkC]) ? String(row[h.linkC]).trim() : urls[0] || '', note: note, done: false, rec: '' });
+  }
+}
+/** Tabel "Pengeluaran" di bawah baris TOTAL pada sheet itinerary -> pemesanan (top-up Suica dilewati: sudah ada di biaya harian). */
+function xlBlock(rows, h, from, out) {
+  var j = from + 1, blanks = 0, n = out.bk.length;
+  while (j < rows.length && !/^pengeluaran/i.test(String((rows[j] || [])[h.textC] || '').trim())) if (j++ > from + 12) return;
+  for (j++; j < rows.length && blanks < 4; j++) {
+    var row = rows[j] || [], t = String(row[h.textC] == null ? '' : row[h.textC]).trim().replace(/\s+/g, ' ');
+    if (!t) { blanks++; continue; }
+    blanks = 0;
+    if (/^(sub)?total\b/i.test(t) || /^suica|top ?up suica|suica untuk/i.test(t)) continue;
+    var amt = xlNum(row[h.textC + 1]), pay = xlPay(row[h.textC + 2]);
+    if (amt > 0) out.bk.push({ id: 'b' + ++n, title: t.slice(0, 120), cat: xlBcat(t), amt: Math.round(amt), fx: false, pay: pay || 'on', link: '', a: '', b: '', paid: false, rec: '' });
+  }
+}
+function xlBook(rows, h, out) {
+  var cat = 'Lainnya', n = out.bk.length, add = function (title, c, amt, fx, pay, paid, link) {
+    if (amt > 0) out.bk.push({ id: 'b' + ++n, title: title.slice(0, 120), cat: c, amt: Math.round(amt), fx: fx, pay: pay, link: link || '', a: '', b: '', paid: !!paid, rec: '' });
+    if (fx && amt > 0) out.fx = true;
+  };
+  for (var r = h.row + 1; r < rows.length; r++) {
+    var row = rows[r] || [], title = String(row[h.nameC] == null ? '' : row[h.nameC]).trim();
+    if (!title || /^(sub)?total\b/i.test(title)) continue;
+    if (h.free) {
+      var cv = String(row[h.catC] == null ? '' : row[h.catC]).trim();
+      if (cv && cv !== '&') cat = xlBcat(cv);
+      add(title, cat, xlNum(row[h.idrC]), false, 'on', false);
+    } else {
+      var cu = h.curC != null ? String(row[h.curC] || '').trim().toUpperCase() : '', fx = !!cu && !/^(IDR|RP)$/.test(cu);
+      if (fx) out.cur = out.cur || cu.slice(0, 3);
+      add(title, h.catC != null ? xlBcat(row[h.catC]) : 'Lainnya', xlNum(row[h.amtC]), fx, h.payC != null ? xlPay(row[h.payC]) : '', h.paidC != null && /^(ya|y|lunas|paid|1|true|sudah)/i.test(String(row[h.paidC]).trim()), h.linkC != null && /^https?:/.test(row[h.linkC]) ? String(row[h.linkC]).trim() : '');
+    }
+  }
+}
+/** Baca seluruh workbook menjadi data perjalanan. Mengembalikan {it, bk, dt, lk, start, end, cur, fx}. */
+function xlParse(wb) {
+  var out = { it: [], bk: [], dt: {}, lk: [], cur: '', fx: false, hintFx: false }, used = {}, seen = {};
+  wb.SheetNames.forEach(function (nm) {
+    var rows = XLSX.utils.sheet_to_json(wb.Sheets[nm], { header: 1, raw: true, defval: '' });
+    rows.forEach(function (row) { row.forEach(function (c) { if (/yen|suica|¥|jpy/i.test(String(c))) out.hintFx = true; }); });
+    var h = xlHeader(rows, nm);
+    if (!h) return;
+    if (h.kind === 'it') xlItin(rows, h, out);
+    else if (!(h.free && out.bk.length)) xlBook(rows, h, out);
+    rows.forEach(function (row, ri) {
+      row.forEach(function (c, ci) {
+        var t = String(c == null ? '' : c), u = /https?:\/\/\S+/.exec(t);
+        if (!u || (h.kind === 'it' && ci === h.textC) || /maps\.app\.goo\.gl|google\.[a-z.]+\/maps|goo\.gl\/maps/.test(u[0]) || seen[u[0]] || out.lk.length >= 8) return;
+        seen[u[0]] = 1;
+        var ti = t.replace(u[0], '').replace(/[:\s=]+$/, '').replace(/^\s*\d+\.\s*/, '').trim();
+        out.lk.push({ id: 'l' + (out.lk.length + 1), title: (ti || u[0].replace(/^https?:\/\/(www\.)?/, '').split('/')[0]).slice(0, 60), url: u[0].slice(0, 300) });
+      });
+    });
+  });
+  var ds = out.it.map(function (x) { return x.day; }).sort();
+  out.start = ds[0] || '';
+  out.end = ds[ds.length - 1] || '';
+  return out;
+}
+function xlPick(e) {
+  var f = e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  loadXlsx().then(function (X) {
+    var fr = new FileReader();
+    fr.onload = function () {
+      try {
+        var d = xlParse(X.read(fr.result, { type: 'array', cellDates: true }));
+        if (!d.it.length && !d.bk.length) return toast('Format tidak dikenali. Unduh Template Excel lalu isi sesuai kolomnya.');
+        xlData = d;
+        $('xls').textContent = d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan, ' + Object.keys(d.dt).length + ' judul hari' + (d.start ? ' · ' + fmtD(d.start) + ' – ' + fmtD(d.end) : '') + '.' + (function () {
+          var a = 0, b = 0;
+          d.bk.forEach(function (x) { if (x.fx) b += x.amt; else a += x.amt; });
+          d.it.forEach(function (x) { if (x.pay === 'on') return; if (x.fx) b += x.est; else a += x.est; });
+          return ' Perkiraan biaya: ' + rp(a) + (b ? ' + ' + b.toLocaleString('id-ID') + ' dalam mata uang asing' : '') + '.' + (d.fx ? ' Isi kode dan kurs mata uang asing.' : '');
+        })();
+        $('xln').value = f.name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').slice(0, 30);
+        $('xlu').value = d.cur || (d.fx ? 'JPY' : '');
+        $('xlk').value = '';
+        $('xle').textContent = '';
+        $('xlm').hidden = false;
+      } catch (x) {
+        toast('File tidak bisa dibaca. Coba simpan ulang sebagai .xlsx.');
+      }
+    };
+    fr.readAsArrayBuffer(f);
+  }).catch(function (x) { toast(x.message); });
+}
+function xlCommit() {
+  var d = xlData, n = $('xln').value.trim().slice(0, 30), cu = $('xlu').value.trim().toUpperCase(), rt = parseFloat(String($('xlk').value).replace(',', '.')) || 0, er = function (t) { $('xle').textContent = t; };
+  if (!d) return;
+  if (!n) return er('Nama perjalanan belum diisi.');
+  if (d.fx && !cu) return er('Ada biaya mata uang asing (mis. yen). Isi kodenya, misalnya JPY.');
+  if (cu && !/^[A-Z]{3}$/.test(cu)) return er('Mata uang terdiri dari 3 huruf, mis. JPY.');
+  if (cu && !(rt > 0)) return er('Isi kurs: berapa rupiah untuk 1 ' + cu + '.');
+  var nm = n, k = 2;
+  while (trips().some(function (x) { return x.name.toLowerCase() === nm.toLowerCase(); })) nm = n.slice(0, 26) + ' (' + k++ + ')';
+  var id = 'p' + Date.now().toString(36), re = function (a, p) { return a.map(function (x) { return Object.assign({}, x, { id: kid(p) }); }); };
+  ALL.kas.pr[id] = { id: id, name: nm, saldo: 0, link: false, start: d.start, end: d.end, budget: 0, cur: cu, rate: cu ? rt : 0, dt: d.dt, tx: [], it: re(d.it, 'i'), bk: re(d.bk, 'b'), lk: re(d.lk, 'l'), ck: [], note: '', goal: null };
+  xlData = null;
+  $('xlm').hidden = true;
+  save();
+  setMode('trip');
+  setTrip(id);
+  toast('Perjalanan diimpor: ' + d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan.');
+}
+/** Unduh template Excel yang bisa langsung diisi lalu diimpor. */
+function xlTemplate() {
+  loadXlsx().then(function (X) {
+    var wb = X.utils.book_new();
+    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([
+      ['Tanggal', 'Jam', 'Kegiatan', 'Kategori', 'Biaya', 'Mata uang', 'Pembayaran', 'Tautan', 'Catatan'],
+      ['', '', 'DAY 1 Jakarta - Tokyo', '', '', '', '', '', 'Baris "DAY n judul" menjadi judul hari'],
+      ['2026-01-27', '07.30-09.00', 'Sarapan di konbini', 'Makan', 500, 'JPY', 'Kartu IC', '', ''],
+      ['', '10.00-12.00', 'Tokyo Tower', 'Tiket & Tour', 1200, 'JPY', 'Cash', 'https://maps.app.goo.gl/contoh', 'Tanggal kosong = ikut baris di atasnya'],
+    ]), 'Itinerary');
+    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([
+      ['Nama', 'Kategori', 'Jumlah', 'Mata uang', 'Pembayaran', 'Lunas', 'Tautan', 'Catatan'],
+      ['Tiket pesawat PP', 'Transport', 6500000, 'IDR', 'Online', 'Ya', '', ''],
+      ['Hotel 4 malam', 'Penginapan', 1800000, 'IDR', 'Online', 'Belum', '', ''],
+    ]), 'Pemesanan');
+    X.writeFile(wb, 'template-itinerary.xlsx');
+  }).catch(function (x) { toast(x.message); });
+}
+
+/* ===== Bagikan itinerary ===== */
+function amtPlain(P, v, fx) {
+  return fx && P.cur ? P.cur + ' ' + Math.round(v).toLocaleString('id-ID') : rp(v);
+}
+/** Teks itinerary siap kirim (format tebal ala WhatsApp). */
+function tripText(P, cost) {
+  var L = ['*' + P.name + '*'];
+  if (P.start && P.end) L.push(fmtD(P.start) + ' – ' + fmtD(P.end) + ' · ' + (dayNo(P.end, P.start) + 1) + ' hari');
+  L.push('');
+  tripDays(P).forEach(function (d) {
+    var its = P.it.filter(function (x) { return x.day === d; }).sort(byTime);
+    if (!its.length && !P.dt[d]) return;
+    L.push('*' + dayLabel(P, d) + '*' + (P.dt[d] ? ' — ' + P.dt[d] : ''));
+    its.forEach(function (x) {
+      L.push('• ' + (x.time ? tmShow(x.time) + (x.time2 ? '–' + tmShow(x.time2) : '') + ' ' : '') + x.place + (cost && x.est ? ' (' + amtPlain(P, x.est, x.fx) + ')' : '') + (x.link ? '\n   ' + x.link : '') + (x.note ? '\n   ' + x.note : ''));
+    });
+    L.push('');
+  });
+  if (P.bk.length) {
+    L.push('*Pemesanan*');
+    P.bk.forEach(function (b) { L.push('• ' + b.title + (cost ? ' (' + amtPlain(P, b.amt, b.fx) + ')' : '') + (b.paid ? ' ✓' : '')); });
+    L.push('');
+  }
+  if (P.lk.length) {
+    L.push('*Tautan penting*');
+    P.lk.forEach(function (l) { L.push('• ' + l.title + '\n   ' + l.url); });
+  }
+  return L.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+/** Dokumen HTML siap cetak (untuk disimpan sebagai PDF). */
+function tripPrintHtml(P, cost) {
+  var css = 'body{font:13px/1.45 system-ui,sans-serif;color:#111;margin:24px}h1{margin:0 0 2px;font-size:22px}h2{font-size:15px;margin:18px 0 6px;border-bottom:2px solid #1f6f5c;padding-bottom:3px}table{width:100%;border-collapse:collapse}td{padding:4px 6px;border-bottom:1px solid #ddd;vertical-align:top}td.t{white-space:nowrap;width:96px;font-weight:600}td.c{text-align:right;white-space:nowrap}small{color:#555}a{color:#1f6f5c;word-break:break-all}@media print{h2{break-after:avoid}tr{break-inside:avoid}}',
+    b = '<h1>' + esc(P.name) + '</h1>' + (P.start && P.end ? '<small>' + esc(fmtD(P.start) + ' – ' + fmtD(P.end)) + ' · ' + (dayNo(P.end, P.start) + 1) + ' hari</small>' : '');
+  tripDays(P).forEach(function (d) {
+    var its = P.it.filter(function (x) { return x.day === d; }).sort(byTime);
+    if (!its.length && !P.dt[d]) return;
+    b += '<h2>' + esc(dayLabel(P, d)) + (P.dt[d] ? ' — ' + esc(P.dt[d]) : '') + '</h2><table>' + its.map(function (x) {
+      return '<tr><td class="t">' + esc(tmShow(x.time) + (x.time2 ? '–' + tmShow(x.time2) : '')) + '</td><td>' + esc(x.place) + (x.link ? '<br><a href="' + esc(x.link) + '">' + esc(x.link) + '</a>' : '') + (x.note ? '<br><small>' + esc(x.note) + '</small>' : '') + '</td>' + (cost ? '<td class="c">' + (x.est ? esc(amtPlain(P, x.est, x.fx)) : '') + '</td>' : '') + '</tr>';
+    }).join('') + '</table>';
+  });
+  if (P.bk.length) b += '<h2>Pemesanan</h2><table>' + P.bk.map(function (x) { return '<tr><td>' + esc(x.title) + (x.paid ? ' <small>(lunas)</small>' : '') + '</td>' + (cost ? '<td class="c">' + esc(amtPlain(P, x.amt, x.fx)) + '</td>' : '') + '</tr>'; }).join('') + '</table>';
+  if (P.lk.length) b += '<h2>Tautan penting</h2>' + P.lk.map(function (l) { return '<div>' + esc(l.title) + ': <a href="' + esc(l.url) + '">' + esc(l.url) + '</a></div>'; }).join('');
+  return '<!doctype html><html lang="id"><head><meta charset="utf-8"><title>' + esc(P.name) + '</title><style>' + css + '</style></head><body>' + b + '</body></html>';
+}
+function printHtml(h) {
+  var f = document.createElement('iframe');
+  f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+  document.body.appendChild(f);
+  var d = f.contentWindow.document;
+  d.open();
+  d.write(h);
+  d.close();
+  setTimeout(function () {
+    try {
+      f.contentWindow.focus();
+      f.contentWindow.print();
+    } catch (e) {}
+    setTimeout(function () { f.remove(); }, 3000);
+  }, 300);
+}
+function copyText(t) {
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t);
+  return new Promise(function (ok) {
+    var a = document.createElement('textarea');
+    a.value = t;
+    document.body.appendChild(a);
+    a.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    a.remove();
+    ok();
+  });
+}
+function bindXl() {
+  $('xlf').onchange = xlPick;
+  $('xlok').onclick = xlCommit;
+  $('xlc').onclick = function () { $('xlm').hidden = true; };
+  $('shx').onclick = function () { $('shm').hidden = true; };
+  $('shm').onclick = function (e) {
+    var b = e.target.closest('[data-sh]'), P = tp();
+    if (!b || !P) return;
+    var cost = $('shc').checked, kind = b.dataset.sh;
+    if (kind === 'pdf') return printHtml(tripPrintHtml(P, cost));
+    var t = tripText(P, cost);
+    if (kind === 'wa' && navigator.share) navigator.share({ title: P.name, text: t }).catch(function () {});
+    else if (kind === 'wa') window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener');
+    else copyText(t).then(function () { $('shs').textContent = 'Teks disalin. Tinggal tempel di WhatsApp atau catatan.'; });
+  };
+}
+
+/** PWA: daftar service worker (hanya di https), tombol "Pasang aplikasi", penanda offline, dan penyegaran menit untuk tab Hari ini. */
+function bindPwa() {
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol))
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  var ev = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    ev = e;
+    $('pwa').hidden = false;
+  });
+  window.addEventListener('appinstalled', function () {
+    $('pwa').hidden = true;
+  });
+  $('pwa').onclick = function () {
+    if (!ev) return;
+    ev.prompt();
+    ev = null;
+    $('pwa').hidden = true;
+  };
+  function net() {
+    $('offl').hidden = navigator.onLine !== false;
+  }
+  window.addEventListener('online', net);
+  window.addEventListener('offline', net);
+  net();
+  setInterval(function () {
+    if (mode === 'trip' && tripTab === 'now' && !document.hidden && tp()) renderTrip();
+  }, 60000);
+  autoTrip();
+}
+
 /* ===== js/app.js ===== */
 /**
  * Titik masuk aplikasi. Urutan: muat data -> pasang listener -> render -> sinkron.
@@ -6448,6 +7151,9 @@ function main() {
   bindUi();
   bindKas();
   bindTrip();
+  bindSim();
+  bindXl();
+  bindPwa();
   resetForm();
   renderAll();
   save();
