@@ -930,13 +930,19 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 @media (max-width: 480px) { .itm { grid-template-columns: 44px 1fr; } .itm .co { grid-column: 2; text-align: left; } .itm .ac { justify-content: flex-start; } }
 .tbk { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; padding: 9px 16px; border: 1.5px solid var(--ac); border-radius: 999px; background: var(--acs); color: var(--ink); cursor: pointer; box-shadow: 0 3px 0 var(--ln), 0 6px 14px rgba(0, 0, 0, .14); }
 .tbk:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ln); }
+/* ===== baris form Perjalanan ===== */
+.fr { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; }
+.fr > div { min-width: 0; }
+.fr input, .fr select { min-width: 0; }
+@media (max-width: 520px) { .fr.wr { flex-wrap: wrap; } .fr.wr > div { flex: 1 1 calc(50% - 10px) !important; } .fr.wr > div.fw { flex-basis: 100% !important; } }
+@media (max-width: 640px) { .fr.wrb { flex-wrap: wrap; } .fr.wrb > div { flex: 1 1 calc(50% - 10px) !important; } .fr.wrb > div.fw { flex-basis: 100% !important; } }
 </style>
 </head>
 <body>
 <div class="w">
 <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px"><div class="kt" id="mdbar"><button type="button" class="yp on" data-md="rencana">Rencana Keuangan</button><button type="button" class="yp" data-md="trip">Perjalanan</button></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span id="offl" class="chp cash" hidden>Offline &middot; data tersimpan di perangkat</span><button type="button" id="pwa" hidden>Pasang aplikasi</button><button type="button" id="thm" title="Ketuk untuk ganti tema">&#9680; Tema: Otomatis</button></div></div>
 <header>
-  <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r16 · 13 Okt 2026</div><div class="sub" id="sbs"></div></div>
+  <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r17 · 16 Okt 2026</div><div class="sub" id="sbs"></div></div>
   <div class="ctl">
     <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
     <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub" id="adjs" style="margin-top:4px"></div></div>
@@ -944,8 +950,8 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
   </div>
 </header>
 <nav role="tablist">
-  <button role="tab" data-t="kas" aria-selected="false">Catatan Kas</button>
   <button role="tab" data-t="rincian" aria-selected="true">Rincian Bulanan</button>
+  <button role="tab" data-t="kas" aria-selected="false">Catatan Kas</button>
   <button role="tab" data-t="jadwal" aria-selected="false">Jadwal Bayar</button>
   <button role="tab" data-t="item" aria-selected="false">Kelola Item</button>
   <button role="tab" data-t="sim" aria-selected="false">Simulasi</button>
@@ -1022,7 +1028,6 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 <button type="button" data-sc="geser"><b>Geser tanggal bayar</b><span>Contoh: dari tanggal 1 jadi tanggal 15</span></button>
 <button type="button" data-sc="manual"><b>Atur manual</b><span>Semua pilihan sekaligus (mis. harga sementara, kombinasi lain)</span></button>
 </div>
-<button type="button" class="bk" id="pback" hidden>&larr; Kembali ke pilihan</button>
 <div id="pform" hidden>
 <p class="sub" id="phint" style="margin:12px 0 0"></p>
 <div id="pdw" style="margin-top:10px">
@@ -1523,7 +1528,7 @@ function normKas(k) {
         note: String(p.note || '').slice(0, 2000),
         goal: (function (g) {
           if (!g || typeof g !== 'object' || !(+g.per > 0) || !/^\d{4}-\d{2}$/.test(g.from) || !/^\d{4}-\d{2}$/.test(g.to) || g.to < g.from) return null;
-          return { t: +g.t > 0 ? +g.t : 0, s0: +g.s0 > 0 ? +g.s0 : 0, from: g.from, to: g.to, per: +g.per };
+          return { t: +g.t > 0 ? +g.t : 0, s0: +g.s0 > 0 ? +g.s0 : 0, from: g.from, to: g.to, per: +g.per, link: g.link !== false };
         })(p.goal),
         tx: (Array.isArray(p.tx) ? p.tx : [])
           .filter(function (x) {
@@ -2608,6 +2613,22 @@ function detailRows(r) {
 }
 
 /** Render tab Rincian Bulanan. */
+/** Dashboard saldo nyata (dari Catatan Kas) di paling atas Rincian Bulanan. */
+function kasHero() {
+  var P = kasLinked();
+  if (!P) return '';
+  var asc = kasRows(P),
+    A = kasSum(asc.filter(function (x) { return x.d <= todayISO(); }), 'all'),
+    R = kasSum(asc, 'all'),
+    bal = kasBase(P) + A.i - A.o,
+    st = function (l, v) { return '<div><span>' + l + '</span><b>' + v + '</b></div>'; };
+  return (
+    '<div class="hero"><div class="card" style="margin:0"><div class="sub">Saldo &quot;' + esc(P.name) + '&quot; sekarang</div><div class="big' + (bal < 0 ? ' neg' : '') + '">' + rp(bal) +
+    '</div><div class="sub">saldo awal Rencana ' + rp(kasBase(P)) + ' + masuk ' + rp(A.i) + ' &minus; keluar ' + rp(A.o) +
+    '</div></div><div class="card stats" style="margin:0">' + st('Masuk', rp(R.i)) + st('Keluar', rp(R.o)) + st('Selisih', R.i === R.o ? rp(0) : signed(R.i - R.o)) + st('Transaksi', R.n) + '</div></div>'
+  );
+}
+
 function renderRincian() {
   var c = calc(),
     y = S.year,
@@ -2650,7 +2671,7 @@ function renderRincian() {
     '</td><td data-l="Saldo akhir">' +
     rp(c.end) +
     '</td><td></td></tr></tbody></table></div></div>';
-  $('v-rincian').innerHTML = heroHtml(c, R) + barsHtml(R) + categoryHtml(c) + table;
+  $('v-rincian').innerHTML = kasHero() + heroHtml(c, R) + barsHtml(R) + categoryHtml(c) + table;
 }
 
 /** Baris "dilewati" pada rincian sebuah bulan. */
@@ -3373,7 +3394,7 @@ function renderYears() {
       .join('') +
     '<button class="g d" data-dy="1" title="Hapus semua data tahun ini">Hapus tahun ' +
     S.year +
-    '</button><span class="sub">Tiap tahun punya item, saldo, dan status bayar sendiri. Ketik tahun baru di kolom Tahun.</span>';
+    '</button>';
 }
 
 /** Pindah ke tahun v (dibuat kosong bila belum ada). */
@@ -3509,7 +3530,7 @@ function renderAdj() {
   }
   e.innerHTML =
     (c.adjIn
-      ? (c.adjIn > 0 ? '+ ' : '&minus; ') + rp(Math.abs(c.adjIn)) + ' penyesuaian = <b>' + rp(c.open) + '</b>'
+      ? ''
       : '') +
     (c.adjLate
       ? (c.adjIn ? '<br>' : '') +
@@ -4144,7 +4165,6 @@ function pmSc(sc) {
   $("pps").hidden = !sc;
   $("pbk2").hidden = !sc;
   $("psc").classList.toggle("picked", !!sc);
-  $("pback").hidden = !sc;
   $("g-price").hidden = sc === "geser";
   $("pcad").hidden = !(
     (sc === "siklus" || sc === "manual") &&
@@ -4172,7 +4192,6 @@ function pmSc(sc) {
 function pmBack() {
   pmScen = null;
   $("psc").classList.remove("picked");
-  $("pback").hidden = true;
   $("pbk2").hidden = true;
   $("pform").hidden = true;
   $("pps").hidden = true;
@@ -4312,7 +4331,6 @@ function bindPrice() {
     $("pm").hidden = true;
   };
   $("pps").onclick = savePm;
-  $("pback").onclick = pmBack;
   $("pbk2").onclick = pmBack;
   $("phl").onclick = function (e) {
     var b = e.target.closest("button[data-pdel]");
@@ -5767,10 +5785,7 @@ function renderKas() {
     (L.length > 200 ? '<div class="sub">+ ' + (L.length - 200) + ' lainnya. Pilih periode yang lebih sempit.</div>' : '') +
     '</div>';
   el.innerHTML =
-    (P.link
-      ? '<div class="sub" style="margin-bottom:10px">&#8644; Tergabung dengan Rencana Keuangan tahun ' + S.year + '. Tagihan lunas dan penyesuaian saldo otomatis tercatat di sini; catatan masuk/keluar Anda memengaruhi Rincian Bulanan.</div>'
-      : '') +
-    hero + per + form + kasChart(asc) + catH + lst;
+    per + form + kasChart(asc) + catH + lst;
 }
 
 function kasErr(t) {
@@ -6006,7 +6021,7 @@ function tripBadge(P) {
 function tripList() {
   var L = trips();
   return (
-    '<div class="kp"><button class="p" data-tnew="1">+ Perjalanan baru</button><button data-xl="1">Impor Excel</button><button class="g" data-xlt="1">Template Excel</button></div><div class="sub" id="tsync" style="margin-bottom:10px">&#9729; ' + esc($('sbs').textContent) + '</div>' +
+    '<div class="kp"><button class="p" data-tnew="1">+ Perjalanan baru</button><button data-xl="1">Impor Excel</button><button class="g" data-xlt="1">Template Excel</button></div>' +
     (L.map(function (P) {
       var pl = tripPlan(P);
       return (
@@ -6055,7 +6070,6 @@ function tripRing(P) {
     '<div class="hero"><div class="card" style="margin:0"><div class="sub">Total rencana biaya</div><div class="big">' + rp(pl.t) + '</div><div class="sub">pemesanan ' + rp(pl.b) + ' + estimasi harian ' + rp(pl.d) + '</div>' +
     (P.budget ? bar(pl.t, P.budget) + '<div class="sub">dari anggaran ' + rp(P.budget) + '</div>' : '<div class="sub">Anggaran belum ditentukan (atur lewat tombol Ubah).</div>') +
     (P.cur && P.rate ? '<div class="sub">Kurs 1 ' + esc(P.cur) + ' = ' + rp(P.rate) + '</div>' : '') + '</div><div class="card stats" style="margin:0">' + cells + '</div></div>' +
-    goalCard(P, pl) +
     (ck.length
       ? '<div class="card"><h2>Siapkan tunai / kartu</h2>' + ck.map(function (k) {
           var c = pl.cash[k];
@@ -6090,9 +6104,9 @@ function fxPrev(a, u) {
 /** Kotak biaya: jumlah + pilihan mata uang (Rp / asing). */
 function amtField(P, id, uid, v, fx) {
   return (
-    '<div style="display:flex;gap:6px"><input id="' + id + '" inputmode="numeric" placeholder="0" style="flex:1;min-width:0;font-size:17px;font-weight:600" value="' + (v ? v.toLocaleString('id-ID') : '') + '">' +
-    '<select id="' + uid + '" style="width:auto;min-width:112px;flex:none;font-weight:600" aria-label="Mata uang"><option value="idr">Rp (IDR)</option>' + (P.cur ? '<option value="fx"' + (fx ? ' selected' : '') + '>' + esc(P.cur) + '</option>' : '') + '</select></div>' +
-    '<div class="sub" id="' + id + 'h" style="margin-top:4px">' + (P.cur ? '' : 'Ingin mata uang asing? Isi di tombol Ubah perjalanan.') + '</div>'
+    '<div style="display:flex;gap:6px"><input id="' + id + '" inputmode="numeric" placeholder="0" style="flex:1;min-width:0;font-size:16px;font-weight:600" value="' + (v ? v.toLocaleString('id-ID') : '') + '">' +
+    '<select id="' + uid + '" style="width:84px;min-width:0;flex:none;font-weight:600;padding-left:8px;padding-right:4px" aria-label="Mata uang"><option value="idr">Rp</option>' + (P.cur ? '<option value="fx"' + (fx ? ' selected' : '') + '>' + esc(P.cur) + '</option>' : '') + '</select></div>' +
+    '<div class="sub" id="' + id + 'h" style="margin-top:4px">' + (P.cur ? '' : 'Mata uang asing: atur lewat Ubah.') + '</div>'
   );
 }
 
@@ -6101,14 +6115,17 @@ function tripItin(P) {
     days = tripDays(P),
     td = todayISO(),
     form =
-      '<div class="card"><h2>' + (E ? 'Ubah kegiatan' : 'Tambah kegiatan') + '</h2><div class="kf"><div><label for="itd">Tanggal</label><input id="itd" type="date" value="' + (E ? E.day : days[0] || td) +
-      '"></div><div><label for="itt">Mulai</label><input id="itt" inputmode="numeric" maxlength="5" placeholder="14.00" value="' + tmShow(E ? E.time : '') + '"></div><div><label for="itt2">Selesai</label><input id="itt2" inputmode="numeric" maxlength="5" placeholder="16.30" value="' + tmShow(E ? E.time2 : '') +
-      '"></div><div style="grid-column:1/-1"><label for="itp">Kegiatan</label><input id="itp" maxlength="120" placeholder="mis. Senso-ji Temple" value="' + (E ? esc(E.place) : '') +
-      '"></div><div><label for="itk">Kategori</label><select id="itk">' + opts(ICAT, E ? E.cat : 'Transport') + '</select></div><div style="grid-column:1/-1"><label for="ite">Biaya</label>' + amtField(P, 'ite', 'itu', E ? E.est : 0, E && E.fx) +
-      '</div><div><label for="itm">Pembayaran</label><select id="itm">' + opts([['', 'Belum ditentukan'], ['ic', 'Kartu IC / e-money'], ['on', 'Online (dicatat di Pemesanan)'], ['cash', 'Cash']], E ? E.pay : '') +
-      '</select></div><div style="grid-column:1/-1"><label for="itl">Tautan (peta / tiket)</label><input id="itl" inputmode="url" placeholder="https://maps.app.goo.gl/..." value="' + (E ? esc(E.link) : '') +
-      '"></div><div style="grid-column:1/-1"><label for="itn">Catatan</label><input id="itn" maxlength="200" value="' + (E ? esc(E.note) : '') + '"></div></div><div class="err" id="iter"></div><div class="row2"><button class="p" data-its="1">' +
-      (E ? 'Simpan perubahan' : 'Tambah') + '</button>' + (E ? '<button data-itx="1">Batal</button>' : '') + '</div></div>';
+      '<div class="card"><h2>' + (E ? 'Ubah kegiatan' : 'Tambah kegiatan') + '</h2>' +
+      '<div class="fr wr"><div class="fw" style="flex:0 0 140px"><label for="itd">Tanggal</label><input id="itd" type="date" value="' + (E ? E.day : days[0] || td) + '"></div>' +
+      '<div style="flex:0 0 68px"><label for="itt">Mulai</label><input id="itt" inputmode="numeric" maxlength="5" placeholder="14.00" value="' + tmShow(E ? E.time : '') + '"></div>' +
+      '<div style="flex:0 0 68px"><label for="itt2">Selesai</label><input id="itt2" inputmode="numeric" maxlength="5" placeholder="16.30" value="' + tmShow(E ? E.time2 : '') + '"></div>' +
+      '<div class="fw" style="flex:1 1 140px"><label for="itp">Kegiatan</label><input id="itp" maxlength="120" placeholder="mis. Senso-ji Temple" value="' + (E ? esc(E.place) : '') + '"></div></div>' +
+      '<div class="fr wr"><div class="fw" style="flex:2 1 0"><label for="ite">Biaya</label>' + amtField(P, 'ite', 'itu', E ? E.est : 0, E && E.fx) + '</div>' +
+      '<div style="flex:1.3 1 0"><label for="itm">Pembayaran</label><select id="itm" title="Online: dicatat di Pemesanan">' + opts([['', 'Belum ditentukan'], ['ic', 'Kartu IC'], ['on', 'Online'], ['cash', 'Cash']], E ? E.pay : '') + '</select></div>' +
+      '<div style="flex:1 1 0"><label for="itk">Kategori</label><select id="itk">' + opts(ICAT, E ? E.cat : 'Transport') + '</select></div></div>' +
+      '<div class="fr wr"><div class="fw" style="flex:1 1 0"><label for="itl">Tautan (peta / tiket) (opsional)</label><input id="itl" inputmode="url" placeholder="https://maps.app.goo.gl/..." value="' + (E ? esc(E.link) : '') + '"></div>' +
+      '<div class="fw" style="flex:1 1 0"><label for="itn">Catatan (opsional)</label><input id="itn" maxlength="200" value="' + (E ? esc(E.note) : '') + '"></div></div>' +
+      '<div class="err" id="iter"></div><div class="row2"><button class="p" data-its="1">' + (E ? 'Simpan perubahan' : 'Tambah') + '</button>' + (E ? '<button data-itx="1">Batal</button>' : '') + '</div></div>';
   return (
     form +
     (days.map(function (d) {
@@ -6142,12 +6159,15 @@ function tripItin(P) {
 function tripBook(P) {
   var E = bkEdit ? P.bk.filter(function (x) { return x.id === bkEdit; })[0] : null, pl = tripPlan(P),
     form =
-      '<div class="card"><h2>' + (E ? 'Ubah pemesanan' : 'Tambah pemesanan') + '</h2><div class="kf"><div style="grid-column:1/-1"><label for="bkt">Nama (tiket, hotel, tour)</label><input id="bkt" maxlength="120" placeholder="mis. Tiket pesawat CGK-HND" value="' + (E ? esc(E.title) : '') +
-      '"></div><div><label for="bkc">Kategori</label><select id="bkc">' + opts(BCAT, E ? E.cat : 'Transport') + '</select></div><div style="grid-column:1/-1"><label for="bke">Jumlah</label>' + amtField(P, 'bke', 'bku', E ? E.amt : 0, E && E.fx) +
-      '</div><div><label for="bkm">Pembayaran</label><select id="bkm">' + opts([['on', 'Online'], ['cash', 'Cash'], ['ic', 'Kartu IC / e-money'], ['', 'Belum ditentukan']], E ? E.pay : 'on') +
-      '</select></div><div><label for="bka">Mulai / check-in</label><input id="bka" type="date" value="' + (E ? E.a : '') + '"></div><div><label for="bkb">Selesai / check-out</label><input id="bkb" type="date" value="' + (E ? E.b : '') +
-      '"></div><div style="grid-column:1/-1"><label for="bkl">Tautan</label><input id="bkl" inputmode="url" placeholder="https://..." value="' + (E ? esc(E.link) : '') + '"></div></div><div class="err" id="bker"></div><div class="row2"><button class="p" data-bks="1">' +
-      (E ? 'Simpan perubahan' : 'Tambah') + '</button>' + (E ? '<button data-bkx="1">Batal</button>' : '') + '</div></div>',
+      '<div class="card"><h2>' + (E ? 'Ubah pemesanan' : 'Tambah pemesanan') + '</h2>' +
+      '<div class="fr wrb"><div class="fw" style="flex:2 1 0"><label for="bkt">Nama (tiket, hotel, tour)</label><input id="bkt" maxlength="120" placeholder="mis. Tiket pesawat CGK-HND" value="' + (E ? esc(E.title) : '') + '"></div>' +
+      '<div class="fw" style="flex:1.4 1 0"><label for="bke">Jumlah</label>' + amtField(P, 'bke', 'bku', E ? E.amt : 0, E && E.fx) + '</div></div>' +
+      '<div class="fr wrb"><div style="flex:1 1 0"><label for="bka">Mulai / check-in</label><input id="bka" type="date" value="' + (E ? E.a : '') + '"></div>' +
+      '<div style="flex:1 1 0"><label for="bkb">Selesai / check-out</label><input id="bkb" type="date" value="' + (E ? E.b : '') + '"></div>' +
+      '<div style="flex:1 1 0"><label for="bkm">Pembayaran</label><select id="bkm">' + opts([['on', 'Online'], ['cash', 'Cash'], ['ic', 'Kartu IC'], ['', 'Belum ditentukan']], E ? E.pay : 'on') + '</select></div></div>' +
+      '<div class="fr"><div class="fw" style="flex:1 1 0"><label for="bkl">Tautan (opsional)</label><input id="bkl" inputmode="url" placeholder="https://..." value="' + (E ? esc(E.link) : '') + '"></div></div>' +
+      '<div class="fr"><div class="fw" style="flex:0 1 280px"><label for="bkc">Kategori</label><select id="bkc">' + opts(BCAT, E ? E.cat : 'Transport') + '</select></div></div>' +
+      '<div class="err" id="bker"></div><div class="row2"><button class="p" data-bks="1">' + (E ? 'Simpan perubahan' : 'Tambah') + '</button>' + (E ? '<button data-bkx="1">Batal</button>' : '') + '</div></div>',
     cats = BCAT.concat(P.bk.map(function (x) { return x.cat; })).filter(function (c, i, a) { return a.indexOf(c) === i; });
   return (
     '<div class="card"><h2>Ringkasan pemesanan</h2><div class="stats"><div><span>Total</span><b>' + rp(pl.b) + '</b></div><div><span>Sudah dibayar</span><b>' + rp(pl.paid) + '</b></div><div><span>Belum dibayar</span><b>' + rp(pl.b - pl.paid) + '</b></div></div></div>' +
@@ -6204,12 +6224,12 @@ function renderTrip() {
     return;
   }
   if (tripTab === 'now' && !tripActive(P)) tripTab = 'ring';
-  var tabs = (tripActive(P) ? [['now', 'Hari ini']] : []).concat([['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['cek', 'Checklist'], ['cat', 'Catatan']]);
+  var tabs = (tripActive(P) ? [['now', 'Hari ini']] : []).concat([['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['cek', 'Checklist'], ['cat', 'Catatan'], ['sv', 'Tabungan']]);
   el.innerHTML =
     '<div class="kp"><button class="tbk" data-tback="1">&larr; Semua perjalanan</button><button class="g" data-tshare="1">Bagikan</button><button class="g" data-ted="1">Ubah</button><button class="g d" data-tdel="1">Hapus</button></div><h2 style="margin:0 0 2px">' + esc(P.name) + '</h2><div class="sub" style="margin-bottom:12px">' +
-    (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) : 'Tanggal belum diisi') + (P.cur && P.rate ? ' · 1 ' + P.cur + ' = ' + rp(P.rate) : '') + '</div><div class="sub" id="tsync" style="margin:-6px 0 10px">&#9729; ' + esc($('sbs').textContent) + '</div><div class="kt" style="flex-wrap:wrap;margin-bottom:14px">' +
+    (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) : 'Tanggal belum diisi') + (P.cur && P.rate ? ' · 1 ' + P.cur + ' = ' + rp(P.rate) : '') + '</div><div class="kt" style="flex-wrap:wrap;margin-bottom:14px">' +
     tabs.map(function (t) { return '<button type="button" class="yp' + (tripTab === t[0] ? ' on' : '') + '" data-tt="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
-    (tripTab === 'now' ? tripNow(P) : tripTab === 'itin' ? tripItin(P) : tripTab === 'book' ? tripBook(P) : tripTab === 'cek' ? tripCek(P) : tripTab === 'cat' ? tripCat(P) : tripRing(P));
+    (tripTab === 'now' ? tripNow(P) : tripTab === 'itin' ? tripItin(P) : tripTab === 'book' ? tripBook(P) : tripTab === 'cek' ? tripCek(P) : tripTab === 'cat' ? tripCat(P) : tripTab === 'sv' ? goalCard(P, tripPlan(P)) : tripRing(P));
   if (P.cur) {
     fxPrev('ite', 'itu');
     fxPrev('bke', 'bku');
@@ -6334,7 +6354,7 @@ function bkPay(id) {
 function kasGoals() {
   return Object.keys(ALL.kas.pr)
     .map(function (i) { return ALL.kas.pr[i]; })
-    .filter(function (P) { return !P.link && P.goal; })
+    .filter(function (P) { return !P.link && P.goal && P.goal.link !== false; })
     .map(function (P) { return Object.assign({ id: P.id, name: P.name }, P.goal); });
 }
 /** Daftar bulan 'YYYY-MM' dari a sampai b (inklusif). */
@@ -6364,7 +6384,7 @@ function goalOpts(P) {
   return monthList(todayISO().slice(0, 7), P.start.slice(0, 7));
 }
 function goalCard(P, pl) {
-  var g = P.goal;
+  var g = P.goal, lk = !g || g.link !== false;
   if (!P.start) return '<div class="card"><h2>Target tabungan</h2><div class="sub">Isi tanggal mulai perjalanan (tombol Ubah) untuk menghitung tabungan per bulan.</div></div>';
   var opts = goalOpts(P);
   if (g && !gEdit) {
@@ -6373,12 +6393,12 @@ function goalCard(P, pl) {
     return (
       '<div class="card"><h2>Target tabungan</h2><div class="sub">Terkumpul <b>' + rp(got) + '</b> dari ' + rp(g.t) + '</div>' + bar(got, g.t) +
       '<div class="sub">Sisihkan <b>' + rp(g.per) + '</b> per bulan &middot; ' + monthLbl(g.from) + ' – ' + monthLbl(g.to) + ' &middot; bulan ke ' + Math.min(el, ms.length) + ' dari ' + ms.length + '</div>' +
-      '<div class="sub" style="margin-top:6px">Tabungan ini otomatis dihitung sebagai pengeluaran bulanan di <b>Rincian Bulanan</b>.</div>' +
-      (!goalMonthsIn(g, +S.year).length
+      '<div class="sub" style="margin-top:6px">' + (lk ? 'Tersambung ke Rencana Keuangan: tabungan ini otomatis dihitung sebagai pengeluaran bulanan di <b>Rincian Bulanan</b>.' : 'Tidak tersambung ke Rencana Keuangan: hanya sebagai pencatat, tidak memengaruhi Rincian Bulanan.') + '</div>' +
+      (lk && !goalMonthsIn(g, +S.year).length
         ? '<div style="margin-top:8px" class="chp ic">Bulan menabung ada di tahun ' + Object.keys(ms.reduce(function (o, k) { o[k.slice(0, 4)] = 1; return o; }, {})).join(' & ') + '. Ganti Tahun di mode Rencana untuk melihat dampaknya.</div>'
         : '') +
-      (low && goalMonthsIn(g, +S.year).length ? '<div style="margin-top:8px" class="chp ' + (neg.length ? 'cash' : 'on') + '">' + (neg.length ? 'Saldo Rencana ' + S.year + ' negatif di ' + neg.map(function (r) { return MON[r.m]; }).join(', ') : 'Saldo Rencana ' + S.year + ' tetap positif (terendah ' + rp(low.ak) + ' di ' + MON[low.m] + ')') + '</div>' : '') +
-      '<div class="acts" style="margin-top:8px"><button class="g" data-gedit="1">Ubah target</button><button class="g d" data-gdel="1">Hapus target</button></div></div>'
+      (lk && low && goalMonthsIn(g, +S.year).length ? '<div style="margin-top:8px" class="chp ' + (neg.length ? 'cash' : 'on') + '">' + (neg.length ? 'Saldo Rencana ' + S.year + ' negatif di ' + neg.map(function (r) { return MON[r.m]; }).join(', ') : 'Saldo Rencana ' + S.year + ' tetap positif (terendah ' + rp(low.ak) + ' di ' + MON[low.m] + ')') + '</div>' : '') +
+      '<div class="acts" style="margin-top:8px"><button class="g" data-gedit="1">Ubah target</button><button class="g" data-glink="1">' + (lk ? 'Putuskan dari Rencana' : 'Sambungkan ke Rencana') + '</button><button class="g d" data-gdel="1">Hapus target</button></div></div>'
     );
   }
   if (!opts.length) return '<div class="card"><h2>Target tabungan</h2><div class="sub">Perjalanan ini sudah dimulai, jadi tidak ada bulan tersisa untuk menabung.</div></div>';
@@ -6386,12 +6406,12 @@ function goalCard(P, pl) {
   return (
     '<div class="card"><h2>Target tabungan</h2><div class="sub" style="margin-bottom:8px">Hitung berapa yang perlu disisihkan tiap bulan sebelum berangkat.</div><div class="kf"><div><label for="gt">Target (Rp)</label><input id="gt" inputmode="numeric" value="' + (t0 ? t0.toLocaleString('id-ID') : '') +
     '"></div><div><label for="gs">Sudah terkumpul (Rp)</label><input id="gs" inputmode="numeric" placeholder="0" value="' + (g && g.s0 ? g.s0.toLocaleString('id-ID') : '') + '"></div><div><label for="gf">Mulai menabung</label>' + goalSel('gf', opts, g ? g.from : opts[0]) +
-    '</div><div><label for="gz">Terakhir menabung</label>' + goalSel('gz', opts, g ? g.to : before) + '</div></div><div class="sub" id="gprev" style="margin:8px 0"></div><div class="err" id="gerr"></div><div class="row2"><button class="p" data-gset="1">Simpan target</button>' + (g ? '<button data-gcancel="1">Batal</button>' : '') + '</div></div>'
+    '</div><div><label for="gz">Terakhir menabung</label>' + goalSel('gz', opts, g ? g.to : before) + '</div><div style="grid-column:1/-1"><label for="gl">Sambungkan ke Rencana Keuangan?</label><select id="gl"><option value="1"' + (lk ? ' selected' : '') + '>Ya, hitung sebagai pengeluaran bulanan di Rincian</option><option value="0"' + (lk ? '' : ' selected') + '>Tidak, hanya pencatat target</option></select></div></div><div class="sub" id="gprev" style="margin:8px 0"></div><div class="err" id="gerr"></div><div class="row2"><button class="p" data-gset="1">Simpan target</button>' + (g ? '<button data-gcancel="1">Batal</button>' : '') + '</div></div>'
   );
 }
 function goalCalc() {
   var t = parseRp($('gt').value) || 0, s0 = parseRp($('gs').value) || 0, a = $('gf').value, b = $('gz').value, n = a && b && b >= a ? monthList(a, b).length : 0;
-  return { t: t, s0: s0, from: a, to: b, n: n, per: n && t > s0 ? Math.ceil((t - s0) / n / 1000) * 1000 : 0 };
+  return { link: !$('gl') || $('gl').value !== '0', t: t, s0: s0, from: a, to: b, n: n, per: n && t > s0 ? Math.ceil((t - s0) / n / 1000) * 1000 : 0 };
 }
 function goalPrev() {
   var c = goalCalc();
@@ -6402,7 +6422,7 @@ function goalSave() {
   if (!(c.t > 0)) { $('gerr').textContent = 'Isi target tabungan.'; return; }
   if (!c.n) { $('gerr').textContent = 'Bulan terakhir tidak boleh sebelum bulan mulai.'; return; }
   if (!c.per) { $('gerr').textContent = 'Dana yang terkumpul sudah mencapai target.'; return; }
-  tp().goal = { t: c.t, s0: c.s0, from: c.from, to: c.to, per: c.per };
+  tp().goal = { t: c.t, s0: c.s0, from: c.from, to: c.to, per: c.per, link: c.link };
   gEdit = false;
   save();
   renderAll();
@@ -6431,12 +6451,31 @@ function simCalc(list) {
       C.items.forEach(function (it) {
         if (it.id != x.id) return;
         if (x.k === 'stop') { it.end = isoD(Date.UTC(y, x.m, 0)); it.cnt = 0; }
+        else if (x.k === 'cycle' || x.k === 'shift') it.ch = (it.ch || []).concat([simChg(it, x)]).sort(cmpFrom);
         else it.ch = (it.ch || []).concat([{ from: y + '-' + pad2(x.m + 1) + '-01', to: '', price: x.amt, n: null, unit: null, cut: false }]);
       });
   });
   S = C;
   KL.tx = keepTx.concat(extra);
   try { return calc(); } finally { S = keepS; KL.tx = keepTx; }
+}
+function simItemDates(id) {
+  var it = S.items.filter(function (x) { return x.id == id; })[0],
+    L = it ? occ(it, +S.year) : [];
+  return L.length ? L.map(function (t) { return '<option value="' + isoD(t) + '">' + fmtD(isoD(t)) + '</option>'; }).join('') : '<option value="">(tidak ada tagihan)</option>';
+}
+function simExtra() {
+  if (simK === 'cycle')
+    return '<div><label for="smn2">Bayar tiap</label><input id="smn2" type="number" min="1" value="3"></div><div><label for="smu">Satuan</label><select id="smu"><option value="bulan">bulan</option><option value="tahun">tahun</option><option value="minggu">minggu</option><option value="hari">hari</option></select></div><div style="grid-column:1/-1"><label for="smd">Mulai berlaku dari tanggal</label><input id="smd" type="date"><div class="sub" style="margin-top:4px">Siklus baru dimulai di tanggal ini; jadwal lama sesudahnya diganti.</div></div>';
+  return '<div style="grid-column:1/-1"><label for="smf">Tagihan yang digeser</label><select id="smf">' + simItemDates(S.items[0] && S.items[0].id) + '</select><div class="sub" style="margin-top:4px">Tagihan ini dan semua sesudahnya mengikuti tanggal baru dengan siklus yang sama.</div></div><div style="grid-column:1/-1"><label for="smt">Ganti jadi tanggal</label><input id="smt" type="date"></div>';
+}
+/** Perubahan jadwal (ch) untuk skenario siklus / geser. */
+function simChg(it, x) {
+  var eff = priceAt(it, Date.parse(x.from + 'T00:00:00Z')),
+    p = eff !== it.price ? eff : null;
+  if (x.k === 'cycle') return { from: x.from, to: '', price: p, n: x.n, unit: x.unit, cut: false };
+  var sg = segAt(it, x.from);
+  return { from: x.from, anchor: x.to, to: '', price: p, n: (sg && sg.n) || it.n, unit: (sg && sg.unit) || it.unit };
 }
 function simName(id) {
   var it = S.items.filter(function (x) { return x.id == id; })[0];
@@ -6445,6 +6484,8 @@ function simName(id) {
 function simDesc(x) {
   var m = MON[x.m];
   if (x.k === 'stop') return 'Hentikan <b>' + esc(simName(x.id)) + '</b> mulai ' + m;
+  if (x.k === 'cycle') return 'Ganti siklus <b>' + esc(simName(x.id)) + '</b> jadi tiap ' + x.n + ' ' + x.unit + ' mulai ' + fmtD(x.from);
+  if (x.k === 'shift') return 'Geser tagihan <b>' + esc(simName(x.id)) + '</b> dari ' + fmtD(x.from) + ' jadi ' + fmtD(x.to) + ' (bulan berikutnya mengikuti)';
   if (x.k === 'price') return 'Harga <b>' + esc(simName(x.id)) + '</b> jadi ' + rp(x.amt) + ' mulai ' + m;
   return (x.k === 'in' ? 'Pemasukan ' : 'Pengeluaran ') + '<b>' + esc(x.name) + '</b> ' + rp(x.amt) + ' ' + (x.rep === 'sekali' ? 'sekali di ' + m : x.rep === 'n' ? x.n + ' kali mulai ' + m : 'tiap bulan mulai ' + m + ' sampai Des');
 }
@@ -6461,11 +6502,12 @@ function renderSim() {
   if (mode === 'trip') { el.innerHTML = ''; return; }
   var mo = MON.map(function (m, i) { return '<option value="' + i + '">' + m + '</option>'; }).join(''), items = S.items.map(function (it) { return '<option value="' + it.id + '">' + esc(it.name) + '</option>'; }).join(''),
     two = simK === 'in' || simK === 'out',
+    nb = simK === 'cycle' || simK === 'shift',
     form =
       '<div class="card"><h2>Simulasi &quot;bagaimana jika&quot; &middot; ' + S.year + '</h2><div class="sub" style="margin-bottom:10px">Coba perubahan tanpa mengubah data. Hasilnya langsung terlihat di grafik.</div><div class="kf"><div style="grid-column:1/-1"><label for="smk">Skenario</label><select id="smk">' +
-      [['out', 'Tambah pengeluaran / cicilan'], ['in', 'Tambah pemasukan'], ['stop', 'Hentikan item'], ['price', 'Ubah harga item']].map(function (o) { return '<option value="' + o[0] + '"' + (simK === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
+      [['out', 'Tambah pengeluaran / cicilan'], ['in', 'Tambah pemasukan'], ['stop', 'Hentikan item'], ['price', 'Ubah harga item'], ['cycle', 'Ganti seberapa sering bayar'], ['shift', 'Geser tanggal bayar']].map(function (o) { return '<option value="' + o[0] + '"' + (simK === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
       (two ? '<div style="grid-column:1/-1"><label for="smn">Nama</label><input id="smn" maxlength="30" placeholder="mis. Cicilan motor"></div>' : '<div style="grid-column:1/-1"><label for="smi">Item</label><select id="smi">' + items + '</select></div>') +
-      '<div><label for="sma">' + (simK === 'stop' ? 'Jumlah (tidak dipakai)' : simK === 'price' ? 'Harga baru (Rp)' : 'Jumlah (Rp)') + '</label><input id="sma" inputmode="numeric" placeholder="0"' + (simK === 'stop' ? ' disabled' : '') + '></div><div><label for="smm">Mulai bulan</label><select id="smm">' + mo + '</select></div>' +
+      (nb ? simExtra() : '<div><label for="sma">' + (simK === 'stop' ? 'Jumlah (tidak dipakai)' : simK === 'price' ? 'Harga baru (Rp)' : 'Jumlah (Rp)') + '</label><input id="sma" inputmode="numeric" placeholder="0"' + (simK === 'stop' ? ' disabled' : '') + '></div><div><label for="smm">Mulai bulan</label><select id="smm">' + mo + '</select></div>') +
       (two ? '<div><label for="smr">Berapa kali</label><select id="smr"><option value="bulan">Tiap bulan sampai Des</option><option value="sekali">Sekali saja</option><option value="n">Sekian kali</option></select></div><div id="smcw" hidden><label for="smc">Jumlah bulan</label><input id="smc" type="number" min="1" max="12" value="3"></div>' : '') +
       '</div><div class="err" id="smerr"></div><div class="row2"><button class="p" data-smadd="1">Tambah ke simulasi</button></div></div>';
   var out = form;
@@ -6493,6 +6535,11 @@ function simApply() {
       S.items.forEach(function (it) {
         if (it.id != x.id) return;
         if (x.k === 'stop') { it.end = isoD(Date.UTC(y, x.m, 0)); it.cnt = 0; }
+        else if (x.k === 'cycle' || x.k === 'shift')
+          trackSchedule(it, function () {
+            (it.ch = it.ch || []).push(simChg(it, x));
+            it.ch.sort(cmpFrom);
+          });
         else (it.ch = it.ch || []).push({ from: y + '-' + pad2(x.m + 1) + '-01', to: '', price: x.amt, n: null, unit: null, cut: false });
       });
   });
@@ -6503,7 +6550,7 @@ function simApply() {
   toast('Simulasi diterapkan ke data.', function () { restoreSnap(sn.t); });
 }
 function simAdd() {
-  var x = { k: simK, m: +$('smm').value }, err = function (t) { $('smerr').textContent = t; };
+  var x = { k: simK, m: $('smm') ? +$('smm').value : 0 }, err = function (t) { $('smerr').textContent = t; };
   if (simK === 'in' || simK === 'out') {
     x.name = $('smn').value.trim().slice(0, 30);
     x.amt = parseRp($('sma').value) || 0;
@@ -6514,6 +6561,21 @@ function simAdd() {
   } else {
     x.id = $('smi').value;
     if (!x.id) return err('Belum ada item. Tambahkan item dulu di Kelola Item.');
+    if (simK === 'cycle') {
+      x.from = $('smd').value;
+      x.n = parseInt($('smn2').value, 10) || 0;
+      x.unit = $('smu').value;
+      if (!ISO_RE.test(x.from)) return err('Pilih tanggal mulai siklus baru.');
+      if (!(x.n >= 1)) return err('Isi seberapa sering bayar.');
+    } else if (simK === 'shift') {
+      x.from = $('smf').value;
+      x.to = $('smt').value;
+      if (!x.from) return err('Pilih tagihan yang mau digeser.');
+      if (!ISO_RE.test(x.to)) return err('Isi tanggal baru di "Ganti jadi tanggal".');
+      if (x.to === x.from) return err('Tanggal baru sama dengan tanggal tagihan.');
+      var L = occ(item(x.id), +S.year).map(isoD), i = L.indexOf(x.from), pv = i > 0 ? L[i - 1] : null;
+      if (pv && x.to <= pv) return err('Tanggal baru harus sesudah tagihan sebelumnya (' + fmtD(pv) + ').');
+    }
     if (simK === 'price') {
       x.amt = parseRp($('sma').value) || 0;
       if (!(x.amt > 0)) return err('Isi harga baru.');
@@ -6535,6 +6597,7 @@ function bindSim() {
   };
   V.onchange = function (e) {
     if (e.target.id === 'smk') { simK = e.target.value; renderSim(); }
+    else if (e.target.id === 'smi' && simK === 'shift') $('smf').innerHTML = simItemDates(e.target.value);
     else if (e.target.id === 'smr') $('smcw').hidden = e.target.value !== 'n';
   };
   V.addEventListener('input', function (e) {
@@ -6652,7 +6715,12 @@ function bindTrip() {
       renderTrip();
       goalPrev();
     } else if (d.gdel) goalDel();
-    else if (d.gset) goalSave();
+    else if (d.glink) {
+      var G = tp().goal;
+      G.link = G.link === false;
+      save();
+      renderAll();
+    } else if (d.gset) goalSave();
     else if (d.gcancel) {
       gEdit = false;
       renderTrip();
