@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulator deposit IBKR: USDC vs Flip</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef2f5;--panel:#fff;--ink:#14213d;--mute:#5b6678;--line:#d6dde6;--win:#0f766e;--winbg:#d9f2ee;--bad:#b45309;--bar:#c7d2e0;--warn:#9a3412;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1522;--panel:#16203a;--ink:#e8edf6;--mute:#9aa7bd;--line:#2a3756;--win:#5eead4;--winbg:#12403f;--bad:#fbbf24;--bar:#34456b;--warn:#fdba74}}
+:root[data-theme="dark"]{--bg:#0e1522;--panel:#16203a;--ink:#e8edf6;--mute:#9aa7bd;--line:#2a3756;--win:#5eead4;--winbg:#12403f;--bad:#fbbf24;--bar:#34456b;--warn:#fdba74}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5;font-variant-numeric:tabular-nums}
+main{max-width:1040px;margin:0 auto;padding:28px 18px 48px}
+h1{font-size:clamp(26px,5vw,40px);line-height:1.1;margin:0 0 6px;font-weight:800;letter-spacing:-.02em}
+.sub{color:var(--mute);margin:0 0 24px;max-width:60ch}
+.grid{display:grid;grid-template-columns:320px 1fr;gap:18px;align-items:start}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px}
+.panel h2{font-size:16px;margin:0 0 12px}
+label{display:block;font-size:13px;color:var(--mute);margin:12px 0 4px}
+input[type=number],input.fmt{width:100%;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--ink)}
+input:focus-visible,summary:focus-visible{outline:2px solid var(--win);outline-offset:2px}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--ink);margin-top:14px}
+.chk input{margin-top:4px}
+details{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+summary{cursor:pointer;font-size:14px;font-weight:600}
+.row{border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:10px;background:var(--panel)}
+.row.win{border:2px solid var(--win);background:var(--winbg)}
+.top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:baseline}
+.nm{font-weight:800;font-size:18px}
+.badge{font-size:12px;font-weight:600;color:var(--win);margin-left:8px}
+.cost{font-weight:800;font-size:18px}
+.cost small{font-weight:400;color:var(--mute);font-size:13px}
+.bar{height:8px;background:var(--line);border-radius:4px;margin:10px 0 8px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--bar);border-radius:4px;transition:width .25s}
+.row.win .bar i{background:var(--win)}
+.meta{font-size:13px;color:var(--mute)}
+.warn{font-size:13px;color:var(--warn);margin-top:4px}
+.note{font-size:14px;color:var(--mute);margin:4px 0 18px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:460px}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+table input[type=number]{width:116px;padding:6px 8px;font-size:14px}td.best{font-weight:800;color:var(--win)}
+.pr{display:flex;gap:6px;margin-bottom:6px}.pr input{min-width:0}.mr{display:flex;gap:6px;margin-bottom:6px}.mr input{min-width:0}[hidden]{display:none!important}input:disabled{opacity:.4;cursor:not-allowed}select{width:100%;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}td button,#addRow,#mAdd,.mr button{font:inherit;font-size:14px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--ink);cursor:pointer}#addRow{margin-top:8px}.fine{font-size:13px;color:var(--mute);margin-top:22px}
+</style>
+</head>
+<body>
+<main>
+<h1>Deposit ke IBKR: USDC atau Flip?</h1>
+<p class="sub">Masukkan nominal rupiah, lihat berapa USD yang benar-benar sampai di IBKR dan berapa biayanya di tiap rute.</p>
+<div class="grid">
+<section class="panel" aria-label="Pengaturan">
+<h2>Pengaturan</h2>
+<label for="amt">Total uang yang kamu keluarkan (Rp)</label>
+<input id="amt" class="fmt" type="text" inputmode="numeric" value="1.000.000">
+<label for="rate">Kurs beli USDC di Tokocrypto (Rp per USDC)</label>
+<input id="rate" class="fmt" type="text" inputmode="decimal" value="17.883">
+<label for="buyFee">Fee beli USDC di Tokocrypto (%)</label><input id="buyFee" type="number" min="0" step="0.0001" value="0.2222">
+<div class="chk"><input id="mOn" type="checkbox"><label for="mOn" style="margin:0;color:var(--ink)">Beli USDC beberapa kali dengan kurs berbeda</label></div>
+<div id="mBox" hidden>
+<label>Tiap pembelian: rupiah dan kurs (Rp per USDC)</label>
+<div id="mb"></div><button type="button" id="mAdd">Tambah pembelian</button>
+<label for="mSep">Cara kirim ke IBKR</label>
+<select id="mSep"><option value="one">Digabung, kirim sekali</option><option value="sep">Kirim tiap pembelian</option></select>
+<p class="meta" id="mSum"></p>
+</div>
+<div class="chk"><input id="minOn" type="checkbox" checked><label for="minOn" style="margin:0;color:var(--ink)">Terapkan fee minimum $1 dari Zerohash (belum pasti masih berlaku)</label></div>
+<details open><summary>Fee jaringan Tokocrypto (Rp)</summary>
+<label for="f0">Solana</label><input id="f0" class="fmt" type="text" inputmode="numeric" value="5.000">
+<label for="f1">Base</label><input id="f1" class="fmt" type="text" inputmode="numeric" value="3.589">
+<label for="f2">AVAXC</label><input id="f2" class="fmt" type="text" inputmode="numeric" value="1.005">
+</details>
+<details><summary>Flip</summary>
+
+<label for="fT">Biaya transfer (Rp)</label><input id="fT" class="fmt" type="text" inputmode="numeric" value="24.750">
+<label for="fK">Biaya kurs (Rp)</label><input id="fK" class="fmt" type="text" inputmode="numeric" value="4.250">
+
+<p class="meta" id="fTot"></p>
+
+
+<label for="flipRate">Kurs Flip (Rp per USD)</label><input id="flipRate" class="fmt" type="text" inputmode="decimal" value="17.911">
+
+</details>
+</section>
+<section aria-live="polite">
+<div id="results"></div>
+<p class="note" id="breakeven"></p>
+<div class="panel">
+<h2>Total fee (% dari uang yang dikeluarkan) di berbagai nominal</h2>
+<div class="scroll"><table id="tbl"></table></div><p class="note" style="margin:10px 0 0">Baris pertama memakai nominal yang kamu isi dan fee Flip yang kamu ketik. Baris lain adalah perkiraan: biaya transfer Flip tetap, biaya kurs Flip dihitung 0,45% dari jumlah yang dikirim (berdasarkan data Flip-mu).</p>
+</div>
+</section>
+</div>
+<p class="fine">Fee Zerohash: 0,35% untuk $5.000 pertama, 0,20% untuk $15.000 berikutnya, 0,10% di atas $20.000. Fee beli 0,2222% = fee taker 0,20% + biaya ICEx 0,0222%, tanpa PPN (tabel resmi Tokocrypto per 18 Juni 2026; order maker 0,1222%); isi 0 kalau kurs di atas sudah hasil bersih pembelian. Fee jaringan dipotong dari saldo USDC. Fee Flip berbeda untuk tiap nominal dan hanya diketahui sistem Flip, jadi isi fee dan kurs dari aplikasinya setiap kali membandingkan. IBKR juga bisa menolak deposit stablecoin yang sangat kecil (panduan resminya menyebut minimum $10). Kurs dan fee berubah, jadi isi dengan angka yang tampil di aplikasi saat kamu transaksi. Ini simulasi, bukan nasihat keuangan.</p>
+</main>
+<script src="../bridge.js"></script>
+<script>
+const NET=[{n:"USDC via Solana",id:"f0",min:3},{n:"USDC via Base",id:"f1",min:3},{n:"USDC via AVAXC",id:"f2",min:5}];
+const $=id=>document.getElementById(id);
+const num=s=>parseFloat(String(s).replace(/\./g,"").replace(",","."))||0;
+const v=id=>{const e=$(id);return Math.max(0,e.classList.contains("fmt")?num(e.value):(parseFloat(e.value)||0))};
+const fv=id=>{const s=$(id).value.trim();return s===""?"":Math.max(0,num(s))};
+function fmtIn(e){
+ const el=e.target,raw=el.value,pos=el.selectionStart;
+ const sig=raw.slice(0,pos).replace(/[^0-9,]/g,"").length;
+ const s=raw.replace(/[^0-9,]/g,""),ci=s.indexOf(",");
+ let ip=ci<0?s:s.slice(0,ci);
+ const dp=ci<0?null:s.slice(ci+1).replace(/,/g,"");
+ ip=ip.replace(/^0+(?=\d)/,"").replace(/\B(?=(\d{3})+(?!\d))/g,".");
+ const out=dp===null?ip:ip+","+dp;
+ el.value=out;
+ let c=0,np=0;
+ while(np<out.length&&c<sig){if(/[0-9,]/.test(out[np]))c++;np++}
+ el.setSelectionRange(np,np);
+}
+const idr=x=>"Rp"+Math.round(x).toLocaleString("id-ID");
+const usd=x=>"$"+x.toFixed(2);
+
+
+function tier(a){return .0035*Math.min(a,5000)+.002*Math.max(0,Math.min(a,20000)-5000)+.001*Math.max(0,a-20000)}
+function calc(X,fl,rt){
+ const rate=rt||v("rate")||1,minOn=$("minOn").checked,rows=[];
+ NET.forEach(n=>{
+  const bought=X*(1-v("buyFee")/100)/rate,fee=v(n.id)/rate,recv=Math.max(0,bought-fee);
+  const zh=minOn?Math.max(tier(recv),1):tier(recv);
+  const net=Math.max(0,recv-zh),w=[];
+  if(bought<n.min)w.push("Di bawah minimum penarikan Tokocrypto ("+n.min+" USDC).");
+  
+  rows.push({name:n.n,net,loss:X-net*rate,w,ok:!w.length,zh,fee:v(n.id)});
+ });
+ const fr=v("flipRate")||1,ff=fl===""||fl==null?null:{fee:Math.max(0,+fl||0),est:false};
+ if(!ff){rows.push({name:"Flip",net:0,loss:1e12,w:["Isi fee Flip dari aplikasi Flip di pengaturan."],ok:false,flip:true,nofee:true});}
+ else{const net=Math.max(0,(X-ff.fee)/fr);rows.push({name:"Flip",net,loss:ff.fee,w:ff.est?["Fee Flip ini perkiraan dari fee yang kamu isi. Isi fee asli dari aplikasi Flip agar akurat."]:[],ok:true,flip:true,ffee:ff.fee});}
+ return rows;
+}
+const SIZES=[1e6,2e6,3e6,5e6,10e6,20e6];
+function updTbl(){
+ let h="<tr><th>Nominal</th>"+NET.map(n=>"<th>"+n.n.replace("USDC via ","")+"</th>").join("")+"<th>Flip</th></tr>";
+ const cur=(multi()||{}).X||v("amt");[cur,...SIZES].forEach((s,ix)=>{if(!(s>0))return;
+  const r=calc(s,"",(multi()||{}).rate).filter(x=>!x.flip),fp=.0045,S=Math.max(0,(s-v("fT"))/(1+fp)),ff=(ix===0&&flipTot()!=="")?flipTot():s-S,m=Math.min(ff,...r.map(x=>x.loss));
+  h+="<tr><td>"+(ix===0?"<b>"+idr(s)+"</b> (nominalmu)":idr(s))+"</td>"+r.map(x=>'<td'+(x.loss===m?' class="best"':'')+'>'+(x.loss/s*100).toFixed(2)+"%</td>").join("")+'<td'+(ff===m?' class="best"':'')+'>'+(ff/s*100).toFixed(2)+"%</td></tr>";
+ });
+ $("tbl").innerHTML=h;
+}
+function flipTot(){const a=$("fT").value.trim(),b=$("fK").value.trim();return a===""&&b===""?"":num(a)+num(b)}
+function syncFlip(X){
+ const t=flipTot(),f=t===""?0:t;
+ $("fTot").textContent="Dari total "+idr(X)+", biaya Flip "+idr(f)+", sisa "+idr(Math.max(0,X-f))+" ditukar ke USD.";
+ 
+}
+
+function multi(){
+ if(!$("mOn").checked)return null;
+ const b=[...document.querySelectorAll("#mb .mr")].map(d=>({x:num(d.querySelector(".mx").value),k:num(d.querySelector(".mk").value)})).filter(o=>o.x>0&&o.k>0);
+ if(!b.length)return null;
+ const X=b.reduce((a,o)=>a+o.x,0),U=b.reduce((a,o)=>a+o.x/o.k,0);
+ return{b,X,rate:X/U,sep:$("mSep").value==="sep"};
+}
+function calcMulti(M,fl){
+ const base=calc(M.X,fl,M.rate);
+ if(!M.sep)return base;
+ const per=M.b.map(o=>calc(o.x,"",o.k).filter(r=>!r.flip));
+ return base.map((r,i)=>{
+  if(r.flip)return r;
+  const P=per.map(p=>p[i]);
+  return{...r,net:P.reduce((a,p)=>a+p.net,0),loss:P.reduce((a,p)=>a+p.loss,0),zh:P.reduce((a,p)=>a+p.zh,0),fee:P.reduce((a,p)=>a+p.fee,0),w:[...new Set(P.flatMap(p=>p.w))],ok:P.every(p=>p.ok)};
+ });
+}
+function addM(x,k){
+ const d=document.createElement("div");d.className="mr";
+ d.innerHTML='<input class="mx fmt" type="text" inputmode="numeric" placeholder="Rupiah" aria-label="Rupiah" value="'+x+'"><input class="mk fmt" type="text" inputmode="decimal" placeholder="Kurs" aria-label="Kurs" value="'+k+'"><button type="button" aria-label="Hapus pembelian">×</button>';
+ d.querySelector("button").onclick=()=>{d.remove();render()};
+ d.querySelectorAll("input").forEach(i=>{i.addEventListener("input",fmtIn);i.addEventListener("input",render)});
+ $("mb").appendChild(d);
+}
+addM("","");addM("","");
+$("mAdd").onclick=()=>addM("","");
+$("mSep").addEventListener("change",render);
+$("mOn").addEventListener("change",()=>{const o=$("mOn").checked;$("mBox").hidden=!o;$("amt").disabled=o;$("rate").disabled=o;document.querySelectorAll('label[for="amt"],label[for="rate"]').forEach(l=>l.style.opacity=o?".4":"");render()});
+function render(){
+ const M=multi(),X=M?M.X:v("amt"),rows=M?calcMulti(M,flipTot()):calc(X,flipTot()),rate=M?M.rate:(v("rate")||1);
+ syncFlip(X);
+ $("mSum").textContent=M?("Total "+idr(M.X)+", kurs rata-rata "+M.rate.toLocaleString("id-ID",{maximumFractionDigits:2})+" per USDC, "+(M.sep?M.b.length+" kali kirim ke IBKR":"1 kali kirim ke IBKR")):($("mOn").checked?"Isi rupiah dan kurs untuk minimal satu pembelian.":"");
+ if(!X){$("results").innerHTML='<div class="row">Isi nominal rupiah untuk mulai.</div>';}
+ else{
+  const okRows=rows.filter(r=>r.ok),best=okRows.length?okRows.reduce((a,b)=>a.net>b.net?a:b):null;
+  const maxLoss=Math.max(...rows.filter(r=>!r.nofee).map(r=>r.loss),1);
+  rows.sort((a,b)=>b.net-a.net);
+  $("results").innerHTML=rows.map(r=>{
+   const win=r===best;
+   const detail=r.flip?(r.nofee?"":"= biaya transfer "+idr(v("fT"))+" + biaya kurs "+idr(v("fK"))+".<br>Hitungannya: "+idr(X)+" − "+idr(r.ffee)+" = "+idr(Math.max(0,X-r.ffee))+", lalu ditukar dengan kurs Flip "+v("flipRate").toLocaleString("id-ID",{maximumFractionDigits:2})+" per USD = <b>"+usd(r.net)+"</b> bersih di IBKR."):"Fee beli "+idr(X*v("buyFee")/100)+" + fee jaringan "+idr(r.fee)+" + fee Zerohash "+usd(r.zh)+" (≈ "+idr(r.zh*rate)+")";
+   return '<div class="row'+(win?' win':'')+'"><div class="top"><div><span class="nm">'+r.name+'</span>'+(win?'<span class="badge">Termurah</span>':'')+'</div>'
+   +'<div class="cost">'+(r.nofee?"—":usd(r.net)+' <small>bersih di IBKR</small>')+'</div></div>'
+   +'<div class="bar"><i style="width:'+Math.max(2,Math.min(100,r.loss/maxLoss*100))+'%"></i></div>'
+   +'<div class="meta">'+(r.nofee?"":'Total fee: <b>'+idr(r.loss)+'</b> ('+(r.loss/X*100).toFixed(2)+'%) &nbsp; ')+detail+'</div>'
+   +r.w.map(t=>'<div class="warn">'+t+'</div>').join('')+'</div>';
+  }).join("");
+ }
+ const th=v("minOn")||$("minOn").checked?1/.0035*rate:0;
+ $("breakeven").textContent=$("minOn").checked?"Fee minimum $1 baru tidak terasa kalau deposit di atas sekitar "+idr(th)+" (0,35% dari jumlah itu = $1).":"Fee minimum $1 dimatikan, jadi biaya Zerohash murni persentase.";
+ updTbl();
+ if(window.rkChanged)window.rkChanged();
+}
+document.querySelectorAll("input.fmt").forEach(i=>i.addEventListener("input",fmtIn));
+document.querySelectorAll("input").forEach(i=>i.addEventListener("input",render));
+render();
+window.rkGetState=function(){var f={};document.querySelectorAll("input[id],select[id]").forEach(function(e){f[e.id]=e.type==="checkbox"?e.checked:e.value});var m=[].map.call(document.querySelectorAll("#mb .mr"),function(d){return{x:d.querySelector(".mx").value,k:d.querySelector(".mk").value}});return{v:1,fields:f,multi:m}};
+window.rkSetState=function(s){if(!s||typeof s!=="object")return;var f=s.fields||{};Object.keys(f).forEach(function(id){var e=$(id);if(!e)return;if(e.type==="checkbox")e.checked=!!f[id];else if(typeof f[id]==="string")e.value=f[id]});$("mb").innerHTML="";var rows=Array.isArray(s.multi)&&s.multi.length?s.multi:[{x:"",k:""},{x:"",k:""}];rows.forEach(function(o){addM(o.x||"",o.k||"")});var on=$("mOn").checked;$("mBox").hidden=!on;$("amt").disabled=on;$("rate").disabled=on;document.querySelectorAll('label[for="amt"],label[for="rate"]').forEach(function(l){l.style.opacity=on?".4":""});render()};
+</script>
+</body>
+</html>
