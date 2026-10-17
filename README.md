@@ -89,3 +89,14 @@ Tes e2e tidak menyentuh Supabase asli. Untuk Supabase sungguhan pakai **Impor / 
 - Publishable key memang boleh publik; yang melindungi data adalah **RLS** di `schema.sql` dan login. Jangan pernah menaruh kunci *secret*/`service_role` di repo (cek sistem akan memperingatkan).
 - Matikan pendaftaran baru di Supabase setelah akun Anda dibuat.
 - Tindakan yang merusak (hapus tahun/item, impor, pulihkan contoh, memuat data cloud) membuat **cadangan otomatis** (5 terakhir) dan menampilkan tombol **Urungkan**.
+
+## Alat tambahan (r18): Rebalance porto & IBKR vs Flip
+
+Dua tab baru di bar atas (di samping Rencana Keuangan dan Perjalanan). Keduanya **berdiri sendiri dan tidak terhubung ke data Rencana Keuangan**.
+
+- File: `tools/rebalance/` (kalkulator rebalancing), `tools/ibkr-flip/` (simulator deposit IBKR), `tools/bridge.js` (jembatan penyimpanan). Ditampilkan lewat iframe, jadi kode dan gayanya tidak bentrok dengan aplikasi utama.
+- Penyimpanan: isian disimpan di perangkat (`localStorage`, kunci `rk-tool-<nama>`) dan, setelah masuk, di Supabase tabel `rk_tools` (satu baris per akun per alat, terlindungi RLS, terpisah dari `rk_state`). Bila data lokal dan cloud berbeda, yang paling baru dipakai.
+- Pasang: (1) jalankan bagian bawah `schema.sql` (bagian "Alat") di Supabase SQL Editor satu kali; (2) unggah `index.html` dan folder `tools/` ke repo. Sebelum tabel dibuat, alat tetap jalan dan menyimpan di perangkat; statusnya menampilkan pesan.
+- Data alat tidak ikut Impor/Ekspor Rencana Keuangan.
+- Kalkulator rebalancing memakai Tailwind dan Chart.js dari CDN, jadi butuh internet.
+- Catatan: folder `js/` dan `dist/` adalah versi modular lama dan tidak memuat tab Perjalanan maupun alat ini. Yang dipakai GitHub Pages adalah `index.html`.

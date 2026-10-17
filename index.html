@@ -879,7 +879,7 @@ nav {
 
 /* ===== Catatan Kas ===== */
 .kp { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
-.kt { display: flex; gap: 8px; }
+.kt { display: flex; flex-wrap: wrap; gap: 8px; }
 .kf { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
 .kin { color: var(--ac); }
 .kch { width: 100%; height: 130px; display: block; }
@@ -940,9 +940,9 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 </head>
 <body>
 <div class="w">
-<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px"><div class="kt" id="mdbar"><button type="button" class="yp on" data-md="rencana">Rencana Keuangan</button><button type="button" class="yp" data-md="trip">Perjalanan</button></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span id="offl" class="chp cash" hidden>Offline &middot; data tersimpan di perangkat</span><button type="button" id="pwa" hidden>Pasang aplikasi</button><button type="button" id="thm" title="Ketuk untuk ganti tema">&#9680; Tema: Otomatis</button></div></div>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px"><div class="kt" id="mdbar"><button type="button" class="yp on" data-md="rencana">Rencana Keuangan</button><button type="button" class="yp" data-md="trip">Perjalanan</button><button type="button" class="yp" data-md="rebalance">Rebalance porto</button><button type="button" class="yp" data-md="ibkr">IBKR vs Flip</button></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span id="offl" class="chp cash" hidden>Offline &middot; data tersimpan di perangkat</span><button type="button" id="pwa" hidden>Pasang aplikasi</button><button type="button" id="thm" title="Ketuk untuk ganti tema">&#9680; Tema: Otomatis</button></div></div>
 <header>
-  <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r17 · 16 Okt 2026</div><div class="sub" id="sbs"></div></div>
+  <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r18 · 17 Okt 2026</div><div class="sub" id="sbs"></div></div>
   <div class="ctl">
     <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
     <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub" id="adjs" style="margin-top:4px"></div></div>
@@ -964,6 +964,8 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 <section id="v-kas" hidden></section>
 <section id="v-sim" hidden></section>
 <section id="v-trip" hidden></section>
+<section id="v-rebalance" hidden></section>
+<section id="v-ibkr" hidden></section>
 <section id="v-item" hidden>
   <div class="card">
     <h2 id="ft">Tambah item</h2>
@@ -5169,6 +5171,7 @@ function setUser(s) {
   if (u) {
     sbStat('Menyinkronkan...');
     pull();
+    toolsPull();
   } else sbStat('Belum masuk. Data tersimpan lokal.');
 }
 
@@ -5883,7 +5886,8 @@ function bindKas() {
  */
 var mode = (function () {
     try {
-      return localStorage.getItem('rk-mode') === 'trip' ? 'trip' : 'rencana';
+      var m0 = localStorage.getItem('rk-mode');
+      return m0 === 'trip' || m0 === 'rebalance' || m0 === 'ibkr' ? m0 : 'rencana';
     } catch (e) {
       return 'rencana';
     }
@@ -6237,20 +6241,179 @@ function renderTrip() {
   if ($('gprev')) goalPrev();
 }
 
-/** Tampilan sesuai mode: Rencana (tab + kontrol tahun) atau Perjalanan (lembar sendiri). */
+/* ===== Alat: Rebalance porto & IBKR vs Flip =====
+ * Dua halaman mandiri di folder tools/ (tampil lewat iframe, tidak terhubung ke data Rencana Keuangan).
+ * Isian keduanya disimpan di perangkat (localStorage 'rk-tool-<nama>') dan, bila sudah masuk, di Supabase
+ * tabel rk_tools (satu baris per akun per alat). Bila lokal dan cloud berbeda, yang paling baru dipakai. */
+var TOOLS = {
+    rebalance: { title: 'Rebalance porto', src: 'tools/rebalance/index.html' },
+    ibkr: { title: 'IBKR vs Flip', src: 'tools/ibkr-flip/index.html' },
+  },
+  toolFrames = {},
+  toolReady = {},
+  toolPushT = {},
+  toolMsg = {};
+
+function toolLocal(name) {
+  try {
+    var o = JSON.parse(localStorage.getItem('rk-tool-' + name) || 'null');
+    return o && typeof o.t === 'number' && o.state ? o : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function toolSaveLocal(name, state, t) {
+  try {
+    localStorage.setItem('rk-tool-' + name, JSON.stringify({ state: state, t: t }));
+  } catch (e) {}
+}
+
+function toolStat(name, text, bad) {
+  toolMsg[name] = { t: text, bad: bad };
+  var el = $('tstat-' + name);
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = bad ? 'var(--wr)' : 'var(--mut)';
+}
+
+function toolErr(err) {
+  var m = (err && err.message) || '';
+  if ((err && err.code === '42P01') || /rk_tools/.test(m) && /not exist|schema cache|find the table/i.test(m))
+    return 'Tabel rk_tools belum ada di Supabase. Jalankan schema.sql terbaru di SQL Editor. Data tetap tersimpan di perangkat ini.';
+  return 'Gagal sinkron: ' + m;
+}
+
+function toolTheme() {
+  var t = document.documentElement.getAttribute('data-theme');
+  return t === 'dark' || t === 'bwd' ? 'dark' : t === 'light' || t === 'bw' ? 'light' : '';
+}
+
+function toolPost(name, msg) {
+  var f = toolFrames[name];
+  if (!f || !f.contentWindow) return;
+  msg.rkTool = true;
+  try {
+    f.contentWindow.postMessage(msg, location.origin === 'null' ? '*' : location.origin);
+  } catch (e) {}
+}
+
+function toolSendLoad(name) {
+  var L = toolLocal(name);
+  toolPost(name, { type: 'load', state: L ? L.state : null, theme: toolTheme() });
+}
+
+function toolMount(name) {
+  var box = $('v-' + name);
+  if (!box || toolFrames[name]) return;
+  var d = TOOLS[name];
+  box.innerHTML =
+    '<div class="sub" id="tstat-' + name + '" style="margin:0 0 8px"></div>' +
+    '<iframe id="tf-' + name + '" title="' + d.title + '" src="' + d.src +
+    '" style="width:100%;height:900px;border:0;border-radius:14px;display:block"></iframe>';
+  toolFrames[name] = $('tf-' + name);
+  var m = toolMsg[name];
+  if (m) toolStat(name, m.t, m.bad);
+  else if (sbUser) toolStat(name, 'Menyinkronkan...');
+  else toolStat(name, 'Data tersimpan di perangkat ini. Masuk untuk sinkron antar perangkat.');
+}
+
+function toolSchedPush(name) {
+  if (!sb || !sbUser) {
+    toolStat(name, 'Tersimpan di perangkat ini. Masuk untuk sinkron ke cloud.');
+    return;
+  }
+  toolStat(name, 'Menyimpan ke cloud...');
+  clearTimeout(toolPushT[name]);
+  toolPushT[name] = setTimeout(function () {
+    toolPush(name);
+  }, 1500);
+}
+
+function toolPush(name) {
+  var L = toolLocal(name);
+  if (!L || !sb || !sbUser) return Promise.resolve();
+  return sb
+    .from('rk_tools')
+    .upsert({ user_id: sbUser.id, tool: name, data: L.state, updated_at: new Date(L.t).toISOString() })
+    .then(function (r) {
+      if (r.error) toolStat(name, toolErr(r.error), 1);
+      else toolStat(name, 'Tersinkron ' + clock());
+    });
+}
+
+/** Setelah masuk: bandingkan lokal vs cloud per alat; yang terbaru menang. */
+function toolsPull() {
+  if (!sb || !sbUser) return Promise.resolve();
+  return sb
+    .from('rk_tools')
+    .select('tool,data,updated_at')
+    .eq('user_id', sbUser.id)
+    .then(function (r) {
+      if (r.error) {
+        Object.keys(TOOLS).forEach(function (n) {
+          toolStat(n, toolErr(r.error), 1);
+        });
+        return;
+      }
+      var rows = {};
+      (r.data || []).forEach(function (x) {
+        rows[x.tool] = x;
+      });
+      Object.keys(TOOLS).forEach(function (n) {
+        var L = toolLocal(n),
+          R = rows[n],
+          rt = R ? Date.parse(R.updated_at) || 0 : 0;
+        if (R && R.data && (!L || rt > L.t)) {
+          toolSaveLocal(n, R.data, rt);
+          if (toolReady[n]) toolSendLoad(n);
+          toolStat(n, 'Tersinkron ' + clock() + ' (data cloud dimuat)');
+        } else if (L && (!R || L.t > rt)) toolPush(n);
+        else toolStat(n, 'Tersinkron ' + clock());
+      });
+    });
+}
+
+window.addEventListener('message', function (e) {
+  var m = e.data;
+  if (!m || m.rkTool !== true) return;
+  var name = Object.keys(toolFrames).filter(function (k) {
+    return toolFrames[k].contentWindow === e.source;
+  })[0];
+  if (!name) return;
+  if (m.type === 'ready') {
+    toolReady[name] = true;
+    toolSendLoad(name);
+  } else if (m.type === 'save' && m.state && typeof m.state === 'object') {
+    toolSaveLocal(name, m.state, Date.now());
+    toolSchedPush(name);
+  } else if (m.type === 'height') {
+    var hh = Math.min(20000, Math.max(300, Math.ceil(+m.h || 0)));
+    if (Math.abs(hh - toolFrames[name].offsetHeight) > 2) toolFrames[name].style.height = hh + 'px';
+  }
+});
+
+/** Tampilan sesuai mode: Rencana (tab + kontrol tahun), Perjalanan (lembar sendiri), atau alat (Rebalance porto / IBKR vs Flip). */
 function modeUi() {
-  var T = mode === 'trip';
+  var T = mode === 'trip',
+    X = !!TOOLS[mode],
+    O = T || X;
   document.querySelectorAll('#mdbar [data-md]').forEach(function (b) {
     b.classList.toggle('on', b.dataset.md === mode);
   });
   $('v-trip').hidden = !T;
-  document.querySelector('nav').style.display = T ? 'none' : '';
-  ['year', 'sm', 'saldo'].forEach(function (id) {
-    $(id).parentNode.style.display = T ? 'none' : '';
+  Object.keys(TOOLS).forEach(function (n) {
+    $('v-' + n).hidden = mode !== n;
   });
-  $('rem').style.display = T ? 'none' : '';
-  document.querySelector('h1').textContent = T ? 'Perjalanan' : 'Rencana Keuangan';
-  if (T) {
+  if (X) toolMount(mode);
+  document.querySelector('.w').style.maxWidth = mode === 'rebalance' ? '1500px' : '';
+  document.querySelector('nav').style.display = O ? 'none' : '';
+  ['year', 'sm', 'saldo'].forEach(function (id) {
+    $(id).parentNode.style.display = O ? 'none' : '';
+  });
+  $('rem').style.display = O ? 'none' : '';
+  document.querySelector('h1').textContent = T ? 'Perjalanan' : X ? TOOLS[mode].title : 'Rencana Keuangan';
+  if (O) {
     ['rincian', 'jadwal', 'item', 'kas', 'sim'].forEach(function (x) {
       $('v-' + x).hidden = true;
     });
