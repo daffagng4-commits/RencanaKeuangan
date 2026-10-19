@@ -141,6 +141,19 @@
 
           <div class="my-7 h-px bg-white/10"></div>
 
+          <section aria-labelledby="portfolio-mode-title" class="mb-7">
+            <label for="portfolio-mode" id="portfolio-mode-title" class="input-label">Sumber nilai portfolio</label>
+            <select id="portfolio-mode" class="dark-input"><option value="direct">Input nilai langsung</option><option value="holdings">Jurnal posisi × harga pasar</option></select>
+            <p class="mt-2 text-[10px] leading-4 text-white/40">Mode jurnal menyimpan lembar/unit dan transaksi. Mode lama tetap tersedia.</p>
+          </section>
+
+          <section id="holdings-pane" hidden aria-labelledby="holdings-title" class="mb-7 rounded-xl border border-white/10 p-4">
+            <div class="input-group-heading"><div><p class="input-group-index">J</p><h3 id="holdings-title">Harga pasar & posisi jurnal</h3></div></div>
+            <p class="mt-2 text-[10px] leading-4 text-white/40">Isi harga terbaru. Saham per lembar; ETF per unit sesuai satuan nilai ETF.</p>
+            <div id="holding-prices" class="mt-3 grid gap-3 sm:grid-cols-2"></div>
+            <div id="execution-journal" class="mt-4 text-[11px] leading-5 text-white/55"></div>
+          </section>
+
           <section aria-labelledby="stock-input-title">
             <div class="input-group-heading">
               <div><p class="input-group-index">A</p><h3 id="stock-input-title">Saham Lokal</h3></div>
@@ -205,6 +218,25 @@
 
             
             <div class="mt-4">
+              <label for="etf-cash-pending" class="input-label">Kas ETF di penampung (belum disetor ke IBKR)</label>
+              <div class="currency-input-wrap"><span>Rp</span><input id="etf-cash-pending" class="technical-input" type="text" inputmode="numeric" autocomplete="off" value="0"></div>
+              <label for="quarter-month" class="input-label mt-3">Bulan ke-berapa dalam kuartal</label>
+              <select id="quarter-month" class="dark-input"><option value="1">1 — awal kuartal</option><option value="2">2 — tengah kuartal</option><option value="3">3 — akhir kuartal</option></select>
+              <p class="mt-2 text-[10px] leading-4 text-white/40">Kas menambah nilai ETF parent, tetapi belum dihitung sebagai alokasi VOO/VXUS/SMH/NVDA.</p>
+            </div>
+
+            <div class="mt-4">
+              <label for="stock-buy-fee" class="input-label">Fee beli broker (%)</label>
+              <input id="stock-buy-fee" class="dark-input" type="number" min="0" max="100" step="0.0001" value="0" placeholder="Isi sesuai broker">
+              <p class="mt-2 text-[10px] leading-4 text-white/40">Fee masuk perhitungan lot dan saldo RDN. Isi 0 bila bebas fee.</p>
+            </div>
+
+            <div class="mt-4">
+              <label for="recovery-target" class="input-label">Target pemulihan parent</label>
+              <select id="recovery-target" class="dark-input"><option value="middle">Ke target tengah</option><option value="band">Ke tepi band</option></select>
+            </div>
+
+            <div class="mt-4">
               <label for="rdn-carry" class="input-label">Saldo Cash RDN Mengendap Bulan Lalu</label>
               <div class="currency-input-wrap"><span>Rp</span><input id="rdn-carry" class="technical-input" type="text" inputmode="numeric" autocomplete="off" value="0"></div>
               <p id="rdn-auto-copy" class="mt-2 text-[10px] leading-4 text-white/40">Sisa bulan ini dapat disimpan untuk periode berikutnya.</p>
@@ -215,6 +247,11 @@
               <label for="wire-fee" class="input-label">Estimasi Biaya Wire Transfer Bank</label>
               <div class="currency-input-wrap"><span>Rp</span><input id="wire-fee" class="technical-input" type="text" inputmode="numeric" autocomplete="off" value="250.000"></div>
               <p class="mt-2 text-[10px] leading-4 text-white/40">Panduan umum: Rp 150.000 - Rp 350.000 per wire transfer.</p>
+            </div>
+            <div id="ibkr-bridge-notice" class="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs" hidden>
+              <div class="font-bold text-emerald-400">Rute IBKR vs Flip Tersedia</div>
+              <p class="mt-1 text-[11px] text-white/70" id="ibkr-bridge-text"></p>
+              <button id="apply-ibkr-route-btn" type="button" class="mt-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-500">Terapkan Kurs & Fee Ini</button>
             </div>
             <div id="technical-validation" class="target-validation valid" role="status">Harga saham dan biaya bank siap digunakan.</div>
           </section>
@@ -232,6 +269,11 @@
         </aside>
 
         <div class="min-w-0 space-y-8">
+          <section class="panel p-5" aria-label="Simulasi bagaimana kalau">
+            <div class="flex flex-wrap items-end gap-3"><div><label for="scenario-etf-change" class="input-label">Pasar ETF (%)</label><input id="scenario-etf-change" class="dark-input !text-ink" type="number" min="-100" step="0.1" value="0"></div><div><label for="scenario-stock-change" class="input-label">Pasar saham (%)</label><input id="scenario-stock-change" class="dark-input !text-ink" type="number" min="-100" step="0.1" value="0"></div><button id="scenario-reset" type="button" class="rounded-xl border border-ink/15 px-4 py-2.5 text-xs font-bold uppercase tracking-[.1em]">Reset skenario</button></div>
+            <p id="scenario-status" class="mt-3 text-xs text-ink/55"></p>
+          </section>
+
           <section id="status-panel" class="status-panel" aria-live="polite">
             <div class="relative z-10 grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
               <div>
@@ -278,6 +320,7 @@
                 <figcaption><strong>Internal ETF</strong><span id="etf-chart-target">50% / 25% / 20% / 5% &middot; band &plusmn;3</span></figcaption>
               </figure>
             </div>
+            <div class="mt-8" id="history-chart-wrap" hidden><p class="eyebrow">Riwayat jurnal</p><canvas id="history-chart" aria-label="Penyimpangan ETF terhadap band dari waktu ke waktu" role="img"></canvas><p id="history-chart-empty" class="mt-2 text-xs text-ink/45">Belum ada snapshot eksekusi.</p></div>
           </section>
 
           <section class="grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
@@ -304,7 +347,7 @@
 
           <section class="execution-panel">
             <div class="execution-heading">
-              <div><p class="eyebrow !text-lime">Action plan</p><h2 class="mt-3 text-3xl font-extrabold leading-tight tracking-[-0.05em] sm:text-4xl">Rencana Aksi Bulan demi Bulan</h2></div>
+              <div><p class="eyebrow !text-lime">Action plan</p><h2 class="mt-3 text-3xl font-extrabold leading-tight tracking-[-0.05em] sm:text-4xl">Rencana Aksi Bulan demi Bulan</h2><div class="mt-4 flex flex-wrap gap-2"><button id="copy-current-action" type="button" class="rounded-xl border border-white/20 px-3 py-2 text-[10px] font-bold uppercase tracking-[.1em]">Salin instruksi bulan ini</button><button id="download-reminders" type="button" class="rounded-xl border border-white/20 px-3 py-2 text-[10px] font-bold uppercase tracking-[.1em]">Unduh pengingat .ics</button></div></div>
               <div class="execution-number" aria-hidden="true">01</div>
             </div>
 

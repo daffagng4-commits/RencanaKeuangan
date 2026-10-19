@@ -90,6 +90,16 @@ table input[type=number]{width:116px;padding:6px 8px;font-size:14px}td.best{font
 <section aria-live="polite">
 <div id="results"></div>
 <p class="note" id="breakeven"></p>
+<div class="panel" id="apply-rebalance-card" style="margin-top:14px;border:1px solid rgba(16,185,129,0.3);background:rgba(16,185,129,0.04)">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+<div>
+<div style="font-weight:700;font-size:13px;color:#10b981">Hubungkan ke Rebalance Porto</div>
+<div style="font-size:11px;color:#94a3b8;margin-top:2px">Kirim kurs efektif dan fee rute termurah langsung ke kalkulator Rebalance.</div>
+</div>
+<button type="button" id="btn-apply-rebalance" style="padding:8px 14px;background:#059669;color:#fff;border:none;border-radius:8px;font-weight:600;font-size:12px;cursor:pointer">Pakai rute ini di Rebalance</button>
+</div>
+<div id="apply-rebalance-status" style="font-size:11px;color:#34d399;margin-top:8px" hidden></div>
+</div>
 <div class="panel">
 <h2>Total fee (% dari uang yang dikeluarkan) di berbagai nominal</h2>
 <div class="scroll"><table id="tbl"></table></div><p class="note" style="margin:10px 0 0">Baris pertama memakai nominal yang kamu isi dan fee Flip yang kamu ketik. Baris lain adalah perkiraan: biaya transfer Flip tetap, biaya kurs Flip dihitung 0,45% dari jumlah yang dikirim (berdasarkan data Flip-mu).</p>
@@ -208,6 +218,24 @@ function render(){
 }
 document.querySelectorAll("input.fmt").forEach(i=>i.addEventListener("input",fmtIn));
 document.querySelectorAll("input").forEach(i=>i.addEventListener("input",render));
+const btnApply=$("btn-apply-rebalance");
+if(btnApply){
+ btnApply.onclick=function(){
+  const M=multi(),X=M?M.X:v("amt"),rows=M?calcMulti(M,flipTot()):calc(X,flipTot());
+  const okRows=rows.filter(r=>r.ok),best=okRows.length?okRows.reduce((a,b)=>a.net>b.net?a:b):null;
+  if(!best||!X||best.net<=0)return;
+  const effRate=Math.round(X/best.net);
+  const estFee=Math.round(best.loss);
+  const data={rate:effRate,wireFee:estFee,name:best.name,updatedAt:Date.now()};
+  try{localStorage.setItem("rk-ibkr-best-route",JSON.stringify(data));}catch(e){}
+  try{if(window.parent)window.parent.postMessage({type:"rk-ibkr-best-route",...data},"*");}catch(e){}
+  const st=$("apply-rebalance-status");
+  if(st){
+   st.textContent="✓ Rute '"+best.name+"' tersimpan: kurs Rp "+effRate.toLocaleString("id-ID")+" dan fee Rp "+estFee.toLocaleString("id-ID")+". Buka Rebalance Porto untuk menerapkan.";
+   st.hidden=false;
+  }
+ };
+}
 render();
 window.rkGetState=function(){var f={};document.querySelectorAll("input[id],select[id]").forEach(function(e){f[e.id]=e.type==="checkbox"?e.checked:e.value});var m=[].map.call(document.querySelectorAll("#mb .mr"),function(d){return{x:d.querySelector(".mx").value,k:d.querySelector(".mk").value}});return{v:1,fields:f,multi:m}};
 window.rkSetState=function(s){if(!s||typeof s!=="object")return;var f=s.fields||{};Object.keys(f).forEach(function(id){var e=$(id);if(!e)return;if(e.type==="checkbox")e.checked=!!f[id];else if(typeof f[id]==="string")e.value=f[id]});$("mb").innerHTML="";var rows=Array.isArray(s.multi)&&s.multi.length?s.multi:[{x:"",k:""},{x:"",k:""}];rows.forEach(function(o){addM(o.x||"",o.k||"")});var on=$("mOn").checked;$("mBox").hidden=!on;$("amt").disabled=on;$("rate").disabled=on;document.querySelectorAll('label[for="amt"],label[for="rate"]').forEach(function(l){l.style.opacity=on?".4":""});render()};

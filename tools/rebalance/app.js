@@ -30,7 +30,12 @@ const DEFAULT_TECHNICAL = Object.freeze({
   rdnCarry: 0,
   wireFee: 250_000,
   usdRate: 0,
+  etfCashPending: 0,
+  quarterMonth: 1,
+  buyFeeRate: 0,
+  recoveryTarget: "middle",
 });
+const JOURNAL_VERSION = 1;
 
 const INITIAL_VALUES = Object.freeze({
   bmri: 4_000_000,
@@ -73,10 +78,24 @@ const elements = {
     etf: document.querySelector("#etf-target-total"),
   },
   monthlyFund: document.querySelector("#monthly-fund"),
+  portfolioMode: document.querySelector("#portfolio-mode"),
+  holdingsPane: document.querySelector("#holdings-pane"),
+  holdingPrices: document.querySelector("#holding-prices"),
+  executionJournal: document.querySelector("#execution-journal"),
   rdnCarry: document.querySelector("#rdn-carry"),
   wireFee: document.querySelector("#wire-fee"),
+  etfCashPending: document.querySelector("#etf-cash-pending"),
+  quarterMonth: document.querySelector("#quarter-month"),
+  stockBuyFee: document.querySelector("#stock-buy-fee"),
+  recoveryTarget: document.querySelector("#recovery-target"),
   usdRate: document.querySelector("#usd-rate"),
   etfCurrency: document.querySelector("#etf-currency"),
+  scenarioEtf: document.querySelector("#scenario-etf-change"),
+  scenarioStock: document.querySelector("#scenario-stock-change"),
+  scenarioReset: document.querySelector("#scenario-reset"),
+  scenarioStatus: document.querySelector("#scenario-status"),
+  historyWrap: document.querySelector("#history-chart-wrap"),
+  historyEmpty: document.querySelector("#history-chart-empty"),
   rdnAutoCopy: document.querySelector("#rdn-auto-copy"),
   technicalValidation: document.querySelector("#technical-validation"),
   targetValidation: document.querySelector("#target-validation"),
@@ -162,6 +181,14 @@ const elements = {
   shortfallStock: document.querySelector("#shortfall-stock"),
   shortfallEtf: document.querySelector("#shortfall-etf"),
   shortfallNote: document.querySelector("#shortfall-note"),
+  copyCurrentAction: document.querySelector("#copy-current-action"),
+  downloadReminders: document.querySelector("#download-reminders"),
+  historyChart: document.querySelector("#history-chart"),
+  historyChartWrap: document.querySelector("#history-chart-wrap"),
+  historyChartEmpty: document.querySelector("#history-chart-empty"),
+  ibkrBridgeNotice: document.querySelector("#ibkr-bridge-notice"),
+  ibkrBridgeText: document.querySelector("#ibkr-bridge-text"),
+  applyIbkrRouteBtn: document.querySelector("#apply-ibkr-route-btn"),
 };
 
 const charts = {};
@@ -171,19 +198,35 @@ const RDN_STORAGE_PREFIX = "aras-portfolio-rdn:";
 const MAX_SETTLEMENT_CARDS = 12;
 let renderFrame = null;
 let lastRemainder = 0;
+let journalState = {
+  v: JOURNAL_VERSION, holdings: Object.fromEntries([...CONFIG.stockAssets, ...CONFIG.etfAssets].map(({ key }) => [key, 0])),
+  prices: {}, cash: { rdn: 0, etfPending: 0 }, transactions: [], snapshots: [], completed: {},
+};
+
+function quarterFor(month, quarterMonth) { return Math.floor((Number(quarterMonth) + month - 2) / 3) + 1; }
+function isQuarterEnd(month, quarterMonth) { return (Number(quarterMonth) + month - 1) % 3 === 0; }
+function periodFor(month) {
+  const value = elements.targetMonth.value;
+  if (!/^\d{4}-\d{2}$/.test(value)) return `bulan-${month}`;
+  const [year, mon] = value.split("-").map(Number);
+  const date = new Date(year, mon - 1 + month - 1, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+function decimalText(value) { return Number.isFinite(value) ? String(value).replace(".", ",") : ""; }
 
 function sum(values) {
   return values.reduce((total, value) => total + value, 0);
 }
 
 function parseCurrency(value) {
-  const digits = String(value).replace(/[^\d]/g, "");
-  return digits ? Number.parseInt(digits, 10) : 0;
+  return parseDecimal(value);
 }
 
-function parseDecimal(value) {
-  let text = String(value).trim().replace(/[^\d.,]/g, "");
-  if (!text) return 0;
+function parseNumber(value, signed = false) {
+  let text = String(value).trim().replace(signed ? /[^\d.,-]/g : /[^\d.,]/g, "");
+  if (!text || text === "-") return 0;
+  const negative = signed && text.startsWith("-");
+  text = text.replace(/-/g, "");
   const hasDot = text.includes(".");
   const hasComma = text.includes(",");
   if (hasDot && hasComma) {
@@ -195,8 +238,12 @@ function parseDecimal(value) {
     text = text.replace(/\./g, "");
   }
   const parsed = Number.parseFloat(text);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+  if (!Number.isFinite(parsed)) return 0;
+  return negative ? -parsed : parsed;
 }
+
+function parseDecimal(value) { return Math.max(0, parseNumber(value)); }
+function parseSignedDecimal(value) { return parseNumber(value, true); }
 
 function parseTarget(value) {
   const parsed = Number.parseFloat(String(value).replace(",", "."));
@@ -331,12 +378,17 @@ function updateSettingsValidation(settings) {
 }
 
 function getTechnicalSettings() {
+  const journal = elements.portfolioMode.value === "holdings";
   const raw = {
-    rdnCarry: parseCurrency(elements.rdnCarry.value),
+    rdnCarry: journal ? journalState.cash.rdn : parseCurrency(elements.rdnCarry.value),
     wireFee: parseCurrency(elements.wireFee.value),
     usdRate: parseDecimal(elements.usdRate.value),
+    etfCashPending: journal ? journalState.cash.etfPending : parseCurrency(elements.etfCashPending.value),
+    quarterMonth: Number(elements.quarterMonth.value),
+    buyFeeRate: parseDecimal(elements.stockBuyFee.value) / 100,
+    recoveryTarget: elements.recoveryTarget.value === "band" ? "band" : "middle",
   };
-  const valid = raw.rdnCarry >= 0 && raw.wireFee >= 0 && (raw.usdRate > 0 || elements.etfCurrency.value !== "usd");
+  const valid = raw.rdnCarry >= 0 && raw.wireFee >= 0 && raw.etfCashPending >= 0 && raw.quarterMonth >= 1 && raw.quarterMonth <= 3 && raw.buyFeeRate >= 0 && raw.buyFeeRate <= 1 && (raw.usdRate > 0 || elements.etfCurrency.value !== "usd");
   if (valid) lastValidTechnical = { ...raw };
   return { ...(valid ? raw : lastValidTechnical), valid };
 }
@@ -373,6 +425,21 @@ function getRawValues(technical) {
   }));
 }
 
+function getPortfolioValues(technical) {
+  const direct = getRawValues(technical);
+  const values = elements.portfolioMode.value === "holdings"
+    ? Object.fromEntries(Object.keys(elements.inputs).map((key) => {
+      const price = parseDecimal(journalState.prices[key]);
+      const quantity = Number(journalState.holdings[key]) || 0;
+      const raw = quantity * price;
+      return [key, isEtfKey(key) && elements.etfCurrency.value === "usd" ? raw * technical.usdRate : raw];
+    }))
+    : direct;
+  const etfShift = Math.max(0, 1 + parseSignedDecimal(elements.scenarioEtf.value) / 100);
+  const stockShift = Math.max(0, 1 + parseSignedDecimal(elements.scenarioStock.value) / 100);
+  return Object.fromEntries(Object.entries(values).map(([key, value]) => [key, value * (isEtfKey(key) ? etfShift : stockShift)]));
+}
+
 function issueStatus(share, target, band) {
   if (share < target - band - EPSILON) return "low";
   if (share > target + band + EPSILON) return "high";
@@ -402,57 +469,38 @@ function allocateRebalance(values, total, definitions) {
 
 function calculateLotExecution(allocation, recommendedBudget, technical) {
   const totalCapital = recommendedBudget + technical.rdnCarry;
+  const feeRate = technical.buyFeeRate || 0;
   const active = allocation.filter((item) => item.amount > 0);
-  if (recommendedBudget <= 0 || active.length === 0) {
-    return {
-      recommendedBudget,
-      openingCarry: technical.rdnCarry,
-      totalCapital,
-      totalSpent: 0,
-      remainder: totalCapital,
-      trades: allocation.map((item) => ({ ...item, budget: 0, price: technical[`${item.key}Price`], lotCost: technical[`${item.key}Price`] * 100, lots: 0, shares: 0, spent: 0 })),
-    };
-  }
-
+  const emptyTrade = (item) => ({ ...item, budget: 0, price: technical[`${item.key}Price`], grossLotCost: (technical[`${item.key}Price`] || 0) * 100, lotCost: (technical[`${item.key}Price`] || 0) * 100 * (1 + feeRate), lots: 0, shares: 0, grossSpent: 0, fee: 0, spent: 0 });
+  if (recommendedBudget <= 0 || active.length === 0) return { recommendedBudget, openingCarry: technical.rdnCarry, totalCapital, totalSpent: 0, totalFee: 0, remainder: totalCapital, trades: allocation.map(emptyTrade) };
   const weights = allocation.map((item) => ({ ...item, weight: item.amount / recommendedBudget }));
   const budgets = allocateByWeights(totalCapital, weights);
   const trades = budgets.map((item) => {
     const price = technical[`${item.key}Price`];
-    const lotCost = price * 100;
+    const grossLotCost = price * 100;
+    const lotCost = grossLotCost * (1 + feeRate);
     const lots = lotCost > 0 ? Math.floor(item.amount / lotCost) : 0;
     const shares = lots * 100;
+    const grossSpent = lots * grossLotCost;
     const spent = lots * lotCost;
-    return { ...item, budget: item.amount, price, lotCost, lots, shares, spent };
+    return { ...item, budget: item.amount, price, grossLotCost, lotCost, lots, shares, grossSpent, fee: spent - grossSpent, spent };
   });
   let totalSpent = sum(trades.map((item) => item.spent));
   let remainder = totalCapital - totalSpent;
   const activeTrades = trades.filter((item) => item.weight > 0);
   let safety = 0;
-  while (activeTrades.some((item) => item.lotCost <= remainder) && safety < activeTrades.length * 2) {
-    const affordable = activeTrades.filter((item) => item.lotCost <= remainder);
-    affordable.sort((a, b) => {
-      const aGap = (a.budget - a.spent) / Math.max(a.budget, 1);
-      const bGap = (b.budget - b.spent) / Math.max(b.budget, 1);
-      return bGap - aGap;
-    });
+  while (activeTrades.some((item) => item.lotCost <= remainder + EPSILON) && safety < activeTrades.length * 2) {
+    const affordable = activeTrades.filter((item) => item.lotCost <= remainder + EPSILON);
+    affordable.sort((a, b) => ((b.budget - b.spent) / Math.max(b.budget, 1)) - ((a.budget - a.spent) / Math.max(a.budget, 1)));
     const selected = affordable[0];
     const extraLots = Math.max(1, Math.floor(remainder / selected.lotCost));
-    const extraSpent = extraLots * selected.lotCost;
-    selected.lots += extraLots;
-    selected.shares += extraLots * 100;
-    selected.spent += extraSpent;
-    totalSpent += extraSpent;
-    remainder -= extraSpent;
-    safety += 1;
+    selected.lots += extraLots; selected.shares += extraLots * 100;
+    selected.grossSpent += extraLots * selected.grossLotCost;
+    selected.spent += extraLots * selected.lotCost;
+    selected.fee = selected.spent - selected.grossSpent;
+    totalSpent += extraLots * selected.lotCost; remainder -= extraLots * selected.lotCost; safety += 1;
   }
-  return {
-    recommendedBudget,
-    openingCarry: technical.rdnCarry,
-    totalCapital,
-    totalSpent,
-    remainder,
-    trades,
-  };
+  return { recommendedBudget, openingCarry: technical.rdnCarry, totalCapital, totalSpent, totalFee: sum(trades.map((item) => item.fee)), remainder: Math.max(0, remainder), trades };
 }
 
 function settlementIndices(firstIndex, lastIndex) {
@@ -467,13 +515,29 @@ function settlementIndices(firstIndex, lastIndex) {
 
 const MAX_RECOVERY_MONTHS = 1200;
 
-function buildParentPlan(direction, fullMonths, remainder, settings, normalStock, normalEtf) {
+function buildSettlements(schedule, technical) {
+  const grouped = new Map();
+  schedule.forEach((entry) => {
+    if (entry.etf <= 0) return;
+    const quarter = quarterFor(entry.month, technical.quarterMonth);
+    if (!grouped.has(quarter)) grouped.set(quarter, []);
+    grouped.get(quarter).push({ month: entry.month, amount: entry.etf });
+  });
+  const all = [...grouped.entries()].map(([quarter, components], index) => {
+    const month = components[components.length - 1].month;
+    const openingCash = index === 0 ? technical.etfCashPending : 0;
+    const freshAmount = sum(components.map((item) => item.amount));
+    return { quarter, sequence: index + 1, month, amount: openingCash + freshAmount, openingCash, freshAmount, components };
+  });
+  const visible = settlementIndices(0, all.length - 1).map((index) => all[index]);
+  return { settlements: visible, settlementCount: all.length, settlementsOmitted: Math.max(0, all.length - visible.length) };
+}
+
+function buildParentPlan(direction, fullMonths, remainder, settings, normalStock, normalEtf, technical) {
   const isStock = direction === "parent-stock";
   const fund = settings.monthlyFund;
   const schedule = [];
-  for (let month = 1; month <= fullMonths; month += 1) {
-    schedule.push({ month, stock: isStock ? fund : 0, etf: isStock ? 0 : fund, phase: "full" });
-  }
+  for (let month = 1; month <= fullMonths; month += 1) schedule.push({ month, stock: isStock ? fund : 0, etf: isStock ? 0 : fund, phase: "full" });
   const closingAmount = Math.round(remainder);
   let closing = null;
   if (closingAmount > 0) {
@@ -482,60 +546,27 @@ function buildParentPlan(direction, fullMonths, remainder, settings, normalStock
     schedule.push(closing);
   }
   const normalStart = schedule.length + 1;
-  const horizon = Math.max(3, Math.ceil(normalStart / 3) * 3);
-  for (let month = normalStart; month <= horizon; month += 1) {
-    schedule.push({ month, stock: normalStock, etf: normalEtf, phase: "normal" });
-  }
-  const etfMonths = schedule.filter((entry) => entry.etf > 0);
-  const lastIndex = Math.ceil(horizon / 3);
-  const firstIndex = etfMonths.length ? Math.ceil(etfMonths[0].month / 3) : lastIndex;
-  const allCount = Math.max(0, lastIndex - firstIndex + 1);
-  const settlements = settlementIndices(firstIndex, lastIndex).map((quarterIndex) => {
-    const endMonth = quarterIndex * 3;
-    const components = schedule
-      .filter((entry) => entry.month > endMonth - 3 && entry.month <= endMonth && entry.etf > 0)
-      .map((entry) => ({ month: entry.month, amount: entry.etf }));
-    return { sequence: quarterIndex - firstIndex + 1, month: endMonth, amount: sum(components.map((item) => item.amount)), components };
-  });
-  return {
-    firstMonth: schedule[0],
-    schedule,
-    closing,
-    settlements,
-    settlementCount: allCount,
-    settlementsOmitted: Math.max(0, allCount - settlements.length),
-    normalStartMonth: normalStart,
-    settlementHorizon: horizon,
-    cycleStock: sum(schedule.map((entry) => entry.stock)),
-    cycleEtf: sum(schedule.map((entry) => entry.etf)),
-  };
+  let horizon = Math.max(normalStart, 1);
+  while (!isQuarterEnd(horizon, technical.quarterMonth)) horizon += 1;
+  for (let month = normalStart; month <= horizon; month += 1) schedule.push({ month, stock: normalStock, etf: normalEtf, phase: "normal" });
+  const settlements = buildSettlements(schedule, technical);
+  return { firstMonth: schedule[0], schedule, closing, ...settlements, normalStartMonth: normalStart, settlementHorizon: horizon, cycleStock: sum(schedule.map((entry) => entry.stock)), cycleEtf: sum(schedule.map((entry) => entry.etf)) };
 }
 
-function buildChildrenPlan(settings, normalStock, normalEtf) {
-  const schedule = [1, 2, 3].map((month) => ({ month, stock: normalStock, etf: normalEtf, phase: "children" }));
-  return {
-    firstMonth: schedule[0],
-    schedule,
-    settlements: [{
-      month: 3,
-      sequence: 1,
-      amount: normalEtf * 3,
-      components: schedule.map((entry) => ({ month: entry.month, amount: entry.etf })),
-    }],
-    settlementCount: 1,
-    settlementsOmitted: 0,
-    normalStartMonth: 1,
-    settlementHorizon: 3,
-    cycleStock: normalStock * 3,
-    cycleEtf: normalEtf * 3,
-  };
+function buildChildrenPlan(settings, normalStock, normalEtf, technical) {
+  const schedule = [];
+  let month = 1;
+  do { schedule.push({ month, stock: normalStock, etf: normalEtf, phase: "children" }); month += 1; } while (!isQuarterEnd(month - 1, technical.quarterMonth));
+  const settlements = buildSettlements(schedule, technical);
+  return { firstMonth: schedule[0], schedule, ...settlements, normalStartMonth: 1, settlementHorizon: schedule.length, cycleStock: normalStock * schedule.length, cycleEtf: normalEtf * schedule.length };
 }
 
 function getState(values, settings, technical) {
   const stockValues = settings.stockTargets.map((item) => values[item.key]);
   const etfValues = settings.etfTargets.map((item) => values[item.key]);
   const stockTotal = sum(stockValues);
-  const etfTotal = sum(etfValues);
+  const etfMarketTotal = sum(etfValues);
+  const etfTotal = etfMarketTotal + technical.etfCashPending;
   const total = stockTotal + etfTotal;
   const etfShare = total > 0 ? etfTotal / total : settings.etfGlobalTarget;
   const stockShare = 1 - etfShare;
@@ -556,8 +587,11 @@ function getState(values, settings, technical) {
 
   const normalEtf = Math.round(settings.monthlyFund * settings.etfGlobalTarget);
   const normalStock = settings.monthlyFund - normalEtf;
-  const targetEtfValue = total * settings.etfGlobalTarget;
-  const targetStockValue = total * settings.stockGlobalTarget;
+  const recoveryTargetShare = technical.recoveryTarget === "band"
+    ? (parentStatus === "etf-low" ? lowerEtfBand : parentStatus === "stock-low" ? upperEtfBand : settings.etfGlobalTarget)
+    : settings.etfGlobalTarget;
+  const targetEtfValue = Math.round(total * recoveryTargetShare);
+  const targetStockValue = Math.round(total * (1 - recoveryTargetShare));
   const etfDeficit = Math.max(0, targetEtfValue - etfTotal);
   const stockDeficit = Math.max(0, targetStockValue - stockTotal);
 
@@ -573,16 +607,18 @@ function getState(values, settings, technical) {
   let plan;
   let calculatedFullMonths = 0;
   let fullMonths = 0;
+  let recoveryUnreachable = false;
   if (mode === "parent-etf" || mode === "parent-stock") {
     const deficit = mode === "parent-etf" ? etfDeficit : stockDeficit;
-    const increment = mode === "parent-etf" ? settings.monthlyFund - normalEtf : settings.monthlyFund - normalStock;
-    const rawMonths = increment > 0 ? deficit / increment : 0;
-    calculatedFullMonths = Math.min(MAX_RECOVERY_MONTHS, Math.floor(rawMonths));
+    const increment = mode === "parent-etf" ? normalStock : normalEtf;
+    const rawMonths = increment > 0 ? deficit / increment : Infinity;
+    recoveryUnreachable = !Number.isFinite(rawMonths);
+    calculatedFullMonths = recoveryUnreachable ? 0 : Math.min(MAX_RECOVERY_MONTHS, Math.floor(rawMonths));
     fullMonths = calculatedFullMonths;
-    const closingGap = rawMonths >= MAX_RECOVERY_MONTHS ? 0 : deficit - calculatedFullMonths * increment;
-    plan = buildParentPlan(mode, fullMonths, closingGap, settings, normalStock, normalEtf);
+    const closingGap = !recoveryUnreachable && rawMonths < MAX_RECOVERY_MONTHS ? deficit - calculatedFullMonths * increment : 0;
+    plan = buildParentPlan(mode, fullMonths, closingGap, settings, normalStock, normalEtf, technical);
   } else {
-    plan = buildChildrenPlan(settings, normalStock, normalEtf);
+    plan = buildChildrenPlan(settings, normalStock, normalEtf, technical);
   }
 
   const cycleStock = plan.cycleStock;
@@ -597,7 +633,9 @@ function getState(values, settings, technical) {
   // ETF: alokasi per kuartal, berurutan (setoran berikutnya memakai posisi setelah setoran sebelumnya).
   const quarterAmounts = new Map();
   plan.schedule.forEach((entry) => {
-    if (entry.etf > 0) quarterAmounts.set(Math.ceil(entry.month / 3), (quarterAmounts.get(Math.ceil(entry.month / 3)) || 0) + entry.etf);
+    if (entry.etf <= 0) return;
+    const quarter = quarterFor(entry.month, technical.quarterMonth);
+    quarterAmounts.set(quarter, (quarterAmounts.get(quarter) || 0) + entry.etf);
   });
   let runningEtf = etfValues.slice();
   const quarterAllocation = new Map();
@@ -608,7 +646,7 @@ function getState(values, settings, technical) {
     quarterAllocation.set(quarter, allocation);
   });
   const etfPlanned = runningEtf.map((value, index) => value - etfValues[index]);
-  plan.settlements = plan.settlements.map((settlement) => ({ ...settlement, allocation: quarterAllocation.get(settlement.month / 3) }));
+  plan.settlements = plan.settlements.map((settlement) => ({ ...settlement, allocation: quarterAllocation.get(settlement.quarter) || allocateByWeights(0, settings.etfTargets) }));
 
   // Saham: alokasi per bulan yang memang ada belanja saham, berurutan.
   let runningStock = stockValues.slice();
@@ -640,8 +678,11 @@ function getState(values, settings, technical) {
     components: [],
     allocation: allocateByWeights(0, settings.etfTargets),
   };
-  const projectedStock = stockTotal + cycleStock;
-  const projectedEtf = etfTotal + cycleEtf;
+  const projectionSchedule = mode === "parent-etf" || mode === "parent-stock"
+    ? plan.schedule.filter((entry) => entry.month < plan.normalStartMonth)
+    : plan.schedule;
+  const projectedStock = stockTotal + sum(projectionSchedule.map((entry) => entry.stock));
+  const projectedEtf = etfTotal + sum(projectionSchedule.map((entry) => entry.etf));
   const projectedTotal = projectedStock + projectedEtf;
   const projectedEtfShare = projectedTotal > 0 ? projectedEtf / projectedTotal : settings.etfGlobalTarget;
 
@@ -652,6 +693,7 @@ function getState(values, settings, technical) {
     stockValues,
     etfValues,
     stockTotal,
+    etfMarketTotal,
     etfTotal,
     total,
     etfShare,
@@ -681,6 +723,8 @@ function getState(values, settings, technical) {
     mode,
     calculatedFullMonths,
     fullMonths,
+    recoveryTargetShare,
+    recoveryUnreachable,
     settlements: plan.settlements,
     settlementCount: plan.settlementCount,
     settlementsOmitted: plan.settlementsOmitted,
@@ -697,6 +741,193 @@ function getState(values, settings, technical) {
     projectedEtf,
     projectedEtfShare,
   };
+}
+
+function formatCurrentActionPlan(state) {
+  const lines = [];
+  lines.push(`📋 Instruksi Rebalance - ${state.firstMonth ? `Bulan ${state.firstMonth.month}` : "Bulan 1"}`);
+  lines.push(`• Total Dana: ${formatCurrency(state.settings.monthlyFund)}`);
+  lines.push(`• Status: ${state.modeTitle || state.mode}`);
+  
+  if (state.firstMonth && state.firstMonth.stock > 0) {
+    lines.push(`\n[Saham Lokal - Alokasi ${formatCurrency(state.firstMonth.stock)}]`);
+    if (state.currentStockAllocation) {
+      state.currentStockAllocation.filter((t) => t.amount > 0).forEach((t) => {
+        lines.push(`- ${t.name}: ${formatCurrency(t.amount)}`);
+      });
+    }
+  } else {
+    lines.push(`\n[Saham Lokal]`);
+    lines.push(`- Ditunda / Rp 0 bulan ini`);
+  }
+
+  if (state.firstMonth && state.firstMonth.etf > 0) {
+    const isWire = state.settlements && state.settlements.some((s) => s.month === state.firstMonth.month);
+    lines.push(`\n[ETF Global - ${isWire ? "Setor IBKR" : "Tabung Kas Penampung"}]`);
+    lines.push(`- Nominal: ${formatCurrency(state.firstMonth.etf)}`);
+    if (isWire) {
+      const settlement = state.settlements.find((s) => s.month === state.firstMonth.month);
+      if (settlement && state.technical.usdRate > 0) {
+        const usd = usdSplit(settlement, state.technical.usdRate);
+        lines.push(`- Estimasi USD: ${formatUsd(usd.total)} (Kurs ${formatCurrency(state.technical.usdRate)})`);
+        usd.rows.filter((r) => r.usd > 0).forEach((r) => {
+          lines.push(`  * ${r.name}: ${formatUsd(r.usd)}`);
+        });
+      }
+    }
+  } else {
+    lines.push(`\n[ETF Global]`);
+    lines.push(`- Ditunda / Rp 0 bulan ini`);
+  }
+
+  if (state.calculatedFullMonths > 0) {
+    lines.push(`\nℹ️ Durasi pemulihan: ${state.calculatedFullMonths} bulan penuh`);
+  }
+  return lines.join("\n");
+}
+
+function generateRemindersIcs(state) {
+  const now = new Date();
+  const formatIcsDate = (d) => {
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
+  };
+  const stamp = formatIcsDate(now);
+  const events = [];
+  const year = now.getFullYear();
+  const month = now.getMonth();
+
+  for (let i = 0; i < Math.min(6, state.schedule.length); i++) {
+    const planMonth = state.schedule[i];
+    const eventDate = new Date(year, month + i, 25, 9, 0, 0);
+    const startStr = formatIcsDate(eventDate);
+    const endStr = formatIcsDate(new Date(year, month + i, 25, 10, 0, 0));
+    const summary = `Rebalance Bulan ${planMonth.month}: Saham ${formatCurrency(planMonth.stock)}, ETF ${formatCurrency(planMonth.etf)}`;
+    const description = `Jadwal eksekusi dana rebalance bulanan: Saham ${formatCurrency(planMonth.stock)} dan Kas ETF ${formatCurrency(planMonth.etf)}.`;
+
+    events.push([
+      "BEGIN:VEVENT",
+      `UID:rebalance-m${planMonth.month}-${stamp}@rencanakeuangan`,
+      `DTSTAMP:${stamp}`,
+      `DTSTART:${startStr}`,
+      `DTEND:${endStr}`,
+      `SUMMARY:${summary}`,
+      `DESCRIPTION:${description}`,
+      "END:VEVENT"
+    ].join("\n"));
+  }
+
+  if (state.settlements) {
+    state.settlements.forEach((s) => {
+      const wireDate = new Date(year, month + s.month - 1, 28, 10, 0, 0);
+      const startStr = formatIcsDate(wireDate);
+      const endStr = formatIcsDate(new Date(year, month + s.month - 1, 11, 0, 0));
+      events.push([
+        "BEGIN:VEVENT",
+        `UID:rebalance-wire-m${s.month}-${stamp}@rencanakeuangan`,
+        `DTSTAMP:${stamp}`,
+        `DTSTART:${startStr}`,
+        `DTEND:${endStr}`,
+        `SUMMARY:Setor Wire IBKR Bulan ${s.month} (${formatCurrency(s.amount)})`,
+        `DESCRIPTION:Lakukan wire transfer ke rekening IBKR sebesar ${formatCurrency(s.amount)} plus biaya transfer.`,
+        "END:VEVENT"
+      ].join("\n"));
+    });
+  }
+
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//RencanaKeuangan//Rebalance//ID",
+    "CALSCALE:GREGORIAN",
+    ...events,
+    "END:VCALENDAR"
+  ].join("\n");
+}
+
+function recordExecution(journal, month, execution, options = {}) {
+  const updated = {
+    ...journal,
+    holdings: { ...(journal.holdings || {}) },
+    cash: { ...(journal.cash || { rdn: 0, etfPending: 0 }) },
+    transactions: [...(journal.transactions || [])],
+    snapshots: [...(journal.snapshots || [])],
+  };
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  if (execution && Array.isArray(execution.trades)) {
+    execution.trades.forEach((trade) => {
+      if (trade.lots > 0) {
+        updated.holdings[trade.key] = (Number(updated.holdings[trade.key]) || 0) + trade.shares;
+        updated.transactions.push({
+          id: Date.now() + Math.random(),
+          date: today,
+          month,
+          type: "saham",
+          ticker: trade.key.toUpperCase(),
+          name: trade.name,
+          lots: trade.lots,
+          shares: trade.shares,
+          price: trade.price,
+          total: trade.spent,
+          fee: trade.fee || 0,
+        });
+      }
+    });
+    if (typeof execution.remainder === "number") {
+      updated.cash.rdn = execution.remainder;
+    }
+  }
+
+  if (options.isSettlement) {
+    if (Array.isArray(options.settlementTrades)) {
+      options.settlementTrades.forEach((st) => {
+        if (st.units > 0) {
+          updated.holdings[st.key] = (Number(updated.holdings[st.key]) || 0) + st.units;
+          updated.transactions.push({
+            id: Date.now() + Math.random(),
+            date: today,
+            month,
+            type: "etf-wire",
+            ticker: st.key.toUpperCase(),
+            name: st.name,
+            units: st.units,
+            usd: st.usd,
+            price: st.price,
+          });
+        }
+      });
+    }
+    updated.cash.etfPending = 0;
+  } else if (options.etfAmount > 0) {
+    updated.cash.etfPending = (Number(updated.cash.etfPending) || 0) + options.etfAmount;
+    updated.transactions.push({
+      id: Date.now() + Math.random(),
+      date: today,
+      month,
+      type: "etf-pending",
+      name: "Kas ETF Penampung",
+      amount: options.etfAmount,
+    });
+  }
+
+  if (options.snapshot) {
+    updated.snapshots.push({
+      date: today,
+      month,
+      ...options.snapshot,
+    });
+  } else {
+    updated.snapshots.push({
+      date: today,
+      month,
+      rdn: updated.cash.rdn,
+      etfPending: updated.cash.etfPending,
+    });
+  }
+
+  return updated;
 }
 
 function stockAllocationSentence(state, monthly = true) {
@@ -830,7 +1061,13 @@ function renderStatus(state, content) {
   elements.statusBadge.textContent = content.badge;
   elements.priorityPill.textContent = content.priority;
   elements.statusTitle.textContent = content.title;
-  elements.statusDescription.textContent = content.description;
+  let desc = content.description;
+  if (state.calculatedFullMonths > 12) {
+    desc += `<div class="mt-2.5 rounded-lg border border-amber-400/40 bg-amber-400/10 p-2.5 text-xs text-amber-200">⚠️ <b>Peringatan:</b> Estimasi durasi pemulihan <b>${state.calculatedFullMonths} bulan</b> (> 12 bulan). Pertimbangkan menaikkan dana bulanan, memperlebar target band, atau rebalance sebagian dengan menjual aset overweight.</div>`;
+  } else if (state.calculatedFullMonths > 6) {
+    desc += `<div class="mt-2.5 rounded-lg border border-emerald-400/30 bg-emerald-400/10 p-2 text-xs text-emerald-200">ℹ️ Estimasi durasi pemulihan <b>${state.calculatedFullMonths} bulan penuh</b>. Durasi normal untuk akumulasi bertahap dana baru tanpa jual.</div>`;
+  }
+  elements.statusDescription.innerHTML = desc;
   elements.heroEtfPercentage.textContent = formatPercent(state.etfShare);
 }
 
@@ -844,7 +1081,9 @@ function renderCharts(state) {
     charts.global.data.datasets[0].data = [state.etfTotal, state.stockTotal];
     charts.stock.data.datasets[0].data = state.stockValues;
     charts.etf.data.datasets[0].data = state.etfValues;
-    Object.values(charts).forEach((chart) => chart.update("none"));
+    Object.values(charts).forEach((chart) => {
+      if (chart !== charts.history) chart.update("none");
+    });
   }
   elements.chartCenters.global.textContent = formatPercent(state.etfShare, 1);
   elements.chartCenters.stock.textContent = formatPercent(state.stockShares[0], 1);
@@ -852,6 +1091,63 @@ function renderCharts(state) {
   setMiniStatus(elements.miniStatuses.global, state.parentStatus === "safe" ? "Parent aman" : state.parentStatus === "etf-low" ? "ETF parent underweight" : "Saham parent underweight", state.parentStatus === "safe");
   setMiniStatus(elements.miniStatuses.stock, getStockStatusText(state), !state.stockBroken);
   setMiniStatus(elements.miniStatuses.etf, getEtfStatusText(state), !state.etfBroken);
+
+  if (elements.historyChart) {
+    const snapshots = journalState.snapshots || [];
+    if (snapshots.length > 0) {
+      if (elements.historyChartWrap) elements.historyChartWrap.hidden = false;
+      if (elements.historyChartEmpty) elements.historyChartEmpty.hidden = true;
+      const labels = snapshots.map((s, idx) => s.date || `S-${idx + 1}`);
+      const etfShares = snapshots.map((s) => (s.etfShare != null ? Math.round(s.etfShare * 1000) / 10 : null));
+      const targetLine = snapshots.map(() => state.settings.etfTarget);
+      const upperLine = snapshots.map(() => state.upperEtfBand * 100);
+      const lowerLine = snapshots.map(() => state.lowerEtfBand * 100);
+
+      if (charts.history) {
+        charts.history.data.labels = labels;
+        charts.history.data.datasets[0].data = etfShares;
+        charts.history.data.datasets[1].data = upperLine;
+        charts.history.data.datasets[2].data = targetLine;
+        charts.history.data.datasets[3].data = lowerLine;
+        charts.history.update();
+      } else if (typeof Chart !== "undefined") {
+        charts.history = new Chart(elements.historyChart, {
+          type: "line",
+          data: {
+            labels,
+            datasets: [
+              { label: "Porsi ETF Aktual (%)", data: etfShares, borderColor: "#10b981", backgroundColor: "rgba(16,185,129,0.1)", tension: 0.2, fill: false, borderWidth: 2, pointRadius: 4 },
+              { label: "Batas Atas (Band)", data: upperLine, borderColor: "rgba(243,109,74,0.5)", borderDash: [4, 4], pointRadius: 0, fill: false, borderWidth: 1.5 },
+              { label: "Target", data: targetLine, borderColor: "rgba(255,255,255,0.4)", borderDash: [2, 2], pointRadius: 0, fill: false, borderWidth: 1 },
+              { label: "Batas Bawah (Band)", data: lowerLine, borderColor: "rgba(243,109,74,0.5)", borderDash: [4, 4], pointRadius: 0, fill: false, borderWidth: 1.5 },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                min: Math.max(0, Math.min(...etfShares.filter(Boolean), state.lowerEtfBand * 100) - 5),
+                max: Math.min(100, Math.max(...etfShares.filter(Boolean), state.upperEtfBand * 100) + 5),
+                grid: { color: "rgba(255,255,255,0.06)" },
+                ticks: { color: "#94a3b8", callback: (v) => v + "%" },
+              },
+              x: {
+                grid: { color: "rgba(255,255,255,0.06)" },
+                ticks: { color: "#94a3b8" },
+              },
+            },
+            plugins: {
+              legend: { labels: { color: "#cbd5e1", font: { size: 10 } } },
+            },
+          },
+        });
+      }
+    } else {
+      if (elements.historyChartWrap) elements.historyChartWrap.hidden = true;
+      if (elements.historyChartEmpty) elements.historyChartEmpty.hidden = false;
+    }
+  }
 }
 
 function renderRoutes(state) {
@@ -996,7 +1292,13 @@ function actionCard(state, entry, execution) {
   }
   const estimate = now ? "" : '<span class="timeline-badge soft">Estimasi</span>';
   const note = now ? "" : `<p class="timeline-note">Dihitung dengan harga hari ini. Hitung ulang di awal bulan ${entry.month} dengan harga terbaru.</p>`;
-  return `<li class="timeline-card${now ? " is-now" : ""}"><div class="timeline-head"><strong>Bulan ${entry.month}${now ? " · sekarang" : ""}</strong><span class="timeline-badges">${estimate}<span class="timeline-badge">${phaseBadge(state, entry)}</span></span></div>${note}<ul>${items.join("")}</ul></li>`;
+  const executeBtn = now
+    ? `<div class="mt-3.5 flex items-center justify-between border-t border-white/10 pt-3">
+         <button type="button" class="btn-execute-month rounded-xl border border-lime/40 bg-lime/15 px-3 py-1.5 text-xs font-bold text-lime transition hover:bg-lime/25" data-month="${entry.month}">✓ Tandai sudah dieksekusi</button>
+         <span class="text-[10px] text-white/45">Catat saldo & unit ke jurnal</span>
+       </div>`
+    : "";
+  return `<li class="timeline-card${now ? " is-now" : ""}"><div class="timeline-head"><strong>Bulan ${entry.month}${now ? " · sekarang" : ""}</strong><span class="timeline-badges">${estimate}<span class="timeline-badge">${phaseBadge(state, entry)}</span></span></div>${note}<ul>${items.join("")}</ul>${executeBtn}</li>`;
 }
 
 function renderActionPlan(state) {
@@ -1054,7 +1356,7 @@ function render() {
   const technical = getTechnicalSettings();
   updateSettingsValidation(settings);
   updateTechnicalValidation(technical);
-  const state = getState(getRawValues(technical), settings, technical);
+  const state = getState(getPortfolioValues(technical), settings, technical);
   const content = statusContent(state);
   renderSettings(state);
   renderInputSummary(state);
@@ -1065,6 +1367,9 @@ function render() {
   renderActionPlan(state);
   renderShortfall(state);
   renderProjection(state);
+  renderHoldingsUI();
+  renderExecutionJournalUI();
+  checkIbkrRouteAvailability();
   const targetPeriod = nextMonth(elements.targetMonth.value);
   const firstLot = monthlyLotPlans(state, [state.firstMonth])[0];
   lastRemainder = firstLot.pending ? null : firstLot.remainder;
@@ -1153,6 +1458,234 @@ function updatePeriodCopy() {
   elements.periodCopy.textContent = `Snapshot ${period}`;
 }
 
+let holdingsRendered = false;
+
+function syncHoldingsToDirectInputs(technical) {
+  const usdRate = technical.usdRate > 0 ? technical.usdRate : 16000;
+  const isUsd = elements.etfCurrency.value === "usd";
+
+  CONFIG.stockAssets.forEach(({ key }) => {
+    const qty = Number(journalState.holdings[key]) || 0;
+    const price = Number(journalState.prices[key]) || 0;
+    const totalIdr = qty * price;
+    if (totalIdr > 0 || qty > 0) {
+      elements.inputs[key].value = formatInputCurrency(totalIdr);
+    }
+  });
+
+  CONFIG.etfAssets.forEach(({ key }) => {
+    const qty = Number(journalState.holdings[key]) || 0;
+    const price = Number(journalState.prices[key]) || 0;
+    const totalUsd = qty * price;
+    if (totalUsd > 0 || qty > 0) {
+      elements.inputs[key].value = isUsd ? decimalInputFormatter.format(totalUsd) : formatInputCurrency(totalUsd * usdRate);
+    }
+  });
+
+  elements.rdnCarry.value = formatInputCurrency(journalState.cash.rdn || 0);
+  elements.etfCashPending.value = formatInputCurrency(journalState.cash.etfPending || 0);
+}
+
+function renderHoldingsUI() {
+  if (!elements.holdingPrices) return;
+  const technical = getTechnicalSettings();
+  const usdRate = technical.usdRate > 0 ? technical.usdRate : 16000;
+
+  if (!holdingsRendered || elements.holdingPrices.children.length === 0) {
+    const stockRows = CONFIG.stockAssets.map(({ key, name }) => {
+      const qty = journalState.holdings[key] || 0;
+      const price = journalState.prices[key] || "";
+      return `
+        <div class="grid grid-cols-12 gap-2 items-center text-xs py-1.5 border-b border-white/5">
+          <div class="col-span-3 font-semibold text-white/90">${name} <span class="text-[10px] text-white/40">(Saham)</span></div>
+          <div class="col-span-3">
+            <input type="number" step="100" min="0" placeholder="0" class="holding-qty-input w-full bg-white/5 border border-white/15 rounded px-2 py-1 text-white text-right font-mono" data-key="${key}" value="${qty || ''}">
+          </div>
+          <div class="col-span-3">
+            <input type="text" placeholder="Rp/lembar" class="holding-price-input w-full bg-white/5 border border-white/15 rounded px-2 py-1 text-white text-right font-mono" data-key="${key}" value="${price ? formatInputCurrency(price) : ''}">
+          </div>
+          <div class="col-span-3 text-right font-mono text-white/70 holding-subtotal" data-key="${key}">Rp 0</div>
+        </div>
+      `;
+    }).join("");
+
+    const etfRows = CONFIG.etfAssets.map(({ key, name }) => {
+      const qty = journalState.holdings[key] || 0;
+      const price = journalState.prices[key] || "";
+      return `
+        <div class="grid grid-cols-12 gap-2 items-center text-xs py-1.5 border-b border-white/5">
+          <div class="col-span-3 font-semibold text-white/90">${name} <span class="text-[10px] text-white/40">(ETF)</span></div>
+          <div class="col-span-3">
+            <input type="number" step="0.0001" min="0" placeholder="0" class="holding-qty-input w-full bg-white/5 border border-white/15 rounded px-2 py-1 text-white text-right font-mono" data-key="${key}" value="${qty || ''}">
+          </div>
+          <div class="col-span-3">
+            <input type="text" placeholder="USD/unit" class="holding-price-input w-full bg-white/5 border border-white/15 rounded px-2 py-1 text-white text-right font-mono" data-key="${key}" value="${price ? String(price) : ''}">
+          </div>
+          <div class="col-span-3 text-right font-mono text-white/70 holding-subtotal" data-key="${key}">US$ 0</div>
+        </div>
+      `;
+    }).join("");
+
+    elements.holdingPrices.innerHTML = `
+      <div class="grid grid-cols-12 gap-2 text-[10px] uppercase font-bold text-white/40 pb-1 border-b border-white/10">
+        <div class="col-span-3">Aset</div>
+        <div class="col-span-3 text-right">Lembar / Unit</div>
+        <div class="col-span-3 text-right">Harga Pasar</div>
+        <div class="col-span-3 text-right">Subtotal</div>
+      </div>
+      ${stockRows}
+      ${etfRows}
+      <div class="grid grid-cols-12 gap-2 items-center text-xs pt-2">
+        <div class="col-span-6 font-semibold text-white/75">Saldo Kas RDN (Mengendap)</div>
+        <div class="col-span-6 text-right font-mono text-white/90" id="holding-cash-rdn">${formatCurrency(journalState.cash.rdn || 0)}</div>
+      </div>
+      <div class="grid grid-cols-12 gap-2 items-center text-xs pb-1">
+        <div class="col-span-6 font-semibold text-white/75">Kas ETF Penampung</div>
+        <div class="col-span-6 text-right font-mono text-white/90" id="holding-cash-etf">${formatCurrency(journalState.cash.etfPending || 0)}</div>
+      </div>
+    `;
+    holdingsRendered = true;
+  }
+
+  CONFIG.stockAssets.forEach(({ key }) => {
+    const qty = Number(journalState.holdings[key]) || 0;
+    const price = Number(journalState.prices[key]) || 0;
+    const subtotalEl = elements.holdingPrices.querySelector(`.holding-subtotal[data-key="${key}"]`);
+    if (subtotalEl) subtotalEl.textContent = formatCurrency(qty * price);
+  });
+
+  CONFIG.etfAssets.forEach(({ key }) => {
+    const qty = Number(journalState.holdings[key]) || 0;
+    const price = Number(journalState.prices[key]) || 0;
+    const subtotalUsd = qty * price;
+    const subtotalEl = elements.holdingPrices.querySelector(`.holding-subtotal[data-key="${key}"]`);
+    if (subtotalEl) {
+      subtotalEl.innerHTML = `${formatUsd(subtotalUsd)} <span class="text-[9px] block text-white/40">${formatCurrency(subtotalUsd * usdRate)}</span>`;
+    }
+  });
+
+  const cashRdnEl = document.getElementById("holding-cash-rdn");
+  if (cashRdnEl) cashRdnEl.textContent = formatCurrency(journalState.cash.rdn || 0);
+  const cashEtfEl = document.getElementById("holding-cash-etf");
+  if (cashEtfEl) cashEtfEl.textContent = formatCurrency(journalState.cash.etfPending || 0);
+
+  if (!elements.holdingPrices.contains(document.activeElement)) {
+    elements.holdingPrices.querySelectorAll(".holding-qty-input").forEach((inp) => {
+      const val = journalState.holdings[inp.dataset.key];
+      inp.value = val || "";
+    });
+    elements.holdingPrices.querySelectorAll(".holding-price-input").forEach((inp) => {
+      const val = journalState.prices[inp.dataset.key];
+      inp.value = val ? (isEtfKey(inp.dataset.key) ? String(val) : formatInputCurrency(val)) : "";
+    });
+  }
+}
+
+function renderExecutionJournalUI() {
+  if (!elements.executionJournal) return;
+  const txs = journalState.transactions || [];
+  if (txs.length === 0) {
+    elements.executionJournal.innerHTML = '<div class="text-xs text-white/40 italic py-2">Belum ada catatan transaksi eksekusi. Klik "✓ Tandai sudah dieksekusi" pada kartu Bulan 1 untuk mencatat.</div>';
+    return;
+  }
+  const rows = [...txs].reverse().map((tx) => {
+    let detail = "";
+    if (tx.type === "saham") {
+      detail = `Beli ${tx.lots} lot (${tx.shares} lbr) @ ${formatCurrency(tx.price)} · Total ${formatCurrency(tx.total)}`;
+    } else if (tx.type === "etf-wire") {
+      detail = `Setor IBKR: ${tx.name || "ETF"} · $${tx.usd ? tx.usd.toFixed(2) : ""}`;
+    } else if (tx.type === "etf-pending") {
+      detail = `Menabung kas penampung ETF: ${formatCurrency(tx.amount)}`;
+    } else {
+      detail = tx.name || tx.ticker || "";
+    }
+    return `
+      <div class="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5 text-xs">
+        <div>
+          <div class="font-bold text-white/90">${tx.date} · ${tx.name || tx.ticker}</div>
+          <div class="text-[11px] text-white/60">${detail}</div>
+        </div>
+        <button type="button" class="btn-delete-tx text-red-400 hover:text-red-300 text-xs px-2 py-1 font-semibold" data-id="${tx.id}">Hapus</button>
+      </div>
+    `;
+  });
+  elements.executionJournal.innerHTML = rows.join("");
+}
+
+function checkIbkrRouteAvailability() {
+  if (!elements.ibkrBridgeNotice) return;
+  let stored = null;
+  try {
+    const raw = localStorage.getItem("rk-ibkr-best-route");
+    if (raw) stored = JSON.parse(raw);
+  } catch (e) {}
+
+  if (stored && stored.rate > 0) {
+    elements.ibkrBridgeNotice.hidden = false;
+    elements.ibkrBridgeText.textContent = `Rute terbaik: ${stored.name} — Kurs Rp ${stored.rate.toLocaleString("id-ID")}, Biaya Rp ${stored.wireFee.toLocaleString("id-ID")}.`;
+  } else {
+    elements.ibkrBridgeNotice.hidden = true;
+  }
+}
+
+function updateScenarioStatus() {
+  if (!elements.scenarioStatus) return;
+  const etfChg = parseNumber(elements.scenarioEtf ? elements.scenarioEtf.value : 0, true);
+  const stockChg = parseNumber(elements.scenarioStock ? elements.scenarioStock.value : 0, true);
+  if (etfChg === 0 && stockChg === 0) {
+    elements.scenarioStatus.textContent = "";
+  } else {
+    elements.scenarioStatus.textContent = `Simulasi aktif: ETF ${etfChg > 0 ? "+" : ""}${etfChg}%, Saham ${stockChg > 0 ? "+" : ""}${stockChg}%. Nilai portofolio disesuaikan.`;
+  }
+}
+
+function onExecuteMonthClick(event) {
+  const btn = event.target.closest(".btn-execute-month");
+  if (!btn) return;
+  const month = Number(btn.dataset.month) || 1;
+  const settings = getSettings();
+  const technical = getTechnicalSettings();
+  const state = getState(getPortfolioValues(technical), settings, technical);
+  const firstLot = monthlyLotPlans(state, [state.firstMonth])[0];
+  const isSettlement = Boolean(state.settlements && state.settlements.some((s) => s.month === month));
+
+  let settlementTrades = [];
+  if (isSettlement) {
+    const settlement = state.settlements.find((s) => s.month === month);
+    const rate = technical.usdRate > 0 ? technical.usdRate : 1;
+    if (settlement) {
+      const split = usdSplit(settlement, rate);
+      settlementTrades = split.rows.map((row) => {
+        const price = journalState.prices[row.key] > 0 ? journalState.prices[row.key] : 1;
+        const units = row.usd > 0 ? row.usd / price : 0;
+        return { key: row.key, name: row.name, units, usd: row.usd, price };
+      });
+    }
+  }
+
+  journalState = recordExecution(journalState, month, firstLot, {
+    etfAmount: state.firstMonth ? state.firstMonth.etf : 0,
+    isSettlement,
+    settlementTrades,
+    snapshot: {
+      etfShare: state.etfShare,
+      stockShare: state.stockShare,
+      total: state.total,
+    },
+  });
+
+  elements.rdnCarry.value = formatInputCurrency(journalState.cash.rdn);
+  elements.etfCashPending.value = formatInputCurrency(journalState.cash.etfPending);
+
+  if (elements.portfolioMode.value === "holdings") {
+    syncHoldingsToDirectInputs(technical);
+  }
+
+  render();
+  btn.textContent = "✓ Tercatat!";
+  setTimeout(() => { if (btn) btn.textContent = "✓ Tandai sudah dieksekusi"; }, 2000);
+}
+
 elements.analyzeButton.addEventListener("click", render);
 elements.saveRdnButton.addEventListener("click", () => {
   const targetPeriod = nextMonth(elements.targetMonth.value);
@@ -1180,6 +1713,141 @@ elements.actionTimeline.addEventListener("change", (event) => {
   if (rate > 0) settlementRates[input.dataset.month] = rate;
   else delete settlementRates[input.dataset.month];
   render();
+});
+elements.actionTimeline.addEventListener("click", onExecuteMonthClick);
+
+if (elements.portfolioMode) {
+  elements.portfolioMode.addEventListener("change", () => {
+    const isHoldings = elements.portfolioMode.value === "holdings";
+    if (elements.holdingsPane) elements.holdingsPane.hidden = !isHoldings;
+    if (isHoldings) {
+      const technical = getTechnicalSettings();
+      syncHoldingsToDirectInputs(technical);
+    }
+    scheduleRender();
+  });
+}
+
+if (elements.holdingPrices) {
+  elements.holdingPrices.addEventListener("input", (event) => {
+    const qtyInput = event.target.closest(".holding-qty-input");
+    if (qtyInput) {
+      const key = qtyInput.dataset.key;
+      journalState.holdings[key] = parseFloat(qtyInput.value) || 0;
+      if (elements.portfolioMode.value === "holdings") {
+        syncHoldingsToDirectInputs(getTechnicalSettings());
+      }
+      scheduleRender();
+      return;
+    }
+    const priceInput = event.target.closest(".holding-price-input");
+    if (priceInput) {
+      const key = priceInput.dataset.key;
+      journalState.prices[key] = isEtfKey(key) ? parseDecimal(priceInput.value) : parseCurrency(priceInput.value);
+      if (elements.portfolioMode.value === "holdings") {
+        syncHoldingsToDirectInputs(getTechnicalSettings());
+      }
+      scheduleRender();
+      return;
+    }
+  });
+}
+
+if (elements.executionJournal) {
+  elements.executionJournal.addEventListener("click", (event) => {
+    const delBtn = event.target.closest(".btn-delete-tx");
+    if (!delBtn) return;
+    const id = Number(delBtn.dataset.id);
+    journalState.transactions = (journalState.transactions || []).filter((tx) => tx.id !== id);
+    renderExecutionJournalUI();
+    if (window.rkChanged) window.rkChanged();
+  });
+}
+
+if (elements.copyCurrentAction) {
+  elements.copyCurrentAction.addEventListener("click", async () => {
+    const settings = getSettings();
+    const technical = getTechnicalSettings();
+    const state = getState(getPortfolioValues(technical), settings, technical);
+    const text = formatCurrentActionPlan(state);
+    try {
+      await navigator.clipboard.writeText(text);
+      const orig = elements.copyCurrentAction.textContent;
+      elements.copyCurrentAction.textContent = "✓ Tersalin!";
+      setTimeout(() => { if (elements.copyCurrentAction) elements.copyCurrentAction.textContent = orig; }, 2000);
+    } catch (e) {
+      alert("Gagal menyalin otomatis:\n\n" + text);
+    }
+  });
+}
+
+if (elements.downloadReminders) {
+  elements.downloadReminders.addEventListener("click", () => {
+    const settings = getSettings();
+    const technical = getTechnicalSettings();
+    const state = getState(getPortfolioValues(technical), settings, technical);
+    const ics = generateRemindersIcs(state);
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "rebalance-pengingat.ics";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+}
+
+if (elements.scenarioEtf) {
+  elements.scenarioEtf.addEventListener("input", () => {
+    updateScenarioStatus();
+    scheduleRender();
+  });
+}
+if (elements.scenarioStock) {
+  elements.scenarioStock.addEventListener("input", () => {
+    updateScenarioStatus();
+    scheduleRender();
+  });
+}
+if (elements.scenarioReset) {
+  elements.scenarioReset.addEventListener("click", () => {
+    if (elements.scenarioEtf) elements.scenarioEtf.value = "0";
+    if (elements.scenarioStock) elements.scenarioStock.value = "0";
+    if (elements.scenarioStatus) elements.scenarioStatus.textContent = "";
+    scheduleRender();
+  });
+}
+
+if (elements.applyIbkrRouteBtn) {
+  elements.applyIbkrRouteBtn.addEventListener("click", () => {
+    try {
+      const raw = localStorage.getItem("rk-ibkr-best-route");
+      if (raw) {
+        const stored = JSON.parse(raw);
+        if (stored.rate > 0) elements.usdRate.value = decimalInputFormatter.format(stored.rate);
+        if (stored.wireFee >= 0) elements.wireFee.value = formatInputCurrency(stored.wireFee);
+        elements.ibkrBridgeNotice.hidden = true;
+        scheduleRender();
+      }
+    } catch (e) {}
+  });
+}
+
+window.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "rk-ibkr-best-route") {
+    checkIbkrRouteAvailability();
+  }
+});
+
+[elements.etfCashPending, elements.stockBuyFee].filter(Boolean).forEach((input) => {
+  input.addEventListener("input", scheduleRender);
+  input.addEventListener("blur", scheduleRender);
+});
+
+[elements.quarterMonth, elements.recoveryTarget].filter(Boolean).forEach((select) => {
+  select.addEventListener("change", scheduleRender);
 });
 elements.usdRate.addEventListener("input", scheduleRender);
 elements.usdRate.addEventListener("focus", () => { elements.usdRate.value = String(parseDecimal(elements.usdRate.value) || "").replace(".", ","); });
