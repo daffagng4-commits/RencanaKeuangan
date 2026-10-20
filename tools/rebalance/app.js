@@ -32,6 +32,7 @@ const DEFAULT_TECHNICAL = Object.freeze({
   usdRate: 0,
   stockFee: 0,
   ibkrFee: 0,
+  tolerance: 0.01,
 });
 
 const INITIAL_VALUES = Object.freeze({
@@ -78,6 +79,7 @@ const elements = {
   rdnCarry: document.querySelector("#rdn-carry"),
   wireFee: document.querySelector("#wire-fee"),
   usdRate: document.querySelector("#usd-rate"),
+  tolerance: document.querySelector("#tolerance"),
   stockFee: document.querySelector("#stock-fee"),
   ibkrFee: document.querySelector("#ibkr-fee"),
   routeLink: document.querySelector("#route-link"),
@@ -347,6 +349,7 @@ function getTechnicalSettings() {
     rdnCarry: parseCurrency(elements.rdnCarry.value),
     wireFee: parseCurrency(elements.wireFee.value),
     usdRate: parseDecimal(elements.usdRate.value),
+    tolerance: Math.min(5, Math.max(0, elements.tolerance.value.trim() === "" ? 1 : parseDecimal(elements.tolerance.value))) / 100,
     stockFee: Math.min(5, parseDecimal(elements.stockFee.value)) / 100,
     ibkrFee: Math.min(5, parseDecimal(elements.ibkrFee.value)) / 100,
     route: routeLinked ? currentRoute : null,
@@ -518,21 +521,33 @@ function buildSettlements(schedule, horizon) {
 
 // Pemulihan parent disimulasikan bulan demi bulan karena dana tiap bulan bisa berbeda.
 // Dengan dana sama tiap bulan hasilnya identik dengan rumus lama: floor(defisit / kenaikan) bulan penuh + 1 bulan penutup.
-function buildParentPlan(direction, deficit, settings) {
+function buildParentPlan(direction, deficit, settings, tolerance = 0, total = 0) {
   const isStock = direction === "parent-stock";
   const schedule = [];
   let remaining = deficit;
   let month = 0;
   let fullMonths = 0;
   let closing = null;
+  let funded = 0;
   while (remaining >= 0.5 && month < MAX_RECOVERY_MONTHS) {
     month += 1;
     const fund = fundForMonth(month, settings);
     const normal = splitFund(fund, settings);
     const increment = isStock ? fund - normal.stock : fund - normal.etf;
+    funded += fund;
+    const toleranceRp = tolerance * (total + funded);
     if (increment > 0 && remaining >= increment - 0.5) {
       schedule.push({ month, stock: isStock ? fund : 0, etf: isStock ? 0 : fund, phase: "full", fund });
       remaining -= increment;
+      fullMonths += 1;
+    } else if (remaining <= toleranceRp) {
+      // Sisa defisit sudah di dalam toleransi: tidak perlu bulan penutup, cukup lanjut normal.
+      month -= 1;
+      remaining = 0;
+    } else if (increment > 0 && increment - remaining <= toleranceRp) {
+      // Satu bulan penuh lagi hanya melewati target sedikit (di dalam toleransi): pakai bulan penuh, tanpa bulan penutup kecil.
+      schedule.push({ month, stock: isStock ? fund : 0, etf: isStock ? 0 : fund, phase: "full", fund });
+      remaining = 0;
       fullMonths += 1;
     } else {
       const gap = Math.round(remaining);
@@ -631,7 +646,7 @@ function getState(values, settings, technical) {
   let fullMonths = 0;
   if (mode === "parent-etf" || mode === "parent-stock") {
     const deficit = mode === "parent-etf" ? etfDeficit : stockDeficit;
-    plan = buildParentPlan(mode, deficit, settings);
+    plan = buildParentPlan(mode, deficit, settings, technical.tolerance || 0, total);
     calculatedFullMonths = plan.fullMonths;
     fullMonths = plan.fullMonths;
   } else {
@@ -675,16 +690,17 @@ function getState(values, settings, technical) {
   const stockPlanned = runningStock.map((value, index) => value - stockValues[index]);
   const currentStockAllocation = stockPlan.length && stockPlan[0].month === firstMonth.month ? stockPlan[0].allocation : allocateByWeights(0, settings.stockTargets);
 
-  const afterRows = (targets, values, planned, shares) => {
+  const afterRows = (targets, values, planned, shares, band) => {
     const afterTotal = sum(values) + sum(planned);
     return targets.map((item, index) => ({
       name: item.name, share: shares[index], target: item.weight, planned: planned[index],
       after: afterTotal > 0 ? (values[index] + planned[index]) / afterTotal : item.weight,
+      band,
     }));
   };
   const shortfall = {
-    stock: afterRows(settings.stockTargets, stockValues, stockPlanned, stockShares),
-    etf: afterRows(settings.etfTargets, etfValues, etfPlanned, etfShares),
+    stock: afterRows(settings.stockTargets, stockValues, stockPlanned, stockShares, CONFIG.stockBand),
+    etf: afterRows(settings.etfTargets, etfValues, etfPlanned, etfShares, CONFIG.etfBand),
   };
 
   const nextSettlement = plan.settlements[0] || {
@@ -1126,19 +1142,42 @@ function renderActionPlan(state) {
   elements.actionTimeline.innerHTML = cards.join("");
 }
 
-function shortfallRows(rows, usdRate) {
-  const pts = new Intl.NumberFormat("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1, signDisplay: "exceptZero" });
-  return rows.map((row) => {
+function shortfallRows(rows, usdRate, actual) {
+  return rows.map((row, index) => {
     const gap = (row.share - row.target) * 100;
-    const plan = row.planned > 0 ? `+${usdRate ? `${formatUsd(row.planned / usdRate)} (${formatCurrency(row.planned)})` : formatCurrency(row.planned)}` : (usdRate ? "US$ 0" : "Rp 0");
     const size = Math.abs(gap).toFixed(1).replace(".", ",");
     const state = Math.abs(gap) < 0.05 ? "sesuai target" : gap > 0 ? `lebih ${size} poin` : `kurang ${size} poin`;
-    return `<div class="rdn-execution-row"><span>${row.name} · porsi sekarang ${formatPercent(row.share, 1)} (target ${formatPercent(row.target, 1)}, ${state})</span><strong>tambah ${plan.replace(/^\+/, "")} → ${formatPercent(row.after, 1)}</strong></div>`;
+    const real = actual ? actual.rows[index] : null;
+    const plan = row.planned > 0 ? (usdRate ? `${formatUsd(row.planned / usdRate)} (${formatCurrency(row.planned)})` : formatCurrency(row.planned)) : (usdRate ? "US$ 0" : "Rp 0");
+    const finalShare = real ? real.after : row.after;
+    const off = Math.abs(finalShare - row.target) * 100;
+    const verdict = off <= row.band * 100 + 0.0005 ? `<em class="ok">aman · selisih ${off.toFixed(1).replace(".", ",")} poin</em>` : `<em class="warn">di luar band ±${row.band * 100} poin</em>`;
+    const right = real
+      ? `beli ${formatCurrency(Math.round(real.bought))} <small>(ideal ${formatCurrency(row.planned)})</small> → ${formatPercent(real.after, 1)} ${verdict}`
+      : `tambah ${plan} → ${formatPercent(row.after, 1)} ${verdict}`;
+    return `<div class="rdn-execution-row"><span>${row.name} · porsi sekarang ${formatPercent(row.share, 1)} (target ${formatPercent(row.target, 1)}, ${state})</span><strong>${right}</strong></div>`;
   }).join("");
 }
 
+// Angka nyata saham: jumlah lot yang benar-benar terbeli sepanjang rencana (butuh harga terisi semua).
+function actualStockOutcome(state) {
+  if (!state.stockPlan.length) return null;
+  const plans = monthlyLotPlans(state, state.schedule);
+  const stockMonths = plans.filter((_, index) => state.schedule[index].stock > 0);
+  if (!stockMonths.length || stockMonths.some((plan) => plan.pending)) return null;
+  const targets = state.settings.stockTargets;
+  const bought = targets.map(() => 0);
+  plans.forEach((plan) => plan.trades.forEach((trade) => {
+    const index = targets.findIndex((item) => item.key === trade.key);
+    if (index >= 0) bought[index] += (trade.shares || 0) * trade.price;
+  }));
+  const total = sum(state.stockValues) + sum(bought);
+  return { rows: targets.map((_, index) => ({ bought: bought[index], after: total > 0 ? (state.stockValues[index] + bought[index]) / total : 0 })), remainder: plans[plans.length - 1].remainder };
+}
+
 function renderShortfall(state) {
-  elements.shortfallStock.innerHTML = shortfallRows(state.shortfall.stock);
+  const actual = actualStockOutcome(state);
+  elements.shortfallStock.innerHTML = shortfallRows(state.shortfall.stock, 0, actual);
   elements.shortfallEtf.innerHTML = shortfallRows(state.shortfall.etf, state.technical.usdRate);
   const next = state.stockPlan[0];
   const stockNote = !next
@@ -1151,7 +1190,10 @@ function renderShortfall(state) {
     : "Semua kamar dalam band, dana dibagi sesuai target normal.";
   const overweight = [...state.shortfall.stock, ...state.shortfall.etf].some((row) => row.share - row.target > 0.0005 && row.planned > 0);
   const overNote = overweight ? " Aset yang porsinya lebih dari target tetap bisa dapat dana karena total ikut bertambah; tidak ada yang dijual, porsinya turun sendiri." : "";
-  elements.shortfallNote.textContent = `${stockNote} ${fixNote}${overNote} Kolom kanan: dana yang ditambahkan selama rencana dan porsi akhirnya.`;
+  const lotNote = actual
+    ? ` Saham dibeli per lot (100 lembar), jadi kolom kanan Saham Lokal memakai jumlah lot yang benar-benar terbeli, sedikit di bawah angka ideal; sisa ${formatCurrency(Math.round(actual.remainder))} tetap di RDN.`
+    : " Isi harga saham di kartu untuk melihat hasil per lot.";
+  elements.shortfallNote.textContent = `${stockNote} ${fixNote}${overNote}${lotNote}`;
 }
 
 function renderProjection(state) {
@@ -1252,6 +1294,7 @@ function resetSettings() {
   elements.rdnCarry.value = formatInputCurrency(DEFAULT_TECHNICAL.rdnCarry);
   elements.wireFee.value = formatInputCurrency(DEFAULT_TECHNICAL.wireFee);
   elements.usdRate.value = "";
+  elements.tolerance.value = "1";
   elements.stockFee.value = "";
   elements.ibkrFee.value = "";
   elements.etfCurrency.value = "idr";
@@ -1365,6 +1408,7 @@ elements.actionTimeline.addEventListener("change", (event) => {
   input.addEventListener("input", scheduleRender);
   input.addEventListener("blur", () => { const fee = parseDecimal(input.value); input.value = fee > 0 ? decimalInputFormatter.format(fee) : ""; scheduleRender(); });
 });
+elements.tolerance.addEventListener("input", scheduleRender);
 elements.usdRate.addEventListener("input", scheduleRender);
 elements.usdRate.addEventListener("focus", () => { elements.usdRate.value = String(parseDecimal(elements.usdRate.value) || "").replace(".", ","); });
 elements.usdRate.addEventListener("blur", () => { const rate = parseDecimal(elements.usdRate.value); elements.usdRate.value = rate > 0 ? decimalInputFormatter.format(rate) : ""; scheduleRender(); });

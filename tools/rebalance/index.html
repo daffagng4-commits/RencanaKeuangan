@@ -219,6 +219,12 @@
             </div>
 
             <div class="mt-4">
+              <label for="tolerance" class="input-label">Toleransi dari target (poin)</label>
+              <div class="currency-input-wrap"><span>±</span><input id="tolerance" class="technical-input" type="text" inputmode="decimal" autocomplete="off" value="1"></div>
+              <p class="mt-2 text-[10px] leading-4 text-white/40">Pemulihan parent berhenti bila sisa selisih sudah di dalam angka ini (0-5 poin), jadi tidak ada bulan penutup dengan nominal kecil. Isi 0 untuk mengejar target persis.</p>
+            </div>
+
+            <div class="mt-4">
               <label for="stock-fee" class="input-label">Fee broker Stockbit saat beli saham (%)</label>
               <div class="currency-input-wrap"><span>%</span><input id="stock-fee" class="technical-input" type="text" inputmode="decimal" autocomplete="off" value="" placeholder="Isi sesuai Stockbit"></div>
               <p class="mt-2 text-[10px] leading-4 text-white/40">Kosong = tanpa fee. Fee ditambahkan ke biaya tiap lot dan mengurangi saldo RDN.</p>
