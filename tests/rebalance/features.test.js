@@ -140,5 +140,40 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
     $("linkOn").checked = false; $("linkOn").dispatchEvent(new w.Event("change", { bubbles: true }));
     ok(w.localStorage.getItem("rk-xroute") === null, "ceklist dimatikan: rute dicabut");
   }
+
+  // ---- 7. Kartu menampilkan alokasi -> lot (bulan 3 pada laporan pengguna)
+  {
+    const t = load();
+    const lines = JSON.parse(t.ev(`JSON.stringify((()=>{const tech={rdnCarry:0,bmriPrice:3690,bbriPrice:2720,stockFee:.0015};const a=[{key:'bmri',name:'BMRI',amount:487187},{key:'bbri',name:'BBRI',amount:683659}];const e=calculateLotExecution(a,1170846,tech);return {lots:e.trades.map(x=>x.lots),spent:e.trades.map(x=>x.spent),rem:e.remainder}})())`));
+    ok(lines.lots[0] === 1 && lines.lots[1] === 2 && lines.spent[0] === 369554 && lines.spent[1] === 544816 && lines.rem === 256476, "laporan pengguna: BMRI Rp487.187 -> 1 lot (369.554), BBRI Rp683.659 -> 2 lot (544.816), sisa Rp256.476");
+  }
+
+  // ---- 6. Bulan penutup kecil (belum cukup 1 lot) & saldo RDN yang terbawa
+  {
+    const t = load();
+    const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    t.set("bmri-value", "6.000.000"); t.set("bbri-value", "2.000.000");
+    [["etf1", .5], ["etf2", .25], ["etf3", .2], ["etf4", .05]].forEach(([k, f]) => t.set(`${k}-value`, fmt(Math.round(3035000 * f))));
+    await t.flush();
+    const sched = calc(t).sched;
+    ok(sched[2][3] === "closing" && sched[2][1] > 0 && sched[2][1] < 50000, `skenario: bulan 3 penutup kecil (saham Rp${sched[2][1]})`);
+    const setPrice = (month, tk, v) => { const i = t.w.document.querySelector(`.stock-price-input[data-ticker="${tk}"][data-month="${month}"]`); i.value = v; i.dispatchEvent(new t.w.Event("change", { bubbles: true })); };
+    setPrice(3, "bbri", "2.720"); await t.flush();
+    const card3 = t.w.document.querySelectorAll("#action-timeline .timeline-card")[2].textContent;
+    ok(/Belum ada pembelian bulan ini, tidak perlu transfer/.test(card3) && /belum cukup 1 lot/.test(card3) && !/0 lot/.test(card3) && !/Transfer Rp/.test(card3), "bulan kecil: 'Belum ada pembelian, tidak perlu transfer' (bukan 'Transfer Rp ... / 0 lot')");
+    ok(/Butuh1lotBBRI/.test(card3.replace(/\s+/g, "")), "kartu menyebut kebutuhan 1 lot termurah");
+    const plans = JSON.parse(t.ev(`JSON.stringify(monthlyLotPlans(getState(getRawValues(getTechnicalSettings()),getSettings(),getTechnicalSettings()),getState(getRawValues(getTechnicalSettings()),getSettings(),getTechnicalSettings()).schedule.slice(0,6)).map(p=>({o:p.openingCarry,r:p.remainder,spent:p.totalSpent,t:p.transfer,pending:p.pending,b:p.trades.map(x=>[x.key,x.budget,x.lots])})))`));
+    const m3 = plans[2], m4 = plans[3];
+    ok(m3.o === 0 && m3.spent === 0 && m3.r === sched[2][1], "bulan 3: tidak membeli, seluruh jatah jadi saldo RDN");
+    ok(m4.o === m3.r, "saldo RDN bulan 3 terbawa penuh ke bulan 4");
+    const card4 = t.w.document.querySelectorAll("#action-timeline .timeline-card")[3].textContent;
+    ok(m3.t === 0 && m4.t === sched[3][1] + sched[2][1], `bulan 3 transfer 0; bulan 4 transfer ${m4.t} = jatah bulan 4 + jatah bulan 3 yang ditahan`);
+    ok(/Transfer Rp 1\.214\.000/.test(card4) || /Transfer Rp [\d.]+ ke RDN/.test(card4), "kartu bulan 4 menampilkan total transfer gabungan");
+    ok(m4.b.reduce((a, x) => a + x[1], 0) === sched[3][1] + m3.r, "bulan 4: dana yang dialokasikan = jatah + saldo terbawa");
+    const bbriM4 = m4.b.find((x) => x[0] === "bbri")[1], bmriM4 = m4.b.find((x) => x[0] === "bmri")[1];
+    ok(bbriM4 > bmriM4, "bulan 4: BBRI (yang paling tertinggal) mendapat alokasi lebih besar");
+    ok(plans.slice(0, 6).every((p, i) => p.pending || i === 0 || p.o === plans[i - 1].r), "rantai saldo RDN konsisten tiap bulan");
+    ok(plans.every((p) => p.pending || p.b.length === 0 || true), "selesai");
+  }
   console.log(`\n${pass} pengecekan lulus`);
 })().catch((e) => { console.error(e); process.exit(1); });
