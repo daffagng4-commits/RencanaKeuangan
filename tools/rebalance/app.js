@@ -30,10 +30,6 @@ const DEFAULT_TECHNICAL = Object.freeze({
   rdnCarry: 0,
   wireFee: 250_000,
   usdRate: 0,
-  etfBuffer: 0,
-  quarterPos: 1,
-  buyFee: 0,
-  recoveryTarget: "mid",
 });
 
 const INITIAL_VALUES = Object.freeze({
@@ -80,11 +76,6 @@ const elements = {
   rdnCarry: document.querySelector("#rdn-carry"),
   wireFee: document.querySelector("#wire-fee"),
   usdRate: document.querySelector("#usd-rate"),
-  etfBuffer: document.querySelector("#etf-buffer"),
-  quarterPos: document.querySelector("#quarter-pos"),
-  buyFee: document.querySelector("#buy-fee"),
-  recoveryTarget: document.querySelector("#recovery-target"),
-  durationWarning: document.querySelector("#duration-warning"),
   etfCurrency: document.querySelector("#etf-currency"),
   rdnAutoCopy: document.querySelector("#rdn-auto-copy"),
   technicalValidation: document.querySelector("#technical-validation"),
@@ -173,8 +164,6 @@ const elements = {
   shortfallNote: document.querySelector("#shortfall-note"),
 };
 
-// Kait untuk journal.js (jurnal, riwayat, simulasi, dsb.). journal.js mengisi get/set/render/reset.
-const extras = { get: () => undefined, set: () => {}, render: () => {}, reset: () => {} };
 const charts = {};
 let lastValidSettings = { ...DEFAULT_SETTINGS };
 let lastValidTechnical = { ...DEFAULT_TECHNICAL };
@@ -346,10 +335,6 @@ function getTechnicalSettings() {
     rdnCarry: parseCurrency(elements.rdnCarry.value),
     wireFee: parseCurrency(elements.wireFee.value),
     usdRate: parseDecimal(elements.usdRate.value),
-    etfBuffer: parseCurrency(elements.etfBuffer.value),
-    quarterPos: Math.min(3, Math.max(1, Number.parseInt(elements.quarterPos.value, 10) || 1)),
-    buyFee: Math.min(5, parseDecimal(elements.buyFee.value)) / 100,
-    recoveryTarget: elements.recoveryTarget.value === "band" ? "band" : "mid",
   };
   const valid = raw.rdnCarry >= 0 && raw.wireFee >= 0 && (raw.usdRate > 0 || elements.etfCurrency.value !== "usd");
   if (valid) lastValidTechnical = { ...raw };
@@ -415,22 +400,7 @@ function allocateRebalance(values, total, definitions) {
   return allocateByWeights(budget, weighted).map((row, i) => ({ ...definitions[i], amount: row.amount }));
 }
 
-// Biaya beli saham = harga x 100 x lot, ditambah fee broker (dibulatkan per order).
-function buyCost(price, lots, fee) {
-  const gross = price * 100 * lots;
-  return gross + Math.round(gross * fee);
-}
-
-function maxLots(price, money, fee) {
-  if (!(price > 0) || money <= 0) return 0;
-  let n = Math.max(0, Math.floor(money / (price * 100 * (1 + fee))));
-  while (n > 0 && buyCost(price, n, fee) > money) n -= 1;
-  while (buyCost(price, n + 1, fee) <= money) n += 1;
-  return n;
-}
-
 function calculateLotExecution(allocation, recommendedBudget, technical) {
-  const fee = technical.buyFee || 0;
   const totalCapital = recommendedBudget + technical.rdnCarry;
   const active = allocation.filter((item) => item.amount > 0);
   if (recommendedBudget <= 0 || active.length === 0) {
@@ -439,9 +409,8 @@ function calculateLotExecution(allocation, recommendedBudget, technical) {
       openingCarry: technical.rdnCarry,
       totalCapital,
       totalSpent: 0,
-      totalFee: 0,
       remainder: totalCapital,
-      trades: allocation.map((item) => ({ ...item, budget: 0, price: technical[`${item.key}Price`], lotCost: technical[`${item.key}Price`] * 100, lots: 0, shares: 0, spent: 0, fee: 0 })),
+      trades: allocation.map((item) => ({ ...item, budget: 0, price: technical[`${item.key}Price`], lotCost: technical[`${item.key}Price`] * 100, lots: 0, shares: 0, spent: 0 })),
     };
   }
 
@@ -450,32 +419,30 @@ function calculateLotExecution(allocation, recommendedBudget, technical) {
   const trades = budgets.map((item) => {
     const price = technical[`${item.key}Price`];
     const lotCost = price * 100;
-    const lots = maxLots(price, item.amount, fee);
-    const spent = buyCost(price, lots, fee);
-    return { ...item, budget: item.amount, price, lotCost, lots, shares: lots * 100, spent, fee: spent - lots * lotCost };
+    const lots = lotCost > 0 ? Math.floor(item.amount / lotCost) : 0;
+    const shares = lots * 100;
+    const spent = lots * lotCost;
+    return { ...item, budget: item.amount, price, lotCost, lots, shares, spent };
   });
   let totalSpent = sum(trades.map((item) => item.spent));
   let remainder = totalCapital - totalSpent;
   const activeTrades = trades.filter((item) => item.weight > 0);
-  const room = (trade) => maxLots(trade.price, trade.spent + remainder, fee) - trade.lots;
   let safety = 0;
-  while (activeTrades.some((item) => room(item) > 0) && safety < activeTrades.length * 2) {
-    const affordable = activeTrades.filter((item) => room(item) > 0);
+  while (activeTrades.some((item) => item.lotCost <= remainder) && safety < activeTrades.length * 2) {
+    const affordable = activeTrades.filter((item) => item.lotCost <= remainder);
     affordable.sort((a, b) => {
       const aGap = (a.budget - a.spent) / Math.max(a.budget, 1);
       const bGap = (b.budget - b.spent) / Math.max(b.budget, 1);
       return bGap - aGap;
     });
     const selected = affordable[0];
-    const newLots = selected.lots + room(selected);
-    const newSpent = buyCost(selected.price, newLots, fee);
-    const delta = newSpent - selected.spent;
-    selected.lots = newLots;
-    selected.shares = newLots * 100;
-    selected.spent = newSpent;
-    selected.fee = newSpent - newLots * selected.lotCost;
-    totalSpent += delta;
-    remainder -= delta;
+    const extraLots = Math.max(1, Math.floor(remainder / selected.lotCost));
+    const extraSpent = extraLots * selected.lotCost;
+    selected.lots += extraLots;
+    selected.shares += extraLots * 100;
+    selected.spent += extraSpent;
+    totalSpent += extraSpent;
+    remainder -= extraSpent;
     safety += 1;
   }
   return {
@@ -483,7 +450,6 @@ function calculateLotExecution(allocation, recommendedBudget, technical) {
     openingCarry: technical.rdnCarry,
     totalCapital,
     totalSpent,
-    totalFee: sum(trades.map((item) => item.fee)),
     remainder,
     trades,
   };
@@ -501,33 +467,7 @@ function settlementIndices(firstIndex, lastIndex) {
 
 const MAX_RECOVERY_MONTHS = 1200;
 
-// Siklus setor IBKR: kuartal berakhir (wire) pada bulan ke-3 siklus. quarterPos = posisi bulan ini dalam siklus (1-3).
-// Bulan rencana m jatuh di kuartal ceil((m + off) / 3); wire kuartal itu pada bulan idx*3 - off.
-function quarterOf(month, off) {
-  return Math.ceil((month + off) / 3);
-}
-
-function quarterEnd(month, off) {
-  return quarterOf(month, off) * 3 - off;
-}
-
-function buildSettlements(schedule, horizon, off, buffer) {
-  const etfMonths = schedule.filter((entry) => entry.etf > 0);
-  const lastIndex = quarterOf(horizon, off);
-  const firstIndex = buffer > 0 ? 1 : etfMonths.length ? quarterOf(etfMonths[0].month, off) : lastIndex;
-  const allCount = Math.max(0, lastIndex - firstIndex + 1);
-  const settlements = settlementIndices(firstIndex, lastIndex).map((quarterIndex) => {
-    const endMonth = quarterIndex * 3 - off;
-    const components = schedule
-      .filter((entry) => entry.month > endMonth - 3 && entry.month <= endMonth && entry.etf > 0)
-      .map((entry) => ({ month: entry.month, amount: entry.etf }));
-    if (quarterIndex === 1 && buffer > 0) components.unshift({ month: 0, amount: buffer, buffer: true });
-    return { sequence: quarterIndex - firstIndex + 1, quarter: quarterIndex, month: endMonth, amount: sum(components.map((item) => item.amount)), components };
-  });
-  return { settlements, allCount };
-}
-
-function buildParentPlan(direction, fullMonths, remainder, settings, normalStock, normalEtf, off = 0, buffer = 0) {
+function buildParentPlan(direction, fullMonths, remainder, settings, normalStock, normalEtf) {
   const isStock = direction === "parent-stock";
   const fund = settings.monthlyFund;
   const schedule = [];
@@ -542,11 +482,21 @@ function buildParentPlan(direction, fullMonths, remainder, settings, normalStock
     schedule.push(closing);
   }
   const normalStart = schedule.length + 1;
-  const horizon = quarterEnd(normalStart, off);
+  const horizon = Math.max(3, Math.ceil(normalStart / 3) * 3);
   for (let month = normalStart; month <= horizon; month += 1) {
     schedule.push({ month, stock: normalStock, etf: normalEtf, phase: "normal" });
   }
-  const { settlements, allCount } = buildSettlements(schedule, horizon, off, buffer);
+  const etfMonths = schedule.filter((entry) => entry.etf > 0);
+  const lastIndex = Math.ceil(horizon / 3);
+  const firstIndex = etfMonths.length ? Math.ceil(etfMonths[0].month / 3) : lastIndex;
+  const allCount = Math.max(0, lastIndex - firstIndex + 1);
+  const settlements = settlementIndices(firstIndex, lastIndex).map((quarterIndex) => {
+    const endMonth = quarterIndex * 3;
+    const components = schedule
+      .filter((entry) => entry.month > endMonth - 3 && entry.month <= endMonth && entry.etf > 0)
+      .map((entry) => ({ month: entry.month, amount: entry.etf }));
+    return { sequence: quarterIndex - firstIndex + 1, month: endMonth, amount: sum(components.map((item) => item.amount)), components };
+  });
   return {
     firstMonth: schedule[0],
     schedule,
@@ -561,40 +511,31 @@ function buildParentPlan(direction, fullMonths, remainder, settings, normalStock
   };
 }
 
-function buildChildrenPlan(settings, normalStock, normalEtf, off = 0, buffer = 0) {
-  const horizon = 3 - off;
-  const schedule = Array.from({ length: horizon }, (_, index) => ({ month: index + 1, stock: normalStock, etf: normalEtf, phase: "children" }));
-  const { settlements } = buildSettlements(schedule, horizon, off, buffer);
+function buildChildrenPlan(settings, normalStock, normalEtf) {
+  const schedule = [1, 2, 3].map((month) => ({ month, stock: normalStock, etf: normalEtf, phase: "children" }));
   return {
     firstMonth: schedule[0],
     schedule,
-    closing: null,
-    settlements,
+    settlements: [{
+      month: 3,
+      sequence: 1,
+      amount: normalEtf * 3,
+      components: schedule.map((entry) => ({ month: entry.month, amount: entry.etf })),
+    }],
     settlementCount: 1,
     settlementsOmitted: 0,
     normalStartMonth: 1,
-    settlementHorizon: horizon,
-    cycleStock: normalStock * horizon,
-    cycleEtf: normalEtf * horizon,
+    settlementHorizon: 3,
+    cycleStock: normalStock * 3,
+    cycleEtf: normalEtf * 3,
   };
-}
-
-// Jumlah bulan pemulihan (bulan penuh + 1 bulan penutup bila ada sisa).
-function recoveryMonthCount(deficit, increment) {
-  const raw = increment > 0 ? deficit / increment : 0;
-  const full = Math.min(MAX_RECOVERY_MONTHS, Math.floor(raw));
-  const closing = raw >= MAX_RECOVERY_MONTHS ? 0 : deficit - full * increment;
-  return full + (Math.round(closing) > 0 ? 1 : 0);
 }
 
 function getState(values, settings, technical) {
   const stockValues = settings.stockTargets.map((item) => values[item.key]);
   const etfValues = settings.etfTargets.map((item) => values[item.key]);
   const stockTotal = sum(stockValues);
-  // Kas ETF di penampung (belum disetor ke IBKR) ikut dihitung untuk status parent, tetapi belum teralokasi antar-ETF.
-  const buffer = technical.etfBuffer || 0;
-  const off = (technical.quarterPos || 1) - 1;
-  const etfTotal = sum(etfValues) + buffer;
+  const etfTotal = sum(etfValues);
   const total = stockTotal + etfTotal;
   const etfShare = total > 0 ? etfTotal / total : settings.etfGlobalTarget;
   const stockShare = 1 - etfShare;
@@ -615,16 +556,10 @@ function getState(values, settings, technical) {
 
   const normalEtf = Math.round(settings.monthlyFund * settings.etfGlobalTarget);
   const normalStock = settings.monthlyFund - normalEtf;
-  // Target pemulihan: tengah (target manual) atau tepi band terdekat.
-  const toBand = technical.recoveryTarget === "band";
-  const targetEtfValue = total * (toBand ? lowerEtfBand : settings.etfGlobalTarget);
-  const targetStockValue = total * (toBand ? 1 - upperEtfBand : settings.stockGlobalTarget);
+  const targetEtfValue = total * settings.etfGlobalTarget;
+  const targetStockValue = total * settings.stockGlobalTarget;
   const etfDeficit = Math.max(0, targetEtfValue - etfTotal);
   const stockDeficit = Math.max(0, targetStockValue - stockTotal);
-  const etfIncrement = settings.monthlyFund - normalEtf;
-  const stockIncrement = settings.monthlyFund - normalStock;
-  const monthsMid = mode0 => recoveryMonthCount(Math.max(0, (mode0 === "etf" ? total * settings.etfGlobalTarget - etfTotal : total * settings.stockGlobalTarget - stockTotal)), mode0 === "etf" ? etfIncrement : stockIncrement);
-  const monthsBand = mode0 => recoveryMonthCount(Math.max(0, (mode0 === "etf" ? total * lowerEtfBand - etfTotal : total * (1 - upperEtfBand) - stockTotal)), mode0 === "etf" ? etfIncrement : stockIncrement);
 
   const inverseActive = parentStatus === "safe" && etfBroken;
 
@@ -645,13 +580,10 @@ function getState(values, settings, technical) {
     calculatedFullMonths = Math.min(MAX_RECOVERY_MONTHS, Math.floor(rawMonths));
     fullMonths = calculatedFullMonths;
     const closingGap = rawMonths >= MAX_RECOVERY_MONTHS ? 0 : deficit - calculatedFullMonths * increment;
-    plan = buildParentPlan(mode, fullMonths, closingGap, settings, normalStock, normalEtf, off, buffer);
+    plan = buildParentPlan(mode, fullMonths, closingGap, settings, normalStock, normalEtf);
   } else {
-    plan = buildChildrenPlan(settings, normalStock, normalEtf, off, buffer);
+    plan = buildChildrenPlan(settings, normalStock, normalEtf);
   }
-  const recoveryMonths = plan.schedule.filter((entry) => entry.phase === "full" || entry.phase === "closing").length;
-  const recoverySide = mode === "parent-etf" ? "etf" : mode === "parent-stock" ? "stock" : null;
-  const recoveryAlt = recoverySide ? { mid: monthsMid(recoverySide), band: monthsBand(recoverySide) } : null;
 
   const cycleStock = plan.cycleStock;
   const cycleEtf = plan.cycleEtf;
@@ -665,9 +597,8 @@ function getState(values, settings, technical) {
   // ETF: alokasi per kuartal, berurutan (setoran berikutnya memakai posisi setelah setoran sebelumnya).
   const quarterAmounts = new Map();
   plan.schedule.forEach((entry) => {
-    if (entry.etf > 0) quarterAmounts.set(quarterOf(entry.month, off), (quarterAmounts.get(quarterOf(entry.month, off)) || 0) + entry.etf);
+    if (entry.etf > 0) quarterAmounts.set(Math.ceil(entry.month / 3), (quarterAmounts.get(Math.ceil(entry.month / 3)) || 0) + entry.etf);
   });
-  if (buffer > 0) quarterAmounts.set(1, (quarterAmounts.get(1) || 0) + buffer);
   let runningEtf = etfValues.slice();
   const quarterAllocation = new Map();
   [...quarterAmounts.keys()].sort((a, b) => a - b).forEach((quarter) => {
@@ -677,7 +608,7 @@ function getState(values, settings, technical) {
     quarterAllocation.set(quarter, allocation);
   });
   const etfPlanned = runningEtf.map((value, index) => value - etfValues[index]);
-  plan.settlements = plan.settlements.map((settlement) => ({ ...settlement, allocation: quarterAllocation.get(settlement.quarter) || allocateByWeights(0, settings.etfTargets) }));
+  plan.settlements = plan.settlements.map((settlement) => ({ ...settlement, allocation: quarterAllocation.get(settlement.month / 3) }));
 
   // Saham: alokasi per bulan yang memang ada belanja saham, berurutan.
   let runningStock = stockValues.slice();
@@ -704,7 +635,7 @@ function getState(values, settings, technical) {
   };
 
   const nextSettlement = plan.settlements[0] || {
-    month: 3 - off,
+    month: 3,
     amount: 0,
     components: [],
     allocation: allocateByWeights(0, settings.etfTargets),
@@ -748,11 +679,6 @@ function getState(values, settings, technical) {
     etfDeficit,
     stockDeficit,
     mode,
-    buffer,
-    off,
-    toBand,
-    recoveryMonths,
-    recoveryAlt,
     calculatedFullMonths,
     fullMonths,
     settlements: plan.settlements,
@@ -882,7 +808,7 @@ function renderSettings(state) {
   elements.metricEtfTarget.textContent = settings.etfTargets.map((item) => formatTargetNumber(item.weight * 100)).join("/");
   elements.heroTargetCopy.textContent = `Target ETF ${formatPercent(settings.etfGlobalTarget, 1)} · zona ${formatPercent(state.lowerEtfBand, 1)}-${formatPercent(state.upperEtfBand, 1)}`;
   // Increment pemulihan: ETF = dana - jatah ETF normal (= jatah saham normal); saham sebaliknya.
-  elements.healthNote.textContent = `Rumus durasi aktif: defisit ETF dibagi ${formatCurrency(state.normalStock)}; defisit saham dibagi ${formatCurrency(state.normalEtf)}. Bulan penuh dibulatkan ke bawah; sisa defisit ditutup di satu bulan penutup agar berhenti tepat di ${state.toBand ? "tepi band" : "target"}.${state.buffer > 0 ? ` Kas penampung ${formatCurrency(state.buffer)} sudah dihitung sebagai bagian ETF.` : ""}`;
+  elements.healthNote.textContent = `Rumus durasi aktif: defisit ETF dibagi ${formatCurrency(state.normalStock)}; defisit saham dibagi ${formatCurrency(state.normalEtf)}. Bulan penuh dibulatkan ke bawah; sisa defisit ditutup di satu bulan penutup agar berhenti tepat di target.`;
   elements.footerBand.textContent = `ETF <${formatPercent(state.lowerEtfBand, 0).replace(",00","")} · aman ${formatPercent(state.lowerEtfBand, 0).replace(",00","")}-${formatPercent(state.upperEtfBand, 0).replace(",00","")} · ETF >${formatPercent(state.upperEtfBand, 0).replace(",00","")}`;
   elements.chartTargetCopies.global.textContent = `Target ETF ${formatPercent(settings.etfGlobalTarget, 1)} · band ±5 poin`;
   elements.chartTargetCopies.stock.textContent = `${settings.stockTargets[0].name} ${formatPercent(settings.stockTargets[0].weight, 1)} · ${settings.stockTargets[1].name} ${formatPercent(settings.stockTargets[1].weight, 1)} · band ±5`;
@@ -897,28 +823,6 @@ function renderInputSummary(state) {
   elements.etfGlobalShare.textContent = state.technical.usdRate > 0 ? `${formatPercent(state.etfShare)} portfolio · ≈ ${formatUsd(state.etfTotal / state.technical.usdRate)}` : `${formatPercent(state.etfShare)} portfolio`;
   state.settings.stockTargets.forEach((item, index) => { elements.liveShares[item.key].textContent = formatPercent(state.stockShares[index]); });
   state.settings.etfTargets.forEach((item, index) => { elements.liveShares[item.key].textContent = formatPercent(state.etfShares[index]); });
-}
-
-function renderDuration(state) {
-  const box = elements.durationWarning;
-  const months = state.recoveryMonths;
-  box.className = "duration-warning";
-  if (!state.recoveryAlt || months <= 6) {
-    box.hidden = true;
-    box.textContent = "";
-    return;
-  }
-  const alt = state.toBand
-    ? `Anda sudah memilih pemulihan ke tepi band (${state.recoveryAlt.band} bulan).`
-    : `Bila pemulihan hanya sampai tepi band, durasinya sekitar ${state.recoveryAlt.band} bulan (bukan ${state.recoveryAlt.mid}).`;
-  const fact = "Tidak ada batas waktu baku untuk rebalancing; praktik umum adalah cek tiap 6-12 bulan atau saat selisih melewati sekitar 5 poin.";
-  if (months > 12) {
-    box.classList.add("is-strong");
-    box.textContent = `Pemulihan butuh ${months} bulan, lebih dari 12 bulan. Pertimbangkan menaikkan dana bulanan, menyesuaikan target, atau menjual sebagian (cek pajak dan biaya transaksi dulu). ${alt} ${fact}`;
-  } else {
-    box.textContent = `Pemulihan butuh ${months} bulan (lebih dari 6 bulan). ${alt} ${fact}`;
-  }
-  box.hidden = false;
 }
 
 function renderStatus(state, content) {
@@ -1060,8 +964,7 @@ function actionCard(state, entry, execution) {
       items.push(`<li><b>Saham</b>Transfer ${formatCurrency(entry.stock)}${carry} ke RDN. Alokasi: ${alloc}. <em>Isi harga saham di bawah untuk menghitung jumlah lot.</em>${boxes}</li>`);
     } else if (now) {
       const buys = execution.trades.filter((trade) => trade.lots > 0).map((trade) => `${trade.name} ${trade.lots} lot (${formatCurrency(trade.spent)})`).join(" · ") || "belum cukup untuk 1 lot";
-      const feeText = execution.totalFee > 0 ? ` Sudah termasuk fee broker ${formatCurrency(execution.totalFee)}.` : "";
-      items.push(`<li><b>Saham</b>Transfer ${formatCurrency(entry.stock)}${carry} ke RDN. Beli ${buys}.${feeText} Sisa ${formatCurrency(execution.remainder)} mengendap di RDN.${boxes}</li>`);
+      items.push(`<li><b>Saham</b>Transfer ${formatCurrency(entry.stock)}${carry} ke RDN. Beli ${buys}. Sisa ${formatCurrency(execution.remainder)} mengendap di RDN.${boxes}</li>`);
     } else {
       const approx = active.map((trade) => `${trade.name} ${trade.lots} lot`).join(", ");
       items.push(`<li><b>Saham</b>Transfer ${formatCurrency(entry.stock)}${carry} ke RDN. Alokasi: ${alloc} (perkiraan ${approx}). Jumlah lot dihitung ulang dengan harga hari itu; sisa mengendap di RDN.${boxes}</li>`);
@@ -1076,7 +979,7 @@ function actionCard(state, entry, execution) {
   if (settlement) {
     const manual = settlementRates[settlement.month] > 0;
     const rate = manual ? settlementRates[settlement.month] : state.technical.usdRate;
-    const sources = settlement.components.map((item) => (item.buffer ? `kas penampung ${formatCurrency(item.amount)}` : `bulan ${item.month} ${formatCurrency(item.amount)}`)).join(", ");
+    const sources = settlement.components.map((item) => `bulan ${item.month} ${formatCurrency(item.amount)}`).join(", ");
     const reserve = `Siapkan ${formatCurrency(settlement.amount + fee)} termasuk biaya ${formatCurrency(fee)}.`;
     const placeholder = state.technical.usdRate > 0 ? decimalInputFormatter.format(state.technical.usdRate) : "isi manual";
     const rateInput = `<span class="wire-rate"><label>Kurs hari kirim <input class="wire-rate-input" data-month="${settlement.month}" type="text" inputmode="decimal" autocomplete="off" placeholder="${placeholder}" value="${manual ? decimalInputFormatter.format(rate) : ""}"></label></span>`;
@@ -1093,8 +996,7 @@ function actionCard(state, entry, execution) {
   }
   const estimate = now ? "" : '<span class="timeline-badge soft">Estimasi</span>';
   const note = now ? "" : `<p class="timeline-note">Dihitung dengan harga hari ini. Hitung ulang di awal bulan ${entry.month} dengan harga terbaru.</p>`;
-  const actions = `<div class="card-actions"><button type="button" class="card-btn copy-month" data-month="${entry.month}">Salin instruksi</button>${now ? '<button type="button" class="card-btn exec-month">Sudah saya eksekusi</button>' : ""}</div>`;
-  return `<li class="timeline-card${now ? " is-now" : ""}"><div class="timeline-head"><strong>Bulan ${entry.month}${now ? " · sekarang" : ""}</strong><span class="timeline-badges">${estimate}<span class="timeline-badge">${phaseBadge(state, entry)}</span></span></div>${note}<ul>${items.join("")}</ul>${actions}</li>`;
+  return `<li class="timeline-card${now ? " is-now" : ""}"><div class="timeline-head"><strong>Bulan ${entry.month}${now ? " · sekarang" : ""}</strong><span class="timeline-badges">${estimate}<span class="timeline-badge">${phaseBadge(state, entry)}</span></span></div>${note}<ul>${items.join("")}</ul></li>`;
 }
 
 function renderActionPlan(state) {
@@ -1157,14 +1059,12 @@ function render() {
   renderSettings(state);
   renderInputSummary(state);
   renderStatus(state, content);
-  renderDuration(state);
   renderCharts(state);
   renderRoutes(state);
   renderHealth(state);
   renderActionPlan(state);
   renderShortfall(state);
   renderProjection(state);
-  extras.render(state);
   const targetPeriod = nextMonth(elements.targetMonth.value);
   const firstLot = monthlyLotPlans(state, [state.firstMonth])[0];
   lastRemainder = firstLot.pending ? null : firstLot.remainder;
@@ -1233,10 +1133,6 @@ function resetSettings() {
   elements.rdnCarry.value = formatInputCurrency(DEFAULT_TECHNICAL.rdnCarry);
   elements.wireFee.value = formatInputCurrency(DEFAULT_TECHNICAL.wireFee);
   elements.usdRate.value = "";
-  elements.etfBuffer.value = formatInputCurrency(DEFAULT_TECHNICAL.etfBuffer);
-  elements.quarterPos.value = String(DEFAULT_TECHNICAL.quarterPos);
-  elements.buyFee.value = "";
-  elements.recoveryTarget.value = DEFAULT_TECHNICAL.recoveryTarget;
   elements.etfCurrency.value = "idr";
   lastEtfUnit = "idr";
   syncEtfUnitLabels();
@@ -1285,10 +1181,6 @@ elements.actionTimeline.addEventListener("change", (event) => {
   else delete settlementRates[input.dataset.month];
   render();
 });
-elements.quarterPos.addEventListener("change", scheduleRender);
-elements.recoveryTarget.addEventListener("change", scheduleRender);
-elements.buyFee.addEventListener("input", scheduleRender);
-elements.buyFee.addEventListener("blur", () => { const fee = parseDecimal(elements.buyFee.value); elements.buyFee.value = fee > 0 ? decimalInputFormatter.format(fee) : ""; scheduleRender(); });
 elements.usdRate.addEventListener("input", scheduleRender);
 elements.usdRate.addEventListener("focus", () => { elements.usdRate.value = String(parseDecimal(elements.usdRate.value) || "").replace(".", ","); });
 elements.usdRate.addEventListener("blur", () => { const rate = parseDecimal(elements.usdRate.value); elements.usdRate.value = rate > 0 ? decimalInputFormatter.format(rate) : ""; scheduleRender(); });
@@ -1320,7 +1212,7 @@ Object.values(elements.targetInputs).forEach((input) => {
     scheduleRender();
   });
 });
-[elements.rdnCarry, elements.wireFee, elements.etfBuffer].forEach((input) => {
+[elements.rdnCarry, elements.wireFee].forEach((input) => {
   input.addEventListener("input", scheduleRender);
   input.addEventListener("focus", () => { input.value = String(parseCurrency(input.value) || ""); });
   input.addEventListener("blur", () => { input.value = formatInputCurrency(parseCurrency(input.value)); scheduleRender(); });
@@ -1333,7 +1225,6 @@ elements.targetMonth.addEventListener("change", () => {
 });
 elements.resetButton.addEventListener("click", () => {
   resetSettings();
-  extras.reset();
   elements.targetMonth.value = "2027-06";
   storeRdn(elements.targetMonth.value, 0);
   updatePeriodCopy();
@@ -1360,7 +1251,7 @@ function rkGetState() {
       if (key && key.startsWith(RDN_STORAGE_PREFIX)) rdn[key] = localStorage.getItem(key);
     }
   } catch (error) { /* abaikan */ }
-  return { v: 1, fields, stockPrices, settlementRates, lastEtfUnit, rdn, journal: extras.get() };
+  return { v: 1, fields, stockPrices, settlementRates, lastEtfUnit, rdn };
 }
 
 function rkSetState(state) {
@@ -1388,7 +1279,6 @@ function rkSetState(state) {
       if (key.startsWith(RDN_STORAGE_PREFIX)) localStorage.setItem(key, String(value));
     });
   } catch (error) { /* abaikan */ }
-  extras.set(state.journal);
   syncEtfUnitLabels();
   updatePeriodCopy();
   render();

@@ -89,7 +89,6 @@ table input[type=number]{width:116px;padding:6px 8px;font-size:14px}td.best{font
 </section>
 <section aria-live="polite">
 <div id="results"></div>
-<div id="routeBox" class="note" hidden><button type="button" id="routeBtn">Pakai rute termurah di Rebalance</button> <span id="routeMsg"></span></div>
 <p class="note" id="breakeven"></p>
 <div class="panel">
 <h2>Total fee (% dari uang yang dikeluarkan) di berbagai nominal</h2>
@@ -191,7 +190,6 @@ function render(){
  else{
   const okRows=rows.filter(r=>r.ok),best=okRows.length?okRows.reduce((a,b)=>a.net>b.net?a:b):null;
   const maxLoss=Math.max(...rows.filter(r=>!r.nofee).map(r=>r.loss),1);
-  window.__best=best&&best.net>0?{name:best.name,X,net:best.net}:null;
   rows.sort((a,b)=>b.net-a.net);
   $("results").innerHTML=rows.map(r=>{
    const win=r===best;
@@ -204,12 +202,10 @@ function render(){
   }).join("");
  }
  const th=v("minOn")||$("minOn").checked?1/.0035*rate:0;
- $("routeBox").hidden=!window.__best;
  $("breakeven").textContent=$("minOn").checked?"Fee minimum $1 baru tidak terasa kalau deposit di atas sekitar "+idr(th)+" (0,35% dari jumlah itu = $1).":"Fee minimum $1 dimatikan, jadi biaya Zerohash murni persentase.";
  updTbl();
  if(window.rkChanged)window.rkChanged();
 }
-$("routeBtn").onclick=()=>{const b=window.__best;if(!b)return;try{localStorage.setItem("rk-xroute",JSON.stringify({name:b.name,X:Math.round(b.X),net:b.net,rate:b.X/b.net,t:Date.now()}));$("routeMsg").textContent="Terkirim: kurs efektif Rp"+(b.X/b.net).toLocaleString("id-ID",{maximumFractionDigits:2})+" per USD. Buka tab Rebalance porto lalu klik Terapkan."}catch(e){$("routeMsg").textContent="Penyimpanan peramban diblokir."}};
 document.querySelectorAll("input.fmt").forEach(i=>i.addEventListener("input",fmtIn));
 document.querySelectorAll("input").forEach(i=>i.addEventListener("input",render));
 render();
