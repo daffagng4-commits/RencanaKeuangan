@@ -4,6 +4,8 @@ const fs = require("fs");
 const { JSDOM } = require("jsdom");
 const { load } = require("./harness.js");
 const ORIG = path.join(__dirname, "app.baseline.js");
+const ORIG5 = path.join(require("os").tmpdir(), "app.baseline5.js");
+fs.writeFileSync(ORIG5, fs.readFileSync(ORIG, "utf8").replace("etfBand: 0.03", "etfBand: 0.05"));
 let pass = 0;
 const ok = (c, m) => { assert(c, m); pass++; console.log("ok -", m); };
 const num = (t) => Number(String(t).replace(/\./g, ""));
@@ -15,8 +17,8 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
 (async () => {
   // ---- 0. Regresi: tanpa override & tanpa fee, hasil sama dengan r18
   {
-    const a = load(), b = load({ appFile: ORIG });
-    a.set("tolerance", "0");
+    const a = load(), b = load({ appFile: ORIG5 });
+    a.ev("recoveryTolerance = 0");
     const mk = (m) => Object.fromEntries(Object.entries({ bmri: 1, bbri: 1, etf1: 1, etf2: 1, etf3: 1, etf4: 1 }).map(([k]) => [`${k}-value`, m[k] ?? null]).filter(([, v]) => v !== null));
     const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     const scenarios = [
@@ -153,7 +155,7 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
   {
     const t = load();
     const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    t.set("tolerance", "0");
+    t.ev("recoveryTolerance = 0");
     t.set("bmri-value", "6.000.000"); t.set("bbri-value", "2.000.000");
     [["etf1", .5], ["etf2", .25], ["etf3", .2], ["etf4", .05]].forEach(([k, f]) => t.set(`${k}-value`, fmt(Math.round(3035000 * f))));
     await t.flush();
@@ -195,7 +197,7 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
   {
     const t = load();
     const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    t.set("tolerance", "0");
+    t.ev("recoveryTolerance = 0");
     t.set("monthly-fund", "2.750.000"); t.set("stock-fee", "0,15");
     t.set("bmri-value", "4.834.800"); t.set("bbri-value", "2.815.200");
     [["etf1", .5], ["etf2", .25], ["etf3", .2], ["etf4", .05]].forEach(([k, f]) => t.set(`${k}-value`, fmt(Math.round(6152115 * f))));
@@ -222,21 +224,38 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
     t.set("bmri-value", "4.834.800"); t.set("bbri-value", "2.815.200");
     [["etf1", .5], ["etf2", .25], ["etf3", .2], ["etf4", .05]].forEach(([k, f]) => t.set(`${k}-value`, fmt(Math.round(6152115 * f))));
     await t.flush();
-    ok(t.$("tolerance").value === "1", "toleransi bawaan 1 poin");
+    ok(t.$("tolerance") === null && t.ev("recoveryTolerance") === 0.01, "toleransi 1 poin tersimpan di backend, tidak ada isian di layar");
     const r = calc(t);
     ok(r.sched[0][3] === "full" && r.sched[1][3] === "full" && r.sched[1][1] === 0 && r.sched[1][2] === 2750000, "kasus pengguna: bulan 2 seluruhnya ke ETF (tanpa jatah saham Rp70.846)");
     ok(!r.sched.some((e) => e[3] === "closing"), "tidak ada bulan penutup kecil");
     const etfAfter = r.sched.slice(0, 2).reduce((a, e) => a + e[2], 0) + 6152115;
     const share = etfAfter / (etfAfter + 7650000);
     ok(share > 0.60 && share < 0.61, `porsi ETF setelah pemulihan ${(share * 100).toFixed(2)}%: lewat 60% sedikit, jauh di dalam band`);
-    t.set("tolerance", "0"); await t.flush();
+    t.ev("recoveryTolerance = 0"); t.set("monthly-fund", "2.750.000"); await t.flush();
     ok(calc(t).sched[1][3] === "closing", "toleransi 0: bulan penutup tepat sasaran seperti semula");
-    t.set("tolerance", "5"); await t.flush();
+    t.ev("recoveryTolerance = 0.05"); t.set("monthly-fund", "2.750.000"); await t.flush();
     const wide = calc(t);
     ok(wide.sched.filter((e) => e[3] === "full").length <= r.sched.filter((e) => e[3] === "full").length, "toleransi 5 poin: pemulihan tidak lebih panjang dari toleransi 1 poin");
-    const txt = (() => { t.set("tolerance", "1"); return null; })();
+    t.ev("recoveryTolerance = 0.01"); t.set("monthly-fund", "2.750.000");
     await t.flush();
     ok(/aman · selisih/.test(t.$("shortfall-etf").textContent) || /aman · selisih/.test(t.$("shortfall-stock").textContent), "panel menandai 'aman' dengan selisih poin");
+  }
+
+  // ---- 11. Band ETF 5 poin (sama seperti saham)
+  {
+    const t = load();
+    ok(t.ev("CONFIG.etfBand") === 0.05 && t.ev("CONFIG.stockBand") === 0.05 && t.ev("CONFIG.parentBand") === 0.05, "semua band 5 poin: parent, saham, dan antar-ETF");
+    const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    // VOO 54% (target 50%): selisih 4 poin -> dulu 'di luar band' (batas 3), sekarang aman
+    [["etf1", .54], ["etf2", .22], ["etf3", .19], ["etf4", .05]].forEach(([k, f]) => t.set(`${k}-value`, fmt(Math.round(9000000 * f))));
+    t.set("bmri-value", "3.600.000"); t.set("bbri-value", "2.400.000");
+    await t.flush();
+    const st = JSON.parse(t.ev(`JSON.stringify((()=>{const t=getTechnicalSettings();const s=getState(getRawValues(t),getSettings(),t);return {mode:s.mode,etfFix:s.etfShortfallAware}})())`));
+    ok(st.mode === "safe" && st.etfFix === false, "VOO 4 poin dari target: dianggap aman, tidak ada koreksi antar-ETF");
+    t.set("etf1-value", fmt(Math.round(9000000 * .58))); t.set("etf2-value", fmt(Math.round(9000000 * .18))); t.set("etf3-value", fmt(Math.round(9000000 * .19))); t.set("etf4-value", fmt(Math.round(9000000 * .05)));
+    await t.flush();
+    const st2 = JSON.parse(t.ev(`JSON.stringify((()=>{const t=getTechnicalSettings();const s=getState(getRawValues(t),getSettings(),t);return {etfFix:s.etfShortfallAware}})())`));
+    ok(st2.etfFix === true, "VOO 8 poin dari target: di luar band, koreksi antar-ETF aktif");
   }
   console.log(`\n${pass} pengecekan lulus`);
 })().catch((e) => { console.error(e); process.exit(1); });
