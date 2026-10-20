@@ -16,6 +16,7 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
   // ---- 0. Regresi: tanpa override & tanpa fee, hasil sama dengan r18
   {
     const a = load(), b = load({ appFile: ORIG });
+    a.set("tolerance", "0");
     const mk = (m) => Object.fromEntries(Object.entries({ bmri: 1, bbri: 1, etf1: 1, etf2: 1, etf3: 1, etf4: 1 }).map(([k]) => [`${k}-value`, m[k] ?? null]).filter(([, v]) => v !== null));
     const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     const scenarios = [
@@ -152,6 +153,7 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
   {
     const t = load();
     const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    t.set("tolerance", "0");
     t.set("bmri-value", "6.000.000"); t.set("bbri-value", "2.000.000");
     [["etf1", .5], ["etf2", .25], ["etf3", .2], ["etf4", .05]].forEach(([k, f]) => t.set(`${k}-value`, fmt(Math.round(3035000 * f))));
     await t.flush();
@@ -187,6 +189,54 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
     ok(/BMRI · porsi sekarang 63,2% \(target 60,0%, lebih 3,2 poin\)/.test(flat) && /BMRI[^→]*tambah Rp [\d.]+ → 60,0%/.test(flat), "panel: BMRI porsi 63,2% (lebih 3,2 poin) tetap mendapat 'tambah Rp ...'");
     ok(/BBRI · porsi sekarang 36,8% \(target 40,0%, kurang 3,2 poin\)/.test(flat), "panel: BBRI 'kurang 3,2 poin' (tanpa tanda ganda)");
     ok(/tidak ada yang dijual/.test(t.w.document.body.textContent), "catatan menjelaskan aset di atas target tetap dapat dana");
+  }
+
+  // ---- 9. Kasus pengguna: panel memakai hasil per lot (bukan nominal ideal)
+  {
+    const t = load();
+    const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    t.set("tolerance", "0");
+    t.set("monthly-fund", "2.750.000"); t.set("stock-fee", "0,15");
+    t.set("bmri-value", "4.834.800"); t.set("bbri-value", "2.815.200");
+    [["etf1", .5], ["etf2", .25], ["etf3", .2], ["etf4", .05]].forEach(([k, f]) => t.set(`${k}-value`, fmt(Math.round(6152115 * f))));
+    await t.flush();
+    const sched = calc(t).sched;
+    ok(sched[1][1] === 70846 && sched[1][3] === "closing", "kasus pengguna: bulan 2 penutup, saham Rp70.846");
+    const stockShort = () => t.$("shortfall-stock").textContent.replace(/\s+/g, " ");
+    ok(/tambah Rp 457\.708/.test(stockShort()) && /tambah Rp 713\.138/.test(stockShort()), "tanpa harga: panel menampilkan angka ideal (457.708 / 713.138)");
+    const setP = (m, tk, v) => { const i = t.w.document.querySelector(`.stock-price-input[data-ticker="${tk}"][data-month="${m}"]`); i.value = v; i.dispatchEvent(new t.w.Event("change", { bubbles: true })); };
+    setP(2, "bbri", "2.720"); await t.flush(); setP(3, "bmri", "3.690"); await t.flush();
+    const flat = stockShort();
+    ok(/BMRI[^→]*beli Rp 369\.000 \(ideal Rp 457\.708\) → 60,8%/.test(flat), "dengan harga: BMRI beli Rp369.000 (1 lot) -> porsi akhir 60,8%, bukan 60,0%");
+    ok(/BBRI[^→]*beli Rp 544\.000 \(ideal Rp 713\.138\) → 39,2%/.test(flat), "dengan harga: BBRI beli Rp544.000 (2 lot) -> porsi akhir 39,2%");
+    ok(/sisa Rp 256\.476 tetap di RDN/.test(t.$("shortfall-note").textContent), "catatan menyebut sisa RDN Rp256.476");
+    const card3 = t.w.document.querySelectorAll("#action-timeline .timeline-card")[2].textContent.replace(/\s+/g, " ");
+    ok(/BMRI Rp 457\.708 → 1 lot/.test(card3) && /BBRI Rp 713\.138 → 2 lot/.test(card3), "kartu bulan 3 sama dengan panel: 457.708 -> 1 lot, 713.138 -> 2 lot");
+  }
+
+  // ---- 10. Toleransi: tidak ada bulan penutup kecil; porsi akhir tetap dalam band
+  {
+    const t = load();
+    const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    t.set("monthly-fund", "2.750.000");
+    t.set("bmri-value", "4.834.800"); t.set("bbri-value", "2.815.200");
+    [["etf1", .5], ["etf2", .25], ["etf3", .2], ["etf4", .05]].forEach(([k, f]) => t.set(`${k}-value`, fmt(Math.round(6152115 * f))));
+    await t.flush();
+    ok(t.$("tolerance").value === "1", "toleransi bawaan 1 poin");
+    const r = calc(t);
+    ok(r.sched[0][3] === "full" && r.sched[1][3] === "full" && r.sched[1][1] === 0 && r.sched[1][2] === 2750000, "kasus pengguna: bulan 2 seluruhnya ke ETF (tanpa jatah saham Rp70.846)");
+    ok(!r.sched.some((e) => e[3] === "closing"), "tidak ada bulan penutup kecil");
+    const etfAfter = r.sched.slice(0, 2).reduce((a, e) => a + e[2], 0) + 6152115;
+    const share = etfAfter / (etfAfter + 7650000);
+    ok(share > 0.60 && share < 0.61, `porsi ETF setelah pemulihan ${(share * 100).toFixed(2)}%: lewat 60% sedikit, jauh di dalam band`);
+    t.set("tolerance", "0"); await t.flush();
+    ok(calc(t).sched[1][3] === "closing", "toleransi 0: bulan penutup tepat sasaran seperti semula");
+    t.set("tolerance", "5"); await t.flush();
+    const wide = calc(t);
+    ok(wide.sched.filter((e) => e[3] === "full").length <= r.sched.filter((e) => e[3] === "full").length, "toleransi 5 poin: pemulihan tidak lebih panjang dari toleransi 1 poin");
+    const txt = (() => { t.set("tolerance", "1"); return null; })();
+    await t.flush();
+    ok(/aman · selisih/.test(t.$("shortfall-etf").textContent) || /aman · selisih/.test(t.$("shortfall-stock").textContent), "panel menandai 'aman' dengan selisih poin");
   }
   console.log(`\n${pass} pengecekan lulus`);
 })().catch((e) => { console.error(e); process.exit(1); });
