@@ -30,6 +30,8 @@ const DEFAULT_TECHNICAL = Object.freeze({
   rdnCarry: 0,
   wireFee: 250_000,
   usdRate: 0,
+  stockFee: 0,
+  ibkrFee: 0,
 });
 
 const INITIAL_VALUES = Object.freeze({
@@ -76,6 +78,9 @@ const elements = {
   rdnCarry: document.querySelector("#rdn-carry"),
   wireFee: document.querySelector("#wire-fee"),
   usdRate: document.querySelector("#usd-rate"),
+  stockFee: document.querySelector("#stock-fee"),
+  ibkrFee: document.querySelector("#ibkr-fee"),
+  routeLink: document.querySelector("#route-link"),
   etfCurrency: document.querySelector("#etf-currency"),
   rdnAutoCopy: document.querySelector("#rdn-auto-copy"),
   technicalValidation: document.querySelector("#technical-validation"),
@@ -164,6 +169,11 @@ const elements = {
   shortfallNote: document.querySelector("#shortfall-note"),
 };
 
+// Tautan ke tab IBKR vs Flip: tab itu menulis rute termurah ke localStorage (kunci rk-xroute) bila dicentang.
+const ROUTE_KEY = "rk-xroute";
+let routeLinked = false;
+let currentRoute = null;
+let routeBackup = null;
 const charts = {};
 let lastValidSettings = { ...DEFAULT_SETTINGS };
 let lastValidTechnical = { ...DEFAULT_TECHNICAL };
@@ -218,11 +228,13 @@ function formatUsd(value) {
   return usdFormatter.format(value).replace(/\u00a0/g, " ");
 }
 
-function usdSplit(settlement, usdRate) {
-  const totalCents = Math.round((settlement.amount / usdRate) * 100);
+// Fee broker IBKR (% dari nilai beli) diambil dari dana yang masuk: yang dibelikan = USD masuk / (1 + fee).
+function usdSplit(settlement, usdRate, fee = 0) {
+  const grossCents = Math.round((settlement.amount / usdRate) * 100);
+  const investCents = fee > 0 ? Math.round(grossCents / (1 + fee)) : grossCents;
   const weights = settlement.allocation.map((item) => ({ ...item, weight: settlement.amount > 0 ? item.amount / settlement.amount : 0 }));
-  const cents = allocateByWeights(totalCents, weights);
-  return { total: totalCents / 100, rows: cents.map((item) => ({ name: item.name, usd: item.amount / 100 })) };
+  const cents = allocateByWeights(investCents, weights);
+  return { total: grossCents / 100, invest: investCents / 100, fee: (grossCents - investCents) / 100, rows: cents.map((item) => ({ name: item.name, usd: item.amount / 100 })) };
 }
 
 function formatCompactCurrency(value) {
@@ -335,6 +347,9 @@ function getTechnicalSettings() {
     rdnCarry: parseCurrency(elements.rdnCarry.value),
     wireFee: parseCurrency(elements.wireFee.value),
     usdRate: parseDecimal(elements.usdRate.value),
+    stockFee: Math.min(5, parseDecimal(elements.stockFee.value)) / 100,
+    ibkrFee: Math.min(5, parseDecimal(elements.ibkrFee.value)) / 100,
+    route: routeLinked ? currentRoute : null,
   };
   const valid = raw.rdnCarry >= 0 && raw.wireFee >= 0 && (raw.usdRate > 0 || elements.etfCurrency.value !== "usd");
   if (valid) lastValidTechnical = { ...raw };
@@ -400,7 +415,22 @@ function allocateRebalance(values, total, definitions) {
   return allocateByWeights(budget, weighted).map((row, i) => ({ ...definitions[i], amount: row.amount }));
 }
 
+// Biaya beli saham = harga x 100 x lot + fee broker Stockbit (dibulatkan per order).
+function buyCost(price, lots, fee) {
+  const gross = price * 100 * lots;
+  return gross + Math.round(gross * fee);
+}
+
+function maxLots(price, money, fee) {
+  if (!(price > 0) || money <= 0) return 0;
+  let n = Math.max(0, Math.floor(money / (price * 100 * (1 + fee))));
+  while (n > 0 && buyCost(price, n, fee) > money) n -= 1;
+  while (buyCost(price, n + 1, fee) <= money) n += 1;
+  return n;
+}
+
 function calculateLotExecution(allocation, recommendedBudget, technical) {
+  const fee = technical.stockFee || 0;
   const totalCapital = recommendedBudget + technical.rdnCarry;
   const active = allocation.filter((item) => item.amount > 0);
   if (recommendedBudget <= 0 || active.length === 0) {
@@ -409,50 +439,41 @@ function calculateLotExecution(allocation, recommendedBudget, technical) {
       openingCarry: technical.rdnCarry,
       totalCapital,
       totalSpent: 0,
+      totalFee: 0,
       remainder: totalCapital,
-      trades: allocation.map((item) => ({ ...item, budget: 0, price: technical[`${item.key}Price`], lotCost: technical[`${item.key}Price`] * 100, lots: 0, shares: 0, spent: 0 })),
+      trades: allocation.map((item) => ({ ...item, budget: 0, price: technical[`${item.key}Price`], lotCost: technical[`${item.key}Price`] * 100, lots: 0, shares: 0, spent: 0, fee: 0 })),
     };
   }
-
   const weights = allocation.map((item) => ({ ...item, weight: item.amount / recommendedBudget }));
   const budgets = allocateByWeights(totalCapital, weights);
   const trades = budgets.map((item) => {
     const price = technical[`${item.key}Price`];
     const lotCost = price * 100;
-    const lots = lotCost > 0 ? Math.floor(item.amount / lotCost) : 0;
-    const shares = lots * 100;
-    const spent = lots * lotCost;
-    return { ...item, budget: item.amount, price, lotCost, lots, shares, spent };
+    const lots = maxLots(price, item.amount, fee);
+    const spent = buyCost(price, lots, fee);
+    return { ...item, budget: item.amount, price, lotCost, lots, shares: lots * 100, spent, fee: spent - lots * lotCost };
   });
   let totalSpent = sum(trades.map((item) => item.spent));
   let remainder = totalCapital - totalSpent;
   const activeTrades = trades.filter((item) => item.weight > 0);
+  const room = (trade) => maxLots(trade.price, trade.spent + remainder, fee) - trade.lots;
   let safety = 0;
-  while (activeTrades.some((item) => item.lotCost <= remainder) && safety < activeTrades.length * 2) {
-    const affordable = activeTrades.filter((item) => item.lotCost <= remainder);
-    affordable.sort((a, b) => {
-      const aGap = (a.budget - a.spent) / Math.max(a.budget, 1);
-      const bGap = (b.budget - b.spent) / Math.max(b.budget, 1);
-      return bGap - aGap;
-    });
+  while (activeTrades.some((item) => room(item) > 0) && safety < activeTrades.length * 2) {
+    const affordable = activeTrades.filter((item) => room(item) > 0);
+    affordable.sort((a, b) => ((b.budget - b.spent) / Math.max(b.budget, 1)) - ((a.budget - a.spent) / Math.max(a.budget, 1)));
     const selected = affordable[0];
-    const extraLots = Math.max(1, Math.floor(remainder / selected.lotCost));
-    const extraSpent = extraLots * selected.lotCost;
-    selected.lots += extraLots;
-    selected.shares += extraLots * 100;
-    selected.spent += extraSpent;
-    totalSpent += extraSpent;
-    remainder -= extraSpent;
+    const newLots = selected.lots + room(selected);
+    const newSpent = buyCost(selected.price, newLots, fee);
+    const delta = newSpent - selected.spent;
+    selected.lots = newLots;
+    selected.shares = newLots * 100;
+    selected.spent = newSpent;
+    selected.fee = newSpent - newLots * selected.lotCost;
+    totalSpent += delta;
+    remainder -= delta;
     safety += 1;
   }
-  return {
-    recommendedBudget,
-    openingCarry: technical.rdnCarry,
-    totalCapital,
-    totalSpent,
-    remainder,
-    trades,
-  };
+  return { recommendedBudget, openingCarry: technical.rdnCarry, totalCapital, totalSpent, totalFee: sum(trades.map((item) => item.fee)), remainder, trades };
 }
 
 function settlementIndices(firstIndex, lastIndex) {
@@ -467,25 +488,20 @@ function settlementIndices(firstIndex, lastIndex) {
 
 const MAX_RECOVERY_MONTHS = 1200;
 
-function buildParentPlan(direction, fullMonths, remainder, settings, normalStock, normalEtf) {
-  const isStock = direction === "parent-stock";
-  const fund = settings.monthlyFund;
-  const schedule = [];
-  for (let month = 1; month <= fullMonths; month += 1) {
-    schedule.push({ month, stock: isStock ? fund : 0, etf: isStock ? 0 : fund, phase: "full" });
-  }
-  const closingAmount = Math.round(remainder);
-  let closing = null;
-  if (closingAmount > 0) {
-    const stock = isStock ? Math.min(fund, normalStock + closingAmount) : Math.max(0, normalStock - closingAmount);
-    closing = { month: fullMonths + 1, stock, etf: fund - stock, phase: "closing", gap: closingAmount };
-    schedule.push(closing);
-  }
-  const normalStart = schedule.length + 1;
-  const horizon = Math.max(3, Math.ceil(normalStart / 3) * 3);
-  for (let month = normalStart; month <= horizon; month += 1) {
-    schedule.push({ month, stock: normalStock, etf: normalEtf, phase: "normal" });
-  }
+// Setoran per bulan: bawaan = "Dana baru per bulan"; bulan yang dicentang memakai nominal manual.
+const fundOverrides = {};
+
+function fundForMonth(month, settings) {
+  const override = fundOverrides[month];
+  return override && override.amount > 0 ? override.amount : settings.monthlyFund;
+}
+
+function splitFund(fund, settings) {
+  const etf = Math.round(fund * settings.etfGlobalTarget);
+  return { etf, stock: fund - etf };
+}
+
+function buildSettlements(schedule, horizon) {
   const etfMonths = schedule.filter((entry) => entry.etf > 0);
   const lastIndex = Math.ceil(horizon / 3);
   const firstIndex = etfMonths.length ? Math.ceil(etfMonths[0].month / 3) : lastIndex;
@@ -497,10 +513,48 @@ function buildParentPlan(direction, fullMonths, remainder, settings, normalStock
       .map((entry) => ({ month: entry.month, amount: entry.etf }));
     return { sequence: quarterIndex - firstIndex + 1, month: endMonth, amount: sum(components.map((item) => item.amount)), components };
   });
+  return { settlements, allCount };
+}
+
+// Pemulihan parent disimulasikan bulan demi bulan karena dana tiap bulan bisa berbeda.
+// Dengan dana sama tiap bulan hasilnya identik dengan rumus lama: floor(defisit / kenaikan) bulan penuh + 1 bulan penutup.
+function buildParentPlan(direction, deficit, settings) {
+  const isStock = direction === "parent-stock";
+  const schedule = [];
+  let remaining = deficit;
+  let month = 0;
+  let fullMonths = 0;
+  let closing = null;
+  while (remaining >= 0.5 && month < MAX_RECOVERY_MONTHS) {
+    month += 1;
+    const fund = fundForMonth(month, settings);
+    const normal = splitFund(fund, settings);
+    const increment = isStock ? fund - normal.stock : fund - normal.etf;
+    if (increment > 0 && remaining >= increment - 0.5) {
+      schedule.push({ month, stock: isStock ? fund : 0, etf: isStock ? 0 : fund, phase: "full", fund });
+      remaining -= increment;
+      fullMonths += 1;
+    } else {
+      const gap = Math.round(remaining);
+      const stock = isStock ? Math.min(fund, normal.stock + gap) : Math.max(0, normal.stock - gap);
+      closing = { month, stock, etf: fund - stock, phase: "closing", gap, fund };
+      schedule.push(closing);
+      remaining = 0;
+    }
+  }
+  const normalStart = schedule.length + 1;
+  const horizon = Math.max(3, Math.ceil(normalStart / 3) * 3);
+  for (let m = normalStart; m <= horizon; m += 1) {
+    const fund = fundForMonth(m, settings);
+    const normal = splitFund(fund, settings);
+    schedule.push({ month: m, stock: normal.stock, etf: normal.etf, phase: "normal", fund });
+  }
+  const { settlements, allCount } = buildSettlements(schedule, horizon);
   return {
     firstMonth: schedule[0],
     schedule,
     closing,
+    fullMonths,
     settlements,
     settlementCount: allCount,
     settlementsOmitted: Math.max(0, allCount - settlements.length),
@@ -511,23 +565,25 @@ function buildParentPlan(direction, fullMonths, remainder, settings, normalStock
   };
 }
 
-function buildChildrenPlan(settings, normalStock, normalEtf) {
-  const schedule = [1, 2, 3].map((month) => ({ month, stock: normalStock, etf: normalEtf, phase: "children" }));
+function buildChildrenPlan(settings) {
+  const schedule = [1, 2, 3].map((month) => {
+    const fund = fundForMonth(month, settings);
+    const normal = splitFund(fund, settings);
+    return { month, stock: normal.stock, etf: normal.etf, phase: "children", fund };
+  });
+  const { settlements } = buildSettlements(schedule, 3);
   return {
     firstMonth: schedule[0],
     schedule,
-    settlements: [{
-      month: 3,
-      sequence: 1,
-      amount: normalEtf * 3,
-      components: schedule.map((entry) => ({ month: entry.month, amount: entry.etf })),
-    }],
+    closing: null,
+    fullMonths: 0,
+    settlements,
     settlementCount: 1,
     settlementsOmitted: 0,
     normalStartMonth: 1,
     settlementHorizon: 3,
-    cycleStock: normalStock * 3,
-    cycleEtf: normalEtf * 3,
+    cycleStock: sum(schedule.map((entry) => entry.stock)),
+    cycleEtf: sum(schedule.map((entry) => entry.etf)),
   };
 }
 
@@ -575,14 +631,11 @@ function getState(values, settings, technical) {
   let fullMonths = 0;
   if (mode === "parent-etf" || mode === "parent-stock") {
     const deficit = mode === "parent-etf" ? etfDeficit : stockDeficit;
-    const increment = mode === "parent-etf" ? settings.monthlyFund - normalEtf : settings.monthlyFund - normalStock;
-    const rawMonths = increment > 0 ? deficit / increment : 0;
-    calculatedFullMonths = Math.min(MAX_RECOVERY_MONTHS, Math.floor(rawMonths));
-    fullMonths = calculatedFullMonths;
-    const closingGap = rawMonths >= MAX_RECOVERY_MONTHS ? 0 : deficit - calculatedFullMonths * increment;
-    plan = buildParentPlan(mode, fullMonths, closingGap, settings, normalStock, normalEtf);
+    plan = buildParentPlan(mode, deficit, settings);
+    calculatedFullMonths = plan.fullMonths;
+    fullMonths = plan.fullMonths;
   } else {
-    plan = buildChildrenPlan(settings, normalStock, normalEtf);
+    plan = buildChildrenPlan(settings);
   }
 
   const cycleStock = plan.cycleStock;
@@ -856,9 +909,9 @@ function renderCharts(state) {
 
 function renderRoutes(state) {
   elements.routingTitle.textContent = state.parentStatus === "safe" ? "Jatah Parent Tetap" : "Prioritas Parent";
-  elements.stockRoutePercent.textContent = formatPercent(state.firstMonth.stock / state.settings.monthlyFund, 1);
+  elements.stockRoutePercent.textContent = formatPercent(state.firstMonth.stock / Math.max(1, state.firstMonth.stock + state.firstMonth.etf), 1);
   elements.stockRouteValue.textContent = formatCurrency(state.firstMonth.stock);
-  elements.etfRoutePercent.textContent = formatPercent(state.firstMonth.etf / state.settings.monthlyFund, 1);
+  elements.etfRoutePercent.textContent = formatPercent(state.firstMonth.etf / Math.max(1, state.firstMonth.stock + state.firstMonth.etf), 1);
   elements.etfRouteValue.textContent = formatCurrency(state.firstMonth.etf);
   elements.stockRouteNote.textContent = state.parentStatus === "safe" && state.stockBroken ? `Targeted Vacuum → ${state.stockDeepest.name}` : "Jatah parent sesuai target";
   elements.etfRouteNote.textContent = state.inverseActive ? "Ditampung untuk Inverse Allocation" : "Ditampung sesuai target";
@@ -905,6 +958,7 @@ function resolveStockPrice(key, month) {
 }
 
 function clearMonthlyInputs() {
+  Object.keys(fundOverrides).forEach((key) => delete fundOverrides[key]);
   Object.keys(settlementRates).forEach((key) => delete settlementRates[key]);
   Object.values(stockPrices).forEach((prices) => Object.keys(prices).forEach((month) => delete prices[month]));
 }
@@ -951,6 +1005,15 @@ function priceBoxes(keys, month) {
 // Kurs hari kirim per setoran IBKR (manual). Kosong = pakai kurs saat ini (estimasi).
 const settlementRates = {};
 
+function fundControl(state, entry) {
+  const override = fundOverrides[entry.month];
+  const on = !!override;
+  const toggle = `<label class="fund-toggle"><input type="checkbox" class="fund-check" data-month="${entry.month}"${on ? " checked" : ""}> Setoran bulan ini berbeda dari dana baru per bulan</label>`;
+  if (!on) return `<div class="fund-row">${toggle}<span class="fund-note">Setoran ${formatCurrency(state.settings.monthlyFund)} (sama dengan Dana baru per bulan)</span></div>`;
+  const value = override.amount > 0 ? formatInputCurrency(override.amount) : "";
+  return `<div class="fund-row">${toggle}<span class="wire-rate"><label>Nominal disetor <input class="fund-input" data-month="${entry.month}" type="text" inputmode="numeric" autocomplete="off" placeholder="${formatInputCurrency(state.settings.monthlyFund)}" value="${value}"></label></span>${override.amount > 0 ? "" : '<span class="fund-note">Belum diisi: sementara memakai Dana baru per bulan.</span>'}</div>`;
+}
+
 function actionCard(state, entry, execution) {
   const fee = state.technical.wireFee;
   const now = entry.month === state.firstMonth.month;
@@ -964,7 +1027,8 @@ function actionCard(state, entry, execution) {
       items.push(`<li><b>Saham</b>Transfer ${formatCurrency(entry.stock)}${carry} ke RDN. Alokasi: ${alloc}. <em>Isi harga saham di bawah untuk menghitung jumlah lot.</em>${boxes}</li>`);
     } else if (now) {
       const buys = execution.trades.filter((trade) => trade.lots > 0).map((trade) => `${trade.name} ${trade.lots} lot (${formatCurrency(trade.spent)})`).join(" · ") || "belum cukup untuk 1 lot";
-      items.push(`<li><b>Saham</b>Transfer ${formatCurrency(entry.stock)}${carry} ke RDN. Beli ${buys}. Sisa ${formatCurrency(execution.remainder)} mengendap di RDN.${boxes}</li>`);
+      const feeText = execution.totalFee > 0 ? ` Sudah termasuk fee broker Stockbit ${formatCurrency(execution.totalFee)}.` : "";
+      items.push(`<li><b>Saham</b>Transfer ${formatCurrency(entry.stock)}${carry} ke RDN. Beli ${buys}.${feeText} Sisa ${formatCurrency(execution.remainder)} mengendap di RDN.${boxes}</li>`);
     } else {
       const approx = active.map((trade) => `${trade.name} ${trade.lots} lot`).join(", ");
       items.push(`<li><b>Saham</b>Transfer ${formatCurrency(entry.stock)}${carry} ke RDN. Alokasi: ${alloc} (perkiraan ${approx}). Jumlah lot dihitung ulang dengan harga hari itu; sisa mengendap di RDN.${boxes}</li>`);
@@ -980,23 +1044,28 @@ function actionCard(state, entry, execution) {
     const manual = settlementRates[settlement.month] > 0;
     const rate = manual ? settlementRates[settlement.month] : state.technical.usdRate;
     const sources = settlement.components.map((item) => `bulan ${item.month} ${formatCurrency(item.amount)}`).join(", ");
-    const reserve = `Siapkan ${formatCurrency(settlement.amount + fee)} termasuk biaya ${formatCurrency(fee)}.`;
+    const routeNote = state.technical.route;
+    const routeFee = routeNote ? ` Biaya rute ${routeNote.name} ≈ ${formatCurrency(Math.round(settlement.amount * routeNote.pct))} (${formatPercent(routeNote.pct, 2)}), sudah termasuk di kurs efektif.` : "";
+    const reserve = routeNote ? `Siapkan ${formatCurrency(settlement.amount)} (biaya setor sudah termasuk di kurs).` : `Siapkan ${formatCurrency(settlement.amount + fee)} termasuk biaya wire ${formatCurrency(fee)}.`;
     const placeholder = state.technical.usdRate > 0 ? decimalInputFormatter.format(state.technical.usdRate) : "isi manual";
     const rateInput = `<span class="wire-rate"><label>Kurs hari kirim <input class="wire-rate-input" data-month="${settlement.month}" type="text" inputmode="decimal" autocomplete="off" placeholder="${placeholder}" value="${manual ? decimalInputFormatter.format(rate) : ""}"></label></span>`;
     const recheck = "<em>Estimasi: hitung ulang di hari kirim dengan kurs dan harga ETF terbaru.</em>";
     if (rate > 0) {
-      const usd = usdSplit(settlement, rate);
+      const usd = usdSplit(settlement, rate, state.technical.ibkrFee);
       const buys = usd.rows.filter((item) => item.usd > 0).map((item) => `${item.name} ${formatUsd(item.usd)}`).join(" · ");
-      const rateNote = manual ? "kurs hari kirim" : "kurs saat ini";
-      items.push(`<li class="wire"><b>Setor IBKR</b>Kirim ${formatCurrency(settlement.amount)} (${sources}) ≈ <strong>${formatUsd(usd.total)}</strong> pada ${rateNote} ${formatCurrency(rate)}. ${reserve} Beli di IBKR (USD): ${buys}. ${recheck}${rateInput}</li>`);
+      const rateNote = manual ? "kurs hari kirim" : routeNote ? "kurs efektif rute termurah" : "kurs saat ini";
+      const ibkrFeeText = state.technical.ibkrFee > 0 ? ` Fee broker IBKR ≈ ${formatUsd(usd.fee)} (${formatPercent(state.technical.ibkrFee, 2)}) sudah dikurangkan dari dana ini.` : "";
+      items.push(`<li class="wire"><b>Setor IBKR</b>Kirim ${formatCurrency(settlement.amount)} (${sources}) ≈ <strong>${formatUsd(usd.total)}</strong> pada ${rateNote} ${formatCurrency(rate)}.${routeFee} ${reserve}${ibkrFeeText} Beli di IBKR (USD): ${buys}. ${recheck}${rateInput}</li>`);
     } else {
-      const buys = settlement.allocation.filter((item) => item.amount > 0).map((item) => `${item.name} ${formatCurrency(item.amount)}`).join(" · ");
-      items.push(`<li class="wire"><b>Setor IBKR</b>Kirim ${formatCurrency(settlement.amount)} (${sources}). ${reserve} Pembagian beli (Rp): ${buys}. ${recheck} Isi kurs untuk melihat nominal USD.${rateInput}</li>`);
+      const scale = 1 + (state.technical.ibkrFee || 0);
+      const buys = settlement.allocation.filter((item) => item.amount > 0).map((item) => `${item.name} ${formatCurrency(Math.round(item.amount / scale))}`).join(" · ");
+      const ibkrFeeText = state.technical.ibkrFee > 0 ? ` Sudah dikurangi fee broker IBKR ${formatPercent(state.technical.ibkrFee, 2)}.` : "";
+      items.push(`<li class="wire"><b>Setor IBKR</b>Kirim ${formatCurrency(settlement.amount)} (${sources}). ${reserve}${ibkrFeeText} Pembagian beli (Rp): ${buys}. ${recheck} Isi kurs untuk melihat nominal USD.${rateInput}</li>`);
     }
   }
   const estimate = now ? "" : '<span class="timeline-badge soft">Estimasi</span>';
   const note = now ? "" : `<p class="timeline-note">Dihitung dengan harga hari ini. Hitung ulang di awal bulan ${entry.month} dengan harga terbaru.</p>`;
-  return `<li class="timeline-card${now ? " is-now" : ""}"><div class="timeline-head"><strong>Bulan ${entry.month}${now ? " · sekarang" : ""}</strong><span class="timeline-badges">${estimate}<span class="timeline-badge">${phaseBadge(state, entry)}</span></span></div>${note}<ul>${items.join("")}</ul></li>`;
+  return `<li class="timeline-card${now ? " is-now" : ""}"><div class="timeline-head"><strong>Bulan ${entry.month}${now ? " · sekarang" : ""}</strong><span class="timeline-badges">${estimate}<span class="timeline-badge">${phaseBadge(state, entry)}</span></span></div>${fundControl(state, entry)}${note}<ul>${items.join("")}</ul></li>`;
 }
 
 function renderActionPlan(state) {
@@ -1133,9 +1202,47 @@ function resetSettings() {
   elements.rdnCarry.value = formatInputCurrency(DEFAULT_TECHNICAL.rdnCarry);
   elements.wireFee.value = formatInputCurrency(DEFAULT_TECHNICAL.wireFee);
   elements.usdRate.value = "";
+  elements.stockFee.value = "";
+  elements.ibkrFee.value = "";
   elements.etfCurrency.value = "idr";
   lastEtfUnit = "idr";
   syncEtfUnitLabels();
+}
+
+function readRoute() {
+  try {
+    const route = JSON.parse(localStorage.getItem(ROUTE_KEY) || "null");
+    return route && route.on && route.rate > 0 ? route : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function syncRouteLink() {
+  const route = readRoute();
+  const box = elements.routeLink;
+  if (route) {
+    if (!routeLinked) routeBackup = { usd: elements.usdRate.value, fee: elements.wireFee.value };
+    routeLinked = true;
+    currentRoute = { name: route.name, rate: route.rate, pct: route.pct || 0, X: route.X, t: route.t };
+    elements.usdRate.value = decimalInputFormatter.format(route.rate);
+    elements.wireFee.value = "0";
+    elements.usdRate.readOnly = true;
+    elements.wireFee.readOnly = true;
+    box.hidden = false;
+    box.textContent = `Terhubung ke IBKR vs Flip: rute termurah ${route.name}, kurs efektif ${formatCurrency(Math.round(route.rate))} per US$, biaya rute ≈ ${formatPercent(route.pct || 0, 2)} (dihitung pada nominal ${formatCurrency(route.X)}). Kurs dan biaya wire terkunci; buka tab IBKR vs Flip untuk memperbarui, atau matikan ceklist di sana untuk mengisi manual.`;
+  } else if (routeLinked) {
+    routeLinked = false;
+    currentRoute = null;
+    elements.usdRate.readOnly = false;
+    elements.wireFee.readOnly = false;
+    if (routeBackup) { elements.usdRate.value = routeBackup.usd; elements.wireFee.value = routeBackup.fee; }
+    routeBackup = null;
+    box.hidden = true;
+  } else {
+    box.hidden = true;
+  }
+  scheduleRender();
 }
 
 function loadRdnForPeriod() {
@@ -1166,6 +1273,22 @@ Object.entries(elements.inputs).forEach(([key, input]) => {
   input.addEventListener("blur", () => { input.value = formatAssetInput(key, parseAssetInput(key, input.value)); scheduleRender(); });
 });
 elements.actionTimeline.addEventListener("change", (event) => {
+  const fundCheck = event.target.closest(".fund-check");
+  if (fundCheck) {
+    const month = fundCheck.dataset.month;
+    if (fundCheck.checked) fundOverrides[month] = { amount: 0 };
+    else delete fundOverrides[month];
+    render();
+    const box = elements.actionTimeline.querySelector(`.fund-input[data-month="${month}"]`);
+    if (box) box.focus();
+    return;
+  }
+  const fundInput = event.target.closest(".fund-input");
+  if (fundInput) {
+    fundOverrides[fundInput.dataset.month] = { amount: parseCurrency(fundInput.value) };
+    render();
+    return;
+  }
   const priceInput = event.target.closest(".stock-price-input");
   if (priceInput) {
     const price = parseCurrency(priceInput.value);
@@ -1180,6 +1303,11 @@ elements.actionTimeline.addEventListener("change", (event) => {
   if (rate > 0) settlementRates[input.dataset.month] = rate;
   else delete settlementRates[input.dataset.month];
   render();
+});
+["stockFee", "ibkrFee"].forEach((name) => {
+  const input = elements[name];
+  input.addEventListener("input", scheduleRender);
+  input.addEventListener("blur", () => { const fee = parseDecimal(input.value); input.value = fee > 0 ? decimalInputFormatter.format(fee) : ""; scheduleRender(); });
 });
 elements.usdRate.addEventListener("input", scheduleRender);
 elements.usdRate.addEventListener("focus", () => { elements.usdRate.value = String(parseDecimal(elements.usdRate.value) || "").replace(".", ","); });
@@ -1251,7 +1379,7 @@ function rkGetState() {
       if (key && key.startsWith(RDN_STORAGE_PREFIX)) rdn[key] = localStorage.getItem(key);
     }
   } catch (error) { /* abaikan */ }
-  return { v: 1, fields, stockPrices, settlementRates, lastEtfUnit, rdn };
+  return { v: 1, fields, stockPrices, settlementRates, fundOverrides, lastEtfUnit, rdn };
 }
 
 function rkSetState(state) {
@@ -1274,6 +1402,8 @@ function rkSetState(state) {
   });
   Object.keys(settlementRates).forEach((key) => delete settlementRates[key]);
   Object.assign(settlementRates, state.settlementRates || {});
+  Object.keys(fundOverrides).forEach((key) => delete fundOverrides[key]);
+  Object.assign(fundOverrides, state.fundOverrides || {});
   try {
     Object.entries(state.rdn || {}).forEach(([key, value]) => {
       if (key.startsWith(RDN_STORAGE_PREFIX)) localStorage.setItem(key, String(value));

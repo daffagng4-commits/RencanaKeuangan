@@ -70,6 +70,8 @@ table input[type=number]{width:116px;padding:6px 8px;font-size:14px}td.best{font
 <p class="meta" id="mSum"></p>
 </div>
 <div class="chk"><input id="minOn" type="checkbox" checked><label for="minOn" style="margin:0;color:var(--ink)">Terapkan fee minimum $1 dari Zerohash (belum pasti masih berlaku)</label></div>
+<div class="chk"><input id="linkOn" type="checkbox"><label for="linkOn" style="margin:0;color:var(--ink)">Hubungkan rute termurah ke tab Rebalance porto</label></div>
+<p class="meta" id="linkMsg"></p>
 <details open><summary>Fee jaringan Tokocrypto (Rp)</summary>
 <label for="f0">Solana</label><input id="f0" class="fmt" type="text" inputmode="numeric" value="5.000">
 <label for="f1">Base</label><input id="f1" class="fmt" type="text" inputmode="numeric" value="3.589">
@@ -183,12 +185,14 @@ $("mAdd").onclick=()=>addM("","");
 $("mSep").addEventListener("change",render);
 $("mOn").addEventListener("change",()=>{const o=$("mOn").checked;$("mBox").hidden=!o;$("amt").disabled=o;$("rate").disabled=o;document.querySelectorAll('label[for="amt"],label[for="rate"]').forEach(l=>l.style.opacity=o?".4":"");render()});
 function render(){
+ let bestRow=null;
  const M=multi(),X=M?M.X:v("amt"),rows=M?calcMulti(M,flipTot()):calc(X,flipTot()),rate=M?M.rate:(v("rate")||1);
  syncFlip(X);
  $("mSum").textContent=M?("Total "+idr(M.X)+", kurs rata-rata "+M.rate.toLocaleString("id-ID",{maximumFractionDigits:2})+" per USDC, "+(M.sep?M.b.length+" kali kirim ke IBKR":"1 kali kirim ke IBKR")):($("mOn").checked?"Isi rupiah dan kurs untuk minimal satu pembelian.":"");
  if(!X){$("results").innerHTML='<div class="row">Isi nominal rupiah untuk mulai.</div>';}
  else{
   const okRows=rows.filter(r=>r.ok),best=okRows.length?okRows.reduce((a,b)=>a.net>b.net?a:b):null;
+  bestRow=best;
   const maxLoss=Math.max(...rows.filter(r=>!r.nofee).map(r=>r.loss),1);
   rows.sort((a,b)=>b.net-a.net);
   $("results").innerHTML=rows.map(r=>{
@@ -204,8 +208,23 @@ function render(){
  const th=v("minOn")||$("minOn").checked?1/.0035*rate:0;
  $("breakeven").textContent=$("minOn").checked?"Fee minimum $1 baru tidak terasa kalau deposit di atas sekitar "+idr(th)+" (0,35% dari jumlah itu = $1).":"Fee minimum $1 dimatikan, jadi biaya Zerohash murni persentase.";
  updTbl();
+ publishLink(bestRow,X);
  if(window.rkChanged)window.rkChanged();
 }
+function publishLink(best,X){
+ const on=$("linkOn").checked,msg=$("linkMsg");
+ try{
+  if(on&&best&&best.net>0&&X>0){
+   const rate=X/best.net;
+   localStorage.setItem("rk-xroute",JSON.stringify({on:true,name:best.name,X:Math.round(X),net:best.net,rate:rate,loss:best.loss,pct:best.loss/X,t:Date.now()}));
+   msg.textContent="Terhubung: "+best.name+" (termurah), kurs efektif Rp"+rate.toLocaleString("id-ID",{maximumFractionDigits:2})+" per USD, biaya "+(best.loss/X*100).toFixed(2)+"%. Dipakai otomatis di tab Rebalance porto.";
+  }else{
+   localStorage.removeItem("rk-xroute");
+   msg.textContent=on?"Belum ada rute valid (isi nominal dan fee Flip). Tab Rebalance memakai isian manual.":"Tidak terhubung. Tab Rebalance memakai kurs dan biaya wire isian manual.";
+  }
+ }catch(e){msg.textContent="Penyimpanan peramban diblokir, tautan tidak bisa dipakai."}
+}
+$("linkOn").addEventListener("change",render);
 document.querySelectorAll("input.fmt").forEach(i=>i.addEventListener("input",fmtIn));
 document.querySelectorAll("input").forEach(i=>i.addEventListener("input",render));
 render();
