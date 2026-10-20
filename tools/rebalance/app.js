@@ -1131,7 +1131,9 @@ function shortfallRows(rows, usdRate) {
   return rows.map((row) => {
     const gap = (row.share - row.target) * 100;
     const plan = row.planned > 0 ? `+${usdRate ? `${formatUsd(row.planned / usdRate)} (${formatCurrency(row.planned)})` : formatCurrency(row.planned)}` : (usdRate ? "US$ 0" : "Rp 0");
-    return `<div class="rdn-execution-row"><span>${row.name} · ${formatPercent(row.share, 1)} dari target ${formatPercent(row.target, 1)} (${pts.format(gap)} poin)</span><strong>${plan} → ${formatPercent(row.after, 1)}</strong></div>`;
+    const size = Math.abs(gap).toFixed(1).replace(".", ",");
+    const state = Math.abs(gap) < 0.05 ? "sesuai target" : gap > 0 ? `lebih ${size} poin` : `kurang ${size} poin`;
+    return `<div class="rdn-execution-row"><span>${row.name} · porsi sekarang ${formatPercent(row.share, 1)} (target ${formatPercent(row.target, 1)}, ${state})</span><strong>tambah ${plan.replace(/^\+/, "")} → ${formatPercent(row.after, 1)}</strong></div>`;
   }).join("");
 }
 
@@ -1147,7 +1149,9 @@ function renderShortfall(state) {
   const fixNote = state.etfShortfallAware
     ? "Dana ETF dibagi menurut kekurangan tiap ETF terhadap targetnya, bukan persentase target mentah."
     : "Semua kamar dalam band, dana dibagi sesuai target normal.";
-  elements.shortfallNote.textContent = `${stockNote} ${fixNote} Kolom kanan: dana rencana dan porsi akhir setelah rencana.`;
+  const overweight = [...state.shortfall.stock, ...state.shortfall.etf].some((row) => row.share - row.target > 0.0005 && row.planned > 0);
+  const overNote = overweight ? " Aset yang porsinya lebih dari target tetap bisa dapat dana karena total ikut bertambah; tidak ada yang dijual, porsinya turun sendiri." : "";
+  elements.shortfallNote.textContent = `${stockNote} ${fixNote}${overNote} Kolom kanan: dana yang ditambahkan selama rencana dan porsi akhirnya.`;
 }
 
 function renderProjection(state) {
