@@ -109,7 +109,7 @@
               <div><p class="input-group-index">T</p><h3 id="manual-target-title">Target Persentase Manual</h3></div>
               <span class="rounded-full border border-lime/25 bg-lime/10 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] text-lime">Live target</span>
             </div>
-            <p class="mt-3 text-[11px] leading-5 text-white/45">Setiap kelompok harus tepat 100%. Band parent &plusmn;5 poin, saham &plusmn;5 poin, dan ETF &plusmn;3 poin.</p>
+            <p class="mt-3 text-[11px] leading-5 text-white/45">Setiap kelompok harus tepat 100%. Selisih 0-5 poin dari target dianggap aman: band parent, saham, dan ETF semuanya &plusmn;5 poin.</p>
 
             <div class="target-block">
               <div class="target-block-heading"><strong>Global Parent</strong><span id="global-target-total" class="target-total valid">Total 100%</span></div>
@@ -216,12 +216,6 @@
               <label for="wire-fee" class="input-label">Estimasi Biaya Wire Transfer Bank</label>
               <div class="currency-input-wrap"><span>Rp</span><input id="wire-fee" class="technical-input" type="text" inputmode="numeric" autocomplete="off" value="250.000"></div>
               <p class="mt-2 text-[10px] leading-4 text-white/40">Panduan umum: Rp 150.000 - Rp 350.000 per wire transfer. Terkunci Rp 0 bila tab IBKR vs Flip terhubung (biaya sudah di kurs efektif).</p>
-            </div>
-
-            <div class="mt-4">
-              <label for="tolerance" class="input-label">Toleransi dari target (poin)</label>
-              <div class="currency-input-wrap"><span>±</span><input id="tolerance" class="technical-input" type="text" inputmode="decimal" autocomplete="off" value="1"></div>
-              <p class="mt-2 text-[10px] leading-4 text-white/40">Pemulihan parent berhenti bila sisa selisih sudah di dalam angka ini (0-5 poin), jadi tidak ada bulan penutup dengan nominal kecil. Isi 0 untuk mengejar target persis.</p>
             </div>
 
             <div class="mt-4">

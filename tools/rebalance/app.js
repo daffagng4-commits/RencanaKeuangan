@@ -1,7 +1,9 @@
 const CONFIG = Object.freeze({
   parentBand: 0.05,
   stockBand: 0.05,
-  etfBand: 0.03,
+  etfBand: 0.05,
+  // Selisih sisa defisit (poin) yang dianggap cukup dekat dengan target; tidak diisi pengguna.
+  tolerance: 0.01,
   stockAssets: [
     { key: "bmri", name: "BMRI", color: "#0e6b5d" },
     { key: "bbri", name: "BBRI", color: "#f36d4a" },
@@ -26,13 +28,13 @@ const DEFAULT_SETTINGS = Object.freeze({
   etf4: 5,
 });
 
+let recoveryTolerance = CONFIG.tolerance;
 const DEFAULT_TECHNICAL = Object.freeze({
   rdnCarry: 0,
   wireFee: 250_000,
   usdRate: 0,
   stockFee: 0,
   ibkrFee: 0,
-  tolerance: 0.01,
 });
 
 const INITIAL_VALUES = Object.freeze({
@@ -79,7 +81,6 @@ const elements = {
   rdnCarry: document.querySelector("#rdn-carry"),
   wireFee: document.querySelector("#wire-fee"),
   usdRate: document.querySelector("#usd-rate"),
-  tolerance: document.querySelector("#tolerance"),
   stockFee: document.querySelector("#stock-fee"),
   ibkrFee: document.querySelector("#ibkr-fee"),
   routeLink: document.querySelector("#route-link"),
@@ -349,7 +350,6 @@ function getTechnicalSettings() {
     rdnCarry: parseCurrency(elements.rdnCarry.value),
     wireFee: parseCurrency(elements.wireFee.value),
     usdRate: parseDecimal(elements.usdRate.value),
-    tolerance: Math.min(5, Math.max(0, elements.tolerance.value.trim() === "" ? 1 : parseDecimal(elements.tolerance.value))) / 100,
     stockFee: Math.min(5, parseDecimal(elements.stockFee.value)) / 100,
     ibkrFee: Math.min(5, parseDecimal(elements.ibkrFee.value)) / 100,
     route: routeLinked ? currentRoute : null,
@@ -646,7 +646,7 @@ function getState(values, settings, technical) {
   let fullMonths = 0;
   if (mode === "parent-etf" || mode === "parent-stock") {
     const deficit = mode === "parent-etf" ? etfDeficit : stockDeficit;
-    plan = buildParentPlan(mode, deficit, settings, technical.tolerance || 0, total);
+    plan = buildParentPlan(mode, deficit, settings, recoveryTolerance, total);
     calculatedFullMonths = plan.fullMonths;
     fullMonths = plan.fullMonths;
   } else {
@@ -883,7 +883,7 @@ function renderSettings(state) {
   elements.footerBand.textContent = `ETF <${formatPercent(state.lowerEtfBand, 0).replace(",00","")} · aman ${formatPercent(state.lowerEtfBand, 0).replace(",00","")}-${formatPercent(state.upperEtfBand, 0).replace(",00","")} · ETF >${formatPercent(state.upperEtfBand, 0).replace(",00","")}`;
   elements.chartTargetCopies.global.textContent = `Target ETF ${formatPercent(settings.etfGlobalTarget, 1)} · band ±5 poin`;
   elements.chartTargetCopies.stock.textContent = `${settings.stockTargets[0].name} ${formatPercent(settings.stockTargets[0].weight, 1)} · ${settings.stockTargets[1].name} ${formatPercent(settings.stockTargets[1].weight, 1)} · band ±5`;
-  elements.chartTargetCopies.etf.textContent = `${formatTargetList(settings.etfTargets)} · band ±3 poin`;
+  elements.chartTargetCopies.etf.textContent = `${formatTargetList(settings.etfTargets)} · band ±5 poin`;
 }
 
 function renderInputSummary(state) {
@@ -1294,7 +1294,6 @@ function resetSettings() {
   elements.rdnCarry.value = formatInputCurrency(DEFAULT_TECHNICAL.rdnCarry);
   elements.wireFee.value = formatInputCurrency(DEFAULT_TECHNICAL.wireFee);
   elements.usdRate.value = "";
-  elements.tolerance.value = "1";
   elements.stockFee.value = "";
   elements.ibkrFee.value = "";
   elements.etfCurrency.value = "idr";
@@ -1408,7 +1407,6 @@ elements.actionTimeline.addEventListener("change", (event) => {
   input.addEventListener("input", scheduleRender);
   input.addEventListener("blur", () => { const fee = parseDecimal(input.value); input.value = fee > 0 ? decimalInputFormatter.format(fee) : ""; scheduleRender(); });
 });
-elements.tolerance.addEventListener("input", scheduleRender);
 elements.usdRate.addEventListener("input", scheduleRender);
 elements.usdRate.addEventListener("focus", () => { elements.usdRate.value = String(parseDecimal(elements.usdRate.value) || "").replace(".", ","); });
 elements.usdRate.addEventListener("blur", () => { const rate = parseDecimal(elements.usdRate.value); elements.usdRate.value = rate > 0 ? decimalInputFormatter.format(rate) : ""; scheduleRender(); });
