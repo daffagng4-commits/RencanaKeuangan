@@ -100,3 +100,11 @@ Dua tab baru di bar atas (di samping Rencana Keuangan dan Perjalanan). Keduanya 
 - Data alat tidak ikut Impor/Ekspor Rencana Keuangan.
 - Kalkulator rebalancing memakai Tailwind dan Chart.js dari CDN, jadi butuh internet.
 - Catatan: folder `js/` dan `dist/` adalah versi modular lama dan tidak memuat tab Perjalanan maupun alat ini. Yang dipakai GitHub Pages adalah `index.html`.
+
+## Pembaruan alat Rebalance porto (r19)
+
+- **Fee broker**: isian fee Stockbit (saat beli saham, mengurangi saldo RDN) dan fee IBKR (saat beli ETF, dikurangkan dari dana yang masuk). Kosong = tanpa fee.
+- **Setoran per bulan**: tiap kartu di Rencana Aksi punya ceklist. Tidak dicentang = sama dengan "Dana baru per bulan"; dicentang = isi nominal manual untuk bulan itu. Rencana pemulihan dihitung ulang bulan demi bulan.
+- **Tautan IBKR vs Flip**: ceklist di tab IBKR vs Flip mengirim rute termurah (kurs efektif + biaya rute) ke tab Rebalance. Saat terhubung, kurs USD/IDR dan biaya wire di Rebalance terkunci memakai hasil itu; bila dimatikan, isian manual kembali.
+
+Uji: `npm i` lalu `npm run test:rebalance`.
