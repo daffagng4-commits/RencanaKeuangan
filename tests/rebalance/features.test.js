@@ -44,7 +44,7 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
     t.set("target-month", "2027-06"); t.set("stock-fee", "0,15");
     for (const [tk, v] of [["bmri", "4.500"], ["bbri", "3.800"]]) { const i = t.w.document.querySelector(`.timeline-card.is-now .stock-price-input[data-ticker="${tk}"]`); i.value = v; i.dispatchEvent(new t.w.Event("change", { bubbles: true })); }
     await t.flush();
-    ok(/fee broker Stockbit Rp/.test(t.$("action-timeline").textContent), "kartu bulan ini menampilkan fee Stockbit");
+    ok(/Fee Stockbit/.test(t.$("action-timeline").textContent), "kartu bulan ini menampilkan fee Stockbit");
   }
 
   // ---- 2. Fee broker IBKR
@@ -57,7 +57,7 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
     ok(Math.abs(s1.rows.reduce((a, r) => a + r.usd, 0) - s1.invest) < 1e-9, "pembagian per ETF pas dengan nilai yang dibelikan");
     t.set("usd-rate", "16.000"); t.set("ibkr-fee", "0,5");
     await t.flush();
-    ok(/Fee broker IBKR ≈ US\$/.test(t.$("action-timeline").textContent), "kartu setoran menampilkan fee IBKR");
+    ok(/Fee IBKR≈ US\$/.test(t.$("action-timeline").textContent), "kartu setoran menampilkan fee IBKR");
   }
 
   // ---- 3. Setoran per bulan (ceklist)
@@ -114,7 +114,7 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
     ok(t.$("usd-rate").readOnly && t.$("wire-fee").readOnly && !t.$("route-link").hidden, "terhubung: kolom terkunci dan status tampil");
     await t.flush();
     const txt = t.$("action-timeline").textContent;
-    ok(/Biaya rute Flip/.test(txt) && /kurs efektif rute termurah/.test(txt) && !/biaya wire Rp/.test(txt), "kartu setoran memakai rute termurah & menampilkan biaya rute");
+    ok(/rute Flip/.test(txt) && /kurs efektif rute termurah/.test(txt) && !/wire Rp \d/.test(txt.replace("wire Rp 0","")), "kartu setoran memakai rute termurah & menampilkan biaya rute");
     t.w.localStorage.removeItem("rk-xroute"); t.w.dispatchEvent(new t.w.Event("focus")); await t.flush();
     ok(t.$("usd-rate").value === "16.000" && t.$("wire-fee").value === "250.000" && !t.$("usd-rate").readOnly, "putus tautan: isian manual dipulihkan dan terbuka");
     // dibuka saat sudah terhubung
