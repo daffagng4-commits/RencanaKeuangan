@@ -175,5 +175,18 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
     ok(plans.slice(0, 6).every((p, i) => p.pending || i === 0 || p.o === plans[i - 1].r), "rantai saldo RDN konsisten tiap bulan");
     ok(plans.every((p) => p.pending || p.b.length === 0 || true), "selesai");
   }
+
+  // ---- 8. Panel posisi vs target: aset di atas target tetap dapat dana, dengan penjelasan
+  {
+    const t = load();
+    t.set("bmri-value", "4.834.800"); t.set("bbri-value", "2.815.200");
+    [["etf1", .5], ["etf2", .25], ["etf3", .2], ["etf4", .05]].forEach(([k, f]) => t.set(`${k}-value`, String(Math.round(3035000 * f)).replace(/\B(?=(\d{3})+(?!\d))/g, ".")));
+    await t.flush();
+    const txt = t.$("shortfall-stock") ? t.$("shortfall-stock").textContent : t.w.document.body.textContent;
+    const flat = txt.replace(/\s+/g, " ");
+    ok(/BMRI · porsi sekarang 63,2% \(target 60,0%, lebih 3,2 poin\)/.test(flat) && /BMRI[^→]*tambah Rp [\d.]+ → 60,0%/.test(flat), "panel: BMRI porsi 63,2% (lebih 3,2 poin) tetap mendapat 'tambah Rp ...'");
+    ok(/BBRI · porsi sekarang 36,8% \(target 40,0%, kurang 3,2 poin\)/.test(flat), "panel: BBRI 'kurang 3,2 poin' (tanpa tanda ganda)");
+    ok(/tidak ada yang dijual/.test(t.w.document.body.textContent), "catatan menjelaskan aset di atas target tetap dapat dana");
+  }
   console.log(`\n${pass} pengecekan lulus`);
 })().catch((e) => { console.error(e); process.exit(1); });
