@@ -100,3 +100,15 @@ Dua tab baru di bar atas (di samping Rencana Keuangan dan Perjalanan). Keduanya 
 - Data alat tidak ikut Impor/Ekspor Rencana Keuangan.
 - Kalkulator rebalancing memakai Tailwind dan Chart.js dari CDN, jadi butuh internet.
 - Catatan: folder `js/` dan `dist/` adalah versi modular lama dan tidak memuat tab Perjalanan maupun alat ini. Yang dipakai GitHub Pages adalah `index.html`.
+
+## Alat Rebalance porto (r19)
+
+Tambahan di `tools/rebalance/`:
+
+- **Kas ETF di penampung** + **bulan ke-berapa dalam siklus setor IBKR**: kas ikut dihitung untuk status parent; jadwal wire mengikuti posisi siklus.
+- **Fee beli broker (%)**: kosong = tanpa fee; fee dibulatkan per order dan mengurangi sisa RDN.
+- **Target pemulihan**: ke target tengah atau ke tepi band, plus peringatan bila rencana > 6 bulan (info) dan > 12 bulan (saran).
+- **Jurnal eksekusi** (`journal.js`): posisi lembar/unit x harga pasar, tombol "Sudah saya eksekusi" (mencatat transaksi, memajukan bulan, bisa dibatalkan), riwayat band, simulasi "bagaimana kalau", salin instruksi, pengingat `.ics`, dan penerapan rute dari IBKR vs Flip.
+- Data jurnal disimpan di dalam state `rebalance` (kunci `journal`), jadi **tidak perlu mengubah tabel/constraint `rk_tools`**.
+
+Uji: `npm i` lalu `npm run test:rebalance`.

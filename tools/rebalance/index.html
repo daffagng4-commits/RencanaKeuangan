@@ -173,6 +173,7 @@
               <div class="mb-2 flex items-center justify-between"><label for="usd-rate" class="input-label !mb-0">Kurs USD/IDR efektif</label><span class="text-[10px] text-white/40">isi manual</span></div>
               <div class="currency-input-wrap compact"><span>Rp</span><input id="usd-rate" class="asset-input" type="text" inputmode="decimal" autocomplete="off" value="" placeholder="Isi manual, mis. kurs hari ini"></div>
               <p class="mt-2 text-[10px] leading-4 text-white/40">Kurs yang benar-benar didapat saat konversi, sudah termasuk spread. Wajib bila satuan ETF US$, dan untuk melihat nominal USD ke IBKR.</p>
+              <div id="route-offer" class="route-offer" hidden></div>
             </div>
             <div class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
               <div>
@@ -209,6 +210,30 @@
               <div class="currency-input-wrap"><span>Rp</span><input id="rdn-carry" class="technical-input" type="text" inputmode="numeric" autocomplete="off" value="0"></div>
               <p id="rdn-auto-copy" class="mt-2 text-[10px] leading-4 text-white/40">Sisa bulan ini dapat disimpan untuk periode berikutnya.</p>
               <button id="save-rdn-button" type="button" class="mt-3 w-full rounded-xl border border-white/15 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white/65 transition hover:border-white/35 hover:text-white disabled:opacity-40">Simpan sisa ke periode berikutnya</button>
+            </div>
+
+            <div class="mt-4">
+              <label for="etf-buffer" class="input-label">Kas ETF di penampung (belum disetor ke IBKR)</label>
+              <div class="currency-input-wrap"><span>Rp</span><input id="etf-buffer" class="technical-input" type="text" inputmode="numeric" autocomplete="off" value="0"></div>
+              <p class="mt-2 text-[10px] leading-4 text-white/40">Tabungan ETF bulan-bulan sebelumnya yang masih di rekening penampung. Ikut dihitung sebagai bagian ETF untuk status parent, dan akan ikut dikirim di setoran berikutnya.</p>
+            </div>
+
+            <div class="mt-4">
+              <label for="quarter-pos" class="input-label">Bulan ke-berapa dalam siklus setor IBKR (bulan ini)</label>
+              <select id="quarter-pos" class="dark-input [&>option]:text-ink"><option value="1">Bulan ke-1 (siklus baru mulai)</option><option value="2">Bulan ke-2</option><option value="3">Bulan ke-3 (bulan wire)</option></select>
+              <p class="mt-2 text-[10px] leading-4 text-white/40">Setoran ke IBKR jatuh di bulan ke-3 siklus. Jadwal setoran di Action Plan mengikuti pilihan ini.</p>
+            </div>
+
+            <div class="mt-4">
+              <label for="recovery-target" class="input-label">Target pemulihan parent</label>
+              <select id="recovery-target" class="dark-input [&>option]:text-ink"><option value="mid">Ke target tengah (mis. 60%)</option><option value="band">Ke tepi band (mis. 55%)</option></select>
+              <p class="mt-2 text-[10px] leading-4 text-white/40">Tepi band biasanya jauh lebih singkat, tetapi porsi bisa keluar band lagi bila pasar bergerak sedikit.</p>
+            </div>
+
+            <div class="mt-4">
+              <label for="buy-fee" class="input-label">Fee beli broker saham (%)</label>
+              <div class="currency-input-wrap"><span>%</span><input id="buy-fee" class="technical-input" type="text" inputmode="decimal" autocomplete="off" value="" placeholder="Isi sesuai broker, mis. 0,15"></div>
+              <p class="mt-2 text-[10px] leading-4 text-white/40">Kosong = tanpa fee. Fee ditambahkan ke biaya tiap lot dan mengurangi saldo RDN.</p>
             </div>
 
             <div class="mt-4">
@@ -251,6 +276,8 @@
             </div>
             <div class="status-orbit" aria-hidden="true"></div>
           </section>
+
+          <div id="duration-warning" class="duration-warning" role="status" hidden></div>
 
           <section class="panel p-6 sm:p-8">
             <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
@@ -311,6 +338,8 @@
             <div id="instruction-callout" class="instruction-callout">Bulan ini, jangan beli saham. Tabung Rp 3.000.000 untuk kas ETF.</div>
 
             <ol id="action-timeline" class="timeline" aria-live="polite"></ol>
+            <p id="jr-msg" class="jr-msg" role="status" hidden></p>
+            <textarea id="jr-copytext" class="jr-copytext" readonly hidden aria-label="Teks instruksi untuk disalin"></textarea>
 
             <div class="mt-8 border-t border-white/10 pt-8">
               <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-white/45">Posisi sebelum &rarr; sesudah rencana</p>
@@ -322,6 +351,49 @@
               <p id="shortfall-note" class="operational-note"></p>
             </div>
 
+          </section>
+
+          <section id="journal-panel" class="panel p-6 sm:p-8">
+            <div class="mb-6"><p class="eyebrow">Jurnal eksekusi</p><h2 class="mt-2 text-2xl font-extrabold tracking-[-0.04em]">Posisi, catatan, dan riwayat</h2></div>
+
+            <div class="jr-block">
+              <h3>Posisi dalam lembar / unit</h3>
+              <label class="jr-check"><input id="jr-auto" type="checkbox"> Hitung nilai portfolio dari jumlah × harga pasar (cukup isi harga tiap bulan)</label>
+              <div class="jr-scroll"><table class="jr-table"><thead><tr><th>Aset</th><th>Jumlah</th><th>Harga pasar</th><th>Nilai</th></tr></thead><tbody id="jr-holdings"></tbody></table></div>
+              <p class="jr-hint">Saham: lembar dan harga Rp per lembar. ETF: unit (pecahan pakai koma) dan harga US$ per unit; nilai rupiah memakai kurs USD/IDR efektif. Bila dicentang, kolom nilai di panel kiri terkunci dan dihitung otomatis. Tombol &ldquo;Sudah saya eksekusi&rdquo; di kartu Bulan 1 menambah posisi, saldo RDN, dan kas penampung, lalu menggeser ke bulan berikutnya.</p>
+              <div class="jr-actions"><button id="jr-undo" type="button" class="card-btn" disabled>Batalkan eksekusi terakhir</button></div>
+            </div>
+
+            <div class="jr-block">
+              <h3>Catatan transaksi</h3>
+              <ol id="jr-log" class="jr-log"></ol>
+            </div>
+
+            <div class="jr-block">
+              <h3>Riwayat penyimpangan dari band</h3>
+              <div class="jr-chart"><canvas id="hist-chart" aria-label="Riwayat porsi ETF terhadap band" role="img"></canvas></div>
+              <p id="hist-text" class="jr-hint"></p>
+              <div class="jr-actions"><button id="jr-snap" type="button" class="card-btn">Catat snapshot sekarang</button><button id="jr-snap-del" type="button" class="card-btn">Hapus snapshot terakhir</button></div>
+            </div>
+
+            <div class="jr-block">
+              <h3>Simulasi &ldquo;bagaimana kalau&rdquo;</h3>
+              <div class="jr-row">
+                <label>Pasar ETF (%)<input id="wi-etf" type="text" inputmode="decimal" autocomplete="off" value="0"></label>
+                <label>Pasar saham (%)<input id="wi-stock" type="text" inputmode="decimal" autocomplete="off" value="0"></label>
+              </div>
+              <p id="wi-result" class="jr-hint"></p>
+            </div>
+
+            <div class="jr-block">
+              <h3>Pengingat hari setor (kalender .ics)</h3>
+              <div class="jr-row">
+                <label>Tanggal beli saham tiap bulan<input id="rm-stock-day" type="text" inputmode="numeric" autocomplete="off" placeholder="1-31"></label>
+                <label>Tanggal setor IBKR<input id="rm-wire-day" type="text" inputmode="numeric" autocomplete="off" placeholder="1-31"></label>
+              </div>
+              <p class="jr-hint">Bulan pertama rencana = periode simulasi di panel kiri. Berkas .ics bisa diimpor ke Google Kalender atau kalender HP; pengingat muncul pukul 09.00 pada harinya.</p>
+              <div class="jr-actions"><button id="rm-ics" type="button" class="card-btn">Unduh pengingat (.ics)</button></div>
+            </div>
           </section>
 
           <section class="panel p-6 sm:p-8">
@@ -340,5 +412,6 @@
     <noscript><div class="fixed inset-x-4 bottom-4 z-50 rounded-xl bg-coral p-4 text-center font-bold text-ink">Aktifkan JavaScript untuk menjalankan kalkulator.</div></noscript>
     <script src="../bridge.js"></script>
     <script src="app.js"></script>
+    <script src="journal.js"></script>
   </body>
 </html>
