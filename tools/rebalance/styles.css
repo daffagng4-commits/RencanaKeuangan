@@ -1061,3 +1061,12 @@ a:focus-visible {
 .rdn-execution-row em { font-style: normal; font-size: 0.68rem; font-weight: 700; margin-left: 0.35rem; }
 .rdn-execution-row em.ok { color: var(--lime); }
 .rdn-execution-row em.warn { color: #f36d4a; }
+
+/* ===== Daftar batas toleransi ===== */
+.tolerance-list { margin-top: 0.9rem; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 1rem; padding: 0.8rem 0.9rem; font-size: 0.72rem; }
+.tol-title { margin: 0.6rem 0 0.25rem; color: rgba(255, 255, 255, 0.45); font-size: 0.62rem; letter-spacing: 0.09em; text-transform: uppercase; }
+.tol-title:first-child { margin-top: 0; }
+.tol-row { display: grid; grid-template-columns: 1.2fr 1.3fr auto; gap: 0.5rem; padding: 0.2rem 0; color: rgba(255, 255, 255, 0.85); }
+.tol-row small { color: rgba(255, 255, 255, 0.45); }
+.tol-row em { font-style: normal; color: var(--lime); font-weight: 700; }
+.tol-rule { margin: 0.7rem 0 0; color: rgba(255, 255, 255, 0.5); line-height: 1.5; }

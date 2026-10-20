@@ -2,6 +2,9 @@ const CONFIG = Object.freeze({
   parentBand: 0.05,
   stockBand: 0.05,
   etfBand: 0.05,
+  // Target kecil memakai band yang lebih sempit: min(batas, rasio x target), minimal minBand.
+  smallTargetRatio: 0.4,
+  minBand: 0.01,
   // Selisih sisa defisit (poin) yang dianggap cukup dekat dengan target; tidak diisi pengguna.
   tolerance: 0.01,
   stockAssets: [
@@ -29,6 +32,12 @@ const DEFAULT_SETTINGS = Object.freeze({
 });
 
 let recoveryTolerance = CONFIG.tolerance;
+let bandRatio = CONFIG.smallTargetRatio;
+
+// Batas aman (selisih dari target, dalam pecahan) per aset: maksimal `cap`, lebih sempit untuk target kecil.
+function bandFor(target, cap) {
+  return Math.min(cap, Math.max(CONFIG.minBand, bandRatio * target));
+}
 const DEFAULT_TECHNICAL = Object.freeze({
   rdnCarry: 0,
   wireFee: 250_000,
@@ -612,15 +621,16 @@ function getState(values, settings, technical) {
   const stockShare = 1 - etfShare;
   const stockShares = sharesOrWeights(stockValues, settings.stockTargets);
   const etfShares = sharesOrWeights(etfValues, settings.etfTargets);
-  const lowerEtfBand = Math.max(0, settings.etfGlobalTarget - CONFIG.parentBand);
-  const upperEtfBand = Math.min(1, settings.etfGlobalTarget + CONFIG.parentBand);
+  const parentBand = bandFor(Math.min(settings.etfGlobalTarget, settings.stockGlobalTarget), CONFIG.parentBand);
+  const lowerEtfBand = Math.max(0, settings.etfGlobalTarget - parentBand);
+  const upperEtfBand = Math.min(1, settings.etfGlobalTarget + parentBand);
 
   let parentStatus = "safe";
   if (etfShare < lowerEtfBand - EPSILON) parentStatus = "etf-low";
   else if (etfShare > upperEtfBand + EPSILON) parentStatus = "stock-low";
 
-  const stockIssues = settings.stockTargets.map((item, index) => ({ ...item, share: stockShares[index], delta: stockShares[index] - item.weight, status: issueStatus(stockShares[index], item.weight, CONFIG.stockBand) }));
-  const etfIssues = settings.etfTargets.map((item, index) => ({ ...item, share: etfShares[index], delta: etfShares[index] - item.weight, status: issueStatus(etfShares[index], item.weight, CONFIG.etfBand) }));
+  const stockIssues = settings.stockTargets.map((item, index) => ({ ...item, share: stockShares[index], delta: stockShares[index] - item.weight, status: issueStatus(stockShares[index], item.weight, bandFor(item.weight, CONFIG.stockBand)) }));
+  const etfIssues = settings.etfTargets.map((item, index) => ({ ...item, share: etfShares[index], delta: etfShares[index] - item.weight, status: issueStatus(etfShares[index], item.weight, bandFor(item.weight, CONFIG.etfBand)) }));
   const stockBroken = stockIssues.some((item) => item.status !== "safe");
   const etfBroken = etfIssues.some((item) => item.status !== "safe");
   const stockDeepest = stockIssues.reduce((lowest, item) => item.delta < lowest.delta ? item : lowest, stockIssues[0]);
@@ -690,12 +700,12 @@ function getState(values, settings, technical) {
   const stockPlanned = runningStock.map((value, index) => value - stockValues[index]);
   const currentStockAllocation = stockPlan.length && stockPlan[0].month === firstMonth.month ? stockPlan[0].allocation : allocateByWeights(0, settings.stockTargets);
 
-  const afterRows = (targets, values, planned, shares, band) => {
+  const afterRows = (targets, values, planned, shares, cap) => {
     const afterTotal = sum(values) + sum(planned);
     return targets.map((item, index) => ({
       name: item.name, share: shares[index], target: item.weight, planned: planned[index],
       after: afterTotal > 0 ? (values[index] + planned[index]) / afterTotal : item.weight,
-      band,
+      band: bandFor(item.weight, cap),
     }));
   };
   const shortfall = {
@@ -881,9 +891,32 @@ function renderSettings(state) {
   // Increment pemulihan: ETF = dana - jatah ETF normal (= jatah saham normal); saham sebaliknya.
   elements.healthNote.textContent = `Rumus durasi aktif: defisit ETF dibagi ${formatCurrency(state.normalStock)}; defisit saham dibagi ${formatCurrency(state.normalEtf)}. Bulan penuh dibulatkan ke bawah; sisa defisit ditutup di satu bulan penutup agar berhenti tepat di target.`;
   elements.footerBand.textContent = `ETF <${formatPercent(state.lowerEtfBand, 0).replace(",00","")} · aman ${formatPercent(state.lowerEtfBand, 0).replace(",00","")}-${formatPercent(state.upperEtfBand, 0).replace(",00","")} · ETF >${formatPercent(state.upperEtfBand, 0).replace(",00","")}`;
-  elements.chartTargetCopies.global.textContent = `Target ETF ${formatPercent(settings.etfGlobalTarget, 1)} · band ±5 poin`;
+  const poin = (band) => `±${formatTargetNumber(band * 100)}`;
+  const parentBandNow = bandFor(Math.min(settings.etfGlobalTarget, settings.stockGlobalTarget), CONFIG.parentBand);
+  elements.chartTargetCopies.global.textContent = `Target ETF ${formatPercent(settings.etfGlobalTarget, 1)} · band ${poin(parentBandNow)} poin`;
   elements.chartTargetCopies.stock.textContent = `${settings.stockTargets[0].name} ${formatPercent(settings.stockTargets[0].weight, 1)} · ${settings.stockTargets[1].name} ${formatPercent(settings.stockTargets[1].weight, 1)} · band ±5`;
-  elements.chartTargetCopies.etf.textContent = `${formatTargetList(settings.etfTargets)} · band ±5 poin`;
+  elements.chartTargetCopies.etf.textContent = `${formatTargetList(settings.etfTargets)} · band ${settings.etfTargets.map((item) => poin(bandFor(item.weight, CONFIG.etfBand))).join(" / ")} poin`;
+  renderToleranceList(settings);
+}
+
+// Daftar batas aman (band) untuk parent dan child, mengikuti target yang sedang diisi.
+function renderToleranceList(settings) {
+  const box = document.querySelector("#tolerance-list");
+  if (!box) return;
+  const pct = (value) => formatPercent(value, 1);
+  const row = (name, target, cap) => {
+    const band = bandFor(target, cap);
+    const low = Math.max(0, target - band);
+    const high = Math.min(1, target + band);
+    return `<div class="tol-row"><span>${name} <small>target ${pct(target)}</small></span><span>aman ${pct(low)} - ${pct(high)}</span><em>±${formatTargetNumber(band * 100)} poin</em></div>`;
+  };
+  const parentCap = CONFIG.parentBand;
+  const group = (title, rows) => `<p class="tol-title">${title}</p>${rows.join("")}`;
+  box.innerHTML = [
+    group("Parent (porsi dari total portfolio)", [row("ETF Global", settings.etfGlobalTarget, parentCap), row("Saham Lokal", settings.stockGlobalTarget, parentCap)]),
+    group("Child Saham (porsi di dalam Saham Lokal)", settings.stockTargets.map((item) => row(item.name, item.weight, CONFIG.stockBand))),
+    group("Child ETF (porsi di dalam ETF Global)", settings.etfTargets.map((item) => row(item.name, item.weight, CONFIG.etfBand))),
+  ].join("") + `<p class="tol-rule">Aturan: maksimal ±5 poin; untuk target kecil dibatasi 40% dari targetnya (minimal ±1 poin). Di dalam rentang ini dianggap aman dan tidak memicu koreksi.</p>`;
 }
 
 function renderInputSummary(state) {
