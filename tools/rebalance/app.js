@@ -722,6 +722,8 @@ function getState(values, settings, technical) {
     etfShortfallAware,
     shortfall,
     stockPlan,
+    stockValues,
+    stockFix,
     schedule: plan.schedule,
     closingMonth: plan.closing || null,
     stockDeepest,
@@ -963,12 +965,17 @@ function clearMonthlyInputs() {
   Object.values(stockPrices).forEach((prices) => Object.keys(prices).forEach((month) => delete prices[month]));
 }
 
+// Rantai bulan demi bulan. Saldo RDN yang terbawa adalah uang nyata yang belum terbeli, jadi ia dialokasikan
+// bersama jatah bulan itu menurut kekurangan tiap saham terhadap posisi nyata (bukan posisi "virtual" rencana).
 function monthlyLotPlans(state, entries) {
   let carry = state.technical.rdnCarry;
+  const targets = state.settings.stockTargets;
+  let held = state.stockValues.slice();
+  let outside = 0; // jatah bulan lalu yang belum cukup 1 lot dan sengaja belum ditransfer ke RDN
   return entries.map((entry) => {
     const planned = state.stockPlan.find((item) => item.month === entry.month);
-    const allocation = planned ? planned.allocation : allocateByWeights(0, state.settings.stockTargets);
-    const activeKeys = allocation.filter((item) => item.amount > 0).map((item) => item.key);
+    const planAllocation = planned ? planned.allocation : allocateByWeights(0, targets);
+    const activeKeys = planAllocation.filter((item) => item.amount > 0).map((item) => item.key);
     const prices = {};
     const missing = [];
     Object.keys(stockPrices).forEach((key) => {
@@ -981,10 +988,24 @@ function monthlyLotPlans(state, entries) {
       // Harga belum diisi: tampilkan alokasi rupiah, asumsikan belum ada pembelian.
       execution = {
         pending: true, missing, openingCarry: carry, remainder: carry + entry.stock,
-        trades: allocation.map((item) => ({ ...item, budget: item.amount, lots: null, spent: 0 })),
+        transfer: entry.stock + outside, outsidePrev: outside, rdnBalance: carry - outside,
+        trades: planAllocation.map((item) => ({ ...item, budget: item.amount, lots: null, spent: 0 })),
       };
+      outside = 0;
+      held = held.map((value, index) => value + planAllocation[index].amount);
+    } else if (entry.stock > 0) {
+      const budget = entry.stock + carry;
+      const allocation = state.stockFix ? allocateRebalance(held, budget, targets) : allocateByWeights(budget, targets);
+      const result = calculateLotExecution(allocation, budget, { ...state.technical, ...prices, rdnCarry: 0 });
+      const bought = result.trades.some((trade) => trade.lots > 0);
+      execution = { ...result, recommendedBudget: entry.stock, openingCarry: carry, pending: false, transfer: bought ? entry.stock + outside : 0, outsidePrev: outside, rdnBalance: carry - outside };
+      outside = bought ? 0 : outside + entry.stock;
+      result.trades.forEach((trade) => {
+        const index = targets.findIndex((item) => item.key === trade.key);
+        if (index >= 0) held[index] += trade.shares * trade.price;
+      });
     } else {
-      execution = { ...calculateLotExecution(allocation, entry.stock, { ...state.technical, ...prices, rdnCarry: carry }), pending: false };
+      execution = { ...calculateLotExecution(planAllocation, 0, { ...state.technical, ...prices, rdnCarry: carry }), pending: false, transfer: 0, outsidePrev: outside, rdnBalance: carry - outside };
     }
     carry = execution.remainder;
     return execution;
@@ -1035,19 +1056,26 @@ function actionCard(state, entry, execution) {
   const now = entry.month === state.firstMonth.month;
   const items = [];
   if (entry.stock > 0) {
-    const carry = execution.openingCarry > 0 ? ` <span class="sub">(+ saldo RDN ${formatCurrency(execution.openingCarry)})</span>` : "";
+    const notes = [];
+    if (execution.rdnBalance > 0) notes.push(`saldo RDN ${formatCurrency(execution.rdnBalance)}`);
+    if (execution.outsidePrev > 0) notes.push(`termasuk ${formatCurrency(execution.outsidePrev)} tertahan dari bulan sebelumnya`);
+    const carry = notes.length ? ` <span class="sub">(+ ${notes.join("; ")})</span>` : "";
     const active = execution.trades.filter((trade) => trade.budget > 0);
     const boxes = priceBoxes(active.map((trade) => trade.key), entry.month);
     const alloc = active.map((trade) => `${trade.name} ${formatCurrency(trade.budget)}`).join(" · ");
-    const head = `<span class="hl">Transfer <strong>${formatCurrency(entry.stock)}</strong> ke RDN${carry}</span>`;
+    const head = `<span class="hl">Transfer <strong>${formatCurrency(execution.transfer)}</strong> ke RDN${carry}</span>`;
+    const lines = active.map((trade) => `<div>${trade.name} ${formatCurrency(trade.budget)} → ${trade.lots > 0 ? `<b class="ok">${trade.lots} lot</b> (${formatCurrency(trade.spent)})` : "belum cukup 1 lot"}</div>`).join("");
     if (execution.pending) {
       items.push(`<li><b>Saham</b>${head}${kvRows([["Alokasi", alloc]])}<em>Isi harga saham di bawah untuk menghitung jumlah lot.</em>${boxes}</li>`);
-    } else if (now) {
-      const buys = execution.trades.filter((trade) => trade.lots > 0).map((trade) => `${trade.name} ${trade.lots} lot (${formatCurrency(trade.spent)})`).join(" · ") || "belum cukup untuk 1 lot";
-      items.push(`<li><b>Saham</b>${head}${kvRows([["Beli", buys], execution.totalFee > 0 ? ["Fee Stockbit", formatCurrency(execution.totalFee) + " (sudah termasuk)"] : null, ["Sisa RDN", formatCurrency(execution.remainder)]])}${boxes}</li>`);
+    } else if (execution.trades.every((trade) => !(trade.lots > 0))) {
+      const cheapest = execution.trades.filter((trade) => trade.budget > 0 && trade.price > 0).sort((a, b) => a.lotCost - b.lotCost)[0];
+      const holdAmount = execution.outsidePrev + execution.rdnBalance + entry.stock;
+      const need = cheapest ? `1 lot ${cheapest.name} ≈ ${formatCurrency(Math.round(buyCost(cheapest.price, 1, state.technical.stockFee)))}` : "1 lot";
+      items.push(`<li class="muted-strong"><b>Saham</b><span class="hl">Belum ada pembelian bulan ini, tidak perlu transfer</span>${kvRows([["Dana", `${formatCurrency(holdAmount)} belum cukup 1 lot`], ["Butuh", need], ["Nasib dana", "simpan di rekening Anda; ditransfer bersama bulan berikutnya"]])}${boxes}</li>`);
     } else {
-      const approx = active.map((trade) => `${trade.name} ${trade.lots} lot`).join(" · ");
-      items.push(`<li><b>Saham</b>${head}${kvRows([["Alokasi", alloc], ["Perkiraan", approx]])}${moreDetails(`${entry.month}-stock`, "Jumlah lot dihitung ulang dengan harga hari itu; sisa mengendap di RDN.")}${boxes}</li>`);
+      const rows = [["Alokasi → beli", lines], execution.totalFee > 0 ? ["Fee Stockbit", formatCurrency(execution.totalFee) + " (sudah termasuk)"] : null, ["Sisa RDN", formatCurrency(execution.remainder)]];
+      const note = now ? "" : moreDetails(`${entry.month}-stock`, "Jumlah lot dihitung ulang dengan harga hari itu; sisa mengendap di RDN.");
+      items.push(`<li><b>Saham</b>${head}${kvRows(rows)}${note}${boxes}</li>`);
     }
   } else {
     const idle = execution.remainder > 0 ? ` Saldo RDN ${formatCurrency(execution.remainder)} tetap mengendap.` : "";

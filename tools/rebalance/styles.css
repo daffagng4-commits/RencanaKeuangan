@@ -1054,3 +1054,6 @@ a:focus-visible {
 .more summary { cursor: pointer; width: fit-content; color: rgba(255, 255, 255, 0.5); }
 .more summary:hover { color: var(--lime); }
 .more > div { margin-top: 0.3rem; line-height: 1.55; }
+.timeline-card li.muted-strong .hl { color: rgba(255, 255, 255, 0.78); }
+.kv dd b.ok { margin: 0; color: var(--lime); font-size: inherit; letter-spacing: 0; text-transform: none; }
+.kv dd > div + div { margin-top: 0.15rem; }
