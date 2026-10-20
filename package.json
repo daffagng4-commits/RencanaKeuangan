@@ -9,7 +9,8 @@
     "test:unit": "node tests/run-unit.js",
     "test:e2e": "node build.js && node tests/run-e2e.js",
     "test:browser": "node build.js && node tests/browser/smoke.js",
-    "test:rebalance": "node tests/rebalance/features.test.js"
+    "test:rebalance": "node tests/rebalance/features.test.js",
+    "test:schedule": "node tests/schedule/shift.test.js"
   },
   "devDependencies": {
     "jsdom": "^24.0.0"

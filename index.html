@@ -1160,6 +1160,11 @@ function at(it, k) {
 
 /** Perubahan (ch) yang berlaku pada tanggal ISO tertentu; yang mulainya paling akhir menang. null = pengaturan awal item. */
 
+/** Tanggal mulai efektif sebuah perubahan: bila tagihan digeser ke tanggal yang LEBIH AWAL (anchor < from), tanggal barunya ikut dihitung sebagai bagian perubahan itu. */
+function segStart(s) {
+  return s.anchor && s.anchor < s.from ? s.anchor : s.from;
+}
+
 function segAt(it, iso) {
   var c = it.ch || [],
     i,
@@ -1169,7 +1174,7 @@ function segAt(it, iso) {
     if (s.mv) continue;
     if (s.dates) {
       if (s.dates.indexOf(iso) >= 0) return s;
-    } else if (s.from <= iso && (!s.to || iso <= s.to)) return s;
+    } else if (segStart(s) <= iso && (!s.to || iso <= s.to)) return s;
   }
   return null;
 }
@@ -1910,6 +1915,31 @@ function remapStatus(itemId, before, after, maps) {
           moved++;
         }
       });
+  });
+  return moved;
+}
+
+/**
+ * Pindahkan status lunas/lewati secara PERSIS dari tanggal lama ke tanggal baru (dipakai saat menggeser tagihan,
+ * karena kedua tanggalnya diketahui; remapStatus hanya menebak tanggal terdekat maks. 20 hari).
+ * @param pairs [[tanggalLama, tanggalBaru], ...] @param maps [S.paid, S.skip] @returns jumlah status yang dipindah
+ */
+function moveStatusExact(itemId, pairs, maps) {
+  var prefix = String(itemId) + '|',
+    moved = 0;
+  pairs.forEach(function (p) {
+    if (!p || !p[0] || !p[1] || p[0] === p[1]) return;
+    var has = maps.some(function (m) {
+      return m[prefix + p[1]];
+    });
+    if (has) return;
+    maps.forEach(function (m) {
+      if (m[prefix + p[0]]) {
+        m[prefix + p[1]] = m[prefix + p[0]];
+        delete m[prefix + p[0]];
+        moved++;
+      }
+    });
   });
   return moved;
 }
@@ -4013,7 +4043,7 @@ function pmPrev() {
       (miss.length ? "<br>Tanpa tagihan (diabaikan): " + dList(miss) : "");
     return;
   }
-  var f = Date.parse(d.c.from + "T00:00:00Z"),
+  var f = Date.parse(segStart(d.c) + "T00:00:00Z"),
     end = Date.UTC(+d.c.from.slice(0, 4) + 8, 11, 31),
     l = series(tmp, end)
       .filter(function (t) {
@@ -4232,8 +4262,20 @@ function openPm(id) {
 function savePm() {
   var d = pmDraft();
   if (d.err) return pmMsg(d.err);
-  var it = d.it;
+  var it = d.it,
+    pairs = [];
+  // Mode geser: tanggal lama -> baru diketahui persis, jadi status lunas/lewati dipindah langsung (bukan ditebak).
+  if (pmScen === "geser")
+    d.cs.forEach(function (c) {
+      if (c.anchor) pairs.push([c.from, c.anchor]);
+      else if (c.mv)
+        pmDates.forEach(function (cur) {
+          var k = origDate(it, cur);
+          if (c.mv[k]) pairs.push([cur, c.mv[k]]);
+        });
+    });
   trackSchedule(it, function () {
+    moveStatusExact(it.id, pairs, [S.paid, S.skip]);
     it.ch = (it.ch || []).filter(function (q) {
       return !d.cs.some(function (c) {
         return chSig(c) === chSig(q);

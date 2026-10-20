@@ -5,7 +5,7 @@ const { JSDOM } = require("jsdom");
 const { load } = require("./harness.js");
 const ORIG = path.join(__dirname, "app.baseline.js");
 const ORIG5 = path.join(require("os").tmpdir(), "app.baseline5.js");
-fs.writeFileSync(ORIG5, fs.readFileSync(ORIG, "utf8").replace("etfBand: 0.03", "etfBand: 0.05"));
+fs.writeFileSync(ORIG5, fs.readFileSync(ORIG, "utf8").replace("etfBand: 0.03", "etfBand: 0.05").replace("item.weight, CONFIG.etfBand)", "item.weight, item.key === \"etf4\" ? 0.02 : 0.05)"));
 let pass = 0;
 const ok = (c, m) => { assert(c, m); pass++; console.log("ok -", m); };
 const num = (t) => Number(String(t).replace(/\./g, ""));
@@ -18,7 +18,7 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
   // ---- 0. Regresi: tanpa override & tanpa fee, hasil sama dengan r18
   {
     const a = load(), b = load({ appFile: ORIG5 });
-    a.ev("recoveryTolerance = 0");
+    a.ev("recoveryTolerance = 0; bandRatio = 100");
     const mk = (m) => Object.fromEntries(Object.entries({ bmri: 1, bbri: 1, etf1: 1, etf2: 1, etf3: 1, etf4: 1 }).map(([k]) => [`${k}-value`, m[k] ?? null]).filter(([, v]) => v !== null));
     const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     const scenarios = [
@@ -244,7 +244,7 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
   // ---- 11. Band ETF 5 poin (sama seperti saham)
   {
     const t = load();
-    ok(t.ev("CONFIG.etfBand") === 0.05 && t.ev("CONFIG.stockBand") === 0.05 && t.ev("CONFIG.parentBand") === 0.05, "semua band 5 poin: parent, saham, dan antar-ETF");
+    ok(t.ev("CONFIG.etfBand") === 0.05 && t.ev("CONFIG.stockBand") === 0.05 && t.ev("CONFIG.parentBand") === 0.05, "batas maksimal band 5 poin: parent, saham, dan antar-ETF");
     const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     // VOO 54% (target 50%): selisih 4 poin -> dulu 'di luar band' (batas 3), sekarang aman
     [["etf1", .54], ["etf2", .22], ["etf3", .19], ["etf4", .05]].forEach(([k, f]) => t.set(`${k}-value`, fmt(Math.round(9000000 * f))));
@@ -256,6 +256,27 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
     await t.flush();
     const st2 = JSON.parse(t.ev(`JSON.stringify((()=>{const t=getTechnicalSettings();const s=getState(getRawValues(t),getSettings(),t);return {etfFix:s.etfShortfallAware}})())`));
     ok(st2.etfFix === true, "VOO 8 poin dari target: di luar band, koreksi antar-ETF aktif");
+  }
+
+  // ---- 12. Band proporsional untuk target kecil + daftar toleransi
+  {
+    const t = load();
+    const b = (x) => t.ev(`bandFor(${x}, 0.05)`);
+    ok(Math.abs(b(0.05) - 0.02) < 1e-9, "NVDA target 5% -> band ±2 poin");
+    ok(b(0.5) === 0.05 && b(0.25) === 0.05 && Math.abs(b(0.2) - 0.05) < 1e-9, "VOO 50%, VXUS 25%, SMH 20% -> tetap ±5 poin");
+    ok(Math.abs(b(0.1) - 0.04) < 1e-9 && Math.abs(b(0.02) - 0.01) < 1e-9, "target 10% -> ±4 poin; target 2% -> minimal ±1 poin");
+    await t.flush();
+    const list = t.$("tolerance-list").textContent.replace(/\s+/g, "");
+    ok(/ETFGlobaltarget60,0%aman55,0%-65,0%±5poin/.test(list) && /SahamLokaltarget40,0%aman35,0%-45,0%±5poin/.test(list), "daftar: parent ETF Global 55-65%, Saham Lokal 35-45%");
+    ok(/BMRItarget60,0%aman55,0%-65,0%±5poin/.test(list) && /BBRItarget40,0%aman35,0%-45,0%±5poin/.test(list), "daftar: child saham BMRI 55-65%, BBRI 35-45%");
+    ok(/NVDAtarget5,0%aman3,0%-7,0%±2poin/.test(list) && /VOOtarget50,0%aman45,0%-55,0%±5poin/.test(list), "daftar: child ETF VOO 45-55%, NVDA 3-7% (±2)");
+    // NVDA 8% (selisih 3 poin) sekarang di luar band
+    const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    [["etf1", .47], ["etf2", .25], ["etf3", .20], ["etf4", .08]].forEach(([k, f]) => t.set(`${k}-value`, fmt(Math.round(9000000 * f))));
+    t.set("bmri-value", "3.600.000"); t.set("bbri-value", "2.400.000");
+    await t.flush();
+    const fix = t.ev("(()=>{const t=getTechnicalSettings();return getState(getRawValues(t),getSettings(),t).etfShortfallAware})()");
+    ok(fix === true, "NVDA 8% (target 5%, selisih 3 poin > ±2): di luar band, koreksi antar-ETF aktif");
   }
   console.log(`\n${pass} pengecekan lulus`);
 })().catch((e) => { console.error(e); process.exit(1); });
