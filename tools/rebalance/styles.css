@@ -1039,3 +1039,18 @@ a:focus-visible {
 .route-link{margin-top:.75rem;border:1px solid rgba(215,243,107,.4);border-radius:.9rem;padding:.7rem .8rem;font-size:.6875rem;line-height:1.5;color:rgba(255,255,255,.85)}
 .route-link[hidden]{display:none}
 #usd-rate:read-only,#wire-fee:read-only{opacity:.65}
+
+/* ===== Kartu bulan ringkas ===== */
+.timeline-card .hl { display: block; margin-top: 0.15rem; font-size: 0.84rem; color: #fff; }
+.timeline-card .hl strong { font-weight: 800; }
+.timeline-card .sub { color: rgba(255, 255, 255, 0.5); font-size: 0.72rem; }
+.kv { display: grid; grid-template-columns: 5.4rem 1fr; gap: 0.25rem 0.75rem; margin: 0.45rem 0 0; font-size: 0.74rem; }
+.kv dt { color: rgba(255, 255, 255, 0.45); font-size: 0.62rem; letter-spacing: 0.09em; text-transform: uppercase; padding-top: 0.12rem; }
+.kv dd { margin: 0; color: rgba(255, 255, 255, 0.85); }
+.chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.chip { border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 999px; padding: 0.1rem 0.6rem; font-size: 0.72rem; }
+.chip b { margin: 0 0 0 0.25rem; color: var(--lime); font-size: 0.72rem; letter-spacing: 0; text-transform: none; }
+.more { margin-top: 0.4rem; font-size: 0.7rem; color: rgba(255, 255, 255, 0.6); }
+.more summary { cursor: pointer; width: fit-content; color: rgba(255, 255, 255, 0.5); }
+.more summary:hover { color: var(--lime); }
+.more > div { margin-top: 0.3rem; line-height: 1.55; }

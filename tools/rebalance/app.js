@@ -1014,57 +1014,75 @@ function fundControl(state, entry) {
   return `<div class="fund-row">${toggle}<span class="wire-rate"><label>Nominal disetor <input class="fund-input" data-month="${entry.month}" type="text" inputmode="numeric" autocomplete="off" placeholder="${formatInputCurrency(state.settings.monthlyFund)}" value="${value}"></label></span>${override.amount > 0 ? "" : '<span class="fund-note">Belum diisi: sementara memakai Dana baru per bulan.</span>'}</div>`;
 }
 
+// Kartu bulan dibuat ringkas: satu kalimat inti, baris label-nilai, dan "Rincian" yang bisa dibuka.
+const openDetails = new Set();
+
+function kvRows(rows) {
+  const list = rows.filter(Boolean);
+  return list.length ? `<dl class="kv">${list.map(([label, value]) => `<dt>${label}</dt><dd>${value}</dd>`).join("")}</dl>` : "";
+}
+
+function chips(parts) {
+  return `<span class="chips">${parts.map(([name, value]) => `<span class="chip">${name} <b>${value}</b></span>`).join("")}</span>`;
+}
+
+function moreDetails(key, html) {
+  return html ? `<details class="more" data-key="${key}"${openDetails.has(key) ? " open" : ""}><summary>Rincian</summary><div>${html}</div></details>` : "";
+}
+
 function actionCard(state, entry, execution) {
   const fee = state.technical.wireFee;
   const now = entry.month === state.firstMonth.month;
   const items = [];
   if (entry.stock > 0) {
-    const carry = execution.openingCarry > 0 ? ` + saldo RDN ${formatCurrency(execution.openingCarry)}` : "";
+    const carry = execution.openingCarry > 0 ? ` <span class="sub">(+ saldo RDN ${formatCurrency(execution.openingCarry)})</span>` : "";
     const active = execution.trades.filter((trade) => trade.budget > 0);
     const boxes = priceBoxes(active.map((trade) => trade.key), entry.month);
     const alloc = active.map((trade) => `${trade.name} ${formatCurrency(trade.budget)}`).join(" · ");
+    const head = `<span class="hl">Transfer <strong>${formatCurrency(entry.stock)}</strong> ke RDN${carry}</span>`;
     if (execution.pending) {
-      items.push(`<li><b>Saham</b>Transfer ${formatCurrency(entry.stock)}${carry} ke RDN. Alokasi: ${alloc}. <em>Isi harga saham di bawah untuk menghitung jumlah lot.</em>${boxes}</li>`);
+      items.push(`<li><b>Saham</b>${head}${kvRows([["Alokasi", alloc]])}<em>Isi harga saham di bawah untuk menghitung jumlah lot.</em>${boxes}</li>`);
     } else if (now) {
       const buys = execution.trades.filter((trade) => trade.lots > 0).map((trade) => `${trade.name} ${trade.lots} lot (${formatCurrency(trade.spent)})`).join(" · ") || "belum cukup untuk 1 lot";
-      const feeText = execution.totalFee > 0 ? ` Sudah termasuk fee broker Stockbit ${formatCurrency(execution.totalFee)}.` : "";
-      items.push(`<li><b>Saham</b>Transfer ${formatCurrency(entry.stock)}${carry} ke RDN. Beli ${buys}.${feeText} Sisa ${formatCurrency(execution.remainder)} mengendap di RDN.${boxes}</li>`);
+      items.push(`<li><b>Saham</b>${head}${kvRows([["Beli", buys], execution.totalFee > 0 ? ["Fee Stockbit", formatCurrency(execution.totalFee) + " (sudah termasuk)"] : null, ["Sisa RDN", formatCurrency(execution.remainder)]])}${boxes}</li>`);
     } else {
-      const approx = active.map((trade) => `${trade.name} ${trade.lots} lot`).join(", ");
-      items.push(`<li><b>Saham</b>Transfer ${formatCurrency(entry.stock)}${carry} ke RDN. Alokasi: ${alloc} (perkiraan ${approx}). Jumlah lot dihitung ulang dengan harga hari itu; sisa mengendap di RDN.${boxes}</li>`);
+      const approx = active.map((trade) => `${trade.name} ${trade.lots} lot`).join(" · ");
+      items.push(`<li><b>Saham</b>${head}${kvRows([["Alokasi", alloc], ["Perkiraan", approx]])}${moreDetails(`${entry.month}-stock`, "Jumlah lot dihitung ulang dengan harga hari itu; sisa mengendap di RDN.")}${boxes}</li>`);
     }
   } else {
     const idle = execution.remainder > 0 ? ` Saldo RDN ${formatCurrency(execution.remainder)} tetap mengendap.` : "";
     items.push(`<li class="muted"><b>Saham</b>Tidak ada belanja bulan ini.${idle}</li>`);
   }
   const settlement = state.settlements.find((item) => item.month === entry.month);
-  if (entry.etf > 0) items.push(`<li><b>ETF</b>Tabung ${formatCurrency(entry.etf)} di rekening penampung${settlement ? "" : "; belum dikirim ke IBKR."}</li>`);
+  if (entry.etf > 0) items.push(`<li><b>ETF</b><span class="hl">Tabung <strong>${formatCurrency(entry.etf)}</strong> di rekening penampung${settlement ? "" : ' <span class="sub">(belum dikirim ke IBKR)</span>'}</span></li>`);
   else items.push(`<li class="muted"><b>ETF</b>Tidak ada tabungan ETF bulan ini.</li>`);
   if (settlement) {
     const manual = settlementRates[settlement.month] > 0;
     const rate = manual ? settlementRates[settlement.month] : state.technical.usdRate;
-    const sources = settlement.components.map((item) => `bulan ${item.month} ${formatCurrency(item.amount)}`).join(", ");
     const routeNote = state.technical.route;
-    const routeFee = routeNote ? ` Biaya rute ${routeNote.name} ≈ ${formatCurrency(Math.round(settlement.amount * routeNote.pct))} (${formatPercent(routeNote.pct, 2)}), sudah termasuk di kurs efektif.` : "";
-    const reserve = routeNote ? `Siapkan ${formatCurrency(settlement.amount)} (biaya setor sudah termasuk di kurs).` : `Siapkan ${formatCurrency(settlement.amount + fee)} termasuk biaya wire ${formatCurrency(fee)}.`;
+    const sources = settlement.components.map((item) => `bulan ${item.month} ${formatCurrency(item.amount)}`).join(", ");
     const placeholder = state.technical.usdRate > 0 ? decimalInputFormatter.format(state.technical.usdRate) : "isi manual";
     const rateInput = `<span class="wire-rate"><label>Kurs hari kirim <input class="wire-rate-input" data-month="${settlement.month}" type="text" inputmode="decimal" autocomplete="off" placeholder="${placeholder}" value="${manual ? decimalInputFormatter.format(rate) : ""}"></label></span>`;
-    const recheck = "<em>Estimasi: hitung ulang di hari kirim dengan kurs dan harga ETF terbaru.</em>";
+    const costRow = routeNote
+      ? ["Biaya", `rute ${routeNote.name} ≈ ${formatCurrency(Math.round(settlement.amount * routeNote.pct))} (${formatPercent(routeNote.pct, 2)}), sudah di kurs`]
+      : ["Biaya", fee > 0 ? `wire ${formatCurrency(fee)} · siapkan ${formatCurrency(settlement.amount + fee)}` : "wire Rp 0"];
+    const ibkrPct = state.technical.ibkrFee;
+    const detail = (extra) => moreDetails(`${entry.month}-wire`, [`Sumber dana: ${sources}.`, extra, "Estimasi: hitung ulang di hari kirim dengan kurs dan harga ETF terbaru."].filter(Boolean).join("<br>"));
     if (rate > 0) {
-      const usd = usdSplit(settlement, rate, state.technical.ibkrFee);
-      const buys = usd.rows.filter((item) => item.usd > 0).map((item) => `${item.name} ${formatUsd(item.usd)}`).join(" · ");
+      const usd = usdSplit(settlement, rate, ibkrPct);
+      const buys = chips(usd.rows.filter((item) => item.usd > 0).map((item) => [item.name, formatUsd(item.usd)]));
       const rateNote = manual ? "kurs hari kirim" : routeNote ? "kurs efektif rute termurah" : "kurs saat ini";
-      const ibkrFeeText = state.technical.ibkrFee > 0 ? ` Fee broker IBKR ≈ ${formatUsd(usd.fee)} (${formatPercent(state.technical.ibkrFee, 2)}) sudah dikurangkan dari dana ini.` : "";
-      items.push(`<li class="wire"><b>Setor IBKR</b>Kirim ${formatCurrency(settlement.amount)} (${sources}) ≈ <strong>${formatUsd(usd.total)}</strong> pada ${rateNote} ${formatCurrency(rate)}.${routeFee} ${reserve}${ibkrFeeText} Beli di IBKR (USD): ${buys}. ${recheck}${rateInput}</li>`);
+      const rows = [["Kurs", `${formatCurrency(rate)} · ${rateNote}`], costRow, ibkrPct > 0 ? ["Fee IBKR", `≈ ${formatUsd(usd.fee)} (${formatPercent(ibkrPct, 2)}), sudah dikurangkan`] : null, ["Beli (USD)", buys]];
+      items.push(`<li class="wire"><b>Setor IBKR</b><span class="hl">Kirim <strong>${formatCurrency(settlement.amount)}</strong> ≈ <strong>${formatUsd(usd.total)}</strong></span>${kvRows(rows)}${detail("")}${rateInput}</li>`);
     } else {
-      const scale = 1 + (state.technical.ibkrFee || 0);
-      const buys = settlement.allocation.filter((item) => item.amount > 0).map((item) => `${item.name} ${formatCurrency(Math.round(item.amount / scale))}`).join(" · ");
-      const ibkrFeeText = state.technical.ibkrFee > 0 ? ` Sudah dikurangi fee broker IBKR ${formatPercent(state.technical.ibkrFee, 2)}.` : "";
-      items.push(`<li class="wire"><b>Setor IBKR</b>Kirim ${formatCurrency(settlement.amount)} (${sources}). ${reserve}${ibkrFeeText} Pembagian beli (Rp): ${buys}. ${recheck} Isi kurs untuk melihat nominal USD.${rateInput}</li>`);
+      const scale = 1 + (ibkrPct || 0);
+      const buys = chips(settlement.allocation.filter((item) => item.amount > 0).map((item) => [item.name, formatCurrency(Math.round(item.amount / scale))]));
+      const rows = [costRow, ibkrPct > 0 ? ["Fee IBKR", `${formatPercent(ibkrPct, 2)}, sudah dikurangkan`] : null, ["Beli (Rp)", buys]];
+      items.push(`<li class="wire"><b>Setor IBKR</b><span class="hl">Kirim <strong>${formatCurrency(settlement.amount)}</strong></span>${kvRows(rows)}<em>Isi kurs untuk melihat nominal USD.</em>${detail("")}${rateInput}</li>`);
     }
   }
   const estimate = now ? "" : '<span class="timeline-badge soft">Estimasi</span>';
-  const note = now ? "" : `<p class="timeline-note">Dihitung dengan harga hari ini. Hitung ulang di awal bulan ${entry.month} dengan harga terbaru.</p>`;
+  const note = now ? "" : `<p class="timeline-note">Dihitung dengan harga hari ini; hitung ulang di awal bulan ${entry.month}.</p>`;
   return `<li class="timeline-card${now ? " is-now" : ""}"><div class="timeline-head"><strong>Bulan ${entry.month}${now ? " · sekarang" : ""}</strong><span class="timeline-badges">${estimate}<span class="timeline-badge">${phaseBadge(state, entry)}</span></span></div>${fundControl(state, entry)}${note}<ul>${items.join("")}</ul></li>`;
 }
 
@@ -1272,6 +1290,12 @@ Object.entries(elements.inputs).forEach(([key, input]) => {
   input.addEventListener("focus", () => { input.value = String(parseAssetInput(key, input.value) || "").replace(".", ","); });
   input.addEventListener("blur", () => { input.value = formatAssetInput(key, parseAssetInput(key, input.value)); scheduleRender(); });
 });
+elements.actionTimeline.addEventListener("toggle", (event) => {
+  const box = event.target.closest && event.target.closest("details.more");
+  if (!box) return;
+  if (box.open) openDetails.add(box.dataset.key);
+  else openDetails.delete(box.dataset.key);
+}, true);
 elements.actionTimeline.addEventListener("change", (event) => {
   const fundCheck = event.target.closest(".fund-check");
   if (fundCheck) {
