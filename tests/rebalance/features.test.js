@@ -278,5 +278,23 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
     const fix = t.ev("(()=>{const t=getTechnicalSettings();return getState(getRawValues(t),getSettings(),t).etfShortfallAware})()");
     ok(fix === true, "NVDA 8% (target 5%, selisih 3 poin > ±2): di luar band, koreksi antar-ETF aktif");
   }
+
+  // ---- 13. Tabel toleransi bisa disembunyikan / ditampilkan, dan pilihannya tersimpan
+  {
+    const t = load();
+    await t.flush();
+    const list = t.$("tolerance-list"), btn = t.$("tol-toggle");
+    ok(!list.hidden && /Sembunyikan/.test(btn.textContent) && btn.getAttribute("aria-expanded") === "true", "bawaan: tabel toleransi tampil, tombol 'Sembunyikan'");
+    btn.dispatchEvent(new t.w.Event("click", { bubbles: true }));
+    ok(list.hidden && /Tampilkan/.test(btn.textContent) && btn.getAttribute("aria-expanded") === "false", "klik: tabel disembunyikan, tombol jadi 'Tampilkan'");
+    await t.flush();
+    ok(list.textContent.includes("NVDA"), "isi tabel tetap terhitung saat tersembunyi (siap tampil lagi)");
+    const saved = JSON.parse(JSON.stringify(t.ev("rkGetState()")));
+    ok(saved.fields["tol-collapsed"] === "1", "pilihan sembunyi ikut tersimpan lewat jembatan");
+    const t2 = load(); t2.ev(`rkSetState(${JSON.stringify(saved)})`); await t2.flush();
+    ok(t2.$("tolerance-list").hidden && /Tampilkan/.test(t2.$("tol-toggle").textContent), "dimuat ulang: tabel tetap tersembunyi");
+    t2.$("tol-toggle").dispatchEvent(new t2.w.Event("click", { bubbles: true }));
+    ok(!t2.$("tolerance-list").hidden && /Sembunyikan/.test(t2.$("tol-toggle").textContent), "klik lagi: tabel tampil kembali");
+  }
   console.log(`\n${pass} pengecekan lulus`);
 })().catch((e) => { console.error(e); process.exit(1); });
