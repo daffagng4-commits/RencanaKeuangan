@@ -331,6 +331,9 @@ tr.tot td {
   font-size: 13.5px;
   font-weight: 500;
 }
+.sub.bad {
+  color: var(--wr);
+}
 .err {
   color: var(--wr);
   font-size: 13px;
@@ -3611,7 +3614,14 @@ var LB = {
 
 /** Pesan di jendela ubah harga (ok = hijau, selain itu merah). */
 function pmMsg(t, ok) {
-  var e = $("pme");
+  var e = $("pme"),
+    pv = $("ppv");
+  // Galat yang sama sudah tampil di pratinjau: cukup tandai pratinjau (merah), jangan tampilkan dua kali.
+  if (!ok && t && pv && pv.textContent === t) {
+    pv.classList.add("bad");
+    e.textContent = "";
+    return;
+  }
   e.textContent = t;
   e.style.color = ok ? "var(--ac)" : "var(--wr)";
 }
@@ -3836,6 +3846,26 @@ function setDates(list, auto, keepInput) {
   pmPrev();
 }
 
+/** Batasi kotak tanggal (min/max) dan beri petunjuk rentang saat menggeser satu tagihan; hapus batas di mode lain. */
+function pmDateRange() {
+  var el = $("pdt"),
+    it = item(pmId),
+    from = pmDates[0];
+  if (pmScen === "geser" && !pmMulti() && it && from) {
+    var rg = pmShiftRange(it, from);
+    if (rg.min) el.min = rg.min;
+    else el.removeAttribute("min");
+    if (rg.max) el.max = rg.max;
+    else el.removeAttribute("max");
+    $("pdh").textContent =
+      "Ketuk tagihan yang mau digeser, lalu ubah tanggal barunya." +
+      (rg.min || rg.max ? " Tanggal baru boleh " + (rg.min && rg.max ? "antara " + fmtD(rg.min) + " dan " + fmtD(rg.max) : rg.min ? "mulai " + fmtD(rg.min) : "sampai " + fmtD(rg.max)) + "." : "");
+  } else {
+    el.removeAttribute("min");
+    el.removeAttribute("max");
+  }
+}
+
 /** Susun perubahan (mode selain geser). @returns {c, cs, it} atau {err} */
 function pmDraftNormal() {
   var it = item(pmId);
@@ -3914,6 +3944,39 @@ function pmDraftNormal() {
  * Mode geser: tagihan terpilih (pmDates[0]) dipindah ke tanggal baru (#pdt). Tagihan sebelumnya tidak berubah;
  * tagihan itu dan sesudahnya mengikuti tanggal baru dengan siklus (dan harga) yang berlaku pada tagihan itu.
  */
+/** Tagihan sebelum & sesudah `from` pada jadwal SEKARANG, termasuk tahun sebelum/sesudahnya (jadwal tahun aktif saja tidak cukup). */
+function pmNeighbors(it, from) {
+  var y = +from.slice(0, 4),
+    seen = {},
+    all = [];
+  [y - 1, y, y + 1].forEach(function (yy) {
+    occ(it, yy).forEach(function (t) {
+      var d = isoD(t);
+      if (!seen[d]) {
+        seen[d] = 1;
+        all.push(d);
+      }
+    });
+  });
+  all.sort();
+  var i = all.indexOf(from);
+  return { prev: i > 0 ? all[i - 1] : null, next: i >= 0 && i < all.length - 1 ? all[i + 1] : null };
+}
+
+/** Rentang tanggal baru yang sah untuk menggeser `from`: sesudah tagihan sebelumnya dan sebelum tagihan berikutnya. */
+function pmShiftRange(it, from) {
+  var nb = pmNeighbors(it, from);
+  return { min: nb.prev ? addDaysISO(nb.prev, 1) : null, max: nb.next ? addDaysISO(nb.next, -1) : null, prev: nb.prev, next: nb.next };
+}
+
+function pmRangeMsg(r) {
+  return r.min && r.max
+    ? "Tanggal baru harus di antara " + fmtD(r.min) + " dan " + fmtD(r.max) + " (di antara tagihan " + fmtD(r.prev) + " dan " + fmtD(r.next) + ")."
+    : r.min
+      ? "Tanggal baru harus sesudah tagihan sebelumnya (" + fmtD(r.prev) + ")."
+      : "Tanggal baru harus sebelum tagihan berikutnya (" + fmtD(r.next) + ").";
+}
+
 function pmDraftShift(it) {
   var from = pmDates[0],
     to = $("pdt").value;
@@ -3925,18 +3988,9 @@ function pmDraftShift(it) {
     return {
       err: "Tanggal baru sama dengan tanggal tagihan. Pilih tanggal yang berbeda.",
     };
-  var sched = pmScheduleDates(it),
-    i = sched.indexOf(from),
-    prev = i > 0 ? sched[i - 1] : null;
-  if (prev && to <= prev)
-    return {
-      err:
-        "Tanggal baru harus sesudah tagihan sebelumnya (" + fmtD(prev) + ").",
-    };
+  var rg = pmShiftRange(it, from);
+  if ((rg.min && to < rg.min) || (rg.max && to > rg.max)) return { err: pmRangeMsg(rg) };
   if ($("pgm").value === "satu") {
-    var nx = sched[i + 1];
-    if (nx && to >= nx)
-      return { err: "Tanggal baru harus sebelum tagihan berikutnya (" + fmtD(nx) + ")." };
     var ko = origDate(it, from),
       c1 = { from: ko, to: ko, price: null, n: null, unit: null, cut: false, mv: {} };
     c1.mv[ko] = to;
@@ -3944,15 +3998,20 @@ function pmDraftShift(it) {
   }
   var sg = segAt(it, from),
     eff = priceAt(it, Date.parse(from + "T00:00:00Z")),
+    // Tagihan ini sendiri hasil geser sebelumnya (tanggalnya = anchor sebuah perubahan lama): ubah perubahan itu
+    // (from asli dipertahankan) alih-alih menambah yang baru, karena yang baru kalah urutan dari yang lama.
+    old = (it.ch || []).filter(function (q) {
+      return q.anchor === from && !q.cut && !q.mv && !q.dates;
+    })[0],
     c = {
-      from: from,
+      from: old ? old.from : from,
       anchor: to,
-      to: "",
+      to: old ? old.to || "" : "",
       price: eff !== it.price ? eff : null,
       n: (sg && sg.n) || it.n,
       unit: (sg && sg.unit) || it.unit,
     };
-  return { c: c, cs: [c], it: it };
+  return { c: c, cs: [c], it: it, disp: from };
 }
 
 /** Mode geser "pilih sendiri": tiap tagihan terpilih dipindah ke tanggal (1-31) yang sama di bulannya masing-masing. */
@@ -3973,6 +4032,14 @@ function pmDraftMulti(it) {
   });
   var ks = Object.keys(mv).sort();
   if (!ks.length) return { err: "Tanggal barunya sama dengan tanggal tagihan. Pilih tanggal yang berbeda." };
+  var cnt = {};
+  Object.keys(nw).forEach(function (d) {
+    cnt[nw[d]] = (cnt[nw[d]] || 0) + 1;
+  });
+  var dup = Object.keys(cnt).filter(function (d) {
+    return cnt[d] > 1;
+  });
+  if (dup.length) return { err: "Dua tagihan akan pindah ke tanggal yang sama (" + fmtD(dup[0]) + "). Pilih tanggal lain." };
   var bad = Object.keys(nw).filter(function (d) {
     return sched.indexOf(nw[d]) >= 0 && !nw[nw[d]];
   });
@@ -4004,8 +4071,10 @@ function pmPrev() {
   if (d.err) {
     p.className = "sub";
     p.textContent = d.err;
+    pmDateRange();
     return;
   }
+  pmDateRange();
   var tmp = Object.assign({}, d.it, {
     ch: (d.it.ch || [])
       .filter(function (q) {
@@ -4191,7 +4260,7 @@ function pmSc(sc) {
   }
   pmPrefill(it);
   if (sc === "sementara") $("pw").value = "until";
-  if (sc === "geser") $("pdt").value = "";
+  if (sc === "geser") $("pdt").value = pmDates[0] || "";
   var until = $("pw").value === "until";
   $("pform").hidden = !sc;
   $("pps").hidden = !sc;
@@ -4267,7 +4336,7 @@ function savePm() {
   // Mode geser: tanggal lama -> baru diketahui persis, jadi status lunas/lewati dipindah langsung (bukan ditebak).
   if (pmScen === "geser")
     d.cs.forEach(function (c) {
-      if (c.anchor) pairs.push([c.from, c.anchor]);
+      if (c.anchor) pairs.push([d.disp || c.from, c.anchor]);
       else if (c.mv)
         pmDates.forEach(function (cur) {
           var k = origDate(it, cur);
@@ -4307,7 +4376,9 @@ function bindPrice() {
     if (b) pmSc(b.dataset.sc);
   };
   $("pgm").onchange = function () {
-    setDates(this.value === "pilih" ? pmDates : pmDates.slice(0, 1), false, true);
+    var keep = this.value === "pilih" ? pmDates : pmDates.slice(0, 1);
+    if (this.value !== "pilih" && keep[0]) $("pdt").value = keep[0];
+    setDates(keep, false, true);
   };
   $("pgd").oninput = pmPrev;
   ["pp", "pn", "pu", "pto", "pa", "pcut"].forEach(function (i) {
@@ -4337,7 +4408,10 @@ function bindPrice() {
     var b = e.target.closest("button[data-d]");
     if (!b) return;
     var d = b.dataset.d;
-    if (pmScen === "geser" && !pmMulti()) return setDates([d], false, true);
+    if (pmScen === "geser" && !pmMulti()) {
+      $("pdt").value = d;
+      return setDates([d], false, true);
+    }
     if (!pmMulti()) return setDates([d], true);
     setDates(
       pmDates.indexOf(d) >= 0
