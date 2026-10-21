@@ -316,5 +316,22 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
     const st = JSON.parse(JSON.stringify(t.ev("rkGetState()")));
     ok(st.fields["rdn-carry"] === "123.456", "saldo RDN tetap tersimpan lewat jembatan");
   }
+
+  // ---- 15. Isian nilai ETF: 2 baris x 2 kolom (VOO | VXUS, SMH | NVDA)
+  {
+    const t = load();
+    await t.flush();
+    const grid = t.w.document.querySelector(".etf-grid");
+    const ids = [...grid.children].map((c) => c.querySelector("input").id);
+    ok(grid && ids.join() === "etf1-value,etf2-value,etf3-value,etf4-value", "grid ETF berisi 4 kotak berurutan: VOO, VXUS, SMH, NVDA (2 kolom => baris 1 VOO|VXUS, baris 2 SMH|NVDA)");
+    const names = [...grid.children].map((c) => c.querySelector("label").textContent.trim());
+    ok(names.join() === "VOO,VXUS,SMH,NVDA", "label berurutan VOO, VXUS, SMH, NVDA");
+    ok(!/xl:grid-cols-1|sm:grid-cols-2/.test(grid.className), "tidak lagi memakai kelas responsif yang memecah jadi satu kolom");
+    ok([...grid.children].every((c) => c.querySelector(".asset-live-share")), "persentase porsi di tiap kotak tetap tampil");
+    t.set("usd-rate", "16.000"); t.set("etf-currency", "usd"); await t.flush();
+    ok([...grid.querySelectorAll(".currency-input-wrap > span")].every((s) => /US\$/.test(s.textContent)), "satuan US$ tetap tampil di tiap kotak");
+    t.set("etf1-value", "186,2"); await t.flush();
+    ok(/%$/.test(t.$("etf1-live-share").textContent), "porsi langsung ikut berubah saat nilai diubah: " + t.$("etf1-live-share").textContent);
+  }
   console.log(`\n${pass} pengecekan lulus`);
 })().catch((e) => { console.error(e); process.exit(1); });
