@@ -899,6 +899,18 @@ function renderSettings(state) {
   renderToleranceList(settings);
 }
 
+// Tampilkan/sembunyikan tabel batas toleransi; pilihannya ikut tersimpan lewat jembatan (input tersembunyi #tol-collapsed).
+function applyToleranceToggle() {
+  const list = document.querySelector("#tolerance-list");
+  const button = document.querySelector("#tol-toggle");
+  const flag = document.querySelector("#tol-collapsed");
+  if (!list || !button || !flag) return;
+  const collapsed = flag.value === "1";
+  list.hidden = collapsed;
+  button.textContent = collapsed ? "Tampilkan batas toleransi" : "Sembunyikan batas toleransi";
+  button.setAttribute("aria-expanded", String(!collapsed));
+}
+
 // Daftar batas aman (band) untuk parent dan child, mengikuti target yang sedang diisi.
 function renderToleranceList(settings) {
   const box = document.querySelector("#tolerance-list");
@@ -1440,6 +1452,12 @@ elements.actionTimeline.addEventListener("change", (event) => {
   input.addEventListener("input", scheduleRender);
   input.addEventListener("blur", () => { const fee = parseDecimal(input.value); input.value = fee > 0 ? decimalInputFormatter.format(fee) : ""; scheduleRender(); });
 });
+document.querySelector("#tol-toggle").addEventListener("click", () => {
+  const flag = document.querySelector("#tol-collapsed");
+  flag.value = flag.value === "1" ? "0" : "1";
+  applyToleranceToggle();
+  if (window.rkChanged) window.rkChanged();
+});
 elements.usdRate.addEventListener("input", scheduleRender);
 elements.usdRate.addEventListener("focus", () => { elements.usdRate.value = String(parseDecimal(elements.usdRate.value) || "").replace(".", ","); });
 elements.usdRate.addEventListener("blur", () => { const rate = parseDecimal(elements.usdRate.value); elements.usdRate.value = rate > 0 ? decimalInputFormatter.format(rate) : ""; scheduleRender(); });
@@ -1542,5 +1560,6 @@ function rkSetState(state) {
   } catch (error) { /* abaikan */ }
   syncEtfUnitLabels();
   updatePeriodCopy();
+  applyToleranceToggle();
   render();
 }

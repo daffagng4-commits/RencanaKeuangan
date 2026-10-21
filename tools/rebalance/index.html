@@ -110,6 +110,8 @@
               <span class="rounded-full border border-lime/25 bg-lime/10 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.1em] text-lime">Live target</span>
             </div>
             <p class="mt-3 text-[11px] leading-5 text-white/45">Setiap kelompok harus tepat 100%. Selisih dari target di dalam batas aman tidak memicu koreksi. Batasnya &plusmn;5 poin, lebih sempit untuk target kecil (lihat daftar di bawah).</p>
+            <button type="button" id="tol-toggle" class="tol-toggle" aria-controls="tolerance-list" aria-expanded="true">Sembunyikan batas toleransi</button>
+            <input type="hidden" id="tol-collapsed" value="0">
             <div id="tolerance-list" class="tolerance-list"></div>
 
             <div class="target-block">

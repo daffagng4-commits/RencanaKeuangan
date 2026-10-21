@@ -1070,3 +1070,7 @@ a:focus-visible {
 .tol-row small { color: rgba(255, 255, 255, 0.45); }
 .tol-row em { font-style: normal; color: var(--lime); font-weight: 700; }
 .tol-rule { margin: 0.7rem 0 0; color: rgba(255, 255, 255, 0.5); line-height: 1.5; }
+.tol-toggle { margin-top: 0.9rem; border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 0.75rem; background: transparent; padding: 0.4rem 0.8rem; color: rgba(255, 255, 255, 0.8); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+.tol-toggle:hover { border-color: var(--lime); color: var(--lime); }
+.tolerance-list[hidden] { display: none; }
+.tol-toggle + input + .tolerance-list { margin-top: 0.6rem; }
