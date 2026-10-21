@@ -207,30 +207,31 @@
             </div>
             <p class="mt-3 text-[11px] leading-5 text-white/45">Harga saham diisi per bulan di kartu Action Plan (minimal 1 lot = 100 lembar). Biaya wire wajib disiapkan di luar dana baru bulanan.</p>
 
-            
-            <div class="mt-4">
-              <label for="rdn-carry" class="input-label">Saldo Cash RDN Mengendap Bulan Lalu</label>
-              <div class="currency-input-wrap"><span>Rp</span><input id="rdn-carry" class="technical-input" type="text" inputmode="numeric" autocomplete="off" value="0"></div>
-              <p id="rdn-auto-copy" class="mt-2 text-[10px] leading-4 text-white/40">Sisa bulan ini dapat disimpan untuk periode berikutnya.</p>
-              <button id="save-rdn-button" type="button" class="mt-3 w-full rounded-xl border border-white/15 px-4 py-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-white/65 transition hover:border-white/35 hover:text-white disabled:opacity-40">Simpan sisa ke periode berikutnya</button>
+
+            <div class="tech-grid">
+              <div class="tech-cell">
+                <label for="rdn-carry" class="input-label">Saldo Cash RDN Mengendap Bulan Lalu</label>
+                <div class="currency-input-wrap compact"><span>Rp</span><input id="rdn-carry" class="technical-input" type="text" inputmode="numeric" autocomplete="off" value="0"></div>
+                <p class="tech-hint">Sisa cash di RDN dari bulan lalu.</p>
+              </div>
+              <div class="tech-cell">
+                <label for="wire-fee" class="input-label">Estimasi Biaya Wire Transfer Bank</label>
+                <div class="currency-input-wrap compact"><span>Rp</span><input id="wire-fee" class="technical-input" type="text" inputmode="numeric" autocomplete="off" value="250.000"></div>
+                <p class="tech-hint">Per setoran. Rp 0 bila IBKR vs Flip terhubung.</p>
+              </div>
             </div>
 
-            <div class="mt-4">
-              <label for="wire-fee" class="input-label">Estimasi Biaya Wire Transfer Bank</label>
-              <div class="currency-input-wrap"><span>Rp</span><input id="wire-fee" class="technical-input" type="text" inputmode="numeric" autocomplete="off" value="250.000"></div>
-              <p class="mt-2 text-[10px] leading-4 text-white/40">Panduan umum: Rp 150.000 - Rp 350.000 per wire transfer. Terkunci Rp 0 bila tab IBKR vs Flip terhubung (biaya sudah di kurs efektif).</p>
-            </div>
-
-            <div class="mt-4">
-              <label for="stock-fee" class="input-label">Fee broker Stockbit saat beli saham (%)</label>
-              <div class="currency-input-wrap"><span>%</span><input id="stock-fee" class="technical-input" type="text" inputmode="decimal" autocomplete="off" value="" placeholder="Isi sesuai Stockbit"></div>
-              <p class="mt-2 text-[10px] leading-4 text-white/40">Kosong = tanpa fee. Fee ditambahkan ke biaya tiap lot dan mengurangi saldo RDN.</p>
-            </div>
-
-            <div class="mt-4">
-              <label for="ibkr-fee" class="input-label">Fee broker IBKR saat beli ETF (%)</label>
-              <div class="currency-input-wrap"><span>%</span><input id="ibkr-fee" class="technical-input" type="text" inputmode="decimal" autocomplete="off" value="" placeholder="Isi sesuai IBKR"></div>
-              <p class="mt-2 text-[10px] leading-4 text-white/40">Kosong = tanpa fee. Diambil dari dana yang masuk ke IBKR, jadi nilai beli ETF sedikit lebih kecil. Terpisah dari biaya setor/kurs.</p>
+            <div class="tech-grid tech-grid-second">
+              <div class="tech-cell">
+                <label for="stock-fee" class="input-label">Fee broker Stockbit saat beli saham (%)</label>
+                <div class="currency-input-wrap compact"><span>%</span><input id="stock-fee" class="technical-input" type="text" inputmode="decimal" autocomplete="off" value="" placeholder="mis. 0,15"></div>
+                <p class="tech-hint">Kosong = tanpa fee. Mengurangi saldo RDN.</p>
+              </div>
+              <div class="tech-cell">
+                <label for="ibkr-fee" class="input-label">Fee broker IBKR saat beli ETF (%)</label>
+                <div class="currency-input-wrap compact"><span>%</span><input id="ibkr-fee" class="technical-input" type="text" inputmode="decimal" autocomplete="off" value="" placeholder="mis. 0,5"></div>
+                <p class="tech-hint">Kosong = tanpa fee. Dipotong dari dana masuk.</p>
+              </div>
             </div>
             <div id="technical-validation" class="target-validation valid" role="status">Harga saham dan biaya bank siap digunakan.</div>
           </section>

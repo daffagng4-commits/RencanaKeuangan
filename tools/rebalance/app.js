@@ -94,7 +94,6 @@ const elements = {
   ibkrFee: document.querySelector("#ibkr-fee"),
   routeLink: document.querySelector("#route-link"),
   etfCurrency: document.querySelector("#etf-currency"),
-  rdnAutoCopy: document.querySelector("#rdn-auto-copy"),
   technicalValidation: document.querySelector("#technical-validation"),
   targetValidation: document.querySelector("#target-validation"),
   metricMonthlyFund: document.querySelector("#metric-monthly-fund"),
@@ -175,7 +174,6 @@ const elements = {
   projectionStatus: document.querySelector("#projection-status"),
   healthNote: document.querySelector("#health-note"),
   footerBand: document.querySelector("#footer-band"),
-  saveRdnButton: document.querySelector("#save-rdn-button"),
   shortfallStock: document.querySelector("#shortfall-stock"),
   shortfallEtf: document.querySelector("#shortfall-etf"),
   shortfallNote: document.querySelector("#shortfall-note"),
@@ -192,7 +190,6 @@ let lastValidTechnical = { ...DEFAULT_TECHNICAL };
 const RDN_STORAGE_PREFIX = "aras-portfolio-rdn:";
 const MAX_SETTLEMENT_CARDS = 12;
 let renderFrame = null;
-let lastRemainder = 0;
 
 function sum(values) {
   return values.reduce((total, value) => total + value, 0);
@@ -265,31 +262,6 @@ function formatPercent(value, digits = 2) {
 
 function formatTargetList(definitions) {
   return definitions.map((item) => `${formatTargetNumber(item.weight * 100)}%`).join(" / ");
-}
-
-function nextMonth(period) {
-  if (!/^\d{4}-\d{2}$/.test(period)) return null;
-  const [year, month] = period.split("-").map(Number);
-  const date = new Date(year, month, 1);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function readStoredRdn(period) {
-  try {
-    const value = localStorage.getItem(`${RDN_STORAGE_PREFIX}${period}`);
-    return value === null ? null : Math.max(0, Number(value) || 0);
-  } catch {
-    return null;
-  }
-}
-
-function storeRdn(period, value) {
-  if (!period) return;
-  try {
-    localStorage.setItem(`${RDN_STORAGE_PREFIX}${period}`, String(Math.max(0, Math.round(value))));
-  } catch {
-    // The calculator still works when storage is blocked by browser policy.
-  }
 }
 
 function allocateByWeights(total, definitions) {
@@ -1271,15 +1243,6 @@ function render() {
   renderActionPlan(state);
   renderShortfall(state);
   renderProjection(state);
-  const targetPeriod = nextMonth(elements.targetMonth.value);
-  const firstLot = monthlyLotPlans(state, [state.firstMonth])[0];
-  lastRemainder = firstLot.pending ? null : firstLot.remainder;
-  elements.saveRdnButton.disabled = !targetPeriod || lastRemainder === null;
-  elements.rdnAutoCopy.textContent = !targetPeriod
-    ? "Pilih periode simulasi untuk menyimpan sisa RDN."
-    : lastRemainder === null
-      ? "Isi harga saham di kartu Bulan 1 agar sisa RDN bulan ini bisa dihitung."
-      : `Sisa bulan ini ${formatCurrency(lastRemainder)}. Klik "Simpan sisa" setelah Anda benar-benar mengeksekusi order, agar jadi saldo awal periode ${targetPeriod}.`;
   if (window.rkChanged) window.rkChanged();
 }
 
@@ -1382,11 +1345,6 @@ function syncRouteLink() {
   scheduleRender();
 }
 
-function loadRdnForPeriod() {
-  const stored = readStoredRdn(elements.targetMonth.value);
-  elements.rdnCarry.value = formatInputCurrency(stored ?? 0);
-}
-
 function updatePeriodCopy() {
   if (!elements.targetMonth.value) {
     elements.periodCopy.textContent = "Snapshot aktif";
@@ -1398,12 +1356,6 @@ function updatePeriodCopy() {
 }
 
 elements.analyzeButton.addEventListener("click", render);
-elements.saveRdnButton.addEventListener("click", () => {
-  const targetPeriod = nextMonth(elements.targetMonth.value);
-  if (!targetPeriod || lastRemainder === null) return;
-  storeRdn(targetPeriod, lastRemainder);
-  elements.rdnAutoCopy.textContent = `Tersimpan: ${formatCurrency(lastRemainder)} akan jadi saldo awal periode ${targetPeriod}.`;
-});
 Object.entries(elements.inputs).forEach(([key, input]) => {
   input.addEventListener("input", scheduleRender);
   input.addEventListener("focus", () => { input.value = String(parseAssetInput(key, input.value) || "").replace(".", ","); });
@@ -1497,13 +1449,11 @@ Object.values(elements.targetInputs).forEach((input) => {
 elements.targetMonth.addEventListener("change", () => {
   clearMonthlyInputs();
   updatePeriodCopy();
-  loadRdnForPeriod();
   render();
 });
 elements.resetButton.addEventListener("click", () => {
   resetSettings();
   elements.targetMonth.value = "2027-06";
-  storeRdn(elements.targetMonth.value, 0);
   updatePeriodCopy();
   restoreInitialValues();
 });
@@ -1511,7 +1461,6 @@ elements.resetButton.addEventListener("click", () => {
 syncEtfUnitLabels();
 initializeCharts();
 updatePeriodCopy();
-loadRdnForPeriod();
 render();
 
 

@@ -1074,3 +1074,13 @@ a:focus-visible {
 .tol-toggle:hover { border-color: var(--lime); color: var(--lime); }
 .tolerance-list[hidden] { display: none; }
 .tol-toggle + input + .tolerance-list { margin-top: 0.6rem; }
+
+/* ===== Pengaturan teknis: 2 baris x 2 kolom ===== */
+.tech-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 0.75rem; margin-top: 1rem; }
+.tech-grid-second { margin-top: 0.75rem; }
+.tech-cell { display: flex; flex-direction: column; min-width: 0; }
+.tech-cell .input-label { flex: 1 1 auto; display: flex; align-items: flex-end; margin-bottom: 0.45rem; line-height: 1.35; letter-spacing: 0.08em; }
+.tech-grid .currency-input-wrap { gap: 0.45rem; padding: 0.2rem 0.7rem; }
+.tech-grid .currency-input-wrap input { font-size: 0.9rem; padding: 0.55rem 0; }
+.tech-hint { margin: 0.4rem 0 0; color: rgba(255, 255, 255, 0.4); font-size: 0.625rem; line-height: 1.4; }
+@media (max-width: 340px) { .tech-grid { grid-template-columns: 1fr; gap: 0.75rem; } }
