@@ -296,5 +296,25 @@ const calc = (t) => JSON.parse(t.ev(`(()=>{const t=getTechnicalSettings();const 
     t2.$("tol-toggle").dispatchEvent(new t2.w.Event("click", { bubbles: true }));
     ok(!t2.$("tolerance-list").hidden && /Sembunyikan/.test(t2.$("tol-toggle").textContent), "klik lagi: tabel tampil kembali");
   }
+
+  // ---- 14. Pengaturan teknis: 2 baris x 2 kolom, tombol "Simpan sisa" dihapus
+  {
+    const t = load();
+    await t.flush();
+    const grids = [...t.w.document.querySelectorAll(".technical-settings .tech-grid")];
+    ok(grids.length === 2 && grids.every((g) => g.querySelectorAll(".tech-cell").length === 2), "pengaturan teknis: tepat 2 baris, masing-masing 2 kotak");
+    const labels = grids.map((g) => [...g.querySelectorAll("label")].map((l) => l.textContent.trim()));
+    ok(/Saldo Cash RDN/.test(labels[0][0]) && /Estimasi Biaya Wire/.test(labels[0][1]), "baris 1: Saldo Cash RDN | Estimasi Biaya Wire Transfer Bank");
+    ok(/Fee broker Stockbit/.test(labels[1][0]) && /Fee broker IBKR/.test(labels[1][1]), "baris 2: Fee broker Stockbit | Fee broker IBKR");
+    const hints = [...t.w.document.querySelectorAll(".tech-hint")].map((p) => p.textContent.trim());
+    ok(hints.length === 4 && hints.every((h) => h.length > 0 && h.length <= 60), "tiap kotak punya penjelasan singkat (<= 60 karakter): " + hints.map((h) => h.length).join(","));
+    ok(t.$("save-rdn-button") === null && !/Simpan sisa/.test(t.w.document.body.textContent), "tombol 'Simpan sisa ke periode berikutnya' sudah dihapus");
+    ok(grids[0].children[0].querySelector("#rdn-carry") && grids[0].children[1].querySelector("#wire-fee") && grids[1].children[0].querySelector("#stock-fee") && grids[1].children[1].querySelector("#ibkr-fee"), "keempat isian tetap ada di tempat yang benar");
+    // saldo RDN diisi manual dan tidak tertimpa saat periode diganti
+    t.set("rdn-carry", "123.456"); t.set("target-month", "2027-08"); await t.flush();
+    ok(t.$("rdn-carry").value === "123.456", "saldo RDN yang diketik tidak tertimpa saat periode simulasi diganti");
+    const st = JSON.parse(JSON.stringify(t.ev("rkGetState()")));
+    ok(st.fields["rdn-carry"] === "123.456", "saldo RDN tetap tersimpan lewat jembatan");
+  }
   console.log(`\n${pass} pengecekan lulus`);
 })().catch((e) => { console.error(e); process.exit(1); });

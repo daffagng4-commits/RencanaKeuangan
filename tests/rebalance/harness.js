@@ -12,6 +12,7 @@ function load(opts = {}) {
     .replace(/<script>\s*tailwind\.config[\s\S]*?<\/script>/, "")
     .replace(/<script src="\.\.\/bridge\.js"><\/script>/, "")
     .replace(/<script src="app\.js"><\/script>/, () => `<script>${app}</script>`);
+  if (opts.appFile) html = html.replace(/<body[^>]*>/, (m) => m + '<button id="save-rdn-button"></button><p id="rdn-auto-copy"></p>'); // elemen lama yang dicari app.js versi r18
   const dom = new JSDOM(html, { url: "http://localhost/tools/rebalance/index.html", runScripts: "dangerously", pretendToBeVisual: true });
   const w = dom.window;
   const errors = [];
