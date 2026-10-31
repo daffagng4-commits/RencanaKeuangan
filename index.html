@@ -6730,7 +6730,7 @@ function simCalc(list) {
       C.items.forEach(function (it) {
         if (it.id != x.id) return;
         if (x.k === 'stop') { it.end = isoD(Date.UTC(y, x.m, 0)); it.cnt = 0; }
-        else if (x.k === 'cycle' || x.k === 'shift') it.ch = (it.ch || []).concat([simChg(it, x)]).sort(cmpFrom);
+        else if (x.k === 'cycle' || x.k === 'shift') simPutChg(it, simChg(it, x));
         else it.ch = (it.ch || []).concat([{ from: y + '-' + pad2(x.m + 1) + '-01', to: '', price: x.amt, n: null, unit: null, cut: false }]);
       });
   });
@@ -6738,23 +6738,87 @@ function simCalc(list) {
   KL.tx = keepTx.concat(extra);
   try { return calc(); } finally { S = keepS; KL.tx = keepTx; }
 }
-function simItemDates(id) {
-  var it = S.items.filter(function (x) { return x.id == id; })[0],
-    L = it ? occ(it, +S.year) : [];
-  return L.length ? L.map(function (t) { return '<option value="' + isoD(t) + '">' + fmtD(isoD(t)) + '</option>'; }).join('') : '<option value="">(tidak ada tagihan)</option>';
+/** Tagihan item di tahun aktif yang BELUM lunas dan tidak dilewati: hanya ini yang masuk akal untuk disimulasikan. */
+function simOpen(it) {
+  if (!it) return [];
+  return occ(it, +S.year)
+    .map(isoD)
+    .filter(function (d) {
+      var k = it.id + '|' + d;
+      return !S.paid[k] && !S.skip[k];
+    });
 }
-function simExtra() {
+function simOpenItems() {
+  return S.items.filter(function (it) {
+    return simOpen(it).length;
+  });
+}
+function simOpenMonths(id) {
+  var seen = {},
+    r = [];
+  simOpen(item(id)).forEach(function (d) {
+    var m = +d.slice(5, 7) - 1;
+    if (!seen[m]) {
+      seen[m] = 1;
+      r.push(m);
+    }
+  });
+  return r;
+}
+function simMonthOpts(id) {
+  var L = simOpenMonths(id);
+  return L.length
+    ? L.map(function (m) { return '<option value="' + m + '">' + MON[m] + '</option>'; }).join('')
+    : '<option value="">(tidak ada tagihan tersisa)</option>';
+}
+function simItemDates(id) {
+  var L = simOpen(item(id));
+  return L.length ? L.map(function (d) { return '<option value="' + d + '">' + fmtD(d) + '</option>'; }).join('') : '<option value="">(tidak ada tagihan tersisa)</option>';
+}
+/** Isi kotak tanggal baru (geser) dengan tanggal tagihan terpilih + batas sah, dan batas awal tanggal siklus baru. */
+function simSyncDates() {
+  var f = $('smf'),
+    t = $('smt'),
+    h = $('smth'),
+    d = $('smd');
+  if (f && t) {
+    var it = item($('smi') && $('smi').value);
+    if (it && f.value) {
+      var rg = pmShiftRange(it, f.value);
+      t.value = f.value;
+      if (rg.min) t.min = rg.min; else t.removeAttribute('min');
+      if (rg.max) t.max = rg.max; else t.removeAttribute('max');
+      if (h) h.textContent = rg.min || rg.max ? 'Tanggal baru boleh ' + (rg.min && rg.max ? 'antara ' + fmtD(rg.min) + ' dan ' + fmtD(rg.max) : rg.min ? 'mulai ' + fmtD(rg.min) : 'sampai ' + fmtD(rg.max)) + '.' : '';
+    } else {
+      t.value = '';
+      if (h) h.textContent = '';
+    }
+  }
+  if (d) {
+    var o = simOpen(item($('smi') && $('smi').value));
+    if (o.length) d.min = o[0]; else d.removeAttribute('min');
+  }
+}
+function simExtra(firstId) {
   if (simK === 'cycle')
     return '<div><label for="smn2">Bayar tiap</label><input id="smn2" type="number" min="1" value="3"></div><div><label for="smu">Satuan</label><select id="smu"><option value="bulan">bulan</option><option value="tahun">tahun</option><option value="minggu">minggu</option><option value="hari">hari</option></select></div><div style="grid-column:1/-1"><label for="smd">Mulai berlaku dari tanggal</label><input id="smd" type="date"><div class="sub" style="margin-top:4px">Siklus baru dimulai di tanggal ini; jadwal lama sesudahnya diganti.</div></div>';
-  return '<div style="grid-column:1/-1"><label for="smf">Tagihan yang digeser</label><select id="smf">' + simItemDates(S.items[0] && S.items[0].id) + '</select><div class="sub" style="margin-top:4px">Tagihan ini dan semua sesudahnya mengikuti tanggal baru dengan siklus yang sama.</div></div><div style="grid-column:1/-1"><label for="smt">Ganti jadi tanggal</label><input id="smt" type="date"></div>';
+  return '<div style="grid-column:1/-1"><label for="smf">Tagihan yang digeser</label><select id="smf">' + simItemDates(firstId) + '</select><div class="sub" style="margin-top:4px">Tagihan ini dan semua sesudahnya mengikuti tanggal baru dengan siklus yang sama.</div></div><div style="grid-column:1/-1"><label for="smt">Ganti jadi tanggal</label><input id="smt" type="date"><div class="sub" id="smth" style="margin-top:4px"></div></div>';
 }
 /** Perubahan jadwal (ch) untuk skenario siklus / geser. */
 function simChg(it, x) {
   var eff = priceAt(it, Date.parse(x.from + 'T00:00:00Z')),
     p = eff !== it.price ? eff : null;
   if (x.k === 'cycle') return { from: x.from, to: '', price: p, n: x.n, unit: x.unit, cut: false };
-  var sg = segAt(it, x.from);
-  return { from: x.from, anchor: x.to, to: '', price: p, n: (sg && sg.n) || it.n, unit: (sg && sg.unit) || it.unit };
+  var sg = segAt(it, x.from),
+    old = (it.ch || []).filter(function (q) { return q.anchor === x.from && !q.cut && !q.mv && !q.dates; })[0];
+  return { from: old ? old.from : x.from, anchor: x.to, to: old ? old.to || '' : '', price: p, n: (sg && sg.n) || it.n, unit: (sg && sg.unit) || it.unit };
+}
+/** Tambahkan perubahan jadwal `g` ke `it`: yang bertanda tangan sama diganti (bukan ditumpuk). */
+function simPutChg(it, g) {
+  it.ch = (it.ch || [])
+    .filter(function (q) { return chSig(q) !== chSig(g); })
+    .concat([g])
+    .sort(cmpFrom);
 }
 function simName(id) {
   var it = S.items.filter(function (x) { return x.id == id; })[0];
@@ -6779,17 +6843,20 @@ function simChart(A, B) {
 function renderSim() {
   var el = $('v-sim');
   if (mode === 'trip') { el.innerHTML = ''; return; }
-  var mo = MON.map(function (m, i) { return '<option value="' + i + '">' + m + '</option>'; }).join(''), items = S.items.map(function (it) { return '<option value="' + it.id + '">' + esc(it.name) + '</option>'; }).join(''),
+  var mo = MON.map(function (m, i) { return '<option value="' + i + '">' + m + '</option>'; }).join(''), openIts = simOpenItems(),
+    firstId = openIts[0] ? openIts[0].id : '',
+    items = openIts.length ? openIts.map(function (it) { return '<option value="' + it.id + '">' + esc(it.name) + '</option>'; }).join('') : '<option value="">(tidak ada item dengan tagihan tersisa)</option>',
     two = simK === 'in' || simK === 'out',
     nb = simK === 'cycle' || simK === 'shift',
     form =
       '<div class="card"><h2>Simulasi &quot;bagaimana jika&quot; &middot; ' + S.year + '</h2><div class="sub" style="margin-bottom:10px">Coba perubahan tanpa mengubah data. Hasilnya langsung terlihat di grafik.</div><div class="kf"><div style="grid-column:1/-1"><label for="smk">Skenario</label><select id="smk">' +
       [['out', 'Tambah pengeluaran / cicilan'], ['in', 'Tambah pemasukan'], ['stop', 'Hentikan item'], ['price', 'Ubah harga item'], ['cycle', 'Ganti seberapa sering bayar'], ['shift', 'Geser tanggal bayar']].map(function (o) { return '<option value="' + o[0] + '"' + (simK === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
       (two ? '<div style="grid-column:1/-1"><label for="smn">Nama</label><input id="smn" maxlength="30" placeholder="mis. Cicilan motor"></div>' : '<div style="grid-column:1/-1"><label for="smi">Item</label><select id="smi">' + items + '</select></div>') +
-      (nb ? simExtra() : '<div><label for="sma">' + (simK === 'stop' ? 'Jumlah (tidak dipakai)' : simK === 'price' ? 'Harga baru (Rp)' : 'Jumlah (Rp)') + '</label><input id="sma" inputmode="numeric" placeholder="0"' + (simK === 'stop' ? ' disabled' : '') + '></div><div><label for="smm">Mulai bulan</label><select id="smm">' + mo + '</select></div>') +
+      (nb ? simExtra(firstId) : '<div><label for="sma">' + (simK === 'stop' ? 'Jumlah (tidak dipakai)' : simK === 'price' ? 'Harga baru (Rp)' : 'Jumlah (Rp)') + '</label><input id="sma" inputmode="numeric" placeholder="0"' + (simK === 'stop' ? ' disabled' : '') + '></div><div><label for="smm">Mulai bulan</label><select id="smm">' + (two ? mo : simMonthOpts(firstId)) + '</select></div>') +
       (two ? '<div><label for="smr">Berapa kali</label><select id="smr"><option value="bulan">Tiap bulan sampai Des</option><option value="sekali">Sekali saja</option><option value="n">Sekian kali</option></select></div><div id="smcw" hidden><label for="smc">Jumlah bulan</label><input id="smc" type="number" min="1" max="12" value="3"></div>' : '') +
       '</div><div class="err" id="smerr"></div><div class="row2"><button class="p" data-smadd="1">Tambah ke simulasi</button></div></div>';
   var out = form;
+  setTimeout(simSyncDates, 0);
   if (!SIM.length) {
     el.innerHTML = out + '<div class="card"><div class="empty">Belum ada skenario. Tambahkan satu di atas untuk melihat dampaknya pada saldo.</div></div>';
     return;
@@ -6816,8 +6883,8 @@ function simApply() {
         if (x.k === 'stop') { it.end = isoD(Date.UTC(y, x.m, 0)); it.cnt = 0; }
         else if (x.k === 'cycle' || x.k === 'shift')
           trackSchedule(it, function () {
-            (it.ch = it.ch || []).push(simChg(it, x));
-            it.ch.sort(cmpFrom);
+            if (x.k === 'shift') moveStatusExact(it.id, [[x.from, x.to]], [S.paid, S.skip]);
+            simPutChg(it, simChg(it, x));
           });
         else (it.ch = it.ch || []).push({ from: y + '-' + pad2(x.m + 1) + '-01', to: '', price: x.amt, n: null, unit: null, cut: false });
       });
@@ -6839,12 +6906,15 @@ function simAdd() {
     if (!(x.amt > 0)) return err('Isi jumlah yang valid.');
   } else {
     x.id = $('smi').value;
-    if (!x.id) return err('Belum ada item. Tambahkan item dulu di Kelola Item.');
+    if (!x.id) return err(S.items.length ? 'Tidak ada item dengan tagihan tersisa tahun ini (semua sudah lunas atau dilewati).' : 'Belum ada item. Tambahkan item dulu di Kelola Item.');
+    if ((simK === 'stop' || simK === 'price') && simOpenMonths(x.id).indexOf(x.m) < 0) return err('Pilih bulan yang masih punya tagihan belum lunas.');
     if (simK === 'cycle') {
       x.from = $('smd').value;
       x.n = parseInt($('smn2').value, 10) || 0;
       x.unit = $('smu').value;
       if (!ISO_RE.test(x.from)) return err('Pilih tanggal mulai siklus baru.');
+      var o0 = simOpen(item(x.id))[0];
+      if (o0 && x.from < o0) return err('Siklus baru tidak bisa dimulai sebelum tagihan pertama yang belum lunas (' + fmtD(o0) + ').');
       if (!(x.n >= 1)) return err('Isi seberapa sering bayar.');
     } else if (simK === 'shift') {
       x.from = $('smf').value;
@@ -6852,8 +6922,9 @@ function simAdd() {
       if (!x.from) return err('Pilih tagihan yang mau digeser.');
       if (!ISO_RE.test(x.to)) return err('Isi tanggal baru di "Ganti jadi tanggal".');
       if (x.to === x.from) return err('Tanggal baru sama dengan tanggal tagihan.');
-      var L = occ(item(x.id), +S.year).map(isoD), i = L.indexOf(x.from), pv = i > 0 ? L[i - 1] : null;
-      if (pv && x.to <= pv) return err('Tanggal baru harus sesudah tagihan sebelumnya (' + fmtD(pv) + ').');
+      if (simOpen(item(x.id)).indexOf(x.from) < 0) return err('Pilih tagihan yang belum lunas.');
+      var rg = pmShiftRange(item(x.id), x.from);
+      if ((rg.min && x.to < rg.min) || (rg.max && x.to > rg.max)) return err(pmRangeMsg(rg));
     }
     if (simK === 'price') {
       x.amt = parseRp($('sma').value) || 0;
@@ -6876,7 +6947,11 @@ function bindSim() {
   };
   V.onchange = function (e) {
     if (e.target.id === 'smk') { simK = e.target.value; renderSim(); }
-    else if (e.target.id === 'smi' && simK === 'shift') $('smf').innerHTML = simItemDates(e.target.value);
+    else if (e.target.id === 'smi') {
+      if (simK === 'shift') $('smf').innerHTML = simItemDates(e.target.value);
+      if ($('smm') && (simK === 'stop' || simK === 'price')) $('smm').innerHTML = simMonthOpts(e.target.value);
+      simSyncDates();
+    } else if (e.target.id === 'smf') simSyncDates();
     else if (e.target.id === 'smr') $('smcw').hidden = e.target.value !== 'n';
   };
   V.addEventListener('input', function (e) {
