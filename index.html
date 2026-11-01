@@ -831,8 +831,39 @@ nav {
 @media (prefers-reduced-motion: reduce) {
   .pd.late:not(.old), .pd.fx-skip { animation: none; }
 }
-.det.late td:first-child, .det.late td.l { color: var(--wr); }
-.det.skp td { color: var(--wr); text-decoration: line-through; }
+/* Status baris rincian: ikon bulat + garis tepi kiri + latar tipis. Satu hue per status, tanpa kilatan. */
+.det .st {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4em;
+  height: 1.4em;
+  margin-right: 7px;
+  border: 1.5px solid var(--ln);
+  border-radius: 50%;
+  box-sizing: border-box;
+  color: transparent;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  vertical-align: middle;
+}
+.det .st.ok { background: var(--ac); border-color: var(--ac); color: var(--bg); }
+.det .st.bad { background: var(--wr); border-color: var(--wr); color: var(--bg); }
+.det .st.skp { border: 1.5px dashed var(--wr); color: var(--wr); }
+.det.paid td { background: var(--acs); background: color-mix(in srgb, var(--acs) 60%, var(--bg)); }
+.det.paid td:first-child { box-shadow: inset 3px 0 0 var(--ac); }
+.det.late td { background: var(--wrs); background: color-mix(in srgb, var(--wrs) 45%, var(--bg)); }
+.det.late td:first-child { color: var(--wr); box-shadow: inset 3px 0 0 var(--wr); }
+.det.skp td:first-child { box-shadow: inset 3px 0 0 var(--wr); }
+.det.skp td:first-child, .det.skp td:nth-child(2) { color: var(--wr); }
+.det { animation: detin 0.4s ease both; animation-delay: calc(var(--i, 0) * 35ms); }
+@keyframes detin { from { opacity: 0; } to { opacity: 1; } }
+.det.paid .st.ok { animation: stpop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: calc(var(--i, 0) * 35ms + 120ms); }
+@keyframes stpop { from { transform: scale(0.4); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .det, .det.paid .st.ok { animation: none; }
+}
 .catrow { margin: 10px 0; }
 .cathd { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; }
 .cathd .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
@@ -866,7 +897,10 @@ nav {
   #v-rincian td[data-l]::before { content: attr(data-l) ' '; color: var(--mut); font-weight: 400; font-size: 11.5px; }
   #v-rincian tr.row td.c-e::before { font-size: 11.5px; }
   #v-rincian tr.det { display: flex; gap: 10px; padding: 6px 0 6px 8px; background: var(--bg); font-size: 13px; }
-  #v-rincian tr.det td { display: block; padding: 0; border: 0; white-space: normal; }
+  #v-rincian tr.det td { display: block; padding: 0; border: 0; white-space: normal; background: transparent; box-shadow: none; }
+  #v-rincian tr.det.paid { background: var(--acs); background: color-mix(in srgb, var(--acs) 60%, var(--bg)); box-shadow: inset 3px 0 0 var(--ac); }
+  #v-rincian tr.det.late { background: var(--wrs); background: color-mix(in srgb, var(--wrs) 45%, var(--bg)); box-shadow: inset 3px 0 0 var(--wr); }
+  #v-rincian tr.det.skp { box-shadow: inset 3px 0 0 var(--wr); }
   #v-rincian tr.det td:nth-child(2) { flex: 1; }
   #v-rincian tr.tot { display: flex; justify-content: space-between; padding: 12px 0; font-weight: 700; }
   #v-rincian tr.tot td { display: block; border: 0; padding: 0; }
@@ -2659,13 +2693,22 @@ function detailRows(r) {
   var paid = r.ev
     .slice()
     .sort(byDate)
-    .map(function (e) {
-      var price = priceAt(e.it, e.t);
+    .map(function (e, i) {
+      var price = priceAt(e.it, e.t),
+        isPaid = !!S.paid[e.it.id + '|' + isoD(e.t)],
+        isLate = !isPaid && isoD(e.t) < todayISO();
       return (
         '<tr class="det' +
-        (!S.paid[e.it.id + '|' + isoD(e.t)] && isoD(e.t) < todayISO() ? ' late' : '') +
-        '"><td>' +
-        (S.paid[e.it.id + '|' + isoD(e.t)] ? '✓ ' : '') +
+        (isPaid ? ' paid' : isLate ? ' late' : '') +
+        '" style="--i:' +
+        i +
+        '"><td><span class="st ' +
+        (isPaid ? 'ok' : isLate ? 'bad' : 'wait') +
+        '" role="img" aria-label="' +
+        (isPaid ? 'Lunas' : isLate ? 'Terlewat' : 'Belum dibayar') +
+        '">' +
+        (isPaid ? '✓' : isLate ? '!' : '') +
+        '</span>' +
         fd(e.t, { day: 'numeric', month: 'short' }) +
         '</td><td class="l" colspan="2">' +
         esc(e.it.name) +
@@ -2748,9 +2791,11 @@ function skRows(r) {
     .sort(function (a, b) {
       return a.t - b.t;
     })
-    .map(function (e) {
+    .map(function (e, i) {
       return (
-        '<tr class="det skp"><td>' +
+        '<tr class="det skp" style="--i:' +
+        (i + 40) +
+        '"><td><span class="st skp" role="img" aria-label="Dilewati">–</span>' +
         fd(e.t, { day: 'numeric', month: 'short' }) +
         '</td><td class="l" colspan="2"><s>' +
         esc(e.it.name) +
