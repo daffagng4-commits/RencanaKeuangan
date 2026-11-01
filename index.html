@@ -514,16 +514,20 @@ tr.flash td {
   margin: 0;
 }
 .pd.skp {
-  color: var(--mut);
+  color: var(--wr);
   text-decoration: line-through;
-  border-style: dotted;
-  opacity: 0.75;
+  border-style: dashed;
+  border-color: var(--wr);
+  background: rgba(217, 83, 58, 0.08);
+  background: color-mix(in srgb, var(--wr) 9%, transparent);
+  opacity: 1;
 }
 .chip.sk {
-  background: var(--bg);
-  color: var(--mut);
+  background: rgba(217, 83, 58, 0.08);
+  background: color-mix(in srgb, var(--wr) 9%, transparent);
+  color: var(--wr);
   text-decoration: line-through;
-  border: 1px solid var(--ln);
+  border: 1px dashed var(--wr);
 }
 .cm {
   position: fixed;
@@ -802,7 +806,33 @@ nav {
 .rem .dot.old { background: var(--mut); }
 .rem .sep { width: 1px; height: 16px; background: var(--ln); }
 .rem .go { margin-left: auto; color: var(--mut); }
-.pd.late { border-color: var(--wr); color: var(--wr); }
+/* Tagihan terlewat (lupa) dan dilewati: merah */
+.pd.late {
+  border-color: var(--wr);
+  color: var(--wr);
+  background: rgba(217, 83, 58, 0.1);
+  background: color-mix(in srgb, var(--wr) 12%, transparent);
+  font-weight: 700;
+}
+.pd.late:not(.old) { animation: latepulse 2.4s ease-in-out infinite; }
+.pd.late.old { opacity: 0.85; }
+@keyframes latepulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217, 83, 58, 0.35); }
+  50% { box-shadow: 0 0 0 4px rgba(217, 83, 58, 0); }
+}
+.pd.fx-skip { animation: skipfx 0.6s ease-out; }
+@keyframes skipfx {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(217, 83, 58, 0.6); }
+  25% { transform: translateX(-4px) scale(1.1); }
+  50% { transform: translateX(4px) scale(1.06); }
+  75% { transform: translateX(-2px); }
+  100% { transform: none; box-shadow: 0 0 0 14px rgba(217, 83, 58, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pd.late:not(.old), .pd.fx-skip { animation: none; }
+}
+.det.late td:first-child, .det.late td.l { color: var(--wr); }
+.det.skp td { color: var(--wr); text-decoration: line-through; }
 .catrow { margin: 10px 0; }
 .cathd { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; }
 .cathd .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
@@ -2632,7 +2662,9 @@ function detailRows(r) {
     .map(function (e) {
       var price = priceAt(e.it, e.t);
       return (
-        '<tr class="det"><td>' +
+        '<tr class="det' +
+        (!S.paid[e.it.id + '|' + isoD(e.t)] && isoD(e.t) < todayISO() ? ' late' : '') +
+        '"><td>' +
         (S.paid[e.it.id + '|' + isoD(e.t)] ? '✓ ' : '') +
         fd(e.t, { day: 'numeric', month: 'short' }) +
         '</td><td class="l" colspan="2">' +
@@ -2718,7 +2750,7 @@ function skRows(r) {
     })
     .map(function (e) {
       return (
-        '<tr class="det"><td>' +
+        '<tr class="det skp"><td>' +
         fd(e.t, { day: 'numeric', month: 'short' }) +
         '</td><td class="l" colspan="2"><s>' +
         esc(e.it.name) +
@@ -2750,14 +2782,17 @@ var LEGEND_HTML =
   '<span><button class="pd" type="button" tabindex="-1" disabled>10</button>Harga sama dengan harga awal</span>' +
   '<span><button class="pd chg" type="button" tabindex="-1" disabled>1<span class="cp">720rb</span></button>Harga beda dari harga awal (angka kecil = harga berlaku)</span>' +
   '<span><button class="pd on" type="button" tabindex="-1" disabled>&#10003; 10</button>Sudah dibayar</span>' +
-  '<span><button class="pd late" type="button" tabindex="-1" disabled>10</button>Terlambat (lewat tanggal, belum ditandai)</span>' +
-  '<span><button class="pd skp" type="button" tabindex="-1" disabled>10</button>Dilewati (tidak dibayar, tidak dihitung)</span>' +
+  '<span><button class="pd late" type="button" tabindex="-1" disabled>10</button>Terlewat: sudah lewat tanggal tapi belum ditandai dibayar atau dilewati (merah)</span>' +
+  '<span><button class="pd skp" type="button" tabindex="-1" disabled>10</button>Dilewati: sengaja tidak dibayar, tidak dihitung (merah dicoret)</span>' +
   '<span><b style="color:var(--mut)">0</b>Tidak ada tagihan bulan itu</span></div>';
 
 /** Kotak panduan yang bisa disembunyikan / ditampilkan (pilihan diingat per kotak). */
 function gdBox(key, html) {
   return '<div class="gdb"><button type="button" class="g gdt" data-gd="' + key + '"></button><div class="gdc">' + html + '</div></div>';
 }
+
+/** Tagihan yang baru saja dilewati (untuk efek getar merah sesaat). */
+var FX = { k: '' };
 
 /** Chip satu tanggal tagihan (tombol yang membuka menu status). */
 function chipHtml(it, t, today) {
@@ -2767,14 +2802,17 @@ function chipHtml(it, t, today) {
     skipped = S.skip[key],
     price = priceAt(it, t),
     changed = !skipped && price !== it.price,
-    late = !paid && !skipped && isLateISO(d, today);
-  var cls = 'pd' + (skipped ? ' skp' : paid ? ' on' : late ? ' late' : '') + (changed ? ' chg' : '');
+    now = today || todayISO(),
+    late = !paid && !skipped && d < now,
+    old = late && !isLateISO(d, now),
+    days = late ? Math.round((Date.parse(now + 'T00:00:00Z') - Date.parse(d + 'T00:00:00Z')) / 864e5) : 0;
+  var cls = 'pd' + (skipped ? ' skp' : paid ? ' on' : late ? ' late' + (old ? ' old' : '') : '') + (changed ? ' chg' : '') + (FX.k === key ? ' fx-skip' : '');
   var state = skipped
     ? ' (dilewati)'
     : paid
       ? ' (sudah dibayar)'
       : late
-        ? ' (terlambat)'
+        ? ' (terlewat ' + days + ' hari)'
         : ' (belum dibayar)';
   return (
     '<button class="' +
@@ -3029,12 +3067,28 @@ function bindJadwal() {
       openRange(p[0], p[1]);
       return;
     }
+    var sn = st === 'skip' ? snap('Sebelum melewati tagihan') : null;
     delete S.paid[k];
     delete S.skip[k];
     if (st === 'paid') S.paid[k] = 1;
-    if (st === 'skip') S.skip[k] = 1;
+    if (st === 'skip') {
+      S.skip[k] = 1;
+      FX.k = k;
+      try {
+        if (navigator.vibrate) navigator.vibrate([25, 35, 25]);
+      } catch (er) {}
+      setTimeout(function () {
+        FX.k = '';
+      }, 900);
+    }
     save();
     renderAll();
+    if (st === 'skip') {
+      var it0 = item(k.split('|')[0]);
+      toast('Dilewati: ' + (it0 ? it0.name : '') + ' · ' + fmtD(k.split('|')[1]), function () {
+        restoreSnap(sn.t);
+      });
+    }
   };
   document.addEventListener('click', function (e) {
     var m = $('cm');
