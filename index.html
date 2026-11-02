@@ -5731,6 +5731,7 @@ var kasAct = (function () {
     }
   })(),
   kasPer = 'all',
+  kasTf = 'all', // filter Riwayat transaksi: all | + (masuk) | - (keluar)
   kasEdit = null,
   kasT = '-',
   kpMode = 'new';
@@ -5991,9 +5992,14 @@ function renderKas() {
         })
         .join('') +
       '</div>';
+  var LF = kasTf === 'all' ? L : L.filter(function (x) { return x.t === kasTf; }),
+    nIn = L.filter(function (x) { return x.t === '+'; }).length,
+    emptyMsg = kasTf === '+' ? 'Belum ada transaksi masuk di periode ini.' : kasTf === '-' ? 'Belum ada transaksi keluar di periode ini.' : 'Belum ada transaksi di periode ini.';
   var lst =
-    '<div class="card"><h2>Riwayat transaksi</h2>' +
-    (L.slice(0, 200)
+    '<div class="card"><div class="row2" style="margin:0 0 8px;align-items:center;justify-content:space-between"><h2 style="margin:0">Riwayat transaksi</h2>' +
+    '<select id="ktf" aria-label="Filter jenis transaksi" style="width:auto"><option value="all"' + (kasTf === 'all' ? ' selected' : '') + '>Semua</option><option value="+"' + (kasTf === '+' ? ' selected' : '') + '>+ Masuk</option><option value="-"' + (kasTf === '-' ? ' selected' : '') + '>&minus; Keluar</option></select></div>' +
+    (kasTf !== 'all' ? '<div class="sub" style="margin-bottom:6px">' + LF.length + ' dari ' + L.length + ' transaksi · ' + (kasTf === '+' ? 'hanya yang masuk' : 'hanya yang keluar') + '</div>' : '') +
+    (LF.slice(0, 200)
       .map(function (x) {
         return (
           '<div class="it2"><div><b class="' +
@@ -6013,8 +6019,8 @@ function renderKas() {
           '</div></div>'
         );
       })
-      .join('') || '<div class="empty">Belum ada transaksi di periode ini.</div>') +
-    (L.length > 200 ? '<div class="sub">+ ' + (L.length - 200) + ' lainnya. Pilih periode yang lebih sempit.</div>' : '') +
+      .join('') || '<div class="empty">' + emptyMsg + '</div>') +
+    (LF.length > 200 ? '<div class="sub">+ ' + (LF.length - 200) + ' lainnya. Pilih periode yang lebih sempit.</div>' : '') +
     '</div>';
   el.innerHTML =
     per + form + kasChart(asc) + catH + lst;
@@ -6095,6 +6101,9 @@ function bindKas() {
   $('v-kas').onchange = function (e) {
     if (e.target.id === 'kper') {
       kasPer = e.target.value;
+      renderKas();
+    } else if (e.target.id === 'ktf') {
+      kasTf = e.target.value === '+' || e.target.value === '-' ? e.target.value : 'all';
       renderKas();
     }
   };
@@ -6178,6 +6187,7 @@ function setTrip(id) {
   gEdit = false;
   itEdit = bkEdit = null;
   kasPer = 'all';
+  kasTf = 'all';
   kasEdit = null;
   remember('rk-trip', id);
   renderAll();
