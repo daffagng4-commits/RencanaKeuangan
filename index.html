@@ -1356,9 +1356,54 @@ function origDate(it, iso) {
   return iso;
 }
 
+/** Kebalikan origDate: tanggal tagihan SAAT INI untuk tanggal ASLI `iso` (bila tagihan itu sudah digeser). */
+function curDate(it, iso) {
+  var c = it.ch || [],
+    i;
+  for (i = c.length - 1; i >= 0; i--) if (c[i].mv && c[i].mv[iso]) return c[i].mv[iso];
+  return iso;
+}
+
+/**
+ * Perubahan yang berlaku untuk tagihan yang tampil pada tanggal `iso`. Perubahan "hanya tanggal ini" disimpan dengan tanggal
+ * ASLI tagihan; data lama bisa tersimpan dengan tanggal yang tampil (setelah digeser), jadi keduanya dicocokkan.
+ * Yang terakhir di daftar (terbaru) menang.
+ */
+function priceSeg(it, iso) {
+  var o = origDate(it, iso),
+    c = it.ch || [],
+    i,
+    s;
+  for (i = c.length - 1; i >= 0; i--) {
+    s = c[i];
+    if (s.mv) continue;
+    if (s.dates) {
+      if (s.dates.indexOf(o) >= 0 || s.dates.indexOf(iso) >= 0) return s;
+    } else if (segStart(s) <= o && (!s.to || o <= s.to)) return s;
+  }
+  return null;
+}
+
+/** Dua perubahan dianggap sama (yang baru menggantikan yang lama): tanda tangan sama, atau sama-sama "hanya tanggal ini" untuk tagihan yang sama. */
+function chSame(it, a, b) {
+  if (chSig(a) === chSig(b)) return true;
+  if (a.dates && b.dates) {
+    var norm = function (g) {
+      return g.dates
+        .map(function (d) {
+          return origDate(it, d);
+        })
+        .sort()
+        .join(',');
+    };
+    return norm(a) === norm(b);
+  }
+  return false;
+}
+
 /** Harga item pada tanggal t (ms), memperhitungkan perubahan harga. */
 function priceAt(it, t) {
-  var s = segAt(it, origDate(it, isoD(t)));
+  var s = priceSeg(it, isoD(t));
   return s && s.price != null ? s.price : it.price;
 }
 
@@ -3804,9 +3849,9 @@ function descCh(it, c) {
   if (c.dates)
     return (
       "<b>" +
-      dList(c.dates, 4) +
+      dList(c.dates.map(function (d) { return curDate(it, d); }), 4) +
       " " +
-      c.dates[0].slice(0, 4) +
+      curDate(it, c.dates[0]).slice(0, 4) +
       '</b><br><span class="sub">' +
       (p.join(" &middot; ") || "Kembali ke pengaturan awal") +
       " (hanya tanggal ini)</span>"
@@ -4034,10 +4079,16 @@ function pmDraftNormal() {
       return {
         err: "Tidak ada tagihan pada tanggal yang dipilih. Pilih dari daftar tanggal tagihan.",
       };
+    // Disimpan dengan tanggal ASLI tagihan (tagihan yang sudah digeser tetap ketemu saat mencari harganya).
+    var odates = dates
+      .map(function (d) {
+        return origDate(it, d);
+      })
+      .sort();
     c = {
-      from: first,
-      to: last,
-      dates: dates,
+      from: odates[0],
+      to: odates[odates.length - 1],
+      dates: odates,
       price: price,
       n: null,
       unit: null,
@@ -4191,23 +4242,26 @@ function pmPrev() {
   var tmp = Object.assign({}, d.it, {
     ch: (d.it.ch || [])
       .filter(function (q) {
-        return chSig(q) !== chSig(d.c);
+        return !chSame(d.it, q, d.c);
       })
       .concat([d.c])
       .sort(cmpFrom),
   });
   if (d.c.dates) {
-    var years = {};
-    d.c.dates.forEach(function (x) {
+    var years = {},
+      shown = d.c.dates.map(function (x) {
+        return curDate(tmp, x);
+      });
+    shown.forEach(function (x) {
       years[x.slice(0, 4)] = 1;
     });
     var all = Object.keys(years).reduce(function (a, y) {
       return a.concat(occ(tmp, +y));
     }, []);
     var hit = all.filter(function (t) {
-      return d.c.dates.indexOf(isoD(t)) >= 0;
+      return shown.indexOf(isoD(t)) >= 0;
     });
-    var miss = d.c.dates.filter(function (x) {
+    var miss = shown.filter(function (x) {
       return !hit.some(function (t) {
         return isoD(t) === x;
       });
@@ -4343,7 +4397,7 @@ function pmPrefill(it) {
       return !S.paid[it.id + "|" + isoD(t)] && !S.skip[it.id + "|" + isoD(t)];
     })[0],
     iso = isoD(nx != null ? nx : Date.now()),
-    sg = segAt(it, iso);
+    sg = priceSeg(it, iso);
   $("pdt").value = iso;
   $("pto").value = "";
   $("pp").value = (sg && sg.price != null ? sg.price : it.price).toLocaleString(
@@ -4460,7 +4514,7 @@ function savePm() {
     moveStatusExact(it.id, pairs, [S.paid, S.skip]);
     it.ch = (it.ch || []).filter(function (q) {
       return !d.cs.some(function (c) {
-        return chSig(c) === chSig(q);
+        return chSame(it, c, q);
       });
     });
     d.cs.forEach(function (c) {
@@ -6939,7 +6993,7 @@ function simChg(it, x) {
 /** Tambahkan perubahan jadwal `g` ke `it`: yang bertanda tangan sama diganti (bukan ditumpuk). */
 function simPutChg(it, g) {
   it.ch = (it.ch || [])
-    .filter(function (q) { return chSig(q) !== chSig(g); })
+    .filter(function (q) { return !chSame(it, q, g); })
     .concat([g])
     .sort(cmpFrom);
 }
