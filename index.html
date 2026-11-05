@@ -1153,6 +1153,7 @@ var SB_URL = 'https://hjvdkwpoamgkommotzab.supabase.co',
  */
 
 var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+var FULL_MON = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
 /** Escape HTML. */
 function esc(t) {
@@ -1221,7 +1222,7 @@ function addDaysISO(iso, n) {
 
 function at(it, k) {
   var p = it.start.split('-').map(Number),
-    n = Math.max(1, +it.n || 1),
+    n = Math.min(1000, Math.max(1, +it.n || 1)),
     u = it.unit;
   if (u === 'hari') return Date.UTC(p[0], p[1] - 1, p[2] + k * n);
   if (u === 'minggu') return Date.UTC(p[0], p[1] - 1, p[2] + k * n * 7);
@@ -1253,6 +1254,20 @@ function segAt(it, iso) {
   return null;
 }
 
+/** Segmen jadwal aktif untuk tanggal tertentu (khusus siklus / frekuensi). */
+function schedSegAt(it, iso) {
+  var c = it.ch || [],
+    i,
+    s;
+  for (i = c.length - 1; i >= 0; i--) {
+    s = c[i];
+    if (s.mv || s.dates) continue;
+    if (!s.n && !s.unit) continue;
+    if (segStart(s) <= iso && (!s.to || iso <= s.to)) return s;
+  }
+  return null;
+}
+
 /** Semua tanggal tagihan item (ms UTC) sampai endMs: jadwal awal + siklus baru dari perubahan, dikurangi tagihan yang dihapus (cut), batas jumlah kali (cnt) dan tanggal berhenti (end). */
 function series(it, endMs) {
   var out = [],
@@ -1262,8 +1277,8 @@ function series(it, endMs) {
   for (k = 0; k < 4000; k++) {
     t = at(it, k);
     if (t > endMs) break;
-    s = segAt(it, isoD(t));
-    if (!s || (!s.n && !s.unit)) out.push(t);
+    s = schedSegAt(it, isoD(t));
+    if (!s) out.push(t);
     if (it.unit === 'sekali') break;
   }
   (it.ch || []).forEach(function (g) {
@@ -1273,7 +1288,7 @@ function series(it, endMs) {
     for (k = 0; k < 4000; k++) {
       t = at(sub, k);
       if (t > endMs || t > lim) break;
-      if (segAt(it, isoD(t)) === g) out.push(t);
+      if (schedSegAt(it, isoD(t)) === g) out.push(t);
       if (sub.unit === 'sekali') break;
     }
   });
@@ -1305,6 +1320,9 @@ function series(it, endMs) {
       return i === 0 || t !== out[i - 1];
     });
   }
+  var cn = +it.cnt || 0,
+    le = it.end ? Date.parse(it.end + 'T00:00:00Z') : 0;
+  if (cn) out = out.slice(0, cn);
   var cut = 0;
   (it.ch || []).forEach(function (g) {
     if (g.cut) {
@@ -1316,9 +1334,6 @@ function series(it, endMs) {
     out = out.filter(function (t) {
       return t >= cut;
     });
-  var cn = +it.cnt || 0,
-    le = it.end ? Date.parse(it.end + 'T00:00:00Z') : 0;
-  if (cn) out = out.slice(0, cn);
   if (le)
     out = out.filter(function (t) {
       return t <= le;
@@ -1377,9 +1392,10 @@ function priceSeg(it, iso) {
   for (i = c.length - 1; i >= 0; i--) {
     s = c[i];
     if (s.mv) continue;
+    if ((s.n || s.unit || s.anchor) && s.price == null) continue;
     if (s.dates) {
       if (s.dates.indexOf(o) >= 0 || s.dates.indexOf(iso) >= 0) return s;
-    } else if (segStart(s) <= o && (!s.to || o <= s.to)) return s;
+    } else if (segStart(s) <= iso && (!s.to || iso <= s.to)) return s;
   }
   return null;
 }
@@ -1695,7 +1711,7 @@ function chNorm(x) {
       from: q.from,
       to: D.test(q.to) && q.to >= q.from ? q.to : '',
       price: +q.price > 0 ? +q.price : null,
-      n: q.n ? Math.max(1, parseInt(q.n, 10) || 1) : null,
+      n: q.n ? Math.min(1000, Math.max(1, parseInt(q.n, 10) || 1)) : null,
       unit: U.indexOf(q.unit) >= 0 ? q.unit : null,
       cut: !!q.cut,
     };
@@ -2779,15 +2795,18 @@ function detailRows(r) {
 function kasHero() {
   var P = kasLinked();
   if (!P) return '';
-  var asc = kasRows(P),
-    A = kasSum(asc.filter(function (x) { return x.d <= todayISO(); }), 'all'),
-    R = kasSum(asc, 'all'),
+  var sm = +S.startMonth || 0,
+    mName = (typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm]),
+    asc = kasRows(P).filter(function (x) {
+      return +x.d.slice(5, 7) - 1 <= sm;
+    }),
+    A = kasSum(asc, 'all'),
     bal = kasBase(P) + A.i - A.o,
     st = function (l, v) { return '<div><span>' + l + '</span><b>' + v + '</b></div>'; };
   return (
-    '<div class="hero"><div class="card" style="margin:0"><div class="sub">Saldo &quot;' + esc(P.name) + '&quot; sekarang</div><div class="big' + (bal < 0 ? ' neg' : '') + '">' + rp(bal) +
-    '</div><div class="sub">saldo awal Rencana ' + rp(kasBase(P)) + ' + masuk ' + rp(A.i) + ' &minus; keluar ' + rp(A.o) +
-    '</div></div><div class="card stats" style="margin:0">' + st('Masuk', rp(R.i)) + st('Keluar', rp(R.o)) + st('Selisih', R.i === R.o ? rp(0) : signed(R.i - R.o)) + st('Transaksi', R.n) + '</div></div>'
+    '<div class="hero"><div class="card" style="margin:0"><div class="sub">Saldo &quot;' + esc(P.name) + '&quot; Realtime &middot; ' + mName + '</div><div class="big' + (bal < 0 ? ' neg' : '') + '">' + rp(bal) +
+    '</div><div class="sub">' + (P.link ? 'saldo awal Rencana ' : 'saldo awal ') + rp(kasBase(P)) + ' + masuk ' + rp(A.i) + ' &minus; keluar ' + rp(A.o) +
+    '</div></div><div class="card stats" style="margin:0">' + st('Masuk', rp(A.i)) + st('Keluar', rp(A.o)) + st('Selisih', A.i === A.o ? rp(0) : signed(A.i - A.o)) + st('Transaksi', A.n) + '</div></div>'
   );
 }
 
@@ -4000,6 +4019,11 @@ function setDates(list, auto, keepInput) {
   pmAuto = !!auto;
   if (!keepInput)
     $("pdt").value = auto && pmDates.length === 1 ? pmDates[0] : "";
+  var it = item(pmId);
+  if (it && pmDates[0] && !phmTouched && (pmScen === "harga" || pmScen === "sementara" || pmScen === "siklus")) {
+    var eff = priceAt(it, Date.parse(pmDates[0] + "T00:00:00Z"));
+    $("pp").value = eff.toLocaleString("id-ID");
+  }
   pmLayout();
   pmPrev();
 }
@@ -4058,16 +4082,30 @@ function pmDraftNormal() {
   var rs = !specific && $("pa").value === "restart",
     drop =
       !specific && $("pw").value === "forever" && $("pcut").value === "drop";
+  var effPrice = priceAt(it, Date.parse(first + "T00:00:00Z"));
   if (
-    pmInit &&
-    P === pmInit.P &&
-    n === pmInit.n &&
-    u === pmInit.u &&
+    (pmScen === "harga" || pmScen === "sementara") &&
+    P === effPrice &&
     !rs &&
     !drop
   )
     return { err: noopMsg() };
-  var price = P !== it.price ? P : null;
+  var curSeg = schedSegAt(it, first);
+  if (
+    pmScen === "siklus" &&
+    n === (curSeg && curSeg.n ? curSeg.n : it.n) &&
+    u === (curSeg && curSeg.unit ? curSeg.unit : it.unit) &&
+    P === effPrice &&
+    !rs &&
+    !drop
+  )
+    return { err: noopMsg() };
+  var price;
+  if (pmScen === "siklus") {
+    price = P !== effPrice ? P : null;
+  } else {
+    price = P !== it.price ? P : null;
+  }
   var c;
   if (specific) {
     var hit = dates.filter(function (d) {
@@ -4129,8 +4167,22 @@ function pmNeighbors(it, from) {
 
 /** Rentang tanggal baru yang sah untuk menggeser `from`: sesudah tagihan sebelumnya dan sebelum tagihan berikutnya. */
 function pmShiftRange(it, from) {
-  var nb = pmNeighbors(it, from);
-  return { min: nb.prev ? addDaysISO(nb.prev, 1) : null, max: nb.next ? addDaysISO(nb.next, -1) : null, prev: nb.prev, next: nb.next };
+  var nb = pmNeighbors(it, from),
+    min = nb.prev ? addDaysISO(nb.prev, 1) : null,
+    max = nb.next ? addDaysISO(nb.next, -1) : null;
+  if (it.start && (!min || it.start > min)) min = it.start;
+  if (it.end && (!max || it.end < max)) max = it.end;
+  var cut = (it.ch || [])
+    .filter(function (q) {
+      return q.cut;
+    })
+    .map(function (q) {
+      return q.from;
+    })
+    .sort()
+    .pop();
+  if (cut && (!min || cut > min)) min = cut;
+  return { min: min, max: max, prev: nb.prev, next: nb.next };
 }
 
 function pmRangeMsg(r) {
@@ -4145,6 +4197,10 @@ function pmDraftShift(it) {
   var from = pmDates[0],
     to = $("pdt").value;
   if (!from) return { err: "Pilih tagihan yang mau digeser." };
+  var allSched = occ(it, S.year).map(isoD);
+  if (allSched.length && allSched.indexOf(from) < 0) {
+    return { err: "Tanggal asal (" + fmtD(from) + ") bukan tanggal tagihan." };
+  }
   if ($("pgm").value === "pilih") return pmDraftMulti(it);
   if (!ISO_RE.test(to))
     return { err: 'Isi tanggal baru di "Ganti jadi tanggal".' };
@@ -4160,20 +4216,24 @@ function pmDraftShift(it) {
     c1.mv[ko] = to;
     return { c: c1, cs: [c1], it: it };
   }
-  var sg = segAt(it, from),
+  var sg = schedSegAt(it, from),
     eff = priceAt(it, Date.parse(from + "T00:00:00Z")),
-    // Tagihan ini sendiri hasil geser sebelumnya (tanggalnya = anchor sebuah perubahan lama): ubah perubahan itu
-    // (from asli dipertahankan) alih-alih menambah yang baru, karena yang baru kalah urutan dari yang lama.
+    origFrom = origDate(it, from),
     old = (it.ch || []).filter(function (q) {
       return q.anchor === from && !q.cut && !q.mv && !q.dates;
     })[0],
+    effFrom = old ? old.from : (origFrom < from ? origFrom : from),
+    hasCut = (it.ch || []).some(function (q) {
+      return (q.from === from || q.from === origFrom) && q.cut;
+    }),
     c = {
-      from: old ? old.from : from,
+      from: effFrom,
       anchor: to,
       to: old ? old.to || "" : "",
       price: eff !== it.price ? eff : null,
       n: (sg && sg.n) || it.n,
       unit: (sg && sg.unit) || it.unit,
+      cut: !!((old && old.cut) || hasCut),
     };
   return { c: c, cs: [c], it: it, disp: from };
 }
@@ -4393,10 +4453,11 @@ function pmSum(d) {
 
 /** Isi awal form dengan nilai yang berlaku pada tagihan berikutnya. */
 function pmPrefill(it) {
-  var nx = occ(it, S.year).filter(function (t) {
+  var occs = occ(it, S.year),
+    nx = occs.filter(function (t) {
       return !S.paid[it.id + "|" + isoD(t)] && !S.skip[it.id + "|" + isoD(t)];
     })[0],
-    iso = isoD(nx != null ? nx : Date.now()),
+    iso = isoD(nx != null ? nx : (occs.length ? occs[0] : Date.now())),
     sg = priceSeg(it, iso);
   $("pdt").value = iso;
   $("pto").value = "";
@@ -4512,6 +4573,40 @@ function savePm() {
     });
   trackSchedule(it, function () {
     moveStatusExact(it.id, pairs, [S.paid, S.skip]);
+    d.cs.forEach(function (c) {
+      if (c.anchor) {
+        var origFrom = origDate(it, d.disp || c.from);
+        var dispDate = d.disp || c.from;
+        (it.ch || []).forEach(function (q) {
+          if (q.mv) {
+            Object.keys(q.mv).forEach(function (k) {
+              if (k >= origFrom || q.mv[k] >= dispDate || k >= c.from) delete q.mv[k];
+            });
+          }
+        });
+      } else if (c.mv) {
+        Object.keys(c.mv).forEach(function (k) {
+          (it.ch || []).forEach(function (q) {
+            if (q.mv && q.mv[k]) delete q.mv[k];
+          });
+        });
+      }
+    });
+    it.ch = (it.ch || []).filter(function (q) {
+      return !q.mv || Object.keys(q.mv).length > 0;
+    });
+    d.cs.forEach(function (c) {
+      (it.ch || []).forEach(function (q) {
+        if (chSame(it, c, q)) {
+          if (q.cut && !c.cut && pmScen !== "siklus" && pmScen !== "manual") c.cut = true;
+          if ((pmScen === "harga" || pmScen === "sementara") && !c.mv && !c.dates) {
+            if (q.anchor && !c.anchor) c.anchor = q.anchor;
+            if (q.n && !c.n) c.n = q.n;
+            if (q.unit && !c.unit) c.unit = q.unit;
+          }
+        }
+      });
+    });
     it.ch = (it.ch || []).filter(function (q) {
       return !d.cs.some(function (c) {
         return chSame(it, c, q);
@@ -5909,12 +6004,9 @@ function renderKas() {
     asc = kasRows(P).sort(function (a, b) {
       return a.d < b.d ? -1 : a.d > b.d ? 1 : 0;
     }),
-    A = kasSum(
-      asc.filter(function (x) {
-        return x.d <= todayISO();
-      }),
-      'all'
-    ),
+    sm = +S.startMonth || 0,
+    mName = kasPer !== 'all' ? (typeof FULL_MON !== 'undefined' ? FULL_MON[+kasPer.split('-')[1] - 1] : MON[+kasPer.split('-')[1] - 1]) : (typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm]),
+    A = kasSum(asc, 'all'),
     bal = kasBase(P) + A.i - A.o,
     mo = {};
   asc.forEach(function (x) {
@@ -5946,7 +6038,9 @@ function renderKas() {
   var hero =
     '<div class="hero"><div class="card" style="margin:0"><div class="sub">Saldo &quot;' +
     esc(P.name) +
-    '&quot; sekarang</div><div class="big' +
+    '&quot; Realtime &middot; ' +
+    mName +
+    '</div><div class="big' +
     (bal < 0 ? ' neg' : '') +
     '">' +
     rp(bal) +
