@@ -152,6 +152,18 @@ button.g {
 button.d {
   color: var(--wr);
 }
+button.c,
+.modal button.c,
+#pcl, #cl, #rmc, #kpc, #shx, #lgc, #skc, #xlc, [data-cf="later"] {
+  background: var(--wrs);
+  border-color: var(--wr);
+  color: var(--wr);
+}
+button.c:hover,
+.modal button.c:hover,
+#pcl:hover, #cl:hover, #rmc:hover, #kpc:hover, #shx:hover, #lgc:hover, #skc:hover, #xlc:hover, [data-cf="later"]:hover {
+  filter: brightness(0.95);
+}
 nav {
   display: flex;
   gap: 4px;

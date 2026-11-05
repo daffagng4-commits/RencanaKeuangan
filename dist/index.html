@@ -174,6 +174,18 @@ button.g {
 button.d {
   color: var(--wr);
 }
+button.c,
+.modal button.c,
+#pcl, #cl, #rmc, #kpc, #shx, #lgc, #skc, #xlc, [data-cf="later"] {
+  background: var(--wrs);
+  border-color: var(--wr);
+  color: var(--wr);
+}
+button.c:hover,
+.modal button.c:hover,
+#pcl:hover, #cl:hover, #rmc:hover, #kpc:hover, #shx:hover, #lgc:hover, #skc:hover, #xlc:hover, [data-cf="later"]:hover {
+  filter: brightness(0.95);
+}
 nav {
   display: flex;
   gap: 4px;
@@ -1065,35 +1077,35 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 <div class="modal" id="xlm" hidden><div class="card"><h2>Impor dari Excel</h2><div class="sub" id="xls" style="margin-bottom:10px"></div>
 <label for="xln">Nama perjalanan</label><input id="xln" maxlength="30">
 <div class="kf" style="margin-top:12px"><div><label for="xlu">Mata uang asing</label><input id="xlu" maxlength="3" placeholder="JPY"></div><div><label for="xlk">Kurs (Rp per 1)</label><input id="xlk" inputmode="decimal" placeholder="119,4"></div></div>
-<div class="err" id="xle"></div><div class="row2"><button class="p" id="xlok">Impor</button><button id="xlc">Batal</button></div></div></div>
+<div class="err" id="xle"></div><div class="row2"><button class="p" id="xlok">Impor</button><button class="c" id="xlc">Batal</button></div></div></div>
 <div class="modal" id="shm" hidden><div class="card"><h2>Bagikan itinerary</h2>
 <label style="display:flex;gap:8px;align-items:center;margin:4px 0 12px"><input type="checkbox" id="shc" style="width:auto"> Sertakan biaya</label>
 <div class="acts"><button class="p" data-sh="wa">Kirim teks (WhatsApp)</button><button data-sh="copy">Salin teks</button><button data-sh="pdf">Cetak / simpan PDF</button></div>
-<div class="sub" id="shs" style="margin:10px 0"></div><div class="row2"><button id="shx">Tutup</button></div></div></div>
+<div class="sub" id="shs" style="margin:10px 0"></div><div class="row2"><button class="c" id="shx">Tutup</button></div></div></div>
 <div class="modal" id="kpm" hidden><div class="card"><h2 id="kpt">Perjalanan baru</h2>
 <label for="kpn">Nama perjalanan</label><input id="kpn" maxlength="30" placeholder="mis. Tokyo - Osaka 9D8N">
 <div class="kf" style="margin-top:12px"><div><label for="kpa">Mulai</label><input id="kpa" type="date"></div><div><label for="kpb">Selesai</label><input id="kpb" type="date"></div></div>
 <div style="margin-top:12px"><label for="kpgm">Anggaran</label><select id="kpgm"><option value="0">Belum menentukan anggaran</option><option value="1">Tetapkan anggaran</option></select></div>
 <div id="kpgw" style="margin-top:8px" hidden><label for="kpg">Anggaran total (Rp)</label><input id="kpg" inputmode="numeric" placeholder="25.000.000"></div>
 <div class="kf" style="margin-top:12px"><div><label for="kpu">Mata uang asing (opsional)</label><input id="kpu" maxlength="3" placeholder="JPY" style="text-transform:uppercase"></div><div><label for="kpk">Kurs: Rp per 1 mata uang</label><input id="kpk" type="number" step="0.01" min="0" inputmode="decimal" placeholder="119.4"></div></div>
-<div class="err" id="kpe"></div><div class="row2"><button class="p" id="kpsv">Simpan</button><button id="kpc">Tutup</button></div></div></div>
+<div class="err" id="kpe"></div><div class="row2"><button class="p" id="kpsv">Simpan</button><button class="c" id="kpc">Tutup</button></div></div></div>
 <div class="modal" id="cf" hidden><div class="card"><h2>Data berbeda di cloud dan di perangkat ini</h2>
 <p class="sub">Pilih data yang dipakai. Data yang tidak dipilih disimpan sebagai cadangan otomatis, jadi masih bisa dipulihkan.</p>
 <div class="g2"><div class="cfc" id="cf-l"></div><div class="cfc" id="cf-r"></div></div>
 <div class="row2"><button class="p" data-cf="remote">Pakai data cloud</button><button data-cf="local">Pakai data perangkat ini</button></div>
-<div class="row2" style="margin-top:6px"><button data-cf="merge">Gabungkan keduanya</button><button data-cf="later">Nanti saja</button></div>
+<div class="row2" style="margin-top:6px"><button data-cf="merge">Gabungkan keduanya</button><button class="c" data-cf="later">Nanti saja</button></div>
 <div class="sub" style="margin-top:8px"><b>Gabungkan</b>: menambah tahun dan item dari cloud yang belum ada di perangkat ini, tidak ada yang dihapus. Angka saldo awal mengikuti perangkat ini. <b>Nanti saja</b>: sinkron ditunda sampai Anda memilih.</div>
 </div></div>
 <div class="modal" id="rm" hidden><div class="card"><h2>Pengingat tagihan</h2>
 <div class="row2" style="margin:0 0 6px;align-items:center"><label for="rmh" style="margin:0">Tampilkan yang jatuh tempo dalam</label><select id="rmh" style="width:auto"><option value="3">3 hari</option><option value="7">7 hari</option><option value="14">14 hari</option><option value="30">30 hari</option></select></div>
 <div id="rml"></div>
-<div class="row2"><button id="rmb" hidden>Tandai semua yang sudah lewat tanggal sebagai lunas</button><button id="rmc">Tutup</button></div></div></div>
+<div class="row2"><button id="rmb" hidden>Tandai semua yang sudah lewat tanggal sebagai lunas</button><button class="c" id="rmc">Tutup</button></div></div></div>
 <div class="modal" id="sk" hidden><div class="card"><h2 id="skt">Ubah beberapa tagihan</h2>
 <p class="sub">Ubah status semua tagihan item ini dalam rentang tanggal sekaligus.</p>
 <div class="g2"><div><label for="skf">Dari tanggal</label><input id="skf" type="date"></div><div><label for="skto">Sampai tanggal</label><input id="skto" type="date"></div></div>
 <div style="margin-top:12px"><label for="ska">Ubah menjadi</label><select id="ska"><option value="skip">Lewati (tidak bayar)</option><option value="paid">Sudah dibayar</option><option value="none">Belum dibayar</option></select></div>
 <div class="prev" id="skp" style="margin-top:12px"></div><div class="err" id="ske"></div>
-<div class="row2"><button class="p" id="sks">Terapkan</button><button id="skc">Batal</button></div></div></div>
+<div class="row2"><button class="p" id="sks">Terapkan</button><button class="c" id="skc">Batal</button></div></div></div>
 <div class="tt" id="tt" hidden><span id="ttm"></span><button id="ttu" type="button">Urungkan</button></div>
 <div class="cm" id="cm" hidden></div>
 <div class="modal" id="pm" hidden><div class="card"><h2 id="pmt">Ubah harga / jadwal</h2><p class="sub" id="pmi"></p>
@@ -1125,17 +1137,17 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 <div id="pcw" style="margin-top:12px" hidden><label for="pcut">Tagihan sebelum tanggal ini</label><select id="pcut"><option value="keep">Biarkan seperti semula</option><option value="drop">Hapus (jadwal lama diganti total)</option></select></div>
 <div class="prev" id="ppv" style="margin-top:12px"></div><div class="err" id="pme"></div>
 </div>
-<div class="row2"><button id="pbk2" hidden>&larr; Kembali</button><button class="p" id="pps" hidden>Simpan perubahan</button><button id="pcl">Tutup</button></div>
+<div class="row2"><button id="pbk2" hidden>&larr; Kembali</button><button class="p" id="pps" hidden>Simpan perubahan</button><button class="c" id="pcl">Tutup</button></div>
 <div class="h3">Perubahan yang sudah ada</div><div id="phl"></div></div></div>
 <div class="modal" id="m" hidden><div class="card">
   <h2>Impor &amp; Ekspor data</h2><div class="h3">Ekspor</div><div id="exb"><div class="xr"><button class="p" data-ex="json">Cadangan lengkap (.json)</button><span class="sub"><span class="chip">Bisa diimpor</span> Semua tahun, item, saldo, dan status lunas. Untuk pindah perangkat atau memulihkan data.</span></div><div class="xr"><button data-ex="items">Item tahun ini (.csv)</button><span class="sub"><span class="chip">Bisa diimpor</span> Daftar item tahun yang aktif (nama, harga, tiap berapa, mulai). Bisa diedit di Excel.</span></div><div class="xr"><button data-ex="hist">Riwayat pembayaran (.csv)</button><span class="sub"><span class="chip n">Hanya laporan</span> Satu baris per tagihan: tanggal, item, jumlah, status Lunas/Belum.</span></div><div class="xr"><button data-ex="bulan">Rincian bulanan (.csv)</button><span class="sub"><span class="chip n">Hanya laporan</span> Saldo awal, pengeluaran, dan saldo akhir tiap bulan.</span></div></div><div class="h3">Impor</div><div class="row2" style="margin-top:0"><input type="file" id="fi" accept=".json,.csv,text/csv,application/json" style="flex:1;min-width:200px"><select id="im" style="width:auto"><option value="merge">Gabungkan dengan data sekarang</option><option value="replace">Timpa (hapus data sekarang)</option></select></div><div class="gdb"><button type="button" class="g gdt" data-gd="impor"></button><div class="gdc"><div class="sub" style="margin-top:6px"><b>.json</b> = hasil Cadangan lengkap. <b>.csv</b> = hasil Item tahun ini (kolom: Nama; Harga; Tiap; Satuan; Mulai), hanya untuk tahun yang sedang aktif. CSV Riwayat pembayaran dan Rincian bulanan tidak bisa diimpor.<br><b>Gabungkan</b>: menambah yang belum ada, aman diulang. <b>Timpa</b>: mengganti data sekarang (JSON: semua tahun, CSV: item tahun aktif).</div></div></div><div class="err" id="xm"></div><div class="h3">Cadangan otomatis (5 terakhir)</div><div id="sl"></div><div class="h3">Cek sistem</div><div class="row2" style="margin-top:0"><button id="dgb">Jalankan cek sistem</button><button id="dgd">Tes unduh file</button></div><div id="dgr"></div><details id="dt"><summary class="sub" style="cursor:pointer">Cara teks (salin / tempel)</summary>
   <p class="sub">Data tersimpan otomatis di browser ini. Salin teks di bawah untuk cadangan, atau tempel cadangan lama lalu tekan Muat.</p>
   <textarea id="ta" spellcheck="false"></textarea>
   <div class="err" id="merr"></div>
-  <div class="row2"><button class="p" id="cp">Salin</button><button id="ld">Muat dari teks</button><button id="rs" class="d">Pulihkan contoh</button></div></details><div class="row2" style="justify-content:flex-end"><button id="cl">Tutup</button></div>
+  <div class="row2"><button class="p" id="cp">Salin</button><button id="ld">Muat dari teks</button><button id="rs" class="d">Pulihkan contoh</button></div></details><div class="row2" style="justify-content:flex-end"><button class="c" id="cl">Tutup</button></div>
 </div></div>
 
-<div class="modal" id="lg" hidden><div class="card"><h2>Masuk untuk sinkron</h2><p class="sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p><label for="le">Email</label><input id="le" type="email" autocomplete="email"><label for="lp" style="margin-top:10px">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="err" id="lm"></div><div class="row2"><button class="p" id="lin">Masuk</button><button id="lup">Daftar</button><button id="lgc">Tutup</button></div></div></div>
+<div class="modal" id="lg" hidden><div class="card"><h2>Masuk untuk sinkron</h2><p class="sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p><label for="le">Email</label><input id="le" type="email" autocomplete="email"><label for="lp" style="margin-top:10px">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="err" id="lm"></div><div class="row2"><button class="p" id="lin">Masuk</button><button id="lup">Daftar</button><button class="c" id="lgc">Tutup</button></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
@@ -2528,6 +2540,37 @@ function bindDom() {
       f();
     }
   };
+  var _mDown = null;
+  document.addEventListener('mousedown', function (e) {
+    _mDown = e.target;
+  });
+  document.addEventListener('click', function (e) {
+    if (
+      _mDown === e.target &&
+      e.target &&
+      e.target.classList &&
+      e.target.classList.contains('modal')
+    ) {
+      var c = e.target.querySelector(
+        'button.c, #pcl, #cl, #rmc, #kpc, #shx, #lgc, #skc, #xlc, [data-cf="later"]'
+      );
+      if (c) c.click();
+      else e.target.hidden = true;
+    }
+    _mDown = null;
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      var om = document.querySelector('.modal:not([hidden])');
+      if (om) {
+        var c = om.querySelector(
+          'button.c, #pcl, #cl, #rmc, #kpc, #shx, #lgc, #skc, #xlc, [data-cf="later"]'
+        );
+        if (c) c.click();
+        else om.hidden = true;
+      }
+    }
+  });
 }
 
 /** Tulis status simpan di header. */
