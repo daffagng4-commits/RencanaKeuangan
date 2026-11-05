@@ -3849,11 +3849,13 @@ function pmMsg(t, ok) {
 /** Nilai isian harga/siklus saat ini. */
 function pmCur() {
   var it = item(pmId),
-    sek = it && it.unit === "sekali";
+    cadVis = pmScen === "siklus" || pmScen === "manual";
   return {
     P: parseRp($("pp").value),
-    n: sek ? it.n : Math.max(1, parseInt($("pn").value, 10) || 1),
-    u: sek ? it.unit : $("pu").value,
+    n: cadVis
+      ? Math.max(1, parseInt($("pn").value, 10) || 1)
+      : (it ? it.n : 1),
+    u: cadVis ? $("pu").value : (it ? it.unit : "bulan"),
   };
 }
 
@@ -4177,7 +4179,7 @@ function pmDraftNormal() {
     return { c: c, cs: [c], it: it };
   }
   c = { from: first, to: to, price: price, n: null, unit: null };
-  if (it.unit !== "sekali" && (rs || n !== it.n || u !== it.unit)) {
+  if (rs || n !== it.n || u !== it.unit) {
     c.n = n;
     c.unit = u;
   }
@@ -4213,7 +4215,7 @@ function pmShiftRange(it, from) {
   var nb = pmNeighbors(it, from),
     min = nb.prev ? addDaysISO(nb.prev, 1) : null,
     max = nb.next ? addDaysISO(nb.next, -1) : null;
-  if (it.start && (!min || it.start > min)) min = it.start;
+  if (it.unit !== "sekali" && it.start && (!min || it.start > min)) min = it.start;
   if (it.end && (!max || it.end < max)) max = it.end;
   var cut = (it.ch || [])
     .filter(function (q) {
@@ -4465,13 +4467,15 @@ function pmSum(d) {
       f +
       " digeser ke " +
       fmtD(c.anchor) +
-      ", lalu mengikuti siklus tiap " +
-      (c.n || it.n) +
-      " " +
-      (c.unit || it.unit) +
-      ". Tagihan sebelum " +
-      f +
-      " tidak berubah."
+      (it.unit === "sekali"
+        ? ". Tagihan sebelum " + f + " tidak berubah."
+        : ", lalu mengikuti siklus tiap " +
+          (c.n || it.n) +
+          " " +
+          (c.unit || it.unit) +
+          ". Tagihan sebelum " +
+          f +
+          " tidak berubah.")
     );
   if (c.to)
     return (
@@ -4538,10 +4542,7 @@ function pmSc(sc) {
   $("pbk2").hidden = !sc;
   $("psc").classList.toggle("picked", !!sc);
   $("g-price").hidden = sc === "geser";
-  $("pcad").hidden = !(
-    (sc === "siklus" || sc === "manual") &&
-    it.unit !== "sekali"
-  );
+  $("pcad").hidden = !(sc === "siklus" || sc === "manual");
   $("pcw").hidden = !(sc === "siklus" || (sc === "manual" && !until));
   $("pman").hidden = sc !== "manual";
   if (sc) {
@@ -4587,9 +4588,7 @@ function openPm(id) {
   Array.prototype.forEach.call(
     document.querySelectorAll("#psc button"),
     function (b) {
-      b.hidden =
-        it.unit === "sekali" &&
-        (b.dataset.sc === "siklus" || b.dataset.sc === "geser");
+      b.hidden = false;
     },
   );
   pmPrefill(it);
