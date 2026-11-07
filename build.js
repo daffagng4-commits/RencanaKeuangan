@@ -7,7 +7,7 @@ html = html.replace(/<link rel="stylesheet" href="(css\/[^"]+)">/g, (_, f) => '<
 const files = [];
 html = html.replace(/<script src="(js\/[^"]+)"><\/script>\n?/g, (_, f) => { files.push(f); return ''; });
 const js = files.map(f => '/* ===== ' + f + ' ===== */\n' + fs.readFileSync(path.join(root, f), 'utf8')).join('\n');
-html = html.replace('</body>', '<script>\n' + js + '\n</script>\n</body>');
+html = html.replace(/<\/body>\s*<\/html>\s*$/, (js.trim() ? '<script>\n' + js + '\n</script>\n' : '') + '</body>\n</html>');
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(root, 'dist/index.html'), html);
 console.log('dist/index.html dibuat (' + Math.round(html.length / 1024) + ' KB, ' + files.length + ' file js)');
