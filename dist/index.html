@@ -1351,7 +1351,7 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
   </div>
 </div>
 <header>
-  <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r18 · 17 Okt 2026</div><div class="sub" id="sbs"></div></div>
+  <div><h1>Rencana Keuangan</h1><div class="sub" id="ver-info" style="font-size:11.5px;color:var(--mut);margin-top:2px" title="Versi program terbaru">v-r19 · 7 Nov 2026</div><div class="sub" id="status" style="display:none"></div><div class="sub" id="sbs" style="display:none"></div></div>
   <div class="ctl">
     <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
     <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub" id="adjs" style="margin-top:4px"></div></div>
@@ -2975,9 +2975,17 @@ function bindDom() {
 
 /** Tulis status simpan di header. */
 function setSaveStatus(ok) {
-  $('status').textContent = ok
-    ? 'Tersimpan otomatis ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-    : 'Penyimpanan browser tidak tersedia. Gunakan Cadangan agar data aman.';
+  var s = $('status'), vi = $('ver-info');
+  if (ok) {
+    if (s) { s.style.display = 'none'; s.textContent = ''; }
+    if (vi) vi.title = 'Tersimpan otomatis ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  } else {
+    if (s) {
+      s.style.display = 'block';
+      s.style.color = 'var(--wr)';
+      s.textContent = 'Penyimpanan browser tidak tersedia. Gunakan Cadangan agar data aman.';
+    }
+  }
 }
 
 /* ===== js/ui/render.js ===== */
@@ -6408,9 +6416,17 @@ var sb = null,
 
 /** Tulis status sinkron di header. */
 function sbStat(t, bad) {
-  var e = $('sbs');
-  e.textContent = t;
-  e.style.color = bad ? 'var(--wr)' : 'var(--mut)';
+  var e = $('sbs'), vi = $('ver-info');
+  if (!e) return;
+  if (bad) {
+    e.style.display = 'block';
+    e.style.color = 'var(--wr)';
+    e.textContent = t;
+  } else {
+    e.style.display = 'none';
+    e.textContent = '';
+    if (vi && t) vi.title = (vi.title ? vi.title + ' · ' : '') + t;
+  }
   var ts = $('tsync');
   if (ts) ts.textContent = '\u2601 ' + t;
 }
@@ -6620,8 +6636,10 @@ function askConflict(row, rn) {
 
 /** Tampilkan tautan "Selesaikan sekarang" saat sinkron ditunda. */
 function sbPending() {
-  $('sbs').style.color = 'var(--wr)';
-  $('sbs').innerHTML = 'Sinkron ditunda karena data berbeda. <a href="#" id="sbr">Selesaikan sekarang</a>';
+  var e = $('sbs');
+  e.style.display = 'block';
+  e.style.color = 'var(--wr)';
+  e.innerHTML = 'Sinkron ditunda karena data berbeda. <a href="#" id="sbr">Selesaikan sekarang</a>';
 }
 
 /** Masuk (in) atau daftar (up) dengan email dan password. */

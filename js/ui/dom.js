@@ -103,7 +103,15 @@ function bindDom() {
 
 /** Tulis status simpan di header. */
 function setSaveStatus(ok) {
-  $('status').textContent = ok
-    ? 'Tersimpan otomatis ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-    : 'Penyimpanan browser tidak tersedia. Gunakan Cadangan agar data aman.';
+  var s = $('status'), vi = $('ver-info');
+  if (ok) {
+    if (s) { s.style.display = 'none'; s.textContent = ''; }
+    if (vi) vi.title = 'Tersimpan otomatis ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  } else {
+    if (s) {
+      s.style.display = 'block';
+      s.style.color = 'var(--wr)';
+      s.textContent = 'Penyimpanan browser tidak tersedia. Gunakan Cadangan agar data aman.';
+    }
+  }
 }

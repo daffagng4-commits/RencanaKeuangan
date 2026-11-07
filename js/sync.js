@@ -9,9 +9,17 @@ var sb = null,
 
 /** Tulis status sinkron di header. */
 function sbStat(t, bad) {
-  var e = $('sbs');
-  e.textContent = t;
-  e.style.color = bad ? 'var(--wr)' : 'var(--mut)';
+  var e = $('sbs'), vi = $('ver-info');
+  if (!e) return;
+  if (bad) {
+    e.style.display = 'block';
+    e.style.color = 'var(--wr)';
+    e.textContent = t;
+  } else {
+    e.style.display = 'none';
+    e.textContent = '';
+    if (vi && t) vi.title = (vi.title ? vi.title + ' · ' : '') + t;
+  }
 }
 
 /** Jam sekarang (HH.MM). */
