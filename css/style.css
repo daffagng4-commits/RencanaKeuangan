@@ -482,6 +482,11 @@ tr.flash td {
   background: var(--bls);
   color: var(--bl);
 }
+.chip.wr {
+  background: var(--wrs, #fef3c7);
+  color: var(--wr, #b45309);
+  font-weight: 600;
+}
 .lgd {
   display: flex;
   flex-wrap: wrap;
