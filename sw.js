@@ -1,7 +1,7 @@
 /**
  * Service Worker untuk Rencana Keuangan: offline cache & notifikasi lokal tagihan.
  */
-const CACHE_NAME = 'rk-cache-v2';
+const CACHE_NAME = 'rk-cache-v3';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -9,8 +9,9 @@ const STATIC_ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
+  self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
 });
 
@@ -22,13 +23,52 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// Listener untuk memicu Web Notification langsung dari Service Worker
+self.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'DUE_NOTIFICATION') {
+    self.registration.showNotification(e.data.title, {
+      body: e.data.body,
+      tag: e.data.tag || 'rk-bill-notif',
+      renotify: true
+    });
+  }
+});
+
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   // Supabase API bypass cache
   if (url.hostname.includes('supabase.co')) return;
+
+  // Network-First untuk dokumen HTML agar pembaruan program selalu langsung muncul saat online
+  const isHtml = e.request.mode === 'navigate' || (e.request.headers.get('accept') && e.request.headers.get('accept').includes('text/html'));
+  if (isHtml) {
+    e.respondWith(
+      fetch(e.request)
+        .then((res) => {
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+          }
+          return res;
+        })
+        .catch(() => caches.match(e.request).then((cached) => cached || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // Cache-First dengan background revalidate untuk aset statis lain
   e.respondWith(
-    caches.match(e.request).then((cached) => cached || fetch(e.request).catch(() => caches.match('./index.html')))
+    caches.match(e.request).then((cached) => {
+      const fetchPromise = fetch(e.request).then((res) => {
+        if (res && res.status === 200) {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+        }
+        return res;
+      }).catch(() => cached);
+      return cached || fetchPromise;
+    })
   );
 });
 

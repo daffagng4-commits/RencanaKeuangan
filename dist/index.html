@@ -177,22 +177,7 @@ button.p:hover {
   filter: brightness(1.06);
   box-shadow: 0 4px 12px color-mix(in srgb, var(--ac) 35%, transparent);
 }
-#btn-quick-item, #btn-quick-kas {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-#btn-quick-item kbd, #btn-quick-kas kbd {
-  font-family: inherit;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--ink) 6%, var(--sf));
-  border: 1px solid var(--ln);
-  color: var(--mut);
-  line-height: 1.2;
-}
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) button.p {
     color: #042f2e;
@@ -1355,7 +1340,7 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
   <div class="ctl">
     <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
     <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub" id="adjs" style="margin-top:4px"></div></div>
-    <button id="lgb">Masuk</button><button id="bk">Impor / Ekspor</button><button id="btn-quick-item" type="button" title="Tambah item kilat (Tekan I)">+ Item <kbd>I</kbd></button><button id="btn-quick-kas" type="button" onclick="openQuickKas()" title="Catat kas kilat (Tekan N)">+ Kas <kbd>N</kbd></button>
+    <button id="lgb">Masuk</button><button id="bk">Impor / Ekspor</button>
   </div>
 </header>
 <nav role="tablist">
@@ -2961,14 +2946,6 @@ function bindDom() {
         else om.hidden = true;
       }
     }
-    if ((e.key === 'n' || e.key === 'N') && !e.ctrlKey && !e.altKey && !e.metaKey) {
-      var tag = (e.target && e.target.tagName) || '';
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
-      var openM = document.querySelector('.modal:not([hidden])');
-      if (openM) return;
-      e.preventDefault();
-      openQuickKas();
-    }
   });
   bindQuickKas();
 }
@@ -4324,18 +4301,83 @@ function bindItems() {
 function parseQuickItem(str, yr) {
   if (!str || !str.trim()) return { error: 'Masukkan nama dan nominal tagihan/item.' };
   var s = str.trim();
+  var yDefault = yr || (typeof S !== 'undefined' && S.year) || new Date().getFullYear();
+  var start = '';
+  var rem = s;
 
-  // 1. Ekstrak nominal: 186k, 186.000, 1,5jt, 2.5 juta, 50rb, 200000, dst.
-  var priceMatch = s.match(/\b(\d+(?:[\.,]\d+)?\s*(?:k|rb|ribu|jt|juta|m|miliar)?|\d{1,3}(?:\.\d{3})+)\b/i);
+  // 1. Ekstrak tanggal terlebih dahulu agar angka tanggal tidak salah terdeteksi sebagai nominal:
+  // a. DD-MM-YYYY atau DD/MM/YYYY (mis. 07-11-2026 atau 7/11/2026)
+  var dmyMatch = rem.match(/\b(\d{1,2})[-/](\d{1,2})[-/](\d{4})\b/);
+  if (dmyMatch) {
+    var d = parseInt(dmyMatch[1], 10);
+    var m = parseInt(dmyMatch[2], 10);
+    var y = parseInt(dmyMatch[3], 10);
+    if (d >= 1 && d <= 31 && m >= 1 && m <= 12) {
+      start = y + '-' + pad2(m) + '-' + pad2(d);
+      rem = rem.replace(dmyMatch[0], ' ');
+    }
+  }
+
+  // b. ISO YYYY-MM-DD atau YYYY/MM/DD
+  if (!start) {
+    var isoMatch = rem.match(/\b(\d{4})[-/](\d{1,2})[-/](\d{1,2})\b/);
+    if (isoMatch) {
+      var iy = parseInt(isoMatch[1], 10);
+      var im = parseInt(isoMatch[2], 10);
+      var id = parseInt(isoMatch[3], 10);
+      if (id >= 1 && id <= 31 && im >= 1 && im <= 12) {
+        start = iy + '-' + pad2(im) + '-' + pad2(id);
+        rem = rem.replace(isoMatch[0], ' ');
+      }
+    }
+  }
+
+  // c. Format tanggal teks nama bulan: "07/7 november 2026", "7 november 2026", "tgl 15 des 2026", dsb.
+  var MONTH_MAP = {
+    jan: '01', januari: '01', feb: '02', februari: '02', mar: '03', maret: '03',
+    apr: '04', april: '04', mei: '05', jun: '06', juni: '06', jul: '07', juli: '07',
+    agu: '08', agt: '08', agustus: '08', sep: '09', september: '09', okt: '10',
+    oktober: '10', nov: '11', november: '11', des: '12', desember: '12',
+  };
+  if (!start) {
+    var namedRegex = /(?:(?:tgl|tanggal)\.?\s*)?\b(?:\d{1,2}\/)?(\d{1,2})\s+(jan|januari|feb|februari|mar|maret|apr|april|mei|jun|juni|jul|juli|agu|agt|agustus|sep|september|okt|oktober|nov|november|des|desember)(?:\s+(\d{4}))?\b/i;
+    var namedMatch = rem.match(namedRegex);
+    if (namedMatch) {
+      var nd = parseInt(namedMatch[1], 10);
+      var nmStr = MONTH_MAP[namedMatch[2].toLowerCase()];
+      var ny = namedMatch[3] ? parseInt(namedMatch[3], 10) : yDefault;
+      if (nd >= 1 && nd <= 31 && nmStr) {
+        start = ny + '-' + nmStr + '-' + pad2(nd);
+        rem = rem.replace(namedMatch[0], ' ');
+      }
+    }
+  }
+
+  // d. Tanggal saja dengan penanda tgl/tanggal: "tgl 25"
+  if (!start) {
+    var dayOnlyMatch = rem.match(/\b(?:tgl|tanggal)\.?\s*(\d{1,2})\b/i);
+    if (dayOnlyMatch) {
+      var od = parseInt(dayOnlyMatch[1], 10);
+      if (od < 1) od = 1;
+      if (od > 31) od = 31;
+      start = yDefault + '-01-' + pad2(od);
+      rem = rem.replace(dayOnlyMatch[0], ' ');
+    }
+  }
+
+  if (!start) {
+    start = yDefault + '-01-01';
+  }
+
+  // 2. Ekstrak nominal: 186k, 186.000, 1,5jt, 2.5 juta, 50rb, 200000, dst.
+  var priceMatch = rem.match(/\b(\d+(?:[\.,]\d+)?\s*(?:k|rb|ribu|jt|juta|m|miliar)?|\d{1,3}(?:\.\d{3})+)\b/i);
   if (!priceMatch) return { error: 'Nominal tidak ditemukan (mis. 200k, 1.5jt, atau 350.000).' };
   var rawPrice = priceMatch[0];
   var price = parseRp(rawPrice);
   if (!price || price <= 0) return { error: 'Nominal tidak valid.' };
+  rem = rem.replace(rawPrice, ' ').trim();
 
-  // Sisakan teks tanpa bagian nominal
-  var rem = s.replace(rawPrice, ' ').trim();
-
-  // 2. Unit & interval berulang
+  // 3. Unit & interval berulang
   var unit = 'bulan',
     n = 1;
   if (/\bsekali\b/i.test(rem)) {
@@ -4360,61 +4402,6 @@ function parseQuickItem(str, yr) {
         rem = rem.replace(cadUnitMatch[0], ' ');
       }
     }
-  }
-
-  // 3. Tanggal mulai (ISO YYYY-MM-DD atau tgl DD [bulan])
-  var y = yr || (typeof S !== 'undefined' && S.year) || new Date().getFullYear();
-  var start = '';
-  var isoMatch = rem.match(/\b(\d{4}-\d{2}-\d{2})\b/);
-  if (isoMatch) {
-    start = isoMatch[1];
-    rem = rem.replace(isoMatch[0], ' ');
-  } else {
-    var MONTH_MAP = {
-      jan: '01',
-      januari: '01',
-      feb: '02',
-      februari: '02',
-      mar: '03',
-      maret: '03',
-      apr: '04',
-      april: '04',
-      mei: '05',
-      jun: '06',
-      juni: '06',
-      jul: '07',
-      juli: '07',
-      agu: '08',
-      agt: '08',
-      agustus: '08',
-      sep: '09',
-      september: '09',
-      okt: '10',
-      oktober: '10',
-      nov: '11',
-      november: '11',
-      des: '12',
-      desember: '12',
-    };
-    var mMatch = rem.match(
-      /\b(jan|januari|feb|februari|mar|maret|apr|april|mei|jun|juni|jul|juli|agu|agt|agustus|sep|september|okt|oktober|nov|november|des|desember)\b/i,
-    );
-    var monthStr = '01';
-    if (mMatch) {
-      monthStr = MONTH_MAP[mMatch[1].toLowerCase()];
-      rem = rem.replace(mMatch[0], ' ');
-    }
-
-    var dayMatch = rem.match(/\b(?:tgl|tanggal)\.?\s*(\d{1,2})\b/i);
-    var d = 1;
-    if (dayMatch) {
-      d = parseInt(dayMatch[1], 10);
-      rem = rem.replace(dayMatch[0], ' ');
-    }
-    if (d < 1) d = 1;
-    if (d > 31) d = 31;
-    var dd = (d < 10 ? '0' : '') + d;
-    start = y + '-' + monthStr + '-' + dd;
   }
 
   // 4. Bersihkan kata kunci pembantu untuk nama item
@@ -4479,30 +4466,6 @@ function bindQuickItem() {
     }
   };
 
-  var openBtn = $('btn-quick-item');
-  if (openBtn) {
-    openBtn.onclick = function () {
-      tab('item');
-      var card = $('card-quick-add');
-      if (card) {
-        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        setTimeout(function () {
-          input.focus();
-        }, 150);
-      }
-    };
-  }
-
-  // Keyboard shortcut: tekan 'I' di luar form untuk fokus ke Quick Item
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'i' || e.key === 'I') {
-      var tag = (e.target && e.target.tagName) || '';
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target.isContentEditable) return;
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      e.preventDefault();
-      if (openBtn) openBtn.click();
-    }
-  });
 }
 
 /* ===== js/ui/years.js ===== */
@@ -8781,8 +8744,31 @@ function bindXl() {
   };
 }
 
+/** Kirim notifikasi sistem baik via ServiceWorkerRegistration maupun Notification API browser. */
+function triggerSystemNotification(title, body, tag) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  var opt = {
+    body: body,
+    tag: tag || 'bill-due-' + Date.now(),
+    renotify: true,
+  };
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(function (reg) {
+      if (reg && reg.showNotification) {
+        reg.showNotification(title, opt);
+      } else {
+        try { new Notification(title, opt); } catch (e) {}
+      }
+    }).catch(function () {
+      try { new Notification(title, opt); } catch (e) {}
+    });
+  } else {
+    try { new Notification(title, opt); } catch (e) {}
+  }
+}
+
 /** Pengingat tagihan jatuh tempo lokal (Notification API - Fitur 1). */
-function checkDueNotifications() {
+function checkDueNotifications(force) {
   if (!('Notification' in window)) return;
   if (Notification.permission !== 'granted') return;
   if (!S || !S.items) return;
@@ -8804,10 +8790,23 @@ function checkDueNotifications() {
     });
   });
 
-  if (!dueList.length) return;
+  if (!dueList.length) {
+    if (force) {
+      triggerSystemNotification(
+        'Pengingat Tagihan Aktif',
+        'Tidak ada tagihan jatuh tempo dalam 3 hari ke depan.',
+        'bill-check-ok'
+      );
+    }
+    return;
+  }
 
-  var lastNotif = localStorage.getItem('last_bill_notif_date');
-  if (lastNotif === today) return;
+  if (!force) {
+    try {
+      var lastNotif = typeof localStorage !== 'undefined' && localStorage.getItem('last_bill_notif_date');
+      if (lastNotif === today) return;
+    } catch (e) {}
+  }
 
   var titles = [];
   dueList.slice(0, 3).forEach(function (item) {
@@ -8817,23 +8816,16 @@ function checkDueNotifications() {
   var body = titles.join('\n');
   if (dueList.length > 3) body += '\n+' + (dueList.length - 3) + ' tagihan lainnya';
 
+  triggerSystemNotification(
+    'Pengingat Tagihan Jatuh Tempo (' + dueList.length + ')',
+    body,
+    'bill-due-' + today
+  );
   try {
-    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({
-        type: 'DUE_NOTIFICATION',
-        title: 'Pengingat Tagihan Jatuh Tempo (' + dueList.length + ')',
-        body: body,
-        tag: 'bill-due-' + today,
-      });
-    } else {
-      new Notification('Pengingat Tagihan Jatuh Tempo (' + dueList.length + ')', {
-        body: body,
-        icon: 'manifest.webmanifest',
-        tag: 'bill-due-' + today,
-      });
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('last_bill_notif_date', today);
     }
-    localStorage.setItem('last_bill_notif_date', today);
-  } catch (err) {}
+  } catch (e) {}
 }
 
 function requestNotifPermission() {
@@ -8842,8 +8834,8 @@ function requestNotifPermission() {
     return;
   }
   if (Notification.permission === 'granted') {
-    toast('Notifikasi sudah aktif. Pengingat tagihan akan otomatis muncul.');
-    checkDueNotifications();
+    toast('Memeriksa pengingat tagihan...');
+    checkDueNotifications(true);
     return;
   }
   if (Notification.permission === 'denied') {
@@ -8852,18 +8844,21 @@ function requestNotifPermission() {
   }
   Notification.requestPermission().then(function (perm) {
     if (perm === 'granted') {
-      toast('Notifikasi aktif! Pengingat akan muncul saat tagihan mendekati jatuh tempo.');
-      checkDueNotifications();
+      toast('Notifikasi aktif! Memeriksa tagihan...');
+      checkDueNotifications(true);
     } else {
       toast('Izin notifikasi tidak diberikan.');
     }
   });
 }
 
-/** PWA: daftar service worker (hanya di https), tombol "Pasang aplikasi", penanda offline, dan penyegaran menit untuk tab Hari ini. */
+/** PWA: daftar service worker (hanya di https/http), tombol "Pasang aplikasi", dan auto check tagihan. */
 function bindPwa() {
-  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol))
-    navigator.serviceWorker.register('sw.js').catch(function () {});
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    navigator.serviceWorker.register('sw.js').then(function (reg) {
+      if (reg && reg.update) reg.update();
+    }).catch(function () {});
+  }
   var ev = null;
   window.addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault();
