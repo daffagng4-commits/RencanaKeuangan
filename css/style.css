@@ -791,16 +791,86 @@ textarea {
   align-items: center;
   margin-bottom: 16px;
 }
-.yp {
-  border-radius: 99px;
-  padding: 5px 16px;
-  min-height: 36px;
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+  padding: 6px 0 12px;
+  border-bottom: 1px solid var(--ln);
 }
-.yp.on {
+.topbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.yp, a.yp, .topbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-decoration: none;
+  border-radius: 9999px;
+  padding: 6px 14px;
+  min-height: 34px;
+  border: 1px solid var(--ln);
+  background: var(--sf);
+  color: var(--mut);
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.16s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+.yp:hover, a.yp:hover, .topbar-btn:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 4%, var(--sf));
+  border-color: color-mix(in srgb, var(--ink) 25%, var(--ln));
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px -2px rgba(0, 0, 0, 0.08);
+}
+.yp:active, a.yp:active, .topbar-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.yp.on, a.yp.on {
   background: var(--acs);
   color: var(--ac);
   border-color: var(--ac);
   font-weight: 700;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--ac) 20%, transparent);
+}
+a.yp.yp-tool {
+  background: color-mix(in srgb, var(--ink) 2.5%, var(--sf));
+  border-color: color-mix(in srgb, var(--ink) 12%, var(--ln));
+  color: var(--ink);
+  font-weight: 500;
+}
+a.yp.yp-tool:hover {
+  background: var(--acs);
+  border-color: var(--ac);
+  color: var(--ac);
+  box-shadow: 0 3px 10px -2px color-mix(in srgb, var(--ac) 25%, transparent);
+}
+a.yp.yp-tool .arr-icon {
+  opacity: 0.65;
+  transition: transform 0.16s ease, opacity 0.16s ease;
+  flex-shrink: 0;
+}
+a.yp.yp-tool:hover .arr-icon {
+  opacity: 1;
+  transform: translate(1px, -1px);
+}
+.topbar-btn {
+  font-size: 12.5px;
+  padding: 5px 12px;
+  min-height: 32px;
 }
 .yp[data-kt="-"].on, #qk-out.on {
   background: var(--wrs);

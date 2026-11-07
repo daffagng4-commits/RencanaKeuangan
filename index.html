@@ -177,6 +177,22 @@ button.p:hover {
   filter: brightness(1.06);
   box-shadow: 0 4px 12px color-mix(in srgb, var(--ac) 35%, transparent);
 }
+#btn-quick-item, #btn-quick-kas {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+#btn-quick-item kbd, #btn-quick-kas kbd {
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--ink) 6%, var(--sf));
+  border: 1px solid var(--ln);
+  color: var(--mut);
+  line-height: 1.2;
+}
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) button.p {
     color: #042f2e;
@@ -816,16 +832,86 @@ textarea {
   align-items: center;
   margin-bottom: 16px;
 }
-.yp {
-  border-radius: 99px;
-  padding: 5px 16px;
-  min-height: 36px;
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+  padding: 6px 0 12px;
+  border-bottom: 1px solid var(--ln);
 }
-.yp.on {
+.topbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.yp, a.yp, .topbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-decoration: none;
+  border-radius: 9999px;
+  padding: 6px 14px;
+  min-height: 34px;
+  border: 1px solid var(--ln);
+  background: var(--sf);
+  color: var(--mut);
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: all 0.16s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+}
+.yp:hover, a.yp:hover, .topbar-btn:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 4%, var(--sf));
+  border-color: color-mix(in srgb, var(--ink) 25%, var(--ln));
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px -2px rgba(0, 0, 0, 0.08);
+}
+.yp:active, a.yp:active, .topbar-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.yp.on, a.yp.on {
   background: var(--acs);
   color: var(--ac);
   border-color: var(--ac);
   font-weight: 700;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--ac) 20%, transparent);
+}
+a.yp.yp-tool {
+  background: color-mix(in srgb, var(--ink) 2.5%, var(--sf));
+  border-color: color-mix(in srgb, var(--ink) 12%, var(--ln));
+  color: var(--ink);
+  font-weight: 500;
+}
+a.yp.yp-tool:hover {
+  background: var(--acs);
+  border-color: var(--ac);
+  color: var(--ac);
+  box-shadow: 0 3px 10px -2px color-mix(in srgb, var(--ac) 25%, transparent);
+}
+a.yp.yp-tool .arr-icon {
+  opacity: 0.65;
+  transition: transform 0.16s ease, opacity 0.16s ease;
+  flex-shrink: 0;
+}
+a.yp.yp-tool:hover .arr-icon {
+  opacity: 1;
+  transform: translate(1px, -1px);
+}
+.topbar-btn {
+  font-size: 12.5px;
+  padding: 5px 12px;
+  min-height: 32px;
 }
 .yp[data-kt="-"].on, #qk-out.on {
   background: var(--wrs);
@@ -1251,13 +1337,25 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 </head>
 <body>
 <div class="w">
-<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px"><div class="kt" id="mdbar"><button type="button" class="yp on" data-md="rencana">Rencana Keuangan</button><button type="button" class="yp" data-md="trip">Perjalanan</button><a class="yp" href="tools/rebalance/index.html" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px">Rebalance porto <span style="font-size:11px">&nearr;</span></a><a class="yp" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px">IBKR vs Flip <span style="font-size:11px">&nearr;</span></a></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span id="offl" class="chp cash" hidden>Offline &middot; data tersimpan di perangkat</span><button type="button" id="btn-notif" title="Aktifkan pengingat notifikasi tagihan">🔔 Notifikasi</button><button type="button" id="pwa" hidden>Pasang aplikasi</button><button type="button" id="thm" title="Ketuk untuk ganti tema">&#9680; Tema: Otomatis</button></div></div>
+<div class="topbar">
+  <div class="kt" id="mdbar">
+    <button type="button" class="yp on" data-md="rencana">Rencana Keuangan</button>
+    <button type="button" class="yp" data-md="trip">Perjalanan</button>
+    <a class="yp yp-tool" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a>
+    <a class="yp yp-tool" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a>
+  </div>
+  <div class="topbar-actions">
+    <button type="button" id="btn-notif" class="topbar-btn" title="Aktifkan pengingat notifikasi tagihan">🔔 Notifikasi</button>
+    <button type="button" id="pwa" class="topbar-btn" hidden>📲 Pasang aplikasi</button>
+    <button type="button" id="thm" class="topbar-btn" title="Ketuk untuk ganti tema">&#9680; Tema: Otomatis</button>
+  </div>
+</div>
 <header>
   <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r18 · 17 Okt 2026</div><div class="sub" id="sbs"></div></div>
   <div class="ctl">
     <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
     <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub" id="adjs" style="margin-top:4px"></div></div>
-    <button id="lgb">Masuk</button><button id="bk">Impor / Ekspor</button><button id="btn-quick-item" type="button" title="Tambah item kilat (Tekan I)" style="display:inline-flex;align-items:center;gap:4px">+ Item <kbd style="font-size:10px;padding:1px 4px;background:var(--sf);border:1px solid var(--ln);border-radius:3px">I</kbd></button><button id="btn-quick-kas" type="button" onclick="openQuickKas()" title="Catat kas kilat (Tekan N)" style="display:inline-flex;align-items:center;gap:4px">+ Kas <kbd style="font-size:10px;padding:1px 4px;background:var(--sf);border:1px solid var(--ln);border-radius:3px">N</kbd></button>
+    <button id="lgb">Masuk</button><button id="bk">Impor / Ekspor</button><button id="btn-quick-item" type="button" title="Tambah item kilat (Tekan I)">+ Item <kbd>I</kbd></button><button id="btn-quick-kas" type="button" onclick="openQuickKas()" title="Catat kas kilat (Tekan N)">+ Kas <kbd>N</kbd></button>
   </div>
 </header>
 <nav role="tablist">
@@ -4376,7 +4474,7 @@ function bindQuickItem() {
   var openBtn = $('btn-quick-item');
   if (openBtn) {
     openBtn.onclick = function () {
-      setTab('item');
+      tab('item');
       var card = $('card-quick-add');
       if (card) {
         card.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -4557,22 +4655,8 @@ function bindHeader() {
 
 /** Ringkasan di bawah kolom Saldo awal. */
 function renderAdj() {
-  var c = calc(),
-    e = $('adjs');
-  if (!c.adjIn && !c.adjLate) {
-    e.textContent = '';
-    return;
-  }
-  e.innerHTML =
-    (c.adjIn
-      ? ''
-      : '') +
-    (c.adjLate
-      ? (c.adjIn ? '<br>' : '') +
-        'penyesuaian bulan berikutnya: ' +
-        (c.adjLate > 0 ? '+ ' : '&minus; ') +
-        rp(Math.abs(c.adjLate))
-      : '');
+  var e = $('adjs');
+  if (e) e.textContent = '';
 }
 
 /* ===== js/ui/price-modal.js ===== */
@@ -8781,12 +8865,6 @@ function bindPwa() {
   if (notifBtn) {
     notifBtn.onclick = requestNotifPermission;
   }
-  function net() {
-    $('offl').hidden = navigator.onLine !== false;
-  }
-  window.addEventListener('online', net);
-  window.addEventListener('offline', net);
-  net();
   setInterval(function () {
     if (mode === 'trip' && tripTab === 'now' && !document.hidden && tp()) renderTrip();
   }, 60000);

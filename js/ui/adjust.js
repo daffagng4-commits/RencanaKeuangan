@@ -12,22 +12,8 @@ function adjList() {
 
 /** Ringkasan di bawah kolom Saldo awal. */
 function renderAdj() {
-  var c = calc(),
-    e = $('adjs');
-  if (!c.adjIn && !c.adjLate) {
-    e.textContent = '';
-    return;
-  }
-  e.innerHTML =
-    (c.adjIn
-      ? (c.adjIn > 0 ? '+ ' : '&minus; ') + rp(Math.abs(c.adjIn)) + ' penyesuaian = <b>' + rp(c.open) + '</b>'
-      : '') +
-    (c.adjLate
-      ? (c.adjIn ? '<br>' : '') +
-        'penyesuaian bulan berikutnya: ' +
-        (c.adjLate > 0 ? '+ ' : '&minus; ') +
-        rp(Math.abs(c.adjLate))
-      : '');
+  var e = $('adjs');
+  if (e) e.textContent = '';
 }
 
 /** Teks "tiap bulan mulai Jan, 12 kali" untuk penyesuaian berulang. */
