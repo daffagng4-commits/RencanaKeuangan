@@ -7,7 +7,10 @@ html = html.replace(/<link rel="stylesheet" href="(css\/[^"]+)">/g, (_, f) => '<
 const files = [];
 html = html.replace(/<script src="(js\/[^"]+)"><\/script>\n?/g, (_, f) => { files.push(f); return ''; });
 const js = files.map(f => '/* ===== ' + f + ' ===== */\n' + fs.readFileSync(path.join(root, f), 'utf8')).join('\n');
-html = html.replace('</body>', '<script>\n' + js + '\n</script>\n</body>');
+if (files.length > 0) {
+  const lastBody = html.lastIndexOf('</body>');
+  html = lastBody !== -1 ? html.slice(0, lastBody) + '<script>\n' + js + '\n</script>\n' + html.slice(lastBody) : html + '<script>\n' + js + '\n</script>';
+}
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
 fs.writeFileSync(path.join(root, 'dist/index.html'), html);
 console.log('dist/index.html dibuat (' + Math.round(html.length / 1024) + ' KB, ' + files.length + ' file js)');
