@@ -80,6 +80,9 @@ body {
     -apple-system,
     "Segoe UI",
     sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 .w {
   max-width: 1040px;
@@ -128,41 +131,61 @@ textarea {
   color: var(--ink);
   background: var(--sf);
   border: 1px solid var(--ln);
-  border-radius: 8px;
-  padding: 9px 10px;
+  border-radius: 9px;
+  padding: 9px 12px;
   min-height: 42px;
   width: 100%;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 input:focus,
 select:focus,
-textarea:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--ac);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ac) 20%, transparent);
+}
 button:focus-visible {
   outline: 2px solid var(--ac);
-  outline-offset: 1px;
+  outline-offset: 2px;
 }
 button {
   font: inherit;
   font-weight: 600;
-  border-radius: 8px;
+  border-radius: 9px;
   border: 1px solid var(--ln);
   background: var(--sf);
   color: var(--ink);
-  padding: 9px 14px;
+  padding: 9px 15px;
   min-height: 42px;
   cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+button:hover {
+  background: color-mix(in srgb, var(--ink) 4%, var(--sf));
+  border-color: color-mix(in srgb, var(--ink) 14%, var(--ln));
+}
+button:active {
+  transform: scale(0.985);
 }
 button.p {
   background: var(--ac);
   border-color: var(--ac);
   color: #fff;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--ac) 25%, transparent);
+}
+button.p:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--ac) 35%, transparent);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) button.p {
-    color: #0c1d18;
+    color: #042f2e;
+    font-weight: 700;
   }
 }
 :root[data-theme="dark"] button.p {
-  color: #0c1d18;
+  color: #042f2e;
+  font-weight: 700;
 }
 button.g {
   border-color: transparent;
@@ -188,44 +211,47 @@ button.c:hover,
 }
 nav {
   display: flex;
-  gap: 4px;
+  gap: 5px;
   background: var(--sf);
-  padding: 4px;
-  border-radius: 12px;
+  padding: 5px;
+  border-radius: 14px;
   border: 1px solid var(--ln);
-  margin-bottom: 18px;
+  margin-bottom: 20px;
   overflow-x: auto;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 2px 8px -2px rgba(0, 0, 0, 0.02);
 }
 nav button {
   border: 0;
-  border-radius: 8px;
+  border-radius: 9px;
   background: transparent;
   color: var(--mut);
   white-space: nowrap;
   padding: 8px 14px;
   font-weight: 600;
   font-size: 13px;
-  transition: all 0.15s ease-in-out;
+  min-height: 38px;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
 }
 nav button:hover {
   color: var(--ink);
-  background: rgba(0, 0, 0, 0.03);
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
 }
 nav button[aria-selected="true"] {
   color: var(--ac);
   background: var(--acs);
   font-weight: 700;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid color-mix(in srgb, var(--ac) 25%, transparent);
 }
 .card {
   background: var(--sf);
   border: 1px solid var(--ln);
   border-radius: 14px;
-  padding: 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 14px -3px rgba(0, 0, 0, 0.03);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .hero {
   display: grid;
@@ -261,11 +287,11 @@ nav button[aria-selected="true"] {
 table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 14px;
+  font-size: 13.5px;
 }
 th,
 td {
-  padding: 9px 10px;
+  padding: 10px 12px;
   text-align: right;
   border-bottom: 1px solid var(--ln);
   white-space: nowrap;
@@ -275,9 +301,15 @@ td:first-child {
   text-align: left;
 }
 th {
-  font-size: 12.5px;
+  position: sticky;
+  top: 0;
+  background: var(--sf);
+  z-index: 2;
+  font-size: 12px;
   color: var(--mut);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border-bottom: 2px solid var(--ln);
 }
 td.l,
 th.l {
@@ -286,31 +318,42 @@ th.l {
 }
 tr.row {
   cursor: pointer;
+  transition: background 0.12s ease;
 }
 tr.row:hover td {
-  background: var(--bg);
+  background: color-mix(in srgb, var(--ink) 3%, var(--sf));
 }
 tr.tot td {
   font-weight: 700;
   border-bottom: 0;
 }
 .chip {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   background: var(--acs);
   color: var(--ac);
-  border-radius: 99px;
-  padding: 1px 9px;
-  font-size: 12px;
+  border: 1px solid color-mix(in srgb, var(--ac) 20%, transparent);
+  border-radius: 9999px;
+  padding: 2px 10px;
+  font-size: 11.5px;
   font-weight: 600;
   margin: 2px 3px 2px 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 .neg {
   color: var(--wr);
 }
 .det td {
-  background: var(--bg);
+  background: color-mix(in srgb, var(--ink) 2%, var(--sf));
   font-size: 13px;
-  padding: 6px 10px;
+  padding: 8px 12px;
+}
+tr.det {
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+tr.det:hover td {
+  background: color-mix(in srgb, var(--ink) 5%, var(--sf));
 }
 .bars {
   display: flex;
@@ -395,24 +438,33 @@ tr.tot td {
 td.z {
   color: var(--ln);
 }
-body, input, button, select, textarea, table {
+body, input, button, select, textarea, table, kbd, code {
   font-feature-settings: "tnum" 1, "cv05" 1;
 }
-.big, .stats b, .cell, td, th, .pd, .chip, .tag, .runway-box,
-input[type="number"], input[type="date"], input[inputmode="numeric"] {
+.big, .stats b, .cell, td, th, .pd, .chip, .tag, .runway-box, #sparkline-kas,
+input[type="number"], input[type="date"], input[inputmode="numeric"], #q-input {
   font-variant-numeric: tabular-nums;
 }
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.48);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  background: rgba(15, 23, 42, 0.52);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
   z-index: 99;
+  animation: modalBackdropFade 0.18s ease-out;
+}
+@keyframes modalBackdropFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modalSheetIn {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 .modal[hidden] {
   display: none;
@@ -423,8 +475,9 @@ input[type="number"], input[type="date"], input[inputmode="numeric"] {
   margin: 0;
   max-height: 90vh;
   overflow: auto;
-  border-radius: 14px;
-  box-shadow: 0 18px 40px -10px rgba(0, 0, 0, 0.25);
+  border-radius: 16px;
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--ln);
+  animation: modalSheetIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .h3 {
   font-size: 12px;
@@ -534,36 +587,37 @@ tr.flash td {
   color: var(--bl);
 }
 .chip.wr {
-  background: var(--wrs, #fef3c7);
-  color: var(--wr, #b45309);
-  border: 1px solid var(--wr, #b45309);
+  background: var(--wrs);
+  color: var(--wr);
+  border: 1px solid var(--wr);
   font-weight: 700;
 }
 .runway-box {
-  margin-top: 10px;
-  padding: 8px 12px;
-  border-radius: 8px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   line-height: 1.4;
   border: 1px solid transparent;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 .runway-box.runway-deficit {
   background: var(--wrs);
-  border-color: var(--wr);
+  border-color: color-mix(in srgb, var(--wr) 30%, transparent);
   color: var(--wr);
 }
 .runway-box.runway-warning {
   background: var(--wrs);
-  border-color: var(--wr);
+  border-color: color-mix(in srgb, var(--wr) 30%, transparent);
   color: var(--wr);
 }
 .runway-box.runway-safe {
   background: var(--acs);
-  border-color: var(--ac);
+  border-color: color-mix(in srgb, var(--ac) 30%, transparent);
   color: var(--ac);
 }
 .lgd {
@@ -589,13 +643,11 @@ tr.flash td {
   text-decoration: line-through;
   border-style: dashed;
   border-color: var(--wr);
-  background: rgba(217, 83, 58, 0.08);
-  background: color-mix(in srgb, var(--wr) 9%, transparent);
-  opacity: 1;
+  background: var(--wrs);
+  opacity: 0.95;
 }
 .chip.sk {
-  background: rgba(217, 83, 58, 0.08);
-  background: color-mix(in srgb, var(--wr) 9%, transparent);
+  background: var(--wrs);
   color: var(--wr);
   text-decoration: line-through;
   border: 1px dashed var(--wr);
@@ -603,12 +655,15 @@ tr.flash td {
 .cm {
   position: fixed;
   z-index: 20;
-  min-width: 220px;
+  min-width: 230px;
   background: var(--sf);
   border: 1px solid var(--ln);
-  border-radius: 12px;
-  padding: 6px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+  border-radius: 14px;
+  padding: 8px;
+  box-shadow: 0 14px 36px -4px rgba(0, 0, 0, 0.22), 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: modalSheetIn 0.14s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .cm[hidden] {
   display: none;
@@ -616,7 +671,7 @@ tr.flash td {
 .cm .cmh {
   padding: 6px 10px 8px;
   border-bottom: 1px solid var(--ln);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 .cm button {
   display: block;
@@ -624,45 +679,98 @@ tr.flash td {
   text-align: left;
   border: 0;
   background: none;
-  padding: 9px 10px;
-  min-height: 40px;
+  padding: 8px 12px;
+  min-height: 38px;
+  border-radius: 8px;
+  font-size: 13px;
+  transition: background 0.1s ease;
 }
 .cm button:hover {
-  background: var(--bg);
+  background: color-mix(in srgb, var(--ink) 5%, var(--sf));
 }
 .cm button.on {
   background: var(--acs);
   color: var(--ac);
+  font-weight: 700;
 }
 .cm .cm-row {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   align-items: center;
+  padding: 4px 2px;
 }
 .cm .cm-row input {
   flex: 1;
   min-width: 0;
-  font-size: 12px;
-  padding: 4px 6px;
+  font-size: 13px;
+  padding: 6px 10px;
+  min-height: 36px;
   border: 1px solid var(--ln);
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--bg);
-  color: var(--fg);
+  color: var(--ink);
 }
 .cm .cm-row button {
-  display: inline-block;
+  display: inline-flex;
   width: auto;
-  min-height: unset;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  border-radius: 6px;
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  border-radius: 8px;
   background: var(--ac);
   color: #fff;
   text-align: center;
 }
 .cm .cm-row button:hover {
-  opacity: 0.9;
+  filter: brightness(1.08);
+}
+#card-quick-add {
+  background: color-mix(in srgb, var(--ac) 5%, var(--sf));
+  border: 1px solid color-mix(in srgb, var(--ac) 25%, var(--ln));
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 14px -3px color-mix(in srgb, var(--ac) 15%, transparent);
+  transition: all 0.2s ease;
+}
+#card-quick-add:focus-within {
+  border-color: var(--ac);
+  box-shadow: 0 6px 20px -3px color-mix(in srgb, var(--ac) 24%, transparent);
+}
+#card-quick-add input {
+  font-size: 14px;
+  background: var(--sf);
+  border: 1px solid var(--ln);
+  border-radius: 9px;
+  padding: 10px 14px;
+}
+#card-quick-add kbd {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--sf);
+  border: 1px solid var(--ln);
+  color: var(--mut);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06);
+}
+#card-quick-add code {
+  font-family: inherit;
+  font-size: 11.5px;
+  background: color-mix(in srgb, var(--ink) 4%, var(--sf));
+  border: 1px solid var(--ln);
+  padding: 2px 6px;
+  border-radius: 5px;
+  color: var(--ink);
+}
+#sparkline-kas {
+  position: relative;
+  overflow: hidden;
+}
+#sparkline-kas svg {
+  filter: drop-shadow(0 2px 6px color-mix(in srgb, var(--ac) 16%, transparent));
 }
 @media (max-width: 480px) {
   .g2 {
@@ -730,17 +838,25 @@ textarea {
   border-color: var(--ac);
 }
 .pd {
-  min-height: 30px;
-  padding: 2px 9px;
-  border-radius: 99px;
-  font-size: 12.5px;
-  margin: 2px 3px 2px 0;
+  min-height: 28px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  margin: 2px;
   color: var(--mut);
+  border: 1px solid var(--ln);
+  background: var(--sf);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.pd:hover {
+  border-color: color-mix(in srgb, var(--ink) 25%, var(--ln));
+  color: var(--ink);
 }
 .pd.on {
   background: var(--acs);
   color: var(--ac);
   border-color: var(--ac);
+  font-weight: 700;
 }
 .pd.wr {
   border-color: var(--wr);
@@ -752,9 +868,6 @@ textarea {
   background: var(--wr);
   color: #fff;
   border-color: var(--wr);
-}
-.pd {
-  margin: 2px;
 }
 #v-jadwal th:nth-child(n + 3):nth-child(-n + 14),
 #v-jadwal td:nth-child(n + 3):nth-child(-n + 14) {
@@ -791,8 +904,10 @@ textarea {
 nav {
   position: sticky;
   top: 0;
-  z-index: 5;
-  background: var(--bg);
+  z-index: 10;
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .tt {
   position: fixed;
@@ -1163,16 +1278,16 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 <section id="v-rebalance" hidden></section>
 <section id="v-ibkr" hidden></section>
 <section id="v-item" hidden>
-  <div class="card" id="card-quick-add" style="margin-bottom:12px;border:1px solid var(--ac);background:var(--acs)">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+  <div class="card" id="card-quick-add">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <h2 style="margin:0;font-size:15px;color:var(--ac);display:flex;align-items:center;gap:6px">⚡ Tambah Item Kilat (1 Baris)</h2>
-      <span class="sub" style="font-size:11px">Enter untuk simpan</span>
+      <span class="sub" style="font-size:11.5px"><kbd>Enter</kbd> untuk simpan</span>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
-      <input id="q-input" placeholder="mis. Netflix 186k tiap tgl 15 atau Listrik 350k tiap bulan tgl 20" style="flex:1;background:var(--sf)">
+      <input id="q-input" placeholder="mis. Netflix 186k tiap tgl 15 atau Listrik 350k tiap bulan tgl 20" style="flex:1">
       <button class="p" id="q-btn" type="button" style="white-space:nowrap">+ Tambah</button>
     </div>
-    <div class="sub" style="margin-top:6px;font-size:12px">Format: <code>[Nama] [Nominal] [Siklus/Tanggal]</code> &middot; Contoh: <code>Gym 300k tiap 2 minggu mulai 2027-02-05</code>, <code>Pajak 1.2jt tiap tahun tgl 10</code>, <code>Kado 500k sekali 2027-06-15</code></div>
+    <div class="sub" style="margin-top:8px;font-size:12px">Format: <code>[Nama] [Nominal] [Siklus/Tanggal]</code> &middot; Contoh: <code>Gym 300k tiap 2 minggu mulai 2027-02-05</code>, <code>Pajak 1.2jt tiap tahun tgl 10</code>, <code>Kado 500k sekali 2027-06-15</code></div>
     <div class="err" id="q-err"></div>
   </div>
   <div class="card">
