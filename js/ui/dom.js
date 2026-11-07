@@ -68,6 +68,37 @@ function bindDom() {
       f();
     }
   };
+  var _mDown = null;
+  document.addEventListener('mousedown', function (e) {
+    _mDown = e.target;
+  });
+  document.addEventListener('click', function (e) {
+    if (
+      _mDown === e.target &&
+      e.target &&
+      e.target.classList &&
+      e.target.classList.contains('modal')
+    ) {
+      var c = e.target.querySelector(
+        'button.c, #pcl, #cl, #rmc, #kpc, #shx, #lgc, #skc, #xlc, [data-cf="later"]'
+      );
+      if (c) c.click();
+      else e.target.hidden = true;
+    }
+    _mDown = null;
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      var om = document.querySelector('.modal:not([hidden])');
+      if (om) {
+        var c = om.querySelector(
+          'button.c, #pcl, #cl, #rmc, #kpc, #shx, #lgc, #skc, #xlc, [data-cf="later"]'
+        );
+        if (c) c.click();
+        else om.hidden = true;
+      }
+    }
+  });
 }
 
 /** Tulis status simpan di header. */

@@ -16,11 +16,13 @@ function pmMsg(t, ok) {
 /** Nilai isian harga/siklus saat ini. */
 function pmCur() {
   var it = item(pmId),
-    sek = it && it.unit === 'sekali';
+    cadVis = pmScen === 'siklus' || pmScen === 'manual';
   return {
     P: parseRp($('pp').value),
-    n: sek ? it.n : Math.max(1, parseInt($('pn').value, 10) || 1),
-    u: sek ? it.unit : $('pu').value,
+    n: cadVis
+      ? Math.max(1, parseInt($('pn').value, 10) || 1)
+      : (it ? it.n : 1),
+    u: cadVis ? $('pu').value : (it ? it.unit : 'bulan'),
   };
 }
 
@@ -79,7 +81,7 @@ function pmDraft() {
     drop = $('pw').value === 'forever' && $('pcut').value === 'drop';
   if (pmInit && P === pmInit.P && n === pmInit.n && u === pmInit.u && !rs && !drop) return { err: noopMsg() };
   var c = { from: from, to: to, price: P !== it.price ? P : null, n: null, unit: null };
-  if (it.unit !== 'sekali' && (rs || n !== it.n || u !== it.unit)) {
+  if (rs || n !== it.n || u !== it.unit) {
     c.n = n;
     c.unit = u;
   }
@@ -223,7 +225,7 @@ function pmSc(sc) {
   $('pback').hidden = !sc;
   $('g-to').hidden = !(sc === 'sementara' || (sc === 'manual' && until));
   $('g-price').hidden = sc === 'geser';
-  $('pcad').hidden = !((sc === 'siklus' || sc === 'manual') && it.unit !== 'sekali');
+  $('pcad').hidden = !(sc === 'siklus' || sc === 'manual');
   $('pcw').hidden = !(sc === 'siklus' || sc === 'geser' || (sc === 'manual' && !until));
   $('pman').hidden = sc !== 'manual';
   if (sc) {
@@ -245,7 +247,7 @@ function openPm(id) {
   pmId = it.id;
   $('pmt').textContent = 'Ubah harga / jadwal: ' + it.name;
   Array.prototype.forEach.call(document.querySelectorAll('#psc button'), function (b) {
-    b.hidden = it.unit === 'sekali' && (b.dataset.sc === 'siklus' || b.dataset.sc === 'geser');
+    b.hidden = false;
   });
   pmPrefill(it);
   pmScen = null;

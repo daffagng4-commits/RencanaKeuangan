@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rencana Keuangan</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#1f6f5c">
+<meta name="theme-color" content="#059669">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Rencana">
@@ -21,48 +21,48 @@
 </script>
 <style>
 :root {
-  --bg: #eef1ed;
-  --sf: #fff;
-  --ink: #1b2a2f;
-  --mut: #63757a;
-  --ln: #d9e0dc;
-  --ac: #1f6f5c;
-  --acs: #dcefe8;
-  --wr: #b4532a;
-  --wrs: #f8e4da;
-  --bl: #2b5fa8;
-  --bls: #dfe9f7;
+  --bg: #f8fafc;
+  --sf: #ffffff;
+  --ink: #0f172a;
+  --mut: #64748b;
+  --ln: #e2e8f0;
+  --ac: #059669;
+  --acs: #ecfdf5;
+  --wr: #e11d48;
+  --wrs: #ffe4e6;
+  --bl: #2563eb;
+  --bls: #eff6ff;
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #121a1c;
-    --sf: #1b2528;
-    --ink: #e6eeea;
-    --mut: #8fa3a8;
-    --ln: #2c3a3e;
-    --ac: #4fc3a1;
-    --acs: #1d3a33;
-    --wr: #ee9569;
-    --wrs: #3d2a20;
-    --bl: #7fa8e6;
-    --bls: #1e2d44;
+    --bg: #0f172a;
+    --sf: #1e293b;
+    --ink: #f8fafc;
+    --mut: #94a3b8;
+    --ln: #334155;
+    --ac: #10b981;
+    --acs: #064e3b;
+    --wr: #f43f5e;
+    --wrs: #4c0519;
+    --bl: #60a5fa;
+    --bls: #172554;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #121a1c;
-  --sf: #1b2528;
-  --ink: #e6eeea;
-  --mut: #8fa3a8;
-  --ln: #2c3a3e;
-  --ac: #4fc3a1;
-  --acs: #1d3a33;
-  --wr: #ee9569;
-  --wrs: #3d2a20;
-  --bl: #7fa8e6;
-  --bls: #1e2d44;
+  --bg: #0f172a;
+  --sf: #1e293b;
+  --ink: #f8fafc;
+  --mut: #94a3b8;
+  --ln: #334155;
+  --ac: #10b981;
+  --acs: #064e3b;
+  --wr: #f43f5e;
+  --wrs: #4c0519;
+  --bl: #60a5fa;
+  --bls: #172554;
 }
 html {
   scroll-padding-top: env(safe-area-inset-top, 0px);
@@ -174,31 +174,58 @@ button.g {
 button.d {
   color: var(--wr);
 }
+button.c,
+.modal button.c,
+#pcl, #cl, #rmc, #kpc, #shx, #lgc, #skc, #xlc, [data-cf="later"] {
+  background: var(--wrs);
+  border-color: var(--wr);
+  color: var(--wr);
+}
+button.c:hover,
+.modal button.c:hover,
+#pcl:hover, #cl:hover, #rmc:hover, #kpc:hover, #shx:hover, #lgc:hover, #skc:hover, #xlc:hover, [data-cf="later"]:hover {
+  filter: brightness(0.95);
+}
 nav {
   display: flex;
   gap: 4px;
-  border-bottom: 1px solid var(--ln);
+  background: var(--sf);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--ln);
   margin-bottom: 18px;
   overflow-x: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 nav button {
   border: 0;
-  border-bottom: 3px solid transparent;
-  border-radius: 0;
-  background: none;
+  border-radius: 8px;
+  background: transparent;
   color: var(--mut);
   white-space: nowrap;
+  padding: 8px 14px;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+}
+nav button:hover {
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.03);
 }
 nav button[aria-selected="true"] {
   color: var(--ac);
-  border-bottom-color: var(--ac);
+  background: var(--acs);
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 .card {
   background: var(--sf);
   border: 1px solid var(--ln);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 16px;
   margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 .hero {
   display: grid;
@@ -368,15 +395,24 @@ tr.tot td {
 td.z {
   color: var(--ln);
 }
+body, input, button, select, textarea, table {
+  font-feature-settings: "tnum" 1, "cv05" 1;
+}
+.big, .stats b, .cell, td, th, .pd, .chip, .tag, .runway-box,
+input[type="number"], input[type="date"], input[inputmode="numeric"] {
+  font-variant-numeric: tabular-nums;
+}
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
-  z-index: 9;
+  z-index: 99;
 }
 .modal[hidden] {
   display: none;
@@ -387,6 +423,8 @@ td.z {
   margin: 0;
   max-height: 90vh;
   overflow: auto;
+  border-radius: 14px;
+  box-shadow: 0 18px 40px -10px rgba(0, 0, 0, 0.25);
 }
 .h3 {
   font-size: 12px;
@@ -494,6 +532,39 @@ tr.flash td {
 .chip.chg {
   background: var(--bls);
   color: var(--bl);
+}
+.chip.wr {
+  background: var(--wrs, #fef3c7);
+  color: var(--wr, #b45309);
+  border: 1px solid var(--wr, #b45309);
+  font-weight: 700;
+}
+.runway-box {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.4;
+  border: 1px solid transparent;
+}
+.runway-box.runway-deficit {
+  background: var(--wrs);
+  border-color: var(--wr);
+  color: var(--wr);
+}
+.runway-box.runway-warning {
+  background: var(--wrs);
+  border-color: var(--wr);
+  color: var(--wr);
+}
+.runway-box.runway-safe {
+  background: var(--acs);
+  border-color: var(--ac);
+  color: var(--ac);
 }
 .lgd {
   display: flex;
@@ -618,6 +689,16 @@ textarea {
   border-color: var(--ac);
   font-weight: 700;
 }
+.yp[data-kt="-"].on, #qk-out.on {
+  background: var(--wrs);
+  color: var(--wr);
+  border-color: var(--wr);
+}
+.yp[data-kt="+"].on, #qk-in.on {
+  background: var(--acs);
+  color: var(--ac);
+  border-color: var(--ac);
+}
 .pd {
   min-height: 30px;
   padding: 2px 9px;
@@ -630,6 +711,17 @@ textarea {
   background: var(--acs);
   color: var(--ac);
   border-color: var(--ac);
+}
+.pd.wr {
+  border-color: var(--wr);
+  color: var(--wr);
+  background: var(--wrs);
+  font-weight: 700;
+}
+.pd.wr.on {
+  background: var(--wr);
+  color: #fff;
+  border-color: var(--wr);
 }
 .pd {
   margin: 2px;
@@ -1014,13 +1106,13 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 </head>
 <body>
 <div class="w">
-<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px"><div class="kt" id="mdbar"><button type="button" class="yp on" data-md="rencana">Rencana Keuangan</button><button type="button" class="yp" data-md="trip">Perjalanan</button><button type="button" class="yp" data-md="rebalance">Rebalance porto</button><button type="button" class="yp" data-md="ibkr">IBKR vs Flip</button></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span id="offl" class="chp cash" hidden>Offline &middot; data tersimpan di perangkat</span><button type="button" id="pwa" hidden>Pasang aplikasi</button><button type="button" id="thm" title="Ketuk untuk ganti tema">&#9680; Tema: Otomatis</button></div></div>
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 8px"><div class="kt" id="mdbar"><button type="button" class="yp on" data-md="rencana">Rencana Keuangan</button><button type="button" class="yp" data-md="trip">Perjalanan</button><a class="yp" href="tools/rebalance/index.html" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px">Rebalance porto <span style="font-size:11px">&nearr;</span></a><a class="yp" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px">IBKR vs Flip <span style="font-size:11px">&nearr;</span></a></div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span id="offl" class="chp cash" hidden>Offline &middot; data tersimpan di perangkat</span><button type="button" id="pwa" hidden>Pasang aplikasi</button><button type="button" id="thm" title="Ketuk untuk ganti tema">&#9680; Tema: Otomatis</button></div></div>
 <header>
   <div><h1>Rencana Keuangan</h1><div class="sub" id="status">&nbsp;</div><div class="sub" style="font-size:11px;opacity:.7">Versi r18 · 17 Okt 2026</div><div class="sub" id="sbs"></div></div>
   <div class="ctl">
     <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
     <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub" id="adjs" style="margin-top:4px"></div></div>
-    <button id="lgb">Masuk</button><button id="bk">Impor / Ekspor</button>
+    <button id="lgb">Masuk</button><button id="bk">Impor / Ekspor</button><button id="btn-quick-kas" type="button" onclick="openQuickKas()" title="Catat kas kilat (Tekan N)" style="display:inline-flex;align-items:center;gap:4px">+ Kas <kbd style="font-size:10px;padding:1px 4px;background:var(--sf);border:1px solid var(--ln);border-radius:3px">N</kbd></button>
   </div>
 </header>
 <nav role="tablist">
@@ -1065,35 +1157,35 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 <div class="modal" id="xlm" hidden><div class="card"><h2>Impor dari Excel</h2><div class="sub" id="xls" style="margin-bottom:10px"></div>
 <label for="xln">Nama perjalanan</label><input id="xln" maxlength="30">
 <div class="kf" style="margin-top:12px"><div><label for="xlu">Mata uang asing</label><input id="xlu" maxlength="3" placeholder="JPY"></div><div><label for="xlk">Kurs (Rp per 1)</label><input id="xlk" inputmode="decimal" placeholder="119,4"></div></div>
-<div class="err" id="xle"></div><div class="row2"><button class="p" id="xlok">Impor</button><button id="xlc">Batal</button></div></div></div>
+<div class="err" id="xle"></div><div class="row2"><button class="p" id="xlok">Impor</button><button class="c" id="xlc">Batal</button></div></div></div>
 <div class="modal" id="shm" hidden><div class="card"><h2>Bagikan itinerary</h2>
 <label style="display:flex;gap:8px;align-items:center;margin:4px 0 12px"><input type="checkbox" id="shc" style="width:auto"> Sertakan biaya</label>
 <div class="acts"><button class="p" data-sh="wa">Kirim teks (WhatsApp)</button><button data-sh="copy">Salin teks</button><button data-sh="pdf">Cetak / simpan PDF</button></div>
-<div class="sub" id="shs" style="margin:10px 0"></div><div class="row2"><button id="shx">Tutup</button></div></div></div>
+<div class="sub" id="shs" style="margin:10px 0"></div><div class="row2"><button class="c" id="shx">Tutup</button></div></div></div>
 <div class="modal" id="kpm" hidden><div class="card"><h2 id="kpt">Perjalanan baru</h2>
 <label for="kpn">Nama perjalanan</label><input id="kpn" maxlength="30" placeholder="mis. Tokyo - Osaka 9D8N">
 <div class="kf" style="margin-top:12px"><div><label for="kpa">Mulai</label><input id="kpa" type="date"></div><div><label for="kpb">Selesai</label><input id="kpb" type="date"></div></div>
 <div style="margin-top:12px"><label for="kpgm">Anggaran</label><select id="kpgm"><option value="0">Belum menentukan anggaran</option><option value="1">Tetapkan anggaran</option></select></div>
 <div id="kpgw" style="margin-top:8px" hidden><label for="kpg">Anggaran total (Rp)</label><input id="kpg" inputmode="numeric" placeholder="25.000.000"></div>
 <div class="kf" style="margin-top:12px"><div><label for="kpu">Mata uang asing (opsional)</label><input id="kpu" maxlength="3" placeholder="JPY" style="text-transform:uppercase"></div><div><label for="kpk">Kurs: Rp per 1 mata uang</label><input id="kpk" type="number" step="0.01" min="0" inputmode="decimal" placeholder="119.4"></div></div>
-<div class="err" id="kpe"></div><div class="row2"><button class="p" id="kpsv">Simpan</button><button id="kpc">Tutup</button></div></div></div>
+<div class="err" id="kpe"></div><div class="row2"><button class="p" id="kpsv">Simpan</button><button class="c" id="kpc">Tutup</button></div></div></div>
 <div class="modal" id="cf" hidden><div class="card"><h2>Data berbeda di cloud dan di perangkat ini</h2>
 <p class="sub">Pilih data yang dipakai. Data yang tidak dipilih disimpan sebagai cadangan otomatis, jadi masih bisa dipulihkan.</p>
 <div class="g2"><div class="cfc" id="cf-l"></div><div class="cfc" id="cf-r"></div></div>
 <div class="row2"><button class="p" data-cf="remote">Pakai data cloud</button><button data-cf="local">Pakai data perangkat ini</button></div>
-<div class="row2" style="margin-top:6px"><button data-cf="merge">Gabungkan keduanya</button><button data-cf="later">Nanti saja</button></div>
+<div class="row2" style="margin-top:6px"><button data-cf="merge">Gabungkan keduanya</button><button class="c" data-cf="later">Nanti saja</button></div>
 <div class="sub" style="margin-top:8px"><b>Gabungkan</b>: menambah tahun dan item dari cloud yang belum ada di perangkat ini, tidak ada yang dihapus. Angka saldo awal mengikuti perangkat ini. <b>Nanti saja</b>: sinkron ditunda sampai Anda memilih.</div>
 </div></div>
 <div class="modal" id="rm" hidden><div class="card"><h2>Pengingat tagihan</h2>
 <div class="row2" style="margin:0 0 6px;align-items:center"><label for="rmh" style="margin:0">Tampilkan yang jatuh tempo dalam</label><select id="rmh" style="width:auto"><option value="3">3 hari</option><option value="7">7 hari</option><option value="14">14 hari</option><option value="30">30 hari</option></select></div>
 <div id="rml"></div>
-<div class="row2"><button id="rmb" hidden>Tandai semua yang sudah lewat tanggal sebagai lunas</button><button id="rmc">Tutup</button></div></div></div>
+<div class="row2"><button id="rmb" hidden>Tandai semua yang sudah lewat tanggal sebagai lunas</button><button class="c" id="rmc">Tutup</button></div></div></div>
 <div class="modal" id="sk" hidden><div class="card"><h2 id="skt">Ubah beberapa tagihan</h2>
 <p class="sub">Ubah status semua tagihan item ini dalam rentang tanggal sekaligus.</p>
 <div class="g2"><div><label for="skf">Dari tanggal</label><input id="skf" type="date"></div><div><label for="skto">Sampai tanggal</label><input id="skto" type="date"></div></div>
 <div style="margin-top:12px"><label for="ska">Ubah menjadi</label><select id="ska"><option value="skip">Lewati (tidak bayar)</option><option value="paid">Sudah dibayar</option><option value="none">Belum dibayar</option></select></div>
 <div class="prev" id="skp" style="margin-top:12px"></div><div class="err" id="ske"></div>
-<div class="row2"><button class="p" id="sks">Terapkan</button><button id="skc">Batal</button></div></div></div>
+<div class="row2"><button class="p" id="sks">Terapkan</button><button class="c" id="skc">Batal</button></div></div></div>
 <div class="tt" id="tt" hidden><span id="ttm"></span><button id="ttu" type="button">Urungkan</button></div>
 <div class="cm" id="cm" hidden></div>
 <div class="modal" id="pm" hidden><div class="card"><h2 id="pmt">Ubah harga / jadwal</h2><p class="sub" id="pmi"></p>
@@ -1125,17 +1217,73 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 <div id="pcw" style="margin-top:12px" hidden><label for="pcut">Tagihan sebelum tanggal ini</label><select id="pcut"><option value="keep">Biarkan seperti semula</option><option value="drop">Hapus (jadwal lama diganti total)</option></select></div>
 <div class="prev" id="ppv" style="margin-top:12px"></div><div class="err" id="pme"></div>
 </div>
-<div class="row2"><button id="pbk2" hidden>&larr; Kembali</button><button class="p" id="pps" hidden>Simpan perubahan</button><button id="pcl">Tutup</button></div>
+<div class="row2"><button id="pbk2" hidden>&larr; Kembali</button><button class="p" id="pps" hidden>Simpan perubahan</button><button class="c" id="pcl">Tutup</button></div>
 <div class="h3">Perubahan yang sudah ada</div><div id="phl"></div></div></div>
-<div class="modal" id="m" hidden><div class="card">
-  <h2>Impor &amp; Ekspor data</h2><div class="h3">Ekspor</div><div id="exb"><div class="xr"><button class="p" data-ex="json">Cadangan lengkap (.json)</button><span class="sub"><span class="chip">Bisa diimpor</span> Semua tahun, item, saldo, dan status lunas. Untuk pindah perangkat atau memulihkan data.</span></div><div class="xr"><button data-ex="items">Item tahun ini (.csv)</button><span class="sub"><span class="chip">Bisa diimpor</span> Daftar item tahun yang aktif (nama, harga, tiap berapa, mulai). Bisa diedit di Excel.</span></div><div class="xr"><button data-ex="hist">Riwayat pembayaran (.csv)</button><span class="sub"><span class="chip n">Hanya laporan</span> Satu baris per tagihan: tanggal, item, jumlah, status Lunas/Belum.</span></div><div class="xr"><button data-ex="bulan">Rincian bulanan (.csv)</button><span class="sub"><span class="chip n">Hanya laporan</span> Saldo awal, pengeluaran, dan saldo akhir tiap bulan.</span></div></div><div class="h3">Impor</div><div class="row2" style="margin-top:0"><input type="file" id="fi" accept=".json,.csv,text/csv,application/json" style="flex:1;min-width:200px"><select id="im" style="width:auto"><option value="merge">Gabungkan dengan data sekarang</option><option value="replace">Timpa (hapus data sekarang)</option></select></div><div class="gdb"><button type="button" class="g gdt" data-gd="impor"></button><div class="gdc"><div class="sub" style="margin-top:6px"><b>.json</b> = hasil Cadangan lengkap. <b>.csv</b> = hasil Item tahun ini (kolom: Nama; Harga; Tiap; Satuan; Mulai), hanya untuk tahun yang sedang aktif. CSV Riwayat pembayaran dan Rincian bulanan tidak bisa diimpor.<br><b>Gabungkan</b>: menambah yang belum ada, aman diulang. <b>Timpa</b>: mengganti data sekarang (JSON: semua tahun, CSV: item tahun aktif).</div></div></div><div class="err" id="xm"></div><div class="h3">Cadangan otomatis (5 terakhir)</div><div id="sl"></div><div class="h3">Cek sistem</div><div class="row2" style="margin-top:0"><button id="dgb">Jalankan cek sistem</button><button id="dgd">Tes unduh file</button></div><div id="dgr"></div><details id="dt"><summary class="sub" style="cursor:pointer">Cara teks (salin / tempel)</summary>
-  <p class="sub">Data tersimpan otomatis di browser ini. Salin teks di bawah untuk cadangan, atau tempel cadangan lama lalu tekan Muat.</p>
-  <textarea id="ta" spellcheck="false"></textarea>
-  <div class="err" id="merr"></div>
-  <div class="row2"><button class="p" id="cp">Salin</button><button id="ld">Muat dari teks</button><button id="rs" class="d">Pulihkan contoh</button></div></details><div class="row2" style="justify-content:flex-end"><button id="cl">Tutup</button></div>
+<div class="modal" id="m" hidden><div class="card" style="max-width:540px">
+  <h2>Cadangan &amp; Pemulihan Data</h2>
+  <div style="background:var(--card);border:1px solid var(--b);border-radius:8px;padding:12px;margin-bottom:12px">
+    <div style="font-weight:600;margin-bottom:4px">Cadangan Lengkap (.json)</div>
+    <div class="sub" style="margin-bottom:8px">Unduh semua tahun, item, saldo, dan status lunas untuk backup atau pindah perangkat.</div>
+    <div id="exb">
+      <div class="xr" style="margin-bottom:6px"><button class="p" data-ex="json" style="width:100%">Unduh Cadangan Lengkap (.json)</button></div>
+      <details style="margin-top:6px">
+        <summary class="sub" style="cursor:pointer">Ekspor laporan (.csv)</summary>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+          <div class="xr"><button data-ex="items">Item tahun ini (.csv)</button><span class="sub"><span class="chip">Bisa diimpor</span> Format tabel item aktif.</span></div>
+          <div class="xr"><button data-ex="hist">Riwayat pembayaran (.csv)</button><span class="sub"><span class="chip n">Laporan</span> Satu baris per tagihan.</span></div>
+          <div class="xr"><button data-ex="bulan">Rincian bulanan (.csv)</button><span class="sub"><span class="chip n">Laporan</span> Saldo awal, pengeluaran &amp; akhir.</span></div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--b);border-radius:8px;padding:12px;margin-bottom:12px">
+    <div style="font-weight:600;margin-bottom:4px">Impor Data (.json / .csv)</div>
+    <div class="sub" style="margin-bottom:8px">Pilih file cadangan untuk memulihkan atau menambahkan data.</div>
+    <div class="row2" style="margin-top:0"><input type="file" id="fi" accept=".json,.csv,text/csv,application/json" style="flex:1;min-width:180px"><select id="im" style="width:auto"><option value="merge">Gabungkan</option><option value="replace">Timpa data</option></select></div>
+    <div class="gdb"><button type="button" class="g gdt" data-gd="impor"></button><div class="gdc"><div class="sub" style="margin-top:6px"><b>Gabungkan</b>: menambah data baru tanpa menghapus data sekarang.<br><b>Timpa</b>: mengganti seluruh data dengan isi file cadangan.</div></div></div>
+    <div class="err" id="xm"></div>
+  </div>
+
+  <details style="margin-bottom:12px">
+    <summary class="sub" style="cursor:pointer;font-weight:600">Alat lanjutan: Otomatis, diagnostik &amp; teks</summary>
+    <div style="padding-top:8px">
+      <div class="h3">Cadangan otomatis (5 terakhir)</div>
+      <div id="sl"></div>
+      <div class="h3" style="margin-top:8px">Cek sistem &amp; diagnostik</div>
+      <div class="row2" style="margin-top:4px"><button id="dgb">Jalankan cek sistem</button><button id="dgd">Tes unduh file</button></div>
+      <div id="dgr"></div>
+      <details id="dt" style="margin-top:8px"><summary class="sub" style="cursor:pointer">Cara teks (salin / tempel)</summary>
+        <p class="sub" style="margin:4px 0">Data tersimpan otomatis di browser. Salin teks atau tempel data lama:</p>
+        <textarea id="ta" spellcheck="false" style="height:70px"></textarea>
+        <div class="err" id="merr"></div>
+        <div class="row2"><button class="p" id="cp">Salin</button><button id="ld">Muat dari teks</button><button id="rs" class="d">Pulihkan contoh</button></div>
+      </details>
+    </div>
+  </details>
+  <div class="row2" style="justify-content:flex-end"><button class="c" id="cl">Tutup</button></div>
 </div></div>
 
-<div class="modal" id="lg" hidden><div class="card"><h2>Masuk untuk sinkron</h2><p class="sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p><label for="le">Email</label><input id="le" type="email" autocomplete="email"><label for="lp" style="margin-top:10px">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="err" id="lm"></div><div class="row2"><button class="p" id="lin">Masuk</button><button id="lup">Daftar</button><button id="lgc">Tutup</button></div></div></div>
+<div class="modal" id="qkm" hidden><div class="card" style="max-width:440px">
+  <h2>Catat transaksi kilat <span class="sub">(Shortcut: N)</span></h2>
+  <div class="kt" style="margin-bottom:12px">
+    <button type="button" class="yp on" id="qk-out" data-kt="-">&minus; Keluar</button>
+    <button type="button" class="yp" id="qk-in" data-kt="+">+ Masuk</button>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div><label for="qka">Jumlah</label><input id="qka" inputmode="numeric" placeholder="Contoh: 50k atau 50.000"></div>
+    <div><label for="qkc">Kategori</label><input id="qkc" list="catlist" maxlength="30" placeholder="mis. Makanan / Bensin"></div>
+    <div><label for="qkn">Catatan</label><input id="qkn" maxlength="80" placeholder="Keterangan transaksi"></div>
+    <div><label for="qkd">Tanggal</label><input id="qkd" type="date"></div>
+  </div>
+  <div class="err" id="qke"></div>
+  <div class="row2" style="margin-top:14px">
+    <button class="p" id="qks">Simpan transaksi</button>
+    <button class="c" id="qk-cl">Tutup</button>
+  </div>
+</div></div>
+
+<div class="modal" id="lg" hidden><div class="card"><h2>Masuk untuk sinkron</h2><p class="sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p><label for="le">Email</label><input id="le" type="email" autocomplete="email"><label for="lp" style="margin-top:10px">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="err" id="lm"></div><div class="row2"><button class="p" id="lin">Masuk</button><button id="lup">Daftar</button><button class="c" id="lgc">Tutup</button></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
@@ -1153,6 +1301,7 @@ var SB_URL = 'https://hjvdkwpoamgkommotzab.supabase.co',
  */
 
 var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+var FULL_MON = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
 /** Escape HTML. */
 function esc(t) {
@@ -1221,7 +1370,7 @@ function addDaysISO(iso, n) {
 
 function at(it, k) {
   var p = it.start.split('-').map(Number),
-    n = Math.max(1, +it.n || 1),
+    n = Math.min(1000, Math.max(1, +it.n || 1)),
     u = it.unit;
   if (u === 'hari') return Date.UTC(p[0], p[1] - 1, p[2] + k * n);
   if (u === 'minggu') return Date.UTC(p[0], p[1] - 1, p[2] + k * n * 7);
@@ -1253,6 +1402,20 @@ function segAt(it, iso) {
   return null;
 }
 
+/** Segmen jadwal aktif untuk tanggal tertentu (khusus siklus / frekuensi). */
+function schedSegAt(it, iso) {
+  var c = it.ch || [],
+    i,
+    s;
+  for (i = c.length - 1; i >= 0; i--) {
+    s = c[i];
+    if (s.mv || s.dates) continue;
+    if (!s.n && !s.unit) continue;
+    if (segStart(s) <= iso && (!s.to || iso <= s.to)) return s;
+  }
+  return null;
+}
+
 /** Semua tanggal tagihan item (ms UTC) sampai endMs: jadwal awal + siklus baru dari perubahan, dikurangi tagihan yang dihapus (cut), batas jumlah kali (cnt) dan tanggal berhenti (end). */
 function series(it, endMs) {
   var out = [],
@@ -1262,8 +1425,8 @@ function series(it, endMs) {
   for (k = 0; k < 4000; k++) {
     t = at(it, k);
     if (t > endMs) break;
-    s = segAt(it, isoD(t));
-    if (!s || (!s.n && !s.unit)) out.push(t);
+    s = schedSegAt(it, isoD(t));
+    if (!s) out.push(t);
     if (it.unit === 'sekali') break;
   }
   (it.ch || []).forEach(function (g) {
@@ -1273,7 +1436,7 @@ function series(it, endMs) {
     for (k = 0; k < 4000; k++) {
       t = at(sub, k);
       if (t > endMs || t > lim) break;
-      if (segAt(it, isoD(t)) === g) out.push(t);
+      if (schedSegAt(it, isoD(t)) === g) out.push(t);
       if (sub.unit === 'sekali') break;
     }
   });
@@ -1305,6 +1468,9 @@ function series(it, endMs) {
       return i === 0 || t !== out[i - 1];
     });
   }
+  var cn = +it.cnt || 0,
+    le = it.end ? Date.parse(it.end + 'T00:00:00Z') : 0;
+  if (cn) out = out.slice(0, cn);
   var cut = 0;
   (it.ch || []).forEach(function (g) {
     if (g.cut) {
@@ -1316,9 +1482,6 @@ function series(it, endMs) {
     out = out.filter(function (t) {
       return t >= cut;
     });
-  var cn = +it.cnt || 0,
-    le = it.end ? Date.parse(it.end + 'T00:00:00Z') : 0;
-  if (cn) out = out.slice(0, cn);
   if (le)
     out = out.filter(function (t) {
       return t <= le;
@@ -1377,9 +1540,10 @@ function priceSeg(it, iso) {
   for (i = c.length - 1; i >= 0; i--) {
     s = c[i];
     if (s.mv) continue;
+    if ((s.n || s.unit || s.anchor) && s.price == null) continue;
     if (s.dates) {
       if (s.dates.indexOf(o) >= 0 || s.dates.indexOf(iso) >= 0) return s;
-    } else if (segStart(s) <= o && (!s.to || o <= s.to)) return s;
+    } else if (segStart(s) <= iso && (!s.to || iso <= s.to)) return s;
   }
   return null;
 }
@@ -1695,7 +1859,7 @@ function chNorm(x) {
       from: q.from,
       to: D.test(q.to) && q.to >= q.from ? q.to : '',
       price: +q.price > 0 ? +q.price : null,
-      n: q.n ? Math.max(1, parseInt(q.n, 10) || 1) : null,
+      n: q.n ? Math.min(1000, Math.max(1, parseInt(q.n, 10) || 1)) : null,
       unit: U.indexOf(q.unit) >= 0 ? q.unit : null,
       cut: !!q.cut,
     };
@@ -2512,6 +2676,46 @@ function bindDom() {
       f();
     }
   };
+  var _mDown = null;
+  document.addEventListener('mousedown', function (e) {
+    _mDown = e.target;
+  });
+  document.addEventListener('click', function (e) {
+    if (
+      _mDown === e.target &&
+      e.target &&
+      e.target.classList &&
+      e.target.classList.contains('modal')
+    ) {
+      var c = e.target.querySelector(
+        'button.c, #pcl, #cl, #rmc, #kpc, #shx, #lgc, #skc, #xlc, [data-cf="later"]'
+      );
+      if (c) c.click();
+      else e.target.hidden = true;
+    }
+    _mDown = null;
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      var om = document.querySelector('.modal:not([hidden])');
+      if (om) {
+        var c = om.querySelector(
+          'button.c, #pcl, #cl, #rmc, #kpc, #shx, #lgc, #skc, #xlc, #qkc, [data-cf="later"]'
+        );
+        if (c) c.click();
+        else om.hidden = true;
+      }
+    }
+    if ((e.key === 'n' || e.key === 'N') && !e.ctrlKey && !e.altKey && !e.metaKey) {
+      var tag = (e.target && e.target.tagName) || '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
+      var openM = document.querySelector('.modal:not([hidden])');
+      if (openM) return;
+      e.preventDefault();
+      openQuickKas();
+    }
+  });
+  bindQuickKas();
 }
 
 /** Tulis status simpan di header. */
@@ -2717,14 +2921,17 @@ function monthChips(r) {
     Object.keys(chips)
       .map(function (k) {
         var q = chips[k],
-          up = q.p != null;
+          up = q.p != null,
+          itObj = item(k),
+          isAnom = up && itObj && itObj.price > 0 && Math.round(((q.p - itObj.price) / itObj.price) * 100) >= 20;
         return (
           '<span class="chip' +
-          (up ? ' chg' : '') +
+          (isAnom ? ' wr' : up ? ' chg' : '') +
           '">' +
           esc(q.n) +
           (q.c > 1 ? ' ×' + q.c : '') +
           (up ? ' ' + q.u + ' ' + shortP(q.p) : '') +
+          (isAnom ? ' (lonjakan)' : '') +
           '</span>'
         );
       })
@@ -2748,7 +2955,9 @@ function detailRows(r) {
     .map(function (e, i) {
       var price = priceAt(e.it, e.t),
         isPaid = !!S.paid[e.it.id + '|' + isoD(e.t)],
-        isLate = !isPaid && isoD(e.t) < todayISO();
+        isLate = !isPaid && isoD(e.t) < todayISO(),
+        diffPct = e.it.price ? Math.round(((price - e.it.price) / e.it.price) * 100) : 0,
+        anom = diffPct >= 20 ? ' <span class="chip wr" title="Lonjakan tagihan +' + diffPct + '% dari harga awal">▲ +' + diffPct + '% anomali</span>' : '';
       return (
         '<tr class="det' +
         (isPaid ? ' paid' : isLate ? ' late' : '') +
@@ -2764,6 +2973,7 @@ function detailRows(r) {
         fd(e.t, { day: 'numeric', month: 'short' }) +
         '</td><td class="l" colspan="2">' +
         esc(e.it.name) +
+        anom +
         '</td><td colspan="2" class="l">' +
         rp(price) +
         (price !== e.it.price ? ' <span class="sub">(harga awal ' + rp(e.it.price) + ')</span>' : '') +
@@ -2774,20 +2984,91 @@ function detailRows(r) {
   return paid + skRows(r) || '<tr class="det"><td colspan="5">Tidak ada pembayaran.</td></tr>';
 }
 
+/** Proyeksi runway kas: memperkirakan berapa hari saldo bertahan menghadapi tagihan belum lunas ke depan. */
+function kasRunway(P, bal) {
+  if (!P) P = kasLinked() || (typeof kas === 'function' ? kas() : null);
+  if (!P) return null;
+  if (bal == null) {
+    var sm = +S.startMonth || 0,
+      asc = kasRows(P).filter(function (x) {
+        return +x.d.slice(5, 7) - 1 <= sm;
+      }),
+      A = kasSum(asc, 'all');
+    bal = kasBase(P) + A.i - A.o;
+  }
+  var today = todayISO();
+  if (bal <= 0) {
+    return { days: 0, date: today, deficit: Math.abs(bal), status: 'deficit' };
+  }
+  var bills = [];
+  var allYears = (typeof ALL !== 'undefined' && ALL.data) ? Object.keys(ALL.data) : [];
+  if (!allYears.length && typeof S !== 'undefined' && S.year) allYears = [String(S.year)];
+  allYears.forEach(function (yk) {
+    var Y = ALL.data[yk], y = +yk;
+    if (!Y || !Y.items) return;
+    Y.items.forEach(function (it) {
+      occ(it, y).forEach(function (t) {
+        var d = isoD(t);
+        if (d < today) return;
+        var k = it.id + '|' + d;
+        if (Y.paid && (Y.paid[k] || Y.skip[k])) return;
+        bills.push({ d: d, t: t, price: priceAt(it, t), name: it.name });
+      });
+    });
+  });
+  bills.sort(function (a, b) {
+    return a.t - b.t;
+  });
+
+  var curr = bal;
+  for (var i = 0; i < bills.length; i++) {
+    curr -= bills[i].price;
+    if (curr < 0) {
+      var dDiff = Math.max(0, Math.round((bills[i].t - Date.parse(today + 'T00:00:00Z')) / 864e5));
+      return {
+        days: dDiff,
+        date: bills[i].d,
+        deficit: Math.abs(curr),
+        bill: bills[i],
+        status: dDiff <= 30 ? 'warning' : 'ok'
+      };
+    }
+  }
+  return { days: 999, date: null, deficit: 0, status: 'safe' };
+}
+
+function kasRunwayHtml(P, bal) {
+  var rw = kasRunway(P, bal);
+  if (!rw) return '';
+  if (rw.status === 'deficit') {
+    return '<div class="runway-box runway-deficit">&#9888; Saldo defisit ' + rp(rw.deficit) + ' &mdash; segera lakukan penyesuaian kas</div>';
+  }
+  if (rw.status === 'warning') {
+    return '<div class="runway-box runway-warning">&#9203; Kas diproyeksikan habis pada ' + fmtD(rw.date) + ' (' + rw.days + ' hari lagi &middot; defisit ' + rp(rw.deficit) + ')</div>';
+  }
+  if (rw.status === 'ok') {
+    return '<div class="runway-box runway-safe">&#10003; Kas aman hingga ' + fmtD(rw.date) + ' (' + rw.days + ' hari lagi sebelum tagihan ' + esc(rw.bill ? rw.bill.name : '') + ')</div>';
+  }
+  return '<div class="runway-box runway-safe">&#10003; Proyeksi kas aman untuk seluruh jadwal pengeluaran tahun ini</div>';
+}
+
 /** Render tab Rincian Bulanan. */
 /** Dashboard saldo nyata (dari Catatan Kas) di paling atas Rincian Bulanan. */
 function kasHero() {
   var P = kasLinked();
   if (!P) return '';
-  var asc = kasRows(P),
-    A = kasSum(asc.filter(function (x) { return x.d <= todayISO(); }), 'all'),
-    R = kasSum(asc, 'all'),
+  var sm = +S.startMonth || 0,
+    mName = (typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm]),
+    asc = kasRows(P).filter(function (x) {
+      return +x.d.slice(5, 7) - 1 <= sm;
+    }),
+    A = kasSum(asc, 'all'),
     bal = kasBase(P) + A.i - A.o,
-    st = function (l, v) { return '<div><span>' + l + '</span><b>' + v + '</b></div>'; };
+    st = function (l, v) { return '<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;color:var(--mut)">' + l + '</span><b style="font-size:15px;font-weight:700">' + v + '</b></div>'; };
   return (
-    '<div class="hero"><div class="card" style="margin:0"><div class="sub">Saldo &quot;' + esc(P.name) + '&quot; sekarang</div><div class="big' + (bal < 0 ? ' neg' : '') + '">' + rp(bal) +
-    '</div><div class="sub">saldo awal Rencana ' + rp(kasBase(P)) + ' + masuk ' + rp(A.i) + ' &minus; keluar ' + rp(A.o) +
-    '</div></div><div class="card stats" style="margin:0">' + st('Masuk', rp(R.i)) + st('Keluar', rp(R.o)) + st('Selisih', R.i === R.o ? rp(0) : signed(R.i - R.o)) + st('Transaksi', R.n) + '</div></div>'
+    '<div class="hero"><div class="card" style="margin:0;display:flex;flex-direction:column;justify-content:space-between"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div class="sub" style="font-weight:600">Saldo Realtime &middot; ' + mName + '</div><span class="chip on" style="margin:0;font-size:11px;font-weight:700">' + esc(P.name) + '</span></div><div class="big' + (bal < 0 ? ' neg' : '') + '" style="font-size:28px;font-weight:800;letter-spacing:-0.02em;margin:6px 0 4px">' + rp(bal) +
+    '</div><div class="sub" style="font-size:12px;opacity:0.85">' + (P.link ? 'saldo awal Rencana ' : 'saldo awal ') + rp(kasBase(P)) + ' + masuk ' + rp(A.i) + ' &minus; keluar ' + rp(A.o) +
+    '</div>' + kasRunwayHtml(P, bal) + '</div><div class="card stats" style="margin:0;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:center">' + st('Masuk', rp(A.i)) + st('Keluar', rp(A.o)) + st('Selisih', A.i === A.o ? rp(0) : signed(A.i - A.o)) + st('Transaksi', A.n) + '</div></div>'
   );
 }
 
@@ -2903,7 +3184,9 @@ function chipHtml(it, t, today) {
     late = !paid && !skipped && d < now,
     old = late && !isLateISO(d, now),
     days = late ? Math.round((Date.parse(now + 'T00:00:00Z') - Date.parse(d + 'T00:00:00Z')) / 864e5) : 0;
-  var cls = 'pd' + (skipped ? ' skp' : paid ? ' on' : late ? ' late' + (old ? ' old' : '') : '') + (changed ? ' chg' : '') + (FX.k === key ? ' fx-skip' : '');
+  var diffPct = it.price ? Math.round(((price - it.price) / it.price) * 100) : 0,
+    anom = !skipped && diffPct >= 20;
+  var cls = 'pd' + (skipped ? ' skp' : paid ? ' on' : late ? ' late' + (old ? ' old' : '') : '') + (anom ? ' wr' : changed ? ' chg' : '') + (FX.k === key ? ' fx-skip' : '');
   var state = skipped
     ? ' (dilewati)'
     : paid
@@ -2911,6 +3194,7 @@ function chipHtml(it, t, today) {
       : late
         ? ' (terlewat ' + days + ' hari)'
         : ' (belum dibayar)';
+  if (anom) state += ' [Lonjakan +' + diffPct + '%]';
   return (
     '<button class="' +
     cls +
@@ -2926,7 +3210,7 @@ function chipHtml(it, t, today) {
     '">' +
     (skipped ? '' : paid ? '✓ ' : '') +
     new Date(t).getUTCDate() +
-    (changed ? '<span class="cp">' + shortP(price) + '</span>' : '') +
+    (changed ? '<span class="cp">' + (anom ? '▲+' + diffPct + '%' : shortP(price)) + '</span>' : '') +
     '</button>'
   );
 }
@@ -3114,7 +3398,8 @@ function pcell(it, o) {
     var f = o.filter(function (t) {
       return priceAt(it, t) !== p0;
     })[0];
-    s.push('&rarr; ' + rp(pl) + ' mulai ' + fd(f, { day: 'numeric', month: 'short' }));
+    var pct = it.price ? Math.round(((pl - it.price) / it.price) * 100) : 0;
+    s.push('&rarr; ' + rp(pl) + (pct >= 20 ? ' <span class="chip wr">▲ +' + pct + '% anomali</span>' : '') + ' mulai ' + fd(f, { day: 'numeric', month: 'short' }));
   }
   if (p0 !== it.price) s.push('harga awal ' + rp(it.price));
   if (n) s.push(n + ' perubahan');
@@ -3787,11 +4072,13 @@ function pmMsg(t, ok) {
 /** Nilai isian harga/siklus saat ini. */
 function pmCur() {
   var it = item(pmId),
-    sek = it && it.unit === "sekali";
+    cadVis = pmScen === "siklus" || pmScen === "manual";
   return {
     P: parseRp($("pp").value),
-    n: sek ? it.n : Math.max(1, parseInt($("pn").value, 10) || 1),
-    u: sek ? it.unit : $("pu").value,
+    n: cadVis
+      ? Math.max(1, parseInt($("pn").value, 10) || 1)
+      : (it ? it.n : 1),
+    u: cadVis ? $("pu").value : (it ? it.unit : "bulan"),
   };
 }
 
@@ -4000,6 +4287,11 @@ function setDates(list, auto, keepInput) {
   pmAuto = !!auto;
   if (!keepInput)
     $("pdt").value = auto && pmDates.length === 1 ? pmDates[0] : "";
+  var it = item(pmId);
+  if (it && pmDates[0] && !phmTouched && (pmScen === "harga" || pmScen === "sementara" || pmScen === "siklus")) {
+    var eff = priceAt(it, Date.parse(pmDates[0] + "T00:00:00Z"));
+    $("pp").value = eff.toLocaleString("id-ID");
+  }
   pmLayout();
   pmPrev();
 }
@@ -4058,16 +4350,30 @@ function pmDraftNormal() {
   var rs = !specific && $("pa").value === "restart",
     drop =
       !specific && $("pw").value === "forever" && $("pcut").value === "drop";
+  var effPrice = priceAt(it, Date.parse(first + "T00:00:00Z"));
   if (
-    pmInit &&
-    P === pmInit.P &&
-    n === pmInit.n &&
-    u === pmInit.u &&
+    (pmScen === "harga" || pmScen === "sementara") &&
+    P === effPrice &&
     !rs &&
     !drop
   )
     return { err: noopMsg() };
-  var price = P !== it.price ? P : null;
+  var curSeg = schedSegAt(it, first);
+  if (
+    pmScen === "siklus" &&
+    n === (curSeg && curSeg.n ? curSeg.n : it.n) &&
+    u === (curSeg && curSeg.unit ? curSeg.unit : it.unit) &&
+    P === effPrice &&
+    !rs &&
+    !drop
+  )
+    return { err: noopMsg() };
+  var price;
+  if (pmScen === "siklus") {
+    price = P !== effPrice ? P : null;
+  } else {
+    price = P !== it.price ? P : null;
+  }
   var c;
   if (specific) {
     var hit = dates.filter(function (d) {
@@ -4096,7 +4402,7 @@ function pmDraftNormal() {
     return { c: c, cs: [c], it: it };
   }
   c = { from: first, to: to, price: price, n: null, unit: null };
-  if (it.unit !== "sekali" && (rs || n !== it.n || u !== it.unit)) {
+  if (rs || n !== it.n || u !== it.unit) {
     c.n = n;
     c.unit = u;
   }
@@ -4129,8 +4435,22 @@ function pmNeighbors(it, from) {
 
 /** Rentang tanggal baru yang sah untuk menggeser `from`: sesudah tagihan sebelumnya dan sebelum tagihan berikutnya. */
 function pmShiftRange(it, from) {
-  var nb = pmNeighbors(it, from);
-  return { min: nb.prev ? addDaysISO(nb.prev, 1) : null, max: nb.next ? addDaysISO(nb.next, -1) : null, prev: nb.prev, next: nb.next };
+  var nb = pmNeighbors(it, from),
+    min = nb.prev ? addDaysISO(nb.prev, 1) : null,
+    max = nb.next ? addDaysISO(nb.next, -1) : null;
+  if (it.unit !== "sekali" && it.start && (!min || it.start > min)) min = it.start;
+  if (it.end && (!max || it.end < max)) max = it.end;
+  var cut = (it.ch || [])
+    .filter(function (q) {
+      return q.cut;
+    })
+    .map(function (q) {
+      return q.from;
+    })
+    .sort()
+    .pop();
+  if (cut && (!min || cut > min)) min = cut;
+  return { min: min, max: max, prev: nb.prev, next: nb.next };
 }
 
 function pmRangeMsg(r) {
@@ -4145,6 +4465,10 @@ function pmDraftShift(it) {
   var from = pmDates[0],
     to = $("pdt").value;
   if (!from) return { err: "Pilih tagihan yang mau digeser." };
+  var allSched = occ(it, S.year).map(isoD);
+  if (allSched.length && allSched.indexOf(from) < 0) {
+    return { err: "Tanggal asal (" + fmtD(from) + ") bukan tanggal tagihan." };
+  }
   if ($("pgm").value === "pilih") return pmDraftMulti(it);
   if (!ISO_RE.test(to))
     return { err: 'Isi tanggal baru di "Ganti jadi tanggal".' };
@@ -4160,20 +4484,24 @@ function pmDraftShift(it) {
     c1.mv[ko] = to;
     return { c: c1, cs: [c1], it: it };
   }
-  var sg = segAt(it, from),
+  var sg = schedSegAt(it, from),
     eff = priceAt(it, Date.parse(from + "T00:00:00Z")),
-    // Tagihan ini sendiri hasil geser sebelumnya (tanggalnya = anchor sebuah perubahan lama): ubah perubahan itu
-    // (from asli dipertahankan) alih-alih menambah yang baru, karena yang baru kalah urutan dari yang lama.
+    origFrom = origDate(it, from),
     old = (it.ch || []).filter(function (q) {
       return q.anchor === from && !q.cut && !q.mv && !q.dates;
     })[0],
+    effFrom = old ? old.from : (origFrom < from ? origFrom : from),
+    hasCut = (it.ch || []).some(function (q) {
+      return (q.from === from || q.from === origFrom) && q.cut;
+    }),
     c = {
-      from: old ? old.from : from,
+      from: effFrom,
       anchor: to,
       to: old ? old.to || "" : "",
       price: eff !== it.price ? eff : null,
       n: (sg && sg.n) || it.n,
       unit: (sg && sg.unit) || it.unit,
+      cut: !!((old && old.cut) || hasCut),
     };
   return { c: c, cs: [c], it: it, disp: from };
 }
@@ -4362,13 +4690,15 @@ function pmSum(d) {
       f +
       " digeser ke " +
       fmtD(c.anchor) +
-      ", lalu mengikuti siklus tiap " +
-      (c.n || it.n) +
-      " " +
-      (c.unit || it.unit) +
-      ". Tagihan sebelum " +
-      f +
-      " tidak berubah."
+      (it.unit === "sekali"
+        ? ". Tagihan sebelum " + f + " tidak berubah."
+        : ", lalu mengikuti siklus tiap " +
+          (c.n || it.n) +
+          " " +
+          (c.unit || it.unit) +
+          ". Tagihan sebelum " +
+          f +
+          " tidak berubah.")
     );
   if (c.to)
     return (
@@ -4393,10 +4723,11 @@ function pmSum(d) {
 
 /** Isi awal form dengan nilai yang berlaku pada tagihan berikutnya. */
 function pmPrefill(it) {
-  var nx = occ(it, S.year).filter(function (t) {
+  var occs = occ(it, S.year),
+    nx = occs.filter(function (t) {
       return !S.paid[it.id + "|" + isoD(t)] && !S.skip[it.id + "|" + isoD(t)];
     })[0],
-    iso = isoD(nx != null ? nx : Date.now()),
+    iso = isoD(nx != null ? nx : (occs.length ? occs[0] : Date.now())),
     sg = priceSeg(it, iso);
   $("pdt").value = iso;
   $("pto").value = "";
@@ -4434,10 +4765,7 @@ function pmSc(sc) {
   $("pbk2").hidden = !sc;
   $("psc").classList.toggle("picked", !!sc);
   $("g-price").hidden = sc === "geser";
-  $("pcad").hidden = !(
-    (sc === "siklus" || sc === "manual") &&
-    it.unit !== "sekali"
-  );
+  $("pcad").hidden = !(sc === "siklus" || sc === "manual");
   $("pcw").hidden = !(sc === "siklus" || (sc === "manual" && !until));
   $("pman").hidden = sc !== "manual";
   if (sc) {
@@ -4483,9 +4811,7 @@ function openPm(id) {
   Array.prototype.forEach.call(
     document.querySelectorAll("#psc button"),
     function (b) {
-      b.hidden =
-        it.unit === "sekali" &&
-        (b.dataset.sc === "siklus" || b.dataset.sc === "geser");
+      b.hidden = false;
     },
   );
   pmPrefill(it);
@@ -4512,6 +4838,40 @@ function savePm() {
     });
   trackSchedule(it, function () {
     moveStatusExact(it.id, pairs, [S.paid, S.skip]);
+    d.cs.forEach(function (c) {
+      if (c.anchor) {
+        var origFrom = origDate(it, d.disp || c.from);
+        var dispDate = d.disp || c.from;
+        (it.ch || []).forEach(function (q) {
+          if (q.mv) {
+            Object.keys(q.mv).forEach(function (k) {
+              if (k >= origFrom || q.mv[k] >= dispDate || k >= c.from) delete q.mv[k];
+            });
+          }
+        });
+      } else if (c.mv) {
+        Object.keys(c.mv).forEach(function (k) {
+          (it.ch || []).forEach(function (q) {
+            if (q.mv && q.mv[k]) delete q.mv[k];
+          });
+        });
+      }
+    });
+    it.ch = (it.ch || []).filter(function (q) {
+      return !q.mv || Object.keys(q.mv).length > 0;
+    });
+    d.cs.forEach(function (c) {
+      (it.ch || []).forEach(function (q) {
+        if (chSame(it, c, q)) {
+          if (q.cut && !c.cut && pmScen !== "siklus" && pmScen !== "manual") c.cut = true;
+          if ((pmScen === "harga" || pmScen === "sementara") && !c.mv && !c.dates) {
+            if (q.anchor && !c.anchor) c.anchor = q.anchor;
+            if (q.n && !c.n) c.n = q.n;
+            if (q.unit && !c.unit) c.unit = q.unit;
+          }
+        }
+      });
+    });
     it.ch = (it.ch || []).filter(function (q) {
       return !d.cs.some(function (c) {
         return chSame(it, c, q);
@@ -5761,7 +6121,7 @@ function gdOpen(k) {
   try {
     v = localStorage.getItem('rk-gd-' + k);
   } catch (e) {}
-  return v ? v === '1' : !matchMedia('(max-width:640px)').matches;
+  return v ? v === '1' : (typeof matchMedia !== 'undefined' ? !matchMedia('(max-width:640px)').matches : true);
 }
 function gdApply(root) {
   (root || document).querySelectorAll('[data-gd]').forEach(function (b) {
@@ -5909,12 +6269,9 @@ function renderKas() {
     asc = kasRows(P).sort(function (a, b) {
       return a.d < b.d ? -1 : a.d > b.d ? 1 : 0;
     }),
-    A = kasSum(
-      asc.filter(function (x) {
-        return x.d <= todayISO();
-      }),
-      'all'
-    ),
+    sm = +S.startMonth || 0,
+    mName = kasPer !== 'all' ? (typeof FULL_MON !== 'undefined' ? FULL_MON[+kasPer.split('-')[1] - 1] : MON[+kasPer.split('-')[1] - 1]) : (typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm]),
+    A = kasSum(asc, 'all'),
     bal = kasBase(P) + A.i - A.o,
     mo = {};
   asc.forEach(function (x) {
@@ -5946,7 +6303,9 @@ function renderKas() {
   var hero =
     '<div class="hero"><div class="card" style="margin:0"><div class="sub">Saldo &quot;' +
     esc(P.name) +
-    '&quot; sekarang</div><div class="big' +
+    '&quot; Realtime &middot; ' +
+    mName +
+    '</div><div class="big' +
     (bal < 0 ? ' neg' : '') +
     '">' +
     rp(bal) +
@@ -5957,7 +6316,9 @@ function renderKas() {
     rp(A.i) +
     ' &minus; keluar ' +
     rp(A.o) +
-    '</div></div><div class="card stats" style="margin:0">' +
+    '</div>' +
+    kasRunwayHtml(P, bal) +
+    '</div><div class="card stats" style="margin:0">' +
     stat('Masuk', rp(R.i)) +
     stat('Keluar', rp(R.o)) +
     stat('Selisih', R.i === R.o ? rp(0) : signed(R.i - R.o)) +
@@ -6128,6 +6489,69 @@ function kasDelTx(id) {
   renderAll();
   toast('Transaksi dihapus.', function () {
     restoreSnap(sn.t);
+  });
+}
+
+var qkT = '-';
+function openQuickKas() {
+  var P = kasLinked() || kas();
+  if (!P) return;
+  qkT = '-';
+  if ($('qk-out')) $('qk-out').classList.add('on');
+  if ($('qk-in')) $('qk-in').classList.remove('on');
+  if ($('qka')) $('qka').value = '';
+  if ($('qkc')) $('qkc').value = '';
+  if ($('qkn')) $('qkn').value = '';
+  if ($('qkd')) $('qkd').value = todayISO();
+  if ($('qke')) $('qke').textContent = '';
+  if ($('qkm')) $('qkm').hidden = false;
+  setTimeout(function () {
+    if ($('qka')) $('qka').focus();
+  }, 60);
+}
+function closeQuickKas() {
+  if ($('qkm')) $('qkm').hidden = true;
+}
+function saveQuickKas() {
+  var a = parseRp($('qka').value);
+  if (!a || a <= 0) {
+    $('qke').textContent = 'Isi jumlah yang valid. Contoh: 50k atau 50.000.';
+    return;
+  }
+  var d = $('qkd').value;
+  if (!ISO_RE.test(d)) {
+    $('qke').textContent = 'Pilih tanggal transaksi.';
+    return;
+  }
+  var c = ($('qkc').value || '').trim().slice(0, 30);
+  var n = ($('qkn').value || '').trim().slice(0, 80);
+  var P = kasLinked() || kas();
+  if (!P) return;
+  var o = {
+    id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+    d: d,
+    t: qkT,
+    amt: a,
+    cat: c,
+    note: n,
+  };
+  P.tx.push(o);
+  save();
+  closeQuickKas();
+  renderAll();
+  toast('Transaksi kilat dicatat: ' + (qkT === '+' ? '+ ' : '- ') + rp(a));
+}
+function bindQuickKas() {
+  var qo = $('qk-out'), qi = $('qk-in'), qs = $('qks'), qc = $('qk-cl');
+  if (qo) qo.onclick = function () { qkT = '-'; qo.classList.add('on'); qi.classList.remove('on'); };
+  if (qi) qi.onclick = function () { qkT = '+'; qi.classList.add('on'); qo.classList.remove('on'); };
+  if (qs) qs.onclick = saveQuickKas;
+  if (qc) qc.onclick = closeQuickKas;
+  ['qka', 'qkc', 'qkn'].forEach(function (id) {
+    var el = $(id);
+    if (el) el.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); saveQuickKas(); }
+    });
   });
 }
 
