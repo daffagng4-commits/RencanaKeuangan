@@ -380,15 +380,24 @@ tr.tot td {
 td.z {
   color: var(--ln);
 }
+body, input, button, select, textarea, table {
+  font-feature-settings: "tnum" 1, "cv05" 1;
+}
+.big, .stats b, .cell, td, th, .pd, .chip, .tag, .runway-box,
+input[type="number"], input[type="date"], input[inputmode="numeric"] {
+  font-variant-numeric: tabular-nums;
+}
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
-  z-index: 9;
+  z-index: 99;
 }
 .modal[hidden] {
   display: none;
@@ -399,6 +408,8 @@ td.z {
   margin: 0;
   max-height: 90vh;
   overflow: auto;
+  border-radius: 14px;
+  box-shadow: 0 18px 40px -10px rgba(0, 0, 0, 0.25);
 }
 .h3 {
   font-size: 12px;
@@ -510,7 +521,35 @@ tr.flash td {
 .chip.wr {
   background: var(--wrs, #fef3c7);
   color: var(--wr, #b45309);
+  border: 1px solid var(--wr, #b45309);
+  font-weight: 700;
+}
+.runway-box {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.4;
+  border: 1px solid transparent;
+}
+.runway-box.runway-deficit {
+  background: var(--wrs);
+  border-color: var(--wr);
+  color: var(--wr);
+}
+.runway-box.runway-warning {
+  background: var(--wrs);
+  border-color: var(--wr);
+  color: var(--wr);
+}
+.runway-box.runway-safe {
+  background: var(--acs);
+  border-color: var(--ac);
+  color: var(--ac);
 }
 .lgd {
   display: flex;
@@ -635,6 +674,16 @@ textarea {
   border-color: var(--ac);
   font-weight: 700;
 }
+.yp[data-kt="-"].on, #qk-out.on {
+  background: var(--wrs);
+  color: var(--wr);
+  border-color: var(--wr);
+}
+.yp[data-kt="+"].on, #qk-in.on {
+  background: var(--acs);
+  color: var(--ac);
+  border-color: var(--ac);
+}
 .pd {
   min-height: 30px;
   padding: 2px 9px;
@@ -647,6 +696,17 @@ textarea {
   background: var(--acs);
   color: var(--ac);
   border-color: var(--ac);
+}
+.pd.wr {
+  border-color: var(--wr);
+  color: var(--wr);
+  background: var(--wrs);
+  font-weight: 700;
+}
+.pd.wr.on {
+  background: var(--wr);
+  color: #fff;
+  border-color: var(--wr);
 }
 .pd {
   margin: 2px;
@@ -1037,7 +1097,7 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
   <div class="ctl">
     <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
     <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub" id="adjs" style="margin-top:4px"></div></div>
-    <button id="lgb">Masuk</button><button id="bk">Impor / Ekspor</button>
+    <button id="lgb">Masuk</button><button id="bk">Impor / Ekspor</button><button id="btn-quick-kas" type="button" onclick="openQuickKas()" title="Catat kas kilat (Tekan N)" style="display:inline-flex;align-items:center;gap:4px">+ Kas <kbd style="font-size:10px;padding:1px 4px;background:var(--sf);border:1px solid var(--ln);border-radius:3px">N</kbd></button>
   </div>
 </header>
 <nav role="tablist">
@@ -1204,7 +1264,7 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
   <div class="err" id="qke"></div>
   <div class="row2" style="margin-top:14px">
     <button class="p" id="qks">Simpan transaksi</button>
-    <button class="c" id="qkc">Tutup</button>
+    <button class="c" id="qk-cl">Tutup</button>
   </div>
 </div></div>
 
@@ -2966,15 +3026,15 @@ function kasRunwayHtml(P, bal) {
   var rw = kasRunway(P, bal);
   if (!rw) return '';
   if (rw.status === 'deficit') {
-    return '<div class="runway-box" style="margin-top:8px;padding:6px 10px;border-radius:6px;background:var(--dgs, #fee2e2);color:var(--dg, #b91c1c);font-size:12px;font-weight:600">Perhatian: Saldo saat ini defisit ' + rp(rw.deficit) + '</div>';
+    return '<div class="runway-box runway-deficit">&#9888; Saldo defisit ' + rp(rw.deficit) + ' &mdash; segera lakukan penyesuaian kas</div>';
   }
   if (rw.status === 'warning') {
-    return '<div class="runway-box" style="margin-top:8px;padding:6px 10px;border-radius:6px;background:var(--wrs, #fef3c7);color:var(--wr, #b45309);font-size:12px;font-weight:600">Proyeksi kas habis pada ' + fmtD(rw.date) + ' (' + rw.days + ' hari lagi &middot; defisit ' + rp(rw.deficit) + ')</div>';
+    return '<div class="runway-box runway-warning">&#9203; Kas diproyeksikan habis pada ' + fmtD(rw.date) + ' (' + rw.days + ' hari lagi &middot; defisit ' + rp(rw.deficit) + ')</div>';
   }
   if (rw.status === 'ok') {
-    return '<div class="runway-box" style="margin-top:8px;font-size:12px;color:var(--mut, #666)">Proyeksi kas aman hingga ' + fmtD(rw.date) + ' (' + rw.days + ' hari lagi)</div>';
+    return '<div class="runway-box runway-safe">&#10003; Kas aman hingga ' + fmtD(rw.date) + ' (' + rw.days + ' hari lagi sebelum tagihan ' + esc(rw.bill ? rw.bill.name : '') + ')</div>';
   }
-  return '<div class="runway-box" style="margin-top:8px;font-size:12px;color:var(--mut, #666)">Proyeksi kas aman untuk seluruh tagihan tahun ini</div>';
+  return '<div class="runway-box runway-safe">&#10003; Proyeksi kas aman untuk seluruh jadwal pengeluaran tahun ini</div>';
 }
 
 /** Render tab Rincian Bulanan. */
@@ -6467,7 +6527,7 @@ function saveQuickKas() {
   toast('Transaksi kilat dicatat: ' + (qkT === '+' ? '+ ' : '- ') + rp(a));
 }
 function bindQuickKas() {
-  var qo = $('qk-out'), qi = $('qk-in'), qs = $('qks'), qc = $('qkc');
+  var qo = $('qk-out'), qi = $('qk-in'), qs = $('qks'), qc = $('qk-cl');
   if (qo) qo.onclick = function () { qkT = '-'; qo.classList.add('on'); qi.classList.remove('on'); };
   if (qi) qi.onclick = function () { qkT = '+'; qi.classList.add('on'); qo.classList.remove('on'); };
   if (qs) qs.onclick = saveQuickKas;
