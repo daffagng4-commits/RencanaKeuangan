@@ -8075,7 +8075,10 @@ function tripPrintHtml(P, cost) {
   });
   if (P.bk.length) b += '<h2>Pemesanan</h2><table>' + P.bk.map(function (x) { return '<tr><td>' + esc(x.title) + (x.paid ? ' <small>(lunas)</small>' : '') + '</td>' + (cost ? '<td class="c">' + esc(amtPlain(P, x.amt, x.fx)) + '</td>' : '') + '</tr>'; }).join('') + '</table>';
   if (P.lk.length) b += '<h2>Tautan penting</h2>' + P.lk.map(function (l) { return '<div>' + esc(l.title) + ': <a href="' + esc(l.url) + '">' + esc(l.url) + '</a></div>'; }).join('');
-  return '<!doctype html><html lang="id"><head><meta charset="utf-8"><title>' + esc(P.name) + '</title><style>' + css + '</style></head><body>' + b + '<\/body><\/html>';
+  return '<!doctype html><html lang="id"><head><meta charset="utf-8"><title>' + esc(P.name) + '</title><style>' + css + '</style></head><body>' + b + '<script>
+
+</script>
+</body></html>';
 }
 function printHtml(h) {
   var f = document.createElement('iframe');
