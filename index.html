@@ -5762,8 +5762,7 @@ function doExport(kind) {
           'DESCRIPTION:Tagihan: ' + it.name + ' sebesar ' + rp(p) + ((S.paid && S.paid[kk]) ? ' [Lunas]' : ' [Belum Lunas]'),
           'STATUS:' + ((S.paid && S.paid[kk]) ? 'CONFIRMED' : 'TENTATIVE'),
           'END:VEVENT'
-        ].join('
-\n'));
+        ].join('\r\n'));
       });
     });
     var icsContent = [
@@ -5772,11 +5771,9 @@ function doExport(kind) {
       'PRODID:-//Rencana Keuangan//ID',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
-      events.join('
-\n'),
+      events.join('\r\n'),
       'END:VCALENDAR'
-    ].join('
-\n');
+    ].join('\r\n');
     return exportFile('tagihan-' + y + '.ics', icsContent, 'text/calendar;charset=utf-8');
   }
   if (kind === 'items') {
