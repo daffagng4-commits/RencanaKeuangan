@@ -231,3 +231,47 @@ test('allCategories: bawaan + yang dipakai', () => {
   const cats = c.allCategories();
   assert.ok(cats.includes('Langganan') && cats.includes('Hobi Baru'));
 });
+
+test('isInvestCat: kata kunci investasi/aset dikenali, kategori biasa tidak', () => {
+  ['Investasi', 'DCA saham', 'Reksa Dana', 'ETF IBKR', 'Emas', 'Kripto', 'SBN ritel'].forEach((k) => assert.ok(c.isInvestCat(k), k));
+  ['', 'Makan', 'Langganan', 'Tagihan rutin', null, undefined].forEach((k) => assert.ok(!c.isInvestCat(k), String(k)));
+});
+
+test('calc: total investasi dan per bulan dipisah dari pengeluaran lain', () => {
+  const Y = newYear(c, 2041, { startMonth: 2 });
+  Y.items.push(
+    item({ id: 'i1', name: 'DCA', price: 100000, n: 1, unit: 'bulan', start: '2041-01-01', cat: 'Investasi' }),
+    item({ id: 'i2', name: 'Makan', price: 50000, n: 1, unit: 'bulan', start: '2041-01-01', cat: 'Konsumsi' }),
+    item({ id: 'i3', name: 'Dilewati', price: 999, n: 1, unit: 'bulan', start: '2041-01-01', cat: 'Investasi' }),
+  );
+  Y.skip['i3|2041-03-01'] = 1;
+  const r = c.calc();
+  // mulai Maret: 10 bulan DCA (i3 dilewati sekali di Maret => 9 x 999 = 8991)
+  assert.equal(r.invest, 10 * 100000 + 9 * 999);
+  assert.equal(r.investM[0], 0);
+  assert.equal(r.investM[2], 100000);
+  assert.equal(r.total - r.invest, 10 * 50000);
+});
+
+test('incomeYear: hanya baris + di profil tergabung, tahun aktif, mulai bulan saldo', () => {
+  const Y = newYear(c, 2042, { startMonth: 2 });
+  assert.equal(c.incomeYear(), 0);
+  c.ALL.kas = {
+    pr: {
+      k1: {
+        id: 'k1',
+        link: true,
+        tx: [
+          { d: '2042-01-10', t: '+', amt: 1000 },
+          { d: '2042-03-05', t: '+', amt: 5000000 },
+          { d: '2042-04-05', t: '-', amt: 7 },
+          { d: '2042-06-05', t: '+', amt: 2500000 },
+          { d: '2041-12-31', t: '+', amt: 9 },
+        ],
+      },
+    },
+  };
+  assert.equal(c.incomeYear(), 7500000);
+  delete c.ALL.kas;
+  assert.ok(Y);
+});

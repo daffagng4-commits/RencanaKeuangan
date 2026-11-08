@@ -38,7 +38,7 @@ js/core/              logika murni, TANPA DOM -> bisa diuji sebagai unit
 js/ui/                tampilan + event listener (tiap file punya fungsi bindXxx())
   render.js           renderAll(): memperbarui semua tampilan dari state
   rincian.js jadwal.js items.js years.js header.js adjust.js price-modal.js reminders.js skiprange.js
-  kas.js trip.js theme.js topbar.js io.js backup.js diag.js dom.js
+  kas.js trip.js theme.js topbar.js nav.js agenda.js io.js backup.js diag.js dom.js
 js/sync.js            sinkron Supabase + dialog konflik
 js/app.js             titik masuk: muat data -> bind semua -> render -> sinkron
 build.js              gabungkan index.dev.html + css + js -> index.html (+ dist/); `node build.js --check` memeriksa kesegarannya
@@ -47,6 +47,19 @@ tests/                unit, e2e (jsdom), dan tes browser sungguhan
 
 Semua skrip adalah skrip klasik (bukan ES module) yang berbagi lingkup global, jadi bisa dibuka langsung dari `file://`
 dan di-host di GitHub Pages tanpa bundler. Urutan di `index.dev.html` harus: config → core → ui → sync → app.
+
+## Catatan fitur (Tahap 1-2)
+
+- **Kategori investasi.** Item yang kategorinya mengandung `invest`, `dca`, `saham`, `reksa`, `etf`, `sbn`, `obligasi`, `emas`, `kripto` atau `crypto`
+  (huruf besar/kecil tidak berpengaruh) dihitung sebagai investasi (`isInvestCat` di `js/core/items.js`). Uangnya tetap keluar dari kas, tetapi
+  di Rincian Bulanan ditampilkan terpisah: "Investasi (aset)", rasio terhadap pemasukan tercatat (baris `+` di Catatan Kas tahun aktif, mulai
+  bulan saldo), dan "Di luar investasi", plus tautan ke Rebalance porto.
+- **Aman dipakai hari ini.** Saldo Realtime dikurangi tagihan belum lunas (termasuk yang terlambat) sampai akhir bulan, dibagi sisa hari.
+  Hanya tampil bila Catatan Kas tergabung ada dan tahun aktif = tahun berjalan.
+- **Agenda 30 hari.** Tagihan belum lunas + baris Catatan Kas di bulan sesudah bulan saldo (mis. gaji), saldo berjalan, dan penanda saldo terendah.
+- **Ubah harga / jadwal.** Pilihan tujuan: Harga berubah (dengan chip cepat +5/+10/+15/-10%), Harga sementara, Ganti seberapa sering bayar,
+  Geser tanggal bayar, **Berhenti bayar** (mengisi tanggal berhenti item; bisa diurungkan lewat toast), dan Atur manual.
+- **Navigasi.** Desktop: menu "Alat" di topbar. HP (lebar <= 720px): bilah menu bawah (Rincian, Kas, Jadwal, Perjalanan, Lainnya).
 
 ## Model data
 

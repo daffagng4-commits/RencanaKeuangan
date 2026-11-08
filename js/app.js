@@ -24,6 +24,7 @@ function main() {
   bindPwa();
   bindPrivacy();
   bindA11y();
+  bindNav();
   resetForm();
   renderAll();
   save();

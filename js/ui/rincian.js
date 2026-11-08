@@ -10,6 +10,23 @@ function signed(v) {
   return (v > 0 ? '+ ' : '− ') + rp(Math.abs(v));
 }
 
+/** Statistik investasi (hanya bila ada item berkategori investasi): total, rasio ke pemasukan tercatat, tautan Rebalance porto. */
+function investStats(c, R, stat) {
+  var inc = incomeYear(),
+    sub =
+      inc > 0
+        ? Math.round((c.invest / inc) * 100) + '% dari pemasukan tercatat (' + rp(inc) + ')'
+        : 'rata-rata ' + rp(c.invest / R.length) + ' per bulan';
+  return (
+    stat('Investasi (aset)', rp(c.invest), sub, 'pv') +
+    stat(
+      'Di luar investasi',
+      rp(c.total - c.invest),
+      '<a class="lnk" href="tools/rebalance/index.html" target="_blank" rel="noopener">Atur alokasi di Rebalance porto &rarr;</a>',
+    )
+  );
+}
+
 /** Kartu saldo akhir + statistik. */
 function heroHtml(c, R, lead) {
   var y = S.year,
@@ -35,14 +52,16 @@ function heroHtml(c, R, lead) {
           ? ' (' + (c.adjLate > 0 ? '+' : '−') + rp(Math.abs(c.adjLate)) + ' penyesuaian di bulan berikutnya)'
           : '') +
         '</div>';
-  var stat = function (label, value, sub) {
+  var stat = function (label, value, sub, cls) {
     return (
       '<div><span>' +
       label +
-      '</span><b>' +
+      '</span><b' +
+      (cls ? ' class="' + cls + '"' : '') +
+      '>' +
       value +
       '</b>' +
-      (sub ? '<span>' + sub + '</span>' : '') +
+      (sub ? '<span' + (cls ? ' class="' + cls + '"' : '') + '>' + sub + '</span>' : '') +
       '</div>'
     );
   };
@@ -61,6 +80,7 @@ function heroHtml(c, R, lead) {
     (lead ? lead(note) : plain) +
     '<div class="card stats" style="margin:0">' +
     stat('Total pengeluaran', rp(c.total)) +
+    (c.invest > 0 ? investStats(c, R, stat) : '') +
     stat('Rata-rata per bulan', rp(c.total / R.length)) +
     stat('Bulan terberat', rp(hv.sp), MON[hv.m]) +
     stat('Bulan teringan', rp(mn.sp), MON[mn.m]) +
@@ -281,6 +301,7 @@ function categoryHtml(c) {
           color +
           '"></i>' +
           esc(e.name) +
+          (isInvestCat(e.name) ? ' <span class="chp">aset</span>' : '') +
           '</span><b>' +
           rp(e.v) +
           ' <span class="sub">' +
@@ -465,26 +486,36 @@ function amanHariIni(bal, sm) {
     left = new Date(Date.UTC(y, mo, 0)).getUTCDate() - +today.slice(8, 10) + 1,
     rem = reminders(left - 1),
     due = 0,
+    inv = 0,
     n = 0;
   rem.late.concat(rem.soon).forEach(function (r) {
     due += r.price;
+    if (isInvestCat(r.it.cat)) inv += r.price;
     n++;
   });
   var free = bal - due;
-  return { left: left, due: due, n: n, free: free, perDay: free > 0 ? Math.floor(free / left) : 0, sameMonth: sm === mo - 1 };
+  return { left: left, due: due, inv: inv, n: n, free: free, perDay: free > 0 ? Math.floor(free / left) : 0, sameMonth: sm === mo - 1 };
+}
+
+/** Saldo Realtime profil tergabung (dipakai kartu saldo dan agenda): saldo awal + masuk - keluar sampai bulan saldo. */
+function kasBal(P) {
+  var sm = +S.startMonth || 0,
+    asc = kasRows(P).filter(function (x) {
+      return +x.d.slice(5, 7) - 1 <= sm;
+    }),
+    A = kasSum(asc, 'all');
+  return { sm: sm, mName: typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm], A: A, bal: kasBase(P) + A.i - A.o };
 }
 
 /** Satu kartu saldo di Rincian Bulanan: "Aman dipakai hari ini" (bila bisa), Saldo Realtime, dan Sisa saldo akhir. */
 function saldoHero(c, R) {
   var P = kasLinked();
   if (!P) return heroHtml(c, R);
-  var sm = +S.startMonth || 0,
-    mName = typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm],
-    asc = kasRows(P).filter(function (x) {
-      return +x.d.slice(5, 7) - 1 <= sm;
-    }),
-    A = kasSum(asc, 'all'),
-    bal = kasBase(P) + A.i - A.o,
+  var KB = kasBal(P),
+    sm = KB.sm,
+    mName = KB.mName,
+    A = KB.A,
+    bal = KB.bal,
     sf = amanHariIni(bal, sm),
     chip = '<span class="chip on" style="margin:0;font-size:11px;font-weight:700">' + esc(P.name) + '</span>',
     audit =
@@ -496,8 +527,8 @@ function saldoHero(c, R) {
     neg = sf.free <= 0;
     big = neg ? '&minus;' + rp(Math.abs(sf.free)) + '<small>kurang</small>' : rp(sf.perDay) + '<small>/ hari</small>';
     sub = neg
-      ? 'Saldo ' + rp(bal) + ' belum cukup untuk ' + sf.n + ' tagihan sampai akhir bulan (' + rp(sf.due) + ')'
-      : 'Sisa ' + rp(sf.free) + ' setelah ' + sf.n + ' tagihan sampai akhir bulan (' + rp(sf.due) + ') &middot; ' + sf.left + ' hari lagi';
+      ? 'Saldo ' + rp(bal) + ' belum cukup untuk ' + sf.n + ' tagihan sampai akhir bulan (' + rp(sf.due) + (sf.inv ? ', termasuk investasi ' + rp(sf.inv) : '') + ')'
+      : 'Sisa ' + rp(sf.free) + ' setelah ' + sf.n + ' tagihan sampai akhir bulan (' + rp(sf.due) + (sf.inv ? ', termasuk investasi ' + rp(sf.inv) : '') + ') &middot; ' + sf.left + ' hari lagi';
     if (!sf.sameMonth)
       hint = '<span class="hm-hint">Bulan saldo (' + mName + ') bukan bulan ini &mdash; ubah &ldquo;Bulan saldo&rdquo; agar angka ini akurat.</span>';
   } else {
@@ -564,7 +595,7 @@ function renderRincian() {
     '</td><td data-l="Saldo akhir">' +
     rp(c.end) +
     '</td><td></td></tr></tbody></table></div></div>';
-  $('v-rincian').innerHTML = saldoHero(c, R) + sparklineHtml(R) + barsHtml(R) + categoryHtml(c) + table;
+  $('v-rincian').innerHTML = saldoHero(c, R) + agendaHtml() + sparklineHtml(R) + barsHtml(R) + categoryHtml(c) + table;
 }
 
 /** Baris "dilewati" pada rincian sebuah bulan. */

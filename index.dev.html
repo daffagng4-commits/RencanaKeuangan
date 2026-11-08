@@ -27,8 +27,7 @@
   <div class="kt" id="mdbar">
     <button type="button" class="yp on" data-md="rencana">Rencana Keuangan</button>
     <button type="button" class="yp" data-md="trip">Perjalanan</button>
-    <a class="yp yp-tool" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a>
-    <a class="yp yp-tool" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a>
+    <div class="alat" id="alat"><button type="button" class="yp" id="alat-btn" aria-haspopup="true" aria-expanded="false"><span>Alat</span><svg class="arr-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="alat-menu" id="alat-menu" role="menu" hidden><a class="alat-item" role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><a class="alat-item" role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a></div></div>
   </div>
   <div class="topbar-actions">
     <button type="button" id="btn-privacy" class="topbar-btn" title="Mode Privasi (Kaburkan Nominal)" aria-label="Mode Privasi" aria-pressed="false"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Privasi</span></button>
@@ -38,7 +37,7 @@
   </div>
 </div>
 <header>
-  <div><h1>Rencana Keuangan</h1><div class="sub" id="ver-info" style="font-size:11.5px;color:var(--mut);margin-top:2px" title="Versi program terbaru">v-r19 · 7 Nov 2026</div><div class="sub" id="status" style="display:none"></div><div class="sub" id="sbs" style="display:none"></div></div>
+  <div><h1>Rencana Keuangan</h1><div class="sub" id="ver-info" style="font-size:11.5px;color:var(--mut);margin-top:2px" title="Versi program terbaru">v-r20 · 9 Nov 2026</div><div class="sub" id="status" style="display:none"></div><div class="sub" id="sbs" style="display:none"></div></div>
   <div class="ctl">
     <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
     <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub" id="adjs" style="margin-top:4px"></div></div>
@@ -134,8 +133,10 @@
 <div class="h3" style="margin-top:10px">Apa yang mau diubah?</div>
 <div class="sc" id="psc">
 <button type="button" data-sc="harga"><b>Harga berubah</b><span>Contoh: naik jadi 300k mulai Juli</span></button>
+<button type="button" data-sc="sementara"><b>Harga sementara</b><span>Contoh: promo 3 bulan, lalu kembali normal</span></button>
 <button type="button" data-sc="siklus"><b>Ganti seberapa sering bayar</b><span>Contoh: dari tiap bulan jadi tiap 3 bulan</span></button>
 <button type="button" data-sc="geser"><b>Geser tanggal bayar</b><span>Contoh: dari tanggal 1 jadi tanggal 15</span></button>
+<button type="button" data-sc="henti"><b>Berhenti bayar</b><span>Contoh: langganan selesai setelah Agustus</span></button>
 <button type="button" data-sc="manual"><b>Atur manual</b><span>Semua pilihan sekaligus (mis. harga sementara, kombinasi lain)</span></button>
 </div>
 <div id="pform" hidden>
@@ -153,7 +154,7 @@
 <label id="prgw" class="chk" hidden><input type="checkbox" id="prg" checked>Isi semua tagihan di antara tanggal pertama dan terakhir</label>
 </div>
 <div id="g-to" style="margin-top:12px" hidden><label for="pto">Sampai tanggal (termasuk)</label><input id="pto" type="date"></div>
-<div id="g-price" style="margin-top:12px"><label for="pp" id="l-pp">Harga per bayar</label><input id="pp" inputmode="numeric" placeholder="300k atau 300.000"></div>
+<div id="g-price" style="margin-top:12px"><label for="pp" id="l-pp">Harga per bayar</label><input id="pp" inputmode="numeric" placeholder="300k atau 300.000"><div class="pchips" id="ppc" hidden><span class="sub">Cepat:</span><button type="button" data-pct="5">+5%</button><button type="button" data-pct="10">+10%</button><button type="button" data-pct="15">+15%</button><button type="button" data-pct="-10">&minus;10%</button></div></div>
 <div id="pcad" style="margin-top:12px" hidden><label>Seberapa sering bayar</label><div class="every2"><span class="sub">tiap</span><input id="pn" type="number" min="1"><select id="pu"><option value="bulan">bulan</option><option value="tahun">tahun</option><option value="minggu">minggu</option><option value="hari">hari</option></select></div></div>
 <div id="pman" hidden><div style="margin-top:12px"><label for="pa">Tanggal bayar</label><select id="pa"><option value="keep">Tetap seperti jadwal sekarang</option><option value="restart">Mulai ulang jadwal dari tanggal di atas</option></select><div class="sub" style="margin-top:4px" id="pah"></div></div><div style="margin-top:12px"><label for="pw">Berlaku</label><select id="pw"><option value="forever">Seterusnya</option><option value="until">Sementara, lalu kembali ke awal</option></select></div></div>
 <div id="pcw" style="margin-top:12px" hidden><label for="pcut">Tagihan sebelum tanggal ini</label><select id="pcut"><option value="keep">Biarkan seperti semula</option><option value="drop">Hapus (jadwal lama diganti total)</option></select></div>
@@ -240,6 +241,7 @@
 <script src="js/ui/dom.js"></script>
 <script src="js/ui/render.js"></script>
 <script src="js/ui/rincian.js"></script>
+<script src="js/ui/agenda.js"></script>
 <script src="js/ui/jadwal.js"></script>
 <script src="js/ui/items.js"></script>
 <script src="js/ui/years.js"></script>
@@ -255,6 +257,7 @@
 <script src="js/ui/theme.js"></script>
 <script src="js/ui/kas.js"></script>
 <script src="js/ui/trip.js"></script>
+<script src="js/ui/nav.js"></script>
 <script src="js/ui/topbar.js"></script>
 <script src="js/app.js"></script>
 

@@ -515,6 +515,7 @@ window.addEventListener('message', function (e) {
 
 /** Tampilan sesuai mode: Rencana (tab + kontrol tahun), Perjalanan (lembar sendiri), atau alat (Rebalance porto / IBKR vs Flip). */
 function modeUi() {
+  if (typeof syncNav === 'function') syncNav();
   var T = mode === 'trip',
     X = !!TOOLS[mode],
     O = T || X;

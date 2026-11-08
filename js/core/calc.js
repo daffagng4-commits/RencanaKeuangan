@@ -15,7 +15,7 @@ function adjMonths(a) {
 }
 
 /**
- * @returns {{rows, occs, byCat, total, end, open, adjIn, adjLate}}
+ * @returns {{rows, occs, byCat, invest, investM, total, end, open, adjIn, adjLate}}
  *  rows[]: {m, aw (saldo awal bulan), ad (penyesuaian), sp (pengeluaran), ak (saldo akhir), ev, sk}
  *  occs: tanggal tagihan per item (termasuk yang dilewati) | byCat: pengeluaran per kategori
  *  open: saldo awal efektif | end: saldo akhir Desember
@@ -28,11 +28,14 @@ function calc() {
     byCat = {},
     events = [],
     skipped = [],
-    spend = [];
+    spend = [],
+    investM = [],
+    invest = 0;
   for (var m = 0; m < 12; m++) {
     events.push([]);
     skipped.push([]);
     spend.push(0);
+    investM.push(0);
   }
   S.items.forEach(function (it) {
     var list = occ(it, y).filter(function (t) {
@@ -50,6 +53,10 @@ function calc() {
       events[mm].push({ it: it, t: t });
       spend[mm] += price;
       byCat[cat] = (byCat[cat] || 0) + price;
+      if (isInvestCat(cat)) {
+        invest += price;
+        investM[mm] += price;
+      }
     });
   });
 
@@ -102,6 +109,8 @@ function calc() {
     rows: rows,
     occs: occs,
     byCat: byCat,
+    invest: invest,
+    investM: investM,
     total: spend.reduce(function (a, b) {
       return a + b;
     }, 0),
@@ -110,4 +119,17 @@ function calc() {
     adjIn: adjIn,
     adjLate: adjLate,
   };
+}
+
+/** Pemasukan tercatat: baris '+' di Catatan Kas profil tergabung pada tahun aktif, mulai bulan saldo (untuk rasio investasi). */
+function incomeYear() {
+  var KL = kasLinked(),
+    y = +S.year,
+    sm = +S.startMonth || 0,
+    sum = 0;
+  if (KL)
+    KL.tx.forEach(function (x) {
+      if (x.t === '+' && +x.d.slice(0, 4) === y && +x.d.slice(5, 7) - 1 >= sm) sum += x.amt;
+    });
+  return sum;
 }

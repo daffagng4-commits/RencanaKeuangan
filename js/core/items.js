@@ -56,6 +56,12 @@ var DEFAULT_CATEGORIES = [
   'Lainnya',
 ];
 
+/** Kategori yang dihitung sebagai investasi (uang pindah ke aset, bukan biaya hidup): mengandung kata kunci ini. */
+var INVEST_RE = /invest|dca|saham|reksa|etf|sbn|obligasi|emas|kripto|crypto/i;
+function isInvestCat(cat) {
+  return INVEST_RE.test(String(cat || ''));
+}
+
 /** Daftar kategori untuk saran: bawaan + yang sudah dipakai di semua tahun. */
 function allCategories() {
   var seen = {},

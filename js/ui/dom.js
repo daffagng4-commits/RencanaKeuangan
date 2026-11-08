@@ -37,6 +37,7 @@ function tab(t) {
     $('v-' + x).hidden = x !== t;
   });
   $('yb').style.display = '';
+  if (typeof syncNav === 'function') syncNav();
 }
 
 /** Tampilkan pesan singkat; bila ada `undo`, muncul tombol Urungkan selama 10 detik. */

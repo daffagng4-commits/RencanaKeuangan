@@ -22,6 +22,8 @@ var PH = {
     "Pilih satu tanggal dari jadwal atau ketik tanggal kustom. Pembayaran pertama dengan siklus baru jatuh di tanggal itu. Pilih apakah tagihan lama sebelum tanggal itu dibiarkan atau dihapus.",
   geser:
     'Pilih apakah hanya satu bulan, bulan ini dan sesudahnya, atau beberapa bulan pilihan sendiri. Lalu ketuk tagihannya dan isi tanggal barunya.',
+  henti:
+    'Pilih tanggal tagihan TERAKHIR yang masih dibayar. Semua tagihan sesudahnya dihapus dari jadwal (riwayat harga dan perubahan tidak ikut terhapus).',
   manual:
     "Atur semua pilihan sendiri. Lihat pratinjau di bawah sebelum menyimpan.",
 };
@@ -31,6 +33,7 @@ var LB = {
   sementara: ["Tanggal tagihan", "Harga selama periode itu"],
   siklus: ["Mulai dari tanggal", "Harga (biarkan jika tidak berubah)"],
   geser: ["Tagihan yang digeser", "Harga per bayar"],
+  henti: ["Tagihan terakhir yang masih dibayar", ""],
   manual: ["Berlaku mulai tanggal", "Harga per bayar"],
 };
 
@@ -523,7 +526,52 @@ function pmDraftMulti(it) {
 function pmDraft() {
   var it = item(pmId);
   if (!it) return { err: "Item tidak ditemukan." };
+  if (pmScen === "henti") return pmDraftStop(it);
   return pmScen === "geser" ? pmDraftShift(it) : pmDraftNormal();
+}
+
+/** Mode berhenti bayar: item berhenti setelah tanggal terpilih (tagihan sesudahnya hilang). @returns {stop, it, cs} atau {err} */
+function pmDraftStop(it) {
+  var iso = pmDates[0];
+  if (it.unit === "sekali") return { err: "Item sekali bayar tidak punya jadwal berulang untuk dihentikan." };
+  if (!iso || !ISO_RE.test(iso)) return { err: "Pilih tanggal tagihan terakhir yang masih dibayar." };
+  if (it.start && iso < it.start) return { err: "Tanggal itu sebelum item mulai (" + fmtD(it.start) + ")." };
+  var far = Date.UTC(+iso.slice(0, 4) + 8, 11, 31),
+    tmp = Object.assign({}, it, { end: iso, cnt: 0 });
+  if (series(it, far).length === series(tmp, far).length)
+    return { err: "Tidak ada tagihan yang berubah: jadwal item ini memang sudah berakhir sebelum tanggal itu." };
+  return { stop: iso, it: it, cs: [] };
+}
+
+/** Pratinjau berhenti bayar: tagihan terakhir dan yang dihapus (tahun aktif). */
+function pmPrevStop(d, p) {
+  var it = d.it,
+    tmp = Object.assign({}, it, { end: d.stop, cnt: 0 }),
+    far = Date.UTC(+d.stop.slice(0, 4) + 8, 11, 31),
+    stopMs = Date.parse(d.stop + "T00:00:00Z"),
+    kept = series(tmp, far),
+    all = series(it, far).filter(function (t) {
+      return t > stopMs;
+    }),
+    gone = all.filter(function (t) {
+      return new Date(t).getUTCFullYear() === +S.year;
+    }),
+    sum = gone.reduce(function (a, t) {
+      return a + priceAt(it, t);
+    }, 0),
+    last = kept.length ? kept[kept.length - 1] : null;
+  p.className = "prev";
+  p.innerHTML =
+    "<b>" + pmSumStop(d) + "</b><br>" +
+    (last ? "Tagihan terakhir: " + fd(last) + " (" + rp(priceAt(tmp, last)) + ")." : "Tidak ada tagihan sampai tanggal itu.") +
+    "<br>" +
+    (gone.length ? "Tahun " + S.year + ": " + gone.length + " tagihan dihapus dari jadwal, total " + rp(sum) + "." : "Tahun " + S.year + ": tidak ada tagihan yang terhapus.") +
+    (all.length > gone.length ? " Tahun lain: " + (all.length - gone.length) + " tagihan ikut dihapus." : "");
+}
+
+/** Kalimat ringkasan berhenti bayar. */
+function pmSumStop(d) {
+  return 'Berhenti bayar "' + d.it.name + '" setelah ' + fmtD(d.stop) + ". Tagihan sesudahnya dihapus dari jadwal.";
 }
 
 /** Pratinjau tagihan sesudah perubahan. */
@@ -546,6 +594,7 @@ function pmPrev() {
     return;
   }
   pmDateRange();
+  if (d.stop) return pmPrevStop(d, p);
   var tmp = Object.assign({}, d.it, {
     ch: (d.it.ch || [])
       .filter(function (q) {
@@ -743,7 +792,8 @@ function pmSc(sc) {
   $("pps").hidden = !sc;
   $("pbk2").hidden = !sc;
   $("psc").classList.toggle("picked", !!sc);
-  $("g-price").hidden = sc === "geser";
+  $("g-price").hidden = sc === "geser" || sc === "henti";
+  $("ppc").hidden = !(sc === "harga" || sc === "sementara");
   $("pcad").hidden = !(sc === "siklus" || sc === "manual");
   $("pcw").hidden = !(sc === "siklus" || (sc === "manual" && !until));
   $("pman").hidden = sc !== "manual";
@@ -793,6 +843,8 @@ function openPm(id) {
       b.hidden = false;
     },
   );
+  var hb = $("psc").querySelector('button[data-sc="henti"]');
+  if (hb) hb.hidden = it.unit === "sekali";
   pmPrefill(it);
   pmBack();
   renderPm();
@@ -803,6 +855,7 @@ function openPm(id) {
 function savePm() {
   var d = pmDraft();
   if (d.err) return pmMsg(d.err);
+  if (d.stop) return savePmStop(d);
   var it = d.it,
     pairs = [];
   // Mode geser: tanggal lama -> baru diketahui persis, jadi status lunas/lewati dipindah langsung (bukan ditebak).
@@ -875,8 +928,33 @@ function savePm() {
   }
 }
 
+/** Simpan "berhenti bayar": isi tanggal berhenti item (bisa diurungkan lewat toast). */
+function savePmStop(d) {
+  var it = d.it,
+    sn = snap("Sebelum berhenti bayar");
+  it.end = d.stop;
+  it.cnt = 0;
+  save();
+  $("pm").hidden = true;
+  renderAll();
+  toast('"' + it.name + '" berhenti setelah ' + fmtD(d.stop) + ".", function () {
+    restoreSnap(sn.t);
+  });
+}
+
 /** Pasang event listener halaman ini. */
 function bindPrice() {
+  // Chip kenaikan/penurunan cepat: dihitung dari harga yang berlaku di tanggal terpilih, dibulatkan (ratusan/ribuan).
+  $("ppc").onclick = function (e) {
+    var b = e.target.closest("button[data-pct]"),
+      it = item(pmId);
+    if (!b || !it) return;
+    var base = priceAt(it, Date.parse((pmDates[0] || isoD(Date.now())) + "T00:00:00Z")),
+      step = base >= 50000 ? 1000 : 100,
+      v = Math.max(0, Math.round((base * (1 + +b.dataset.pct / 100)) / step) * step);
+    $("pp").value = v.toLocaleString("id-ID");
+    pmPrev();
+  };
   $("psc").onclick = function (e) {
     var b = e.target.closest("button[data-sc]");
     if (b) pmSc(b.dataset.sc);
