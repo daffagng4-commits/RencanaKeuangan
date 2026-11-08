@@ -900,6 +900,48 @@ a.yp.yp-tool:hover .arr-icon {
   padding: 5px 12px;
   min-height: 32px;
 }
+
+/* Topbar ringkas: aksi jadi satu kapsul berisi ikon (label tetap ada untuk pembaca layar, tooltip di title) */
+.topbar-btn[hidden] { display: none; }
+.topbar-actions {
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--ln);
+  border-radius: 9999px;
+  background: var(--sf);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.topbar-actions .topbar-btn {
+  position: relative;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.topbar-actions .topbar-btn:hover {
+  transform: none;
+  box-shadow: none;
+  background: color-mix(in srgb, var(--ink) 8%, var(--sf));
+}
+.topbar-actions .topbar-btn > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.topbar-actions .topbar-btn .arr-icon { width: 16px; height: 16px; }
+.topbar-actions .topbar-btn.on,
+.topbar-actions .topbar-btn.on:hover {
+  background: var(--acs);
+  color: var(--ac);
+  box-shadow: inset 0 0 0 1px var(--ac);
+}
 body.privacy-mode .num,
 body.privacy-mode .amt,
 body.privacy-mode .cur,
@@ -907,6 +949,8 @@ body.privacy-mode td:nth-child(2),
 body.privacy-mode td.r,
 body.privacy-mode input#saldo,
 body.privacy-mode .hero-val,
+body.privacy-mode .big,
+body.privacy-mode .pv,
 body.privacy-mode [data-val="rp"] {
   filter: blur(5px);
   user-select: none;
@@ -918,7 +962,9 @@ body.privacy-mode .cur:hover,
 body.privacy-mode td:nth-child(2):hover,
 body.privacy-mode td.r:hover,
 body.privacy-mode input#saldo:hover,
-body.privacy-mode .hero-val:hover {
+body.privacy-mode .hero-val:hover,
+body.privacy-mode .big:hover,
+body.privacy-mode .pv:hover {
   filter: blur(0);
 }
 .yp[data-kt="-"].on, #qk-out.on {
@@ -3061,7 +3107,7 @@ function heroHtml(c, R) {
   var note =
     c.end < 0
       ? '<div class="err">Saldo habis sebelum akhir tahun. Kurangi item atau tambah saldo awal.</div>'
-      : '<div class="sub">dari saldo awal ' +
+      : '<div class="sub pv">dari saldo awal ' +
         rp(S.saldo) +
         (c.adjIn
           ? ' ' + (c.adjIn > 0 ? '+' : '−') + ' ' + rp(Math.abs(c.adjIn)) + ' penyesuaian = ' + rp(c.open)
@@ -3479,10 +3525,10 @@ function kasRunwayHtml(P, bal) {
   var rw = kasRunway(P, bal);
   if (!rw) return '';
   if (rw.status === 'deficit') {
-    return '<div class="runway-box runway-deficit">&#9888; Saldo defisit ' + rp(rw.deficit) + ' &mdash; segera lakukan penyesuaian kas</div>';
+    return '<div class="runway-box runway-deficit">&#9888; Saldo defisit <span class="pv">' + rp(rw.deficit) + '</span> &mdash; segera lakukan penyesuaian kas</div>';
   }
   if (rw.status === 'warning') {
-    return '<div class="runway-box runway-warning">&#9203; Kas diproyeksikan habis pada ' + fmtD(rw.date) + ' (' + rw.days + ' hari lagi &middot; defisit ' + rp(rw.deficit) + ')</div>';
+    return '<div class="runway-box runway-warning">&#9203; Kas diproyeksikan habis pada ' + fmtD(rw.date) + ' (' + rw.days + ' hari lagi &middot; defisit <span class="pv">' + rp(rw.deficit) + '</span>)</div>';
   }
   if (rw.status === 'ok') {
     return '<div class="runway-box runway-safe">&#10003; Kas aman hingga ' + fmtD(rw.date) + ' (' + rw.days + ' hari lagi sebelum tagihan ' + esc(rw.bill ? rw.bill.name : '') + ')</div>';
@@ -3505,7 +3551,7 @@ function kasHero() {
     st = function (l, v) { return '<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;color:var(--mut)">' + l + '</span><b style="font-size:15px;font-weight:700">' + v + '</b></div>'; };
   return (
     '<div class="hero"><div class="card" style="margin:0;display:flex;flex-direction:column;justify-content:space-between"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div class="sub" style="font-weight:600">Saldo Realtime &middot; ' + mName + '</div><span class="chip on" style="margin:0;font-size:11px;font-weight:700">' + esc(P.name) + '</span></div><div class="big' + (bal < 0 ? ' neg' : '') + '" style="font-size:28px;font-weight:800;letter-spacing:-0.02em;margin:6px 0 4px">' + rp(bal) +
-    '</div><div class="sub" style="font-size:12px;opacity:0.85">' + (P.link ? 'saldo awal Rencana ' : 'saldo awal ') + rp(kasBase(P)) + ' + masuk ' + rp(A.i) + ' &minus; keluar ' + rp(A.o) +
+    '</div><div class="sub pv" style="font-size:12px;opacity:0.85">' + (P.link ? 'saldo awal Rencana ' : 'saldo awal ') + rp(kasBase(P)) + ' + masuk ' + rp(A.i) + ' &minus; keluar ' + rp(A.o) +
     '</div>' + kasRunwayHtml(P, bal) + '</div><div class="card stats" style="margin:0;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:center">' + st('Masuk', rp(A.i)) + st('Keluar', rp(A.o)) + st('Selisih', A.i === A.o ? rp(0) : signed(A.i - A.o)) + st('Transaksi', A.n) + '</div></div>'
   );
 }
@@ -6838,10 +6884,21 @@ function bindUi() {
     var t = de.getAttribute('data-theme');
     return T.indexOf(t) > 0 ? t : 'auto';
   }
+  var IC = {
+    auto: '<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
+    light: '<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>',
+    dark: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+    bw: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>',
+    bwd: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/>'
+  };
   function show() {
-    var txtEl = $('thm-txt');
-    if (txtEl) txtEl.textContent = 'Tema: ' + N[cur()];
-    else btn.textContent = 'Tema: ' + N[cur()];
+    var label = 'Tema: ' + N[cur()],
+      txtEl = $('thm-txt'),
+      ic = btn.querySelector('svg');
+    if (txtEl) txtEl.textContent = label;
+    else btn.textContent = label;
+    if (ic) ic.innerHTML = IC[cur()];
+    btn.title = label + ' (ketuk untuk ganti)';
   }
   btn.onclick = function () {
     var n = T[(T.indexOf(cur()) + 1) % T.length];
@@ -7058,7 +7115,7 @@ function renderKas() {
     (bal < 0 ? ' neg' : '') +
     '">' +
     rp(bal) +
-    '</div><div class="sub">' +
+    '</div><div class="sub pv">' +
     (P.link ? 'saldo awal Rencana ' : 'saldo awal ') +
     rp(kasBase(P)) +
     ' + masuk ' +
@@ -8966,6 +9023,7 @@ function requestNotifPermission() {
     return;
   }
   Notification.requestPermission().then(function (perm) {
+    syncNotifBtn();
     if (perm === 'granted') {
       toast('Notifikasi aktif! Memeriksa tagihan...');
       checkDueNotifications(true);
@@ -9016,10 +9074,15 @@ function bindPwa() {
 function bindPrivacy() {
   var btn = document.getElementById('btn-privacy');
   if (!btn) return;
+  var EYE = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+    EYE_OFF = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
   function apply(on) {
     document.body.classList.toggle('privacy-mode', on);
     btn.classList.toggle('on', on);
     btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.title = on ? 'Mode Privasi: AKTIF (ketuk untuk menampilkan nominal)' : 'Mode Privasi: mati (ketuk untuk mengaburkan nominal)';
+    var ic = btn.querySelector('svg');
+    if (ic) ic.innerHTML = on ? EYE_OFF : EYE;
   }
   var on = false;
   try { on = localStorage.getItem('rk-privacy') === '1'; } catch (e) {}
@@ -9029,6 +9092,18 @@ function bindPrivacy() {
     apply(on);
     try { localStorage.setItem('rk-privacy', on ? '1' : '0'); } catch (e) {}
   });
+  syncNotifBtn();
+}
+
+/** Tombol notifikasi menyala bila izin sudah diberikan. */
+function syncNotifBtn() {
+  var b = document.getElementById('btn-notif');
+  if (!b || !('Notification' in window)) return;
+  var p = Notification.permission;
+  b.classList.toggle('on', p === 'granted');
+  b.title = p === 'granted' ? 'Pengingat tagihan aktif (ketuk untuk periksa sekarang)'
+    : p === 'denied' ? 'Notifikasi diblokir di browser — ubah di setelan situs'
+    : 'Aktifkan pengingat notifikasi tagihan';
 }
 
 function main() {
