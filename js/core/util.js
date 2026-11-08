@@ -21,9 +21,10 @@ function rp(n) {
 function parseRp(s) {
   s = String(s).toLowerCase().replace(/rp|\s/g, '');
   var m = 1;
-  if (/(jt|juta)$/.test(s)) m = 1e6;
+  if (/(m|miliar|milyar)$/.test(s)) m = 1e9;
+  else if (/(jt|juta)$/.test(s)) m = 1e6;
   else if (/(rb|ribu|k)$/.test(s)) m = 1e3;
-  s = s.replace(/(jt|juta|rb|ribu|k)$/, '');
+  s = s.replace(/(m|miliar|milyar|jt|juta|rb|ribu|k)$/, '');
   var v = m > 1 ? parseFloat(s.replace(',', '.')) : parseInt(s.replace(/[.,]/g, ''), 10);
   return isNaN(v) ? 0 : Math.round(v * m);
 }

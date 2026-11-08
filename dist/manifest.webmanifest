@@ -1,0 +1,17 @@
+{
+  "name": "Rencana Keuangan",
+  "short_name": "Rencana",
+  "description": "Perencana keuangan berbasis jadwal tagihan dan arus kas",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#059669",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='128' fill='%23059669'/><path d='M160 256l64 64 128-128' stroke='white' stroke-width='48' stroke-linecap='round' stroke-linejoin='round' fill='none'/></svg>",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -93,7 +93,7 @@ function setSync(rev) {
   } catch (e) {}
 }
 
-/** Kirim state ke cloud (upsert satu baris per akun). */
+/** Kirim state ke cloud (update bersyarat where rev = prevRev untuk cegah balapan data). */
 function push() {
   pushT = null;
   if (!sb || !sbUser || syncBlocked) return Promise.resolve();
@@ -103,17 +103,25 @@ function push() {
       localStorage.setItem(KEY, JSON.stringify(ALL));
     } catch (e) {}
   }
-  return sb
-    .from('rk_state')
-    .upsert({ user_id: sbUser.id, data: ALL, rev: ALL.rev, updated_at: new Date().toISOString() })
-    .then(function (r) {
-      if (r.error) {
-        sbStat('Gagal simpan ke cloud: ' + r.error.message, 1);
-      } else {
-        setSync(ALL.rev);
-        sbStat('Tersinkron ' + clock());
-      }
-    });
+  var prevRev = lastSync();
+  var payload = { user_id: sbUser.id, data: ALL, rev: ALL.rev, updated_at: new Date().toISOString() };
+  var q = prevRev != null
+    ? sb.from('rk_state').update(payload).eq('user_id', sbUser.id).eq('rev', prevRev).select('rev')
+    : sb.from('rk_state').upsert(payload).select('rev');
+
+  return q.then(function (r) {
+    if (r.error) {
+      sbStat('Gagal simpan ke cloud: ' + r.error.message, 1);
+    } else if (prevRev != null && (!r.data || !r.data.length)) {
+      sbStat('Versi cloud berubah di perangkat lain, menyelaraskan...', 1);
+      return pull();
+    } else {
+      setSync(ALL.rev);
+      sbStat('Tersinkron ' + clock());
+    }
+  }).catch(function (err) {
+    sbStat('Gagal simpan (offline): ' + (err.message || 'koneksi'), 1);
+  });
 }
 
 /** Tanda tangan isi data (untuk membandingkan lokal vs cloud). */
@@ -308,6 +316,12 @@ function bindSync() {
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden && sbUser && !pushT && !syncBlocked) pull();
   });
+  window.addEventListener('online', function () {
+    if (sbUser && !syncBlocked) {
+      sbStat('Koneksi pulih, menyelaraskan...');
+      pull();
+    }
+  });
   $('lgb').onclick = function () {
     if (sbUser) {
       sb.auth.signOut();
@@ -322,7 +336,9 @@ function bindSync() {
   $('lin').onclick = function () {
     auth('in');
   };
-  $('lup').onclick = function () {
-    auth('up');
-  };
+  if ($('lup')) {
+    $('lup').onclick = function () {
+      auth('up');
+    };
+  }
 }

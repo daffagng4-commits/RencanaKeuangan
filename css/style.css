@@ -2,8 +2,10 @@
   --bg: #f8fafc;
   --sf: #ffffff;
   --ink: #0f172a;
-  --mut: #64748b;
+  --mut: #475569;
   --ln: #e2e8f0;
+  --card: var(--sf);
+  --b: var(--ln);
   --ac: #059669;
   --acs: #ecfdf5;
   --wr: #e11d48;
@@ -871,6 +873,27 @@ a.yp.yp-tool:hover .arr-icon {
   font-size: 12.5px;
   padding: 5px 12px;
   min-height: 32px;
+}
+body.privacy-mode .num,
+body.privacy-mode .amt,
+body.privacy-mode .cur,
+body.privacy-mode td:nth-child(2),
+body.privacy-mode td.r,
+body.privacy-mode input#saldo,
+body.privacy-mode .hero-val,
+body.privacy-mode [data-val="rp"] {
+  filter: blur(5px);
+  user-select: none;
+  transition: filter 0.15s ease;
+}
+body.privacy-mode .num:hover,
+body.privacy-mode .amt:hover,
+body.privacy-mode .cur:hover,
+body.privacy-mode td:nth-child(2):hover,
+body.privacy-mode td.r:hover,
+body.privacy-mode input#saldo:hover,
+body.privacy-mode .hero-val:hover {
+  filter: blur(0);
 }
 .yp[data-kt="-"].on, #qk-out.on {
   background: var(--wrs);

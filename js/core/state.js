@@ -150,11 +150,17 @@ function save() {
     localStorage.setItem(KEY, JSON.stringify(ALL));
     setSaveStatus(true);
   } catch (e) {
+    try {
+      localStorage.removeItem('rk-undo');
+      localStorage.setItem(KEY, JSON.stringify(ALL));
+      setSaveStatus(true);
+      return;
+    } catch (e2) {}
     setSaveStatus(false);
   }
 }
 
-/** Daftar cadangan otomatis (maks. 5) dari localStorage. */
+/** Daftar cadangan otomatis (maks. 3) dari localStorage. */
 function snapList() {
   try {
     return JSON.parse(localStorage.getItem('rk-undo') || '[]');
@@ -254,10 +260,17 @@ function mergeAll(inc) {
 /** Muat state dari localStorage (atau data contoh bila kosong/rusak). */
 function loadState() {
   var raw = null;
+  var r = null;
   try {
-    var r = localStorage.getItem(KEY);
+    r = typeof localStorage !== 'undefined' ? localStorage.getItem(KEY) : null;
     raw = r ? JSON.parse(r) : null;
   } catch (e) {
+    if (r) {
+      try {
+        localStorage.setItem(KEY + '_corrupt_backup_' + Date.now(), r);
+      } catch (err) {}
+      console.error('Data localStorage rusak, dicadangkan ke backup sebelum dipulihkan:', e);
+    }
     raw = null;
   }
   ALL = norm(raw);
