@@ -40,7 +40,7 @@ const ok = (c, m) => { assert(c, m); pass++; console.log("ok -", m); };
 
   const css = [...w.document.querySelectorAll("style")].map((s) => s.textContent).join("\n");
   const rule = (sel) => (css.match(new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*\\{[^}]*\\}")) || [""])[0];
-  ok(/var\(--acs\)/.test(rule(".det.paid td")) && /inset 3px 0 0 var\(--ac\)/.test(rule(".det.paid td:first-child")), "gaya lunas: latar aksen lembut (--acs) + garis tepi kiri aksen");
+  ok(/var\(--ins\)/.test(rule(".det.paid td")) && /inset 3px 0 0 var\(--in\)/.test(rule(".det.paid td:first-child")), "gaya lunas: latar hijau lembut (--ins) + garis tepi kiri hijau (--in)");
   ok(/var\(--wrs\)/.test(rule(".det.late td")) && /inset 3px 0 0 var\(--wr\)/.test(rule(".det.late td:first-child")), "gaya terlewat: latar merah lembut (--wrs) + garis tepi kiri merah");
   ok(!/\.det\.late td\.l\s*\{/.test(css), "nama dan harga baris terlewat tidak diwarnai merah penuh (hanya tanggal) agar tidak melelahkan mata");
   ok(/@keyframes stpop/.test(css) && /@keyframes detin/.test(css) && /prefers-reduced-motion[\s\S]{0,200}\.det/.test(css), "animasi muncul berurutan + centang membal sekali; dimatikan oleh 'kurangi animasi'");

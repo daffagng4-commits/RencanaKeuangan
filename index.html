@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rencana Keuangan</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#059669">
+<meta name="theme-color" content="#4f46e5">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Rencana">
@@ -28,8 +28,10 @@
   --ln: #e2e8f0;
   --card: var(--sf);
   --b: var(--ln);
-  --ac: #059669;
-  --acs: #ecfdf5;
+  --ac: #4f46e5;
+  --acs: #eef2ff;
+  --in: #059669;
+  --ins: #ecfdf5;
   --wr: #e11d48;
   --wrs: #ffe4e6;
   --bl: #2563eb;
@@ -45,8 +47,10 @@
     --ink: #f8fafc;
     --mut: #94a3b8;
     --ln: #334155;
-    --ac: #10b981;
-    --acs: #064e3b;
+    --ac: #818cf8;
+    --acs: #1e1b4b;
+    --in: #10b981;
+    --ins: #064e3b;
     --wr: #f43f5e;
     --wrs: #4c0519;
     --bl: #60a5fa;
@@ -59,8 +63,10 @@
   --ink: #f8fafc;
   --mut: #94a3b8;
   --ln: #334155;
-  --ac: #10b981;
-  --acs: #064e3b;
+  --ac: #818cf8;
+  --acs: #1e1b4b;
+  --in: #10b981;
+  --ins: #064e3b;
   --wr: #f43f5e;
   --wrs: #4c0519;
   --bl: #60a5fa;
@@ -182,12 +188,12 @@ button.p:hover {
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) button.p {
-    color: #042f2e;
+    color: #1e1b4b;
     font-weight: 700;
   }
 }
 :root[data-theme="dark"] button.p {
-  color: #042f2e;
+  color: #1e1b4b;
   font-weight: 700;
 }
 button.g {
@@ -619,9 +625,9 @@ tr.flash td {
   color: var(--wr);
 }
 .runway-box.runway-safe {
-  background: var(--acs);
-  border-color: color-mix(in srgb, var(--ac) 30%, transparent);
-  color: var(--ac);
+  background: var(--ins);
+  border-color: color-mix(in srgb, var(--in) 30%, transparent);
+  color: var(--in);
 }
 .lgd {
   display: flex;
@@ -942,6 +948,19 @@ a.yp.yp-tool:hover .arr-icon {
   color: var(--ac);
   box-shadow: inset 0 0 0 1px var(--ac);
 }
+/* Kartu saldo gabungan di Rincian Bulanan */
+.big small { font-size: 14px; font-weight: 600; color: var(--mut); letter-spacing: 0; margin-left: 4px; }
+.hm .hm-hint { display: block; margin-top: 4px; color: var(--wr); font-size: 12px; }
+.hm-bal { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--ln); }
+.hm-bal span { display: block; font-size: 12px; color: var(--mut); }
+.hm-bal b { display: block; font-size: 16px; font-weight: 700; }
+.hm-bal b.neg { color: var(--wr); }
+.hm .err, .hm .runway-box { margin-top: 10px; }
+/* Target sentuh minimal di layar sentuh */
+@media (pointer: coarse) {
+  .topbar-actions .topbar-btn { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
+  .yp, a.yp { min-height: 40px; }
+}
 body.privacy-mode .num,
 body.privacy-mode .amt,
 body.privacy-mode .cur,
@@ -973,9 +992,9 @@ body.privacy-mode .pv:hover {
   border-color: var(--wr);
 }
 .yp[data-kt="+"].on, #qk-in.on {
-  background: var(--acs);
-  color: var(--ac);
-  border-color: var(--ac);
+  background: var(--ins);
+  color: var(--in);
+  border-color: var(--in);
 }
 .pd {
   min-height: 28px;
@@ -1225,11 +1244,11 @@ nav {
   line-height: 1;
   vertical-align: middle;
 }
-.st.ok { background: var(--ac); border-color: var(--ac); color: var(--bg); }
+.st.ok { background: var(--in); border-color: var(--in); color: var(--bg); }
 .st.bad { background: var(--wr); border-color: var(--wr); color: var(--bg); }
 .st.skp { border: 1.5px dashed var(--wr); color: var(--wr); }
-.det.paid td { background: var(--acs); background: color-mix(in srgb, var(--acs) 60%, var(--bg)); }
-.det.paid td:first-child { box-shadow: inset 3px 0 0 var(--ac); }
+.det.paid td { background: var(--ins); background: color-mix(in srgb, var(--ins) 60%, var(--bg)); }
+.det.paid td:first-child { box-shadow: inset 3px 0 0 var(--in); }
 .det.late td { background: var(--wrs); background: color-mix(in srgb, var(--wrs) 45%, var(--bg)); }
 .det.late td:first-child { color: var(--wr); box-shadow: inset 3px 0 0 var(--wr); }
 .det.skp td:first-child { box-shadow: inset 3px 0 0 var(--wr); }
@@ -1239,12 +1258,12 @@ nav {
 .det.paid .st.ok { animation: stpop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: calc(var(--i, 0) * 35ms + 120ms); }
 @keyframes stpop { from { transform: scale(0.4); opacity: 0; } to { transform: none; opacity: 1; } }
 /* Item yang seluruh tagihannya sudah lunas (tidak ada tagihan tersisa): efek sama dengan baris lunas di rincian */
-#v-jadwal tr.done td { background: var(--acs); background: color-mix(in srgb, var(--acs) 60%, var(--sf)); }
-#v-jadwal tr.done td:first-child { box-shadow: inset 3px 0 0 var(--ac); }
+#v-jadwal tr.done td { background: var(--ins); background: color-mix(in srgb, var(--ins) 60%, var(--sf)); }
+#v-jadwal tr.done td:first-child { box-shadow: inset 3px 0 0 var(--in); }
 #v-jadwal tr.done .pd.on { background: var(--sf); }
 #v-jadwal tr.done { animation: detin 0.4s ease both; animation-delay: calc(var(--i, 0) * 35ms); }
 #v-jadwal tr.done .st.ok { animation: stpop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: calc(var(--i, 0) * 35ms + 120ms); }
-.doneTag { display: inline-block; margin-left: 8px; padding: 0 8px; border: 1px solid var(--ac); border-radius: 99px; color: var(--ac); font-size: 10.5px; font-weight: 700; vertical-align: middle; }
+.doneTag { display: inline-block; margin-left: 8px; padding: 0 8px; border: 1px solid var(--in); border-radius: 99px; color: var(--in); font-size: 10.5px; font-weight: 700; vertical-align: middle; }
 @media (prefers-reduced-motion: reduce) {
   .det, .det.paid .st.ok, #v-jadwal tr.done, #v-jadwal tr.done .st.ok { animation: none; }
 }
@@ -1282,7 +1301,7 @@ nav {
   #v-rincian tr.row td.c-e::before { font-size: 11.5px; }
   #v-rincian tr.det { display: flex; gap: 10px; padding: 6px 0 6px 8px; background: var(--bg); font-size: 13px; }
   #v-rincian tr.det td { display: block; padding: 0; border: 0; white-space: normal; background: transparent; box-shadow: none; }
-  #v-rincian tr.det.paid { background: var(--acs); background: color-mix(in srgb, var(--acs) 60%, var(--bg)); box-shadow: inset 3px 0 0 var(--ac); }
+  #v-rincian tr.det.paid { background: var(--ins); background: color-mix(in srgb, var(--ins) 60%, var(--bg)); box-shadow: inset 3px 0 0 var(--in); }
   #v-rincian tr.det.late { background: var(--wrs); background: color-mix(in srgb, var(--wrs) 45%, var(--bg)); box-shadow: inset 3px 0 0 var(--wr); }
   #v-rincian tr.det.skp { box-shadow: inset 3px 0 0 var(--wr); }
   #v-rincian tr.det td:nth-child(2) { flex: 1; }
@@ -1332,17 +1351,17 @@ nav {
 .kp { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
 .kt { display: flex; flex-wrap: wrap; gap: 8px; }
 .kf { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-.kin { color: var(--ac); }
+.kin { color: var(--in); }
 .kch { width: 100%; height: 130px; display: block; }
 
 /* ===== Tema hitam-putih & panduan ===== */
 :root[data-theme="bw"] {
   --bg: #ffffff; --sf: #ffffff; --ink: #000000; --mut: #555555; --ln: #a8a8a8;
-  --ac: #000000; --acs: #ececec; --wr: #000000; --wrs: #e2e2e2; --bl: #222222; --bls: #f0f0f0;
+  --ac: #000000; --acs: #ececec; --in: #000000; --ins: #ececec; --wr: #000000; --wrs: #e2e2e2; --bl: #222222; --bls: #f0f0f0;
 }
 :root[data-theme="bwd"] {
   --bg: #000000; --sf: #0e0e0e; --ink: #ffffff; --mut: #a6a6a6; --ln: #444444;
-  --ac: #ffffff; --acs: #262626; --wr: #ffffff; --wrs: #2c2c2c; --bl: #dddddd; --bls: #1e1e1e;
+  --ac: #ffffff; --acs: #262626; --in: #ffffff; --ins: #262626; --wr: #ffffff; --wrs: #2c2c2c; --bl: #dddddd; --bls: #1e1e1e;
 }
 :root[data-theme="bw"], :root[data-theme="bwd"] { filter: grayscale(1); }
 :root[data-theme="bw"] button.p { color: #fff; }
@@ -1399,10 +1418,10 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
     <a class="yp yp-tool" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a>
   </div>
   <div class="topbar-actions">
-    <button type="button" id="btn-privacy" class="topbar-btn" title="Mode Privasi (Kaburkan Nominal)"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Privasi</span></button>
-    <button type="button" id="btn-notif" class="topbar-btn" title="Aktifkan pengingat notifikasi tagihan"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>Notifikasi</span></button>
-    <button type="button" id="pwa" class="topbar-btn" hidden><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg><span>Pasang</span></button>
-    <button type="button" id="thm" class="topbar-btn" title="Ketuk untuk ganti tema"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span id="thm-txt">Tema</span></button>
+    <button type="button" id="btn-privacy" class="topbar-btn" title="Mode Privasi (Kaburkan Nominal)" aria-label="Mode Privasi" aria-pressed="false"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Privasi</span></button>
+    <button type="button" id="btn-notif" class="topbar-btn" title="Aktifkan pengingat notifikasi tagihan" aria-label="Notifikasi tagihan"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>Notifikasi</span></button>
+    <button type="button" id="pwa" class="topbar-btn" aria-label="Pasang aplikasi" hidden><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg><span>Pasang</span></button>
+    <button type="button" id="thm" class="topbar-btn" title="Ketuk untuk ganti tema" aria-label="Ganti tema"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span id="thm-txt">Tema</span></button>
   </div>
 </div>
 <header>
@@ -1464,33 +1483,33 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 </div>
 
 <input type="file" id="xlf" accept=".xlsx,.xls,.csv" hidden>
-<div class="modal" id="xlm" hidden><div class="card"><h2>Impor dari Excel</h2><div class="sub" id="xls" style="margin-bottom:10px"></div>
+<div class="modal" id="xlm" role="dialog" aria-modal="true" hidden><div class="card"><h2>Impor dari Excel</h2><div class="sub" id="xls" style="margin-bottom:10px"></div>
 <label for="xln">Nama perjalanan</label><input id="xln" maxlength="30">
 <div class="kf" style="margin-top:12px"><div><label for="xlu">Mata uang asing</label><input id="xlu" maxlength="3" placeholder="JPY"></div><div><label for="xlk">Kurs (Rp per 1)</label><input id="xlk" inputmode="decimal" placeholder="119,4"></div></div>
 <div class="err" id="xle"></div><div class="row2"><button class="p" id="xlok">Impor</button><button class="c" id="xlc">Batal</button></div></div></div>
-<div class="modal" id="shm" hidden><div class="card"><h2>Bagikan itinerary</h2>
+<div class="modal" id="shm" role="dialog" aria-modal="true" hidden><div class="card"><h2>Bagikan itinerary</h2>
 <label style="display:flex;gap:8px;align-items:center;margin:4px 0 12px"><input type="checkbox" id="shc" style="width:auto"> Sertakan biaya</label>
 <div class="acts"><button class="p" data-sh="wa">Kirim teks (WhatsApp)</button><button data-sh="copy">Salin teks</button><button data-sh="pdf">Cetak / simpan PDF</button></div>
 <div class="sub" id="shs" style="margin:10px 0"></div><div class="row2"><button class="c" id="shx">Tutup</button></div></div></div>
-<div class="modal" id="kpm" hidden><div class="card"><h2 id="kpt">Perjalanan baru</h2>
+<div class="modal" id="kpm" role="dialog" aria-modal="true" hidden><div class="card"><h2 id="kpt">Perjalanan baru</h2>
 <label for="kpn">Nama perjalanan</label><input id="kpn" maxlength="30" placeholder="mis. Tokyo - Osaka 9D8N">
 <div class="kf" style="margin-top:12px"><div><label for="kpa">Mulai</label><input id="kpa" type="date"></div><div><label for="kpb">Selesai</label><input id="kpb" type="date"></div></div>
 <div style="margin-top:12px"><label for="kpgm">Anggaran</label><select id="kpgm"><option value="0">Belum menentukan anggaran</option><option value="1">Tetapkan anggaran</option></select></div>
 <div id="kpgw" style="margin-top:8px" hidden><label for="kpg">Anggaran total (Rp)</label><input id="kpg" inputmode="numeric" placeholder="25.000.000"></div>
 <div class="kf" style="margin-top:12px"><div><label for="kpu">Mata uang asing (opsional)</label><input id="kpu" maxlength="3" placeholder="JPY" style="text-transform:uppercase"></div><div><label for="kpk">Kurs: Rp per 1 mata uang</label><input id="kpk" type="number" step="0.01" min="0" inputmode="decimal" placeholder="119.4"></div></div>
 <div class="err" id="kpe"></div><div class="row2"><button class="p" id="kpsv">Simpan</button><button class="c" id="kpc">Tutup</button></div></div></div>
-<div class="modal" id="cf" hidden><div class="card"><h2>Data berbeda di cloud dan di perangkat ini</h2>
+<div class="modal" id="cf" role="dialog" aria-modal="true" hidden><div class="card"><h2>Data berbeda di cloud dan di perangkat ini</h2>
 <p class="sub">Pilih data yang dipakai. Data yang tidak dipilih disimpan sebagai cadangan otomatis, jadi masih bisa dipulihkan.</p>
 <div class="g2"><div class="cfc" id="cf-l"></div><div class="cfc" id="cf-r"></div></div>
 <div class="row2"><button class="p" data-cf="remote">Pakai data cloud</button><button data-cf="local">Pakai data perangkat ini</button></div>
 <div class="row2" style="margin-top:6px"><button data-cf="merge">Gabungkan keduanya</button><button class="c" data-cf="later">Nanti saja</button></div>
 <div class="sub" style="margin-top:8px"><b>Gabungkan</b>: menambah tahun dan item dari cloud yang belum ada di perangkat ini, tidak ada yang dihapus. Angka saldo awal mengikuti perangkat ini. <b>Nanti saja</b>: sinkron ditunda sampai Anda memilih.</div>
 </div></div>
-<div class="modal" id="rm" hidden><div class="card"><h2>Pengingat tagihan</h2>
+<div class="modal" id="rm" role="dialog" aria-modal="true" hidden><div class="card"><h2>Pengingat tagihan</h2>
 <div class="row2" style="margin:0 0 6px;align-items:center"><label for="rmh" style="margin:0">Tampilkan yang jatuh tempo dalam</label><select id="rmh" style="width:auto"><option value="3">3 hari</option><option value="7">7 hari</option><option value="14">14 hari</option><option value="30">30 hari</option></select></div>
 <div id="rml"></div>
 <div class="row2"><button id="rmb" hidden>Tandai semua yang sudah lewat tanggal sebagai lunas</button><button class="c" id="rmc">Tutup</button></div></div></div>
-<div class="modal" id="sk" hidden><div class="card"><h2 id="skt">Ubah beberapa tagihan</h2>
+<div class="modal" id="sk" role="dialog" aria-modal="true" hidden><div class="card"><h2 id="skt">Ubah beberapa tagihan</h2>
 <p class="sub">Ubah status semua tagihan item ini dalam rentang tanggal sekaligus.</p>
 <div class="g2"><div><label for="skf">Dari tanggal</label><input id="skf" type="date"></div><div><label for="skto">Sampai tanggal</label><input id="skto" type="date"></div></div>
 <div style="margin-top:12px"><label for="ska">Ubah menjadi</label><select id="ska"><option value="skip">Lewati (tidak bayar)</option><option value="paid">Sudah dibayar</option><option value="none">Belum dibayar</option></select></div>
@@ -1498,7 +1517,7 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 <div class="row2"><button class="p" id="sks">Terapkan</button><button class="c" id="skc">Batal</button></div></div></div>
 <div class="tt" id="tt" hidden><span id="ttm"></span><button id="ttu" type="button">Urungkan</button></div>
 <div class="cm" id="cm" hidden></div>
-<div class="modal" id="pm" hidden><div class="card"><h2 id="pmt">Ubah harga / jadwal</h2><p class="sub" id="pmi"></p>
+<div class="modal" id="pm" role="dialog" aria-modal="true" hidden><div class="card"><h2 id="pmt">Ubah harga / jadwal</h2><p class="sub" id="pmi"></p>
 <div class="h3" style="margin-top:10px">Apa yang mau diubah?</div>
 <div class="sc" id="psc">
 <button type="button" data-sc="harga"><b>Harga berubah</b><span>Contoh: naik jadi 300k mulai Juli</span></button>
@@ -1529,7 +1548,7 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 </div>
 <div class="row2"><button id="pbk2" hidden>&larr; Kembali</button><button class="p" id="pps" hidden>Simpan perubahan</button><button class="c" id="pcl">Tutup</button></div>
 <div class="h3">Perubahan yang sudah ada</div><div id="phl"></div></div></div>
-<div class="modal" id="m" hidden><div class="card" style="max-width:540px">
+<div class="modal" id="m" role="dialog" aria-modal="true" hidden><div class="card" style="max-width:540px">
   <h2>Cadangan &amp; Pemulihan Data</h2>
   <div style="background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:12px;margin-bottom:12px">
     <div style="font-weight:600;margin-bottom:4px">Cadangan Lengkap (.json)</div>
@@ -1542,7 +1561,7 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
           <div class="xr"><button data-ex="items">Item tahun ini (.csv)</button><span class="sub"><span class="chip">Bisa diimpor</span> Format tabel item aktif.</span></div>
           <div class="xr"><button data-ex="hist">Riwayat pembayaran (.csv)</button><span class="sub"><span class="chip n">Laporan</span> Satu baris per tagihan.</span></div>
           <div class="xr"><button data-ex="bulan">Rincian bulanan (.csv)</button><span class="sub"><span class="chip n">Laporan</span> Saldo awal, pengeluaran &amp; akhir.</span></div>
-          <div class="xr"><button data-ex="ics">Pengingat kalender (.ics)</button><span class="sub"><span class="chip">Kalender</span> Impor ke Google / Apple Calendar.</span></div>
+          <div class="xr"><button data-ex="ics">Pengingat kalender (.ics)</button><span class="sub"><span class="chip">Kalender</span> Impor ke Google / Apple Calendar. Tagihan belum lunas dapat alarm H-1 dan hari-H pukul 09.00.</span></div>
         </div>
       </details>
     </div>
@@ -1575,7 +1594,7 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
   <div class="row2" style="justify-content:flex-end"><button class="c" id="cl">Tutup</button></div>
 </div></div>
 
-<div class="modal" id="qkm" hidden><div class="card" style="max-width:440px">
+<div class="modal" id="qkm" role="dialog" aria-modal="true" hidden><div class="card" style="max-width:440px">
   <h2>Catat transaksi kilat <span class="sub">(Shortcut: N)</span></h2>
   <div class="kt" style="margin-bottom:12px">
     <button type="button" class="yp on" id="qk-out" data-kt="-">&minus; Keluar</button>
@@ -1594,9 +1613,10 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
   </div>
 </div></div>
 
-<div class="modal" id="lg" hidden><div class="card"><h2>Masuk untuk sinkron</h2><p class="sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p><label for="le">Email</label><input id="le" type="email" autocomplete="email"><label for="lp" style="margin-top:10px">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="err" id="lm"></div><div class="row2"><button class="p" id="lin">Masuk</button><button class="c" id="lgc">Tutup</button></div></div></div>
+<div class="modal" id="lg" role="dialog" aria-modal="true" hidden><div class="card"><h2>Masuk untuk sinkron</h2><p class="sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p><label for="le">Email</label><input id="le" type="email" autocomplete="email"><label for="lp" style="margin-top:10px">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="err" id="lm"></div><div class="row2"><button class="p" id="lin">Masuk</button><button class="c" id="lgc">Tutup</button></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
+
 <script>
 /* ===== js/config.js ===== */
 /**
@@ -3094,7 +3114,7 @@ function signed(v) {
 }
 
 /** Kartu saldo akhir + statistik. */
-function heroHtml(c, R) {
+function heroHtml(c, R, lead) {
   var y = S.year,
     mn = R.reduce(function (a, b) {
       return b.sp < a.sp ? b : a;
@@ -3129,8 +3149,8 @@ function heroHtml(c, R) {
       '</div>'
     );
   };
-  return (
-    '<div class="hero"><div class="card" style="margin:0"><div class="sub">Sisa saldo akhir Des ' +
+  var plain =
+    '<div class="card" style="margin:0"><div class="sub">Sisa saldo akhir Des ' +
     y +
     '</div><div class="big' +
     (c.end < 0 ? ' neg' : '') +
@@ -3138,14 +3158,17 @@ function heroHtml(c, R) {
     rp(c.end) +
     '</div>' +
     note +
-    '</div>' +
+    '</div>';
+  return (
+    '<div class="hero">' +
+    (lead ? lead(note) : plain) +
     '<div class="card stats" style="margin:0">' +
     stat('Total pengeluaran', rp(c.total)) +
     stat('Rata-rata per bulan', rp(c.total / R.length)) +
     stat('Bulan terberat', rp(hv.sp), MON[hv.m]) +
     stat('Bulan teringan', rp(mn.sp), MON[mn.m]) +
     stat('Jatah jajan per bulan', rp(pos / R.length)) +
-    stat('Jatah jajan per hari', rp(pos / days)) +
+    (lead ? '' : stat('Jatah jajan per hari', rp(pos / days))) +
     '</div></div>'
   );
 }
@@ -3236,7 +3259,7 @@ function sparklineHtml(R) {
   var dots = pts
     .map(function (p) {
       var isNeg = p.r.ak < 0;
-      var col = isNeg ? 'var(--wr)' : 'var(--ac)';
+      var col = isNeg ? 'var(--wr)' : 'var(--in)';
       return (
         '<circle cx="' +
         p.x +
@@ -3266,7 +3289,7 @@ function sparklineHtml(R) {
         ' (' +
         rp(minPoint.r.ak) +
         ')</span>'
-      : '<span style="color:var(--ac);font-weight:600">Arus kas sehat (Saldo terendah ' +
+      : '<span style="color:var(--in);font-weight:600">Arus kas sehat (Saldo terendah ' +
         rp(minPoint.r.ak) +
         ' di ' +
         MON[minPoint.r.m] +
@@ -3536,26 +3559,72 @@ function kasRunwayHtml(P, bal) {
   return '<div class="runway-box runway-safe">&#10003; Proyeksi kas aman untuk seluruh jadwal pengeluaran tahun ini</div>';
 }
 
-/** Render tab Rincian Bulanan. */
-/** Dashboard saldo nyata (dari Catatan Kas) di paling atas Rincian Bulanan. */
-function kasHero() {
+/** Perkiraan uang aman dipakai per hari sampai akhir bulan ini (hanya bila tahun aktif = tahun berjalan). */
+function amanHariIni(bal, sm) {
+  var today = todayISO(),
+    y = +today.slice(0, 4);
+  if (+S.year !== y) return null;
+  var mo = +today.slice(5, 7),
+    left = new Date(Date.UTC(y, mo, 0)).getUTCDate() - +today.slice(8, 10) + 1,
+    rem = reminders(left - 1),
+    due = 0,
+    n = 0;
+  rem.late.concat(rem.soon).forEach(function (r) {
+    due += r.price;
+    n++;
+  });
+  var free = bal - due;
+  return { left: left, due: due, n: n, free: free, perDay: free > 0 ? Math.floor(free / left) : 0, sameMonth: sm === mo - 1 };
+}
+
+/** Satu kartu saldo di Rincian Bulanan: "Aman dipakai hari ini" (bila bisa), Saldo Realtime, dan Sisa saldo akhir. */
+function saldoHero(c, R) {
   var P = kasLinked();
-  if (!P) return '';
+  if (!P) return heroHtml(c, R);
   var sm = +S.startMonth || 0,
-    mName = (typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm]),
+    mName = typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm],
     asc = kasRows(P).filter(function (x) {
       return +x.d.slice(5, 7) - 1 <= sm;
     }),
     A = kasSum(asc, 'all'),
     bal = kasBase(P) + A.i - A.o,
-    st = function (l, v) { return '<div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;color:var(--mut)">' + l + '</span><b style="font-size:15px;font-weight:700">' + v + '</b></div>'; };
-  return (
-    '<div class="hero"><div class="card" style="margin:0;display:flex;flex-direction:column;justify-content:space-between"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div class="sub" style="font-weight:600">Saldo Realtime &middot; ' + mName + '</div><span class="chip on" style="margin:0;font-size:11px;font-weight:700">' + esc(P.name) + '</span></div><div class="big' + (bal < 0 ? ' neg' : '') + '" style="font-size:28px;font-weight:800;letter-spacing:-0.02em;margin:6px 0 4px">' + rp(bal) +
-    '</div><div class="sub pv" style="font-size:12px;opacity:0.85">' + (P.link ? 'saldo awal Rencana ' : 'saldo awal ') + rp(kasBase(P)) + ' + masuk ' + rp(A.i) + ' &minus; keluar ' + rp(A.o) +
-    '</div>' + kasRunwayHtml(P, bal) + '</div><div class="card stats" style="margin:0;display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:center">' + st('Masuk', rp(A.i)) + st('Keluar', rp(A.o)) + st('Selisih', A.i === A.o ? rp(0) : signed(A.i - A.o)) + st('Transaksi', A.n) + '</div></div>'
-  );
+    sf = amanHariIni(bal, sm),
+    chip = '<span class="chip on" style="margin:0;font-size:11px;font-weight:700">' + esc(P.name) + '</span>',
+    audit =
+      (P.link ? 'saldo awal Rencana ' : 'saldo awal ') + rp(kasBase(P)) + ' + masuk ' + rp(A.i) + ' &minus; keluar ' + rp(A.o) +
+      ' &middot; selisih ' + (A.i === A.o ? rp(0) : signed(A.i - A.o)) + ' &middot; ' + A.n + ' transaksi',
+    label, big, neg, sub, hint = '';
+  if (sf) {
+    label = 'Aman dipakai hari ini';
+    neg = sf.free <= 0;
+    big = neg ? '&minus;' + rp(Math.abs(sf.free)) + '<small>kurang</small>' : rp(sf.perDay) + '<small>/ hari</small>';
+    sub = neg
+      ? 'Saldo ' + rp(bal) + ' belum cukup untuk ' + sf.n + ' tagihan sampai akhir bulan (' + rp(sf.due) + ')'
+      : 'Sisa ' + rp(sf.free) + ' setelah ' + sf.n + ' tagihan sampai akhir bulan (' + rp(sf.due) + ') &middot; ' + sf.left + ' hari lagi';
+    if (!sf.sameMonth)
+      hint = '<span class="hm-hint">Bulan saldo (' + mName + ') bukan bulan ini &mdash; ubah &ldquo;Bulan saldo&rdquo; agar angka ini akurat.</span>';
+  } else {
+    label = 'Saldo Realtime &middot; ' + mName;
+    neg = bal < 0;
+    big = rp(bal);
+    sub = audit;
+  }
+  return heroHtml(c, R, function (note) {
+    return (
+      '<div class="card hm" style="margin:0"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+      '<div class="sub" style="font-weight:600">' + label + '</div>' + chip + '</div>' +
+      '<div class="big' + (neg ? ' neg' : '') + '" style="margin:6px 0 4px">' + big + '</div>' +
+      '<div class="sub pv">' + sub + '</div>' + hint +
+      '<div class="hm-bal">' +
+      (sf ? '<div><span>Saldo Realtime &middot; ' + mName + '</span><b class="pv' + (bal < 0 ? ' neg' : '') + '">' + rp(bal) + '</b></div>' : '') +
+      '<div><span>Sisa saldo akhir Des ' + S.year + '</span><b class="pv' + (c.end < 0 ? ' neg' : '') + '">' + rp(c.end) + '</b></div></div>' +
+      (sf ? '<div class="sub pv" style="margin-top:8px;font-size:12px">' + audit + '</div>' : '') +
+      note + kasRunwayHtml(P, bal) + '</div>'
+    );
+  });
 }
 
+/** Render tab Rincian Bulanan. */
 function renderRincian() {
   var c = calc(),
     y = S.year,
@@ -3598,7 +3667,7 @@ function renderRincian() {
     '</td><td data-l="Saldo akhir">' +
     rp(c.end) +
     '</td><td></td></tr></tbody></table></div></div>';
-  $('v-rincian').innerHTML = kasHero() + heroHtml(c, R) + sparklineHtml(R) + barsHtml(R) + categoryHtml(c) + table;
+  $('v-rincian').innerHTML = saldoHero(c, R) + sparklineHtml(R) + barsHtml(R) + categoryHtml(c) + table;
 }
 
 /** Baris "dilewati" pada rincian sebuah bulan. */
@@ -4800,7 +4869,7 @@ function pmMsg(t, ok) {
     return;
   }
   e.textContent = t;
-  e.style.color = ok ? "var(--ac)" : "var(--wr)";
+  e.style.color = ok ? "var(--in)" : "var(--wr)";
 }
 
 /** Nilai isian harga/siklus saat ini. */
@@ -5740,7 +5809,7 @@ var DL = null;
 function setX(t, ok) {
   var e = $('xm');
   e.textContent = t;
-  e.style.color = ok ? 'var(--ac)' : 'var(--wr)';
+  e.style.color = ok ? 'var(--in)' : 'var(--wr)';
 }
 
 /** Unduh file; bila tidak bisa, isinya ditaruh di kolom teks agar bisa disalin. */
@@ -5791,6 +5860,9 @@ function doExport(kind) {
   }
   if (kind === 'ics') {
     var events = [];
+    var icsT = function (s) {
+      return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+    };
     var dtstamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
     S.items.forEach(function (it) {
       (c.occs[it.id] || []).forEach(function (t) {
@@ -5799,16 +5871,23 @@ function doExport(kind) {
         if (S.skip && S.skip[kk]) return;
         var p = priceAt(it, t);
         var dt = d.replace(/-/g, '');
-        events.push([
-          'BEGIN:VEVENT',
-          'UID:rk-' + kk + '@rencanakeuangan',
-          'DTSTAMP:' + dtstamp,
-          'DTSTART;VALUE=DATE:' + dt,
-          'SUMMARY:Bayar ' + it.name + ' (' + rp(p) + ')',
-          'DESCRIPTION:Tagihan: ' + it.name + ' sebesar ' + rp(p) + ((S.paid && S.paid[kk]) ? ' [Lunas]' : ' [Belum Lunas]'),
-          'STATUS:' + ((S.paid && S.paid[kk]) ? 'CONFIRMED' : 'TENTATIVE'),
-          'END:VEVENT'
-        ].join('\r\n'));
+        var isPaid = !!(S.paid && S.paid[kk]),
+          ev = [
+            'BEGIN:VEVENT',
+            'UID:rk-' + kk + '@rencanakeuangan',
+            'DTSTAMP:' + dtstamp,
+            'DTSTART;VALUE=DATE:' + dt,
+            'SUMMARY:Bayar ' + icsT(it.name) + ' (' + rp(p) + ')',
+            'DESCRIPTION:Tagihan: ' + icsT(it.name) + ' sebesar ' + rp(p) + (isPaid ? ' [Lunas]' : ' [Belum Lunas]'),
+            'STATUS:' + (isPaid ? 'CONFIRMED' : 'TENTATIVE')
+          ];
+        if (!isPaid) {
+          // Dua pengingat untuk tagihan belum lunas: H-1 pukul 09.00 dan hari-H pukul 09.00.
+          ev.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Besok jatuh tempo: ' + icsT(it.name), 'TRIGGER:-PT15H', 'END:VALARM');
+          ev.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Hari ini jatuh tempo: ' + icsT(it.name), 'TRIGGER:PT9H', 'END:VALARM');
+        }
+        ev.push('END:VEVENT');
+        events.push(ev.join('\r\n'));
       });
     });
     var icsContent = [
@@ -6055,7 +6134,7 @@ function bindBackup() {
 
 function dgRow(r) {
   var ic = { ok: '&#10003;', bad: '&#10007;', warn: '&#9888;', info: '&#8505;' }[r[0]],
-    col = { ok: 'var(--ac)', bad: 'var(--wr)', warn: 'var(--wr)', info: 'var(--mut)' }[r[0]];
+    col = { ok: 'var(--in)', bad: 'var(--wr)', warn: 'var(--wr)', info: 'var(--mut)' }[r[0]];
   return (
     '<div class="it2" style="align-items:flex-start;gap:10px"><span style="color:' +
     col +
@@ -6899,6 +6978,7 @@ function bindUi() {
     else btn.textContent = label;
     if (ic) ic.innerHTML = IC[cur()];
     btn.title = label + ' (ketuk untuk ganti)';
+    btn.setAttribute('aria-label', btn.title);
   }
   btn.onclick = function () {
     var n = T[(T.indexOf(cur()) + 1) % T.length];
@@ -9066,11 +9146,12 @@ function bindPwa() {
   setTimeout(checkDueNotifications, 1200);
 }
 
-/* ===== js/app.js ===== */
+/* ===== js/ui/topbar.js ===== */
 /**
- * Titik masuk aplikasi. Urutan: muat data -> pasang listener -> render -> sinkron.
+ * Aksi topbar (Mode Privasi, status Notifikasi) dan perbaikan aksesibilitas dasar (dialog).
  */
-/* ===== Mode Privasi: kaburkan nominal (tombol #btn-privacy) ===== */
+
+/** Mode Privasi: kaburkan nominal. Tombol menyala bila aktif; pilihan diingat di perangkat. */
 function bindPrivacy() {
   var btn = document.getElementById('btn-privacy');
   if (!btn) return;
@@ -9081,6 +9162,7 @@ function bindPrivacy() {
     btn.classList.toggle('on', on);
     btn.setAttribute('aria-pressed', on ? 'true' : 'false');
     btn.title = on ? 'Mode Privasi: AKTIF (ketuk untuk menampilkan nominal)' : 'Mode Privasi: mati (ketuk untuk mengaburkan nominal)';
+    btn.setAttribute('aria-label', btn.title);
     var ic = btn.querySelector('svg');
     if (ic) ic.innerHTML = on ? EYE_OFF : EYE;
   }
@@ -9104,8 +9186,24 @@ function syncNotifBtn() {
   b.title = p === 'granted' ? 'Pengingat tagihan aktif (ketuk untuk periksa sekarang)'
     : p === 'denied' ? 'Notifikasi diblokir di browser — ubah di setelan situs'
     : 'Aktifkan pengingat notifikasi tagihan';
+  b.setAttribute('aria-label', b.title);
 }
 
+/** Beri nama pada setiap dialog (dari judul h2-nya) supaya terbaca oleh pembaca layar. */
+function bindA11y() {
+  var n = 0;
+  document.querySelectorAll('.modal').forEach(function (m) {
+    var h2 = m.querySelector('h2');
+    if (!h2) return;
+    if (!h2.id) h2.id = 'mh-' + (m.id || ++n);
+    m.setAttribute('aria-labelledby', h2.id);
+  });
+}
+
+/* ===== js/app.js ===== */
+/**
+ * Titik masuk aplikasi. Urutan: muat data -> pasang listener -> render -> sinkron.
+ */
 function main() {
   loadState();
   bindDom();
@@ -9128,6 +9226,7 @@ function main() {
   bindXl();
   bindPwa();
   bindPrivacy();
+  bindA11y();
   resetForm();
   renderAll();
   save();
@@ -9135,7 +9234,6 @@ function main() {
   sbInit();
 }
 main();
-
 </script>
 </body>
 </html>

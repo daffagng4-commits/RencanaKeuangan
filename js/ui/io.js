@@ -8,15 +8,15 @@ var DL = null;
 function setX(t, ok) {
   var e = $('xm');
   e.textContent = t;
-  e.style.color = ok ? 'var(--ac)' : 'var(--wr)';
+  e.style.color = ok ? 'var(--in)' : 'var(--wr)';
 }
 
 /** Unduh file; bila tidak bisa, isinya ditaruh di kolom teks agar bisa disalin. */
-function exportFile(name, data) {
+function exportFile(name, data, mime) {
   if (!DL) {
     try {
       var a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([data], { type: 'text/plain;charset=utf-8' }));
+      a.href = URL.createObjectURL(new Blob([data], { type: mime || 'text/plain;charset=utf-8' }));
       a.download = name;
       document.body.appendChild(a);
       a.click();
@@ -56,6 +56,49 @@ function doExport(kind) {
       'rencana-keuangan-cadangan-' + isoD(Date.now()) + '.json',
       JSON.stringify(ALL, null, 1),
     );
+  }
+  if (kind === 'ics') {
+    var events = [];
+    var icsT = function (s) {
+      return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+    };
+    var dtstamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    S.items.forEach(function (it) {
+      (c.occs[it.id] || []).forEach(function (t) {
+        var d = isoD(t);
+        var kk = it.id + '|' + d;
+        if (S.skip && S.skip[kk]) return;
+        var p = priceAt(it, t);
+        var dt = d.replace(/-/g, '');
+        var isPaid = !!(S.paid && S.paid[kk]),
+          ev = [
+            'BEGIN:VEVENT',
+            'UID:rk-' + kk + '@rencanakeuangan',
+            'DTSTAMP:' + dtstamp,
+            'DTSTART;VALUE=DATE:' + dt,
+            'SUMMARY:Bayar ' + icsT(it.name) + ' (' + rp(p) + ')',
+            'DESCRIPTION:Tagihan: ' + icsT(it.name) + ' sebesar ' + rp(p) + (isPaid ? ' [Lunas]' : ' [Belum Lunas]'),
+            'STATUS:' + (isPaid ? 'CONFIRMED' : 'TENTATIVE')
+          ];
+        if (!isPaid) {
+          // Dua pengingat untuk tagihan belum lunas: H-1 pukul 09.00 dan hari-H pukul 09.00.
+          ev.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Besok jatuh tempo: ' + icsT(it.name), 'TRIGGER:-PT15H', 'END:VALARM');
+          ev.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:Hari ini jatuh tempo: ' + icsT(it.name), 'TRIGGER:PT9H', 'END:VALARM');
+        }
+        ev.push('END:VEVENT');
+        events.push(ev.join('\r\n'));
+      });
+    });
+    var icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Rencana Keuangan//ID',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      events.join('\r\n'),
+      'END:VCALENDAR'
+    ].join('\r\n');
+    return exportFile('tagihan-' + y + '.ics', icsContent, 'text/calendar;charset=utf-8');
   }
   if (kind === 'items') {
     rows = [['Nama', 'Harga', 'Tiap', 'Satuan', 'Mulai', 'Sampai', 'Jumlah kali', 'Kategori']];

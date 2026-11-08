@@ -8,9 +8,17 @@ var LEGEND_HTML =
   '<span><button class="pd" type="button" tabindex="-1" disabled>10</button>Harga sama dengan harga awal</span>' +
   '<span><button class="pd chg" type="button" tabindex="-1" disabled>1<span class="cp">720rb</span></button>Harga beda dari harga awal (angka kecil = harga berlaku)</span>' +
   '<span><button class="pd on" type="button" tabindex="-1" disabled>&#10003; 10</button>Sudah dibayar</span>' +
-  '<span><button class="pd late" type="button" tabindex="-1" disabled>10</button>Terlambat (lewat tanggal, belum ditandai)</span>' +
-  '<span><button class="pd skp" type="button" tabindex="-1" disabled>10</button>Dilewati (tidak dibayar, tidak dihitung)</span>' +
+  '<span><button class="pd late" type="button" tabindex="-1" disabled>10</button>Terlewat: sudah lewat tanggal tapi belum ditandai dibayar atau dilewati (merah)</span>' +
+  '<span><button class="pd skp" type="button" tabindex="-1" disabled>10</button>Dilewati: sengaja tidak dibayar, tidak dihitung (merah dicoret)</span>' +
   '<span><b style="color:var(--mut)">0</b>Tidak ada tagihan bulan itu</span></div>';
+
+/** Kotak panduan yang bisa disembunyikan / ditampilkan (pilihan diingat per kotak). */
+function gdBox(key, html) {
+  return '<div class="gdb"><button type="button" class="g gdt" data-gd="' + key + '"></button><div class="gdc">' + html + '</div></div>';
+}
+
+/** Tagihan yang baru saja dilewati (untuk efek getar merah sesaat). */
+var FX = { k: '' };
 
 /** Chip satu tanggal tagihan (tombol yang membuka menu status). */
 function chipHtml(it, t, today) {
@@ -20,15 +28,21 @@ function chipHtml(it, t, today) {
     skipped = S.skip[key],
     price = priceAt(it, t),
     changed = !skipped && price !== it.price,
-    late = !paid && !skipped && isLateISO(d, today);
-  var cls = 'pd' + (skipped ? ' skp' : paid ? ' on' : late ? ' late' : '') + (changed ? ' chg' : '');
+    now = today || todayISO(),
+    late = !paid && !skipped && d < now,
+    old = late && !isLateISO(d, now),
+    days = late ? Math.round((Date.parse(now + 'T00:00:00Z') - Date.parse(d + 'T00:00:00Z')) / 864e5) : 0;
+  var diffPct = it.price ? Math.round(((price - it.price) / it.price) * 100) : 0,
+    anom = !skipped && diffPct >= 20;
+  var cls = 'pd' + (skipped ? ' skp' : paid ? ' on' : late ? ' late' + (old ? ' old' : '') : '') + (anom ? ' wr' : changed ? ' chg' : '') + (FX.k === key ? ' fx-skip' : '');
   var state = skipped
     ? ' (dilewati)'
     : paid
       ? ' (sudah dibayar)'
       : late
-        ? ' (terlambat)'
+        ? ' (terlewat ' + days + ' hari)'
         : ' (belum dibayar)';
+  if (anom) state += ' [Lonjakan +' + diffPct + '%]';
   return (
     '<button class="' +
     cls +
@@ -44,7 +58,7 @@ function chipHtml(it, t, today) {
     '">' +
     (skipped ? '' : paid ? '✓ ' : '') +
     new Date(t).getUTCDate() +
-    (changed ? '<span class="cp">' + shortP(price) + '</span>' : '') +
+    (changed ? '<span class="cp">' + (anom ? '▲+' + diffPct + '%' : shortP(price)) + '</span>' : '') +
     '</button>'
   );
 }
@@ -75,12 +89,19 @@ function jadwalRow(it, c, today) {
   var paidCount = active.filter(function (t) {
     return S.paid[it.id + '|' + isoD(t)];
   }).length;
+  var isDone = active.length > 0 && paidCount === active.length;
   return (
     '<tr data-r="' +
     it.id +
-    '"><td><b>' +
+    '"' +
+    (isDone ? ' class="done" style="--i:' + S.items.indexOf(it) + '"' : '') +
+    '><td>' +
+    (isDone ? '<span class="st ok" role="img" aria-label="Lunas semua">✓</span>' : '') +
+    '<b>' +
     esc(it.name) +
-    '</b><div class="sub">' +
+    '</b>' +
+    (isDone ? '<span class="doneTag">Lunas semua</span>' : '') +
+    '<div class="sub">' +
     every(it) +
     (it.cat ? ' · ' + esc(it.cat) : '') +
     '</div>' +
@@ -153,12 +174,14 @@ function renderJadwal() {
   var head =
     '<div class="card"><h2>Jadwal pembayaran ' +
     y +
-    '</h2><div class="sub" style="margin-bottom:8px">' +
-    'Klik tanggal untuk memilih: sudah dibayar, dilewati (tidak bayar), atau belum dibayar. ' +
-    'Pakai "Ubah harga / jadwal" untuk mengubah harga atau siklus mulai tanggal tertentu.' +
-    (S.startMonth ? ' Bulan sebelum ' + MON[S.startMonth] + ' tidak dihitung.' : '') +
-    '</div>' +
-    LEGEND_HTML +
+    '</h2>' +
+    (S.startMonth ? '<div class="sub" style="margin-bottom:8px">Bulan sebelum ' + MON[S.startMonth] + ' tidak dihitung.</div>' : '') +
+    gdBox(
+      'jadwal',
+      '<div class="sub" style="margin-bottom:8px">Klik tanggal untuk memilih: sudah dibayar, dilewati (tidak bayar), atau belum dibayar. ' +
+        'Pakai "Ubah harga / jadwal" untuk mengubah harga atau siklus mulai tanggal tertentu.</div>' +
+        LEGEND_HTML
+    ) +
     '<div class="tw"><table><thead><tr><th>Item</th><th>Biaya</th>' +
     MON.map(function (m) {
       return '<th>' + m + '</th>';
@@ -184,18 +207,20 @@ function renderJadwal() {
     rp(c.total) +
     '</td></tr></tbody></table></div></div>';
   $('v-jadwal').innerHTML = jadwalSummary(c) + head + rows + foot;
+  gdApply($('v-jadwal'));
 }
 
 /** Baris kecil di bawah nama item: ringkasan perubahan siklus. */
 function chSub(it) {
   var L = (it.ch || [])
     .filter(function (g) {
-      return g.n || g.unit || g.cut;
+      return g.n || g.unit || g.cut || g.mv;
     })
     .map(function (g) {
+      if (g.mv) return '&#8627; ' + Object.keys(g.mv).length + ' tagihan digeser ke tanggal lain';
       return (
-        '&#8627; mulai ' +
-        fmtD(g.from) +
+        '&#8627; ' +
+        (g.anchor ? 'tagihan ' + fmtD(g.from) + ' digeser ke ' + fmtD(g.anchor) : 'mulai ' + fmtD(g.from)) +
         (g.to ? ' s/d ' + fmtD(g.to) : '') +
         (g.n || g.unit ? ': tiap ' + (g.n || it.n) + ' ' + (g.unit || it.unit) : '') +
         (g.cut ? ' (tagihan sebelumnya dihapus)' : '')
@@ -221,7 +246,8 @@ function pcell(it, o) {
     var f = o.filter(function (t) {
       return priceAt(it, t) !== p0;
     })[0];
-    s.push('&rarr; ' + rp(pl) + ' mulai ' + fd(f, { day: 'numeric', month: 'short' }));
+    var pct = it.price ? Math.round(((pl - it.price) / it.price) * 100) : 0;
+    s.push('&rarr; ' + rp(pl) + (pct >= 20 ? ' <span class="chip wr">▲ +' + pct + '% anomali</span>' : '') + ' mulai ' + fd(f, { day: 'numeric', month: 'short' }));
   }
   if (p0 !== it.price) s.push('harga awal ' + rp(it.price));
   if (n) s.push(n + ' perubahan');
@@ -233,12 +259,25 @@ function cmClose() {
   $('cm').hidden = true;
 }
 
+/** Ubah cepat nominal untuk satu tanggal tagihan tertentu (Fitur 5). */
+function applyQuickPrice(it, isoDate, newPrice) {
+  var o = origDate(it, isoDate);
+  var change = { from: o, to: o, dates: [o], price: newPrice, n: null, unit: null };
+  it.ch = (it.ch || []).filter(function (q) {
+    return !chSame(it, change, q);
+  });
+  it.ch.push(change);
+  it.ch.sort(cmpFrom);
+  save();
+}
+
 /** Menu status di dekat chip yang diklik. */
 function openCm(b) {
   var k = b.dataset.pk,
     p = k.split('|'),
     it = item(p[0]);
   if (!it) return;
+  var curPrice = priceAt(it, Date.parse(p[1] + 'T00:00:00Z'));
   var st = S.skip[k] ? 'skip' : S.paid[k] ? 'paid' : 'none',
     m = $('cm');
   var btn = function (s, label) {
@@ -250,8 +289,14 @@ function openCm(b) {
     '</b><br><span class="sub">' +
     fmtD(p[1]) +
     ' &middot; ' +
-    rp(priceAt(it, Date.parse(p[1] + 'T00:00:00Z'))) +
+    rp(curPrice) +
     '</span></div>' +
+    '<div class="cm-row" style="padding:6px 8px;border-bottom:1px solid var(--ln);margin-bottom:4px">' +
+    '<input id="cm-qa" type="text" inputmode="numeric" value="' +
+    curPrice +
+    '" placeholder="Nominal" title="Ubah nominal tanggal ini">' +
+    '<button id="cm-qas" type="button" title="Simpan nominal">Simpan</button>' +
+    '</div>' +
     btn('paid', '&#10003; Sudah dibayar') +
     btn('skip', '&#10140; Lewati (tidak bayar)') +
     btn('none', 'Belum dibayar') +
@@ -259,15 +304,46 @@ function openCm(b) {
   m.dataset.k = k;
   m.hidden = false;
   var r = b.getBoundingClientRect(),
-    mw = m.offsetWidth || 220,
-    mh = m.offsetHeight || 210;
+    mw = m.offsetWidth || 230,
+    mh = m.offsetHeight || 250;
   m.style.left = Math.max(8, Math.min(r.left, innerWidth - mw - 8)) + 'px';
   m.style.top = (r.bottom + mh + 10 > innerHeight ? Math.max(8, r.top - mh - 6) : r.bottom + 6) + 'px';
+  setTimeout(function () {
+    var inp = $('cm-qa');
+    if (inp) {
+      inp.onkeydown = function (ev) {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          var sBtn = $('cm-qas');
+          if (sBtn) sBtn.click();
+        }
+      };
+    }
+  }, 30);
 }
 
 /** Pasang event listener halaman ini. */
 function bindJadwal() {
   $('cm').onclick = function (e) {
+    var saveBtn = e.target.closest('#cm-qas');
+    if (saveBtn) {
+      var k = this.dataset.k,
+        p = k.split('|'),
+        it = item(p[0]);
+      if (it) {
+        var rawVal = $('cm-qa') ? $('cm-qa').value : '';
+        var nPr = parseRp(rawVal);
+        if (nPr > 0) {
+          applyQuickPrice(it, p[1], nPr);
+          cmClose();
+          renderAll();
+          toast('Nominal ' + esc(it.name) + ' diubah jadi ' + rp(nPr));
+        } else {
+          toast('Nominal tidak valid');
+        }
+      }
+      return;
+    }
     var b = e.target.closest('button[data-st]');
     if (!b) return;
     var k = this.dataset.k,
@@ -278,16 +354,32 @@ function bindJadwal() {
       openRange(p[0], p[1]);
       return;
     }
+    var sn = st === 'skip' ? snap('Sebelum melewati tagihan') : null;
     delete S.paid[k];
     delete S.skip[k];
     if (st === 'paid') S.paid[k] = 1;
-    if (st === 'skip') S.skip[k] = 1;
+    if (st === 'skip') {
+      S.skip[k] = 1;
+      FX.k = k;
+      try {
+        if (navigator.vibrate) navigator.vibrate([25, 35, 25]);
+      } catch (er) {}
+      setTimeout(function () {
+        FX.k = '';
+      }, 900);
+    }
     save();
     renderAll();
+    if (st === 'skip') {
+      var it0 = item(k.split('|')[0]);
+      toast('Dilewati: ' + (it0 ? it0.name : '') + ' · ' + fmtD(k.split('|')[1]), function () {
+        restoreSnap(sn.t);
+      });
+    }
   };
   document.addEventListener('click', function (e) {
     var m = $('cm');
-    if (!m.hidden && !m.contains(e.target) && !e.target.closest('button[data-pk]')) cmClose();
+    if (!m.hidden && !m.contains(e.target) && !e.target.closest('button[data-pk]') && !e.target.closest('tr.det[data-pk]')) cmClose();
   });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') cmClose();

@@ -42,7 +42,7 @@ function carryHtml() {
     '<label style="display:flex;gap:8px;align-items:center;margin:0;width:100%;font-weight:500"><input type="checkbox" id="cs" style="width:auto;min-height:0">Jadikan saldo akhir tahun itu sebagai saldo awal ' +
     S.year +
     '</label>' +
-    '<div class="sub" style="width:100%">Item sekali bayar atau yang sudah selesai (lewat tanggal/jumlah berhenti) tidak ikut dibawa. Perubahan harga dan pemasukan berulang ikut terbawa. Status lunas tidak dibawa.</div>'
+    '<div class="sub" style="width:100%">Item sekali bayar atau yang sudah selesai (lewat tanggal/jumlah berhenti) tidak ikut dibawa. Perubahan harga ikut terbawa. Status lunas tidak dibawa.</div>'
   );
 }
 
@@ -338,4 +338,212 @@ function bindItems() {
   $('cprow').onclick = function (e) {
     if (e.target.id === 'cyb') carryFromYear();
   };
+}
+
+/** Parser Natural Language untuk input kilat item keuangan (nama, nominal, siklus, tanggal) - Fitur 2. */
+function parseQuickItem(str, yr) {
+  if (!str || !str.trim()) return { error: 'Masukkan nama dan nominal tagihan/item.' };
+  var s = str.trim();
+  var today = new Date();
+  var yDefault = yr || (typeof S !== 'undefined' && S.year) || today.getFullYear();
+  var start = '';
+  var rem = s;
+
+  // 1. Ekstrak tanggal spesifik jika ada
+  // a. DD-MM-YYYY atau DD/MM/YYYY (mis. 07-11-2026 atau 7/11/2026)
+  var dmyMatch = rem.match(/\b(\d{1,2})[-/](\d{1,2})[-/](\d{4})\b/);
+  if (dmyMatch) {
+    var d = parseInt(dmyMatch[1], 10);
+    var m = parseInt(dmyMatch[2], 10);
+    var y = parseInt(dmyMatch[3], 10);
+    if (d >= 1 && d <= 31 && m >= 1 && m <= 12) {
+      start = y + '-' + pad2(m) + '-' + pad2(d);
+      rem = rem.replace(dmyMatch[0], ' ');
+    }
+  }
+
+  // b. ISO YYYY-MM-DD atau YYYY/MM/DD
+  if (!start) {
+    var isoMatch = rem.match(/\b(\d{4})[-/](\d{1,2})[-/](\d{1,2})\b/);
+    if (isoMatch) {
+      var iy = parseInt(isoMatch[1], 10);
+      var im = parseInt(isoMatch[2], 10);
+      var id = parseInt(isoMatch[3], 10);
+      if (id >= 1 && id <= 31 && im >= 1 && im <= 12) {
+        start = iy + '-' + pad2(im) + '-' + pad2(id);
+        rem = rem.replace(isoMatch[0], ' ');
+      }
+    }
+  }
+
+  // c. Format tanggal teks nama bulan: "07/7 november 2026", "7 november 2026", "tgl 15 des 2026", dsb.
+  var MONTH_MAP = {
+    jan: '01', januari: '01', feb: '02', februari: '02', mar: '03', maret: '03',
+    apr: '04', april: '04', mei: '05', jun: '06', juni: '06', jul: '07', juli: '07',
+    agu: '08', agt: '08', agustus: '08', sep: '09', september: '09', okt: '10',
+    oktober: '10', nov: '11', november: '11', des: '12', desember: '12',
+  };
+  if (!start) {
+    var namedRegex = /(?:(?:tgl|tanggal)\.?\s*)?\b(?:\d{1,2}\/)?(\d{1,2})\s+(jan|januari|feb|februari|mar|maret|apr|april|mei|jun|juni|jul|juli|agu|agt|agustus|sep|september|okt|oktober|nov|november|des|desember)(?:\s+(\d{4}))?\b/i;
+    var namedMatch = rem.match(namedRegex);
+    if (namedMatch) {
+      var nd = parseInt(namedMatch[1], 10);
+      var nmStr = MONTH_MAP[namedMatch[2].toLowerCase()];
+      var ny = namedMatch[3] ? parseInt(namedMatch[3], 10) : yDefault;
+      if (nd >= 1 && nd <= 31 && nmStr) {
+        start = ny + '-' + nmStr + '-' + pad2(nd);
+        rem = rem.replace(namedMatch[0], ' ');
+      }
+    }
+  }
+
+  // 2. Ekstrak siklus LEBIH DULU sebelum harga
+  var unit = 'bulan', n = 1;
+  var targetDay = null;
+
+  var tiapTglMatch = rem.match(/\btiap\s+(?:tgl|tanggal)\.?\s*(\d{1,2})\b/i);
+  if (tiapTglMatch) {
+    targetDay = parseInt(tiapTglMatch[1], 10);
+    unit = 'bulan';
+    n = 1;
+    rem = rem.replace(tiapTglMatch[0], ' ');
+  } else if (/\bsekali\b/i.test(rem)) {
+    unit = 'sekali';
+    n = 1;
+    rem = rem.replace(/\bsekali\b/gi, ' ');
+  } else {
+    var cadMatch = rem.match(/\btiap\s+(\d+)?\s*(hari|minggu|bulan|thn|tahun)\b/i);
+    if (cadMatch) {
+      n = cadMatch[1] ? parseInt(cadMatch[1], 10) : 1;
+      var u = cadMatch[2].toLowerCase();
+      unit = (u === 'thn' || u === 'tahun') ? 'tahun' : u;
+      rem = rem.replace(cadMatch[0], ' ');
+    } else {
+      var cadUnitMatch = rem.match(/\b(bulanan|mingguan|harian|tahunan)\b/i);
+      if (cadUnitMatch) {
+        var cu = cadUnitMatch[1].toLowerCase();
+        if (cu === 'bulanan') unit = 'bulan';
+        else if (cu === 'mingguan') unit = 'minggu';
+        else if (cu === 'harian') unit = 'hari';
+        else if (cu === 'tahunan') unit = 'tahun';
+        rem = rem.replace(cadUnitMatch[0], ' ');
+      }
+    }
+  }
+
+  // d. Tanggal saja tanpa bulan: misal "tgl 15"
+  if (!start && !targetDay) {
+    var dayOnlyMatch = rem.match(/\b(?:tgl|tanggal)\.?\s*(\d{1,2})\b/i);
+    if (dayOnlyMatch) {
+      targetDay = parseInt(dayOnlyMatch[1], 10);
+      rem = rem.replace(dayOnlyMatch[0], ' ');
+    }
+  }
+
+  if (targetDay !== null) {
+    if (targetDay < 1) targetDay = 1;
+    if (targetDay > 31) targetDay = 31;
+    var curY = today.getFullYear();
+    var curM = today.getMonth() + 1;
+    var curD = today.getDate();
+    if (curD <= targetDay) {
+      start = curY + '-' + pad2(curM) + '-' + pad2(targetDay);
+    } else {
+      var nextM = curM + 1;
+      var nextY = curY;
+      if (nextM > 12) { nextM = 1; nextY++; }
+      start = nextY + '-' + pad2(nextM) + '-' + pad2(targetDay);
+    }
+  }
+
+  if (!start) {
+    start = yDefault + '-01-01';
+  }
+
+  // 3. Ekstrak harga: prioritaskan angka yang punya sufiks uang (k/rb/jt/m/miliar/milyar) atau separator titik ribuan
+  var candidates = [];
+  var pRegex = /\b(\d+(?:[\.,]\d+)?\s*(?:k|rb|ribu|jt|juta|m|miliar|milyar)|\d{1,3}(?:\.\d{3})+|\d+)\b/gi;
+  var pm;
+  while ((pm = pRegex.exec(rem)) !== null) {
+    var val = parseRp(pm[0]);
+    var hasSuffix = /(?:k|rb|ribu|jt|juta|m|miliar|milyar)$/i.test(pm[0]) || /\d{1,3}\.\d{3}/.test(pm[0]);
+    candidates.push({ raw: pm[0], val: val, hasSuffix: hasSuffix, index: pm.index });
+  }
+
+  if (!candidates.length) return { error: 'Nominal tidak ditemukan (mis. 200k, 1.5jt, atau 350.000).' };
+
+  candidates.sort(function(a, b) {
+    if (a.hasSuffix && !b.hasSuffix) return -1;
+    if (!a.hasSuffix && b.hasSuffix) return 1;
+    return b.val - a.val;
+  });
+
+  var chosen = candidates[0];
+  if (!chosen.val || chosen.val <= 0) return { error: 'Nominal tidak valid.' };
+  var price = chosen.val;
+
+  rem = rem.slice(0, chosen.index) + ' ' + rem.slice(chosen.index + chosen.raw.length);
+
+  // 4. Bersihkan nama (HANYA buang kata kontrol pembantu awal/akhir)
+  var name = rem
+    .replace(/\b(?:tiap|mulai|dari|pada)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/^[\s,.;:-]+|[\s,.;:-]+$/g, '')
+    .trim();
+
+  if (!name) return { error: 'Nama item tidak boleh kosong.' };
+
+  return {
+    name: name,
+    price: price,
+    n: n,
+    unit: unit,
+    start: start,
+  };
+}
+
+/** Form tambah item kilat satu baris dengan NLP parser (Fitur 2). */
+function bindQuickItem() {
+  var input = $('q-input');
+  var btn = $('q-btn');
+  var err = $('q-err');
+  if (!input || !btn) return;
+
+  function doQuickAdd() {
+    var raw = input.value.trim();
+    if (!raw) return;
+    err.textContent = '';
+    var res = parseQuickItem(raw, S.year);
+    if (res.error) {
+      err.textContent = res.error;
+      return;
+    }
+    var newItem = Object.assign({
+      id: Date.now(),
+      name: res.name,
+      price: res.price,
+      n: res.n,
+      unit: res.unit,
+      start: res.start,
+      stop: 'none',
+      cnt: 0,
+      end: '',
+      cat: '',
+      ch: [],
+    });
+    S.items.push(newItem);
+    save();
+    input.value = '';
+    renderAll();
+    toast('Item "' + esc(newItem.name) + '" (' + rp(newItem.price) + ') berhasil ditambahkan!');
+  }
+
+  btn.onclick = doQuickAdd;
+  input.onkeydown = function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      doQuickAdd();
+    }
+  };
+
 }

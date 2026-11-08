@@ -67,6 +67,29 @@ function calc() {
     });
   });
 
+  var KL = kasLinked();
+  if (KL)
+    KL.tx.forEach(function (x) {
+      if (+x.d.slice(0, 4) !== y) return;
+      var mm = +x.d.slice(5, 7) - 1,
+        v = x.t === '-' ? -x.amt : x.amt;
+      if (mm <= sm) adjIn += v;
+      else {
+        adjLate += v;
+        adjM[mm] += v;
+      }
+    });
+
+  kasGoals().forEach(function (g) {
+    goalMonthsIn(g, y).forEach(function (mm) {
+      if (mm <= sm) adjIn -= g.per;
+      else {
+        adjLate -= g.per;
+        adjM[mm] -= g.per;
+      }
+    });
+  });
+
   var bal = (+S.saldo || 0) + adjIn,
     open = bal,
     rows = [];

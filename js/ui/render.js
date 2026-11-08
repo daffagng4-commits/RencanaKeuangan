@@ -12,6 +12,9 @@ function renderAll() {
   renderRincian();
   renderJadwal();
   renderList();
+  renderTrip();
+  renderKas();
+  modeUi();
 }
 
 /** Segarkan semua kontrol dan tampilan dari state (setelah ganti tahun, muat data, dsb). */

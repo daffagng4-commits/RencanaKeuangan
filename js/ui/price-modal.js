@@ -1,45 +1,136 @@
 /**
- * Jendela Ubah harga / jadwal (berbasis tujuan).
+ * Jendela Ubah harga / jadwal (berbasis tujuan) dengan pemilih tanggal:
+ *  - chip tanggal dari jadwal item (tahun aktif) + tanggal kustom;
+ *  - mode harga / sementara boleh memilih BANYAK tanggal; siklus / geser / manual memilih satu.
+ * Hasilnya disimpan sebagai "perubahan" (ch) pada item; lihat core/schedule.js.
  */
 
 var pmId = null,
   pmInit = null,
   pmScen = null;
+/** Tanggal terpilih (ISO, terurut). pmAuto = pilihan berasal dari isian awal/ketikan (diganti bila mengetik tanggal lain). */
+var pmDates = [],
+  pmAuto = true,
+  phmTouched = false;
+
+var PH = {
+  harga:
+    'Pilih tanggal dari jadwal atau ketik tanggal kustom. Satu tanggal: harga baru berlaku dari tanggal itu dan seterusnya. Beberapa tanggal: harga baru hanya untuk tagihan yang dipilih (bisa diubah di "Berlaku").',
+  sementara:
+    'Satu tanggal + tanggal "sampai", atau pilih beberapa tanggal tagihan: semua tagihan di antaranya, atau hanya yang dipilih. Sesudahnya kembali ke harga awal.',
+  siklus:
+    "Pilih satu tanggal dari jadwal atau ketik tanggal kustom. Pembayaran pertama dengan siklus baru jatuh di tanggal itu. Pilih apakah tagihan lama sebelum tanggal itu dibiarkan atau dihapus.",
+  geser:
+    'Pilih apakah hanya satu bulan, bulan ini dan sesudahnya, atau beberapa bulan pilihan sendiri. Lalu ketuk tagihannya dan isi tanggal barunya.',
+  manual:
+    "Atur semua pilihan sendiri. Lihat pratinjau di bawah sebelum menyimpan.",
+};
+
+var LB = {
+  harga: ["Tanggal tagihan", "Harga baru"],
+  sementara: ["Tanggal tagihan", "Harga selama periode itu"],
+  siklus: ["Mulai dari tanggal", "Harga (biarkan jika tidak berubah)"],
+  geser: ["Tagihan yang digeser", "Harga per bayar"],
+  manual: ["Berlaku mulai tanggal", "Harga per bayar"],
+};
 
 /** Pesan di jendela ubah harga (ok = hijau, selain itu merah). */
 function pmMsg(t, ok) {
-  var e = $('pme');
+  var e = $("pme"),
+    pv = $("ppv");
+  // Galat yang sama sudah tampil di pratinjau: cukup tandai pratinjau (merah), jangan tampilkan dua kali.
+  if (!ok && t && pv && pv.textContent === t) {
+    pv.classList.add("bad");
+    e.textContent = "";
+    return;
+  }
   e.textContent = t;
-  e.style.color = ok ? 'var(--ac)' : 'var(--wr)';
+  e.style.color = ok ? "var(--in)" : "var(--wr)";
 }
 
 /** Nilai isian harga/siklus saat ini. */
 function pmCur() {
   var it = item(pmId),
-    cadVis = pmScen === 'siklus' || pmScen === 'manual';
+    cadVis = pmScen === "siklus" || pmScen === "manual";
   return {
-    P: parseRp($('pp').value),
+    P: parseRp($("pp").value),
     n: cadVis
-      ? Math.max(1, parseInt($('pn').value, 10) || 1)
+      ? Math.max(1, parseInt($("pn").value, 10) || 1)
       : (it ? it.n : 1),
-    u: cadVis ? $('pu').value : (it ? it.unit : 'bulan'),
+    u: cadVis ? $("pu").value : (it ? it.unit : "bulan"),
   };
+}
+
+/** Tanggal pendek: "1 Mar". */
+function dShort(d) {
+  return fd(Date.parse(d + "T00:00:00Z"), { day: "numeric", month: "short" });
+}
+
+/** Daftar tanggal singkat dengan batas (… bila banyak). */
+function dList(dates, max) {
+  max = max || 6;
+  return (
+    dates.slice(0, max).map(dShort).join(", ") +
+    (dates.length > max ? ", … (+" + (dates.length - max) + ")" : "")
+  );
+}
+
+/** Tanda unik sebuah perubahan (untuk mengganti perubahan yang sama). */
+function chSig(c) {
+  return c.from + "|" + c.to + "|" + (c.dates ? c.dates.join(",") : "");
 }
 
 /** Deskripsi satu perubahan untuk daftar riwayat. */
 function descCh(it, c) {
   var p = [];
+  if (c.mv) {
+    var ks = Object.keys(c.mv).sort();
+    return (
+      '<b>' +
+      ks
+        .slice(0, 3)
+        .map(function (k) {
+          return dShort(k) + ' &rarr; ' + dShort(c.mv[k]);
+        })
+        .join(', ') +
+      (ks.length > 3 ? ', &hellip; (+' + (ks.length - 3) + ')' : '') +
+      '</b><br><span class="sub">Hanya ' +
+      (ks.length > 1 ? ks.length + ' tagihan ini' : 'tagihan ini') +
+      ' yang digeser</span>'
+    );
+  }
   if (c.price != null) p.push(rp(c.price));
-  if (c.n || c.unit) p.push('tiap ' + (c.n || it.n) + ' ' + (c.unit || it.unit));
+  if (c.n || c.unit)
+    p.push("tiap " + (c.n || it.n) + " " + (c.unit || it.unit));
+  if (c.anchor)
+    return (
+      "<b>" +
+      fmtD(c.from) +
+      " &rarr; digeser ke " +
+      fmtD(c.anchor) +
+      '</b><br><span class="sub">' +
+      (p.join(" &middot; ") || "Siklus tetap") +
+      " (tagihan sebelumnya tidak berubah)</span>"
+    );
+  if (c.dates)
+    return (
+      "<b>" +
+      dList(c.dates.map(function (d) { return curDate(it, d); }), 4) +
+      " " +
+      curDate(it, c.dates[0]).slice(0, 4) +
+      '</b><br><span class="sub">' +
+      (p.join(" &middot; ") || "Kembali ke pengaturan awal") +
+      " (hanya tanggal ini)</span>"
+    );
   return (
-    '<b>' +
+    "<b>" +
     fmtD(c.from) +
-    (c.to ? ' &ndash; ' + fmtD(c.to) : ' &rarr; seterusnya') +
+    (c.to ? " &ndash; " + fmtD(c.to) : " &rarr; seterusnya") +
     '</b><br><span class="sub">' +
-    (p.join(' &middot; ') || 'Kembali ke pengaturan awal') +
-    (c.to ? ' (lalu kembali ke awal)' : '') +
-    (c.cut ? ' &middot; tagihan sebelumnya dihapus' : '') +
-    '</span>'
+    (p.join(" &middot; ") || "Kembali ke pengaturan awal") +
+    (c.to ? " (lalu kembali ke awal)" : "") +
+    (c.cut ? " &middot; tagihan sebelumnya dihapus" : "") +
+    "</span>"
   );
 }
 
@@ -47,9 +138,15 @@ function descCh(it, c) {
 function renderPm() {
   var it = item(pmId);
   if (!it) return;
-  $('pmi').textContent =
-    'Pengaturan awal: ' + rp(it.price) + ' · ' + every(it) + ' · mulai ' + fmtD(it.start) + '.';
-  $('phl').innerHTML =
+  $("pmi").textContent =
+    "Pengaturan awal: " +
+    rp(it.price) +
+    " · " +
+    every(it) +
+    " · mulai " +
+    fmtD(it.start) +
+    ".";
+  $("phl").innerHTML =
     (it.ch || [])
       .map(function (c, i) {
         return (
@@ -60,63 +157,438 @@ function renderPm() {
           '">Hapus</button></div>'
         );
       })
-      .join('') || '<div class="sub">Belum ada perubahan.</div>';
+      .join("") || '<div class="sub">Belum ada perubahan.</div>';
 }
 
-/** Susun perubahan dari isian + validasi. @returns {c, it} atau {err} */
-function pmDraft() {
+/* ---------- pemilih tanggal ---------- */
+
+/** Mode yang boleh memilih banyak tanggal. */
+function pmMulti() {
+  return pmScen === "harga" || pmScen === "sementara" || (pmScen === "geser" && $("pgm").value === "pilih");
+}
+
+/** Daftar tanggal tagihan item pada tahun aktif (ISO, unik, terurut). */
+function pmScheduleDates(it) {
+  var seen = {};
+  return occ(it, S.year)
+    .map(isoD)
+    .filter(function (d) {
+      return !seen[d] && (seen[d] = 1);
+    });
+}
+
+/** Gambar chip tanggal jadwal + daftar tanggal terpilih. */
+function renderPicker() {
   var it = item(pmId);
-  if (!it) return { err: 'Item tidak ditemukan.' };
+  if (!it) return;
+  var sel = {};
+  pmDates.forEach(function (d) {
+    sel[d] = 1;
+  });
+  var sched = pmScheduleDates(it);
+  $("pdc").innerHTML =
+    sched
+      .map(function (d) {
+        var k = it.id + "|" + d;
+        return (
+          '<button type="button" class="dc' +
+          (sel[d] ? " on" : "") +
+          (S.skip[k] ? " sk" : "") +
+          '" data-d="' +
+          d +
+          '" aria-pressed="' +
+          (sel[d] ? "true" : "false") +
+          '">' +
+          (S.paid[k] ? "✓ " : "") +
+          dShort(d) +
+          "</button>"
+        );
+      })
+      .join("") ||
+    '<div class="sub">Tidak ada tagihan di tahun ini. Pakai tanggal kustom.</div>';
+  $("pds").innerHTML =
+    pmMulti() && pmDates.length
+      ? pmDates
+          .map(function (d) {
+            return (
+              '<span class="tag">' +
+              fmtD(d) +
+              (sched.indexOf(d) >= 0 ? "" : " (kustom)") +
+              '<button type="button" data-rm="' +
+              d +
+              '" aria-label="Hapus tanggal">&times;</button></span>'
+            );
+          })
+          .join("")
+      : "";
+}
+
+/** Atur tampilan isian yang bergantung pada tanggal terpilih. */
+function pmLayout() {
+  var sc = pmScen,
+    n = pmDates.length,
+    until = $("pw").value === "until";
+  $("g-to").hidden = !(
+    (sc === "sementara" && n < 2) ||
+    (sc === "manual" && until)
+  );
+  $("phmw").hidden = sc !== "harga";
+  $("prgw").hidden = !(sc === "sementara" && n >= 2);
+  var gp = sc === "geser" && $("pgm").value === "pilih";
+  $("pgw").hidden = sc !== "geser";
+  $("pgdw").hidden = !gp;
+  $("pdcus").hidden = gp;
+  $("pda").hidden = !pmMulti() || sc === "geser";
+  $("lgs").hidden = sc !== "geser" || gp;
+  if (sc === "harga" && !phmTouched)
+    $("phm").value = n > 1 ? "terpilih" : "seterusnya";
+  $("pdh").textContent = gp
+    ? "Ketuk semua tagihan yang mau digeser, lalu isi tanggal barunya (angka 1-31)."
+    : pmMulti()
+    ? 'Ketuk tanggal untuk memilih (boleh lebih dari satu). Tanggal kustom: pilih di kotak lalu tekan "+ Tambah".'
+    : sc === "geser"
+      ? "Ketuk tagihan yang mau digeser, lalu isi tanggal barunya."
+      : "Ketuk satu tanggal, atau pilih tanggal kustom di kotak.";
+  renderPicker();
+}
+
+/**
+ * Ganti tanggal terpilih. auto=true: pilihan dianggap "isian tunggal" yang boleh diganti dengan mengetik tanggal lain.
+ * Kotak tanggal (#pdt) ikut diisi bila tepat satu tanggal dan auto.
+ */
+function setDates(list, auto, keepInput) {
+  var seen = {};
+  pmDates = list
+    .filter(function (d) {
+      return ISO_RE.test(d) && !seen[d] && (seen[d] = 1);
+    })
+    .sort();
+  pmAuto = !!auto;
+  if (!keepInput)
+    $("pdt").value = auto && pmDates.length === 1 ? pmDates[0] : "";
+  var it = item(pmId);
+  if (it && pmDates[0] && !phmTouched && (pmScen === "harga" || pmScen === "sementara" || pmScen === "siklus")) {
+    var eff = priceAt(it, Date.parse(pmDates[0] + "T00:00:00Z"));
+    $("pp").value = eff.toLocaleString("id-ID");
+  }
+  pmLayout();
+  pmPrev();
+}
+
+/** Batasi kotak tanggal (min/max) dan beri petunjuk rentang saat menggeser satu tagihan; hapus batas di mode lain. */
+function pmDateRange() {
+  var el = $("pdt"),
+    it = item(pmId),
+    from = pmDates[0];
+  if (pmScen === "geser" && !pmMulti() && it && from) {
+    var rg = pmShiftRange(it, from);
+    if (rg.min) el.min = rg.min;
+    else el.removeAttribute("min");
+    if (rg.max) el.max = rg.max;
+    else el.removeAttribute("max");
+    $("pdh").textContent =
+      "Ketuk tagihan yang mau digeser, lalu ubah tanggal barunya." +
+      (rg.min || rg.max ? " Tanggal baru boleh " + (rg.min && rg.max ? "antara " + fmtD(rg.min) + " dan " + fmtD(rg.max) : rg.min ? "mulai " + fmtD(rg.min) : "sampai " + fmtD(rg.max)) + "." : "");
+  } else {
+    el.removeAttribute("min");
+    el.removeAttribute("max");
+  }
+}
+
+/** Susun perubahan (mode selain geser). @returns {c, cs, it} atau {err} */
+function pmDraftNormal() {
+  var it = item(pmId);
+  if (!it) return { err: "Item tidak ditemukan." };
   var cu = pmCur(),
     P = cu.P,
     n = cu.n,
-    u = cu.u,
-    from = $('pdt').value,
-    un = $('pw').value === 'until',
-    to = un ? $('pto').value : '';
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(from)) return { err: 'Pilih tanggal mulai berlaku.' };
-  if (P <= 0) return { err: 'Isi harga. Contoh: 300k atau 300.000.' };
-  if (un && (!to || to < from)) return { err: 'Isi tanggal "sampai" (sama atau sesudah tanggal mulai).' };
-  var rs = $('pa').value === 'restart',
-    drop = $('pw').value === 'forever' && $('pcut').value === 'drop';
-  if (pmInit && P === pmInit.P && n === pmInit.n && u === pmInit.u && !rs && !drop) return { err: noopMsg() };
-  var c = { from: from, to: to, price: P !== it.price ? P : null, n: null, unit: null };
+    u = cu.u;
+  var dates = pmDates.length
+    ? pmDates.slice()
+    : ISO_RE.test($("pdt").value)
+      ? [$("pdt").value]
+      : [];
+  if (!dates.length)
+    return {
+      err: pmMulti()
+        ? "Pilih minimal satu tanggal."
+        : "Pilih tanggal mulai berlaku.",
+    };
+  if (P <= 0) return { err: "Isi harga. Contoh: 300k atau 300.000." };
+  var first = dates[0],
+    last = dates[dates.length - 1],
+    multi = dates.length > 1;
+  var specific =
+    (pmScen === "harga" && $("phm").value === "terpilih") ||
+    (pmScen === "sementara" && multi && !$("prg").checked);
+  var range = pmScen === "sementara" && multi && $("prg").checked;
+  var un = $("pw").value === "until";
+  var to = range ? last : un && !specific ? $("pto").value : "";
+  if (!specific && !range && un && (!to || to < first))
+    return { err: 'Isi tanggal "sampai" (sama atau sesudah tanggal mulai).' };
+  var rs = !specific && $("pa").value === "restart",
+    drop =
+      !specific && $("pw").value === "forever" && $("pcut").value === "drop";
+  var effPrice = priceAt(it, Date.parse(first + "T00:00:00Z"));
+  if (
+    (pmScen === "harga" || pmScen === "sementara") &&
+    P === effPrice &&
+    !rs &&
+    !drop
+  )
+    return { err: noopMsg() };
+  var curSeg = schedSegAt(it, first);
+  if (
+    pmScen === "siklus" &&
+    n === (curSeg && curSeg.n ? curSeg.n : it.n) &&
+    u === (curSeg && curSeg.unit ? curSeg.unit : it.unit) &&
+    P === effPrice &&
+    !rs &&
+    !drop
+  )
+    return { err: noopMsg() };
+  var price;
+  if (pmScen === "siklus") {
+    price = P !== effPrice ? P : null;
+  } else {
+    price = P !== it.price ? P : null;
+  }
+  var c;
+  if (specific) {
+    var hit = dates.filter(function (d) {
+      return occ(it, +d.slice(0, 4)).some(function (t) {
+        return isoD(t) === d;
+      });
+    });
+    if (!hit.length)
+      return {
+        err: "Tidak ada tagihan pada tanggal yang dipilih. Pilih dari daftar tanggal tagihan.",
+      };
+    // Disimpan dengan tanggal ASLI tagihan (tagihan yang sudah digeser tetap ketemu saat mencari harganya).
+    var odates = dates
+      .map(function (d) {
+        return origDate(it, d);
+      })
+      .sort();
+    c = {
+      from: odates[0],
+      to: odates[odates.length - 1],
+      dates: odates,
+      price: price,
+      n: null,
+      unit: null,
+    };
+    return { c: c, cs: [c], it: it };
+  }
+  c = { from: first, to: to, price: price, n: null, unit: null };
   if (rs || n !== it.n || u !== it.unit) {
     c.n = n;
     c.unit = u;
   }
   if (drop) c.cut = true;
-  return { c: c, it: it };
+  return { c: c, cs: [c], it: it };
+}
+
+/**
+ * Mode geser: tagihan terpilih (pmDates[0]) dipindah ke tanggal baru (#pdt). Tagihan sebelumnya tidak berubah;
+ * tagihan itu dan sesudahnya mengikuti tanggal baru dengan siklus (dan harga) yang berlaku pada tagihan itu.
+ */
+/** Tagihan sebelum & sesudah `from` pada jadwal SEKARANG, termasuk tahun sebelum/sesudahnya (jadwal tahun aktif saja tidak cukup). */
+function pmNeighbors(it, from) {
+  var y = +from.slice(0, 4),
+    seen = {},
+    all = [];
+  [y - 1, y, y + 1].forEach(function (yy) {
+    occ(it, yy).forEach(function (t) {
+      var d = isoD(t);
+      if (!seen[d]) {
+        seen[d] = 1;
+        all.push(d);
+      }
+    });
+  });
+  all.sort();
+  var i = all.indexOf(from);
+  return { prev: i > 0 ? all[i - 1] : null, next: i >= 0 && i < all.length - 1 ? all[i + 1] : null };
+}
+
+/** Rentang tanggal baru yang sah untuk menggeser `from`: sesudah tagihan sebelumnya dan sebelum tagihan berikutnya. */
+function pmShiftRange(it, from) {
+  var nb = pmNeighbors(it, from),
+    min = nb.prev ? addDaysISO(nb.prev, 1) : null,
+    max = nb.next ? addDaysISO(nb.next, -1) : null;
+  if (it.unit !== "sekali" && it.start && (!min || it.start > min)) min = it.start;
+  if (it.end && (!max || it.end < max)) max = it.end;
+  var cut = (it.ch || [])
+    .filter(function (q) {
+      return q.cut;
+    })
+    .map(function (q) {
+      return q.from;
+    })
+    .sort()
+    .pop();
+  if (cut && (!min || cut > min)) min = cut;
+  return { min: min, max: max, prev: nb.prev, next: nb.next };
+}
+
+function pmRangeMsg(r) {
+  return r.min && r.max
+    ? "Tanggal baru harus di antara " + fmtD(r.min) + " dan " + fmtD(r.max) + " (di antara tagihan " + fmtD(r.prev) + " dan " + fmtD(r.next) + ")."
+    : r.min
+      ? "Tanggal baru harus sesudah tagihan sebelumnya (" + fmtD(r.prev) + ")."
+      : "Tanggal baru harus sebelum tagihan berikutnya (" + fmtD(r.next) + ").";
+}
+
+function pmDraftShift(it) {
+  var from = pmDates[0],
+    to = $("pdt").value;
+  if (!from) return { err: "Pilih tagihan yang mau digeser." };
+  var allSched = occ(it, S.year).map(isoD);
+  if (allSched.length && allSched.indexOf(from) < 0) {
+    return { err: "Tanggal asal (" + fmtD(from) + ") bukan tanggal tagihan." };
+  }
+  if ($("pgm").value === "pilih") return pmDraftMulti(it);
+  if (!ISO_RE.test(to))
+    return { err: 'Isi tanggal baru di "Ganti jadi tanggal".' };
+  if (to === from)
+    return {
+      err: "Tanggal baru sama dengan tanggal tagihan. Pilih tanggal yang berbeda.",
+    };
+  var rg = pmShiftRange(it, from);
+  if ((rg.min && to < rg.min) || (rg.max && to > rg.max)) return { err: pmRangeMsg(rg) };
+  if ($("pgm").value === "satu") {
+    var ko = origDate(it, from),
+      c1 = { from: ko, to: ko, price: null, n: null, unit: null, cut: false, mv: {} };
+    c1.mv[ko] = to;
+    return { c: c1, cs: [c1], it: it };
+  }
+  var sg = schedSegAt(it, from),
+    eff = priceAt(it, Date.parse(from + "T00:00:00Z")),
+    origFrom = origDate(it, from),
+    old = (it.ch || []).filter(function (q) {
+      return q.anchor === from && !q.cut && !q.mv && !q.dates;
+    })[0],
+    effFrom = old ? old.from : (origFrom < from ? origFrom : from),
+    hasCut = (it.ch || []).some(function (q) {
+      return (q.from === from || q.from === origFrom) && q.cut;
+    }),
+    c = {
+      from: effFrom,
+      anchor: to,
+      to: old ? old.to || "" : "",
+      price: eff !== it.price ? eff : null,
+      n: (sg && sg.n) || it.n,
+      unit: (sg && sg.unit) || it.unit,
+      cut: !!((old && old.cut) || hasCut),
+    };
+  return { c: c, cs: [c], it: it, disp: from };
+}
+
+/** Mode geser "pilih sendiri": tiap tagihan terpilih dipindah ke tanggal (1-31) yang sama di bulannya masing-masing. */
+function pmDraftMulti(it) {
+  var day = parseInt($("pgd").value, 10);
+  if (!(day >= 1 && day <= 31)) return { err: "Isi tanggal baru (angka 1-31)." };
+  var sched = pmScheduleDates(it),
+    mv = {},
+    nw = {};
+  pmDates.forEach(function (d) {
+    var p = d.split("-"),
+      dim = new Date(Date.UTC(+p[0], +p[1], 0)).getUTCDate(),
+      nd = p[0] + "-" + p[1] + "-" + pad2(Math.min(day, dim));
+    if (nd !== d) {
+      mv[origDate(it, d)] = nd;
+      nw[d] = nd;
+    }
+  });
+  var ks = Object.keys(mv).sort();
+  if (!ks.length) return { err: "Tanggal barunya sama dengan tanggal tagihan. Pilih tanggal yang berbeda." };
+  var cnt = {};
+  Object.keys(nw).forEach(function (d) {
+    cnt[nw[d]] = (cnt[nw[d]] || 0) + 1;
+  });
+  var dup = Object.keys(cnt).filter(function (d) {
+    return cnt[d] > 1;
+  });
+  if (dup.length) return { err: "Dua tagihan akan pindah ke tanggal yang sama (" + fmtD(dup[0]) + "). Pilih tanggal lain." };
+  var bad = Object.keys(nw).filter(function (d) {
+    return sched.indexOf(nw[d]) >= 0 && !nw[nw[d]];
+  });
+  if (bad.length) return { err: "Tanggal baru bentrok dengan tagihan lain (" + fmtD(nw[bad[0]]) + ")." };
+  var c = { from: ks[0], to: ks[ks.length - 1], price: null, n: null, unit: null, cut: false, mv: mv };
+  return { c: c, cs: [c], it: it };
+}
+
+/** Susun perubahan dari isian + validasi. @returns {c, cs, it} atau {err} */
+function pmDraft() {
+  var it = item(pmId);
+  if (!it) return { err: "Item tidak ditemukan." };
+  return pmScen === "geser" ? pmDraftShift(it) : pmDraftNormal();
 }
 
 /** Pratinjau tagihan sesudah perubahan. */
 function pmPrev() {
   var d = pmDraft(),
-    p = $('ppv'),
+    p = $("ppv"),
     it0 = item(pmId),
     cu = pmCur();
-  if (it0 && it0.unit !== 'sekali')
-    $('pah').textContent =
+  if (it0 && it0.unit !== "sekali")
+    $("pah").textContent =
       cu.n !== it0.n || cu.u !== it0.unit
-        ? 'Siklus berbeda dari awal: pembayaran pertama siklus baru jatuh di tanggal mulai berlaku.'
-        : $('pa').value === 'restart'
-          ? 'Pembayaran pertama jatuh di tanggal mulai berlaku, lalu mengikuti siklus.'
+        ? "Siklus berbeda dari awal: pembayaran pertama siklus baru jatuh di tanggal mulai berlaku."
+        : $("pa").value === "restart"
+          ? "Pembayaran pertama jatuh di tanggal mulai berlaku, lalu mengikuti siklus."
           : 'Tanggal bayar mengikuti jadwal sekarang. Pilih "Mulai ulang" jika ingin menggeser tanggalnya.';
   if (d.err) {
-    p.className = 'sub';
+    p.className = "sub";
     p.textContent = d.err;
+    pmDateRange();
     return;
   }
+  pmDateRange();
   var tmp = Object.assign({}, d.it, {
-      ch: (d.it.ch || [])
-        .filter(function (q) {
-          return !(q.from === d.c.from && q.to === d.c.to);
+    ch: (d.it.ch || [])
+      .filter(function (q) {
+        return !chSame(d.it, q, d.c);
+      })
+      .concat([d.c])
+      .sort(cmpFrom),
+  });
+  if (d.c.dates) {
+    var years = {},
+      shown = d.c.dates.map(function (x) {
+        return curDate(tmp, x);
+      });
+    shown.forEach(function (x) {
+      years[x.slice(0, 4)] = 1;
+    });
+    var all = Object.keys(years).reduce(function (a, y) {
+      return a.concat(occ(tmp, +y));
+    }, []);
+    var hit = all.filter(function (t) {
+      return shown.indexOf(isoD(t)) >= 0;
+    });
+    var miss = shown.filter(function (x) {
+      return !hit.some(function (t) {
+        return isoD(t) === x;
+      });
+    });
+    p.className = "prev";
+    p.innerHTML =
+      "<b>" +
+      pmSum(d) +
+      "</b><br>Tagihan yang berubah: " +
+      hit
+        .map(function (t) {
+          return fd(t) + " (" + rp(priceAt(tmp, t)) + ")";
         })
-        .concat([d.c])
-        .sort(cmpFrom),
-    }),
-    f = Date.parse(d.c.from + 'T00:00:00Z'),
-    l = series(tmp, Date.UTC(+d.c.from.slice(0, 4) + 8, 11, 31))
+        .join(", ") +
+      (miss.length ? "<br>Tanpa tagihan (diabaikan): " + dList(miss) : "");
+    return;
+  }
+  var f = Date.parse(segStart(d.c) + "T00:00:00Z"),
+    end = Date.UTC(+d.c.from.slice(0, 4) + 8, 11, 31),
+    l = series(tmp, end)
       .filter(function (t) {
         return t >= f;
       })
@@ -126,44 +598,44 @@ function pmPrev() {
         return g === d.c ? Object.assign({}, g, { cut: false }) : g;
       }),
     }),
-    bf = series(tmp2, Date.UTC(+d.c.from.slice(0, 4) + 8, 11, 31))
+    bf = series(tmp2, end)
       .filter(function (t) {
         return t < f;
       })
       .slice(-3);
-  p.className = 'prev';
+  p.className = "prev";
   p.innerHTML =
-    '<b>' +
+    "<b>" +
     pmSum(d) +
-    '</b><br>' +
+    "</b><br>" +
     (l.length
-      ? 'Tagihan sesudah perubahan: ' +
+      ? "Tagihan sesudah perubahan: " +
         l
           .map(function (t) {
-            return fd(t) + ' (' + rp(priceAt(tmp, t)) + ')';
+            return fd(t) + " (" + rp(priceAt(tmp, t)) + ")";
           })
-          .join(', ') +
-        (l.length >= 6 ? ' &hellip;' : '')
-      : 'Tidak ada tagihan pada rentang ini.') +
+          .join(", ") +
+        (l.length >= 6 ? " &hellip;" : "")
+      : "Tidak ada tagihan pada rentang ini.") +
     (bf.length
-      ? '<br>Sebelum ' +
+      ? "<br>Sebelum " +
         fd(f) +
-        ': ' +
+        ": " +
         bf
           .map(function (t) {
             return fd(t);
           })
-          .join(', ') +
-        (d.c.cut ? ' (dihapus)' : ' (tidak berubah)')
-      : '');
+          .join(", ") +
+        (d.c.cut ? " (dihapus)" : " (tidak berubah)")
+      : "");
 }
 
 /** Pesan saat tidak ada yang berubah (sesuai tujuan terpilih). */
 function noopMsg() {
-  return pmScen === 'harga' || pmScen === 'sementara'
-    ? 'Harga yang diisi sama dengan harga sekarang. Isi harga yang berbeda.'
-    : pmScen === 'siklus'
-      ? 'Siklusnya sama dengan sekarang. Ubah angka atau satuannya.'
+  return pmScen === "harga" || pmScen === "sementara"
+    ? "Harga yang diisi sama dengan harga sekarang. Isi harga yang berbeda."
+    : pmScen === "siklus"
+      ? "Siklusnya sama dengan sekarang. Ubah angka atau satuannya."
       : 'Belum ada yang diubah. Ubah harga atau siklus, atau pilih "Mulai ulang jadwal" / hapus tagihan sebelumnya.';
 }
 
@@ -171,42 +643,86 @@ function noopMsg() {
 function pmSum(d) {
   var c = d.c,
     it = d.it,
-    f = fmtD(c.from),
     P = c.price != null ? c.price : it.price;
+  if (c.mv) {
+    var ks = Object.keys(c.mv).sort();
+    return ks.length === 1
+      ? 'Hanya tagihan ' + fmtD(ks[0]) + ' yang digeser ke ' + fmtD(c.mv[ks[0]]) + '. Tagihan lain tidak berubah.'
+      : ks.length + ' tagihan digeser (' + ks.map(function (k) { return dShort(k) + ' → ' + dShort(c.mv[k]); }).join(', ') + '). Tagihan lain tidak berubah.';
+  }
+  if (c.dates)
+    return (
+      "Hanya " +
+      c.dates.length +
+      " tanggal terpilih (" +
+      dList(c.dates, 5) +
+      "): harga jadi " +
+      rp(P) +
+      ", tagihan lain tetap " +
+      rp(it.price) +
+      "."
+    );
+  var f = fmtD(c.from);
+  if (c.anchor)
+    return (
+      "Tagihan " +
+      f +
+      " digeser ke " +
+      fmtD(c.anchor) +
+      (it.unit === "sekali"
+        ? ". Tagihan sebelum " + f + " tidak berubah."
+        : ", lalu mengikuti siklus tiap " +
+          (c.n || it.n) +
+          " " +
+          (c.unit || it.unit) +
+          ". Tagihan sebelum " +
+          f +
+          " tidak berubah.")
+    );
   if (c.to)
     return (
-      'Dari ' +
+      "Dari " +
       f +
-      ' sampai ' +
+      " sampai " +
       fmtD(c.to) +
-      ', harga jadi ' +
+      ", harga jadi " +
       rp(P) +
-      ', setelah itu kembali ke harga awal ' +
+      ", setelah itu kembali ke harga awal " +
       rp(it.price) +
-      '.'
+      "."
     );
-  var s = 'Mulai ' + f + ': ';
-  if (c.n || c.unit) s += 'bayar tiap ' + (c.n || it.n) + ' ' + (c.unit || it.unit) + ', ';
-  s += 'harga ' + rp(P) + (P !== it.price ? ' (awal ' + rp(it.price) + ')' : '');
-  if (c.cut) s += '. Tagihan sebelum tanggal ini dihapus';
-  return s + '.';
+  var s = "Mulai " + f + ": ";
+  if (c.n || c.unit)
+    s += "bayar tiap " + (c.n || it.n) + " " + (c.unit || it.unit) + ", ";
+  s +=
+    "harga " + rp(P) + (P !== it.price ? " (awal " + rp(it.price) + ")" : "");
+  if (c.cut) s += ". Tagihan sebelum tanggal ini dihapus";
+  return s + ".";
 }
 
 /** Isi awal form dengan nilai yang berlaku pada tagihan berikutnya. */
 function pmPrefill(it) {
-  var nx = occ(it, S.year).filter(function (t) {
-      return !S.paid[it.id + '|' + isoD(t)] && !S.skip[it.id + '|' + isoD(t)];
+  var occs = occ(it, S.year),
+    nx = occs.filter(function (t) {
+      return !S.paid[it.id + "|" + isoD(t)] && !S.skip[it.id + "|" + isoD(t)];
     })[0],
-    iso = isoD(nx != null ? nx : Date.now()),
-    sg = segAt(it, iso);
-  $('pdt').value = iso;
-  $('pto').value = '';
-  $('pp').value = (sg && sg.price != null ? sg.price : it.price).toLocaleString('id-ID');
-  $('pn').value = (sg && sg.n) || it.n;
-  $('pu').value = (sg && sg.unit) || (it.unit === 'sekali' ? 'bulan' : it.unit);
-  $('pw').value = 'forever';
-  $('pa').value = 'keep';
-  $('pcut').value = 'keep';
+    iso = isoD(nx != null ? nx : (occs.length ? occs[0] : Date.now())),
+    sg = priceSeg(it, iso);
+  $("pdt").value = iso;
+  $("pto").value = "";
+  $("pp").value = (sg && sg.price != null ? sg.price : it.price).toLocaleString(
+    "id-ID",
+  );
+  $("pn").value = (sg && sg.n) || it.n;
+  $("pu").value = (sg && sg.unit) || (it.unit === "sekali" ? "bulan" : it.unit);
+  $("pw").value = "forever";
+  $("pa").value = "keep";
+  $("pcut").value = "keep";
+  $("phm").value = "seterusnya";
+  $("prg").checked = true;
+  phmTouched = false;
+  pmDates = [iso];
+  pmAuto = true;
   pmInit = pmCur();
 }
 
@@ -215,29 +731,54 @@ function pmSc(sc) {
   var it = item(pmId);
   if (!it) return;
   pmScen = sc;
-  pmPrefill(it);
-  if (sc === 'sementara') $('pw').value = 'until';
-  if (sc === 'geser') $('pa').value = 'restart';
-  var until = $('pw').value === 'until';
-  $('pform').hidden = !sc;
-  $('pps').hidden = !sc;
-  $('psc').classList.toggle('picked', !!sc);
-  $('pback').hidden = !sc;
-  $('g-to').hidden = !(sc === 'sementara' || (sc === 'manual' && until));
-  $('g-price').hidden = sc === 'geser';
-  $('pcad').hidden = !(sc === 'siklus' || sc === 'manual');
-  $('pcw').hidden = !(sc === 'siklus' || sc === 'geser' || (sc === 'manual' && !until));
-  $('pman').hidden = sc !== 'manual';
-  if (sc) {
-    $('l-pdt').textContent = LB[sc][0];
-    $('l-pp').textContent = LB[sc][1];
-    $('phint').textContent = PH[sc];
+  if (sc === "geser") {
+    $("pgm").value = "semua";
+    $("pgd").value = "";
   }
-  Array.prototype.forEach.call(document.querySelectorAll('#psc button'), function (b) {
-    b.classList.toggle('on', b.dataset.sc === sc);
-  });
-  pmMsg('');
+  pmPrefill(it);
+  if (sc === "sementara") $("pw").value = "until";
+  if (sc === "geser") $("pdt").value = pmDates[0] || "";
+  var until = $("pw").value === "until";
+  $("pform").hidden = !sc;
+  $("pps").hidden = !sc;
+  $("pbk2").hidden = !sc;
+  $("psc").classList.toggle("picked", !!sc);
+  $("g-price").hidden = sc === "geser";
+  $("pcad").hidden = !(sc === "siklus" || sc === "manual");
+  $("pcw").hidden = !(sc === "siklus" || (sc === "manual" && !until));
+  $("pman").hidden = sc !== "manual";
+  if (sc) {
+    $("l-pdt").textContent = LB[sc][0];
+    $("l-pp").textContent = LB[sc][1];
+    $("phint").textContent = PH[sc];
+  }
+  Array.prototype.forEach.call(
+    document.querySelectorAll("#psc button"),
+    function (b) {
+      b.classList.toggle("on", b.dataset.sc === sc);
+    },
+  );
+  pmMsg("");
+  pmLayout();
   if (sc) pmPrev();
+}
+
+/** Kembali ke daftar pilihan "Apa yang mau diubah?". */
+function pmBack() {
+  pmScen = null;
+  $("psc").classList.remove("picked");
+  $("pbk2").hidden = true;
+  $("pform").hidden = true;
+  $("pps").hidden = true;
+  Array.prototype.forEach.call(
+    document.querySelectorAll("#psc button"),
+    function (b) {
+      b.classList.remove("on");
+    },
+  );
+  pmMsg("");
+  var cd = $("pm").querySelector(".card");
+  if (cd) cd.scrollTop = 0;
 }
 
 /** Buka jendela ubah harga/jadwal untuk sebuah item. */
@@ -245,96 +786,181 @@ function openPm(id) {
   var it = item(id);
   if (!it) return;
   pmId = it.id;
-  $('pmt').textContent = 'Ubah harga / jadwal: ' + it.name;
-  Array.prototype.forEach.call(document.querySelectorAll('#psc button'), function (b) {
-    b.hidden = false;
-  });
+  $("pmt").textContent = "Ubah harga / jadwal: " + it.name;
+  Array.prototype.forEach.call(
+    document.querySelectorAll("#psc button"),
+    function (b) {
+      b.hidden = false;
+    },
+  );
   pmPrefill(it);
-  pmScen = null;
-  $('pform').hidden = true;
-  $('pps').hidden = true;
-  $('psc').classList.remove('picked');
-  $('pback').hidden = true;
-  Array.prototype.forEach.call(document.querySelectorAll('#psc button'), function (b) {
-    b.classList.remove('on');
-  });
-  pmMsg('');
+  pmBack();
   renderPm();
-  $('pm').hidden = false;
-  var cd = $('pm').querySelector('.card');
-  if (cd) cd.scrollTop = 0;
+  $("pm").hidden = false;
 }
 
-var PH = {
-  harga:
-    'Tagihan sebelum tanggal ini tidak berubah. Harga baru berlaku untuk tagihan pada tanggal ini dan sesudahnya.',
-  sementara:
-    'Hanya tagihan dalam rentang tanggal ini yang berubah harganya. Sesudahnya kembali ke harga awal.',
-  siklus:
-    'Pembayaran pertama dengan siklus baru jatuh di tanggal mulai. Pilih apakah tagihan lama sebelum tanggal itu dibiarkan atau dihapus.',
-  geser:
-    'Tagihan berikutnya jatuh tepat di tanggal ini, lalu lanjut sesuai siklus. Tagihan sebelumnya tidak berubah.',
-  manual: 'Atur semua pilihan sendiri. Lihat pratinjau di bawah sebelum menyimpan.',
-};
-
-var LB = {
-  harga: ['Mulai tanggal', 'Harga baru'],
-  sementara: ['Dari tanggal', 'Harga selama periode itu'],
-  siklus: ['Mulai tanggal', 'Harga (biarkan jika tidak berubah)'],
-  geser: ['Tanggal bayar pertama yang baru', 'Harga per bayar'],
-  manual: ['Berlaku mulai tanggal', 'Harga per bayar'],
-};
+/** Simpan perubahan; status lunas/lewati ikut pindah bila tanggal tagihan bergeser. */
+function savePm() {
+  var d = pmDraft();
+  if (d.err) return pmMsg(d.err);
+  var it = d.it,
+    pairs = [];
+  // Mode geser: tanggal lama -> baru diketahui persis, jadi status lunas/lewati dipindah langsung (bukan ditebak).
+  if (pmScen === "geser")
+    d.cs.forEach(function (c) {
+      if (c.anchor) pairs.push([d.disp || c.from, c.anchor]);
+      else if (c.mv)
+        pmDates.forEach(function (cur) {
+          var k = origDate(it, cur);
+          if (c.mv[k]) pairs.push([cur, c.mv[k]]);
+        });
+    });
+  trackSchedule(it, function () {
+    moveStatusExact(it.id, pairs, [S.paid, S.skip]);
+    d.cs.forEach(function (c) {
+      if (c.anchor) {
+        var origFrom = origDate(it, d.disp || c.from);
+        var dispDate = d.disp || c.from;
+        (it.ch || []).forEach(function (q) {
+          if (q.mv) {
+            Object.keys(q.mv).forEach(function (k) {
+              if (k >= origFrom || q.mv[k] >= dispDate || k >= c.from) delete q.mv[k];
+            });
+          }
+        });
+      } else if (c.mv) {
+        Object.keys(c.mv).forEach(function (k) {
+          (it.ch || []).forEach(function (q) {
+            if (q.mv && q.mv[k]) delete q.mv[k];
+          });
+        });
+      }
+    });
+    it.ch = (it.ch || []).filter(function (q) {
+      return !q.mv || Object.keys(q.mv).length > 0;
+    });
+    d.cs.forEach(function (c) {
+      (it.ch || []).forEach(function (q) {
+        if (chSame(it, c, q)) {
+          if (q.cut && !c.cut && pmScen !== "siklus" && pmScen !== "manual") c.cut = true;
+          if ((pmScen === "harga" || pmScen === "sementara") && !c.mv && !c.dates) {
+            if (q.anchor && !c.anchor) c.anchor = q.anchor;
+            if (q.n && !c.n) c.n = q.n;
+            if (q.unit && !c.unit) c.unit = q.unit;
+          }
+        }
+      });
+    });
+    it.ch = (it.ch || []).filter(function (q) {
+      return !d.cs.some(function (c) {
+        return chSame(it, c, q);
+      });
+    });
+    d.cs.forEach(function (c) {
+      it.ch.push(c);
+    });
+    it.ch.sort(cmpFrom);
+  });
+  save();
+  $("pm").hidden = true;
+  renderAll();
+  $("status").textContent = 'Perubahan untuk "' + it.name + '" disimpan.';
+  var r = document.querySelector('#v-jadwal tr[data-r="' + it.id + '"]');
+  if (r) {
+    r.classList.add("flash");
+    r.scrollIntoView({ block: "center" });
+    setTimeout(function () {
+      r.classList.remove("flash");
+    }, 2600);
+  }
+}
 
 /** Pasang event listener halaman ini. */
 function bindPrice() {
-  $('psc').onclick = function (e) {
-    var b = e.target.closest('button[data-sc]');
+  $("psc").onclick = function (e) {
+    var b = e.target.closest("button[data-sc]");
     if (b) pmSc(b.dataset.sc);
   };
-  ['pdt', 'pp', 'pn', 'pu', 'pto', 'pa', 'pcut'].forEach(function (i) {
+  $("pgm").onchange = function () {
+    var keep = this.value === "pilih" ? pmDates : pmDates.slice(0, 1);
+    if (this.value !== "pilih" && keep[0]) $("pdt").value = keep[0];
+    setDates(keep, false, true);
+  };
+  $("pgd").oninput = pmPrev;
+  ["pp", "pn", "pu", "pto", "pa", "pcut"].forEach(function (i) {
     $(i).oninput = pmPrev;
     $(i).onchange = pmPrev;
   });
-  $('pw').onchange = function () {
-    $('g-to').hidden = this.value !== 'until';
-    $('pcw').hidden = this.value === 'until';
+  // Mengetik tanggal kustom: mengganti pilihan tunggal otomatis; bila sudah memilih banyak tanggal, tunggu "+ Tambah".
+  $("pdt").oninput = $("pdt").onchange = function () {
+    if (pmScen === "geser") return pmPrev();
+    if (!pmAuto) return;
+    setDates(ISO_RE.test(this.value) ? [this.value] : [], true, true);
+  };
+  $("pda").onclick = function () {
+    var v = $("pdt").value;
+    if (!ISO_RE.test(v))
+      return pmMsg("Pilih tanggal kustom di kotak dulu, lalu tekan + Tambah.");
+    pmMsg("");
+    setDates(
+      pmAuto && pmDates.length === 1 && pmDates[0] === v
+        ? [v]
+        : pmDates.concat([v]),
+      false,
+    );
+    $("pdt").value = "";
+  };
+  $("pdc").onclick = function (e) {
+    var b = e.target.closest("button[data-d]");
+    if (!b) return;
+    var d = b.dataset.d;
+    if (pmScen === "geser" && !pmMulti()) {
+      $("pdt").value = d;
+      return setDates([d], false, true);
+    }
+    if (!pmMulti()) return setDates([d], true);
+    setDates(
+      pmDates.indexOf(d) >= 0
+        ? pmDates.filter(function (x) {
+            return x !== d;
+          })
+        : pmDates.concat([d]),
+      false,
+    );
+  };
+  $("pds").onclick = function (e) {
+    var b = e.target.closest("button[data-rm]");
+    if (!b) return;
+    setDates(
+      pmDates.filter(function (x) {
+        return x !== b.dataset.rm;
+      }),
+      false,
+    );
+  };
+  $("phm").onchange = function () {
+    phmTouched = true;
     pmPrev();
   };
-  $('pp').addEventListener('input', function () {
+  $("prg").onchange = pmPrev;
+  $("pw").onchange = function () {
+    $("pcw").hidden = this.value === "until";
+    pmLayout();
+    pmPrev();
+  };
+  $("pp").addEventListener("input", function () {
     fmtLive(this);
   });
-  $('pcl').onclick = function () {
-    $('pm').hidden = true;
+  $("pcl").onclick = function () {
+    $("pm").hidden = true;
   };
-  $('pps').onclick = function () {
-    var d = pmDraft();
-    if (d.err) return pmMsg(d.err);
-    var it = d.it;
-    trackSchedule(it, function () {
-      it.ch = (it.ch || []).filter(function (q) {
-        return !(q.from === d.c.from && q.to === d.c.to);
-      });
-      it.ch.push(d.c);
-      it.ch.sort(cmpFrom);
-    });
-    save();
-    $('pm').hidden = true;
-    renderAll();
-    $('status').textContent = 'Perubahan untuk "' + it.name + '" disimpan.';
-    var r = document.querySelector('#v-jadwal tr[data-r="' + it.id + '"]');
-    if (r) {
-      r.classList.add('flash');
-      r.scrollIntoView({ block: 'center' });
-      setTimeout(function () {
-        r.classList.remove('flash');
-      }, 2600);
-    }
-  };
-  $('phl').onclick = function (e) {
-    var b = e.target.closest('button[data-pdel]');
+  $("pps").onclick = savePm;
+  $("pbk2").onclick = pmBack;
+  $("phl").onclick = function (e) {
+    var b = e.target.closest("button[data-pdel]");
     if (!b) return;
     var it = item(pmId);
-    var sn = snap('Sebelum hapus perubahan harga');
+    var sn = snap("Sebelum hapus perubahan harga");
     trackSchedule(it, function () {
       it.ch.splice(+b.dataset.pdel, 1);
     });
@@ -342,19 +968,8 @@ function bindPrice() {
     renderAll();
     renderPm();
     pmPrev();
-    toast('Perubahan dihapus.', function () {
+    toast("Perubahan dihapus.", function () {
       restoreSnap(sn.t);
     });
-  };
-  $('pback').onclick = function () {
-    pmScen = null;
-    $('psc').classList.remove('picked');
-    $('pback').hidden = true;
-    $('pform').hidden = true;
-    $('pps').hidden = true;
-    Array.prototype.forEach.call(document.querySelectorAll('#psc button'), function (b) {
-      b.classList.remove('on');
-    });
-    pmMsg('');
   };
 }

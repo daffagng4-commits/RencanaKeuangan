@@ -36,7 +36,11 @@ function cloneItem(it, id) {
     cnt: +it.cnt || 0,
     cat: it.cat || '',
     ch: (it.ch || []).map(function (q) {
-      return { from: q.from, to: q.to || '', price: q.price, n: q.n, unit: q.unit, cut: !!q.cut };
+      var c = { from: q.from, to: q.to || '', price: q.price, n: q.n, unit: q.unit, cut: !!q.cut };
+      if (q.dates) c.dates = q.dates.slice();
+      if (q.anchor) c.anchor = q.anchor;
+      if (q.mv) c.mv = Object.assign({}, q.mv);
+      return c;
     }),
   };
 }
@@ -134,6 +138,31 @@ function remapStatus(itemId, before, after, maps) {
           moved++;
         }
       });
+  });
+  return moved;
+}
+
+/**
+ * Pindahkan status lunas/lewati secara PERSIS dari tanggal lama ke tanggal baru (dipakai saat menggeser tagihan,
+ * karena kedua tanggalnya diketahui; remapStatus hanya menebak tanggal terdekat maks. 20 hari).
+ * @param pairs [[tanggalLama, tanggalBaru], ...] @param maps [S.paid, S.skip] @returns jumlah status yang dipindah
+ */
+function moveStatusExact(itemId, pairs, maps) {
+  var prefix = String(itemId) + '|',
+    moved = 0;
+  pairs.forEach(function (p) {
+    if (!p || !p[0] || !p[1] || p[0] === p[1]) return;
+    var has = maps.some(function (m) {
+      return m[prefix + p[1]];
+    });
+    if (has) return;
+    maps.forEach(function (m) {
+      if (m[prefix + p[0]]) {
+        m[prefix + p[1]] = m[prefix + p[0]];
+        delete m[prefix + p[0]];
+        moved++;
+      }
+    });
   });
   return moved;
 }

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rencana Keuangan</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#4f46e5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Rencana">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('rk-theme');
+    if (/^(light|dark|bw|bwd)$/.test(t || '')) document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="w">
+<div class="topbar">
+  <div class="kt" id="mdbar">
+    <button type="button" class="yp on" data-md="rencana">Rencana Keuangan</button>
+    <button type="button" class="yp" data-md="trip">Perjalanan</button>
+    <a class="yp yp-tool" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a>
+    <a class="yp yp-tool" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a>
+  </div>
+  <div class="topbar-actions">
+    <button type="button" id="btn-privacy" class="topbar-btn" title="Mode Privasi (Kaburkan Nominal)" aria-label="Mode Privasi" aria-pressed="false"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Privasi</span></button>
+    <button type="button" id="btn-notif" class="topbar-btn" title="Aktifkan pengingat notifikasi tagihan" aria-label="Notifikasi tagihan"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>Notifikasi</span></button>
+    <button type="button" id="pwa" class="topbar-btn" aria-label="Pasang aplikasi" hidden><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg><span>Pasang</span></button>
+    <button type="button" id="thm" class="topbar-btn" title="Ketuk untuk ganti tema" aria-label="Ganti tema"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span id="thm-txt">Tema</span></button>
+  </div>
+</div>
+<header>
+  <div><h1>Rencana Keuangan</h1><div class="sub" id="ver-info" style="font-size:11.5px;color:var(--mut);margin-top:2px" title="Versi program terbaru">v-r19 · 7 Nov 2026</div><div class="sub" id="status" style="display:none"></div><div class="sub" id="sbs" style="display:none"></div></div>
+  <div class="ctl">
+    <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
+    <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub" id="adjs" style="margin-top:4px"></div></div>
+    <button id="lgb">Masuk</button><button id="bk">Impor / Ekspor</button>
+  </div>
+</header>
+<nav role="tablist">
+  <button role="tab" data-t="rincian" aria-selected="true">Rincian Bulanan</button>
+  <button role="tab" data-t="kas" aria-selected="false">Catatan Kas</button>
+  <button role="tab" data-t="jadwal" aria-selected="false">Jadwal Bayar</button>
+  <button role="tab" data-t="item" aria-selected="false">Kelola Item</button>
+  <button role="tab" data-t="sim" aria-selected="false">Simulasi</button>
+</nav>
+
+<div class="yb" id="yb"></div>
+<button type="button" class="rem" id="rem" hidden></button>
+<section id="v-rincian"></section>
+<section id="v-jadwal" hidden></section>
+<section id="v-kas" hidden></section>
+<section id="v-sim" hidden></section>
+<section id="v-trip" hidden></section>
+<section id="v-rebalance" hidden></section>
+<section id="v-ibkr" hidden></section>
+<section id="v-item" hidden>
+  <div class="card" id="card-quick-add">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h2 style="margin:0;font-size:15px;color:var(--ac);display:flex;align-items:center;gap:6px">⚡ Tambah Item Kilat (1 Baris)</h2>
+      <span class="sub" style="font-size:11.5px"><kbd>Enter</kbd> untuk simpan</span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="q-input" placeholder="mis. Netflix 186k tiap tgl 15 atau Listrik 350k tiap bulan tgl 20" style="flex:1">
+      <button class="p" id="q-btn" type="button" style="white-space:nowrap">+ Tambah</button>
+    </div>
+    <div class="sub" style="margin-top:8px;font-size:12px">Format: <code>[Nama] [Nominal] [Siklus/Tanggal]</code> &middot; Contoh: <code>Gym 300k tiap 2 minggu mulai 2027-02-05</code>, <code>Pajak 1.2jt tiap tahun tgl 10</code>, <code>Kado 500k sekali 2027-06-15</code></div>
+    <div class="err" id="q-err"></div>
+  </div>
+  <div class="card">
+    <h2 id="ft">Tambah item</h2>
+    <div class="grid">
+      <div class="nm"><label for="f-name">Nama item</label><input id="f-name" placeholder="mis. Video"></div>
+      <div><label for="f-price">Harga per bayar</label><input id="f-price" placeholder="200k atau 200.000"></div>
+      <div><label for="f-n">Berulang tiap</label>
+        <div class="every"><input id="f-n" type="number" min="1" value="1"><select id="f-unit">
+          <option value="bulan">bulan</option><option value="tahun">tahun</option><option value="minggu">minggu</option><option value="hari">hari</option><option value="sekali">sekali saja</option></select></div></div>
+      <div><label for="f-start">Mulai tanggal</label><input id="f-start" type="date"></div>
+      <div class="full" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><label for="f-stop">Berhenti</label><select id="f-stop"><option value="none">Tidak berhenti</option><option value="date">Sampai tanggal</option><option value="cnt">Setelah beberapa kali bayar</option></select></div><div id="w-end" hidden><label for="f-end">Pembayaran terakhir paling lambat</label><input id="f-end" type="date"></div><div id="w-cnt" hidden><label for="f-cnt">Total jumlah kali bayar</label><input id="f-cnt" type="number" min="1" placeholder="mis. 12"><div class="sub" style="margin-top:4px">Dihitung sejak tanggal mulai, termasuk tahun-tahun sebelumnya.</div></div></div>
+      <div class="full"><label for="f-cat">Kategori (opsional)</label><input id="f-cat" list="catlist" maxlength="30" placeholder="mis. Langganan"><datalist id="catlist"></datalist></div>
+      <div class="full prev" id="prev"></div>
+    </div>
+    <div class="err" id="err"></div>
+    <div class="row2"><button class="p" id="save">Simpan item</button><button id="cancel" hidden>Batal edit</button></div>
+  </div>
+  <div class="card"><h2>Daftar item <span id="ly"></span></h2><div id="list"></div><div class="row2" id="cprow"></div></div>
+</section>
+</div>
+
+<input type="file" id="xlf" accept=".xlsx,.xls,.csv" hidden>
+<div class="modal" id="xlm" role="dialog" aria-modal="true" hidden><div class="card"><h2>Impor dari Excel</h2><div class="sub" id="xls" style="margin-bottom:10px"></div>
+<label for="xln">Nama perjalanan</label><input id="xln" maxlength="30">
+<div class="kf" style="margin-top:12px"><div><label for="xlu">Mata uang asing</label><input id="xlu" maxlength="3" placeholder="JPY"></div><div><label for="xlk">Kurs (Rp per 1)</label><input id="xlk" inputmode="decimal" placeholder="119,4"></div></div>
+<div class="err" id="xle"></div><div class="row2"><button class="p" id="xlok">Impor</button><button class="c" id="xlc">Batal</button></div></div></div>
+<div class="modal" id="shm" role="dialog" aria-modal="true" hidden><div class="card"><h2>Bagikan itinerary</h2>
+<label style="display:flex;gap:8px;align-items:center;margin:4px 0 12px"><input type="checkbox" id="shc" style="width:auto"> Sertakan biaya</label>
+<div class="acts"><button class="p" data-sh="wa">Kirim teks (WhatsApp)</button><button data-sh="copy">Salin teks</button><button data-sh="pdf">Cetak / simpan PDF</button></div>
+<div class="sub" id="shs" style="margin:10px 0"></div><div class="row2"><button class="c" id="shx">Tutup</button></div></div></div>
+<div class="modal" id="kpm" role="dialog" aria-modal="true" hidden><div class="card"><h2 id="kpt">Perjalanan baru</h2>
+<label for="kpn">Nama perjalanan</label><input id="kpn" maxlength="30" placeholder="mis. Tokyo - Osaka 9D8N">
+<div class="kf" style="margin-top:12px"><div><label for="kpa">Mulai</label><input id="kpa" type="date"></div><div><label for="kpb">Selesai</label><input id="kpb" type="date"></div></div>
+<div style="margin-top:12px"><label for="kpgm">Anggaran</label><select id="kpgm"><option value="0">Belum menentukan anggaran</option><option value="1">Tetapkan anggaran</option></select></div>
+<div id="kpgw" style="margin-top:8px" hidden><label for="kpg">Anggaran total (Rp)</label><input id="kpg" inputmode="numeric" placeholder="25.000.000"></div>
+<div class="kf" style="margin-top:12px"><div><label for="kpu">Mata uang asing (opsional)</label><input id="kpu" maxlength="3" placeholder="JPY" style="text-transform:uppercase"></div><div><label for="kpk">Kurs: Rp per 1 mata uang</label><input id="kpk" type="number" step="0.01" min="0" inputmode="decimal" placeholder="119.4"></div></div>
+<div class="err" id="kpe"></div><div class="row2"><button class="p" id="kpsv">Simpan</button><button class="c" id="kpc">Tutup</button></div></div></div>
+<div class="modal" id="cf" role="dialog" aria-modal="true" hidden><div class="card"><h2>Data berbeda di cloud dan di perangkat ini</h2>
+<p class="sub">Pilih data yang dipakai. Data yang tidak dipilih disimpan sebagai cadangan otomatis, jadi masih bisa dipulihkan.</p>
+<div class="g2"><div class="cfc" id="cf-l"></div><div class="cfc" id="cf-r"></div></div>
+<div class="row2"><button class="p" data-cf="remote">Pakai data cloud</button><button data-cf="local">Pakai data perangkat ini</button></div>
+<div class="row2" style="margin-top:6px"><button data-cf="merge">Gabungkan keduanya</button><button class="c" data-cf="later">Nanti saja</button></div>
+<div class="sub" style="margin-top:8px"><b>Gabungkan</b>: menambah tahun dan item dari cloud yang belum ada di perangkat ini, tidak ada yang dihapus. Angka saldo awal mengikuti perangkat ini. <b>Nanti saja</b>: sinkron ditunda sampai Anda memilih.</div>
+</div></div>
+<div class="modal" id="rm" role="dialog" aria-modal="true" hidden><div class="card"><h2>Pengingat tagihan</h2>
+<div class="row2" style="margin:0 0 6px;align-items:center"><label for="rmh" style="margin:0">Tampilkan yang jatuh tempo dalam</label><select id="rmh" style="width:auto"><option value="3">3 hari</option><option value="7">7 hari</option><option value="14">14 hari</option><option value="30">30 hari</option></select></div>
+<div id="rml"></div>
+<div class="row2"><button id="rmb" hidden>Tandai semua yang sudah lewat tanggal sebagai lunas</button><button class="c" id="rmc">Tutup</button></div></div></div>
+<div class="modal" id="sk" role="dialog" aria-modal="true" hidden><div class="card"><h2 id="skt">Ubah beberapa tagihan</h2>
+<p class="sub">Ubah status semua tagihan item ini dalam rentang tanggal sekaligus.</p>
+<div class="g2"><div><label for="skf">Dari tanggal</label><input id="skf" type="date"></div><div><label for="skto">Sampai tanggal</label><input id="skto" type="date"></div></div>
+<div style="margin-top:12px"><label for="ska">Ubah menjadi</label><select id="ska"><option value="skip">Lewati (tidak bayar)</option><option value="paid">Sudah dibayar</option><option value="none">Belum dibayar</option></select></div>
+<div class="prev" id="skp" style="margin-top:12px"></div><div class="err" id="ske"></div>
+<div class="row2"><button class="p" id="sks">Terapkan</button><button class="c" id="skc">Batal</button></div></div></div>
+<div class="tt" id="tt" hidden><span id="ttm"></span><button id="ttu" type="button">Urungkan</button></div>
+<div class="cm" id="cm" hidden></div>
+<div class="modal" id="pm" role="dialog" aria-modal="true" hidden><div class="card"><h2 id="pmt">Ubah harga / jadwal</h2><p class="sub" id="pmi"></p>
+<div class="h3" style="margin-top:10px">Apa yang mau diubah?</div>
+<div class="sc" id="psc">
+<button type="button" data-sc="harga"><b>Harga berubah</b><span>Contoh: naik jadi 300k mulai Juli</span></button>
+<button type="button" data-sc="siklus"><b>Ganti seberapa sering bayar</b><span>Contoh: dari tiap bulan jadi tiap 3 bulan</span></button>
+<button type="button" data-sc="geser"><b>Geser tanggal bayar</b><span>Contoh: dari tanggal 1 jadi tanggal 15</span></button>
+<button type="button" data-sc="manual"><b>Atur manual</b><span>Semua pilihan sekaligus (mis. harga sementara, kombinasi lain)</span></button>
+</div>
+<div id="pform" hidden>
+<p class="sub" id="phint" style="margin:12px 0 0"></p>
+<div id="pdw" style="margin-top:10px">
+<div id="pgw" hidden style="margin:0 0 12px"><label for="pgm">Bulan mana yang digeser?</label><select id="pgm"><option value="satu">Hanya satu bulan (yang lain tidak berubah)</option><option value="semua" selected>Bulan ini dan semua bulan sesudahnya</option><option value="pilih">Pilih sendiri beberapa bulan</option></select></div>
+<label id="l-pdt">Tanggal tagihan</label>
+<div class="dchips" id="pdc"></div>
+<div class="sub" id="pdh" style="margin:6px 0 6px"></div>
+<label id="lgs" for="pdt" hidden style="margin-top:8px">Ganti jadi tanggal</label>
+<div class="dcus" id="pdcus"><input id="pdt" type="date" aria-label="Tanggal kustom"><button type="button" id="pda">+ Tambah</button></div>
+<div class="dsel" id="pds"></div>
+<div id="pgdw" hidden style="margin-top:8px"><label for="pgd">Pindah ke tanggal (1-31)</label><input id="pgd" type="number" min="1" max="31" inputmode="numeric" placeholder="mis. 10"><div class="sub" style="margin-top:4px">Semua bulan yang dipilih dipindah ke tanggal ini.</div></div>
+<div id="phmw" style="margin-top:12px" hidden><label for="phm">Berlaku</label><select id="phm"><option value="seterusnya">Mulai tanggal pertama terpilih dan seterusnya</option><option value="terpilih">Hanya tanggal yang dipilih</option></select></div>
+<label id="prgw" class="chk" hidden><input type="checkbox" id="prg" checked>Isi semua tagihan di antara tanggal pertama dan terakhir</label>
+</div>
+<div id="g-to" style="margin-top:12px" hidden><label for="pto">Sampai tanggal (termasuk)</label><input id="pto" type="date"></div>
+<div id="g-price" style="margin-top:12px"><label for="pp" id="l-pp">Harga per bayar</label><input id="pp" inputmode="numeric" placeholder="300k atau 300.000"></div>
+<div id="pcad" style="margin-top:12px" hidden><label>Seberapa sering bayar</label><div class="every2"><span class="sub">tiap</span><input id="pn" type="number" min="1"><select id="pu"><option value="bulan">bulan</option><option value="tahun">tahun</option><option value="minggu">minggu</option><option value="hari">hari</option></select></div></div>
+<div id="pman" hidden><div style="margin-top:12px"><label for="pa">Tanggal bayar</label><select id="pa"><option value="keep">Tetap seperti jadwal sekarang</option><option value="restart">Mulai ulang jadwal dari tanggal di atas</option></select><div class="sub" style="margin-top:4px" id="pah"></div></div><div style="margin-top:12px"><label for="pw">Berlaku</label><select id="pw"><option value="forever">Seterusnya</option><option value="until">Sementara, lalu kembali ke awal</option></select></div></div>
+<div id="pcw" style="margin-top:12px" hidden><label for="pcut">Tagihan sebelum tanggal ini</label><select id="pcut"><option value="keep">Biarkan seperti semula</option><option value="drop">Hapus (jadwal lama diganti total)</option></select></div>
+<div class="prev" id="ppv" style="margin-top:12px"></div><div class="err" id="pme"></div>
+</div>
+<div class="row2"><button id="pbk2" hidden>&larr; Kembali</button><button class="p" id="pps" hidden>Simpan perubahan</button><button class="c" id="pcl">Tutup</button></div>
+<div class="h3">Perubahan yang sudah ada</div><div id="phl"></div></div></div>
+<div class="modal" id="m" role="dialog" aria-modal="true" hidden><div class="card" style="max-width:540px">
+  <h2>Cadangan &amp; Pemulihan Data</h2>
+  <div style="background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:12px;margin-bottom:12px">
+    <div style="font-weight:600;margin-bottom:4px">Cadangan Lengkap (.json)</div>
+    <div class="sub" style="margin-bottom:8px">Unduh semua tahun, item, saldo, dan status lunas untuk backup atau pindah perangkat.</div>
+    <div id="exb">
+      <div class="xr" style="margin-bottom:6px"><button class="p" data-ex="json" style="width:100%">Unduh Cadangan Lengkap (.json)</button></div>
+      <details style="margin-top:6px">
+        <summary class="sub" style="cursor:pointer">Ekspor laporan (.csv / .ics)</summary>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
+          <div class="xr"><button data-ex="items">Item tahun ini (.csv)</button><span class="sub"><span class="chip">Bisa diimpor</span> Format tabel item aktif.</span></div>
+          <div class="xr"><button data-ex="hist">Riwayat pembayaran (.csv)</button><span class="sub"><span class="chip n">Laporan</span> Satu baris per tagihan.</span></div>
+          <div class="xr"><button data-ex="bulan">Rincian bulanan (.csv)</button><span class="sub"><span class="chip n">Laporan</span> Saldo awal, pengeluaran &amp; akhir.</span></div>
+          <div class="xr"><button data-ex="ics">Pengingat kalender (.ics)</button><span class="sub"><span class="chip">Kalender</span> Impor ke Google / Apple Calendar. Tagihan belum lunas dapat alarm H-1 dan hari-H pukul 09.00.</span></div>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div style="background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:12px;margin-bottom:12px">
+    <div style="font-weight:600;margin-bottom:4px">Impor Data (.json / .csv)</div>
+    <div class="sub" style="margin-bottom:8px">Pilih file cadangan untuk memulihkan atau menambahkan data.</div>
+    <div class="row2" style="margin-top:0"><input type="file" id="fi" accept=".json,.csv,text/csv,application/json" style="flex:1;min-width:180px"><select id="im" style="width:auto"><option value="merge">Gabungkan</option><option value="replace">Timpa data</option></select></div>
+    <div class="gdb"><button type="button" class="g gdt" data-gd="impor"></button><div class="gdc"><div class="sub" style="margin-top:6px"><b>Gabungkan</b>: menambah data baru tanpa menghapus data sekarang.<br><b>Timpa</b>: mengganti seluruh data dengan isi file cadangan.</div></div></div>
+    <div class="err" id="xm"></div>
+  </div>
+
+  <details style="margin-bottom:12px">
+    <summary class="sub" style="cursor:pointer;font-weight:600">Alat lanjutan: Otomatis, diagnostik &amp; teks</summary>
+    <div style="padding-top:8px">
+      <div class="h3">Cadangan otomatis (5 terakhir)</div>
+      <div id="sl"></div>
+      <div class="h3" style="margin-top:8px">Cek sistem &amp; diagnostik</div>
+      <div class="row2" style="margin-top:4px"><button id="dgb">Jalankan cek sistem</button><button id="dgd">Tes unduh file</button></div>
+      <div id="dgr"></div>
+      <details id="dt" style="margin-top:8px"><summary class="sub" style="cursor:pointer">Cara teks (salin / tempel)</summary>
+        <p class="sub" style="margin:4px 0">Data tersimpan otomatis di browser. Salin teks atau tempel data lama:</p>
+        <textarea id="ta" spellcheck="false" style="height:70px"></textarea>
+        <div class="err" id="merr"></div>
+        <div class="row2"><button class="p" id="cp">Salin</button><button id="ld">Muat dari teks</button><button id="rs" class="d">Pulihkan contoh</button></div>
+      </details>
+    </div>
+  </details>
+  <div class="row2" style="justify-content:flex-end"><button class="c" id="cl">Tutup</button></div>
+</div></div>
+
+<div class="modal" id="qkm" role="dialog" aria-modal="true" hidden><div class="card" style="max-width:440px">
+  <h2>Catat transaksi kilat <span class="sub">(Shortcut: N)</span></h2>
+  <div class="kt" style="margin-bottom:12px">
+    <button type="button" class="yp on" id="qk-out" data-kt="-">&minus; Keluar</button>
+    <button type="button" class="yp" id="qk-in" data-kt="+">+ Masuk</button>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <div><label for="qka">Jumlah</label><input id="qka" inputmode="numeric" placeholder="Contoh: 50k atau 50.000"></div>
+    <div><label for="qkc">Kategori</label><input id="qkc" list="catlist" maxlength="30" placeholder="mis. Makanan / Bensin"></div>
+    <div><label for="qkn">Catatan</label><input id="qkn" maxlength="80" placeholder="Keterangan transaksi"></div>
+    <div><label for="qkd">Tanggal</label><input id="qkd" type="date"></div>
+  </div>
+  <div class="err" id="qke"></div>
+  <div class="row2" style="margin-top:14px">
+    <button class="p" id="qks">Simpan transaksi</button>
+    <button class="c" id="qk-cl">Tutup</button>
+  </div>
+</div></div>
+
+<div class="modal" id="lg" role="dialog" aria-modal="true" hidden><div class="card"><h2>Masuk untuk sinkron</h2><p class="sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p><label for="le">Email</label><input id="le" type="email" autocomplete="email"><label for="lp" style="margin-top:10px">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="err" id="lm"></div><div class="row2"><button class="p" id="lin">Masuk</button><button class="c" id="lgc">Tutup</button></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
+<script src="js/config.js"></script>
+<script src="js/core/util.js"></script>
+<script src="js/core/schedule.js"></script>
+<script src="js/core/state.js"></script>
+<script src="js/core/items.js"></script>
+<script src="js/core/calc.js"></script>
+<script src="js/core/reminders.js"></script>
+<script src="js/core/csv.js"></script>
+<script src="js/ui/dom.js"></script>
+<script src="js/ui/render.js"></script>
+<script src="js/ui/rincian.js"></script>
+<script src="js/ui/jadwal.js"></script>
+<script src="js/ui/items.js"></script>
+<script src="js/ui/years.js"></script>
+<script src="js/ui/header.js"></script>
+<script src="js/ui/adjust.js"></script>
+<script src="js/ui/price-modal.js"></script>
+<script src="js/ui/io.js"></script>
+<script src="js/ui/backup.js"></script>
+<script src="js/ui/diag.js"></script>
+<script src="js/ui/reminders.js"></script>
+<script src="js/ui/skiprange.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/ui/theme.js"></script>
+<script src="js/ui/kas.js"></script>
+<script src="js/ui/trip.js"></script>
+<script src="js/ui/topbar.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>

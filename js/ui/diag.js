@@ -4,7 +4,7 @@
 
 function dgRow(r) {
   var ic = { ok: '&#10003;', bad: '&#10007;', warn: '&#9888;', info: '&#8505;' }[r[0]],
-    col = { ok: 'var(--ac)', bad: 'var(--wr)', warn: 'var(--wr)', info: 'var(--mut)' }[r[0]];
+    col = { ok: 'var(--in)', bad: 'var(--wr)', warn: 'var(--wr)', info: 'var(--mut)' }[r[0]];
   return (
     '<div class="it2" style="align-items:flex-start;gap:10px"><span style="color:' +
     col +

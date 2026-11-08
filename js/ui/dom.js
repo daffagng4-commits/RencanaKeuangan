@@ -28,12 +28,15 @@ function fmtLive(el) {
 
 /** Tampilkan tab tertentu (rincian | jadwal | item). */
 function tab(t) {
+  curTab = t;
+  if (t === 'sim') renderSim();
   document.querySelectorAll('nav button').forEach(function (b) {
     b.setAttribute('aria-selected', b.dataset.t === t);
   });
-  ['rincian', 'jadwal', 'item'].forEach(function (x) {
+  ['rincian', 'jadwal', 'item', 'kas', 'sim'].forEach(function (x) {
     $('v-' + x).hidden = x !== t;
   });
+  $('yb').style.display = '';
 }
 
 /** Tampilkan pesan singkat; bila ada `undo`, muncul tombol Urungkan selama 10 detik. */
@@ -92,13 +95,14 @@ function bindDom() {
       var om = document.querySelector('.modal:not([hidden])');
       if (om) {
         var c = om.querySelector(
-          'button.c, #pcl, #cl, #rmc, #kpc, #shx, #lgc, #skc, #xlc, [data-cf="later"]'
+          'button.c, #pcl, #cl, #rmc, #kpc, #shx, #lgc, #skc, #xlc, #qkc, [data-cf="later"]'
         );
         if (c) c.click();
         else om.hidden = true;
       }
     }
   });
+  bindQuickKas();
 }
 
 /** Tulis status simpan di header. */

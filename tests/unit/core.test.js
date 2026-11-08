@@ -160,8 +160,13 @@ test('norm: format lama, data rusak, dan idempoten', () => {
   assert.equal(Y.items[1].name, 'Item');
   assert.equal(JSON.stringify(Y.paid), '{}');
   const bad = c.norm({ year: 2030, data: { 2030: { adj: [{ t: 'x', amt: 5 }, { t: '+', amt: -3 }, { t: '+', amt: 200, m: 99, rep: { n: 2 } }, null] } } });
-  assert.equal(bad.data[2030].adj.length, 1);
-  assert.equal(bad.data[2030].adj[0].m, 11);
+  // Penyesuaian saldo lama dipindah ke catatan kas profil tergabung (adj dikosongkan); m=99 dijepit ke Desember.
+  assert.equal(bad.data[2030].adj.length, 0);
+  const migrated = Array.from(Object.values(bad.kas.pr).find((p) => p.link).tx);
+  assert.equal(migrated.length, 1);
+  assert.equal(migrated[0].cat, 'Penyesuaian saldo');
+  assert.equal(migrated[0].amt, 200);
+  assert.equal(migrated[0].d, '2030-12-01');
   const once = JSON.stringify(c.norm(JSON.parse(JSON.stringify(legacy))));
   assert.equal(JSON.stringify(c.norm(JSON.parse(once))), once);
   assert.ok(c.norm(null).data[2027].items.length === 12, 'null -> data contoh');
@@ -201,7 +206,10 @@ test('mergeAll: gabung tanpa duplikat, status dan penyesuaian ikut', () => {
   assert.equal(c.ALL.data[2027].items.filter((i) => i.name === 'Baru').length, 1);
   assert.equal(c.mergeAll(incoming).items, 0, 'tidak menggandakan');
   assert.equal(Object.keys(c.ALL.data[2027].paid).length, 1);
-  assert.equal(c.ALL.data[2027].adj.length, 1);
+  // Penyesuaian saldo ikut digabung lewat catatan kas profil tergabung (adj lama dikosongkan), tanpa duplikat.
+  const adjTx = Array.from(Object.values(c.ALL.kas.pr).find((p) => p.link).tx).filter((x) => x.cat === 'Penyesuaian saldo');
+  assert.equal(c.ALL.data[2027].adj.length, 0);
+  assert.equal(adjTx.length, 1);
 });
 
 test('cadangan otomatis: maksimal 5, waktu unik, dan pulihkan', () => {

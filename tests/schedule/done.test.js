@@ -46,7 +46,7 @@ const ok = (c, m) => { assert(c, m); pass++; console.log("ok -", m); };
 
   const css = [...w.document.querySelectorAll("style")].map((s) => s.textContent).join("\n");
   const rule = (sel) => (css.match(new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*\\{[^}]*\\}")) || [""])[0];
-  ok(/var\(--acs\)/.test(rule("#v-jadwal tr.done td")) && /inset 3px 0 0 var\(--ac\)/.test(rule("#v-jadwal tr.done td:first-child")), "gaya sama dengan baris lunas di rincian: latar aksen lembut + garis tepi kiri aksen");
+  ok(/var\(--ins\)/.test(rule("#v-jadwal tr.done td")) && /inset 3px 0 0 var\(--in\)/.test(rule("#v-jadwal tr.done td:first-child")), "gaya sama dengan baris lunas di rincian: latar hijau lembut + garis tepi kiri hijau");
   ok(/prefers-reduced-motion[\s\S]{0,260}tr\.done/.test(css) && !/infinite/.test(rule("#v-jadwal tr.done")), "animasi sekali (tidak berkedip) dan mati pada mode kurangi gerak");
   ok(/\.st\s*\{/.test(css) && !/\.det \.st\s*\{/.test(css), "ikon status dipakai bersama dengan daftar rincian");
 

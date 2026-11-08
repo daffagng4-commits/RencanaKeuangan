@@ -20,6 +20,8 @@ function sbStat(t, bad) {
     e.textContent = '';
     if (vi && t) vi.title = (vi.title ? vi.title + ' · ' : '') + t;
   }
+  var ts = $('tsync');
+  if (ts) ts.textContent = '\u2601 ' + t;
 }
 
 /** Jam sekarang (HH.MM). */
@@ -62,6 +64,7 @@ function setUser(s) {
   if (u) {
     sbStat('Menyinkronkan...');
     pull();
+    toolsPull();
   } else sbStat('Belum masuk. Data tersimpan lokal.');
 }
 
@@ -126,7 +129,7 @@ function push() {
 
 /** Tanda tangan isi data (untuk membandingkan lokal vs cloud). */
 function dataSig(a) {
-  return JSON.stringify(a.data);
+  return JSON.stringify(a.data) + JSON.stringify((a.kas || {}).pr || null);
 }
 
 /** Apakah data lokal masih data contoh yang belum diubah. */
@@ -141,7 +144,7 @@ function applyRemote(row, label) {
   ALL = norm(JSON.parse(JSON.stringify(row.data)));
   ALL.rev = rr;
   S = ALL.data[ALL.year];
-  lastData = JSON.stringify(ALL.data);
+  lastData = dsig();
   try {
     localStorage.setItem(KEY, JSON.stringify(ALL));
   } catch (e) {}
@@ -234,8 +237,10 @@ function askConflict(row, rn) {
 
 /** Tampilkan tautan "Selesaikan sekarang" saat sinkron ditunda. */
 function sbPending() {
-  $('sbs').style.color = 'var(--wr)';
-  $('sbs').innerHTML = 'Sinkron ditunda karena data berbeda. <a href="#" id="sbr">Selesaikan sekarang</a>';
+  var e = $('sbs');
+  e.style.display = 'block';
+  e.style.color = 'var(--wr)';
+  e.innerHTML = 'Sinkron ditunda karena data berbeda. <a href="#" id="sbr">Selesaikan sekarang</a>';
 }
 
 /** Masuk (in) atau daftar (up) dengan email dan password. */

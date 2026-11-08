@@ -27,6 +27,14 @@ function loadCore(extra) {
   ['util', 'schedule', 'state', 'items', 'calc', 'csv', 'reminders'].forEach((f) =>
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', 'core', f + '.js'), 'utf8'), ctx, { filename: f + '.js' }),
   );
+  // calc() memanggil fungsi Catatan Kas yang hidup di js/ui/ (butuh DOM). Di sini dipakai cerminan minimalnya;
+  // kasLinked sama persis dengan js/ui/kas.js, sedangkan target tabungan (kasGoals) sengaja kosong di tes unit.
+  vm.runInContext(
+    'function kasLinked(){var pr=(ALL&&ALL.kas&&ALL.kas.pr)||{};for(var id in pr)if(pr[id].link)return pr[id];return null;}' +
+      'function kasGoals(){return [];}function goalMonthsIn(){return [];}',
+    ctx,
+    { filename: 'kas-stub.js' },
+  );
   return ctx;
 }
 

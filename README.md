@@ -6,10 +6,11 @@ rincian arus kas per bulan, status lunas/lewati, pengingat, kategori, dan data p
 
 ## Memasang
 
-**Cara 1 – satu file (paling mudah).** Jalankan `npm run build` lalu unggah `dist/index.html` ke repo GitHub dengan nama `index.html`.
+**Cara 1 – satu file (paling mudah).** Unggah `index.html` (hasil build: sudah berisi CSS dan semua skrip) ke repo GitHub.
 Aktifkan GitHub Pages (Settings → Pages → Deploy from branch → `main`, `/ (root)`).
 
-**Cara 2 – folder penuh.** Unggah isi folder ini (`index.html`, `css/`, `js/`) apa adanya ke repo. Tidak perlu build.
+**Cara 2 – seluruh proyek.** Unggah semua isi folder ini; GitHub Pages memakai `index.html` di root. Untuk mencoba tanpa build,
+buka `index.dev.html` (memuat `css/` dan `js/` apa adanya, bisa dari `file://`).
 
 ### Supabase (opsional, untuk sinkron antar perangkat)
 1. SQL Editor → jalankan `schema.sql` (tabel `rk_state` + Row Level Security: tiap akun hanya melihat datanya sendiri).
@@ -22,7 +23,8 @@ Tanpa Supabase aplikasi tetap penuh fungsi dengan penyimpanan lokal (localStorag
 ## Struktur
 
 ```
-index.html            markup + daftar <script> (urutan penting)
+index.dev.html        SUMBER markup + daftar <script> (urutan penting); bisa dibuka langsung
+index.html            HASIL build (satu file) = yang dipakai GitHub Pages. Jangan diedit langsung
 css/style.css         seluruh gaya (tema terang/gelap lewat variabel CSS)
 js/config.js          satu-satunya file konfigurasi (Supabase)
 js/core/              logika murni, TANPA DOM -> bisa diuji sebagai unit
@@ -36,15 +38,15 @@ js/core/              logika murni, TANPA DOM -> bisa diuji sebagai unit
 js/ui/                tampilan + event listener (tiap file punya fungsi bindXxx())
   render.js           renderAll(): memperbarui semua tampilan dari state
   rincian.js jadwal.js items.js years.js header.js adjust.js price-modal.js reminders.js skiprange.js
-  io.js backup.js diag.js dom.js
+  kas.js trip.js theme.js topbar.js io.js backup.js diag.js dom.js
 js/sync.js            sinkron Supabase + dialog konflik
 js/app.js             titik masuk: muat data -> bind semua -> render -> sinkron
-build.js              gabungkan semua jadi dist/index.html (satu file)
+build.js              gabungkan index.dev.html + css + js -> index.html (+ dist/); `node build.js --check` memeriksa kesegarannya
 tests/                unit, e2e (jsdom), dan tes browser sungguhan
 ```
 
 Semua skrip adalah skrip klasik (bukan ES module) yang berbagi lingkup global, jadi bisa dibuka langsung dari `file://`
-dan di-host di GitHub Pages tanpa bundler. Urutan di `index.html` harus: config → core → ui → sync → app.
+dan di-host di GitHub Pages tanpa bundler. Urutan di `index.dev.html` harus: config → core → ui → sync → app.
 
 ## Model data
 
@@ -66,20 +68,25 @@ Status lunas/lewati disimpan per tanggal; bila tanggal bergeser, `remapStatus()`
 
 ```
 npm install          # sekali (hanya jsdom untuk tes)
-npm run build        # -> dist/index.html
-npm test             # build + tes unit + tes e2e
+npm run build        # index.dev.html + css/ + js/  ->  index.html (+ dist/)
+npm run check        # error sintaks di js/ atau bundel, dan index.html masih sinkron dengan sumber
+npm test             # build + check + tes unit + tes jadwal
 npm run test:browser # opsional, butuh: npm i -D puppeteer
 ```
 
+**Alur kerja:** edit HANYA sumber (`js/`, `css/`, `index.dev.html`), jalankan `npm run build`, lalu commit `index.html` dan `dist/` yang baru.
+CI (`.github/workflows/ci.yml`) menolak commit yang bundelnya usang atau yang punya error sintaks, supaya satu salah ketik tidak mematikan seluruh aplikasi lagi.
+
 Menambah fitur: (1) logika di `js/core/` + tes unit di `tests/unit/`, (2) tampilan di `js/ui/` dengan fungsi `bindXxx()` dipanggil di `app.js`,
-(3) skrip baru ditambahkan ke `index.html`, (4) tes e2e di `tests/e2e/`, (5) `npm test`.
+(3) skrip baru ditambahkan ke `index.dev.html`, (4) tes UI di `tests/schedule/`, (5) `npm run build` lalu `npm test`.
 
 ## Tes
 
 | Jenis | Lokasi | Isi |
 |---|---|---|
 | Unit | `tests/unit/core.test.js` | jadwal, harga, hitungan, pengingat, remap status, norm, CSV, gabung data, cadangan |
-| E2E (jsdom) | `tests/e2e/*.js` | seluruh alur UI: item, ubah harga/jadwal, lunas/lewati, saldo, pengingat, kategori, impor/ekspor, sinkron (server Supabase tiruan) |
+| Jadwal (jsdom) | `tests/schedule/*.test.js` | UI Rincian/Jadwal/Kas pada `index.html` hasil build: geser tanggal, ubah harga, lunas/lewati, saldo realtime, simulasi |
+| E2E (jsdom, **usang**) | `tests/e2e/*.js` | seluruh alur UI: item, ubah harga/jadwal, lunas/lewati, saldo, pengingat, kategori, impor/ekspor, sinkron (server Supabase tiruan). Ditulis untuk UI lama dan sebagian gagal; belum ikut `npm test` (`npm run test:e2e`) |
 | Browser | `tests/browser/smoke.js` | Chrome sungguhan: lebar HP 390 px terang/gelap, jendela, unduhan file, tangkapan layar |
 
 Tes e2e tidak menyentuh Supabase asli. Untuk Supabase sungguhan pakai **Impor / Ekspor → Jalankan cek sistem** di aplikasi.
@@ -99,7 +106,7 @@ Dua tab baru di bar atas (di samping Rencana Keuangan dan Perjalanan). Keduanya 
 - Pasang: (1) jalankan bagian bawah `schema.sql` (bagian "Alat") di Supabase SQL Editor satu kali; (2) unggah `index.html` dan folder `tools/` ke repo. Sebelum tabel dibuat, alat tetap jalan dan menyimpan di perangkat; statusnya menampilkan pesan.
 - Data alat tidak ikut Impor/Ekspor Rencana Keuangan.
 - Kalkulator rebalancing memakai Tailwind dan Chart.js dari CDN, jadi butuh internet.
-- Catatan: folder `js/` dan `dist/` adalah versi modular lama dan tidak memuat tab Perjalanan maupun alat ini. Yang dipakai GitHub Pages adalah `index.html`.
+- Catatan: tab Perjalanan ada di `js/ui/trip.js`; alat-alat ini berada di `tools/` dan disalin ke `dist/tools/` oleh `build.js`.
 
 ## Pembaruan alat Rebalance porto (r19)
 

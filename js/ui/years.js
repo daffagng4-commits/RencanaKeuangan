@@ -27,7 +27,7 @@ function renderYears() {
       .join('') +
     '<button class="g d" data-dy="1" title="Hapus semua data tahun ini">Hapus tahun ' +
     S.year +
-    '</button><span class="sub">Tiap tahun punya item, saldo, dan status bayar sendiri. Ketik tahun baru di kolom Tahun.</span>';
+    '</button>';
 }
 
 /** Pindah ke tahun v (dibuat kosong bila belum ada). */
