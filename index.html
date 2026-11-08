@@ -9012,6 +9012,25 @@ function bindPwa() {
 /**
  * Titik masuk aplikasi. Urutan: muat data -> pasang listener -> render -> sinkron.
  */
+/* ===== Mode Privasi: kaburkan nominal (tombol #btn-privacy) ===== */
+function bindPrivacy() {
+  var btn = document.getElementById('btn-privacy');
+  if (!btn) return;
+  function apply(on) {
+    document.body.classList.toggle('privacy-mode', on);
+    btn.classList.toggle('on', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+  var on = false;
+  try { on = localStorage.getItem('rk-privacy') === '1'; } catch (e) {}
+  apply(on);
+  btn.addEventListener('click', function () {
+    on = !on;
+    apply(on);
+    try { localStorage.setItem('rk-privacy', on ? '1' : '0'); } catch (e) {}
+  });
+}
+
 function main() {
   loadState();
   bindDom();
@@ -9033,6 +9052,7 @@ function main() {
   bindSim();
   bindXl();
   bindPwa();
+  bindPrivacy();
   resetForm();
   renderAll();
   save();
