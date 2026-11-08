@@ -24,8 +24,10 @@
   --bg: #f8fafc;
   --sf: #ffffff;
   --ink: #0f172a;
-  --mut: #64748b;
+  --mut: #475569;
   --ln: #e2e8f0;
+  --card: var(--sf);
+  --b: var(--ln);
   --ac: #059669;
   --acs: #ecfdf5;
   --wr: #e11d48;
@@ -898,6 +900,27 @@ a.yp.yp-tool:hover .arr-icon {
   padding: 5px 12px;
   min-height: 32px;
 }
+body.privacy-mode .num,
+body.privacy-mode .amt,
+body.privacy-mode .cur,
+body.privacy-mode td:nth-child(2),
+body.privacy-mode td.r,
+body.privacy-mode input#saldo,
+body.privacy-mode .hero-val,
+body.privacy-mode [data-val="rp"] {
+  filter: blur(5px);
+  user-select: none;
+  transition: filter 0.15s ease;
+}
+body.privacy-mode .num:hover,
+body.privacy-mode .amt:hover,
+body.privacy-mode .cur:hover,
+body.privacy-mode td:nth-child(2):hover,
+body.privacy-mode td.r:hover,
+body.privacy-mode input#saldo:hover,
+body.privacy-mode .hero-val:hover {
+  filter: blur(0);
+}
 .yp[data-kt="-"].on, #qk-out.on {
   background: var(--wrs);
   color: var(--wr);
@@ -1330,9 +1353,10 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
     <a class="yp yp-tool" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a>
   </div>
   <div class="topbar-actions">
-    <button type="button" id="btn-notif" class="topbar-btn" title="Aktifkan pengingat notifikasi tagihan">🔔 Notifikasi</button>
-    <button type="button" id="pwa" class="topbar-btn" hidden>📲 Pasang aplikasi</button>
-    <button type="button" id="thm" class="topbar-btn" title="Ketuk untuk ganti tema">&#9680; Tema: Otomatis</button>
+    <button type="button" id="btn-privacy" class="topbar-btn" title="Mode Privasi (Kaburkan Nominal)"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Privasi</span></button>
+    <button type="button" id="btn-notif" class="topbar-btn" title="Aktifkan pengingat notifikasi tagihan"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>Notifikasi</span></button>
+    <button type="button" id="pwa" class="topbar-btn" hidden><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg><span>Pasang</span></button>
+    <button type="button" id="thm" class="topbar-btn" title="Ketuk untuk ganti tema"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span id="thm-txt">Tema</span></button>
   </div>
 </div>
 <header>
@@ -1461,23 +1485,24 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
 <div class="h3">Perubahan yang sudah ada</div><div id="phl"></div></div></div>
 <div class="modal" id="m" hidden><div class="card" style="max-width:540px">
   <h2>Cadangan &amp; Pemulihan Data</h2>
-  <div style="background:var(--card);border:1px solid var(--b);border-radius:8px;padding:12px;margin-bottom:12px">
+  <div style="background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:12px;margin-bottom:12px">
     <div style="font-weight:600;margin-bottom:4px">Cadangan Lengkap (.json)</div>
     <div class="sub" style="margin-bottom:8px">Unduh semua tahun, item, saldo, dan status lunas untuk backup atau pindah perangkat.</div>
     <div id="exb">
       <div class="xr" style="margin-bottom:6px"><button class="p" data-ex="json" style="width:100%">Unduh Cadangan Lengkap (.json)</button></div>
       <details style="margin-top:6px">
-        <summary class="sub" style="cursor:pointer">Ekspor laporan (.csv)</summary>
+        <summary class="sub" style="cursor:pointer">Ekspor laporan (.csv / .ics)</summary>
         <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
           <div class="xr"><button data-ex="items">Item tahun ini (.csv)</button><span class="sub"><span class="chip">Bisa diimpor</span> Format tabel item aktif.</span></div>
           <div class="xr"><button data-ex="hist">Riwayat pembayaran (.csv)</button><span class="sub"><span class="chip n">Laporan</span> Satu baris per tagihan.</span></div>
           <div class="xr"><button data-ex="bulan">Rincian bulanan (.csv)</button><span class="sub"><span class="chip n">Laporan</span> Saldo awal, pengeluaran &amp; akhir.</span></div>
+          <div class="xr"><button data-ex="ics">Pengingat kalender (.ics)</button><span class="sub"><span class="chip">Kalender</span> Impor ke Google / Apple Calendar.</span></div>
         </div>
       </details>
     </div>
   </div>
 
-  <div style="background:var(--card);border:1px solid var(--b);border-radius:8px;padding:12px;margin-bottom:12px">
+  <div style="background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:12px;margin-bottom:12px">
     <div style="font-weight:600;margin-bottom:4px">Impor Data (.json / .csv)</div>
     <div class="sub" style="margin-bottom:8px">Pilih file cadangan untuk memulihkan atau menambahkan data.</div>
     <div class="row2" style="margin-top:0"><input type="file" id="fi" accept=".json,.csv,text/csv,application/json" style="flex:1;min-width:180px"><select id="im" style="width:auto"><option value="merge">Gabungkan</option><option value="replace">Timpa data</option></select></div>
@@ -1523,9 +1548,9 @@ button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--
   </div>
 </div></div>
 
-<div class="modal" id="lg" hidden><div class="card"><h2>Masuk untuk sinkron</h2><p class="sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p><label for="le">Email</label><input id="le" type="email" autocomplete="email"><label for="lp" style="margin-top:10px">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="err" id="lm"></div><div class="row2"><button class="p" id="lin">Masuk</button><button id="lup">Daftar</button><button class="c" id="lgc">Tutup</button></div></div></div>
+<div class="modal" id="lg" hidden><div class="card"><h2>Masuk untuk sinkron</h2><p class="sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p><label for="le">Email</label><input id="le" type="email" autocomplete="email"><label for="lp" style="margin-top:10px">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="err" id="lm"></div><div class="row2"><button class="p" id="lin">Masuk</button><button class="c" id="lgc">Tutup</button></div></div></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
 <script>
 /* ===== js/config.js ===== */
 /**
@@ -1559,9 +1584,10 @@ function rp(n) {
 function parseRp(s) {
   s = String(s).toLowerCase().replace(/rp|\s/g, '');
   var m = 1;
-  if (/(jt|juta)$/.test(s)) m = 1e6;
+  if (/(m|miliar|milyar)$/.test(s)) m = 1e9;
+  else if (/(jt|juta)$/.test(s)) m = 1e6;
   else if (/(rb|ribu|k)$/.test(s)) m = 1e3;
-  s = s.replace(/(jt|juta|rb|ribu|k)$/, '');
+  s = s.replace(/(m|miliar|milyar|jt|juta|rb|ribu|k)$/, '');
   var v = m > 1 ? parseFloat(s.replace(',', '.')) : parseInt(s.replace(/[.,]/g, ''), 10);
   return isNaN(v) ? 0 : Math.round(v * m);
 }
@@ -2152,11 +2178,17 @@ function save() {
     localStorage.setItem(KEY, JSON.stringify(ALL));
     setSaveStatus(true);
   } catch (e) {
+    try {
+      localStorage.removeItem('rk-undo');
+      localStorage.setItem(KEY, JSON.stringify(ALL));
+      setSaveStatus(true);
+      return;
+    } catch (e2) {}
     setSaveStatus(false);
   }
 }
 
-/** Daftar cadangan otomatis (maks. 5) dari localStorage. */
+/** Daftar cadangan otomatis (maks. 3) dari localStorage. */
 function snapList() {
   try {
     return JSON.parse(localStorage.getItem('rk-undo') || '[]');
@@ -2286,10 +2318,17 @@ function mergeAll(inc) {
 /** Muat state dari localStorage (atau data contoh bila kosong/rusak). */
 function loadState() {
   var raw = null;
+  var r = null;
   try {
-    var r = localStorage.getItem(KEY);
+    r = typeof localStorage !== 'undefined' ? localStorage.getItem(KEY) : null;
     raw = r ? JSON.parse(r) : null;
   } catch (e) {
+    if (r) {
+      try {
+        localStorage.setItem(KEY + '_corrupt_backup_' + Date.now(), r);
+      } catch (err) {}
+      console.error('Data localStorage rusak, dicadangkan ke backup sebelum dipulihkan:', e);
+    }
     raw = null;
   }
   ALL = norm(raw);
@@ -4301,11 +4340,12 @@ function bindItems() {
 function parseQuickItem(str, yr) {
   if (!str || !str.trim()) return { error: 'Masukkan nama dan nominal tagihan/item.' };
   var s = str.trim();
-  var yDefault = yr || (typeof S !== 'undefined' && S.year) || new Date().getFullYear();
+  var today = new Date();
+  var yDefault = yr || (typeof S !== 'undefined' && S.year) || today.getFullYear();
   var start = '';
   var rem = s;
 
-  // 1. Ekstrak tanggal terlebih dahulu agar angka tanggal tidak salah terdeteksi sebagai nominal:
+  // 1. Ekstrak tanggal spesifik jika ada
   // a. DD-MM-YYYY atau DD/MM/YYYY (mis. 07-11-2026 atau 7/11/2026)
   var dmyMatch = rem.match(/\b(\d{1,2})[-/](\d{1,2})[-/](\d{4})\b/);
   if (dmyMatch) {
@@ -4353,34 +4393,17 @@ function parseQuickItem(str, yr) {
     }
   }
 
-  // d. Tanggal saja dengan penanda tgl/tanggal: "tgl 25"
-  if (!start) {
-    var dayOnlyMatch = rem.match(/\b(?:tgl|tanggal)\.?\s*(\d{1,2})\b/i);
-    if (dayOnlyMatch) {
-      var od = parseInt(dayOnlyMatch[1], 10);
-      if (od < 1) od = 1;
-      if (od > 31) od = 31;
-      start = yDefault + '-01-' + pad2(od);
-      rem = rem.replace(dayOnlyMatch[0], ' ');
-    }
-  }
+  // 2. Ekstrak siklus LEBIH DULU sebelum harga
+  var unit = 'bulan', n = 1;
+  var targetDay = null;
 
-  if (!start) {
-    start = yDefault + '-01-01';
-  }
-
-  // 2. Ekstrak nominal: 186k, 186.000, 1,5jt, 2.5 juta, 50rb, 200000, dst.
-  var priceMatch = rem.match(/\b(\d+(?:[\.,]\d+)?\s*(?:k|rb|ribu|jt|juta|m|miliar)?|\d{1,3}(?:\.\d{3})+)\b/i);
-  if (!priceMatch) return { error: 'Nominal tidak ditemukan (mis. 200k, 1.5jt, atau 350.000).' };
-  var rawPrice = priceMatch[0];
-  var price = parseRp(rawPrice);
-  if (!price || price <= 0) return { error: 'Nominal tidak valid.' };
-  rem = rem.replace(rawPrice, ' ').trim();
-
-  // 3. Unit & interval berulang
-  var unit = 'bulan',
+  var tiapTglMatch = rem.match(/\btiap\s+(?:tgl|tanggal)\.?\s*(\d{1,2})\b/i);
+  if (tiapTglMatch) {
+    targetDay = parseInt(tiapTglMatch[1], 10);
+    unit = 'bulan';
     n = 1;
-  if (/\bsekali\b/i.test(rem)) {
+    rem = rem.replace(tiapTglMatch[0], ' ');
+  } else if (/\bsekali\b/i.test(rem)) {
     unit = 'sekali';
     n = 1;
     rem = rem.replace(/\bsekali\b/gi, ' ');
@@ -4389,7 +4412,7 @@ function parseQuickItem(str, yr) {
     if (cadMatch) {
       n = cadMatch[1] ? parseInt(cadMatch[1], 10) : 1;
       var u = cadMatch[2].toLowerCase();
-      unit = u === 'thn' || u === 'tahun' ? 'tahun' : u;
+      unit = (u === 'thn' || u === 'tahun') ? 'tahun' : u;
       rem = rem.replace(cadMatch[0], ' ');
     } else {
       var cadUnitMatch = rem.match(/\b(bulanan|mingguan|harian|tahunan)\b/i);
@@ -4404,9 +4427,62 @@ function parseQuickItem(str, yr) {
     }
   }
 
-  // 4. Bersihkan kata kunci pembantu untuk nama item
+  // d. Tanggal saja tanpa bulan: misal "tgl 15"
+  if (!start && !targetDay) {
+    var dayOnlyMatch = rem.match(/\b(?:tgl|tanggal)\.?\s*(\d{1,2})\b/i);
+    if (dayOnlyMatch) {
+      targetDay = parseInt(dayOnlyMatch[1], 10);
+      rem = rem.replace(dayOnlyMatch[0], ' ');
+    }
+  }
+
+  if (targetDay !== null) {
+    if (targetDay < 1) targetDay = 1;
+    if (targetDay > 31) targetDay = 31;
+    var curY = today.getFullYear();
+    var curM = today.getMonth() + 1;
+    var curD = today.getDate();
+    if (curD <= targetDay) {
+      start = curY + '-' + pad2(curM) + '-' + pad2(targetDay);
+    } else {
+      var nextM = curM + 1;
+      var nextY = curY;
+      if (nextM > 12) { nextM = 1; nextY++; }
+      start = nextY + '-' + pad2(nextM) + '-' + pad2(targetDay);
+    }
+  }
+
+  if (!start) {
+    start = yDefault + '-01-01';
+  }
+
+  // 3. Ekstrak harga: prioritaskan angka yang punya sufiks uang (k/rb/jt/m/miliar/milyar) atau separator titik ribuan
+  var candidates = [];
+  var pRegex = /\b(\d+(?:[\.,]\d+)?\s*(?:k|rb|ribu|jt|juta|m|miliar|milyar)|\d{1,3}(?:\.\d{3})+|\d+)\b/gi;
+  var pm;
+  while ((pm = pRegex.exec(rem)) !== null) {
+    var val = parseRp(pm[0]);
+    var hasSuffix = /(?:k|rb|ribu|jt|juta|m|miliar|milyar)$/i.test(pm[0]) || /\d{1,3}\.\d{3}/.test(pm[0]);
+    candidates.push({ raw: pm[0], val: val, hasSuffix: hasSuffix, index: pm.index });
+  }
+
+  if (!candidates.length) return { error: 'Nominal tidak ditemukan (mis. 200k, 1.5jt, atau 350.000).' };
+
+  candidates.sort(function(a, b) {
+    if (a.hasSuffix && !b.hasSuffix) return -1;
+    if (!a.hasSuffix && b.hasSuffix) return 1;
+    return b.val - a.val;
+  });
+
+  var chosen = candidates[0];
+  if (!chosen.val || chosen.val <= 0) return { error: 'Nominal tidak valid.' };
+  var price = chosen.val;
+
+  rem = rem.slice(0, chosen.index) + ' ' + rem.slice(chosen.index + chosen.raw.length);
+
+  // 4. Bersihkan nama (HANYA buang kata kontrol pembantu awal/akhir)
   var name = rem
-    .replace(/\b(?:tiap|mulai|dari|pada|tgl|tanggal|bulan|minggu|hari|tahun)\b/gi, ' ')
+    .replace(/\b(?:tiap|mulai|dari|pada)\b/gi, ' ')
     .replace(/\s+/g, ' ')
     .replace(/^[\s,.;:-]+|[\s,.;:-]+$/g, '')
     .trim();
@@ -5622,11 +5698,11 @@ function setX(t, ok) {
 }
 
 /** Unduh file; bila tidak bisa, isinya ditaruh di kolom teks agar bisa disalin. */
-function exportFile(name, data) {
+function exportFile(name, data, mime) {
   if (!DL) {
     try {
       var a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([data], { type: 'text/plain;charset=utf-8' }));
+      a.href = URL.createObjectURL(new Blob([data], { type: mime || 'text/plain;charset=utf-8' }));
       a.download = name;
       document.body.appendChild(a);
       a.click();
@@ -5666,6 +5742,42 @@ function doExport(kind) {
       'rencana-keuangan-cadangan-' + isoD(Date.now()) + '.json',
       JSON.stringify(ALL, null, 1),
     );
+  }
+  if (kind === 'ics') {
+    var events = [];
+    var dtstamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    S.items.forEach(function (it) {
+      (c.occs[it.id] || []).forEach(function (t) {
+        var d = isoD(t);
+        var kk = it.id + '|' + d;
+        if (S.skip && S.skip[kk]) return;
+        var p = priceAt(it, t);
+        var dt = d.replace(/-/g, '');
+        events.push([
+          'BEGIN:VEVENT',
+          'UID:rk-' + kk + '@rencanakeuangan',
+          'DTSTAMP:' + dtstamp,
+          'DTSTART;VALUE=DATE:' + dt,
+          'SUMMARY:Bayar ' + it.name + ' (' + rp(p) + ')',
+          'DESCRIPTION:Tagihan: ' + it.name + ' sebesar ' + rp(p) + ((S.paid && S.paid[kk]) ? ' [Lunas]' : ' [Belum Lunas]'),
+          'STATUS:' + ((S.paid && S.paid[kk]) ? 'CONFIRMED' : 'TENTATIVE'),
+          'END:VEVENT'
+        ].join('
+\n'));
+      });
+    });
+    var icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Rencana Keuangan//ID',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      events.join('
+\n'),
+      'END:VCALENDAR'
+    ].join('
+\n');
+    return exportFile('tagihan-' + y + '.ics', icsContent, 'text/calendar;charset=utf-8');
   }
   if (kind === 'items') {
     rows = [['Nama', 'Harga', 'Tiap', 'Satuan', 'Mulai', 'Sampai', 'Jumlah kali', 'Kategori']];
@@ -6466,7 +6578,7 @@ function setSync(rev) {
   } catch (e) {}
 }
 
-/** Kirim state ke cloud (upsert satu baris per akun). */
+/** Kirim state ke cloud (update bersyarat where rev = prevRev untuk cegah balapan data). */
 function push() {
   pushT = null;
   if (!sb || !sbUser || syncBlocked) return Promise.resolve();
@@ -6476,17 +6588,25 @@ function push() {
       localStorage.setItem(KEY, JSON.stringify(ALL));
     } catch (e) {}
   }
-  return sb
-    .from('rk_state')
-    .upsert({ user_id: sbUser.id, data: ALL, rev: ALL.rev, updated_at: new Date().toISOString() })
-    .then(function (r) {
-      if (r.error) {
-        sbStat('Gagal simpan ke cloud: ' + r.error.message, 1);
-      } else {
-        setSync(ALL.rev);
-        sbStat('Tersinkron ' + clock());
-      }
-    });
+  var prevRev = lastSync();
+  var payload = { user_id: sbUser.id, data: ALL, rev: ALL.rev, updated_at: new Date().toISOString() };
+  var q = prevRev != null
+    ? sb.from('rk_state').update(payload).eq('user_id', sbUser.id).eq('rev', prevRev).select('rev')
+    : sb.from('rk_state').upsert(payload).select('rev');
+
+  return q.then(function (r) {
+    if (r.error) {
+      sbStat('Gagal simpan ke cloud: ' + r.error.message, 1);
+    } else if (prevRev != null && (!r.data || !r.data.length)) {
+      sbStat('Versi cloud berubah di perangkat lain, menyelaraskan...', 1);
+      return pull();
+    } else {
+      setSync(ALL.rev);
+      sbStat('Tersinkron ' + clock());
+    }
+  }).catch(function (err) {
+    sbStat('Gagal simpan (offline): ' + (err.message || 'koneksi'), 1);
+  });
 }
 
 /** Tanda tangan isi data (untuk membandingkan lokal vs cloud). */
@@ -6683,6 +6803,12 @@ function bindSync() {
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden && sbUser && !pushT && !syncBlocked) pull();
   });
+  window.addEventListener('online', function () {
+    if (sbUser && !syncBlocked) {
+      sbStat('Koneksi pulih, menyelaraskan...');
+      pull();
+    }
+  });
   $('lgb').onclick = function () {
     if (sbUser) {
       sb.auth.signOut();
@@ -6697,9 +6823,11 @@ function bindSync() {
   $('lin').onclick = function () {
     auth('in');
   };
-  $('lup').onclick = function () {
-    auth('up');
-  };
+  if ($('lup')) {
+    $('lup').onclick = function () {
+      auth('up');
+    };
+  }
 }
 
 /* ===== js/ui/theme.js ===== */
@@ -6714,7 +6842,9 @@ function bindUi() {
     return T.indexOf(t) > 0 ? t : 'auto';
   }
   function show() {
-    btn.textContent = '◐ Tema: ' + N[cur()];
+    var txtEl = $('thm-txt');
+    if (txtEl) txtEl.textContent = 'Tema: ' + N[cur()];
+    else btn.textContent = 'Tema: ' + N[cur()];
   }
   btn.onclick = function () {
     var n = T[(T.indexOf(cur()) + 1) % T.length];
@@ -8767,27 +8897,23 @@ function triggerSystemNotification(title, body, tag) {
   }
 }
 
-/** Pengingat tagihan jatuh tempo lokal (Notification API - Fitur 1). */
+/** Pengingat tagihan jatuh tempo lokal (Notification API - konsisten dengan reminders lintas tahun). */
 function checkDueNotifications(force) {
   if (!('Notification' in window)) return;
   if (Notification.permission !== 'granted') return;
-  if (!S || !S.items) return;
-  var today = todayISO();
+  if (!ALL || !ALL.data) return;
+  var rem = reminders(3);
+  var today = rem.today;
   var todayMs = Date.parse(today + 'T00:00:00Z');
   var dueList = [];
 
-  S.items.forEach(function (it) {
-    var occs = occ(it, S.year || new Date().getFullYear());
-    occs.forEach(function (t) {
-      var d = isoD(t);
-      var pk = it.id + '|' + d;
-      if (S.paid && (S.paid[pk] || (S.skip && S.skip[pk]))) return;
-      var diffDays = Math.round((t - todayMs) / 864e5);
-      if (diffDays >= 0 && diffDays <= 3) {
-        var price = priceAt(it, t);
-        dueList.push({ it: it, d: d, diff: diffDays, price: price });
-      }
-    });
+  (rem.late || []).forEach(function (row) {
+    var diffDays = Math.round((row.t - todayMs) / 864e5);
+    dueList.push({ it: row.it, d: row.iso, diff: diffDays, price: row.price, late: true });
+  });
+  (rem.soon || []).forEach(function (row) {
+    var diffDays = Math.round((row.t - todayMs) / 864e5);
+    dueList.push({ it: row.it, d: row.iso, diff: diffDays, price: row.price, late: false });
   });
 
   if (!dueList.length) {
@@ -8810,7 +8936,7 @@ function checkDueNotifications(force) {
 
   var titles = [];
   dueList.slice(0, 3).forEach(function (item) {
-    var timing = item.diff === 0 ? 'HARI INI' : item.diff + ' hari lagi';
+    var timing = item.diff < 0 ? 'TERLEWAT (' + Math.abs(item.diff) + ' hari)' : (item.diff === 0 ? 'HARI INI' : item.diff + ' hari lagi');
     titles.push(item.it.name + ' (' + rp(item.price) + ' - ' + timing + ')');
   });
   var body = titles.join('\n');
