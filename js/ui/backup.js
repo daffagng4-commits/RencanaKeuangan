@@ -45,7 +45,7 @@ function bindBackup() {
     $('merr').textContent = ok ? 'Tersalin.' : 'Teks sudah terpilih. Salin dengan Ctrl+C.';
   };
   $('rs').onclick = function () {
-    if (this.dataset.arm) {
+    askConfirm('Pulihkan data contoh? <b>Semua tahun dan transaksi Anda akan hilang</b> (masih bisa diurungkan sebentar).', function () {
       var sn = snap('Sebelum pulihkan contoh');
       ALL = norm(null);
       S = ALL.data[ALL.year];
@@ -56,15 +56,10 @@ function bindBackup() {
       renderAll();
       resetForm();
       $('m').hidden = true;
-      this.dataset.arm = '';
-      this.textContent = 'Pulihkan contoh';
       toast('Data contoh dipulihkan.', function () {
         restoreSnap(sn.t);
       });
-    } else {
-      this.dataset.arm = 1;
-      this.textContent = 'Yakin? Semua tahun hilang';
-    }
+    }, 'Ya, pulihkan contoh');
   };
   $('sl').onclick = function (e) {
     var b = e.target.closest('button[data-sr]');

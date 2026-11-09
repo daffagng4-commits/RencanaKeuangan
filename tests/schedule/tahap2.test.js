@@ -26,41 +26,11 @@ const { boot } = require('./ui.js');
   w.kasLinked().tx = [{ id: 'g1', d: '2026-12-01', t: '+', amt: 8000000, cat: 'Gaji', note: 'Gaji Des' }];
   w.renderAll();
   const hero = txt($('v-rincian').querySelector('.hero'));
-  assert(/Investasi \(aset\)\s*Rp 600\.000/.test(hero), 'statistik investasi: ' + hero);
-  assert(/8% dari pemasukan tercatat \(Rp 8\.000\.000\)/.test(hero), 'rasio investasi');
-  assert(/Di luar investasi\s*Rp 1\.300\.000/.test(hero), 'pengeluaran di luar investasi');
-  assert($('v-rincian').querySelector('.hero a.lnk[href*="rebalance"]'), 'tautan Rebalance porto');
-  assert(/termasuk investasi Rp 600\.000/.test(hero), 'aman hari ini menyebut investasi');
-  assert(/aset/.test(txt($('v-rincian'))), 'chip aset di kategori/agenda');
-
-  const ag = $('v-rincian').querySelector('.agenda');
-  assert(ag, 'kartu agenda tampil');
-  const rows = [...ag.querySelectorAll('.ag-row')].map(txt);
-  assert.strictEqual(rows.length, 5, rows.join(' | '));
-  assert(/^TerlambatTelat/.test(rows[0]), 'terlambat paling atas: ' + rows[0]);
-  assert(/Listrik.*Rp 4\.700\.000$/.test(rows[1]), rows[1]);
-  assert(/DCA Saham.*terendah.*Rp 4\.100\.000$/.test(rows[2]), 'titik terendah ditandai: ' + rows[2]);
-  assert(/Gaji Des kas\+Rp 8\.000\.000Rp 12\.100\.000$/.test(rows[3]), 'pemasukan kas ikut: ' + rows[3]);
-  assert(/Saldo terendah Rp 4\.100\.000 setelah DCA Saham/.test(txt(ag)), 'ringkasan terendah');
-  assert(ag.querySelector('svg.ag-chart circle'), 'penanda titik terendah di grafik');
-
-  // saldo habis -> peringatan
-  w.S.saldo = 400000;
-  w.renderAll();
-  assert(/habis/.test(txt($('v-rincian').querySelector('.agenda .err'))), 'peringatan saldo habis');
-  w.S.saldo = 5000000;
-
-  // sensor privasi mencakup agenda
-  click($('btn-privacy'));
-  assert(/blur/.test(w.getComputedStyle($('v-rincian').querySelector('.ag-b')).filter), 'agenda ikut disensor');
-  click($('btn-privacy'));
-
-  // tahun lain / tanpa profil tergabung: agenda tidak tampil
-  w.switchYear(2027);
-  w.renderAll();
-  assert(!$('v-rincian').querySelector('.agenda'), 'tanpa agenda di tahun lain');
-  w.switchYear(2026);
-  w.renderAll();
+  assert(!/Investasi \(aset\)/.test(hero), 'statistik investasi dihapus: ' + hero);
+  assert(!/Di luar investasi/.test(hero), 'pengeluaran di luar investasi dihapus');
+  assert(!$('v-rincian').querySelector('a.lnk[href*="rebalance"]'), 'tautan Rebalance dihapus');
+  assert($('v-rincian').querySelector('svg[aria-label^="Grafik arus kas"]'), 'satu grafik arus kas tampil');
+  assert(!$('v-rincian').querySelector('.agenda'), 'kartu agenda dihapus');
 
   // ---------- 2. Navigasi ----------
   const alatBtn = $('alat-btn'), alatMenu = $('alat-menu');

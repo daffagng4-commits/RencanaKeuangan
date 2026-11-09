@@ -11,38 +11,28 @@ const { boot } = require('./ui.js');
   const de = w.document.documentElement;
   const cur = () => de.getAttribute('data-theme') || 'auto';
 
-  // tombol: Otomatis > Terang > Gelap > Otomatis
+  // tombol: Otomatis > Terang > Gelap > Hitam-putih > Hitam-putih gelap > Otomatis
   const seq = [cur()];
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     click($('thm'));
     seq.push(cur());
   }
-  assert.deepStrictEqual(seq, ['auto', 'light', 'dark', 'auto'], seq.join(' > '));
+  assert.deepStrictEqual(seq, ['auto', 'light', 'dark', 'bw', 'bwd', 'auto'], seq.join(' > '));
   assert.strictEqual(w.localStorage.getItem('rk-theme'), 'auto');
   click($('thm'));
   assert.strictEqual(w.localStorage.getItem('rk-theme'), 'light');
   assert(/Terang/.test($('thm').title));
 
-  // hitam-putih dari menu Alat
-  const alat = $('alat-menu'), item = (v) => w.document.querySelector('#alat-menu [data-theme-set="' + v + '"]');
-  assert(item('bw') && item('bwd'), 'dua pilihan tema lanjutan ada di menu Alat');
-  click($('alat-btn'));
-  click(item('bw'));
+  // tema tidak lagi di menu Alat; semua tema lewat tombol topbar
+  assert(!w.document.querySelector('#alat-menu [data-theme-set]'), 'pilihan tema tidak duplikat di menu Alat');
+  click($('thm'));
+  click($('thm'));
   assert.strictEqual(cur(), 'bw');
-  assert(alat.hidden, 'menu menutup setelah memilih');
   assert(/Hitam-putih/.test($('thm').title) && !/gelap/i.test($('thm').title));
-  assert(item('bw').classList.contains('on') && item('bw').getAttribute('aria-checked') === 'true');
-  assert(!item('bwd').classList.contains('on'));
-  click($('alat-btn'));
-  click(item('bw'));
-  assert.strictEqual(cur(), 'auto', 'memilih lagi = kembali ke Otomatis');
-
-  // dari hitam-putih, tombol topbar kembali ke Otomatis
-  click($('alat-btn'));
-  click(item('bwd'));
+  click($('thm'));
   assert.strictEqual(cur(), 'bwd');
   click($('thm'));
-  assert.strictEqual(cur(), 'auto');
+  assert.strictEqual(cur(), 'auto', 'setelah tema terakhir kembali ke Otomatis');
 
   // lembar Lainnya (HP)
   click($('botnav').querySelector('[data-k="more"]'));

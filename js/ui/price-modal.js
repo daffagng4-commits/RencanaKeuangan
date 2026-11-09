@@ -1037,17 +1037,19 @@ function bindPrice() {
   $("phl").onclick = function (e) {
     var b = e.target.closest("button[data-pdel]");
     if (!b) return;
-    var it = item(pmId);
-    var sn = snap("Sebelum hapus perubahan harga");
-    trackSchedule(it, function () {
-      it.ch.splice(+b.dataset.pdel, 1);
-    });
-    save();
-    renderAll();
-    renderPm();
-    pmPrev();
-    toast("Perubahan dihapus.", function () {
-      restoreSnap(sn.t);
-    });
+    askConfirm("Hapus perubahan harga ini dari jadwal?", function () {
+      var it = item(pmId);
+      var sn = snap("Sebelum hapus perubahan harga");
+      trackSchedule(it, function () {
+        it.ch.splice(+b.dataset.pdel, 1);
+      });
+      save();
+      renderAll();
+      renderPm();
+      pmPrev();
+      toast("Perubahan dihapus.", function () {
+        restoreSnap(sn.t);
+      });
+    }, "Ya, hapus");
   };
 }

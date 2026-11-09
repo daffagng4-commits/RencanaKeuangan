@@ -32,11 +32,9 @@ const { boot } = require('./ui.js');
   w.tab('rincian');
   w.renderAll();
 
-  // ---- keadaan awal: belum ada yang lunas -> empty state dengan tombol aksi ----
+  // ---- keadaan awal: kartu "Rencana vs realisasi" sudah dihapus ----
   let rv = $('v-rincian');
-  assert(/Belum ada tagihan yang dilunasi/.test(txt(rv)), 'empty state realisasi');
-  click(rv.querySelector('[data-goto="jadwal"]'));
-  assert.strictEqual(w.curTab, 'jadwal', 'tombol aksi membuka Jadwal');
+  assert(!/Belum ada tagihan yang dilunasi/.test(txt(rv)), 'kartu realisasi tidak tampil');
 
   // ---- catat transaksi sangat cocok -> otomatis lunas ----
   w.tab('kas');
@@ -98,15 +96,11 @@ const { boot } = require('./ui.js');
   assert.strictEqual(before - dbl, 201000, 'transaksi ikut mengurangi saldo');
   assert.strictEqual(after - dbl, 200000, 'sesudah digabung: baris "(lunas)" 200.000 dilewati, hanya transaksi 201.000 yang dihitung');
 
-  // ---- kartu Rencana vs realisasi ----
+  // ---- kartu Rencana vs realisasi sudah dihapus ----
   w.tab('rincian');
   w.renderAll();
   rv = txt($('v-rincian'));
-  assert(/Rencana vs realisasi 2026/.test(rv), 'kartu realisasi');
-  assert(/2 tagihan lunas: rencana Rp 400\.000, realisasi Rp 406\.000 · lebih besar Rp 6\.000/.test(rv), rv.match(/\d tagihan lunas[^.]*\./)?.[0] + ' | ' + rv.slice(rv.indexOf('Rencana vs realisasi'), rv.indexOf('Rencana vs realisasi') + 300));
-  assert(/Selisih terbesar/.test(rv) && /Listrik PLN/.test(rv));
-  assert(/tagihan sudah lewat jatuh tempo dan belum lunas/.test(rv), 'peringatan tagihan terlambat');
-  assert.strictEqual($('v-rincian').querySelectorAll('.rv-m').length - 1, 2, 'baris bulan: Maret dan Agustus');
+  assert(!/Rencana vs realisasi/.test(rv), 'kartu realisasi dihapus');
 
   assert.strictEqual(errs.length, 0, 'tidak ada galat JavaScript: ' + errs.slice(0, 2));
   console.log('Semua pengecekan tahap3_match lulus');

@@ -82,8 +82,6 @@ function kasDismissMatch(txid) {
   save();
   renderKas();
 }
-
-/** Kartu "Rencana vs realisasi" di Rincian Bulanan. */
 function realisasiHtml() {
   var D = realisasiData(),
     head = '<div class="card"><h2>Rencana vs realisasi ' + S.year + '</h2>';

@@ -35,8 +35,8 @@ const { boot } = require("./ui.js");
   assert(heroRincian.includes("4.550.000"), "Rincian: Saldo harus Rp 4.550.000 saat tagihan belum lunas");
   assert(heroRincian.includes("Realtime"), "Rincian: Harus ada keterangan Realtime");
   assert(heroRincian.includes("Januari"), "Rincian: Harus ada keterangan bulan Januari");
-  assert(/masuk Rp 50\.000/.test(heroRincian), "Rincian: Masuk harus Rp 50.000");
-  assert(/keluar Rp 500\.000/.test(heroRincian), "Rincian: Keluar harus Rp 500.000");
+  assert(!/masuk Rp 50\.000/.test(heroRincian), "Rincian: baris masuk/keluar dihapus");
+  assert(!/keluar Rp 500\.000/.test(heroRincian), "Rincian: baris keluar dihapus");
 
   // ============================
   // 2. Sekarang tandai tagihan 1 Jan 2028 sebagai LUNAS
@@ -50,7 +50,7 @@ const { boot } = require("./ui.js");
 
   // Saldo harus 5.000.000 - 500.000 + 50.000 - 200.000 = 4.350.000
   assert(heroRincian.includes("4.350.000"), "Rincian: Saldo harus Rp 4.350.000 saat tagihan lunas");
-  assert(/keluar Rp 700\.000/.test(heroRincian), "Rincian: Keluar harus Rp 700.000 setelah tagihan 200rb lunas");
+  assert(!/keluar Rp 700\.000/.test(heroRincian), "Rincian: baris keluar dihapus");
 
   // ============================
   // 3. Uji pada Tab Catatan Kas (verifikasi baris transaksi)

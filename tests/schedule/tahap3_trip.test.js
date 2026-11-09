@@ -66,6 +66,6 @@ const { boot } = require('./ui.js');
   console.log('Semua pengecekan tahap3_trip lulus');
   process.exit(0);
 })().catch((e) => {
-  console.error('GAGAL:', e.message);
+  console.error('GAGAL:', e.stack || e.message);
   process.exit(1);
 });

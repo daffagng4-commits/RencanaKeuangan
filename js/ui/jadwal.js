@@ -7,10 +7,11 @@ var LEGEND_HTML =
   '<div class="lgd">' +
   '<span><button class="pd" type="button" tabindex="-1" disabled>10</button>Harga sama dengan harga awal</span>' +
   '<span><button class="pd chg" type="button" tabindex="-1" disabled>1<span class="cp">720rb</span></button>Harga beda dari harga awal (angka kecil = harga berlaku)</span>' +
+  '<span><button class="pd chg" type="button" tabindex="-1" disabled>1<span class="cp an">720rb &uarr;</span></button>Lonjakan &ge;20% dari harga awal (tanda &uarr; merah, nominal tetap terlihat)</span>' +
   '<span><button class="pd on" type="button" tabindex="-1" disabled>&#10003; 10</button>Sudah dibayar</span>' +
   '<span><button class="pd late" type="button" tabindex="-1" disabled>10</button>Terlewat: sudah lewat tanggal tapi belum ditandai dibayar atau dilewati (merah)</span>' +
   '<span><button class="pd skp" type="button" tabindex="-1" disabled>10</button>Dilewati: sengaja tidak dibayar, tidak dihitung (merah dicoret)</span>' +
-  '<span><b class="cmut"">0</b>Tidak ada tagihan bulan itu</span></div>';
+  '<span><b class="cmut">0</b>Tidak ada tagihan bulan itu</span></div>';
 
 /** Kotak panduan yang bisa disembunyikan / ditampilkan (pilihan diingat per kotak). */
 function gdBox(key, html) {
@@ -58,7 +59,7 @@ function chipHtml(it, t, today) {
     '">' +
     (skipped ? '' : paid ? '✓ ' : '') +
     new Date(t).getUTCDate() +
-    (changed ? '<span class="cp">' + (anom ? '▲+' + diffPct + '%' : shortP(price)) + '</span>' : '') +
+    (changed ? '<span class="cp' + (anom ? ' an' : '') + '"' + (anom ? ' title="Lonjakan +' + diffPct + '% dari harga awal"' : '') + '>' + shortP(price) + (anom ? ' &uarr;' : '') + '</span>' : '') +
     '</button>'
   );
 }
@@ -259,18 +260,6 @@ function cmClose() {
   $('cm').hidden = true;
 }
 
-/** Ubah cepat nominal untuk satu tanggal tagihan tertentu (Fitur 5). */
-function applyQuickPrice(it, isoDate, newPrice) {
-  var o = origDate(it, isoDate);
-  var change = { from: o, to: o, dates: [o], price: newPrice, n: null, unit: null };
-  it.ch = (it.ch || []).filter(function (q) {
-    return !chSame(it, change, q);
-  });
-  it.ch.push(change);
-  it.ch.sort(cmpFrom);
-  save();
-}
-
 /** Menu status di dekat chip yang diklik. */
 function openCm(b) {
   var k = b.dataset.pk,
@@ -291,12 +280,6 @@ function openCm(b) {
     ' &middot; ' +
     rp(curPrice) +
     '</span></div>' +
-    '<div class="cm-row" style="padding:6px 8px;border-bottom:1px solid var(--ln);margin-bottom:4px">' +
-    '<input id="cm-qa" type="text" inputmode="numeric" value="' +
-    curPrice +
-    '" placeholder="Nominal" title="Ubah nominal tanggal ini">' +
-    '<button id="cm-qas" type="button" title="Simpan nominal">Simpan</button>' +
-    '</div>' +
     btn('paid', '&#10003; Sudah dibayar') +
     btn('skip', '&#10140; Lewati (tidak bayar)') +
     btn('none', 'Belum dibayar') +
@@ -308,42 +291,11 @@ function openCm(b) {
     mh = m.offsetHeight || 250;
   m.style.left = Math.max(8, Math.min(r.left, innerWidth - mw - 8)) + 'px';
   m.style.top = (r.bottom + mh + 10 > innerHeight ? Math.max(8, r.top - mh - 6) : r.bottom + 6) + 'px';
-  setTimeout(function () {
-    var inp = $('cm-qa');
-    if (inp) {
-      inp.onkeydown = function (ev) {
-        if (ev.key === 'Enter') {
-          ev.preventDefault();
-          var sBtn = $('cm-qas');
-          if (sBtn) sBtn.click();
-        }
-      };
-    }
-  }, 30);
 }
 
 /** Pasang event listener halaman ini. */
 function bindJadwal() {
   $('cm').onclick = function (e) {
-    var saveBtn = e.target.closest('#cm-qas');
-    if (saveBtn) {
-      var k = this.dataset.k,
-        p = k.split('|'),
-        it = item(p[0]);
-      if (it) {
-        var rawVal = $('cm-qa') ? $('cm-qa').value : '';
-        var nPr = parseRp(rawVal);
-        if (nPr > 0) {
-          applyQuickPrice(it, p[1], nPr);
-          cmClose();
-          renderAll();
-          toast('Nominal ' + esc(it.name) + ' diubah jadi ' + rp(nPr));
-        } else {
-          toast('Nominal tidak valid');
-        }
-      }
-      return;
-    }
     var b = e.target.closest('button[data-st]');
     if (!b) return;
     var k = this.dataset.k,

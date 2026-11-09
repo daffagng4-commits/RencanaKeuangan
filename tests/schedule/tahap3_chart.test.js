@@ -61,16 +61,14 @@ const { boot } = require('./ui.js');
   ev(row, 'pointerout');
   click($('btn-privacy'));
 
-  // grafik: titik proyeksi, batang, agenda
-  const dots = $('v-rincian').querySelectorAll('#sparkline-kas circle[data-tip]');
-  assert.strictEqual(dots.length, 12, '12 titik proyeksi punya tooltip');
-  assert(!$('v-rincian').querySelector('#sparkline-kas title'), 'tidak ada <title> ganda');
-  assert(/Saldo akhir/.test(dots[0].dataset.tip));
-  assert.strictEqual($('v-rincian').querySelectorAll('.bars div[data-tip]').length, 12, '12 batang punya tooltip');
+  // grafik: satu grafik arus kas dengan titik + batang bertooltip
+  const dots = $('v-rincian').querySelectorAll('svg[aria-label^="Grafik arus kas"] circle');
+  assert.strictEqual(dots.length, 12, '12 titik saldo akhir');
+  assert(/saldo akhir/.test(dots[0].querySelector('title').textContent), dots[0].querySelector('title').textContent);
+  assert.strictEqual($('v-rincian').querySelectorAll('svg[aria-label^="Grafik arus kas"] rect title').length, 12, '12 batang punya tooltip');
   w.kasLinked().tx = [{ id: 'g', d: '2026-12-01', t: '+', amt: 3000000, cat: 'Gaji', note: 'Gaji' }];
   w.S.items.push(it({ id: 'd', name: 'Cicilan', price: 700000, unit: 'sekali', start: '2026-11-20' }));
   w.renderAll();
-  assert($('v-rincian').querySelectorAll('.ag-chart rect[data-tip]').length >= 1, 'agenda: area tooltip per kejadian');
 
   // grafik kas
   w.tab('kas');

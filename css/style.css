@@ -189,6 +189,16 @@ button.g {
   padding: 6px 8px;
   min-height: 34px;
 }
+button.g:hover {
+  background: var(--acs);
+  border-color: var(--ln);
+  color: var(--ink);
+}
+button.g.d:hover {
+  background: color-mix(in srgb, var(--wr) 12%, transparent);
+  border-color: color-mix(in srgb, var(--wr) 35%, transparent);
+  color: var(--wr);
+}
 button.d {
   color: var(--wr);
 }
@@ -267,6 +277,13 @@ nav button[aria-selected="true"] {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
+}
+@media (min-width: 760px) {
+  .stats {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 210px));
+    justify-content: start;
+    column-gap: 28px;
+  }
 }
 .stats b {
   display: block;
@@ -1339,6 +1356,10 @@ nav {
 .kf { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
 .kin { color: var(--in); }
 .kch { width: 100%; height: 130px; display: block; }
+.kch-x { position: relative; height: 18px; margin-top: 2px; font-size: 11px; color: var(--mut); }
+.kch-x span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.kch-x span:first-child { transform: none; }
+.kch-x span:last-child { transform: translateX(-100%); }
 
 /* ===== Tema hitam-putih & panduan ===== */
 :root[data-theme="bw"] {
@@ -1466,6 +1487,8 @@ button.alat-item { width: 100%; border: 0; background: transparent; text-align: 
 .aic { align-items:center !important; }
 .cmut { color:var(--mut) !important; }
 .cp { cursor:pointer !important; }
+.cp.an { color: var(--wr); }
+.anom { display:inline-block; font-size:10px; font-weight:700; line-height:1.5; padding:0 5px; border-radius:999px; background:var(--wrs); color:var(--wr); margin-left:5px; white-space:nowrap; vertical-align:1px; }
 .dflex { display:flex !important; }
 .fs115 { font-size:11.5px !important; }
 .fs12 { font-size:12px !important; }

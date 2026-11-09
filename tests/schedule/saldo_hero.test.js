@@ -20,8 +20,8 @@ const {boot}=require('./ui.js');
  const sf=w.amanHariIni(w.kasBase(P)+0-50000,10);   // lunas 50rb sudah mengurangi saldo realtime
  assert(/Aman dipakai hari ini/.test(txt()),'label aman');
  assert(/Saldo Realtime/.test(txt())&&/Sisa saldo akhir Des 2026/.test(txt()),'dua saldo ada');
- assert(/tagihan sampai akhir bulan \(Rp 600\.000\)/.test(txt()),'tagihan s/d akhir bulan = 600rb (telat+2 tagihan)');
- assert(/23 hari lagi/.test(txt()),'23 hari');
+ assert(/setelah 3 tagihan bulan ini \(Rp 600\.000\) dibayar/.test(txt()),'tagihan s/d akhir bulan = 600rb (telat+2 tagihan)');
+ assert(/selama 23 hari ke depan/.test(txt()),'23 hari');
  assert(/\/ hari/.test(txt()),'per hari');
  assert(!/bukan bulan ini/.test(txt()),'tanpa hint');
  assert(!/Jatah jajan per hari/.test(txt()),'stat jatah/hari disembunyikan');

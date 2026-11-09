@@ -205,6 +205,7 @@ function saveItem() {
   renderAll();
   resetForm();
   $('status').textContent += ' · item disimpan';
+  toast('Item berhasil disimpan.');
 }
 
 /** Isi form dengan item yang akan diubah. */
@@ -228,31 +229,31 @@ function editItem(it) {
   $('f-name').focus();
 }
 
-/** Hapus item (tekan dua kali) beserta status lunas/lewatinya. Bisa diurungkan. */
+/** Hapus item setelah konfirmasi, beserta status lunas/lewatinya. Bisa diurungkan. */
 function deleteItem(b) {
-  if (!b.dataset.arm) {
-    b.dataset.arm = 1;
-    b.textContent = 'Yakin hapus?';
-    setTimeout(function () {
-      b.dataset.arm = '';
-      b.textContent = 'Hapus';
-    }, 2500);
-    return;
-  }
-  var sn = snap('Sebelum menghapus item');
-  S.items = S.items.filter(function (x) {
-    return x.id != b.dataset.del;
+  var it = S.items.find(function (x) {
+    return x.id == b.dataset.del;
   });
-  [S.paid, S.skip, S.real || {}].forEach(function (map) {
-    Object.keys(map).forEach(function (k) {
-      if (k.split('|')[0] == b.dataset.del) delete map[k];
-    });
-  });
-  save();
-  renderAll();
-  toast('Item dihapus.', function () {
-    restoreSnap(sn.t);
-  });
+  askConfirm(
+    'Hapus item <b>' + esc(it ? it.name : 'ini') + '</b>? Status lunas dan lewati ikut terhapus.',
+    function () {
+      var sn = snap('Sebelum menghapus item');
+      S.items = S.items.filter(function (x) {
+        return x.id != b.dataset.del;
+      });
+      [S.paid, S.skip, S.real || {}].forEach(function (map) {
+        Object.keys(map).forEach(function (k) {
+          if (k.split('|')[0] == b.dataset.del) delete map[k];
+        });
+      });
+      save();
+      renderAll();
+      toast('Item dihapus.', function () {
+        restoreSnap(sn.t);
+      });
+    },
+    'Ya, hapus item'
+  );
 }
 
 /** Bawa item (dan opsional saldo akhir + pemasukan berulang) dari tahun lain ke tahun aktif. */

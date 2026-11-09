@@ -596,6 +596,7 @@ function kasSavePm() {
   save();
   $('kpm').hidden = true;
   renderAll();
+  toast(kpMode === 'new' ? 'Perjalanan dibuat.' : 'Perjalanan disimpan.');
 }
 
 function itSave() {
@@ -612,6 +613,7 @@ function itSave() {
   itEdit = null;
   save();
   renderTrip();
+  toast('Kegiatan disimpan.');
 }
 function bkSave() {
   var P = tp(), t = $('bkt').value.trim(), l = $('bkl').value.trim(), a = $('bka').value, b = $('bkb').value, err = function (m) { $('bker').textContent = m; };
@@ -625,6 +627,7 @@ function bkSave() {
   bkEdit = null;
   save();
   renderTrip();
+  toast('Pemesanan disimpan.');
 }
 /** Tandai pemesanan lunas / belum lunas. */
 function bkPay(id) {
@@ -713,11 +716,13 @@ function goalSave() {
   toast('Target tabungan disimpan. Rincian Bulanan ikut menghitungnya.');
 }
 function goalDel() {
-  var sn = snap('Sebelum menghapus target tabungan');
-  tp().goal = null;
-  save();
-  renderAll();
-  toast('Target tabungan dihapus.', function () { restoreSnap(sn.t); });
+  askConfirm('Hapus target tabungan perjalanan ini?', function () {
+    var sn = snap('Sebelum menghapus target tabungan');
+    tp().goal = null;
+    save();
+    renderAll();
+    toast('Target tabungan dihapus.', function () { restoreSnap(sn.t); });
+  }, 'Ya, hapus');
 }
 
 /* ===== Simulasi "bagaimana jika" ===== */
@@ -946,8 +951,14 @@ function bindSim() {
     if (!b) return;
     var d = b.dataset;
     if (d.smadd) simAdd();
-    else if (d.smdel) { SIM.splice(+d.smdel, 1); renderSim(); }
-    else if (d.smclear) { SIM = []; renderSim(); }
+    else if (d.smdel) {
+      var sx = SIM[+d.smdel], si = sx && item(sx.id);
+      askConfirm('Hapus simulasi <b>' + esc(si ? si.name : 'ini') + '</b>?', function () {
+        SIM.splice(+d.smdel, 1);
+        renderSim();
+      }, 'Ya, hapus');
+    }
+    else if (d.smclear) askConfirm('Hapus semua simulasi?', function () { SIM = []; renderSim(); }, 'Ya, hapus semua');
     else if (d.smapply) simApply();
   };
   V.onchange = function (e) {
@@ -1020,33 +1031,30 @@ function itFind(id) {
   return tp().it.filter(function (x) { return x.id === id; })[0];
 }
 function tripDelete(b) {
-  if (!b.dataset.arm) {
-    b.dataset.arm = 1;
-    b.textContent = 'Yakin hapus?';
-    setTimeout(function () {
-      if (b.isConnected) {
-        b.dataset.arm = '';
-        b.textContent = 'Hapus';
-      }
-    }, 3000);
-    return;
-  }
-  var sn = snap('Sebelum menghapus perjalanan ' + tp().name);
-  delete ALL.kas.pr[tripAct];
-  tripAct = '';
-  save();
-  renderAll();
-  toast('Perjalanan dihapus.', function () {
-    restoreSnap(sn.t);
-  });
+  var name = tp().name;
+  askConfirm('Hapus perjalanan <b>' + esc(name) + '</b> beserta semua item dan catatannya?', function () {
+    var sn = snap('Sebelum menghapus perjalanan ' + name);
+    delete ALL.kas.pr[tripAct];
+    tripAct = '';
+    save();
+    renderAll();
+    toast('Perjalanan dihapus.', function () {
+      restoreSnap(sn.t);
+    });
+  }, 'Ya, hapus perjalanan');
 }
-/** Hapus satu elemen dari daftar perjalanan (kunci k) dengan opsi urungkan. */
+/** Hapus satu elemen dari daftar perjalanan (kunci k) setelah konfirmasi, dengan opsi urungkan. */
 function tripRemove(k, id, msg) {
-  var P = tp(), sn = snap('Sebelum menghapus ' + msg);
-  P[k] = P[k].filter(function (x) { return x.id !== id; });
-  save();
-  renderTrip();
-  toast(msg + ' dihapus.', function () { restoreSnap(sn.t); });
+  var P = tp(),
+    x = P[k].filter(function (o) { return o.id === id; })[0],
+    nm = x && (x.title || x.place || x.text || x.url);
+  askConfirm('Hapus ' + msg.toLowerCase() + (nm ? ' <b>' + esc(nm) + '</b>' : '') + '?', function () {
+    var sn = snap('Sebelum menghapus ' + msg);
+    P[k] = P[k].filter(function (o) { return o.id !== id; });
+    save();
+    renderTrip();
+    toast(msg + ' dihapus.', function () { restoreSnap(sn.t); });
+  }, 'Ya, hapus');
 }
 
 function bindTrip() {
@@ -1138,7 +1146,16 @@ function bindTrip() {
       P.ck.forEach(function (c) { if (c.id === d.cktog) c.done = !c.done; });
       save();
       renderTrip();
-    } else if (d.ckdel) P.ck = P.ck.filter(function (c) { return c.id !== d.ckdel; }), save(), renderTrip();
+    } else if (d.ckdel) {
+      var ck = P.ck.filter(function (c) { return c.id === d.ckdel; })[0];
+      askConfirm('Hapus <b>' + esc(ck ? ck.text : 'barang ini') + '</b> dari checklist?', function () {
+        var sn = snap('Sebelum menghapus checklist');
+        P.ck = P.ck.filter(function (c) { return c.id !== d.ckdel; });
+        save();
+        renderTrip();
+        toast('Barang dihapus.', function () { restoreSnap(sn.t); });
+      }, 'Ya, hapus');
+    }
   };
   V.onchange = function (e) {
     var tid = e.target.id,

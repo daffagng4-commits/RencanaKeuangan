@@ -45,7 +45,7 @@ function kasPrevMonth(per) {
   return p[0] + Math.floor(m / 12) + '-' + pad2(((m % 12) + 12) % 12 + 1);
 }
 
-/** Grafik garis saldo per tanggal transaksi pada periode terpilih. */
+/** Grafik saldo per tanggal: sumbu waktu asli, garis nol, label bulan, dan ringkasan awal→akhir. */
 function kasChart(asc) {
   var bal = kasBase(kas()),
     pts = [];
@@ -57,41 +57,40 @@ function kasChart(asc) {
     else pts.push({ d: x.d, b: bal });
   });
   if (pts.length < 2) return '';
-  var bs = pts.map(function (p) {
-      return p.b;
-    }),
+  var bs = pts.map(function (p) { return p.b; }),
     mn = Math.min.apply(null, bs),
     mx = Math.max.apply(null, bs),
     r = mx - mn || 1,
-    d =
-      'M' +
-      pts
-        .map(function (p, i) {
-          return ((i * 600) / (pts.length - 1)).toFixed(1) + ' ' + (122 - ((p.b - mn) / r) * 108).toFixed(1);
-        })
-        .join(' L');
-  var hw = 600 / (pts.length - 1),
-    hit = pts
-      .map(function (p, i) {
-        return '<rect x="' + Math.max(0, i * hw - hw / 2).toFixed(1) + '" y="0" width="' + hw.toFixed(1) + '" height="130" fill="transparent" tabindex="0" data-tip="' + esc(dShort(p.d) + ' · saldo ' + rp(p.b)) + '"></rect>';
-      })
-      .join('');
+    t0 = Date.parse(pts[0].d),
+    t1 = Date.parse(pts[pts.length - 1].d),
+    span = t1 - t0 || 1,
+    x = function (d) { return ((Date.parse(d) - t0) / span) * 600; },
+    y = function (v) { return 122 - ((v - mn) / r) * 108; },
+    d = 'M' + pts.map(function (p) { return x(p.d).toFixed(1) + ' ' + y(p.b).toFixed(1); }).join(' L'),
+    zero = mn < 0 && mx > 0 ? '<line x1="0" y1="' + y(0).toFixed(1) + '" x2="600" y2="' + y(0).toFixed(1) + '" style="stroke:var(--ln);stroke-dasharray:3 3;vector-effect:non-scaling-stroke"></line>' : '',
+    hit = pts.map(function (p, i) {
+      var xa = i ? (x(pts[i - 1].d) + x(p.d)) / 2 : 0,
+        xb = i < pts.length - 1 ? (x(p.d) + x(pts[i + 1].d)) / 2 : 600;
+      return '<rect x="' + xa.toFixed(1) + '" y="0" width="' + Math.max(1, xb - xa).toFixed(1) + '" height="130" fill="transparent" tabindex="0" data-tip="' + esc(dShort(p.d) + ' · saldo ' + rp(p.b)) + '"></rect>';
+    }).join(''),
+    m0 = new Date(t0), m1 = new Date(t1),
+    months = (m1.getFullYear() - m0.getFullYear()) * 12 + m1.getMonth() - m0.getMonth() + 1,
+    step = Math.ceil(months / 7),
+    ticks = [];
+  for (var i = 0; i < months; i += step) {
+    var md = new Date(m0.getFullYear(), m0.getMonth() + i, 1),
+      left = ((md - t0) / span) * 100;
+    if (left >= 0 && left <= 100)
+      ticks.push('<span style="left:' + left.toFixed(2) + '%">' + MON[md.getMonth()] + (md.getMonth() === 0 || i === 0 ? ' ’' + String(md.getFullYear()).slice(2) : '') + '</span>');
+  }
+  var naik = pts[pts.length - 1].b - pts[0].b;
   return (
-    '<div class="card"><h2>Saldo dari waktu ke waktu</h2><svg class="kch" viewBox="0 0 600 130" preserveAspectRatio="none" role="img" aria-label="Grafik saldo"><path d="' +
-    d +
-    ' L600 130 L0 130Z" style="fill:var(--acs)"></path><path d="' +
-    d +
-    '" style="fill:none;stroke:var(--ac);stroke-width:2.5;vector-effect:non-scaling-stroke"></path>' +
-    hit +
-    '</svg><div class="sub dflex jcsb g8 fwrap"""><span>' +
-    dShort(pts[0].d) +
-    '</span><span>terendah ' +
-    rp(mn) +
-    ' &middot; tertinggi ' +
-    rp(mx) +
-    '</span><span>' +
-    dShort(pts[pts.length - 1].d) +
-    '</span></div></div>'
+    '<div class="card"><h2>Saldo dari waktu ke waktu</h2><svg class="kch" viewBox="0 0 600 130" preserveAspectRatio="none" role="img" aria-label="Grafik saldo">' +
+    zero + '<path d="' + d + ' L600 130 L0 130Z" style="fill:var(--acs)"></path><path d="' + d + '" style="fill:none;stroke:var(--ac);stroke-width:2.5;vector-effect:non-scaling-stroke"></path>' + hit +
+    '</svg><div class="kch-x">' + ticks.join('') + '</div>' +
+    '<div class="sub dflex jcsb g8 fwrap mt8"><span>' + dShort(pts[0].d) + ': <b>' + rp(pts[0].b) + '</b></span>' +
+    '<span>' + dShort(pts[pts.length - 1].d) + ': <b>' + rp(pts[pts.length - 1].b) + '</b> (' + (naik >= 0 ? '+' : '−') + rp(Math.abs(naik)) + ')</span>' +
+    '<span>terendah ' + rp(mn) + ' · tertinggi ' + rp(mx) + '</span></div></div>'
   );
 }
 
@@ -190,7 +189,7 @@ function renderKas() {
     ' &minus; keluar ' +
     rp(A.o) +
     '</div>' +
-    kasRunwayHtml(P, bal) +
+    kasStatusHtml(P, bal) +
     '</div><div class="card stats m0""">' +
     stat('Masuk', rp(R.i)) +
     stat('Keluar', rp(R.o)) +
@@ -346,26 +345,38 @@ function kasSave() {
       return x.id === kasEdit ? o : x;
     });
   else P.tx.push(o);
-  var am = !kasEdit && o.t === '-' && kasLinked() === P ? autoMatchTx(o) : null;
+  var am = !kasEdit && o.t === '-' && kasLinked() === P ? autoMatchTx(o) : null,
+    wasEdit = !!kasEdit;
   kasEdit = null;
   save();
   renderAll();
   $('status').textContent += ' · transaksi disimpan';
   if (am) toastLinked(am);
+  else toast(wasEdit ? 'Transaksi berhasil diubah.' : 'Transaksi berhasil disimpan.');
 }
 
 function kasDelTx(id) {
-  var sn = snap('Sebelum menghapus transaksi'),
-    P = kas();
-  P.tx = P.tx.filter(function (x) {
-    return x.id !== id;
-  });
-  if (kasEdit === id) kasEdit = null;
-  save();
-  renderAll();
-  toast('Transaksi dihapus.', function () {
-    restoreSnap(sn.t);
-  });
+  var P0 = kas(),
+    tx = P0.tx.find(function (x) {
+      return x.id === id;
+    });
+  askConfirm(
+    'Hapus transaksi ' + (tx ? '<b>' + (tx.t === '+' ? '+' : '&minus;') + ' ' + rp(tx.amt) + '</b> tanggal ' + fmtD(tx.d) : 'ini') + '?',
+    function () {
+      var sn = snap('Sebelum menghapus transaksi'),
+        P = kas();
+      P.tx = P.tx.filter(function (x) {
+        return x.id !== id;
+      });
+      if (kasEdit === id) kasEdit = null;
+      save();
+      renderAll();
+      toast('Transaksi dihapus.', function () {
+        restoreSnap(sn.t);
+      });
+    },
+    'Ya, hapus transaksi'
+  );
 }
 
 var qkT = '-';

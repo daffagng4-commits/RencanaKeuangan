@@ -1,6 +1,6 @@
-/** Tema: tombol di topbar bergantian Otomatis > Terang > Gelap. Hitam-putih dan Hitam-putih gelap dipilih dari menu Alat / Lainnya. Diingat di perangkat. */
+/** Tema: satu tombol di topbar (dekat Privasi/Notifikasi) bergantian kelima tema. Diingat di perangkat. */
 var THEME_NAME = { auto: 'Otomatis', light: 'Terang', dark: 'Gelap', bw: 'Hitam-putih', bwd: 'Hitam-putih gelap' },
-  THEME_CYCLE = ['auto', 'light', 'dark'],
+  THEME_CYCLE = ['auto', 'light', 'dark', 'bw', 'bwd'],
   THEME_ICON = {
     auto: '<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
     light: '<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>',

@@ -56,6 +56,29 @@ function toast(msg, undo) {
   );
 }
 
+/** Dialog konfirmasi untuk semua aksi hapus. `onYes` dipanggil hanya bila pengguna menekan tombol hapus. */
+function askConfirm(msg, onYes, yesLabel) {
+  var old = document.querySelector('.cfm');
+  if (old) old.remove();
+  var m = document.createElement('div');
+  m.className = 'modal cfm';
+  m.setAttribute('role', 'dialog');
+  m.setAttribute('aria-modal', 'true');
+  m.innerHTML =
+    '<div class="card"><h2>Konfirmasi hapus</h2><div class="sub mb10">' + msg + '</div>' +
+    '<div class="row2"><button type="button" class="d" data-cf-y>' + (yesLabel || 'Ya, hapus') + '</button>' +
+    '<button type="button" class="c" data-cf-n>Batal</button></div></div>';
+  document.body.appendChild(m);
+  m.onclick = function (e) {
+    if (e.target === m || e.target.closest('[data-cf-n]')) m.remove();
+    else if (e.target.closest('[data-cf-y]')) {
+      m.remove();
+      onYes();
+    }
+  };
+  m.querySelector('[data-cf-n]').focus();
+}
+
 /** Pasang event listener halaman ini. */
 function bindDom() {
   document.querySelectorAll('nav button').forEach(function (b) {

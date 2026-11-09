@@ -100,19 +100,8 @@ function bindYears() {
       return;
     }
     if (b.dataset.dy) {
-      if (b.dataset.arm) {
-        delYear();
-      } else {
-        var yy = S.year;
-        b.dataset.arm = 1;
-        b.textContent = 'Yakin hapus ' + yy + ' (' + S.items.length + ' item)?';
-        setTimeout(function () {
-          if (b.isConnected) {
-            b.dataset.arm = '';
-            b.textContent = 'Hapus tahun ' + yy;
-          }
-        }, 3000);
-      }
+      var yy = S.year;
+      askConfirm('Hapus tahun <b>' + yy + '</b> beserta ' + S.items.length + ' item dan status pembayarannya?', delYear, 'Ya, hapus tahun');
     }
   };
 }

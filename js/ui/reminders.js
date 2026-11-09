@@ -144,18 +144,15 @@ function bindReminders() {
     renderRemModal();
   };
   $('rmb').onclick = function () {
-    if (!this.dataset.arm) {
-      this.dataset.arm = 1;
-      this.textContent = 'Yakin? Semua tagihan yang sudah lewat jadi lunas';
-      return;
-    }
-    var sn = snap('Sebelum menandai semua lunas'),
-      n = markPastPaid();
-    save();
-    renderAll();
-    renderRemModal();
-    toast(n + ' tagihan ditandai lunas.', function () {
-      restoreSnap(sn.t);
-    });
+    askConfirm('Tandai <b>semua tagihan yang sudah lewat</b> sebagai lunas?', function () {
+      var sn = snap('Sebelum menandai semua lunas'),
+        n = markPastPaid();
+      save();
+      renderAll();
+      renderRemModal();
+      toast(n + ' tagihan ditandai lunas.', function () {
+        restoreSnap(sn.t);
+      });
+    }, 'Ya, tandai lunas');
   };
 }

@@ -68,12 +68,20 @@ function setUser(s) {
   } else sbStat('Belum masuk. Data tersimpan lokal.');
 }
 
-/** Jadwalkan kirim ke cloud 1,2 detik setelah perubahan terakhir. */
+/** Jadwalkan kirim ke cloud 300 ms setelah perubahan terakhir. */
 function schedPush() {
   if (!sb || !sbUser || syncBlocked) return;
   sbStat('Menyimpan ke cloud...');
   clearTimeout(pushT);
-  pushT = setTimeout(push, 1200);
+  pushT = setTimeout(push, 300);
+}
+
+/** Kirim segera bila masih ada perubahan tertunda (mis. halaman akan ditutup). */
+function flushPush() {
+  if (!pushT) return;
+  clearTimeout(pushT);
+  pushT = null;
+  push();
 }
 
 var syncBlocked = false,
@@ -106,7 +114,7 @@ function push() {
       localStorage.setItem(KEY, JSON.stringify(ALL));
     } catch (e) {}
   }
-  var prevRev = lastSync();
+  var prevRev = getSync();
   var payload = { user_id: sbUser.id, data: ALL, rev: ALL.rev, updated_at: new Date().toISOString() };
   var q = prevRev != null
     ? sb.from('rk_state').update(payload).eq('user_id', sbUser.id).eq('rev', prevRev).select('rev')
@@ -319,8 +327,13 @@ function bindSync() {
     }
   };
   document.addEventListener('visibilitychange', function () {
-    if (!document.hidden && sbUser && !pushT && !syncBlocked) pull();
+    if (document.hidden) {
+      flushPush();
+      return;
+    }
+    if (sbUser && !pushT && !syncBlocked) pull();
   });
+  window.addEventListener('pagehide', flushPush);
   window.addEventListener('online', function () {
     if (sbUser && !syncBlocked) {
       sbStat('Koneksi pulih, menyelaraskan...');
