@@ -167,10 +167,11 @@ test('norm: format lama, data rusak, dan idempoten', () => {
   assert.equal(migrated[0].cat, 'Penyesuaian saldo');
   assert.equal(migrated[0].amt, 200);
   assert.equal(migrated[0].d, '2030-12-01');
-  const kept = c.norm({ year: 2031, data: { 2031: {} }, kas: { pr: { utama: { link: true, tx: [{ id: 'd1', d: '2031-01-02', t: '-', amt: 9000, debt: true, debtName: 'Budi', debtKind: 'piutang' }] } } } }).kas.pr.utama.tx[0];
+  const kept = c.norm({ year: 2031, data: { 2031: {} }, kas: { pr: { utama: { link: true, tx: [{ id: 'd1', d: '2031-01-02', t: '-', amt: 9000, debt: true, debtName: 'Budi', debtKind: 'piutang', debtDone: true }] } } } }).kas.pr.utama.tx[0];
   assert.equal(kept.debt, true, 'penanda utang bertahan setelah reload/norm');
   assert.equal(kept.debtName, 'Budi');
   assert.equal(kept.debtKind, 'piutang');
+  assert.equal(kept.debtDone, true, 'utang yang di-X tetap tersembunyi setelah reload');
   const once = JSON.stringify(c.norm(JSON.parse(JSON.stringify(legacy))));
   assert.equal(JSON.stringify(c.norm(JSON.parse(once))), once);
   assert.ok(c.norm(null).data[2027].items.length === 12, 'null -> data contoh');

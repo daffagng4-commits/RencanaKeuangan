@@ -51,27 +51,28 @@ function kasPrevMonth(per) {
   return p[0] + Math.floor(m / 12) + '-' + pad2(((m % 12) + 12) % 12 + 1);
 }
 
-/** Grafik pie pemasukan vs pengeluaran periode aktif + kategori di sebelahnya. */
+/** Satu kartu: pie pemasukan vs pengeluaran + rincian kategori di sebelahnya. */
 function kasPie(R, label, catHtml) {
   var t = R.i + R.o;
   if (!t) return '';
   var ip = Math.round((R.i / t) * 100),
     op = 100 - ip,
-    C = 263.894,
+    C = 238.761,
     li = (ip / 100) * C,
     lo = C - li;
   return (
-    '<div class="kas-duo' + (catHtml ? '' : ' solo') + '">' +
-    '<div class="card"><h2>Pemasukan vs pengeluaran</h2>' +
-    '<div class="sub mb8">' + label + '</div>' +
-    '<div class="pie-wrap"><div class="pie"><svg viewBox="0 0 100 100" role="img" aria-label="Pemasukan ' + ip + '%, pengeluaran ' + op + '%">' +
-    '<circle class="pie-slice in" cx="50" cy="50" r="42" stroke="#3aa17e" stroke-dasharray="' + li + ' ' + C + '" transform="rotate(-90 50 50)"><title>Pemasukan ' + ip + '% &middot; ' + rp(R.i) + '</title></circle>' +
-    '<circle class="pie-slice out" cx="50" cy="50" r="42" stroke="#d9627f" stroke-dasharray="' + lo + ' ' + C + '" stroke-dashoffset="' + -li + '" transform="rotate(-90 50 50)"><title>Pengeluaran ' + op + '% &middot; ' + rp(R.o) + '</title></circle>' +
+    '<div class="card kas-dash">' +
+    '<h2>Pemasukan vs pengeluaran</h2>' +
+    '<div class="sub mb12">' + label + '</div>' +
+    '<div class="kas-split' + (catHtml ? '' : ' solo') + '">' +
+    '<div class="kas-pie"><div class="pie-wrap"><div class="pie"><svg viewBox="0 0 100 100" role="img" aria-label="Pemasukan ' + ip + '%, pengeluaran ' + op + '%">' +
+    '<circle class="pie-slice in" cx="50" cy="50" r="38" stroke="#3aa17e" stroke-dasharray="' + li + ' ' + C + '" transform="rotate(-90 50 50)"><title>Pemasukan ' + ip + '% &middot; ' + rp(R.i) + '</title></circle>' +
+    '<circle class="pie-slice out" cx="50" cy="50" r="38" stroke="#d9627f" stroke-dasharray="' + lo + ' ' + C + '" stroke-dashoffset="' + -li + '" transform="rotate(-90 50 50)"><title>Pengeluaran ' + op + '% &middot; ' + rp(R.o) + '</title></circle>' +
     '</svg><span>' + ip + '%</span></div>' +
     '<div class="pie-lg"><span><i style="background:#3aa17e"></i>Pemasukan <b>' + ip + '%</b> &middot; ' + rp(R.i) + '</span>' +
     '<span><i style="background:#d9627f"></i>Pengeluaran <b>' + op + '%</b> &middot; ' + rp(R.o) + '</span></div></div></div>' +
     (catHtml || '') +
-    '</div>'
+    '</div></div>'
   );
 }
 
@@ -82,16 +83,26 @@ function debtKinds(t) {
     : [['utang', 'Utang baru (saya pinjam)'], ['bayar-piutang', 'Terima bayar piutang']];
 }
 
+/** Nama utang/piutang yang dipakai untuk mengelompokkan sisa. */
+function debtNameOf(x) {
+  return (x.debtName || x.note || x.cat || 'Tanpa nama').trim().slice(0, 40) || 'Tanpa nama';
+}
+
 /** Ringkasan utang/piutang dari transaksi kas yang dicentang. */
 function debtData(P) {
   var g = {};
   (P.tx || []).forEach(function (x) {
-    if (!x.debt) return;
-    var n = (x.debtName || x.note || x.cat || 'Tanpa nama').trim().slice(0, 40) || 'Tanpa nama',
-      o = g[n] || (g[n] = { name: n, utang: 0, piutang: 0, bayarU: 0, bayarP: 0 });
-    if (x.debtKind === 'utang') o.utang += x.amt;
-    else if (x.debtKind === 'piutang') o.piutang += x.amt;
-    else if (x.debtKind === 'bayar-utang') o.bayarU += x.amt;
+    if (!x.debt || x.debtDone) return;
+    var n = debtNameOf(x),
+      y = x.d.slice(0, 4),
+      o = g[n] || (g[n] = { name: n, utang: 0, piutang: 0, bayarU: 0, bayarP: 0, fromU: '', fromP: '' });
+    if (x.debtKind === 'utang') {
+      o.utang += x.amt;
+      if (!o.fromU || y < o.fromU) o.fromU = y;
+    } else if (x.debtKind === 'piutang') {
+      o.piutang += x.amt;
+      if (!o.fromP || y < o.fromP) o.fromP = y;
+    } else if (x.debtKind === 'bayar-utang') o.bayarU += x.amt;
     else if (x.debtKind === 'bayar-piutang') o.bayarP += x.amt;
   });
   return Object.keys(g)
@@ -102,6 +113,12 @@ function debtData(P) {
       return x;
     })
     .filter(function (x) { return x.sisaU > 0 || x.sisaP > 0; });
+}
+
+/** Tombol X untuk menyembunyikan satu arah utang/piutang dari kartu. */
+function debtXBtn(name, dir) {
+  var j = dir === 'u' ? 'utang' : 'piutang';
+  return '<button class="g debt-x" data-debt-x="' + esc(name) + '" data-debt-dir="' + dir + '" title="Hilangkan dari daftar" aria-label="Hilangkan ' + j + ' ' + esc(name) + '">&times;</button>';
 }
 
 /** Kartu utang/piutang: sisa per nama + tombol bayar yang mengisi form. */
@@ -116,9 +133,9 @@ function debtHtml(P) {
     D.map(function (x) {
       var rows = '';
       if (x.sisaU > 0)
-        rows += '<div class="debt-row"><div><b>' + esc(x.name) + '</b><span class="sub">Saya berutang</span></div><div><b class="neg">' + rp(x.sisaU) + '</b> <button class="g" data-debt-pay="utang" data-name="' + esc(x.name) + '" data-amt="' + x.sisaU + '">Bayar</button></div></div>';
+        rows += '<div class="debt-row"><div><b>' + esc(x.name) + '</b><span class="sub">Saya berutang' + (x.fromU ? ' &middot; sejak ' + x.fromU : '') + '</span></div><div><b class="neg">' + rp(x.sisaU) + '</b> <button class="g" data-debt-pay="utang" data-name="' + esc(x.name) + '" data-amt="' + x.sisaU + '">Bayar</button>' + debtXBtn(x.name, 'u') + '</div></div>';
       if (x.sisaP > 0)
-        rows += '<div class="debt-row"><div><b>' + esc(x.name) + '</b><span class="sub">Orang berutang</span></div><div><b class="kin">' + rp(x.sisaP) + '</b> <button class="g" data-debt-pay="piutang" data-name="' + esc(x.name) + '" data-amt="' + x.sisaP + '">Bayar</button></div></div>';
+        rows += '<div class="debt-row"><div><b>' + esc(x.name) + '</b><span class="sub">Orang berutang' + (x.fromP ? ' &middot; sejak ' + x.fromP : '') + '</span></div><div><b class="kin">' + rp(x.sisaP) + '</b> <button class="g" data-debt-pay="piutang" data-name="' + esc(x.name) + '" data-amt="' + x.sisaP + '">Bayar</button>' + debtXBtn(x.name, 'p') + '</div></div>';
       return rows;
     }).join('') +
     '<div class="sub mt6">Centang <b>Transaksi utang/piutang</b> di form untuk mencatat utang baru. Pembayaran bisa dicicil berkali-kali; sisa di atas otomatis berkurang. Untuk beberapa utang ke orang yang sama, pakai nama berbeda (mis. <b>Budi motor</b>, <b>Budi kos</b>) agar sisanya terpisah.</div></div>'
@@ -140,6 +157,28 @@ function openDebtForm(name, kind, amt) {
   }
 }
 
+
+/** Hilangkan satu arah utang/piutang dari kartu tanpa menghapus riwayat kas. */
+function hideDebt(name, dir) {
+  askConfirm(
+    'Hilangkan <b>' + esc(name) + '</b> dari kartu utang/piutang? Transaksi kas tetap tersimpan.',
+    function () {
+      var P = kas(),
+        sn = snap('Sebelum menghilangkan utang');
+      P.tx.forEach(function (x) {
+        if (!x.debt || debtNameOf(x) !== name) return;
+        if (dir === 'u' && (x.debtKind === 'utang' || x.debtKind === 'bayar-utang')) x.debtDone = true;
+        if (dir === 'p' && (x.debtKind === 'piutang' || x.debtKind === 'bayar-piutang')) x.debtDone = true;
+      });
+      save();
+      renderAll();
+      toast('Utang/piutang dihilangkan dari kartu.', function () {
+        restoreSnap(sn.t);
+      });
+    },
+    'Ya, hilangkan'
+  );
+}
 
 /** Profil yang tergabung dengan Rencana (selalu tepat satu). */
 function kasLinked() {
@@ -332,7 +371,7 @@ function renderKas() {
     catH = '';
   if (cl.length)
     catH =
-      '<div class="card"><h2>Pengeluaran per kategori</h2>' +
+      '<div class="kas-cat"><div class="kas-cat-h">Pengeluaran per kategori</div>' +
       cl
         .map(function (k, i) {
           var pc = (bc[k] / R.o) * 100,
@@ -366,7 +405,7 @@ function renderKas() {
     rowsH = LF.slice(0, 200).map(function (x) {
       var sep = x.d !== lastD ? '<div class="daysep"><span>' + fmtD(x.d) + '</span></div>' : '';
       lastD = x.d;
-      return sep + '<div class="it2"><div><b class="' +
+      return sep + '<div class="it2 kit"><div><b class="' +
         (x.t === '-' ? 'neg' : 'kin') +
         '">' +
         (x.t === '-' ? '&minus; ' : '+ ') +
@@ -581,6 +620,7 @@ function bindKas() {
       renderKas();
       $('ka').scrollIntoView({ block: 'center' });
     } else if (d.kdel) kasDelTx(d.kdel);
+    else if (d.debtX) hideDebt(d.debtX, d.debtDir);
     else if (d.debtPay) openDebtForm(d.name, d.debtPay, d.amt);
     else if (d.kfocus) {
       $('ka').scrollIntoView({ block: 'center' });

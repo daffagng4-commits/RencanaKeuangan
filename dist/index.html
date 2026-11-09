@@ -1559,35 +1559,45 @@ button.alat-item { width: 100%; border: 0; background: transparent; text-align: 
 .daysep { display:flex; align-items:center; gap:8px; margin:12px 0 6px; font-size:11px; color:var(--mut); }
 .daysep::after { content:''; flex:1; height:1px; background:var(--ln); }
 .daysep span { font-weight:600; }
+.kit { border-bottom:0; padding:8px 0; }
 
-/* Pie pemasukan vs pengeluaran */
-.kas-duo { display:grid; grid-template-columns:minmax(230px,.9fr) minmax(260px,1.1fr); gap:12px; align-items:stretch; }
-.kas-duo > .card { margin:0; }
-.kas-duo.solo { grid-template-columns:1fr; }
-@media (max-width:700px) { .kas-duo { grid-template-columns:1fr; } }
+/* Pie + kategori dalam satu kartu */
+.kas-dash > h2 { margin-bottom: 2px; }
+.kas-split { display:grid; grid-template-columns:minmax(260px,.9fr) minmax(280px,1.1fr); gap:22px; align-items:start; margin-top:10px; }
+.kas-split.solo { grid-template-columns:1fr; }
+.kas-pie { min-width:0; }
+.kas-cat { min-width:0; border-left:1px solid var(--ln); padding-left:22px; }
+.kas-cat-h { font-size:11px; font-weight:700; color:var(--mut); letter-spacing:.04em; text-transform:uppercase; margin:0 0 2px; }
+.kas-cat .catrow { margin:9px 0; }
+.kas-cat .catrow:first-of-type { margin-top:0; }
+@media (max-width:700px) { .kas-split { grid-template-columns:1fr; gap:16px; } .kas-cat { border-left:0; border-top:1px solid var(--ln); padding-left:0; padding-top:14px; } }
 .pie-wrap { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
-.pie { width:132px; height:132px; border-radius:50%; display:grid; place-items:center; position:relative; flex:0 0 auto; }
-.pie svg { position:absolute; inset:0; width:100%; height:100%; }
-.pie-slice { fill:none; stroke-width:18; cursor:pointer; pointer-events:stroke; transition:stroke-width .15s ease, filter .15s ease; }
-.pie-slice:hover { stroke-width:24; filter:drop-shadow(0 0 5px rgba(0,0,0,.22)); }
-.pie::after { content:''; position:absolute; inset:22px; background:var(--card); border-radius:50%; pointer-events:none; }
-.pie span { position:relative; z-index:1; font-weight:700; font-size:22px; }
+.pie { width:148px; height:148px; border-radius:50%; display:grid; place-items:center; position:relative; flex:0 0 auto; }
+.pie svg { position:absolute; inset:0; width:100%; height:100%; animation:pieIn .38s ease-out both; }
+@keyframes pieIn { from { transform:scale(.94); opacity:.35; } to { transform:scale(1); opacity:1; } }
+@media (prefers-reduced-motion: reduce) { .pie svg { animation:none; } }
+.pie-slice { fill:none; stroke-width:16; cursor:pointer; pointer-events:stroke; transition:stroke-width .15s ease, filter .15s ease; }
+.pie-slice:hover { stroke-width:22; filter:drop-shadow(0 0 5px rgba(0,0,0,.22)); }
+.pie span { position:relative; z-index:1; font-weight:700; font-size:24px; }
 .pie-lg { display:flex; flex-direction:column; gap:8px; font-size:13px; }
 .pie-lg span { display:flex; align-items:center; gap:7px; }
-.pie-lg i { width:10px; height:10px; border-radius:3px; display:inline-block; flex:0 0 auto; }
+.pie-lg i { width:10px; height:10px; border-radius:50%; display:inline-block; flex:0 0 auto; }
 
 /* Utang & piutang dari kas */
 .kdebt { border-top:1px dashed var(--ln); padding-top:10px; margin-top:2px; }
-.kdebt .ck { display:flex; align-items:center; gap:7px; font-size:13px; cursor:pointer; }
-.kdebt .ck input { width:auto; margin:0; }
+.kdebt .ck { display:flex; align-items:center; gap:8px; width:max-content; max-width:100%; margin:0; font-size:13px; font-weight:500; color:var(--ink); cursor:pointer; }
+.kdebt .ck input[type="checkbox"] { appearance:auto; -webkit-appearance:auto; flex:0 0 auto; width:18px; height:18px; min-height:0; padding:0; margin:0; border:0; border-radius:3px; background:transparent; box-shadow:none; accent-color:var(--ac); }
+.kdebt .ck input[type="checkbox"]:focus { box-shadow:none; }
 .debt-sum { display:flex; gap:24px; flex-wrap:wrap; margin:0 0 10px; }
 .debt-sum div { display:flex; flex-direction:column; gap:2px; }
 .debt-sum span { font-size:11px; color:var(--mut); }
 .debt-sum b { font-size:17px; }
 .debt-row { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--ln); }
 .debt-row > div { display:flex; flex-direction:column; gap:2px; }
-.debt-row > div:last-child { flex-direction:row; align-items:center; white-space:nowrap; }
+.debt-row > div:last-child { flex-direction:row; align-items:center; gap:6px; white-space:nowrap; }
 .debt-row .sub { font-size:11px; }
+.debt-row .debt-x { flex:0 0 auto; width:30px; height:30px; min-height:0; padding:0; border-radius:50%; font-size:18px; line-height:1; color:var(--ink); border-color:var(--ln); }
+.debt-row .debt-x:hover { color:var(--neg); border-color:var(--neg); background:rgba(217,98,127,.08); }
 </style>
 </head>
 <body>
@@ -2350,7 +2360,7 @@ function normKas(k) {
             return x && +x.amt > 0 && (x.t === '+' || x.t === '-') && ISO_RE.test(x.d);
           })
           .map(function (x, i) {
-            return { id: String(x.id || 't' + i), d: x.d, t: x.t, amt: +x.amt, cat: String(x.cat || '').slice(0, 30), note: String(x.note || '').slice(0, 80), debt: x.debt === true, debtName: String(x.debtName || '').slice(0, 40), debtKind: /^(piutang|bayar-utang|utang|bayar-piutang)$/.test(x.debtKind) ? x.debtKind : '' };
+            return { id: String(x.id || 't' + i), d: x.d, t: x.t, amt: +x.amt, cat: String(x.cat || '').slice(0, 30), note: String(x.note || '').slice(0, 80), debt: x.debt === true, debtName: String(x.debtName || '').slice(0, 40), debtKind: /^(piutang|bayar-utang|utang|bayar-piutang)$/.test(x.debtKind) ? x.debtKind : '', debtDone: x.debtDone === true };
           }),
       };
     });
@@ -7694,27 +7704,28 @@ function kasPrevMonth(per) {
   return p[0] + Math.floor(m / 12) + '-' + pad2(((m % 12) + 12) % 12 + 1);
 }
 
-/** Grafik pie pemasukan vs pengeluaran periode aktif + kategori di sebelahnya. */
+/** Satu kartu: pie pemasukan vs pengeluaran + rincian kategori di sebelahnya. */
 function kasPie(R, label, catHtml) {
   var t = R.i + R.o;
   if (!t) return '';
   var ip = Math.round((R.i / t) * 100),
     op = 100 - ip,
-    C = 263.894,
+    C = 238.761,
     li = (ip / 100) * C,
     lo = C - li;
   return (
-    '<div class="kas-duo' + (catHtml ? '' : ' solo') + '">' +
-    '<div class="card"><h2>Pemasukan vs pengeluaran</h2>' +
-    '<div class="sub mb8">' + label + '</div>' +
-    '<div class="pie-wrap"><div class="pie"><svg viewBox="0 0 100 100" role="img" aria-label="Pemasukan ' + ip + '%, pengeluaran ' + op + '%">' +
-    '<circle class="pie-slice in" cx="50" cy="50" r="42" stroke="#3aa17e" stroke-dasharray="' + li + ' ' + C + '" transform="rotate(-90 50 50)"><title>Pemasukan ' + ip + '% &middot; ' + rp(R.i) + '</title></circle>' +
-    '<circle class="pie-slice out" cx="50" cy="50" r="42" stroke="#d9627f" stroke-dasharray="' + lo + ' ' + C + '" stroke-dashoffset="' + -li + '" transform="rotate(-90 50 50)"><title>Pengeluaran ' + op + '% &middot; ' + rp(R.o) + '</title></circle>' +
+    '<div class="card kas-dash">' +
+    '<h2>Pemasukan vs pengeluaran</h2>' +
+    '<div class="sub mb12">' + label + '</div>' +
+    '<div class="kas-split' + (catHtml ? '' : ' solo') + '">' +
+    '<div class="kas-pie"><div class="pie-wrap"><div class="pie"><svg viewBox="0 0 100 100" role="img" aria-label="Pemasukan ' + ip + '%, pengeluaran ' + op + '%">' +
+    '<circle class="pie-slice in" cx="50" cy="50" r="38" stroke="#3aa17e" stroke-dasharray="' + li + ' ' + C + '" transform="rotate(-90 50 50)"><title>Pemasukan ' + ip + '% &middot; ' + rp(R.i) + '</title></circle>' +
+    '<circle class="pie-slice out" cx="50" cy="50" r="38" stroke="#d9627f" stroke-dasharray="' + lo + ' ' + C + '" stroke-dashoffset="' + -li + '" transform="rotate(-90 50 50)"><title>Pengeluaran ' + op + '% &middot; ' + rp(R.o) + '</title></circle>' +
     '</svg><span>' + ip + '%</span></div>' +
     '<div class="pie-lg"><span><i style="background:#3aa17e"></i>Pemasukan <b>' + ip + '%</b> &middot; ' + rp(R.i) + '</span>' +
     '<span><i style="background:#d9627f"></i>Pengeluaran <b>' + op + '%</b> &middot; ' + rp(R.o) + '</span></div></div></div>' +
     (catHtml || '') +
-    '</div>'
+    '</div></div>'
   );
 }
 
@@ -7725,16 +7736,26 @@ function debtKinds(t) {
     : [['utang', 'Utang baru (saya pinjam)'], ['bayar-piutang', 'Terima bayar piutang']];
 }
 
+/** Nama utang/piutang yang dipakai untuk mengelompokkan sisa. */
+function debtNameOf(x) {
+  return (x.debtName || x.note || x.cat || 'Tanpa nama').trim().slice(0, 40) || 'Tanpa nama';
+}
+
 /** Ringkasan utang/piutang dari transaksi kas yang dicentang. */
 function debtData(P) {
   var g = {};
   (P.tx || []).forEach(function (x) {
-    if (!x.debt) return;
-    var n = (x.debtName || x.note || x.cat || 'Tanpa nama').trim().slice(0, 40) || 'Tanpa nama',
-      o = g[n] || (g[n] = { name: n, utang: 0, piutang: 0, bayarU: 0, bayarP: 0 });
-    if (x.debtKind === 'utang') o.utang += x.amt;
-    else if (x.debtKind === 'piutang') o.piutang += x.amt;
-    else if (x.debtKind === 'bayar-utang') o.bayarU += x.amt;
+    if (!x.debt || x.debtDone) return;
+    var n = debtNameOf(x),
+      y = x.d.slice(0, 4),
+      o = g[n] || (g[n] = { name: n, utang: 0, piutang: 0, bayarU: 0, bayarP: 0, fromU: '', fromP: '' });
+    if (x.debtKind === 'utang') {
+      o.utang += x.amt;
+      if (!o.fromU || y < o.fromU) o.fromU = y;
+    } else if (x.debtKind === 'piutang') {
+      o.piutang += x.amt;
+      if (!o.fromP || y < o.fromP) o.fromP = y;
+    } else if (x.debtKind === 'bayar-utang') o.bayarU += x.amt;
     else if (x.debtKind === 'bayar-piutang') o.bayarP += x.amt;
   });
   return Object.keys(g)
@@ -7745,6 +7766,12 @@ function debtData(P) {
       return x;
     })
     .filter(function (x) { return x.sisaU > 0 || x.sisaP > 0; });
+}
+
+/** Tombol X untuk menyembunyikan satu arah utang/piutang dari kartu. */
+function debtXBtn(name, dir) {
+  var j = dir === 'u' ? 'utang' : 'piutang';
+  return '<button class="g debt-x" data-debt-x="' + esc(name) + '" data-debt-dir="' + dir + '" title="Hilangkan dari daftar" aria-label="Hilangkan ' + j + ' ' + esc(name) + '">&times;</button>';
 }
 
 /** Kartu utang/piutang: sisa per nama + tombol bayar yang mengisi form. */
@@ -7759,9 +7786,9 @@ function debtHtml(P) {
     D.map(function (x) {
       var rows = '';
       if (x.sisaU > 0)
-        rows += '<div class="debt-row"><div><b>' + esc(x.name) + '</b><span class="sub">Saya berutang</span></div><div><b class="neg">' + rp(x.sisaU) + '</b> <button class="g" data-debt-pay="utang" data-name="' + esc(x.name) + '" data-amt="' + x.sisaU + '">Bayar</button></div></div>';
+        rows += '<div class="debt-row"><div><b>' + esc(x.name) + '</b><span class="sub">Saya berutang' + (x.fromU ? ' &middot; sejak ' + x.fromU : '') + '</span></div><div><b class="neg">' + rp(x.sisaU) + '</b> <button class="g" data-debt-pay="utang" data-name="' + esc(x.name) + '" data-amt="' + x.sisaU + '">Bayar</button>' + debtXBtn(x.name, 'u') + '</div></div>';
       if (x.sisaP > 0)
-        rows += '<div class="debt-row"><div><b>' + esc(x.name) + '</b><span class="sub">Orang berutang</span></div><div><b class="kin">' + rp(x.sisaP) + '</b> <button class="g" data-debt-pay="piutang" data-name="' + esc(x.name) + '" data-amt="' + x.sisaP + '">Bayar</button></div></div>';
+        rows += '<div class="debt-row"><div><b>' + esc(x.name) + '</b><span class="sub">Orang berutang' + (x.fromP ? ' &middot; sejak ' + x.fromP : '') + '</span></div><div><b class="kin">' + rp(x.sisaP) + '</b> <button class="g" data-debt-pay="piutang" data-name="' + esc(x.name) + '" data-amt="' + x.sisaP + '">Bayar</button>' + debtXBtn(x.name, 'p') + '</div></div>';
       return rows;
     }).join('') +
     '<div class="sub mt6">Centang <b>Transaksi utang/piutang</b> di form untuk mencatat utang baru. Pembayaran bisa dicicil berkali-kali; sisa di atas otomatis berkurang. Untuk beberapa utang ke orang yang sama, pakai nama berbeda (mis. <b>Budi motor</b>, <b>Budi kos</b>) agar sisanya terpisah.</div></div>'
@@ -7783,6 +7810,28 @@ function openDebtForm(name, kind, amt) {
   }
 }
 
+
+/** Hilangkan satu arah utang/piutang dari kartu tanpa menghapus riwayat kas. */
+function hideDebt(name, dir) {
+  askConfirm(
+    'Hilangkan <b>' + esc(name) + '</b> dari kartu utang/piutang? Transaksi kas tetap tersimpan.',
+    function () {
+      var P = kas(),
+        sn = snap('Sebelum menghilangkan utang');
+      P.tx.forEach(function (x) {
+        if (!x.debt || debtNameOf(x) !== name) return;
+        if (dir === 'u' && (x.debtKind === 'utang' || x.debtKind === 'bayar-utang')) x.debtDone = true;
+        if (dir === 'p' && (x.debtKind === 'piutang' || x.debtKind === 'bayar-piutang')) x.debtDone = true;
+      });
+      save();
+      renderAll();
+      toast('Utang/piutang dihilangkan dari kartu.', function () {
+        restoreSnap(sn.t);
+      });
+    },
+    'Ya, hilangkan'
+  );
+}
 
 /** Profil yang tergabung dengan Rencana (selalu tepat satu). */
 function kasLinked() {
@@ -7975,7 +8024,7 @@ function renderKas() {
     catH = '';
   if (cl.length)
     catH =
-      '<div class="card"><h2>Pengeluaran per kategori</h2>' +
+      '<div class="kas-cat"><div class="kas-cat-h">Pengeluaran per kategori</div>' +
       cl
         .map(function (k, i) {
           var pc = (bc[k] / R.o) * 100,
@@ -8009,7 +8058,7 @@ function renderKas() {
     rowsH = LF.slice(0, 200).map(function (x) {
       var sep = x.d !== lastD ? '<div class="daysep"><span>' + fmtD(x.d) + '</span></div>' : '';
       lastD = x.d;
-      return sep + '<div class="it2"><div><b class="' +
+      return sep + '<div class="it2 kit"><div><b class="' +
         (x.t === '-' ? 'neg' : 'kin') +
         '">' +
         (x.t === '-' ? '&minus; ' : '+ ') +
@@ -8224,6 +8273,7 @@ function bindKas() {
       renderKas();
       $('ka').scrollIntoView({ block: 'center' });
     } else if (d.kdel) kasDelTx(d.kdel);
+    else if (d.debtX) hideDebt(d.debtX, d.debtDir);
     else if (d.debtPay) openDebtForm(d.name, d.debtPay, d.amt);
     else if (d.kfocus) {
       $('ka').scrollIntoView({ block: 'center' });
