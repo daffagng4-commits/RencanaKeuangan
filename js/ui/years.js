@@ -8,6 +8,8 @@ function renderYears() {
     .sort(function (a, b) {
       return a - b;
     });
+  var sum = $('yr-sum');
+  if (sum) sum.textContent = S.year + ' · ' + MON[+S.startMonth || 0] + ' · ' + rp(+S.saldo || 0);
   $('yb').innerHTML =
     '<span class="sub">Data tahun:</span>' +
     ks
@@ -104,4 +106,33 @@ function bindYears() {
       askConfirm('Hapus tahun <b>' + yy + '</b> beserta ' + S.items.length + ' item dan status pembayarannya?', delYear, 'Ya, hapus tahun');
     }
   };
+  var pop = $('yr-pop'),
+    btn = $('yr-btn'),
+    panel = $('yr-panel');
+  function setOpen(v) {
+    if (!panel || !btn) return;
+    panel.hidden = !v;
+    btn.setAttribute('aria-expanded', v ? 'true' : 'false');
+    if (v) setTimeout(function () { $('year').focus(); }, 0);
+  }
+  if (btn && panel) {
+    btn.onclick = function (e) {
+      e.stopPropagation();
+      setOpen(panel.hidden);
+    };
+    var done = $('yr-done');
+    if (done) done.onclick = function () {
+      setOpen(false);
+      btn.focus();
+    };
+    document.addEventListener('click', function (e) {
+      if (!panel.hidden && !pop.contains(e.target)) setOpen(false);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !panel.hidden) {
+        setOpen(false);
+        btn.focus();
+      }
+    });
+  }
 }

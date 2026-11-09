@@ -48,6 +48,11 @@ const {boot}=require('./ui.js');
  assert($('acct') && $('acct-ini').textContent==='?','tombol akun bulat default ?');
  assert(!$('lgb'),'tombol Masuk lama dihapus');
  assert(!w.document.querySelector('header #bk'),'impor/ekspor tidak di header');
+ assert(/2026 · Nov · Rp 5\.000\.000/.test($('yr-sum').textContent),'ringkasan tahun/bulan/saldo di satu tombol');
+ click($('yr-btn'));
+ assert(!$('yr-panel').hidden && $('yr-btn').getAttribute('aria-expanded')==='true','panel kontrol terbuka');
+ click($('yr-done'));
+ assert($('yr-panel').hidden && $('yr-btn').getAttribute('aria-expanded')==='false','panel kontrol tertutup');
  // ICS
  let ics=''; w.exportFile=(n,c)=>{ics=c;};
  w.document.querySelector('[data-ex="ics"]').click();

@@ -528,9 +528,8 @@ function modeUi() {
   if (X) toolMount(mode);
   document.querySelector('.w').style.maxWidth = mode === 'rebalance' ? '1500px' : '';
   document.querySelector('nav').style.display = O ? 'none' : '';
-  ['year', 'sm', 'saldo'].forEach(function (id) {
-    $(id).parentNode.style.display = O ? 'none' : '';
-  });
+  var ctl = document.querySelector('.ctl');
+  if (ctl) ctl.style.display = O ? 'none' : '';
   $('rem').style.display = O ? 'none' : '';
   document.querySelector('h1').textContent = T ? 'Perjalanan' : X ? TOOLS[mode].title : 'Rencana Keuangan';
   if (O) {

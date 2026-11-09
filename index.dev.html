@@ -38,8 +38,18 @@
 <header>
   <div><h1>Rencana Keuangan</h1><div class="sub fs115 cmut mt2"" id="ver-info"" title="Versi program terbaru">v-r21 · 9 Nov 2026</div><div class="sub" id="status" style="display:none"></div><div class="sub" id="sbs" style="display:none"></div></div>
   <div class="ctl">
-    <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
-    <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub mt4"" id="adjs""></div></div>
+    <div class="yr-pop" id="yr-pop">
+      <button type="button" class="yr-btn" id="yr-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="yr-panel" title="Atur tahun, bulan saldo, dan saldo awal">
+        <span id="yr-sum">2027 · Jan · Rp 25.000.000</span>
+        <svg class="arr-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="yr-panel" id="yr-panel" role="dialog" aria-label="Tahun, bulan saldo, dan saldo awal" hidden>
+        <div class="yr-field"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
+        <div class="yr-field"><label for="sm">Bulan saldo</label><select id="sm"></select></div>
+        <div class="yr-field"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub mt4" id="adjs"></div></div>
+        <button type="button" class="p yr-done" id="yr-done">Selesai</button>
+      </div>
+    </div>
   </div>
 </header>
 <nav role="tablist">

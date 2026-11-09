@@ -111,6 +111,49 @@ h2 {
   gap: 10px;
   align-items: flex-end;
 }
+.yr-pop { position: relative; }
+.yr-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 13px;
+  border: 1px solid var(--ln);
+  border-radius: 999px;
+  background: var(--sf);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.yr-btn:hover { background: color-mix(in srgb, var(--ink) 6%, var(--sf)); }
+.yr-btn[aria-expanded="true"] { border-color: var(--ac); box-shadow: inset 0 0 0 1px var(--ac); }
+.yr-btn .arr-icon { color: var(--mut); transition: transform 0.15s ease; }
+.yr-btn[aria-expanded="true"] .arr-icon { transform: rotate(180deg); }
+.yr-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 60;
+  width: min(340px, calc(100vw - 32px));
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+  background: var(--sf);
+  border: 1px solid var(--ln);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.28);
+}
+.yr-panel[hidden] { display: none; }
+.yr-field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--mut); margin-bottom: 4px; }
+.yr-field input, .yr-field select { width: 100%; }
+.yr-done { width: 100%; }
+@media (max-width: 700px) {
+  .yr-btn { width: 100%; justify-content: space-between; }
+  .yr-panel { position: fixed; left: 12px; right: 12px; top: auto; bottom: 12px; width: auto; }
+}
 label {
   display: block;
   font-size: 12.5px;
@@ -1001,18 +1044,6 @@ body.privacy-mode .pv,
 body.privacy-mode [data-val="rp"] {
   filter: blur(5px);
   user-select: none;
-  transition: filter 0.15s ease;
-}
-body.privacy-mode .num:hover,
-body.privacy-mode .amt:hover,
-body.privacy-mode .cur:hover,
-body.privacy-mode td:nth-child(2):hover,
-body.privacy-mode td.r:hover,
-body.privacy-mode input#saldo:hover,
-body.privacy-mode .hero-val:hover,
-body.privacy-mode .big:hover,
-body.privacy-mode .pv:hover {
-  filter: blur(0);
 }
 .yp[data-kt="-"].on, #qk-out.on {
   background: var(--wrs);

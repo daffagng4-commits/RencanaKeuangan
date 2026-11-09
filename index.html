@@ -132,6 +132,49 @@ h2 {
   gap: 10px;
   align-items: flex-end;
 }
+.yr-pop { position: relative; }
+.yr-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 13px;
+  border: 1px solid var(--ln);
+  border-radius: 999px;
+  background: var(--sf);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.yr-btn:hover { background: color-mix(in srgb, var(--ink) 6%, var(--sf)); }
+.yr-btn[aria-expanded="true"] { border-color: var(--ac); box-shadow: inset 0 0 0 1px var(--ac); }
+.yr-btn .arr-icon { color: var(--mut); transition: transform 0.15s ease; }
+.yr-btn[aria-expanded="true"] .arr-icon { transform: rotate(180deg); }
+.yr-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 60;
+  width: min(340px, calc(100vw - 32px));
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+  background: var(--sf);
+  border: 1px solid var(--ln);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.28);
+}
+.yr-panel[hidden] { display: none; }
+.yr-field label { display: block; font-size: 11.5px; font-weight: 600; color: var(--mut); margin-bottom: 4px; }
+.yr-field input, .yr-field select { width: 100%; }
+.yr-done { width: 100%; }
+@media (max-width: 700px) {
+  .yr-btn { width: 100%; justify-content: space-between; }
+  .yr-panel { position: fixed; left: 12px; right: 12px; top: auto; bottom: 12px; width: auto; }
+}
 label {
   display: block;
   font-size: 12.5px;
@@ -1022,18 +1065,6 @@ body.privacy-mode .pv,
 body.privacy-mode [data-val="rp"] {
   filter: blur(5px);
   user-select: none;
-  transition: filter 0.15s ease;
-}
-body.privacy-mode .num:hover,
-body.privacy-mode .amt:hover,
-body.privacy-mode .cur:hover,
-body.privacy-mode td:nth-child(2):hover,
-body.privacy-mode td.r:hover,
-body.privacy-mode input#saldo:hover,
-body.privacy-mode .hero-val:hover,
-body.privacy-mode .big:hover,
-body.privacy-mode .pv:hover {
-  filter: blur(0);
 }
 .yp[data-kt="-"].on, #qk-out.on {
   background: var(--wrs);
@@ -1675,8 +1706,18 @@ button.alat-item { width: 100%; border: 0; background: transparent; text-align: 
 <header>
   <div><h1>Rencana Keuangan</h1><div class="sub fs115 cmut mt2"" id="ver-info"" title="Versi program terbaru">v-r21 · 9 Nov 2026</div><div class="sub" id="status" style="display:none"></div><div class="sub" id="sbs" style="display:none"></div></div>
   <div class="ctl">
-    <div style="width:104px"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
-    <div style="width:96px"><label for="sm">Bulan saldo</label><select id="sm"></select></div><div style="width:170px"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub mt4"" id="adjs""></div></div>
+    <div class="yr-pop" id="yr-pop">
+      <button type="button" class="yr-btn" id="yr-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="yr-panel" title="Atur tahun, bulan saldo, dan saldo awal">
+        <span id="yr-sum">2027 · Jan · Rp 25.000.000</span>
+        <svg class="arr-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="yr-panel" id="yr-panel" role="dialog" aria-label="Tahun, bulan saldo, dan saldo awal" hidden>
+        <div class="yr-field"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
+        <div class="yr-field"><label for="sm">Bulan saldo</label><select id="sm"></select></div>
+        <div class="yr-field"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub mt4" id="adjs"></div></div>
+        <button type="button" class="p yr-done" id="yr-done">Selesai</button>
+      </div>
+    </div>
   </div>
 </header>
 <nav role="tablist">
@@ -5541,6 +5582,8 @@ function renderYears() {
     .sort(function (a, b) {
       return a - b;
     });
+  var sum = $('yr-sum');
+  if (sum) sum.textContent = S.year + ' · ' + MON[+S.startMonth || 0] + ' · ' + rp(+S.saldo || 0);
   $('yb').innerHTML =
     '<span class="sub">Data tahun:</span>' +
     ks
@@ -5637,6 +5680,35 @@ function bindYears() {
       askConfirm('Hapus tahun <b>' + yy + '</b> beserta ' + S.items.length + ' item dan status pembayarannya?', delYear, 'Ya, hapus tahun');
     }
   };
+  var pop = $('yr-pop'),
+    btn = $('yr-btn'),
+    panel = $('yr-panel');
+  function setOpen(v) {
+    if (!panel || !btn) return;
+    panel.hidden = !v;
+    btn.setAttribute('aria-expanded', v ? 'true' : 'false');
+    if (v) setTimeout(function () { $('year').focus(); }, 0);
+  }
+  if (btn && panel) {
+    btn.onclick = function (e) {
+      e.stopPropagation();
+      setOpen(panel.hidden);
+    };
+    var done = $('yr-done');
+    if (done) done.onclick = function () {
+      setOpen(false);
+      btn.focus();
+    };
+    document.addEventListener('click', function (e) {
+      if (!panel.hidden && !pop.contains(e.target)) setOpen(false);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !panel.hidden) {
+        setOpen(false);
+        btn.focus();
+      }
+    });
+  }
 }
 
 /* ===== js/ui/header.js ===== */
@@ -9081,9 +9153,8 @@ function modeUi() {
   if (X) toolMount(mode);
   document.querySelector('.w').style.maxWidth = mode === 'rebalance' ? '1500px' : '';
   document.querySelector('nav').style.display = O ? 'none' : '';
-  ['year', 'sm', 'saldo'].forEach(function (id) {
-    $(id).parentNode.style.display = O ? 'none' : '';
-  });
+  var ctl = document.querySelector('.ctl');
+  if (ctl) ctl.style.display = O ? 'none' : '';
   $('rem').style.display = O ? 'none' : '';
   document.querySelector('h1').textContent = T ? 'Perjalanan' : X ? TOOLS[mode].title : 'Rencana Keuangan';
   if (O) {
