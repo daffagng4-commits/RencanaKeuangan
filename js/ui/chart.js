@@ -40,6 +40,7 @@ function saldoLine(o) {
     return (
       '<g class="lc-p"><rect class="lc-hit" x="' + left.toFixed(1) + '" y="' + padT + '" width="' + Math.max(1, right - left).toFixed(1) + '" height="' + plotH + '" fill="transparent" tabindex="0" data-tip="' + esc(p.tip) + '"></rect>' +
       '<line class="lc-v" x1="' + x.toFixed(1) + '" y1="' + padT + '" x2="' + x.toFixed(1) + '" y2="' + (padT + plotH) + '"></line>' +
+      '<circle class="lc-halo" cx="' + x.toFixed(1) + '" cy="' + Y(p.v).toFixed(1) + '" r="11"></circle>' +
       '<circle class="lc-d' + (p.v < 0 ? ' neg' : '') + '" cx="' + x.toFixed(1) + '" cy="' + Y(p.v).toFixed(1) + '" r="4.5" data-tip="' + esc(p.tip) + '"></circle></g>'
     );
   }).join('');
@@ -78,3 +79,72 @@ function saldoLine(o) {
     (o.foot ? '<div class="sub lc-foot">' + o.foot + '</div>' : '') + '</div>'
   );
 }
+
+/* Geser jari di grafik (mobile): titik terdekat mengikuti jari + tooltip, seperti grafik saham. */
+(function () {
+  var active = null,
+    last = null;
+
+  function clear(closeTip) {
+    if (active) active.classList.remove('active');
+    active = last = null;
+    if (closeTip && typeof tipHide === 'function') tipHide();
+  }
+  function nearest(svg, clientX) {
+    var r = svg.getBoundingClientRect(),
+      x = r.width ? ((clientX - r.left) / r.width) * 720 : 0,
+      best = null,
+      dist = 1e9;
+    svg.querySelectorAll('.lc-p').forEach(function (g) {
+      var dot = g.querySelector('.lc-d');
+      if (!dot) return;
+      var d = Math.abs(parseFloat(dot.getAttribute('cx')) - x);
+      if (d < dist) { dist = d; best = g; }
+    });
+    return best;
+  }
+  function setActive(g, x, y) {
+    if (!g) return;
+    if (active !== g) {
+      if (active) active.classList.remove('active');
+      active = g;
+      g.classList.add('active');
+    }
+    last = { x: x, y: y };
+    if (typeof tipShow === 'function') tipShow(g.querySelector('.lc-hit'), x, y);
+  }
+  function chartOf(e) {
+    return e.target && e.target.closest ? e.target.closest('svg.lc') : null;
+  }
+
+  document.addEventListener('pointerdown', function (e) {
+    var svg = chartOf(e);
+    if (!svg) { clear(true); return; }
+    if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+      setActive(nearest(svg, e.clientX), e.clientX, e.clientY);
+      try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+    }
+  });
+  document.addEventListener('pointermove', function (e) {
+    var svg = chartOf(e);
+    if (!svg) {
+      if (e.pointerType !== 'touch' && e.pointerType !== 'pen') clear(true);
+      return;
+    }
+    if (e.pointerType === 'touch' || e.pointerType === 'pen' || e.buttons) {
+      setActive(nearest(svg, e.clientX), e.clientX, e.clientY);
+    }
+  });
+  document.addEventListener('pointerup', function (e) {
+    if (e.pointerType === 'mouse') { clear(true); return; }
+    if (!active || !last) return;
+    var g = active,
+      hit = g.querySelector('.lc-hit');
+    /* klik setelah geser bisa menutup tooltip; tampilkan lagi setelah klik selesai */
+    setTimeout(function () {
+      if (active === g && typeof tipShow === 'function') tipShow(hit, last.x, last.y);
+    }, 0);
+  });
+  document.addEventListener('pointercancel', function () { clear(true); });
+  window.addEventListener('scroll', function () { clear(false); }, true);
+})();

@@ -67,6 +67,24 @@ const { boot } = require('./ui.js');
   const hits = $('v-rincian').querySelectorAll('svg[aria-label^="Grafik arus saldo"] rect[data-tip]');
   assert.strictEqual(hits.length, dots.length, 'area hover punya tooltip');
   assert(/saldo Rp/.test(hits[0].dataset.tip), hits[0].dataset.tip);
+
+  // geser jari (touch): titik aktif mengikuti posisi jari
+  const chart = $('v-rincian').querySelector('svg.lc');
+  chart.getBoundingClientRect = () => ({ left: 0, top: 0, width: 720, height: 238, right: 720, bottom: 238 });
+  const pe = (type, x) => {
+    const e = new w.Event(type, { bubbles: true, cancelable: true });
+    Object.defineProperty(e, 'pointerType', { value: 'touch' });
+    e.pointerId = 1; e.clientX = x; e.clientY = 40;
+    hits[0].dispatchEvent(e);
+  };
+  const activeIdx = () => [...chart.querySelectorAll('.lc-p')].findIndex((g) => g.classList.contains('active'));
+  pe('pointerdown', 2);
+  assert.strictEqual(activeIdx(), 0, 'sentuh kiri: titik pertama aktif');
+  pe('pointermove', 718);
+  assert.strictEqual(activeIdx(), dots.length - 1, 'geser ke kanan: titik terakhir aktif');
+  assert(!$('tip').hidden, 'geser jari menampilkan tooltip');
+  w.document.dispatchEvent(new w.Event('pointercancel'));
+  assert.strictEqual(activeIdx(), -1, 'lepas jari menghapus titik aktif');
   w.S.startMonth = 10;
   w.renderAll();
   const part = $('v-rincian').querySelectorAll('svg[aria-label^="Grafik arus saldo"] rect[data-tip]');

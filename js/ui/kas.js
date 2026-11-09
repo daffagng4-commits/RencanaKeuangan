@@ -9,7 +9,6 @@ var kasAct = (function () {
       return '';
     }
   })(),
-  kasPer = 'all',
   kasTf = 'all', // filter Riwayat transaksi: all | + (masuk) | - (keluar)
   kasFrom = '',
   kasTo = '',
@@ -31,28 +30,18 @@ function kas() {
 function kasEl() {
   return $('v-kas');
 }
-function kasIn(x, per) {
-  return per === 'all' || x.d.slice(0, 7) === per;
-}
-/** Jumlah masuk (i), keluar (o), dan banyaknya transaksi (n) pada periode. */
-function kasSum(tx, per) {
+/** Jumlah masuk (i), keluar (o), dan banyaknya transaksi (n). */
+function kasSum(tx) {
   var r = { i: 0, o: 0, n: 0 };
   tx.forEach(function (x) {
-    if (!kasIn(x, per)) return;
     r.n++;
     if (x.t === '+') r.i += x.amt;
     else r.o += x.amt;
   });
   return r;
 }
-function kasPrevMonth(per) {
-  var p = per.split('-').map(Number),
-    m = p[1] - 2;
-  return p[0] + Math.floor(m / 12) + '-' + pad2(((m % 12) + 12) % 12 + 1);
-}
-
 /** Satu kartu: pie pemasukan vs pengeluaran + rincian kategori di sebelahnya. */
-function kasPie(R, label, catHtml) {
+function kasPie(R, catHtml) {
   var t = R.i + R.o;
   if (!t) return '';
   var ip = Math.round((R.i / t) * 100),
@@ -63,7 +52,6 @@ function kasPie(R, label, catHtml) {
   return (
     '<div class="card kas-dash">' +
     '<h2>Pemasukan vs pengeluaran</h2>' +
-    '<div class="sub mb12">' + label + '</div>' +
     '<div class="kas-split' + (catHtml ? '' : ' solo') + '">' +
     '<div class="kas-pie"><div class="pie-wrap"><div class="pie"><svg viewBox="0 0 100 100" role="img" aria-label="Pemasukan ' + ip + '%, pengeluaran ' + op + '%">' +
     '<circle class="pie-slice in" cx="50" cy="50" r="38" stroke="#3aa17e" stroke-dasharray="' + li + ' ' + C + '" transform="rotate(-90 50 50)"><title>Pemasukan ' + ip + '% &middot; ' + rp(R.i) + '</title></circle>' +
@@ -228,16 +216,9 @@ function renderKas() {
       return a.d < b.d ? -1 : a.d > b.d ? 1 : 0;
     }),
     sm = +S.startMonth || 0,
-    mName = kasPer !== 'all' ? (typeof FULL_MON !== 'undefined' ? FULL_MON[+kasPer.split('-')[1] - 1] : MON[+kasPer.split('-')[1] - 1]) : (typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm]),
-    A = kasSum(asc, 'all'),
-    bal = kasBase(P) + A.i - A.o,
-    mo = {};
-  asc.forEach(function (x) {
-    mo[x.d.slice(0, 7)] = 1;
-  });
-  mo[todayISO().slice(0, 7)] = 1;
-  var ms = Object.keys(mo).sort().reverse();
-  if (kasPer !== 'all' && !mo[kasPer]) kasPer = 'all';
+    mName = typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm],
+    A = kasSum(asc),
+    bal = kasBase(P) + A.i - A.o;
   var minD = asc.length ? asc[0].d : todayISO(),
     maxD = asc.length ? asc[asc.length - 1].d : todayISO(),
     catList = [];
@@ -252,15 +233,11 @@ function renderKas() {
   if (to < minD || to > maxD) to = maxD;
   if (from > to) from = to;
   if (kasCat !== 'all' && kasCat !== '__none' && catList.indexOf(kasCat) < 0) kasCat = 'all';
-  var R = kasSum(asc, kasPer),
+  var R = kasSum(asc),
     baseL = asc.filter(function (x) {
       return x.d >= from && x.d <= to && (kasCat === 'all' || (x.cat || '') === (kasCat === '__none' ? '' : kasCat));
     }),
-    L = baseL
-      .filter(function (x) {
-        return kasIn(x, kasPer);
-      })
-      .reverse(),
+    L = baseL.reverse(),
     E = kasEdit
       ? asc.filter(function (x) {
           return x.id === kasEdit;
@@ -270,11 +247,6 @@ function renderKas() {
   var stat = function (l, v, s) {
     return '<div><span>' + l + '</span><b>' + v + '</b>' + (s ? '<span>' + s + '</span>' : '') + '</div>';
   };
-  var prev = '';
-  if (kasPer !== 'all') {
-    var pv = kasSum(asc, kasPrevMonth(kasPer));
-    if (pv.o) prev = stat('Keluar bulan sebelumnya', rp(pv.o), (R.o >= pv.o ? 'naik ' : 'turun ') + rp(Math.abs(R.o - pv.o)));
-  }
   var hero =
     '<div class="hero"><div class="card m0"""><div class="sub">Saldo &quot;' +
     esc(P.name) +
@@ -298,17 +270,7 @@ function renderKas() {
     stat('Keluar', rp(R.o)) +
     stat('Selisih', R.i === R.o ? rp(0) : signed(R.i - R.o)) +
     stat('Transaksi', R.n) +
-    prev +
     '</div></div>';
-  var per =
-    '<div class="row2" style="margin:0 0 12px;align-items:center"><label class="m0" for="kper"">Periode</label><select class="wauto" id="kper""><option value="all">Semua waktu</option>' +
-    ms
-      .map(function (m) {
-        var p = m.split('-');
-        return '<option value="' + m + '"' + (m === kasPer ? ' selected' : '') + '>' + MON[p[1] - 1] + ' ' + p[0] + '</option>';
-      })
-      .join('') +
-    '</select></div>';
   var cats = KAS_IN.concat(KAS_OUT),
     seen = {};
   P.tx.forEach(function (x) {
@@ -432,7 +394,7 @@ function renderKas() {
     (LF.length > 200 ? '<div class="sub">+ ' + (LF.length - 200) + ' lainnya. Pilih rentang yang lebih sempit.</div>' : '') +
     '</div>';
   el.innerHTML =
-    per + form + kasPie(R, kasPer === 'all' ? 'Semua waktu' : mName, catH) + debtHtml(P) + lst;
+    form + kasPie(R, catH) + debtHtml(P) + lst;
 }
 
 function kasErr(t) {
@@ -626,10 +588,7 @@ function bindKas() {
     }
   };
   $('v-kas').onchange = function (e) {
-    if (e.target.id === 'kper') {
-      kasPer = e.target.value;
-      renderKas();
-    } else if (e.target.id === 'ktf') {
+    if (e.target.id === 'ktf') {
       kasTf = e.target.value === '+' || e.target.value === '-' ? e.target.value : 'all';
       renderKas();
     } else if (e.target.id === 'kfrom') {

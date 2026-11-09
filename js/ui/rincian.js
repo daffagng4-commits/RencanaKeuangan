@@ -302,7 +302,7 @@ function kasRunway(P, bal) {
       asc = kasRows(P).filter(function (x) {
         return +x.d.slice(5, 7) - 1 <= sm;
       }),
-      A = kasSum(asc, 'all');
+      A = kasSum(asc);
     bal = kasBase(P) + A.i - A.o;
   }
   var today = todayISO();
@@ -388,7 +388,7 @@ function kasBal(P) {
     asc = kasRows(P).filter(function (x) {
       return +x.d.slice(5, 7) - 1 <= sm;
     }),
-    A = kasSum(asc, 'all');
+    A = kasSum(asc);
   return { sm: sm, mName: typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm], A: A, bal: kasBase(P) + A.i - A.o };
 }
 

@@ -46,12 +46,9 @@ const ok = (c, m) => { assert(c, m); pass++; console.log("ok -", m); };
   click($("krst")); await tick();
   ok($("kfrom").value === "2026-10-30" && $("kto").value === "2026-12-01" && rows().length === 7, "Reset mengembalikan rentang ke default dan semua transaksi tampil");
 
-  // filter periode + jenis berjalan bersama
-  $("kper").value = "2026-11"; fire($("kper"), "change"); await tick();
-  $("ktf").value = "-"; fire($("ktf"), "change"); await tick();
-  ok(rows().length === 1 && /400.000/.test(rows()[0].textContent), "periode Nov 2026 + Keluar: hanya 1 transaksi (Rp 400.000)");
-  $("ktf").value = "+"; fire($("ktf"), "change"); await tick();
-  ok(rows().length === 2, "periode Nov 2026 + Masuk: 2 transaksi");
+  // filter periode sudah dihapus
+  ok(!$("kper"), "dropdown Periode sudah dihapus");
+  ok(rows().length === 7, "semua transaksi tampil tanpa filter periode");
 
   // kosong
   P.tx = P.tx.filter((x) => x.t === "+"); w.renderAll(); await tick();

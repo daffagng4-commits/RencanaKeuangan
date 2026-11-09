@@ -1360,11 +1360,13 @@ nav {
 .kch-x span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .kch-x span:first-child { transform: none; }
 .kch-x span:last-child { transform: translateX(-100%); }
-.lc { width: 100%; height: auto; display: block; overflow: visible; }
+.lc { width: 100%; height: auto; display: block; overflow: visible; touch-action: pan-y pinch-zoom; -webkit-user-select: none; user-select: none; }
 .lc .lc-v { opacity: 0; stroke: var(--mut); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; transition: opacity .12s; }
+.lc .lc-halo { opacity: 0; fill: var(--ac); pointer-events: none; transition: opacity .12s; }
 .lc .lc-d { opacity: 0; fill: var(--ac); stroke: var(--card); stroke-width: 2; transition: opacity .12s; }
 .lc .lc-d.neg { fill: var(--wr); }
-.lc .lc-p:hover .lc-v, .lc .lc-p:hover .lc-d, .lc .lc-p:focus-within .lc-v, .lc .lc-p:focus-within .lc-d { opacity: 1; }
+.lc .lc-p:hover .lc-v, .lc .lc-p:hover .lc-d, .lc .lc-p:focus-within .lc-v, .lc .lc-p:focus-within .lc-d, .lc .lc-p.active .lc-v, .lc .lc-p.active .lc-d { opacity: 1; }
+.lc .lc-p.active .lc-halo { opacity: .16; }
 .lc .lc-hit:focus { outline: none; }
 .lc-foot { margin-top: 6px; }
 

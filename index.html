@@ -1381,11 +1381,13 @@ nav {
 .kch-x span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .kch-x span:first-child { transform: none; }
 .kch-x span:last-child { transform: translateX(-100%); }
-.lc { width: 100%; height: auto; display: block; overflow: visible; }
+.lc { width: 100%; height: auto; display: block; overflow: visible; touch-action: pan-y pinch-zoom; -webkit-user-select: none; user-select: none; }
 .lc .lc-v { opacity: 0; stroke: var(--mut); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; transition: opacity .12s; }
+.lc .lc-halo { opacity: 0; fill: var(--ac); pointer-events: none; transition: opacity .12s; }
 .lc .lc-d { opacity: 0; fill: var(--ac); stroke: var(--card); stroke-width: 2; transition: opacity .12s; }
 .lc .lc-d.neg { fill: var(--wr); }
-.lc .lc-p:hover .lc-v, .lc .lc-p:hover .lc-d, .lc .lc-p:focus-within .lc-v, .lc .lc-p:focus-within .lc-d { opacity: 1; }
+.lc .lc-p:hover .lc-v, .lc .lc-p:hover .lc-d, .lc .lc-p:focus-within .lc-v, .lc .lc-p:focus-within .lc-d, .lc .lc-p.active .lc-v, .lc .lc-p.active .lc-d { opacity: 1; }
+.lc .lc-p.active .lc-halo { opacity: .16; }
 .lc .lc-hit:focus { outline: none; }
 .lc-foot { margin-top: 6px; }
 
@@ -3646,6 +3648,7 @@ function saldoLine(o) {
     return (
       '<g class="lc-p"><rect class="lc-hit" x="' + left.toFixed(1) + '" y="' + padT + '" width="' + Math.max(1, right - left).toFixed(1) + '" height="' + plotH + '" fill="transparent" tabindex="0" data-tip="' + esc(p.tip) + '"></rect>' +
       '<line class="lc-v" x1="' + x.toFixed(1) + '" y1="' + padT + '" x2="' + x.toFixed(1) + '" y2="' + (padT + plotH) + '"></line>' +
+      '<circle class="lc-halo" cx="' + x.toFixed(1) + '" cy="' + Y(p.v).toFixed(1) + '" r="11"></circle>' +
       '<circle class="lc-d' + (p.v < 0 ? ' neg' : '') + '" cx="' + x.toFixed(1) + '" cy="' + Y(p.v).toFixed(1) + '" r="4.5" data-tip="' + esc(p.tip) + '"></circle></g>'
     );
   }).join('');
@@ -3684,6 +3687,75 @@ function saldoLine(o) {
     (o.foot ? '<div class="sub lc-foot">' + o.foot + '</div>' : '') + '</div>'
   );
 }
+
+/* Geser jari di grafik (mobile): titik terdekat mengikuti jari + tooltip, seperti grafik saham. */
+(function () {
+  var active = null,
+    last = null;
+
+  function clear(closeTip) {
+    if (active) active.classList.remove('active');
+    active = last = null;
+    if (closeTip && typeof tipHide === 'function') tipHide();
+  }
+  function nearest(svg, clientX) {
+    var r = svg.getBoundingClientRect(),
+      x = r.width ? ((clientX - r.left) / r.width) * 720 : 0,
+      best = null,
+      dist = 1e9;
+    svg.querySelectorAll('.lc-p').forEach(function (g) {
+      var dot = g.querySelector('.lc-d');
+      if (!dot) return;
+      var d = Math.abs(parseFloat(dot.getAttribute('cx')) - x);
+      if (d < dist) { dist = d; best = g; }
+    });
+    return best;
+  }
+  function setActive(g, x, y) {
+    if (!g) return;
+    if (active !== g) {
+      if (active) active.classList.remove('active');
+      active = g;
+      g.classList.add('active');
+    }
+    last = { x: x, y: y };
+    if (typeof tipShow === 'function') tipShow(g.querySelector('.lc-hit'), x, y);
+  }
+  function chartOf(e) {
+    return e.target && e.target.closest ? e.target.closest('svg.lc') : null;
+  }
+
+  document.addEventListener('pointerdown', function (e) {
+    var svg = chartOf(e);
+    if (!svg) { clear(true); return; }
+    if (e.pointerType === 'touch' || e.pointerType === 'pen') {
+      setActive(nearest(svg, e.clientX), e.clientX, e.clientY);
+      try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+    }
+  });
+  document.addEventListener('pointermove', function (e) {
+    var svg = chartOf(e);
+    if (!svg) {
+      if (e.pointerType !== 'touch' && e.pointerType !== 'pen') clear(true);
+      return;
+    }
+    if (e.pointerType === 'touch' || e.pointerType === 'pen' || e.buttons) {
+      setActive(nearest(svg, e.clientX), e.clientX, e.clientY);
+    }
+  });
+  document.addEventListener('pointerup', function (e) {
+    if (e.pointerType === 'mouse') { clear(true); return; }
+    if (!active || !last) return;
+    var g = active,
+      hit = g.querySelector('.lc-hit');
+    /* klik setelah geser bisa menutup tooltip; tampilkan lagi setelah klik selesai */
+    setTimeout(function () {
+      if (active === g && typeof tipShow === 'function') tipShow(hit, last.x, last.y);
+    }, 0);
+  });
+  document.addEventListener('pointercancel', function () { clear(true); });
+  window.addEventListener('scroll', function () { clear(false); }, true);
+})();
 
 /* ===== js/ui/rincian.js ===== */
 /**
@@ -3990,7 +4062,7 @@ function kasRunway(P, bal) {
       asc = kasRows(P).filter(function (x) {
         return +x.d.slice(5, 7) - 1 <= sm;
       }),
-      A = kasSum(asc, 'all');
+      A = kasSum(asc);
     bal = kasBase(P) + A.i - A.o;
   }
   var today = todayISO();
@@ -4076,7 +4148,7 @@ function kasBal(P) {
     asc = kasRows(P).filter(function (x) {
       return +x.d.slice(5, 7) - 1 <= sm;
     }),
-    A = kasSum(asc, 'all');
+    A = kasSum(asc);
   return { sm: sm, mName: typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm], A: A, bal: kasBase(P) + A.i - A.o };
 }
 
@@ -7662,7 +7734,6 @@ var kasAct = (function () {
       return '';
     }
   })(),
-  kasPer = 'all',
   kasTf = 'all', // filter Riwayat transaksi: all | + (masuk) | - (keluar)
   kasFrom = '',
   kasTo = '',
@@ -7684,28 +7755,18 @@ function kas() {
 function kasEl() {
   return $('v-kas');
 }
-function kasIn(x, per) {
-  return per === 'all' || x.d.slice(0, 7) === per;
-}
-/** Jumlah masuk (i), keluar (o), dan banyaknya transaksi (n) pada periode. */
-function kasSum(tx, per) {
+/** Jumlah masuk (i), keluar (o), dan banyaknya transaksi (n). */
+function kasSum(tx) {
   var r = { i: 0, o: 0, n: 0 };
   tx.forEach(function (x) {
-    if (!kasIn(x, per)) return;
     r.n++;
     if (x.t === '+') r.i += x.amt;
     else r.o += x.amt;
   });
   return r;
 }
-function kasPrevMonth(per) {
-  var p = per.split('-').map(Number),
-    m = p[1] - 2;
-  return p[0] + Math.floor(m / 12) + '-' + pad2(((m % 12) + 12) % 12 + 1);
-}
-
 /** Satu kartu: pie pemasukan vs pengeluaran + rincian kategori di sebelahnya. */
-function kasPie(R, label, catHtml) {
+function kasPie(R, catHtml) {
   var t = R.i + R.o;
   if (!t) return '';
   var ip = Math.round((R.i / t) * 100),
@@ -7716,7 +7777,6 @@ function kasPie(R, label, catHtml) {
   return (
     '<div class="card kas-dash">' +
     '<h2>Pemasukan vs pengeluaran</h2>' +
-    '<div class="sub mb12">' + label + '</div>' +
     '<div class="kas-split' + (catHtml ? '' : ' solo') + '">' +
     '<div class="kas-pie"><div class="pie-wrap"><div class="pie"><svg viewBox="0 0 100 100" role="img" aria-label="Pemasukan ' + ip + '%, pengeluaran ' + op + '%">' +
     '<circle class="pie-slice in" cx="50" cy="50" r="38" stroke="#3aa17e" stroke-dasharray="' + li + ' ' + C + '" transform="rotate(-90 50 50)"><title>Pemasukan ' + ip + '% &middot; ' + rp(R.i) + '</title></circle>' +
@@ -7881,16 +7941,9 @@ function renderKas() {
       return a.d < b.d ? -1 : a.d > b.d ? 1 : 0;
     }),
     sm = +S.startMonth || 0,
-    mName = kasPer !== 'all' ? (typeof FULL_MON !== 'undefined' ? FULL_MON[+kasPer.split('-')[1] - 1] : MON[+kasPer.split('-')[1] - 1]) : (typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm]),
-    A = kasSum(asc, 'all'),
-    bal = kasBase(P) + A.i - A.o,
-    mo = {};
-  asc.forEach(function (x) {
-    mo[x.d.slice(0, 7)] = 1;
-  });
-  mo[todayISO().slice(0, 7)] = 1;
-  var ms = Object.keys(mo).sort().reverse();
-  if (kasPer !== 'all' && !mo[kasPer]) kasPer = 'all';
+    mName = typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm],
+    A = kasSum(asc),
+    bal = kasBase(P) + A.i - A.o;
   var minD = asc.length ? asc[0].d : todayISO(),
     maxD = asc.length ? asc[asc.length - 1].d : todayISO(),
     catList = [];
@@ -7905,15 +7958,11 @@ function renderKas() {
   if (to < minD || to > maxD) to = maxD;
   if (from > to) from = to;
   if (kasCat !== 'all' && kasCat !== '__none' && catList.indexOf(kasCat) < 0) kasCat = 'all';
-  var R = kasSum(asc, kasPer),
+  var R = kasSum(asc),
     baseL = asc.filter(function (x) {
       return x.d >= from && x.d <= to && (kasCat === 'all' || (x.cat || '') === (kasCat === '__none' ? '' : kasCat));
     }),
-    L = baseL
-      .filter(function (x) {
-        return kasIn(x, kasPer);
-      })
-      .reverse(),
+    L = baseL.reverse(),
     E = kasEdit
       ? asc.filter(function (x) {
           return x.id === kasEdit;
@@ -7923,11 +7972,6 @@ function renderKas() {
   var stat = function (l, v, s) {
     return '<div><span>' + l + '</span><b>' + v + '</b>' + (s ? '<span>' + s + '</span>' : '') + '</div>';
   };
-  var prev = '';
-  if (kasPer !== 'all') {
-    var pv = kasSum(asc, kasPrevMonth(kasPer));
-    if (pv.o) prev = stat('Keluar bulan sebelumnya', rp(pv.o), (R.o >= pv.o ? 'naik ' : 'turun ') + rp(Math.abs(R.o - pv.o)));
-  }
   var hero =
     '<div class="hero"><div class="card m0"""><div class="sub">Saldo &quot;' +
     esc(P.name) +
@@ -7951,17 +7995,7 @@ function renderKas() {
     stat('Keluar', rp(R.o)) +
     stat('Selisih', R.i === R.o ? rp(0) : signed(R.i - R.o)) +
     stat('Transaksi', R.n) +
-    prev +
     '</div></div>';
-  var per =
-    '<div class="row2" style="margin:0 0 12px;align-items:center"><label class="m0" for="kper"">Periode</label><select class="wauto" id="kper""><option value="all">Semua waktu</option>' +
-    ms
-      .map(function (m) {
-        var p = m.split('-');
-        return '<option value="' + m + '"' + (m === kasPer ? ' selected' : '') + '>' + MON[p[1] - 1] + ' ' + p[0] + '</option>';
-      })
-      .join('') +
-    '</select></div>';
   var cats = KAS_IN.concat(KAS_OUT),
     seen = {};
   P.tx.forEach(function (x) {
@@ -8085,7 +8119,7 @@ function renderKas() {
     (LF.length > 200 ? '<div class="sub">+ ' + (LF.length - 200) + ' lainnya. Pilih rentang yang lebih sempit.</div>' : '') +
     '</div>';
   el.innerHTML =
-    per + form + kasPie(R, kasPer === 'all' ? 'Semua waktu' : mName, catH) + debtHtml(P) + lst;
+    form + kasPie(R, catH) + debtHtml(P) + lst;
 }
 
 function kasErr(t) {
@@ -8279,10 +8313,7 @@ function bindKas() {
     }
   };
   $('v-kas').onchange = function (e) {
-    if (e.target.id === 'kper') {
-      kasPer = e.target.value;
-      renderKas();
-    } else if (e.target.id === 'ktf') {
+    if (e.target.id === 'ktf') {
       kasTf = e.target.value === '+' || e.target.value === '-' ? e.target.value : 'all';
       renderKas();
     } else if (e.target.id === 'kfrom') {
@@ -8377,7 +8408,6 @@ function setTrip(id) {
   tripTab = tp() && tripActive(tp()) ? 'now' : 'ring';
   gEdit = false;
   itEdit = bkEdit = null;
-  kasPer = 'all';
   kasTf = 'all';
   kasEdit = null;
   remember('rk-trip', id);
@@ -10191,6 +10221,16 @@ function bindNav() {
  * Tooltip ringan untuk grafik dan batang: elemen ber-atribut data-tip menampilkan teksnya saat disorot (mouse),
  * difokus (keyboard), atau diketuk (layar sentuh). Saat Mode Privasi aktif, nominal rupiah pada tooltip disamarkan.
  */
+var TIP_API = { show: null, hide: null };
+
+/** Tampilkan tooltip dari kode lain (mis. geser grafik di layar sentuh). */
+function tipShow(el, x, y) {
+  if (TIP_API.show) TIP_API.show(el, x, y);
+}
+function tipHide() {
+  if (TIP_API.hide) TIP_API.hide();
+}
+
 function bindTip() {
   var tip = document.createElement('div'),
     cur = null;
@@ -10203,7 +10243,7 @@ function bindTip() {
     tip.hidden = true;
     cur = null;
   }
-  function show(el) {
+  function show(el, px, py) {
     var txt = el.getAttribute('data-tip') || '';
     if (document.body.classList.contains('privacy-mode')) txt = txt.replace(/Rp\s?[-\u2212]?[\d.]+/g, 'Rp \u2022\u2022\u2022\u2022');
     tip.textContent = txt;
@@ -10211,13 +10251,15 @@ function bindTip() {
     var r = el.getBoundingClientRect(),
       w = tip.offsetWidth,
       h = tip.offsetHeight,
-      left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), Math.max(8, (window.innerWidth || 600) - w - 8)),
-      top = r.top - h - 8;
-    if (top < 8) top = r.bottom + 8;
+      left = Math.min(Math.max(8, (px == null ? r.left + r.width / 2 : px) - w / 2), Math.max(8, (window.innerWidth || 600) - w - 8)),
+      top = px == null ? r.top - h - 8 : py - h - 14;
+    if (top < 8) top = (px == null ? r.bottom : py) + 14;
     tip.style.left = left + 'px';
     tip.style.top = top + 'px';
     cur = el;
   }
+  TIP_API.show = show;
+  TIP_API.hide = hide;
   function target(e) {
     return e.target && e.target.closest ? e.target.closest('[data-tip]') : null;
   }

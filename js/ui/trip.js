@@ -67,7 +67,6 @@ function setTrip(id) {
   tripTab = tp() && tripActive(tp()) ? 'now' : 'ring';
   gEdit = false;
   itEdit = bkEdit = null;
-  kasPer = 'all';
   kasTf = 'all';
   kasEdit = null;
   remember('rk-trip', id);
