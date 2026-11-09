@@ -10,7 +10,7 @@ var LEGEND_HTML =
   '<span><button class="pd on" type="button" tabindex="-1" disabled>&#10003; 10</button>Sudah dibayar</span>' +
   '<span><button class="pd late" type="button" tabindex="-1" disabled>10</button>Terlewat: sudah lewat tanggal tapi belum ditandai dibayar atau dilewati (merah)</span>' +
   '<span><button class="pd skp" type="button" tabindex="-1" disabled>10</button>Dilewati: sengaja tidak dibayar, tidak dihitung (merah dicoret)</span>' +
-  '<span><b style="color:var(--mut)">0</b>Tidak ada tagihan bulan itu</span></div>';
+  '<span><b class="cmut"">0</b>Tidak ada tagihan bulan itu</span></div>';
 
 /** Kotak panduan yang bisa disembunyikan / ditampilkan (pilihan diingat per kotak). */
 function gdBox(key, html) {
@@ -175,10 +175,10 @@ function renderJadwal() {
     '<div class="card"><h2>Jadwal pembayaran ' +
     y +
     '</h2>' +
-    (S.startMonth ? '<div class="sub" style="margin-bottom:8px">Bulan sebelum ' + MON[S.startMonth] + ' tidak dihitung.</div>' : '') +
+    (S.startMonth ? '<div class="sub mb8""">Bulan sebelum ' + MON[S.startMonth] + ' tidak dihitung.</div>' : '') +
     gdBox(
       'jadwal',
-      '<div class="sub" style="margin-bottom:8px">Klik tanggal untuk memilih: sudah dibayar, dilewati (tidak bayar), atau belum dibayar. ' +
+      '<div class="sub mb8""">Klik tanggal untuk memilih: sudah dibayar, dilewati (tidak bayar), atau belum dibayar. ' +
         'Pakai "Ubah harga / jadwal" untuk mengubah harga atau siklus mulai tanggal tertentu.</div>' +
         LEGEND_HTML
     ) +

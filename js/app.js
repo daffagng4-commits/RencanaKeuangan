@@ -25,6 +25,7 @@ function main() {
   bindPrivacy();
   bindA11y();
   bindNav();
+  bindTip();
   resetForm();
   renderAll();
   save();

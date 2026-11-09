@@ -74,6 +74,7 @@ const { boot } = require('./ui.js');
   w.document.body.click();
   assert(alatMenu.hidden, 'klik di luar menutup menu Alat');
 
+  w.setTripVisible(true); // Perjalanan tersembunyi bila belum ada data perjalanan; di sini diaktifkan agar ikut diuji
   const bar = $('botnav'), btn = (k) => bar.querySelector('button[data-k="' + k + '"]');
   assert.strictEqual(bar.querySelectorAll('button').length, 5, 'lima tujuan di bilah bawah');
   assert(btn('rincian').classList.contains('on'), 'Rincian aktif awalnya');

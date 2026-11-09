@@ -25,7 +25,8 @@ Tanpa Supabase aplikasi tetap penuh fungsi dengan penyimpanan lokal (localStorag
 ```
 index.dev.html        SUMBER markup + daftar <script> (urutan penting); bisa dibuka langsung
 index.html            HASIL build (satu file) = yang dipakai GitHub Pages. Jangan diedit langsung
-css/style.css         seluruh gaya (tema terang/gelap lewat variabel CSS)
+css/style.css         seluruh gaya (tema lewat variabel CSS) + kelas utilitas pengganti style= inline
+css/fonts/            Plus Jakarta Sans (latin, variabel) + lisensi OFL; disematkan ke index.html oleh build.js
 js/config.js          satu-satunya file konfigurasi (Supabase)
 js/core/              logika murni, TANPA DOM -> bisa diuji sebagai unit
   util.js             format uang/tanggal, escape HTML
@@ -35,10 +36,12 @@ js/core/              logika murni, TANPA DOM -> bisa diuji sebagai unit
   calc.js             arus kas bulanan (pengeluaran, penyesuaian saldo tunggal/berulang, kategori)
   csv.js              baca/tulis CSV
   reminders.js        tagihan terlambat / akan datang, tandai lunas massal
+  match.js            pencocokan transaksi Catatan Kas dengan tagihan (tautan S.real) + data rencana vs realisasi
+  cicilan.js          kemajuan, sisa, dan bunga cicilan/utang
 js/ui/                tampilan + event listener (tiap file punya fungsi bindXxx())
   render.js           renderAll(): memperbarui semua tampilan dari state
   rincian.js jadwal.js items.js years.js header.js adjust.js price-modal.js reminders.js skiprange.js
-  kas.js trip.js theme.js topbar.js nav.js agenda.js io.js backup.js diag.js dom.js
+  kas.js trip.js theme.js topbar.js nav.js tip.js agenda.js realisasi.js cicilan.js io.js backup.js diag.js dom.js
 js/sync.js            sinkron Supabase + dialog konflik
 js/app.js             titik masuk: muat data -> bind semua -> render -> sinkron
 build.js              gabungkan index.dev.html + css + js -> index.html (+ dist/); `node build.js --check` memeriksa kesegarannya
@@ -59,7 +62,21 @@ dan di-host di GitHub Pages tanpa bundler. Urutan di `index.dev.html` harus: con
 - **Agenda 30 hari.** Tagihan belum lunas + baris Catatan Kas di bulan sesudah bulan saldo (mis. gaji), saldo berjalan, dan penanda saldo terendah.
 - **Ubah harga / jadwal.** Pilihan tujuan: Harga berubah (dengan chip cepat +5/+10/+15/-10%), Harga sementara, Ganti seberapa sering bayar,
   Geser tanggal bayar, **Berhenti bayar** (mengisi tanggal berhenti item; bisa diurungkan lewat toast), dan Atur manual.
-- **Navigasi.** Desktop: menu "Alat" di topbar. HP (lebar <= 720px): bilah menu bawah (Rincian, Kas, Jadwal, Perjalanan, Lainnya).
+- **Navigasi.** Desktop: menu "Alat" di topbar. HP (lebar <= 720px): bilah menu bawah (Rincian, Kas, Jadwal, Perjalanan atau Item, Lainnya).
+- **Rencana vs realisasi (Tahap 3).** Transaksi keluar di Catatan Kas bisa *ditautkan* ke satu tagihan (`S.real[kunciTagihan] = {tx}`): tagihan otomatis
+  lunas, transaksi itulah yang dihitung di kas (baris turunan "(lunas)" tagihan itu dilewati, jadi tidak terhitung dua kali), dan realisasi
+  (jumlah + tanggal) mengikuti transaksi. Pencocokan memakai nama, jumlah, dan tanggal (maks 10 hari): yang sangat cocok dan tunggal otomatis
+  dilunasi saat dicatat (bisa dimatikan di kartu "Cocokkan dengan tagihan", bisa diurungkan); sisanya jadi saran yang bisa diterima atau ditolak
+  ("Bukan"). Tagihan yang sudah lunas manual dan punya transaksi yang sama ditawarkan untuk "Gabungkan". Kartu "Rencana vs realisasi" di Rincian
+  menampilkan selisih per bulan dan yang terbesar.
+- **Cicilan & utang.** Item dengan batas berhenti (berhenti setelah N kali atau sampai tanggal) tampil di kartu "Cicilan & utang": sisa tenor,
+  sisa kewajiban, tanggal lunas, dan, bila "Pokok pinjaman" diisi di form item, total bunga/biaya. Tahun yang tidak ada datanya dan sudah lewat
+  dianggap lunas (dicatat sebagai asumsi di kartu).
+- **Grafik.** Warna kategori stabil berdasarkan nama (`catColor`, investasi selalu indigo). Tooltip (`data-tip`) muncul saat disorot, difokus, atau
+  diketuk, dan nominalnya disamarkan saat Mode Privasi aktif. Tersedia empty state dengan tombol aksi (`data-goto` membuka tab tujuan).
+- **Tema & font.** Tombol topbar: Otomatis > Terang > Gelap. Hitam-putih dipilih dari menu Alat / Lainnya. Font Plus Jakarta Sans disematkan
+  (tanpa Google Fonts) sehingga aplikasi jalan offline.
+- **Perjalanan.** Tersembunyi bila belum ada data perjalanan; pilihan "Tampilkan Perjalanan" di menu Alat / Lainnya (data tidak dihapus saat disembunyikan).
 
 ## Model data
 

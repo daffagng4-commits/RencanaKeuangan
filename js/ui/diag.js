@@ -10,7 +10,7 @@ function dgRow(r) {
     col +
     ';font-weight:700;min-width:18px">' +
     ic +
-    '</span><div style="flex:1"><b>' +
+    '</span><div class="fx1""><b>' +
     r[1] +
     '</b><div class="sub">' +
     esc(r[2]) +
@@ -189,7 +189,7 @@ async function runDiag() {
   }
   out.innerHTML =
     R.map(dgRow).join('') +
-    '<div class="sub" style="margin-top:6px">Selesai ' +
+    '<div class="sub mt6""">Selesai ' +
     new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) +
     '.</div>';
 }

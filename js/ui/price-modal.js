@@ -869,7 +869,7 @@ function savePm() {
         });
     });
   trackSchedule(it, function () {
-    moveStatusExact(it.id, pairs, [S.paid, S.skip]);
+    moveStatusExact(it.id, pairs, [S.paid, S.skip], [S.real || {}]);
     d.cs.forEach(function (c) {
       if (c.anchor) {
         var origFrom = origDate(it, d.disp || c.from);

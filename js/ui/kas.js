@@ -70,12 +70,20 @@ function kasChart(asc) {
           return ((i * 600) / (pts.length - 1)).toFixed(1) + ' ' + (122 - ((p.b - mn) / r) * 108).toFixed(1);
         })
         .join(' L');
+  var hw = 600 / (pts.length - 1),
+    hit = pts
+      .map(function (p, i) {
+        return '<rect x="' + Math.max(0, i * hw - hw / 2).toFixed(1) + '" y="0" width="' + hw.toFixed(1) + '" height="130" fill="transparent" tabindex="0" data-tip="' + esc(dShort(p.d) + ' · saldo ' + rp(p.b)) + '"></rect>';
+      })
+      .join('');
   return (
     '<div class="card"><h2>Saldo dari waktu ke waktu</h2><svg class="kch" viewBox="0 0 600 130" preserveAspectRatio="none" role="img" aria-label="Grafik saldo"><path d="' +
     d +
     ' L600 130 L0 130Z" style="fill:var(--acs)"></path><path d="' +
     d +
-    '" style="fill:none;stroke:var(--ac);stroke-width:2.5;vector-effect:non-scaling-stroke"></path></svg><div class="sub" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>' +
+    '" style="fill:none;stroke:var(--ac);stroke-width:2.5;vector-effect:non-scaling-stroke"></path>' +
+    hit +
+    '</svg><div class="sub dflex jcsb g8 fwrap"""><span>' +
     dShort(pts[0].d) +
     '</span><span>terendah ' +
     rp(mn) +
@@ -105,7 +113,7 @@ function kasDerived() {
     occ(it, y).forEach(function (t) {
       var d = isoD(t),
         k = it.id + '|' + d;
-      if (S.paid[k] && !S.skip[k])
+      if (S.paid[k] && !S.skip[k] && !realTx(k))
         out.push({ id: 'b' + k, d: d, t: '-', amt: priceAt(it, t), cat: it.cat || 'Tagihan', note: it.name + ' (lunas)', ro: 'tagihan' });
     });
   });
@@ -166,7 +174,7 @@ function renderKas() {
     if (pv.o) prev = stat('Keluar bulan sebelumnya', rp(pv.o), (R.o >= pv.o ? 'naik ' : 'turun ') + rp(Math.abs(R.o - pv.o)));
   }
   var hero =
-    '<div class="hero"><div class="card" style="margin:0"><div class="sub">Saldo &quot;' +
+    '<div class="hero"><div class="card m0"""><div class="sub">Saldo &quot;' +
     esc(P.name) +
     '&quot; Realtime &middot; ' +
     mName +
@@ -183,7 +191,7 @@ function renderKas() {
     rp(A.o) +
     '</div>' +
     kasRunwayHtml(P, bal) +
-    '</div><div class="card stats" style="margin:0">' +
+    '</div><div class="card stats m0""">' +
     stat('Masuk', rp(R.i)) +
     stat('Keluar', rp(R.o)) +
     stat('Selisih', R.i === R.o ? rp(0) : signed(R.i - R.o)) +
@@ -191,7 +199,7 @@ function renderKas() {
     prev +
     '</div></div>';
   var per =
-    '<div class="row2" style="margin:0 0 12px;align-items:center"><label for="kper" style="margin:0">Periode</label><select id="kper" style="width:auto"><option value="all">Semua waktu</option>' +
+    '<div class="row2" style="margin:0 0 12px;align-items:center"><label class="m0" for="kper"">Periode</label><select class="wauto" id="kper""><option value="all">Semua waktu</option>' +
     ms
       .map(function (m) {
         var p = m.split('-');
@@ -215,14 +223,14 @@ function renderKas() {
   var form =
     '<div class="card"><h2>' +
     (E ? 'Ubah transaksi' : 'Catat transaksi') +
-    '</h2><div class="kt" style="margin-bottom:12px"><button type="button" class="yp' +
+    '</h2><div class="kt mb12"""><button type="button" class="yp' +
     (kasT === '+' ? ' on' : '') +
     '" data-kt="+">+ Masuk</button><button type="button" class="yp' +
     (kasT === '-' ? ' on' : '') +
-    '" data-kt="-">&minus; Keluar</button></div><div class="kf"><div><label for="ka">Jumlah</label><div style="display:flex;gap:6px"><input id="ka" inputmode="numeric" placeholder="50k atau 50.000" value="' +
+    '" data-kt="-">&minus; Keluar</button></div><div class="kf"><div><label for="ka">Jumlah</label><div class="dflex g6""><input id="ka" inputmode="numeric" placeholder="50k atau 50.000" value="' +
     (E ? E.amt.toLocaleString('id-ID') : '') +
     '">' +
-    (mode === 'trip' && P.cur && P.rate ? '<select id="kcu" style="width:auto"><option value="idr">Rp</option><option value="fx">' + P.cur + '</option></select>' : '') +
+    (mode === 'trip' && P.cur && P.rate ? '<select class="wauto" id="kcu""><option value="idr">Rp</option><option value="fx">' + P.cur + '</option></select>' : '') +
     '</div></div><div><label for="kd">Tanggal</label><input id="kd" type="date" value="' +
     (E ? E.d : todayISO()) +
     '"></div><div><label for="kc">Kategori</label><input id="kc" list="kcl" maxlength="30" value="' +
@@ -253,9 +261,9 @@ function renderKas() {
       cl
         .map(function (k, i) {
           var pc = (bc[k] / R.o) * 100,
-            c = CAT_COLORS[i % CAT_COLORS.length];
+            c = catColor(k);
           return (
-            '<div class="catrow"><div class="cathd"><span><i class="dot" style="background:' +
+            '<div class="catrow" tabindex="0" data-tip="' + esc(k + ': ' + rp(bc[k]) + ' (' + (pc < 1 ? '<1' : Math.round(pc)) + '% dari total)') + '"><div class="cathd"><span><i class="dot" style="background:' +
             c +
             '"></i>' +
             esc(k) +
@@ -276,9 +284,9 @@ function renderKas() {
     nIn = L.filter(function (x) { return x.t === '+'; }).length,
     emptyMsg = kasTf === '+' ? 'Belum ada transaksi masuk di periode ini.' : kasTf === '-' ? 'Belum ada transaksi keluar di periode ini.' : 'Belum ada transaksi di periode ini.';
   var lst =
-    '<div class="card"><div class="row2" style="margin:0 0 8px;align-items:center;justify-content:space-between"><h2 style="margin:0">Riwayat transaksi</h2>' +
-    '<select id="ktf" aria-label="Filter jenis transaksi" style="width:auto"><option value="all"' + (kasTf === 'all' ? ' selected' : '') + '>Semua</option><option value="+"' + (kasTf === '+' ? ' selected' : '') + '>+ Masuk</option><option value="-"' + (kasTf === '-' ? ' selected' : '') + '>&minus; Keluar</option></select></div>' +
-    (kasTf !== 'all' ? '<div class="sub" style="margin-bottom:6px">' + LF.length + ' dari ' + L.length + ' transaksi · ' + (kasTf === '+' ? 'hanya yang masuk' : 'hanya yang keluar') + '</div>' : '') +
+    '<div class="card"><div class="row2" style="margin:0 0 8px;align-items:center;justify-content:space-between"><h2 class="m0"">Riwayat transaksi</h2>' +
+    '<select class="wauto" id="ktf" aria-label="Filter jenis transaksi""><option value="all"' + (kasTf === 'all' ? ' selected' : '') + '>Semua</option><option value="+"' + (kasTf === '+' ? ' selected' : '') + '>+ Masuk</option><option value="-"' + (kasTf === '-' ? ' selected' : '') + '>&minus; Keluar</option></select></div>' +
+    (kasTf !== 'all' ? '<div class="sub mb6""">' + LF.length + ' dari ' + L.length + ' transaksi · ' + (kasTf === '+' ? 'hanya yang masuk' : 'hanya yang keluar') + '</div>' : '') +
     (LF.slice(0, 200)
       .map(function (x) {
         return (
@@ -292,6 +300,7 @@ function renderKas() {
           (x.cat ? ' &middot; ' + esc(x.cat) : '') +
           '</span>' +
           (x.note ? '<br><span class="sub">' + esc(x.note) + '</span>' : '') +
+          lkChip(x) +
           '</div><div>' +
           (x.ro
             ? '<span class="sub">dari ' + (x.ro === 'tabungan' ? 'Target tabungan' : 'Jadwal Bayar') + '</span>'
@@ -299,11 +308,11 @@ function renderKas() {
           '</div></div>'
         );
       })
-      .join('') || '<div class="empty">' + emptyMsg + '</div>') +
+      .join('') || '<div class="empty">' + emptyMsg + '</div>' + (!L.length ? '<div class="row2 mt8"""><button type="button" class="p" data-kfocus="1">Catat transaksi pertama</button></div>' : '')) +
     (LF.length > 200 ? '<div class="sub">+ ' + (LF.length - 200) + ' lainnya. Pilih periode yang lebih sempit.</div>' : '') +
     '</div>';
   el.innerHTML =
-    per + form + kasChart(asc) + catH + lst;
+    per + matchCardHtml() + form + kasChart(asc) + catH + lst;
 }
 
 function kasErr(t) {
@@ -337,10 +346,12 @@ function kasSave() {
       return x.id === kasEdit ? o : x;
     });
   else P.tx.push(o);
+  var am = !kasEdit && o.t === '-' && kasLinked() === P ? autoMatchTx(o) : null;
   kasEdit = null;
   save();
   renderAll();
   $('status').textContent += ' · transaksi disimpan';
+  if (am) toastLinked(am);
 }
 
 function kasDelTx(id) {
@@ -401,10 +412,12 @@ function saveQuickKas() {
     note: n,
   };
   P.tx.push(o);
+  var am = o.t === '-' && P === kasLinked() ? autoMatchTx(o) : null;
   save();
   closeQuickKas();
   renderAll();
-  toast('Transaksi kilat dicatat: ' + (qkT === '+' ? '+ ' : '- ') + rp(a));
+  if (am) toastLinked(am);
+  else toast('Transaksi kilat dicatat: ' + (qkT === '+' ? '+ ' : '- ') + rp(a));
 }
 function bindQuickKas() {
   var qo = $('qk-out'), qi = $('qk-in'), qs = $('qks'), qc = $('qk-cl');
@@ -440,9 +453,22 @@ function bindKas() {
       renderKas();
       $('ka').scrollIntoView({ block: 'center' });
     } else if (d.kdel) kasDelTx(d.kdel);
+    else if (d.kfocus) {
+      $('ka').scrollIntoView({ block: 'center' });
+      $('ka').focus();
+    } else if (d.mok) kasApplyMatch(d.mok);
+    else if (d.mno) kasDismissMatch(d.mno);
+    else if (b.id === 'mall') kasApplyAll();
   };
   $('v-kas').onchange = function (e) {
-    if (e.target.id === 'kper') {
+    if (e.target.id === 'mauto') {
+      var LP = kasLinked();
+      if (LP) {
+        LP.auto = !!e.target.checked;
+        save();
+        renderKas();
+      }
+    } else if (e.target.id === 'kper') {
       kasPer = e.target.value;
       renderKas();
     } else if (e.target.id === 'ktf') {

@@ -30,7 +30,7 @@ function carryHtml() {
     })
     .pop();
   return (
-    '<div class="h3" style="width:100%;margin:6px 0 0">Bawa jadwal tagihan dari tahun lain</div><select id="cy" style="width:auto">' +
+    '<div class="h3" style="width:100%;margin:6px 0 0">Bawa jadwal tagihan dari tahun lain</div><select class="wauto" id="cy"">' +
     years
       .map(function (k) {
         return '<option' + (+k === prev ? ' selected' : '') + '>' + k + '</option>';
@@ -42,7 +42,7 @@ function carryHtml() {
     '<label style="display:flex;gap:8px;align-items:center;margin:0;width:100%;font-weight:500"><input type="checkbox" id="cs" style="width:auto;min-height:0">Jadikan saldo akhir tahun itu sebagai saldo awal ' +
     S.year +
     '</label>' +
-    '<div class="sub" style="width:100%">Item sekali bayar atau yang sudah selesai (lewat tanggal/jumlah berhenti) tidak ikut dibawa. Perubahan harga ikut terbawa. Status lunas tidak dibawa.</div>'
+    '<div class="sub w100""">Item sekali bayar atau yang sudah selesai (lewat tanggal/jumlah berhenti) tidak ikut dibawa. Perubahan harga ikut terbawa. Status lunas tidak dibawa.</div>'
   );
 }
 
@@ -106,6 +106,7 @@ function fItem() {
     start: $('f-start').value,
     end: st === 'date' ? $('f-end').value : '',
     cnt: st === 'cnt' ? Math.max(0, parseInt($('f-cnt').value, 10) || 0) : 0,
+    pokok: st === 'none' ? 0 : parseRp($('f-pokok').value),
     cat: $('f-cat').value.trim().slice(0, 30),
   };
 }
@@ -148,6 +149,7 @@ function resetForm() {
   $('f-stop').value = 'none';
   $('f-end').value = '';
   $('f-cnt').value = '';
+  $('f-pokok').value = '';
   $('f-cat').value = '';
   stopUI();
   $('cancel').hidden = true;
@@ -160,6 +162,7 @@ function stopUI() {
   var v = $('f-stop').value;
   $('w-end').hidden = v !== 'date';
   $('w-cnt').hidden = v !== 'cnt';
+  $('w-pokok').hidden = v === 'none';
 }
 
 /** Harga item + jumlah perubahan, untuk daftar. */
@@ -194,7 +197,7 @@ function saveItem() {
     S.items = S.items.map(function (x) {
       return x.id === editId ? updated : x;
     });
-    remapStatus(editId, before, occ(updated, S.year), [S.paid, S.skip]);
+    remapStatus(editId, before, occ(updated, S.year), [S.paid, S.skip], [S.real || {}]);
   } else {
     S.items.push(Object.assign({ id: Date.now(), ch: [] }, f));
   }
@@ -216,6 +219,7 @@ function editItem(it) {
   $('f-stop').value = it.cnt ? 'cnt' : it.end ? 'date' : 'none';
   $('f-end').value = it.end || '';
   $('f-cnt').value = it.cnt || '';
+  $('f-pokok').value = it.pokok ? it.pokok.toLocaleString('id-ID') : '';
   $('f-cat').value = it.cat || '';
   stopUI();
   $('cancel').hidden = false;
@@ -239,7 +243,7 @@ function deleteItem(b) {
   S.items = S.items.filter(function (x) {
     return x.id != b.dataset.del;
   });
-  [S.paid, S.skip].forEach(function (map) {
+  [S.paid, S.skip, S.real || {}].forEach(function (map) {
     Object.keys(map).forEach(function (k) {
       if (k.split('|')[0] == b.dataset.del) delete map[k];
     });
@@ -331,6 +335,9 @@ function bindItems() {
     stopUI();
     preview();
   };
+  $('f-pokok').addEventListener('input', function () {
+    fmtLive(this);
+  });
   ['f-end', 'f-cnt'].forEach(function (i) {
     $(i).oninput = preview;
     $(i).onchange = preview;

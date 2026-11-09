@@ -50,6 +50,7 @@ function normItem(x, i, year) {
     start: ISO_RE.test(x.start) ? x.start : year + '-01-01',
     end: ISO_RE.test(x.end) ? x.end : '',
     cnt: Math.max(0, +x.cnt || 0),
+    pokok: Math.max(0, +x.pokok || 0),
     cat: String(x.cat || '').slice(0, 30),
     ch: chNorm(x),
   };
@@ -105,6 +106,15 @@ function norm(a) {
     });
     s.paid = s.paid && typeof s.paid === 'object' ? s.paid : {};
     s.skip = s.skip && typeof s.skip === 'object' ? s.skip : {};
+    // S.real: tagihan -> transaksi kas yang melunasinya ({kunciTagihan: {tx: idTransaksi}}), lihat core/match.js
+    s.real = (function (r) {
+      var o = {};
+      if (r && typeof r === 'object')
+        Object.keys(r).forEach(function (k) {
+          if (/^[^|]+\|\d{4}-\d{2}-\d{2}$/.test(k) && r[k] && r[k].tx) o[k] = { tx: String(r[k].tx).slice(0, 40) };
+        });
+      return o;
+    })(s.real);
     s.adj = (Array.isArray(s.adj) ? s.adj : [])
       .filter(function (a) {
         return a && +a.amt > 0 && (a.t === '+' || a.t === '-');
@@ -227,6 +237,8 @@ function normKas(k) {
           if (!g || typeof g !== 'object' || !(+g.per > 0) || !/^\d{4}-\d{2}$/.test(g.from) || !/^\d{4}-\d{2}$/.test(g.to) || g.to < g.from) return null;
           return { t: +g.t > 0 ? +g.t : 0, s0: +g.s0 > 0 ? +g.s0 : 0, from: g.from, to: g.to, per: +g.per, link: g.link !== false };
         })(p.goal),
+        auto: p.auto !== false,
+        nm: (Array.isArray(p.nm) ? p.nm : []).map(String).slice(0, 300),
         tx: (Array.isArray(p.tx) ? p.tx : [])
           .filter(function (x) {
             return x && +x.amt > 0 && (x.t === '+' || x.t === '-') && ISO_RE.test(x.d);
@@ -413,6 +425,11 @@ function mergeAll(inc) {
       var p = pk.split('|'),
         m = map[p[0]];
       if (m != null) dst.skip[m + '|' + p[1]] = 1;
+    });
+    Object.keys(src.real || {}).forEach(function (pk) {
+      var p = pk.split('|'),
+        m = map[p[0]];
+      if (m != null && src.real[pk] && src.real[pk].tx) dst.real[m + '|' + p[1]] = { tx: src.real[pk].tx };
     });
     (src.adj || []).forEach(function (a) {
       if (

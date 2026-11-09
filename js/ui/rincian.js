@@ -3,7 +3,19 @@
  */
 
 var openRows = {};
-var CAT_COLORS = ['#3aa17e', '#5b8fd9', '#e08a5c', '#9c7fd0', '#d1b04a', '#8a99a3'];
+var CAT_PALETTE = ['#3aa17e', '#5b8fd9', '#e08a5c', '#9c7fd0', '#d1b04a', '#4fb3bf', '#d9627f', '#7e9b3f', '#b57a52', '#6c7ae0'];
+
+/** Warna kategori yang STABIL: bergantung pada nama (posisi di daftar kategori), bukan urutan nilai. Investasi selalu indigo, tanpa kategori abu-abu. */
+function catColor(name) {
+  if (!name || name === 'Tanpa kategori') return '#8a99a3';
+  if (isInvestCat(name)) return '#6366f1';
+  var i = allCategories().indexOf(name);
+  if (i < 0) {
+    i = 0;
+    for (var j = 0; j < name.length; j++) i = (i * 31 + name.charCodeAt(j)) >>> 0;
+  }
+  return CAT_PALETTE[i % CAT_PALETTE.length];
+}
 
 /** "+ Rp 1.000" atau "− Rp 1.000". */
 function signed(v) {
@@ -66,7 +78,7 @@ function heroHtml(c, R, lead) {
     );
   };
   var plain =
-    '<div class="card" style="margin:0"><div class="sub">Sisa saldo akhir Des ' +
+    '<div class="card m0"""><div class="sub">Sisa saldo akhir Des ' +
     y +
     '</div><div class="big' +
     (c.end < 0 ? ' neg' : '') +
@@ -78,7 +90,7 @@ function heroHtml(c, R, lead) {
   return (
     '<div class="hero">' +
     (lead ? lead(note) : plain) +
-    '<div class="card stats" style="margin:0">' +
+    '<div class="card stats m0""">' +
     stat('Total pengeluaran', rp(c.total)) +
     (c.invest > 0 ? investStats(c, R, stat) : '') +
     stat('Rata-rata per bulan', rp(c.total / R.length)) +
@@ -175,23 +187,11 @@ function sparklineHtml(R) {
 
   var dots = pts
     .map(function (p) {
-      var isNeg = p.r.ak < 0;
-      var col = isNeg ? 'var(--wr)' : 'var(--in)';
+      var col = p.r.ak < 0 ? 'var(--wr)' : 'var(--in)',
+        tip = MON[p.r.m] + ': Saldo akhir ' + rp(p.r.ak) + ' (Pengeluaran ' + rp(p.r.sp) + ')';
       return (
-        '<circle cx="' +
-        p.x +
-        '" cy="' +
-        p.y +
-        '" r="3.5" fill="' +
-        col +
-        '" stroke="var(--sf)" stroke-width="1.5">' +
-        '<title>' +
-        MON[p.r.m] +
-        ': Saldo akhir ' +
-        rp(p.r.ak) +
-        ' (Pengeluaran ' +
-        rp(p.r.sp) +
-        ')</title></circle>'
+        '<circle cx="' + p.x + '" cy="' + p.y + '" r="3.5" fill="' + col + '" stroke="var(--sf)" stroke-width="1.5"/>' +
+        '<circle cx="' + p.x + '" cy="' + p.y + '" r="13" fill="transparent" tabindex="0" role="img" aria-label="' + esc(tip) + '" data-tip="' + esc(tip) + '"/>'
       );
     })
     .join('');
@@ -214,9 +214,9 @@ function sparklineHtml(R) {
 
   return (
     '<div id="sparkline-kas" class="card" style="padding-bottom:12px">' +
-    '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px">' +
+    '<div class="dflex jcsb aic fwrap g8 mb8"">' +
     '<h2>Proyeksi Saldo 12 Bulan</h2>' +
-    '<div class="sub" style="font-size:12px">' +
+    '<div class="sub fs12""">' +
     alertMsg +
     '</div>' +
     '</div>' +
@@ -258,8 +258,8 @@ function barsHtml(R) {
     '<div class="card"><h2>Pengeluaran per bulan</h2><div class="bars">' +
     R.map(function (r) {
       return (
-        '<div title="' +
-        rp(r.sp) +
+        '<div tabindex="0" data-tip="' +
+        MON[r.m] + ': ' + rp(r.sp) +
         '"><i style="height:' +
         Math.round((r.sp / mx) * 85) +
         '%"></i>' +
@@ -280,7 +280,7 @@ function categoryHtml(c) {
   });
   if (!total) return '';
   if (!anyCat) {
-    return '<div class="card"><h2>Pengeluaran per kategori</h2><div class="sub">Belum ada kategori. Isi kolom <b>Kategori</b> saat menambah atau mengubah item di tab Kelola Item untuk melihat porsi pengeluaran.</div></div>';
+    return '<div class="card"><h2>Pengeluaran per kategori</h2><div class="sub">Belum ada kategori. Isi kolom <b>Kategori</b> saat menambah atau mengubah item di tab Kelola Item untuk melihat porsi pengeluaran.</div><div class="row2 mt8"""><button type="button" data-goto="item">Buka Kelola Item</button></div></div>';
   }
   var list = keys
     .map(function (k) {
@@ -289,15 +289,14 @@ function categoryHtml(c) {
     .sort(function (a, b) {
       return b.v - a.v;
     });
-  var i = 0;
   return (
     '<div class="card"><h2>Pengeluaran per kategori</h2>' +
     list
       .map(function (e) {
         var pct = (e.v / total) * 100,
-          color = e.none ? '#8a99a3' : CAT_COLORS[i++ % CAT_COLORS.length];
+          color = catColor(e.none ? '' : e.name);
         return (
-          '<div class="catrow"><div class="cathd"><span><i class="dot" style="background:' +
+          '<div class="catrow" tabindex="0" data-tip="' + esc(e.name + ': ' + rp(e.v) + ' (' + Math.round(pct) + '% dari total)') + '"><div class="cathd"><span><i class="dot" style="background:' +
           color +
           '"></i>' +
           esc(e.name) +
@@ -539,17 +538,26 @@ function saldoHero(c, R) {
   }
   return heroHtml(c, R, function (note) {
     return (
-      '<div class="card hm" style="margin:0"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
-      '<div class="sub" style="font-weight:600">' + label + '</div>' + chip + '</div>' +
+      '<div class="card hm m0"""><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+      '<div class="sub fw6""">' + label + '</div>' + chip + '</div>' +
       '<div class="big' + (neg ? ' neg' : '') + '" style="margin:6px 0 4px">' + big + '</div>' +
       '<div class="sub pv">' + sub + '</div>' + hint +
       '<div class="hm-bal">' +
       (sf ? '<div><span>Saldo Realtime &middot; ' + mName + '</span><b class="pv' + (bal < 0 ? ' neg' : '') + '">' + rp(bal) + '</b></div>' : '') +
       '<div><span>Sisa saldo akhir Des ' + S.year + '</span><b class="pv' + (c.end < 0 ? ' neg' : '') + '">' + rp(c.end) + '</b></div></div>' +
-      (sf ? '<div class="sub pv" style="margin-top:8px;font-size:12px">' + audit + '</div>' : '') +
+      (sf ? '<div class="sub pv mt8 fs12""">' + audit + '</div>' : '') +
       note + kasRunwayHtml(P, bal) + '</div>'
     );
   });
+}
+
+/** Kartu ajakan saat tahun ini belum punya item. */
+function emptyItemsHtml() {
+  return (
+    '<div class="card"><h2>Mulai dari item pertama</h2><div class="empty">Belum ada item untuk tahun ' + S.year +
+    '. Item adalah tagihan atau pengeluaran berulang, mis. listrik, langganan, cicilan, atau DCA.</div>' +
+    '<div class="row2 mt8"""><button type="button" class="p" data-goto="item">Tambah item</button></div></div>'
+  );
 }
 
 /** Render tab Rincian Bulanan. */
@@ -587,7 +595,7 @@ function renderRincian() {
   var table =
     '<div class="card"><h2>Rincian arus kas ' +
     y +
-    '</h2><div class="sub" style="margin-bottom:8px">Klik baris untuk melihat tanggal dan rincian tiap pembayaran. ' +
+    '</h2><div class="sub mb8""">Klik baris untuk melihat tanggal dan rincian tiap pembayaran. ' +
     'Label biru (▲ naik, ▼ turun) = harga berbeda dari harga awal.</div><div class="tw"><table><thead><tr><th>Bulan</th><th>Saldo awal</th><th>Pengeluaran</th><th>Saldo akhir</th><th class="l">Item berkala</th></tr></thead><tbody>' +
     rows +
     '<tr class="tot"><td>Total</td><td></td><td data-l="Pengeluaran">' +
@@ -595,7 +603,7 @@ function renderRincian() {
     '</td><td data-l="Saldo akhir">' +
     rp(c.end) +
     '</td><td></td></tr></tbody></table></div></div>';
-  $('v-rincian').innerHTML = saldoHero(c, R) + agendaHtml() + sparklineHtml(R) + barsHtml(R) + categoryHtml(c) + table;
+  $('v-rincian').innerHTML = (S.items.length ? '' : emptyItemsHtml()) + saldoHero(c, R) + agendaHtml() + sparklineHtml(R) + barsHtml(R) + categoryHtml(c) + cicilanHtml() + realisasiHtml() + table;
 }
 
 /** Baris "dilewati" pada rincian sebuah bulan. */

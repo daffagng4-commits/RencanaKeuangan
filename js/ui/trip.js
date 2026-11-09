@@ -139,8 +139,8 @@ function tripPlan(P) {
 
 function tripBadge(P) {
   var T = tripToday(P), x = T.L[T.cur >= 0 ? T.cur : T.nxt];
-  return '<div style="margin-bottom:4px"><span class="chp on">Sedang berlangsung &middot; Hari ' + (dayNo(todayISO(), P.start) + 1) + '/' + (dayNo(P.end, P.start) + 1) + '</span></div>' +
-    (x ? '<div class="sub" style="margin-bottom:4px">' + (T.cur >= 0 ? 'Sekarang' : 'Berikutnya') + ': <b>' + (tmShow(x.time) ? tmShow(x.time) + ' ' : '') + esc(x.place) + '</b></div>' : '');
+  return '<div class="mb4""><span class="chp on">Sedang berlangsung &middot; Hari ' + (dayNo(todayISO(), P.start) + 1) + '/' + (dayNo(P.end, P.start) + 1) + '</span></div>' +
+    (x ? '<div class="sub mb4""">' + (T.cur >= 0 ? 'Sekarang' : 'Berikutnya') + ': <b>' + (tmShow(x.time) ? tmShow(x.time) + ' ' : '') + esc(x.place) + '</b></div>' : '');
 }
 function tripList() {
   var L = trips();
@@ -149,7 +149,7 @@ function tripList() {
     (L.map(function (P) {
       var pl = tripPlan(P);
       return (
-        '<div class="card" data-trip="' + P.id + '" style="cursor:pointer"><h2>' + esc(P.name) + '</h2>' + (tripActive(P) ? tripBadge(P) : '') + '<div class="sub">' +
+        '<div class="card cp"" data-trip="' + P.id + '""><h2>' + esc(P.name) + '</h2>' + (tripActive(P) ? tripBadge(P) : '') + '<div class="sub">' +
         (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) + ' · ' + (dayNo(P.end, P.start) + 1) + ' hari' : 'Tanggal belum diisi') + '</div>' +
         (P.budget ? bar(pl.t, P.budget) + '<div class="sub">Rencana biaya ' + rp(pl.t) + ' dari anggaran ' + rp(P.budget) + '</div>' : '<div class="sub">Rencana biaya ' + rp(pl.t) + ' · anggaran belum ditentukan</div>') + '</div>'
       );
@@ -191,9 +191,9 @@ function tripRing(P) {
     return '<div class="catrow"><div class="cathd"><span>' + (c ? '<i class="dot" style="background:' + c + '"></i>' : '') + k + '</span><b>' + extra + '</b></div><div class="catbar"><i style="width:' + pc.toFixed(1) + '%;background:' + (c || 'var(--ac)') + '"></i></div></div>';
   };
   return (
-    '<div class="hero"><div class="card" style="margin:0"><div class="sub">Total rencana biaya</div><div class="big">' + rp(pl.t) + '</div><div class="sub">pemesanan ' + rp(pl.b) + ' + estimasi harian ' + rp(pl.d) + '</div>' +
+    '<div class="hero"><div class="card m0"""><div class="sub">Total rencana biaya</div><div class="big">' + rp(pl.t) + '</div><div class="sub">pemesanan ' + rp(pl.b) + ' + estimasi harian ' + rp(pl.d) + '</div>' +
     (P.budget ? bar(pl.t, P.budget) + '<div class="sub">dari anggaran ' + rp(P.budget) + '</div>' : '<div class="sub">Anggaran belum ditentukan (atur lewat tombol Ubah).</div>') +
-    (P.cur && P.rate ? '<div class="sub">Kurs 1 ' + esc(P.cur) + ' = ' + rp(P.rate) + '</div>' : '') + '</div><div class="card stats" style="margin:0">' + cells + '</div></div>' +
+    (P.cur && P.rate ? '<div class="sub">Kurs 1 ' + esc(P.cur) + ' = ' + rp(P.rate) + '</div>' : '') + '</div><div class="card stats m0""">' + cells + '</div></div>' +
     (ck.length
       ? '<div class="card"><h2>Siapkan tunai / kartu</h2>' + ck.map(function (k) {
           var c = pl.cash[k];
@@ -228,9 +228,9 @@ function fxPrev(a, u) {
 /** Kotak biaya: jumlah + pilihan mata uang (Rp / asing). */
 function amtField(P, id, uid, v, fx) {
   return (
-    '<div style="display:flex;gap:6px"><input id="' + id + '" inputmode="numeric" placeholder="0" style="flex:1;min-width:0;font-size:16px;font-weight:600" value="' + (v ? v.toLocaleString('id-ID') : '') + '">' +
+    '<div class="dflex g6""><input id="' + id + '" inputmode="numeric" placeholder="0" style="flex:1;min-width:0;font-size:16px;font-weight:600" value="' + (v ? v.toLocaleString('id-ID') : '') + '">' +
     '<select id="' + uid + '" style="width:84px;min-width:0;flex:none;font-weight:600;padding-left:8px;padding-right:4px" aria-label="Mata uang"><option value="idr">Rp</option>' + (P.cur ? '<option value="fx"' + (fx ? ' selected' : '') + '>' + esc(P.cur) + '</option>' : '') + '</select></div>' +
-    '<div class="sub" id="' + id + 'h" style="margin-top:4px">' + (P.cur ? '' : 'Mata uang asing: atur lewat Ubah.') + '</div>'
+    '<div class="sub mt4"" id="' + id + 'h"">' + (P.cur ? '' : 'Mata uang asing: atur lewat Ubah.') + '</div>'
   );
 }
 
@@ -246,9 +246,9 @@ function tripItin(P) {
       '<div class="fw" style="flex:1 1 140px"><label for="itp">Kegiatan</label><input id="itp" maxlength="120" placeholder="mis. Senso-ji Temple" value="' + (E ? esc(E.place) : '') + '"></div></div>' +
       '<div class="fr wr"><div class="fw" style="flex:2 1 0"><label for="ite">Biaya</label>' + amtField(P, 'ite', 'itu', E ? E.est : 0, E && E.fx) + '</div>' +
       '<div style="flex:1.3 1 0"><label for="itm">Pembayaran</label><select id="itm" title="Online: dicatat di Pemesanan">' + opts([['', 'Belum ditentukan'], ['ic', 'Kartu IC'], ['on', 'Online'], ['cash', 'Cash']], E ? E.pay : '') + '</select></div>' +
-      '<div style="flex:1 1 0"><label for="itk">Kategori</label><select id="itk">' + opts(ICAT, E ? E.cat : 'Transport') + '</select></div></div>' +
-      '<div class="fr wr"><div class="fw" style="flex:1 1 0"><label for="itl">Tautan (peta / tiket) (opsional)</label><input id="itl" inputmode="url" placeholder="https://maps.app.goo.gl/..." value="' + (E ? esc(E.link) : '') + '"></div>' +
-      '<div class="fw" style="flex:1 1 0"><label for="itn">Catatan (opsional)</label><input id="itn" maxlength="200" value="' + (E ? esc(E.note) : '') + '"></div></div>' +
+      '<div class="fx110""><label for="itk">Kategori</label><select id="itk">' + opts(ICAT, E ? E.cat : 'Transport') + '</select></div></div>' +
+      '<div class="fr wr"><div class="fw fx110"""><label for="itl">Tautan (peta / tiket) (opsional)</label><input id="itl" inputmode="url" placeholder="https://maps.app.goo.gl/..." value="' + (E ? esc(E.link) : '') + '"></div>' +
+      '<div class="fw fx110"""><label for="itn">Catatan (opsional)</label><input id="itn" maxlength="200" value="' + (E ? esc(E.note) : '') + '"></div></div>' +
       '<div class="err" id="iter"></div><div class="row2"><button class="p" data-its="1">' + (E ? 'Simpan perubahan' : 'Tambah') + '</button>' + (E ? '<button data-itx="1">Batal</button>' : '') + '</div></div>';
   return (
     form +
@@ -264,8 +264,8 @@ function tripItin(P) {
       return (
         '<div class="card"><div class="dh"><h2>' + esc(dayLabel(P, d)) + '</h2>' + (d === td ? '<span class="chp ic">Hari ini</span>' : '') + '</div>' +
         '<input class="dti" data-dt="' + d + '" maxlength="60" placeholder="Judul hari, mis. Jakarta – Tokyo" value="' + esc(P.dt[d] || '') + '">' +
-        (stay.length ? '<div class="sub" style="margin-bottom:6px">&#127976; Menginap: ' + stay.map(function (b) { return esc(b.title); }).join(', ') + '</div>' : '') +
-        (tot ? '<div class="sub" style="margin-bottom:4px">Estimasi hari ini <b>' + rp(tot) + '</b>' + (Object.keys(fxm).length ? ' · ' + Object.keys(fxm).map(function (k) { return k + ' ' + fxs(P, fxm[k]); }).join(' · ') : '') + '</div>' : '') +
+        (stay.length ? '<div class="sub mb6""">&#127976; Menginap: ' + stay.map(function (b) { return esc(b.title); }).join(', ') + '</div>' : '') +
+        (tot ? '<div class="sub mb4""">Estimasi hari ini <b>' + rp(tot) + '</b>' + (Object.keys(fxm).length ? ' · ' + Object.keys(fxm).map(function (k) { return k + ' ' + fxs(P, fxm[k]); }).join(' · ') : '') + '</div>' : '') +
         (L.map(function (x) {
           return (
             '<div class="itm"><div class="tm">' + tmShow(x.time) + (x.time2 ? '<br>' + tmShow(x.time2) : '') + '</div><div><div class="ttl"' + (x.done ? ' style="text-decoration:line-through;opacity:.6"' : '') + '>' + esc(x.place) + '</div><div>' +
@@ -286,10 +286,10 @@ function tripBook(P) {
       '<div class="card"><h2>' + (E ? 'Ubah pemesanan' : 'Tambah pemesanan') + '</h2>' +
       '<div class="fr wrb"><div class="fw" style="flex:2 1 0"><label for="bkt">Nama (tiket, hotel, tour)</label><input id="bkt" maxlength="120" placeholder="mis. Tiket pesawat CGK-HND" value="' + (E ? esc(E.title) : '') + '"></div>' +
       '<div class="fw" style="flex:1.4 1 0"><label for="bke">Jumlah</label>' + amtField(P, 'bke', 'bku', E ? E.amt : 0, E && E.fx) + '</div></div>' +
-      '<div class="fr wrb"><div style="flex:1 1 0"><label for="bka">Mulai / check-in</label><input id="bka" type="date" value="' + (E ? E.a : '') + '"></div>' +
-      '<div style="flex:1 1 0"><label for="bkb">Selesai / check-out</label><input id="bkb" type="date" value="' + (E ? E.b : '') + '"></div>' +
-      '<div style="flex:1 1 0"><label for="bkm">Pembayaran</label><select id="bkm">' + opts([['on', 'Online'], ['cash', 'Cash'], ['ic', 'Kartu IC'], ['', 'Belum ditentukan']], E ? E.pay : 'on') + '</select></div></div>' +
-      '<div class="fr"><div class="fw" style="flex:1 1 0"><label for="bkl">Tautan (opsional)</label><input id="bkl" inputmode="url" placeholder="https://..." value="' + (E ? esc(E.link) : '') + '"></div></div>' +
+      '<div class="fr wrb"><div class="fx110""><label for="bka">Mulai / check-in</label><input id="bka" type="date" value="' + (E ? E.a : '') + '"></div>' +
+      '<div class="fx110""><label for="bkb">Selesai / check-out</label><input id="bkb" type="date" value="' + (E ? E.b : '') + '"></div>' +
+      '<div class="fx110""><label for="bkm">Pembayaran</label><select id="bkm">' + opts([['on', 'Online'], ['cash', 'Cash'], ['ic', 'Kartu IC'], ['', 'Belum ditentukan']], E ? E.pay : 'on') + '</select></div></div>' +
+      '<div class="fr"><div class="fw fx110"""><label for="bkl">Tautan (opsional)</label><input id="bkl" inputmode="url" placeholder="https://..." value="' + (E ? esc(E.link) : '') + '"></div></div>' +
       '<div class="fr"><div class="fw" style="flex:0 1 280px"><label for="bkc">Kategori</label><select id="bkc">' + opts(BCAT, E ? E.cat : 'Transport') + '</select></div></div>' +
       '<div class="err" id="bker"></div><div class="row2"><button class="p" data-bks="1">' + (E ? 'Simpan perubahan' : 'Tambah') + '</button>' + (E ? '<button data-bkx="1">Batal</button>' : '') + '</div></div>',
     cats = BCAT.concat(P.bk.map(function (x) { return x.cat; })).filter(function (c, i, a) { return a.indexOf(c) === i; });
@@ -301,11 +301,11 @@ function tripBook(P) {
       if (!L.length) return '';
       L.forEach(function (x) { sum += val(P, x.amt, x.fx); });
       return (
-        '<div class="card"><div class="pgrp"><h2 style="margin:0">' + esc(c) + '</h2><b>' + rp(sum) + '</b></div>' +
+        '<div class="card"><div class="pgrp"><h2 class="m0"">' + esc(c) + '</h2><b>' + rp(sum) + '</b></div>' +
         L.map(function (x) {
           return (
             '<div class="itm" style="grid-template-columns:1fr auto"><div><div class="ttl">' + esc(x.title) + '</div><div>' + pchip(x.pay) + (x.a ? '<span class="sub">' + dShort(x.a) + (x.b ? ' – ' + dShort(x.b) : '') + '</span> ' : '') + lnk(x.link) +
-            '</div><div class="ac" style="justify-content:flex-start"><button class="g" data-bkpay="' + x.id + '">' + (x.paid ? '&#9745; Lunas' : '&#9744; Tandai lunas') + '</button><button class="g" data-bked="' + x.id + '">Ubah</button><button class="g d" data-bkdel="' + x.id + '">Hapus</button></div></div>' +
+            '</div><div class="ac jcfs"""><button class="g" data-bkpay="' + x.id + '">' + (x.paid ? '&#9745; Lunas' : '&#9744; Tandai lunas') + '</button><button class="g" data-bked="' + x.id + '">Ubah</button><button class="g d" data-bkdel="' + x.id + '">Hapus</button></div></div>' +
             '<div class="co">' + amtTxt(P, x.amt, x.fx) + '</div></div>'
           );
         }).join('') + '</div>'
@@ -317,7 +317,7 @@ function tripBook(P) {
 function tripCek(P) {
   var n = P.ck.filter(function (x) { return x.done; }).length;
   return (
-    '<div class="card"><h2>Checklist barang bawaan</h2><div class="sub" style="margin-bottom:8px">' + n + ' dari ' + P.ck.length + ' siap</div>' +
+    '<div class="card"><h2>Checklist barang bawaan</h2><div class="sub mb8""">' + n + ' dari ' + P.ck.length + ' siap</div>' +
     (P.ck.length ? bar(n, P.ck.length).replace('var(--wr)', 'var(--ac)') : '') +
     '<div class="row2" style="margin:10px 0"><input id="ckn" maxlength="60" placeholder="mis. Topi, Sunscreen"><button class="p" data-cka="1">Tambah</button></div>' +
     (P.ck.map(function (x) {
@@ -329,10 +329,10 @@ function tripCek(P) {
 
 function tripCat(P) {
   return (
-    '<div class="card"><h2>Tautan berguna</h2><div class="sub" style="margin-bottom:8px">Video panduan, situs tiket, peta, dan lainnya.</div><div class="kf"><div><input id="lkt" maxlength="80" placeholder="Judul, mis. Cara bayar bus pakai IC card"></div><div><input id="lku" inputmode="url" placeholder="https://..."></div></div>' +
-    '<div class="err" id="lker"></div><div class="row2" style="margin-bottom:8px"><button class="p" data-lka="1">Tambah</button></div>' +
+    '<div class="card"><h2>Tautan berguna</h2><div class="sub mb8""">Video panduan, situs tiket, peta, dan lainnya.</div><div class="kf"><div><input id="lkt" maxlength="80" placeholder="Judul, mis. Cara bayar bus pakai IC card"></div><div><input id="lku" inputmode="url" placeholder="https://..."></div></div>' +
+    '<div class="err" id="lker"></div><div class="row2 mb8"""><button class="p" data-lka="1">Tambah</button></div>' +
     P.lk.map(function (x) { return '<div class="it2"><div>' + esc(x.title) + '</div><div>' + lnk(x.url) + '<button class="g d" data-lkdel="' + x.id + '">Hapus</button></div></div>'; }).join('') + '</div>' +
-    '<div class="card"><h2>Catatan penting</h2><div class="sub" style="margin-bottom:8px">Kode booking, alamat, kontak darurat. Tersimpan otomatis.</div><textarea id="tnote" maxlength="2000" placeholder="mis. Hotel: ... Kode booking: ...">' + esc(P.note) + '</textarea></div>'
+    '<div class="card"><h2>Catatan penting</h2><div class="sub mb8""">Kode booking, alamat, kontak darurat. Tersimpan otomatis.</div><textarea id="tnote" maxlength="2000" placeholder="mis. Hotel: ... Kode booking: ...">' + esc(P.note) + '</textarea></div>'
   );
 }
 
@@ -350,8 +350,8 @@ function renderTrip() {
   if (tripTab === 'now' && !tripActive(P)) tripTab = 'ring';
   var tabs = (tripActive(P) ? [['now', 'Hari ini']] : []).concat([['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['cek', 'Checklist'], ['cat', 'Catatan'], ['sv', 'Tabungan']]);
   el.innerHTML =
-    '<div class="kp"><button class="tbk" data-tback="1">&larr; Semua perjalanan</button><button class="g" data-tshare="1">Bagikan</button><button class="g" data-ted="1">Ubah</button><button class="g d" data-tdel="1">Hapus</button></div><h2 style="margin:0 0 2px">' + esc(P.name) + '</h2><div class="sub" style="margin-bottom:12px">' +
-    (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) : 'Tanggal belum diisi') + (P.cur && P.rate ? ' · 1 ' + P.cur + ' = ' + rp(P.rate) : '') + '</div><div class="kt" style="flex-wrap:wrap;margin-bottom:14px">' +
+    '<div class="kp"><button class="tbk" data-tback="1">&larr; Semua perjalanan</button><button class="g" data-tshare="1">Bagikan</button><button class="g" data-ted="1">Ubah</button><button class="g d" data-tdel="1">Hapus</button></div><h2 style="margin:0 0 2px">' + esc(P.name) + '</h2><div class="sub mb12""">' +
+    (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) : 'Tanggal belum diisi') + (P.cur && P.rate ? ' · 1 ' + P.cur + ' = ' + rp(P.rate) : '') + '</div><div class="kt fwrap mb14""">' +
     tabs.map(function (t) { return '<button type="button" class="yp' + (tripTab === t[0] ? ' on' : '') + '" data-tt="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
     (tripTab === 'now' ? tripNow(P) : tripTab === 'itin' ? tripItin(P) : tripTab === 'book' ? tripBook(P) : tripTab === 'cek' ? tripCek(P) : tripTab === 'cat' ? tripCat(P) : tripTab === 'sv' ? goalCard(P, tripPlan(P)) : tripRing(P));
   if (P.cur) {
@@ -677,20 +677,20 @@ function goalCard(P, pl) {
     return (
       '<div class="card"><h2>Target tabungan</h2><div class="sub">Terkumpul <b>' + rp(got) + '</b> dari ' + rp(g.t) + '</div>' + bar(got, g.t) +
       '<div class="sub">Sisihkan <b>' + rp(g.per) + '</b> per bulan &middot; ' + monthLbl(g.from) + ' – ' + monthLbl(g.to) + ' &middot; bulan ke ' + Math.min(el, ms.length) + ' dari ' + ms.length + '</div>' +
-      '<div class="sub" style="margin-top:6px">' + (lk ? 'Tersambung ke Rencana Keuangan: tabungan ini otomatis dihitung sebagai pengeluaran bulanan di <b>Rincian Bulanan</b>.' : 'Tidak tersambung ke Rencana Keuangan: hanya sebagai pencatat, tidak memengaruhi Rincian Bulanan.') + '</div>' +
+      '<div class="sub mt6""">' + (lk ? 'Tersambung ke Rencana Keuangan: tabungan ini otomatis dihitung sebagai pengeluaran bulanan di <b>Rincian Bulanan</b>.' : 'Tidak tersambung ke Rencana Keuangan: hanya sebagai pencatat, tidak memengaruhi Rincian Bulanan.') + '</div>' +
       (lk && !goalMonthsIn(g, +S.year).length
-        ? '<div style="margin-top:8px" class="chp ic">Bulan menabung ada di tahun ' + Object.keys(ms.reduce(function (o, k) { o[k.slice(0, 4)] = 1; return o; }, {})).join(' & ') + '. Ganti Tahun di mode Rencana untuk melihat dampaknya.</div>'
+        ? '<div" class="chp ic mt8"">Bulan menabung ada di tahun ' + Object.keys(ms.reduce(function (o, k) { o[k.slice(0, 4)] = 1; return o; }, {})).join(' & ') + '. Ganti Tahun di mode Rencana untuk melihat dampaknya.</div>'
         : '') +
-      (lk && low && goalMonthsIn(g, +S.year).length ? '<div style="margin-top:8px" class="chp ' + (neg.length ? 'cash' : 'on') + '">' + (neg.length ? 'Saldo Rencana ' + S.year + ' negatif di ' + neg.map(function (r) { return MON[r.m]; }).join(', ') : 'Saldo Rencana ' + S.year + ' tetap positif (terendah ' + rp(low.ak) + ' di ' + MON[low.m] + ')') + '</div>' : '') +
-      '<div class="acts" style="margin-top:8px"><button class="g" data-gedit="1">Ubah target</button><button class="g" data-glink="1">' + (lk ? 'Putuskan dari Rencana' : 'Sambungkan ke Rencana') + '</button><button class="g d" data-gdel="1">Hapus target</button></div></div>'
+      (lk && low && goalMonthsIn(g, +S.year).length ? '<div" class="chp ' + (neg.length ? 'cash' : 'on') + ' mt8"">' + (neg.length ? 'Saldo Rencana ' + S.year + ' negatif di ' + neg.map(function (r) { return MON[r.m]; }).join(', ') : 'Saldo Rencana ' + S.year + ' tetap positif (terendah ' + rp(low.ak) + ' di ' + MON[low.m] + ')') + '</div>' : '') +
+      '<div class="acts mt8"""><button class="g" data-gedit="1">Ubah target</button><button class="g" data-glink="1">' + (lk ? 'Putuskan dari Rencana' : 'Sambungkan ke Rencana') + '</button><button class="g d" data-gdel="1">Hapus target</button></div></div>'
     );
   }
   if (!opts.length) return '<div class="card"><h2>Target tabungan</h2><div class="sub">Perjalanan ini sudah dimulai, jadi tidak ada bulan tersisa untuk menabung.</div></div>';
   var t0 = g ? g.t : Math.ceil(pl.t / 1000) * 1000, last = opts[opts.length - 1], before = opts.length > 1 ? opts[opts.length - 2] : last;
   return (
-    '<div class="card"><h2>Target tabungan</h2><div class="sub" style="margin-bottom:8px">Hitung berapa yang perlu disisihkan tiap bulan sebelum berangkat.</div><div class="kf"><div><label for="gt">Target (Rp)</label><input id="gt" inputmode="numeric" value="' + (t0 ? t0.toLocaleString('id-ID') : '') +
+    '<div class="card"><h2>Target tabungan</h2><div class="sub mb8""">Hitung berapa yang perlu disisihkan tiap bulan sebelum berangkat.</div><div class="kf"><div><label for="gt">Target (Rp)</label><input id="gt" inputmode="numeric" value="' + (t0 ? t0.toLocaleString('id-ID') : '') +
     '"></div><div><label for="gs">Sudah terkumpul (Rp)</label><input id="gs" inputmode="numeric" placeholder="0" value="' + (g && g.s0 ? g.s0.toLocaleString('id-ID') : '') + '"></div><div><label for="gf">Mulai menabung</label>' + goalSel('gf', opts, g ? g.from : opts[0]) +
-    '</div><div><label for="gz">Terakhir menabung</label>' + goalSel('gz', opts, g ? g.to : before) + '</div><div style="grid-column:1/-1"><label for="gl">Sambungkan ke Rencana Keuangan?</label><select id="gl"><option value="1"' + (lk ? ' selected' : '') + '>Ya, hitung sebagai pengeluaran bulanan di Rincian</option><option value="0"' + (lk ? '' : ' selected') + '>Tidak, hanya pencatat target</option></select></div></div><div class="sub" id="gprev" style="margin:8px 0"></div><div class="err" id="gerr"></div><div class="row2"><button class="p" data-gset="1">Simpan target</button>' + (g ? '<button data-gcancel="1">Batal</button>' : '') + '</div></div>'
+    '</div><div><label for="gz">Terakhir menabung</label>' + goalSel('gz', opts, g ? g.to : before) + '</div><div class="gcall""><label for="gl">Sambungkan ke Rencana Keuangan?</label><select id="gl"><option value="1"' + (lk ? ' selected' : '') + '>Ya, hitung sebagai pengeluaran bulanan di Rincian</option><option value="0"' + (lk ? '' : ' selected') + '>Tidak, hanya pencatat target</option></select></div></div><div class="sub" id="gprev" style="margin:8px 0"></div><div class="err" id="gerr"></div><div class="row2"><button class="p" data-gset="1">Simpan target</button>' + (g ? '<button data-gcancel="1">Batal</button>' : '') + '</div></div>'
   );
 }
 function goalCalc() {
@@ -806,8 +806,8 @@ function simSyncDates() {
 }
 function simExtra(firstId) {
   if (simK === 'cycle')
-    return '<div><label for="smn2">Bayar tiap</label><input id="smn2" type="number" min="1" value="3"></div><div><label for="smu">Satuan</label><select id="smu"><option value="bulan">bulan</option><option value="tahun">tahun</option><option value="minggu">minggu</option><option value="hari">hari</option></select></div><div style="grid-column:1/-1"><label for="smd">Mulai berlaku dari tanggal</label><input id="smd" type="date"><div class="sub" style="margin-top:4px">Siklus baru dimulai di tanggal ini; jadwal lama sesudahnya diganti.</div></div>';
-  return '<div style="grid-column:1/-1"><label for="smf">Tagihan yang digeser</label><select id="smf">' + simItemDates(firstId) + '</select><div class="sub" style="margin-top:4px">Tagihan ini dan semua sesudahnya mengikuti tanggal baru dengan siklus yang sama.</div></div><div style="grid-column:1/-1"><label for="smt">Ganti jadi tanggal</label><input id="smt" type="date"><div class="sub" id="smth" style="margin-top:4px"></div></div>';
+    return '<div><label for="smn2">Bayar tiap</label><input id="smn2" type="number" min="1" value="3"></div><div><label for="smu">Satuan</label><select id="smu"><option value="bulan">bulan</option><option value="tahun">tahun</option><option value="minggu">minggu</option><option value="hari">hari</option></select></div><div class="gcall""><label for="smd">Mulai berlaku dari tanggal</label><input id="smd" type="date"><div class="sub mt4""">Siklus baru dimulai di tanggal ini; jadwal lama sesudahnya diganti.</div></div>';
+  return '<div class="gcall""><label for="smf">Tagihan yang digeser</label><select id="smf">' + simItemDates(firstId) + '</select><div class="sub mt4""">Tagihan ini dan semua sesudahnya mengikuti tanggal baru dengan siklus yang sama.</div></div><div class="gcall""><label for="smt">Ganti jadi tanggal</label><input id="smt" type="date"><div class="sub mt4"" id="smth""></div></div>';
 }
 /** Perubahan jadwal (ch) untuk skenario siklus / geser. */
 function simChg(it, x) {
@@ -854,9 +854,9 @@ function renderSim() {
     two = simK === 'in' || simK === 'out',
     nb = simK === 'cycle' || simK === 'shift',
     form =
-      '<div class="card"><h2>Simulasi &quot;bagaimana jika&quot; &middot; ' + S.year + '</h2><div class="sub" style="margin-bottom:10px">Coba perubahan tanpa mengubah data. Hasilnya langsung terlihat di grafik.</div><div class="kf"><div style="grid-column:1/-1"><label for="smk">Skenario</label><select id="smk">' +
+      '<div class="card"><h2>Simulasi &quot;bagaimana jika&quot; &middot; ' + S.year + '</h2><div class="sub mb10""">Coba perubahan tanpa mengubah data. Hasilnya langsung terlihat di grafik.</div><div class="kf"><div class="gcall""><label for="smk">Skenario</label><select id="smk">' +
       [['out', 'Tambah pengeluaran / cicilan'], ['in', 'Tambah pemasukan'], ['stop', 'Hentikan item'], ['price', 'Ubah harga item'], ['cycle', 'Ganti seberapa sering bayar'], ['shift', 'Geser tanggal bayar']].map(function (o) { return '<option value="' + o[0] + '"' + (simK === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
-      (two ? '<div style="grid-column:1/-1"><label for="smn">Nama</label><input id="smn" maxlength="30" placeholder="mis. Cicilan motor"></div>' : '<div style="grid-column:1/-1"><label for="smi">Item</label><select id="smi">' + items + '</select></div>') +
+      (two ? '<div class="gcall""><label for="smn">Nama</label><input id="smn" maxlength="30" placeholder="mis. Cicilan motor"></div>' : '<div class="gcall""><label for="smi">Item</label><select id="smi">' + items + '</select></div>') +
       (nb ? simExtra(firstId) : '<div><label for="sma">' + (simK === 'stop' ? 'Jumlah (tidak dipakai)' : simK === 'price' ? 'Harga baru (Rp)' : 'Jumlah (Rp)') + '</label><input id="sma" inputmode="numeric" placeholder="0"' + (simK === 'stop' ? ' disabled' : '') + '></div><div><label for="smm">Mulai bulan</label><select id="smm">' + (two ? mo : simMonthOpts(firstId)) + '</select></div>') +
       (two ? '<div><label for="smr">Berapa kali</label><select id="smr"><option value="bulan">Tiap bulan sampai Des</option><option value="sekali">Sekali saja</option><option value="n">Sekian kali</option></select></div><div id="smcw" hidden><label for="smc">Jumlah bulan</label><input id="smc" type="number" min="1" max="12" value="3"></div>' : '') +
       '</div><div class="err" id="smerr"></div><div class="row2"><button class="p" data-smadd="1">Tambah ke simulasi</button></div></div>';
@@ -870,8 +870,8 @@ function renderSim() {
     negs = function (C) { return C.rows.filter(function (r) { return r.ak < 0; }).map(function (r) { return MON[r.m]; }); }, nb = negs(B);
   out +=
     '<div class="card"><h2>Skenario aktif</h2>' + SIM.map(function (x, i) { return '<div class="it2"><div>' + simDesc(x) + '</div><div><button class="g d" data-smdel="' + i + '" aria-label="Hapus skenario">&#10005;</button></div></div>'; }).join('') +
-    '<div class="acts" style="margin-top:8px"><button class="p" data-smapply="1">Terapkan ke data</button><button class="g d" data-smclear="1">Buang semua</button></div></div>' +
-    '<div class="card"><h2>Dampak</h2><div class="hero" style="margin:0"><div class="card" style="margin:0"><div class="sub">Saldo akhir Des ' + S.year + '</div><div class="big' + (B.end < 0 ? ' neg' : '') + '">' + rp(B.end) + '</div><div class="sub">asli ' + rp(A.end) + ' &middot; <b>' + (d >= 0 ? 'naik ' : 'turun ') + rp(Math.abs(d)) + '</b></div></div><div class="card stats" style="margin:0"><div><span>Saldo terendah asli</span><b>' + rp(la.ak) + '</b><span>' + MON[la.m] +
+    '<div class="acts mt8"""><button class="p" data-smapply="1">Terapkan ke data</button><button class="g d" data-smclear="1">Buang semua</button></div></div>' +
+    '<div class="card"><h2>Dampak</h2><div class="hero m0"""><div class="card m0"""><div class="sub">Saldo akhir Des ' + S.year + '</div><div class="big' + (B.end < 0 ? ' neg' : '') + '">' + rp(B.end) + '</div><div class="sub">asli ' + rp(A.end) + ' &middot; <b>' + (d >= 0 ? 'naik ' : 'turun ') + rp(Math.abs(d)) + '</b></div></div><div class="card stats m0"""><div><span>Saldo terendah asli</span><b>' + rp(la.ak) + '</b><span>' + MON[la.m] +
     '</span></div><div><span>Saldo terendah simulasi</span><b>' + rp(lb.ak) + '</b><span>' + MON[lb.m] + '</span></div></div></div>' + '<div class="chp ' + (nb.length ? 'cash' : 'on') + '" style="margin:10px 0 6px">' + (nb.length ? 'Saldo negatif di ' + nb.join(', ') : 'Saldo tetap positif sepanjang tahun') + '</div>' + simChart(A, B) + '</div>' +
     '<div class="card"><h2>Per bulan</h2>' + B.rows.map(function (r, i) { var a = A.rows[i].ak, df = r.ak - a; return '<div class="it2"><div><b>' + MON[r.m] + '</b> <span class="sub">asli ' + rp(a) + '</span></div><div><b' + (r.ak < 0 ? ' style="color:var(--wr)"' : '') + '>' + rp(r.ak) + '</b> <span class="sub">' + (df === 0 ? '' : (df > 0 ? '+' : '&minus;') + rp(Math.abs(df))) + '</span></div></div>'; }).join('') + '</div>';
   el.innerHTML = out;
@@ -888,7 +888,7 @@ function simApply() {
         if (x.k === 'stop') { it.end = isoD(Date.UTC(y, x.m, 0)); it.cnt = 0; }
         else if (x.k === 'cycle' || x.k === 'shift')
           trackSchedule(it, function () {
-            if (x.k === 'shift') moveStatusExact(it.id, [[x.from, x.to]], [S.paid, S.skip]);
+            if (x.k === 'shift') moveStatusExact(it.id, [[x.from, x.to]], [S.paid, S.skip], [S.real || {}]);
             simPutChg(it, simChg(it, x));
           });
         else (it.ch = it.ch || []).push({ from: y + '-' + pad2(x.m + 1) + '-01', to: '', price: x.amt, n: null, unit: null, cut: false });
@@ -997,7 +997,7 @@ function tripNow(P) {
       return (
         '<div class="itm"><div class="tm">' + tmShow(x.time) + (x.time2 ? '<br>' + tmShow(x.time2) + '' : '') + '</div><div><div class="ttl"' + (x.done ? ' style="text-decoration:line-through;opacity:.6"' : '') + '>' + esc(x.place) + '</div><div>' + mk +
         (x.cat ? '<span class="chp" style="background:transparent;border:1px solid var(--ln)">' + esc(x.cat) + '</span>' : '') + pchip(x.pay) + lnk(x.link) + '</div>' + (x.note ? '<div class="sub">' + esc(x.note) + '</div>' : '') +
-        '<div class="ac" style="justify-content:flex-start"><button class="g" data-itdone="' + x.id + '">' + (x.done ? '&#9745; Selesai' : '&#9744; Tandai selesai') + '</button></div></div><div class="co">' + (x.est ? amtTxt(P, x.est, x.fx) : '') + '</div></div>'
+        '<div class="ac jcfs"""><button class="g" data-itdone="' + x.id + '">' + (x.done ? '&#9745; Selesai' : '&#9744; Tandai selesai') + '</button></div></div><div class="co">' + (x.est ? amtTxt(P, x.est, x.fx) : '') + '</div></div>'
       );
     }).join('') || '<div class="sub">Belum ada kegiatan untuk hari ini. Tambahkan di tab Itinerary.</div>') + '</div>' +
     (B.length

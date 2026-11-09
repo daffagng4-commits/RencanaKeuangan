@@ -11,8 +11,12 @@ const root = __dirname;
 function build() {
   let html = fs.readFileSync(path.join(root, 'index.dev.html'), 'utf8');
   // Catatan: pakai fungsi (bukan string) sebagai pengganti, supaya "$&", "$'" dsb. di dalam kode JS tidak ditafsirkan.
-  html = html.replace(/<link rel="stylesheet" href="(css\/[^"]+)">/g, (_, f) =>
-    '<style>\n' + fs.readFileSync(path.join(root, f), 'utf8').trim() + '\n</style>');
+  html = html.replace(/<link rel="stylesheet" href="(css\/[^"]+)">/g, (_, f) => {
+    // url(fonts/xx.woff2) di CSS disematkan sebagai data URI, supaya index.html tetap SATU file dan jalan offline
+    const css = fs.readFileSync(path.join(root, f), 'utf8').trim().replace(/url\((fonts\/[^)]+\.woff2)\)/g, (_m, u) =>
+      'url(data:font/woff2;base64,' + fs.readFileSync(path.join(root, 'css', u)).toString('base64') + ')');
+    return '<style>\n' + css + '\n</style>';
+  });
   const files = [];
   html = html.replace(/<script src="(js\/[^"]+)"><\/script>\r?\n?/g, (_, f) => { files.push(f); return ''; });
   const js = files

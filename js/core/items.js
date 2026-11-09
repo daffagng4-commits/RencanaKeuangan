@@ -34,6 +34,7 @@ function cloneItem(it, id) {
     start: it.start,
     end: it.end || '',
     cnt: +it.cnt || 0,
+    pokok: +it.pokok || 0,
     cat: it.cat || '',
     ch: (it.ch || []).map(function (q) {
       var c = { from: q.from, to: q.to || '', price: q.price, n: q.n, unit: q.unit, cut: !!q.cut };
@@ -87,13 +88,14 @@ function allCategories() {
  * Pindahkan status lunas/lewati ke tanggal baru terdekat (maks. 20 hari) saat tanggal tagihan
  * bergeser. Hanya status yang tanggal lamanya HILANG dari jadwal yang dipindah.
  * @param before,after daftar tanggal (ms) tagihan item sebelum/sesudah perubahan
- * @param maps [S.paid, S.skip]
+ * @param maps [S.paid, S.skip] @param follow peta pengikut, mis. [S.real]
  * @returns jumlah status yang dipindah
  */
-function remapStatus(itemId, before, after, maps) {
+function remapStatus(itemId, before, after, maps, follow) {
   var beforeSet = {},
     afterSet = {},
     used = {},
+    moves = [],
     moved = 0,
     prefix = String(itemId) + '|';
   before.forEach(function (t) {
@@ -141,9 +143,19 @@ function remapStatus(itemId, before, after, maps) {
           used[best] = 1;
           map[prefix + best] = map[prefix + d];
           delete map[prefix + d];
+          moves.push([d, best]);
           moved++;
         }
       });
+  });
+  // peta pengikut (mis. S.real): ikut pindah bersama status yang dipindah, tanpa memengaruhi hitungan
+  (follow || []).forEach(function (m) {
+    moves.forEach(function (p) {
+      if (m[prefix + p[0]] != null && m[prefix + p[1]] == null) {
+        m[prefix + p[1]] = m[prefix + p[0]];
+        delete m[prefix + p[0]];
+      }
+    });
   });
   return moved;
 }
@@ -153,7 +165,7 @@ function remapStatus(itemId, before, after, maps) {
  * karena kedua tanggalnya diketahui; remapStatus hanya menebak tanggal terdekat maks. 20 hari).
  * @param pairs [[tanggalLama, tanggalBaru], ...] @param maps [S.paid, S.skip] @returns jumlah status yang dipindah
  */
-function moveStatusExact(itemId, pairs, maps) {
+function moveStatusExact(itemId, pairs, maps, follow) {
   var prefix = String(itemId) + '|',
     moved = 0;
   pairs.forEach(function (p) {
@@ -169,6 +181,12 @@ function moveStatusExact(itemId, pairs, maps) {
         moved++;
       }
     });
+    (follow || []).forEach(function (m) {
+      if (m[prefix + p[0]] != null) {
+        m[prefix + p[1]] = m[prefix + p[0]];
+        delete m[prefix + p[0]];
+      }
+    });
   });
   return moved;
 }
@@ -177,7 +195,7 @@ function moveStatusExact(itemId, pairs, maps) {
 function trackSchedule(it, mutate) {
   var before = occ(it, S.year);
   mutate();
-  return remapStatus(it.id, before, occ(it, S.year), [S.paid, S.skip]);
+  return remapStatus(it.id, before, occ(it, S.year), [S.paid, S.skip], [S.real || {}]);
 }
 
 /**

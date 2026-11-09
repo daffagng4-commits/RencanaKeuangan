@@ -275,3 +275,125 @@ test('incomeYear: hanya baris + di profil tergabung, tahun aktif, mulai bulan sa
   delete c.ALL.kas;
   assert.ok(Y);
 });
+
+function matchSetup(year) {
+  const Y = newYear(c, year, { real: {} });
+  Y.items.push(
+    item({ id: 'l', name: 'Listrik PLN', price: 200000, n: 1, unit: 'bulan', start: year + '-01-05' }),
+    item({ id: 'n', name: 'Netflix', price: 50000, n: 1, unit: 'bulan', start: year + '-01-20' }),
+  );
+  c.ALL.kas = { pr: { k: { id: 'k', link: true, auto: true, nm: [], tx: [] } } };
+  return { Y, P: c.ALL.kas.pr.k };
+}
+
+test('match: nama + jumlah + tanggal yang dekat = sangat cocok; tautan membuat tagihan lunas dan realisasi mengikuti transaksi', () => {
+  const { Y, P } = matchSetup(2043);
+  P.tx.push({ id: 't1', d: '2043-03-06', t: '-', amt: 205000, cat: 'Tagihan', note: 'bayar listrik pln' });
+  P.tx.push({ id: 't2', d: '2043-03-21', t: '-', amt: 70000, cat: 'Hiburan', note: 'nonton' });
+  const s = c.suggestMatches();
+  assert.equal(s.length, 1, 'hanya t1 yang cocok (t2 selisih jumlah 40% tanpa nama)');
+  assert.equal(s[0].tx.id, 't1');
+  assert.equal(s[0].cand.key, 'l|2043-03-05');
+  assert.equal(s[0].cand.conf, 'high');
+  assert.equal(s[0].kind, 'unpaid');
+  c.applyLink('l|2043-03-05', 't1');
+  assert.ok(Y.paid['l|2043-03-05']);
+  assert.equal(c.realTx('l|2043-03-05').amt, 205000);
+  assert.deepEqual(Object.keys(c.linkedTxIds()), ['t1']);
+  assert.equal(c.suggestMatches().length, 0, 'yang sudah tertaut tidak diusulkan lagi');
+  const D = c.realisasiData();
+  assert.equal(D.nPaid, 1);
+  assert.equal(D.nReal, 1);
+  assert.equal(D.planPaid, 200000);
+  assert.equal(D.act, 205000);
+  assert.equal(D.months[2].act - D.months[2].planPaid, 5000);
+  // transaksi dihapus -> kembali ke jumlah rencana, status lunas tetap
+  P.tx = P.tx.filter((x) => x.id !== 't1');
+  assert.equal(c.realTx('l|2043-03-05'), null);
+  assert.equal(c.realisasiData().act, 200000);
+});
+
+test('match: otomatis hanya bila tepat satu tagihan sangat cocok, dan bisa dimatikan', () => {
+  const { Y, P } = matchSetup(2044);
+  const tx = { id: 'a1', d: '2044-04-19', t: '-', amt: 49000, cat: '', note: 'netflix' };
+  P.tx.push(tx);
+  P.auto = false;
+  assert.equal(c.autoMatchTx(tx), null, 'dimatikan');
+  P.auto = true;
+  const r = c.autoMatchTx(tx);
+  assert.equal(r.key, 'n|2044-04-20');
+  assert.ok(Y.paid['n|2044-04-20'] && Y.real['n|2044-04-20'].tx === 'a1');
+  c.unlinkBill('n|2044-04-20');
+  assert.ok(!Y.paid['n|2044-04-20'] && !Y.real['n|2044-04-20']);
+  // dua tagihan sama-sama cocok -> ambigu, tidak otomatis
+  Y.items.push(item({ id: 'n2', name: 'Netflix', price: 50000, n: 1, unit: 'bulan', start: '2044-01-20' }));
+  assert.equal(c.autoMatchTx(tx), null);
+  // tanggal terlalu jauh / transaksi masuk -> tidak
+  assert.equal(c.autoMatchTx({ id: 'a2', d: '2044-04-02', t: '-', amt: 49000, note: 'netflix' }), null);
+  assert.equal(c.autoMatchTx({ id: 'a3', d: '2044-04-20', t: '+', amt: 49000, note: 'netflix' }), null);
+});
+
+test('match: jumlah persis tanpa nama = saran biasa (bukan otomatis); tagihan sudah lunas + transaksi = saran gabung; Bukan menyembunyikan', () => {
+  const { Y, P } = matchSetup(2045);
+  P.tx.push({ id: 'm1', d: '2045-05-22', t: '-', amt: 50000, cat: '', note: 'langganan' });
+  const s = c.suggestMatches();
+  assert.equal(s.length, 1);
+  assert.equal(s[0].cand.conf, 'mid');
+  assert.equal(c.autoMatchTx(P.tx[0]), null, 'mid tidak pernah otomatis');
+  P.nm = ['m1'];
+  assert.equal(c.suggestMatches().length, 0, 'ditolak -> tidak diusulkan');
+  P.nm = [];
+  // tagihan sudah ditandai lunas manual dan ada transaksi yang sangat cocok -> hitung ganda, ditawarkan gabung
+  Y.paid['l|2045-05-05'] = 1;
+  P.tx.push({ id: 'm2', d: '2045-05-05', t: '-', amt: 200000, cat: '', note: 'listrik pln' });
+  const g = c.suggestMatches().filter((x) => x.tx.id === 'm2')[0];
+  assert.equal(g.kind, 'paid');
+  c.applyLink(g.cand.key, 'm2');
+  assert.equal(c.realTx('l|2045-05-05').id, 'm2');
+});
+
+test('remapStatus/moveStatusExact: S.real ikut pindah bersama status lunas', () => {
+  const { Y } = matchSetup(2046);
+  Y.paid['l|2046-02-05'] = 1;
+  Y.real['l|2046-02-05'] = { tx: 'z' };
+  c.moveStatusExact('l', [['2046-02-05', '2046-02-12']], [Y.paid, Y.skip], [Y.real]);
+  assert.ok(Y.paid['l|2046-02-12'] && !Y.paid['l|2046-02-05']);
+  assert.equal(Y.real['l|2046-02-12'].tx, 'z');
+  assert.ok(!Y.real['l|2046-02-05']);
+});
+
+test('norm: S.real dibersihkan dan profil kas membawa auto + nm', () => {
+  const n = c.norm({ year: 2047, data: { 2047: { real: { 'a|2047-01-02': { tx: 't' }, rusak: { tx: 'x' }, 'b|2047-01-03': {} } } }, kas: { pr: { u: { id: 'u', link: true, nm: ['q', 5], tx: [] } } } });
+  assert.deepEqual(JSON.parse(JSON.stringify(n.data[2047].real)), { 'a|2047-01-02': { tx: 't' } });
+  assert.equal(n.kas.pr.u.auto, true);
+  assert.deepEqual(Array.from(n.kas.pr.u.nm), ['q', '5']);
+});
+
+test('cicilanData: kemajuan, sisa, tanggal lunas, tahun tanpa data dianggap lunas, bunga dari pokok', () => {
+  const Y = newYear(c, 2051, { real: {} });
+  c.window = undefined;
+  const today = '2051-03-15';
+  c.todayISO = () => today;
+  Y.items.push(
+    item({ id: 'k', name: 'KPR Mini', price: 1000000, n: 1, unit: 'bulan', start: '2050-11-10', cnt: 6, pokok: 5500000 }),
+    item({ id: 'o', name: 'Langganan', price: 10000, n: 1, unit: 'bulan', start: '2051-01-01' }),
+    item({ id: 's', name: 'Sekali', price: 10000, unit: 'sekali', start: '2051-01-01', cnt: 1 }),
+  );
+  // 6 kali dari 10 Nov 2050: Nov, Des (2050, tanpa data -> dianggap lunas), Jan, Feb, Mar, Apr 2051
+  Y.paid['k|2051-01-10'] = 1;
+  Y.paid['k|2051-02-10'] = 1;
+  const L = c.cicilanData();
+  assert.equal(L.length, 1, 'hanya item berjadwal terbatas dan bukan sekali bayar');
+  const k = L[0];
+  assert.equal(k.n, 6);
+  assert.equal(k.assumed, 2, 'Nov dan Des 2050 tidak ada datanya');
+  assert.equal(k.paidN, 4);
+  assert.equal(k.remN, 2);
+  assert.equal(k.remSum, 2000000);
+  assert.equal(k.total, 6000000);
+  assert.equal(k.bunga, 500000);
+  assert.equal(new Date(k.last).toISOString().slice(0, 10), '2051-04-10');
+  assert.equal(new Date(k.next).toISOString().slice(0, 10), '2051-03-10');
+  Y.skip['k|2051-04-10'] = 1;
+  assert.equal(c.cicilanData()[0].n, 5, 'tagihan dilewati tidak dihitung');
+});
