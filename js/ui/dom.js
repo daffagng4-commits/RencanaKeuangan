@@ -56,8 +56,8 @@ function toast(msg, undo) {
   );
 }
 
-/** Dialog konfirmasi untuk semua aksi hapus. `onYes` dipanggil hanya bila pengguna menekan tombol hapus. */
-function askConfirm(msg, onYes, yesLabel) {
+/** Dialog konfirmasi. `onYes` dipanggil hanya bila pengguna menekan tombol aksi. */
+function askConfirm(msg, onYes, yesLabel, title) {
   var old = document.querySelector('.cfm');
   if (old) old.remove();
   var m = document.createElement('div');
@@ -65,7 +65,7 @@ function askConfirm(msg, onYes, yesLabel) {
   m.setAttribute('role', 'dialog');
   m.setAttribute('aria-modal', 'true');
   m.innerHTML =
-    '<div class="card"><h2>Konfirmasi hapus</h2><div class="sub mb10">' + msg + '</div>' +
+    '<div class="card"><h2>' + (title || 'Konfirmasi hapus') + '</h2><div class="sub mb10">' + msg + '</div>' +
     '<div class="row2"><button type="button" class="d" data-cf-y>' + (yesLabel || 'Ya, hapus') + '</button>' +
     '<button type="button" class="c" data-cf-n>Batal</button></div></div>';
   document.body.appendChild(m);

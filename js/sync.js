@@ -61,7 +61,7 @@ function acctUI(u) {
   if (!b || !ini) return;
   b.classList.toggle('on', !!u);
   ini.textContent = u ? 'D' : '?';
-  b.title = u ? (u.email || 'Akun') + ' · klik untuk keluar' : 'Masuk / daftar untuk sinkron';
+  b.title = u ? (u.email || 'Akun') + ' · opsi akun' : 'Masuk / daftar untuk sinkron';
 }
 
 /** Dipanggil saat sesi login berubah; memulai tarik data setelah login. */
@@ -357,8 +357,21 @@ function bindSync() {
       return;
     }
     if (sbUser) {
-      sb.auth.signOut();
-      toast('Keluar dari akun. Data lokal tetap ada.');
+      var em = sbUser.email || 'akun ini';
+      askConfirm(
+        'Keluar dari <b>' + esc(em) + '</b>? Data lokal tetap tersimpan di perangkat ini.',
+        function () {
+          sb.auth.signOut().then(function (r) {
+            if (r && r.error) {
+              toast('Gagal keluar: ' + r.error.message);
+              return;
+            }
+            toast('Keluar dari akun. Data lokal tetap ada.');
+          });
+        },
+        'Keluar',
+        'Keluar dari akun'
+      );
       return;
     }
     $('lm').textContent = '';

@@ -304,8 +304,25 @@ nav button[aria-selected="true"] {
 .hero {
   display: grid;
   grid-template-columns: 1.2fr 2fr;
-  gap: 16px;
+  gap: 0;
   margin-bottom: 16px;
+  background: var(--sf);
+  border: 1px solid var(--ln);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.hero > .card {
+  margin: 0;
+  padding: 18px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  min-width: 0;
+}
+.hero > .card + .card {
+  border-left: 1px solid var(--ln);
+  box-shadow: inset 10px 0 14px -14px rgba(0, 0, 0, 0.22);
 }
 .big {
   font-size: 34px;
@@ -332,7 +349,7 @@ nav button[aria-selected="true"] {
   display: block;
   font-size: 16px;
 }
-.hero .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; }
+.hero .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; align-content: center; }
 .hero .stats > div:last-child:nth-child(odd) { grid-column: span 2; }
 .stats span {
   font-size: 12px;
@@ -1021,9 +1038,10 @@ a.yp.yp-tool:hover .arr-icon {
 /* Kartu saldo gabungan di Rincian Bulanan */
 .big small { font-size: 14px; font-weight: 600; color: var(--mut); letter-spacing: 0; margin-left: 4px; }
 .hm .hm-hint { display: block; margin-top: 4px; color: var(--wr); font-size: 12px; }
-.hm-bal { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--ln); }
-.hm-bal span { display: block; font-size: 12px; color: var(--mut); }
-.hm-bal b { display: block; font-size: 16px; font-weight: 700; }
+.hm-bal { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--ln); }
+.hm-bal > div { min-width: 0; }
+.hm-bal span { display: block; font-size: 11.5px; line-height: 1.35; color: var(--mut); }
+.hm-bal b { display: block; font-size: 23px; font-weight: 800; letter-spacing: -0.015em; line-height: 1.2; margin-top: 2px; font-variant-numeric: tabular-nums; }
 .hm-bal b.neg { color: var(--wr); }
 .hm .err, .hm .runway-box { margin-top: 10px; }
 /* Target sentuh minimal di layar sentuh */
@@ -1037,6 +1055,10 @@ body.privacy-mode .amt,
 body.privacy-mode .cur,
 body.privacy-mode td:nth-child(2),
 body.privacy-mode td.r,
+body.privacy-mode td.c-s,
+body.privacy-mode td.c-e,
+body.privacy-mode td[data-l="Pengeluaran"],
+body.privacy-mode td[data-l="Saldo akhir"],
 body.privacy-mode input#saldo,
 body.privacy-mode .hero-val,
 body.privacy-mode .big,
@@ -1101,9 +1123,25 @@ body.privacy-mode [data-val="rp"] {
   background: var(--sf);
   z-index: 1;
 }
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+  .hero > .card + .card {
+    border-left: 0;
+    border-top: 1px solid var(--ln);
+    box-shadow: inset 0 10px 14px -14px rgba(0, 0, 0, 0.22);
+  }
+}
 @media (max-width: 720px) {
   .hero {
     grid-template-columns: 1fr;
+  }
+  .hero > .card {
+    padding: 16px;
+  }
+  .hm-bal b {
+    font-size: 20px;
   }
   .grid {
     grid-template-columns: 1fr 1fr;
@@ -1608,36 +1646,42 @@ button.alat-item { width: 100%; border: 0; background: transparent; text-align: 
 .kas-cat .catrow { margin:9px 0; }
 .kas-cat .catrow:first-of-type { margin-top:0; }
 @media (max-width:700px) { .kas-split { grid-template-columns:1fr; gap:16px; } .kas-cat { border-left:0; border-top:1px solid var(--ln); padding-left:0; padding-top:14px; } }
-/* Grafik arus saldo + pie pemasukan/pengeluaran berdampingan */
-.flow-split { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(250px,.65fr); gap:16px; margin-bottom:16px; align-items:stretch; }
-.flow-split.solo { grid-template-columns:1fr; }
-.flow-split > .card { margin:0; min-width:0; }
-.flow-pie { display:flex; flex-direction:column; justify-content:center; }
-.flow-pie .pie-wrap { margin-top:8px; }
-@media (max-width:700px) { .flow-split { grid-template-columns:1fr; gap:14px; } }
-/* Pengeluaran per kategori: tab periode + donat + bar */
-.cat-dash { margin-bottom:16px; }
+/* Satu kartu: pie pemasukan/pengeluaran + bar kategori */
+.insight { margin-bottom: 16px; }
+.insight-head { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+.insight-title .sub { margin-top:2px; }
+.insight .cat-tabs { margin:0; }
+.insight-body { display:grid; grid-template-columns:minmax(180px,220px) 2px minmax(0,1fr); gap:22px; align-items:start; }
+.insight-pie { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; min-width:0; align-self:center; }
+.insight-pie .pie { width:170px; height:170px; }
+.insight-pie .pie span { font-size:26px; line-height:1; text-align:center; }
+.insight-pie .pie span small { display:block; font-size:10px; font-weight:600; color:var(--mut); letter-spacing:.03em; margin-top:3px; }
+.insight-pie .pie-lg { width:100%; }
+.insight-pie .pie-lg span { justify-content:space-between; gap:10px; }
+.insight-pie .pie-lg b { margin-left:auto; font-size:13px; font-variant-numeric:tabular-nums; }
+.insight-div { align-self:stretch; width:2px; border-radius:99px; background:linear-gradient(180deg,transparent,#64748b 12%,#64748b 88%,transparent); }
+.insight-cat { min-width:0; }
+.insight-h3 { font-size:14px; margin:0; }
+.insight-cat .cat-list { margin-top:10px; }
+.insight-cat .catrow { margin:9px 0; }
+.insight-cat .catrow:first-child { margin-top:0; }
+.insight-cat .cathd b { font-variant-numeric:tabular-nums; white-space:nowrap; }
+.insight-cat .cathd b .sub { margin-left:5px; }
+@media (max-width:760px) {
+  .insight-body { grid-template-columns:1fr; gap:16px; }
+  .insight-div { width:auto; height:1px; background:linear-gradient(90deg,transparent,#475569 10%,#475569 90%,transparent); }
+  .insight-pie { flex-direction:row; justify-content:center; gap:18px; }
+  .insight-pie .pie { width:140px; height:140px; }
+  .insight-pie .pie span { font-size:22px; }
+  .insight-pie .pie-lg { width:auto; min-width:140px; }
+}
+/* Pengeluaran per kategori: tab periode + bar */
 .cat-tabs { display:inline-flex; gap:2px; padding:2px; border:1px solid var(--ln); border-radius:999px; margin:8px 0 2px; background:var(--bg); }
 .cat-tab { border:0; background:transparent; color:var(--mut); border-radius:999px; padding:5px 11px; font-size:12px; font-weight:600; min-height:28px; cursor:pointer; }
 .cat-tab:hover { color:var(--ink); }
 .cat-tab.on { background:var(--sf); color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.08); }
-.cat-kpis { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:12px 0 14px; padding:12px 0; border-top:1px solid var(--ln); border-bottom:1px solid var(--ln); }
-.cat-kpis span { display:block; font-size:12px; color:var(--mut); }
-.cat-kpis b { display:block; font-size:18px; line-height:1.25; }
-.cat-split { display:grid; grid-template-columns:minmax(170px,200px) minmax(0,1fr); gap:20px; align-items:center; }
-.cat-pie-wrap { display:flex; justify-content:center; }
-.cat-pie { width:180px; height:180px; }
-.cat-pie .pie-slice { stroke-width:14; }
-.cat-pie .pie-slice:hover { stroke-width:18; }
-.cat-pie span { font-size:20px; }
 .cat-list .catrow { margin:10px 0; }
 .cat-list .catrow:first-child { margin-top:0; }
-@media (max-width:700px) {
-  .cat-split { grid-template-columns:1fr; gap:10px; }
-  .cat-pie { width:150px; height:150px; }
-  .cat-pie span { font-size:18px; }
-  .cat-kpis b { font-size:16px; }
-}
 .pie-wrap { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
 .pie { width:148px; height:148px; border-radius:50%; display:grid; place-items:center; position:relative; flex:0 0 auto; }
 .pie svg { position:absolute; inset:0; width:100%; height:100%; animation:pieIn .38s ease-out both; }

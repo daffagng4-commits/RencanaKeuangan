@@ -98,7 +98,7 @@ const { boot } = require('./ui.js');
   // pie pemasukan vs pengeluaran pindah ke Rincian Bulanan, di samping grafik arus saldo
   w.tab('rincian');
   w.renderAll();
-  const pie = $('v-rincian').querySelector('.flow-pie .pie');
+  const pie = $('v-rincian').querySelector('.insight .pie');
   assert(pie, 'pie pemasukan vs pengeluaran di Rincian Bulanan');
   assert.strictEqual(pie.querySelectorAll('.pie-slice').length, 2, 'dua potongan pie (pemasukan & pengeluaran)');
   assert(/Masuk/.test(txt($('v-rincian'))) && /Keluar/.test(txt($('v-rincian'))), 'legenda warna pemasukan/pengeluaran');
