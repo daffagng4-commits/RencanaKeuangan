@@ -1381,6 +1381,13 @@ nav {
 .kch-x span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .kch-x span:first-child { transform: none; }
 .kch-x span:last-child { transform: translateX(-100%); }
+.lc { width: 100%; height: auto; display: block; overflow: visible; }
+.lc .lc-v { opacity: 0; stroke: var(--mut); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; transition: opacity .12s; }
+.lc .lc-d { opacity: 0; fill: var(--ac); stroke: var(--card); stroke-width: 2; transition: opacity .12s; }
+.lc .lc-d.neg { fill: var(--wr); }
+.lc .lc-p:hover .lc-v, .lc .lc-p:hover .lc-d, .lc .lc-p:focus-within .lc-v, .lc .lc-p:focus-within .lc-d { opacity: 1; }
+.lc .lc-hit:focus { outline: none; }
+.lc-foot { margin-top: 6px; }
 
 /* ===== Tema hitam-putih & panduan ===== */
 :root[data-theme="bw"] {
@@ -1411,6 +1418,8 @@ button.gdt {
 }
 button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--ln); }
 .gdc[hidden] { display: none; }
+.tut { margin: 2px 0 6px 18px; padding: 0; }
+.tut li { margin: 3px 0; }
 /* ===== Perjalanan ===== */
 .itm { display: grid; grid-template-columns: 52px 1fr auto; gap: 10px; padding: 10px 0; border-top: 1px solid var(--ln); align-items: start; }
 .itm .tm { font-variant-numeric: tabular-nums; color: var(--mut); font-size: 12.5px; font-weight: 700; text-align: right; line-height: 1.3; }
@@ -3599,12 +3608,91 @@ function syncUI() {
   resetForm();
 }
 
+/* ===== js/ui/chart.js ===== */
+/**
+ * Grafik garis saldo bulanan: 12 titik, crosshair + tooltip saat kursor/fokus di area grafik.
+ * o = {id, title, sub, aria, pts:[{m, v, tip}], foot}
+ */
+function saldoWave(o) {
+  var P = o.pts || [];
+  if (P.length < 2) return '';
+  var W = 720,
+    H = 238,
+    padL = 44,
+    padR = 14,
+    padT = 18,
+    padB = 32,
+    plotW = W - padL - padR,
+    plotH = H - padT - padB,
+    vs = P.map(function (p) { return p.v; }),
+    mn = Math.min.apply(null, vs),
+    mx = Math.max.apply(null, vs),
+    lo = Math.min(0, mn),
+    hi = Math.max(0, mx);
+  if (hi === lo) hi = lo + 1;
+  var pad = (hi - lo) * 0.14 || 1;
+  lo -= pad;
+  hi += pad;
+  var X = function (i) { return padL + (plotW * i) / (P.length - 1); },
+    Y = function (v) { return padT + ((hi - v) / (hi - lo)) * plotH; },
+    ax = function (v) { return (v < 0 ? '−' : '') + shortP(Math.abs(v)); },
+    zero = Y(0),
+    line = 'M' + P.map(function (p, i) { return X(i).toFixed(1) + ' ' + Y(p.v).toFixed(1); }).join(' L'),
+    area = line + ' L' + X(P.length - 1).toFixed(1) + ' ' + (padT + plotH) + ' L' + padL + ' ' + (padT + plotH) + ' Z',
+    slot = plotW / (P.length - 1),
+    gid = 'lcg-' + (o.id || 'x');
+  var groups = P.map(function (p, i) {
+    var x = X(i),
+      left = i ? x - slot / 2 : padL,
+      right = i < P.length - 1 ? x + slot / 2 : W - padR;
+    return (
+      '<g class="lc-p"><rect class="lc-hit" x="' + left.toFixed(1) + '" y="' + padT + '" width="' + Math.max(1, right - left).toFixed(1) + '" height="' + plotH + '" fill="transparent" tabindex="0" data-tip="' + esc(p.tip) + '"></rect>' +
+      '<line class="lc-v" x1="' + x.toFixed(1) + '" y1="' + padT + '" x2="' + x.toFixed(1) + '" y2="' + (padT + plotH) + '"></line>' +
+      '<circle class="lc-d' + (p.v < 0 ? ' neg' : '') + '" cx="' + x.toFixed(1) + '" cy="' + Y(p.v).toFixed(1) + '" r="4.5" data-tip="' + esc(p.tip) + '"></circle></g>'
+    );
+  }).join('');
+  var labels = P.map(function (p, i) {
+    var a = i === 0 ? 'start' : i === P.length - 1 ? 'end' : 'middle';
+    return '<text x="' + X(i).toFixed(1) + '" y="' + (H - 9) + '" text-anchor="' + a + '" font-size="8.8" fill="var(--mut)">' + MON[p.m] + '</text>';
+  }).join('');
+  var yv = [mx, 0, mn],
+    seen = {},
+    grid = yv.map(function (v) {
+      var y = Y(v).toFixed(1);
+      if (seen[y]) return '';
+      seen[y] = 1;
+      return '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '" stroke="var(--ln)" stroke-width="1" opacity=".55"></line>' +
+        '<text x="' + (padL - 6) + '" y="' + (+y + 3) + '" text-anchor="end" font-size="8.6" fill="var(--mut)">' + ax(v) + '</text>';
+    }).join('');
+  return (
+    '<div class="card"><div class="dflex jcsb aic fwrap g8 mb6"><h2 style="margin:0">' + o.title + '</h2>' +
+    (o.sub ? '<span class="sub fs12">' + o.sub + '</span>' : '') + '</div>' +
+    '<svg class="lc kch" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(o.aria || o.title) + '">' +
+    '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--ac)" stop-opacity=".18"></stop><stop offset="1" stop-color="var(--ac)" stop-opacity="0"></stop></linearGradient></defs>' +
+    grid +
+    '<path d="' + area + '" fill="url(#' + gid + ')"></path>' +
+    '<path d="' + line + '" fill="none" stroke="var(--ac)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>' +
+    '<line x1="' + padL + '" y1="' + zero.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + zero.toFixed(1) + '" stroke="var(--ln)" stroke-width="1" stroke-dasharray="3 3" opacity=".8"></line>' +
+    groups + labels + '</svg>' +
+    (o.foot ? '<div class="sub lc-foot">' + o.foot + '</div>' : '') + '</div>'
+  );
+}
+
 /* ===== js/ui/rincian.js ===== */
 /**
  * Tab Rincian Bulanan: ringkasan saldo, grafik per bulan, grafik per kategori, tabel arus kas.
  */
 
 var openRows = {};
+
+/** Legenda chip di kolom "Item berkala" (dipakai juga oleh panduan yang bisa disembunyikan). */
+var RINCIAN_LEGEND =
+  '<div class="lgd">' +
+  '<span><span class="chip">Listrik ×2</span>Siklus khusus / lebih dari sekali</span>' +
+  '<span><span class="chip chg">Listrik ▲ 720rb</span>Harga beda dari harga awal (▲ naik, ▼ turun)</span>' +
+  '<span><span class="chip wr">Listrik ▲ 720rb (lonjakan)</span>Lonjakan ≥20% dari harga awal</span>' +
+  '<span><span class="chip sk">Gym</span>Dilewati bulan ini</span>' +
+  '</div>';
 var CAT_PALETTE = ['#3aa17e', '#5b8fd9', '#e08a5c', '#9c7fd0', '#d1b04a', '#4fb3bf', '#d9627f', '#7e9b3f', '#b57a52', '#6c7ae0'];
 
 /** Warna kategori yang STABIL: bergantung pada nama (tanpa beda huruf besar/kecil), bukan urutan nilai. Investasi selalu indigo, tanpa kategori abu-abu. */
@@ -3671,7 +3759,7 @@ function heroHtml(c, R, lead, txCount) {
     );
   };
   var plain =
-    '<div class="card m0"""><div class="sub">Sisa saldo akhir Des ' +
+    '<div class="card m0"><div class="sub">Sisa saldo akhir Des ' +
     y +
     '</div><div class="big' +
     (c.end < 0 ? ' neg' : '') +
@@ -3688,78 +3776,41 @@ function heroHtml(c, R, lead, txCount) {
     stat('Rata-rata per bulan', rp(c.total / R.length)) +
     stat('Bulan terberat', rp(hv.sp), MON[hv.m]) +
     stat('Bulan teringan', rp(mn.sp), MON[mn.m]) +
-    stat('Jatah jajan per bulan', rp(pos / R.length)) +
+    stat('Jatah jajan per bulan', pos ? rp(pos / R.length) : '—', c.end < 0 ? 'saldo akhir tahun minus' : '') +
     (txCount != null ? stat('Transaksi kas', String(txCount), 'sampai ' + MON[+S.startMonth || 0]) : '') +
     (lead ? '' : stat('Jatah jajan per hari', rp(pos / days))) +
     '</div></div>'
   );
 }
 
-/** Satu grafik arus kas: batang pengeluaran bulanan + garis saldo akhir, skala rupiah yang sama. */
+/** Grafik arus saldo tahun aktif: saldo akhir tiap bulan, titik aktif saat disorot. */
 function flowChart(R) {
   if (!R || !R.length) return '';
-  var W = 640,
-    H = 220,
-    padL = 46,
-    padR = 14,
-    padT = 16,
-    padB = 28,
-    plotW = W - padL - padR,
-    plotH = H - padT - padB,
-    maxSp = Math.max.apply(null, R.map(function (r) { return r.sp; }).concat([0])),
-    minAk = Math.min.apply(null, R.map(function (r) { return r.ak; })),
-    maxAk = Math.max.apply(null, R.map(function (r) { return r.ak; }));
-  var lo = Math.min(0, minAk),
-    hi = Math.max(maxSp, maxAk, 1),
-    pad = (hi - lo) * 0.12 || 500000;
-  lo -= pad;
-  hi += pad;
-  var slot = plotW / R.length,
-    barW = Math.max(8, slot * 0.46);
-  var Y = function (v) { return padT + ((hi - v) / (hi - lo)) * plotH; };
-  var X = function (i) { return padL + slot * (i + 0.5); };
-  var ax = function (v) { return (v < 0 ? '−' : '') + shortP(Math.abs(Math.round(v))); };
-  var zero = Y(0);
-  var bars = R.map(function (r, i) {
-    var y = Y(r.sp),
-      h = Math.max(0, zero - y),
-      tip = MON[r.m] + ': keluar ' + rp(r.sp) + ' · saldo akhir ' + rp(r.ak);
-    return (
-      '<rect x="' + (X(i) - barW / 2) + '" y="' + y + '" width="' + barW + '" height="' + h +
-      '" rx="3" fill="var(--ac)" opacity="0.16"><title>' + esc(tip) + '</title></rect>'
-    );
-  }).join('');
-  var pts = R.map(function (r, i) { return X(i) + ',' + Y(r.ak); }).join(' ');
-  var dots = R.map(function (r, i) {
-    var tip = MON[r.m] + ': saldo akhir ' + rp(r.ak) + ' · keluar ' + rp(r.sp);
-    return (
-      '<circle cx="' + X(i) + '" cy="' + Y(r.ak) + '" r="3.4" fill="' +
-      (r.ak < 0 ? 'var(--wr)' : 'var(--ac)') + '" stroke="var(--card)" stroke-width="1.5">' +
-      '<title>' + esc(tip) + '</title></circle>'
-    );
-  }).join('');
-  var labels = R.map(function (r, i) {
-    return '<text x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="9.5" fill="var(--mut)">' + MON[r.m] + '</text>';
-  }).join('');
+  var by = {},
+    base = +S.saldo || R[0].aw || 0;
+  R.forEach(function (r) { by[r.m] = r; });
+  var pts = [];
+  for (var m = 0; m < 12; m++) {
+    var r = by[m];
+    if (r) {
+      pts.push({
+        m: r.m,
+        v: r.ak,
+        tip: MON[r.m] + ' · awal ' + rp(r.aw) + ' · keluar ' + rp(r.sp) + ' · saldo ' + rp(r.ak)
+      });
+    } else {
+      pts.push({ m: m, v: base, tip: MON[m] + ' · sebelum pencatatan · saldo ' + rp(base) });
+    }
+  }
   var low = R.reduce(function (a, b) { return b.ak < a.ak ? b : a; });
-  var total = R.reduce(function (s, r) { return s + r.sp; }, 0);
-  return (
-    '<div class="card"><div class="dflex jcsb aic fwrap g8 mb6">' +
-    '<h2 style="margin:0">Arus kas ' + S.year + '</h2>' +
-    '<span class="sub fs12">Batang = pengeluaran bulanan · garis = saldo akhir</span></div>' +
-    '<div class="sub mb8">Keluar <b>' + rp(total) + '</b> · rata-rata <b>' + rp(total / R.length) +
-    '</b>/bulan · saldo terendah <b class="' + (low.ak < 0 ? 'neg' : '') + '">' + rp(low.ak) + '</b> (' + MON[low.m] + ')</div>' +
-    '<div style="width:100%;overflow-x:auto"><svg viewBox="0 0 ' + W + ' ' + H +
-    '" style="width:100%;min-width:520px;height:auto;display:block" role="img" aria-label="Grafik arus kas ' + S.year + '">' +
-    '<line x1="' + padL + '" y1="' + zero + '" x2="' + (W - padR) + '" y2="' + zero +
-    '" stroke="var(--ln)" stroke-width="1"/>' +
-    '<text x="' + (padL - 6) + '" y="' + (Y(hi) + 4) + '" text-anchor="end" font-size="9" fill="var(--mut)">' + ax(hi) + '</text>' +
-    '<text x="' + (padL - 6) + '" y="' + (zero + 3) + '" text-anchor="end" font-size="9" fill="var(--mut)">0</text>' +
-    '<text x="' + (padL - 6) + '" y="' + (Y(lo) + 3) + '" text-anchor="end" font-size="9" fill="var(--mut)">' + ax(lo) + '</text>' +
-    bars +
-    '<polyline points="' + pts + '" fill="none" stroke="var(--ac)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>' +
-    dots + labels + '</svg></div></div>'
-  );
+  return saldoWave({
+    id: 'rincian',
+    title: 'Arus saldo ' + S.year,
+    sub: 'Saldo akhir bulan · sorot titik untuk detail',
+    aria: 'Grafik arus saldo ' + S.year,
+    pts: pts,
+    foot: 'Terendah <b class="' + (low.ak < 0 ? 'neg' : '') + '">' + rp(low.ak) + '</b> (' + MON[low.m] + ') · akhir tahun <b>' + rp(R[R.length - 1].ak) + '</b>'
+  });
 }
 
 /** Porsi pengeluaran per kategori (tahun aktif). */
@@ -4016,6 +4067,8 @@ function saldoHero(c, R) {
       : 'Bebas dipakai ' + rp(sf.free) + ' selama ' + sf.left + ' hari ke depan, setelah ' + sf.n + ' tagihan bulan ini (' + rp(sf.due) + (sf.inv ? ', termasuk investasi ' + rp(sf.inv) : '') + ') dibayar.';
     if (!sf.sameMonth)
       hint = '<span class="hm-hint">Bulan saldo (' + mName + ') bukan bulan ini &mdash; ubah &ldquo;Bulan saldo&rdquo; agar angka ini akurat.</span>';
+    if (!neg)
+      hint += '<div class="sub mt4">Hanya menghitung sisa ' + mName + '; tagihan bulan berikutnya belum dikurangi.</div>';
   } else {
     label = 'Saldo Realtime &middot; ' + mName;
     neg = bal < 0;
@@ -4080,8 +4133,12 @@ function renderRincian() {
   var table =
     '<div class="card"><h2>Rincian arus kas ' +
     y +
-    '</h2><div class="sub mb8""">Klik baris untuk melihat tanggal dan rincian tiap pembayaran. ' +
-    'Label biru (▲ naik, ▼ turun) = harga berbeda dari harga awal.</div><div class="tw"><table><thead><tr><th>Bulan</th><th>Saldo awal</th><th>Pengeluaran</th><th>Saldo akhir</th><th class="l">Item berkala</th></tr></thead><tbody>' +
+    '</h2>' +
+    gdBox(
+      'rincian',
+      '<div class="sub mb8">Klik baris bulan untuk melihat tanggal dan rincian tiap pembayaran.</div>' + RINCIAN_LEGEND
+    ) +
+    '<div class="tw"><table><thead><tr><th>Bulan</th><th>Saldo awal</th><th>Pengeluaran</th><th>Saldo akhir</th><th class="l">Item berkala</th></tr></thead><tbody>' +
     rows +
     '<tr class="tot"><td>Total</td><td></td><td data-l="Pengeluaran">' +
     rp(c.total) +
@@ -4089,6 +4146,7 @@ function renderRincian() {
     rp(c.end) +
     '</td><td></td></tr></tbody></table></div></div>';
   $('v-rincian').innerHTML = (S.items.length ? '' : emptyItemsHtml()) + saldoHero(c, R) + flowChart(R) + categoryHtml(c) + cicilanHtml() + table;
+  gdApply($('v-rincian'));
 }
 
 /** Baris "dilewati" pada rincian sebuah bulan. */
@@ -4295,6 +4353,17 @@ function cicilanHtml() {
     '<div class="sub">Sisa <b class="pv">' + rp(sisa) + '</b> dari ' + L.length + ' item yang belum lunas' + (utang ? ' (' + utang + ' utang, ' + (L.length - utang) + ' langganan berjangka)' : '') + '. Semua selesai paling lambat <b>' + ym(akhir) + '</b>.</div>' +
     '<div class="sub mt4">Berikutnya lunas: <b>' + esc(nx.it.name) + '</b> pada ' + ym(nx.last) + '. Setelah itu tagihan ini berhenti.</div>' +
     '<div class="sub mt4">Utang = item yang diisi <b>pokok pinjaman</b> di Kelola Item. Item tanpa pokok dihitung sebagai langganan berjangka.</div>' +
+    gdBox(
+      'utang',
+      '<ol class="tut">' +
+        '<li>Buka <b>Kelola Item</b> &rarr; Tambah item.</li>' +
+        '<li>Isi <b>harga cicilan</b> dan siklusnya, mis. <b>1.500.000</b> tiap <b>1 bulan</b>.</li>' +
+        '<li>Pilih <b>Berhenti</b> &rarr; <b>Setelah beberapa kali bayar</b>, lalu isi total tenor, mis. <b>24</b>.</li>' +
+        '<li>Isi <b>Pokok pinjaman</b> = uang yang dipinjam, mis. <b>30.000.000</b>. Ini bukan harga cicilan; dipakai menghitung total bayar dan biaya tambahan.</li>' +
+        '<li>Tandai tiap cicilan lunas di <b>Jadwal pembayaran</b>. Sisa dan progres di kartu ini ikut turun.</li>' +
+      '</ol>' +
+      '<div class="sub">Contoh: pinjam 30 jt, cicil 1,5 jt/bulan selama 24 bulan. Isi pokok 30 jt; aplikasi menghitung total bayar 36 jt dan biaya tambahan 6 jt (20%).</div>'
+    ) +
     L.map(function (x) {
       var pc = Math.round((x.paidN / x.n) * 100);
       return (
@@ -7720,53 +7789,42 @@ function kasPrevMonth(per) {
   return p[0] + Math.floor(m / 12) + '-' + pad2(((m % 12) + 12) % 12 + 1);
 }
 
-/** Grafik saldo per tanggal: sumbu waktu asli, garis nol, label bulan, dan ringkasan awal→akhir. */
+/** Grafik arus saldo tahun aktif: saldo akhir tiap bulan dari catatan kas aktual. */
 function kasChart(asc) {
-  var bal = kasBase(kas()),
-    pts = [];
+  if (!asc || !asc.length) return '';
+  var base = kasBase(kas()),
+    bal = base,
+    sums = {},
+    last = {};
   asc.forEach(function (x) {
     bal += x.t === '+' ? x.amt : -x.amt;
-    if (!kasIn(x, kasPer)) return;
-    var q = pts[pts.length - 1];
-    if (q && q.d === x.d) q.b = bal;
-    else pts.push({ d: x.d, b: bal });
+    var m = +x.d.slice(5, 7) - 1;
+    if (m < 0 || m > 11) return;
+    if (!sums[m]) sums[m] = { i: 0, o: 0 };
+    if (x.t === '+') sums[m].i += x.amt;
+    else sums[m].o += x.amt;
+    last[m] = bal;
   });
-  if (pts.length < 2) return '';
-  var bs = pts.map(function (p) { return p.b; }),
-    mn = Math.min.apply(null, bs),
-    mx = Math.max.apply(null, bs),
-    r = mx - mn || 1,
-    t0 = Date.parse(pts[0].d),
-    t1 = Date.parse(pts[pts.length - 1].d),
-    span = t1 - t0 || 1,
-    x = function (d) { return ((Date.parse(d) - t0) / span) * 600; },
-    y = function (v) { return 122 - ((v - mn) / r) * 108; },
-    d = 'M' + pts.map(function (p) { return x(p.d).toFixed(1) + ' ' + y(p.b).toFixed(1); }).join(' L'),
-    zero = mn < 0 && mx > 0 ? '<line x1="0" y1="' + y(0).toFixed(1) + '" x2="600" y2="' + y(0).toFixed(1) + '" style="stroke:var(--ln);stroke-dasharray:3 3;vector-effect:non-scaling-stroke"></line>' : '',
-    hit = pts.map(function (p, i) {
-      var xa = i ? (x(pts[i - 1].d) + x(p.d)) / 2 : 0,
-        xb = i < pts.length - 1 ? (x(p.d) + x(pts[i + 1].d)) / 2 : 600;
-      return '<rect x="' + xa.toFixed(1) + '" y="0" width="' + Math.max(1, xb - xa).toFixed(1) + '" height="130" fill="transparent" tabindex="0" data-tip="' + esc(dShort(p.d) + ' · saldo ' + rp(p.b)) + '"></rect>';
-    }).join(''),
-    m0 = new Date(t0), m1 = new Date(t1),
-    months = (m1.getFullYear() - m0.getFullYear()) * 12 + m1.getMonth() - m0.getMonth() + 1,
-    step = Math.ceil(months / 7),
-    ticks = [];
-  for (var i = 0; i < months; i += step) {
-    var md = new Date(m0.getFullYear(), m0.getMonth() + i, 1),
-      left = ((md - t0) / span) * 100;
-    if (left >= 0 && left <= 100)
-      ticks.push('<span style="left:' + left.toFixed(2) + '%">' + MON[md.getMonth()] + (md.getMonth() === 0 || i === 0 ? ' ’' + String(md.getFullYear()).slice(2) : '') + '</span>');
+  var pts = [],
+    prev = base;
+  for (var m = 0; m < 12; m++) {
+    if (last[m] != null) prev = last[m];
+    var s = sums[m] || { i: 0, o: 0 };
+    pts.push({
+      m: m,
+      v: prev,
+      tip: MON[m] + ' · masuk ' + rp(s.i) + ' · keluar ' + rp(s.o) + ' · saldo ' + rp(prev)
+    });
   }
-  var naik = pts[pts.length - 1].b - pts[0].b;
-  return (
-    '<div class="card"><h2>Saldo dari waktu ke waktu</h2><svg class="kch" viewBox="0 0 600 130" preserveAspectRatio="none" role="img" aria-label="Grafik saldo">' +
-    zero + '<path d="' + d + ' L600 130 L0 130Z" style="fill:var(--acs)"></path><path d="' + d + '" style="fill:none;stroke:var(--ac);stroke-width:2.5;vector-effect:non-scaling-stroke"></path>' + hit +
-    '</svg><div class="kch-x">' + ticks.join('') + '</div>' +
-    '<div class="sub dflex jcsb g8 fwrap mt8"><span>' + dShort(pts[0].d) + ': <b>' + rp(pts[0].b) + '</b></span>' +
-    '<span>' + dShort(pts[pts.length - 1].d) + ': <b>' + rp(pts[pts.length - 1].b) + '</b> (' + (naik >= 0 ? '+' : '−') + rp(Math.abs(naik)) + ')</span>' +
-    '<span>terendah ' + rp(mn) + ' · tertinggi ' + rp(mx) + '</span></div></div>'
-  );
+  var low = pts.reduce(function (a, b) { return b.v < a.v ? b : a; });
+  return saldoWave({
+    id: 'kas',
+    title: 'Arus saldo ' + S.year,
+    sub: 'Saldo akhir bulan · sorot titik untuk detail',
+    aria: 'Grafik arus saldo ' + S.year,
+    pts: pts,
+    foot: 'Terendah <b class="' + (low.v < 0 ? 'neg' : '') + '">' + rp(low.v) + '</b> (' + MON[low.m] + ') · saldo terakhir <b>' + rp(pts[11].v) + '</b>'
+  });
 }
 
 /** Profil yang tergabung dengan Rencana (selalu tepat satu). */
@@ -9906,13 +9964,10 @@ function sheetHtml() {
     '<div class="bs-h">Rencana</div>' +
     (tripOn() ? '<button type="button" role="menuitem" data-go="item">Kelola Item</button>' : '') +
     '<button type="button" role="menuitem" data-go="sim">Simulasi</button>' +
+    '<button type="button" role="menuitemcheckbox" data-trip-toggle aria-checked="false">Tampilkan Perjalanan</button>' +
     '<div class="bs-h">Alat</div>' +
     '<a role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span>' + ext + '</a>' +
     '<a role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span>' + ext + '</a>' +
-    '<div class="bs-h">Tampilan</div>' +
-    '<button type="button" role="menuitemradio" data-theme-set="bw" aria-checked="false">Hitam-putih</button>' +
-    '<button type="button" role="menuitemradio" data-theme-set="bwd" aria-checked="false">Hitam-putih gelap</button>' +
-    '<button type="button" role="menuitemcheckbox" data-trip-toggle aria-checked="false">Tampilkan Perjalanan</button>' +
     '<div class="bs-h">Data</div>' +
     '<button type="button" role="menuitem" data-go="backup">Impor / Ekspor</button>'
   );

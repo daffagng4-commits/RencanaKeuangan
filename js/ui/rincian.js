@@ -3,6 +3,15 @@
  */
 
 var openRows = {};
+
+/** Legenda chip di kolom "Item berkala" (dipakai juga oleh panduan yang bisa disembunyikan). */
+var RINCIAN_LEGEND =
+  '<div class="lgd">' +
+  '<span><span class="chip">Listrik ×2</span>Siklus khusus / lebih dari sekali</span>' +
+  '<span><span class="chip chg">Listrik ▲ 720rb</span>Harga beda dari harga awal (▲ naik, ▼ turun)</span>' +
+  '<span><span class="chip wr">Listrik ▲ 720rb (lonjakan)</span>Lonjakan ≥20% dari harga awal</span>' +
+  '<span><span class="chip sk">Gym</span>Dilewati bulan ini</span>' +
+  '</div>';
 var CAT_PALETTE = ['#3aa17e', '#5b8fd9', '#e08a5c', '#9c7fd0', '#d1b04a', '#4fb3bf', '#d9627f', '#7e9b3f', '#b57a52', '#6c7ae0'];
 
 /** Warna kategori yang STABIL: bergantung pada nama (tanpa beda huruf besar/kecil), bukan urutan nilai. Investasi selalu indigo, tanpa kategori abu-abu. */
@@ -69,7 +78,7 @@ function heroHtml(c, R, lead, txCount) {
     );
   };
   var plain =
-    '<div class="card m0"""><div class="sub">Sisa saldo akhir Des ' +
+    '<div class="card m0"><div class="sub">Sisa saldo akhir Des ' +
     y +
     '</div><div class="big' +
     (c.end < 0 ? ' neg' : '') +
@@ -86,78 +95,41 @@ function heroHtml(c, R, lead, txCount) {
     stat('Rata-rata per bulan', rp(c.total / R.length)) +
     stat('Bulan terberat', rp(hv.sp), MON[hv.m]) +
     stat('Bulan teringan', rp(mn.sp), MON[mn.m]) +
-    stat('Jatah jajan per bulan', rp(pos / R.length)) +
+    stat('Jatah jajan per bulan', pos ? rp(pos / R.length) : '—', c.end < 0 ? 'saldo akhir tahun minus' : '') +
     (txCount != null ? stat('Transaksi kas', String(txCount), 'sampai ' + MON[+S.startMonth || 0]) : '') +
     (lead ? '' : stat('Jatah jajan per hari', rp(pos / days))) +
     '</div></div>'
   );
 }
 
-/** Satu grafik arus kas: batang pengeluaran bulanan + garis saldo akhir, skala rupiah yang sama. */
+/** Grafik arus saldo tahun aktif: saldo akhir tiap bulan, titik aktif saat disorot. */
 function flowChart(R) {
   if (!R || !R.length) return '';
-  var W = 640,
-    H = 220,
-    padL = 46,
-    padR = 14,
-    padT = 16,
-    padB = 28,
-    plotW = W - padL - padR,
-    plotH = H - padT - padB,
-    maxSp = Math.max.apply(null, R.map(function (r) { return r.sp; }).concat([0])),
-    minAk = Math.min.apply(null, R.map(function (r) { return r.ak; })),
-    maxAk = Math.max.apply(null, R.map(function (r) { return r.ak; }));
-  var lo = Math.min(0, minAk),
-    hi = Math.max(maxSp, maxAk, 1),
-    pad = (hi - lo) * 0.12 || 500000;
-  lo -= pad;
-  hi += pad;
-  var slot = plotW / R.length,
-    barW = Math.max(8, slot * 0.46);
-  var Y = function (v) { return padT + ((hi - v) / (hi - lo)) * plotH; };
-  var X = function (i) { return padL + slot * (i + 0.5); };
-  var ax = function (v) { return (v < 0 ? '−' : '') + shortP(Math.abs(Math.round(v))); };
-  var zero = Y(0);
-  var bars = R.map(function (r, i) {
-    var y = Y(r.sp),
-      h = Math.max(0, zero - y),
-      tip = MON[r.m] + ': keluar ' + rp(r.sp) + ' · saldo akhir ' + rp(r.ak);
-    return (
-      '<rect x="' + (X(i) - barW / 2) + '" y="' + y + '" width="' + barW + '" height="' + h +
-      '" rx="3" fill="var(--ac)" opacity="0.16"><title>' + esc(tip) + '</title></rect>'
-    );
-  }).join('');
-  var pts = R.map(function (r, i) { return X(i) + ',' + Y(r.ak); }).join(' ');
-  var dots = R.map(function (r, i) {
-    var tip = MON[r.m] + ': saldo akhir ' + rp(r.ak) + ' · keluar ' + rp(r.sp);
-    return (
-      '<circle cx="' + X(i) + '" cy="' + Y(r.ak) + '" r="3.4" fill="' +
-      (r.ak < 0 ? 'var(--wr)' : 'var(--ac)') + '" stroke="var(--card)" stroke-width="1.5">' +
-      '<title>' + esc(tip) + '</title></circle>'
-    );
-  }).join('');
-  var labels = R.map(function (r, i) {
-    return '<text x="' + X(i) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="9.5" fill="var(--mut)">' + MON[r.m] + '</text>';
-  }).join('');
+  var by = {},
+    base = +S.saldo || R[0].aw || 0;
+  R.forEach(function (r) { by[r.m] = r; });
+  var pts = [];
+  for (var m = 0; m < 12; m++) {
+    var r = by[m];
+    if (r) {
+      pts.push({
+        m: r.m,
+        v: r.ak,
+        tip: MON[r.m] + ' · awal ' + rp(r.aw) + ' · keluar ' + rp(r.sp) + ' · saldo ' + rp(r.ak)
+      });
+    } else {
+      pts.push({ m: m, v: base, tip: MON[m] + ' · sebelum pencatatan · saldo ' + rp(base) });
+    }
+  }
   var low = R.reduce(function (a, b) { return b.ak < a.ak ? b : a; });
-  var total = R.reduce(function (s, r) { return s + r.sp; }, 0);
-  return (
-    '<div class="card"><div class="dflex jcsb aic fwrap g8 mb6">' +
-    '<h2 style="margin:0">Arus kas ' + S.year + '</h2>' +
-    '<span class="sub fs12">Batang = pengeluaran bulanan · garis = saldo akhir</span></div>' +
-    '<div class="sub mb8">Keluar <b>' + rp(total) + '</b> · rata-rata <b>' + rp(total / R.length) +
-    '</b>/bulan · saldo terendah <b class="' + (low.ak < 0 ? 'neg' : '') + '">' + rp(low.ak) + '</b> (' + MON[low.m] + ')</div>' +
-    '<div style="width:100%;overflow-x:auto"><svg viewBox="0 0 ' + W + ' ' + H +
-    '" style="width:100%;min-width:520px;height:auto;display:block" role="img" aria-label="Grafik arus kas ' + S.year + '">' +
-    '<line x1="' + padL + '" y1="' + zero + '" x2="' + (W - padR) + '" y2="' + zero +
-    '" stroke="var(--ln)" stroke-width="1"/>' +
-    '<text x="' + (padL - 6) + '" y="' + (Y(hi) + 4) + '" text-anchor="end" font-size="9" fill="var(--mut)">' + ax(hi) + '</text>' +
-    '<text x="' + (padL - 6) + '" y="' + (zero + 3) + '" text-anchor="end" font-size="9" fill="var(--mut)">0</text>' +
-    '<text x="' + (padL - 6) + '" y="' + (Y(lo) + 3) + '" text-anchor="end" font-size="9" fill="var(--mut)">' + ax(lo) + '</text>' +
-    bars +
-    '<polyline points="' + pts + '" fill="none" stroke="var(--ac)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>' +
-    dots + labels + '</svg></div></div>'
-  );
+  return saldoWave({
+    id: 'rincian',
+    title: 'Arus saldo ' + S.year,
+    sub: 'Saldo akhir bulan · sorot titik untuk detail',
+    aria: 'Grafik arus saldo ' + S.year,
+    pts: pts,
+    foot: 'Terendah <b class="' + (low.ak < 0 ? 'neg' : '') + '">' + rp(low.ak) + '</b> (' + MON[low.m] + ') · akhir tahun <b>' + rp(R[R.length - 1].ak) + '</b>'
+  });
 }
 
 /** Porsi pengeluaran per kategori (tahun aktif). */
@@ -414,6 +386,8 @@ function saldoHero(c, R) {
       : 'Bebas dipakai ' + rp(sf.free) + ' selama ' + sf.left + ' hari ke depan, setelah ' + sf.n + ' tagihan bulan ini (' + rp(sf.due) + (sf.inv ? ', termasuk investasi ' + rp(sf.inv) : '') + ') dibayar.';
     if (!sf.sameMonth)
       hint = '<span class="hm-hint">Bulan saldo (' + mName + ') bukan bulan ini &mdash; ubah &ldquo;Bulan saldo&rdquo; agar angka ini akurat.</span>';
+    if (!neg)
+      hint += '<div class="sub mt4">Hanya menghitung sisa ' + mName + '; tagihan bulan berikutnya belum dikurangi.</div>';
   } else {
     label = 'Saldo Realtime &middot; ' + mName;
     neg = bal < 0;
@@ -478,8 +452,12 @@ function renderRincian() {
   var table =
     '<div class="card"><h2>Rincian arus kas ' +
     y +
-    '</h2><div class="sub mb8""">Klik baris untuk melihat tanggal dan rincian tiap pembayaran. ' +
-    'Label biru (▲ naik, ▼ turun) = harga berbeda dari harga awal.</div><div class="tw"><table><thead><tr><th>Bulan</th><th>Saldo awal</th><th>Pengeluaran</th><th>Saldo akhir</th><th class="l">Item berkala</th></tr></thead><tbody>' +
+    '</h2>' +
+    gdBox(
+      'rincian',
+      '<div class="sub mb8">Klik baris bulan untuk melihat tanggal dan rincian tiap pembayaran.</div>' + RINCIAN_LEGEND
+    ) +
+    '<div class="tw"><table><thead><tr><th>Bulan</th><th>Saldo awal</th><th>Pengeluaran</th><th>Saldo akhir</th><th class="l">Item berkala</th></tr></thead><tbody>' +
     rows +
     '<tr class="tot"><td>Total</td><td></td><td data-l="Pengeluaran">' +
     rp(c.total) +
@@ -487,6 +465,7 @@ function renderRincian() {
     rp(c.end) +
     '</td><td></td></tr></tbody></table></div></div>';
   $('v-rincian').innerHTML = (S.items.length ? '' : emptyItemsHtml()) + saldoHero(c, R) + flowChart(R) + categoryHtml(c) + cicilanHtml() + table;
+  gdApply($('v-rincian'));
 }
 
 /** Baris "dilewati" pada rincian sebuah bulan. */

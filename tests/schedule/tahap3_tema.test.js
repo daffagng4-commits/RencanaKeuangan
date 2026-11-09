@@ -34,14 +34,11 @@ const { boot } = require('./ui.js');
   click($('thm'));
   assert.strictEqual(cur(), 'auto', 'setelah tema terakhir kembali ke Otomatis');
 
-  // lembar Lainnya (HP)
+  // lembar Lainnya (HP): tema tidak lagi muncul di sini
   click($('botnav').querySelector('[data-k="more"]'));
   const sh = $('botsheet');
   assert(!sh.hidden);
-  click(sh.querySelector('[data-theme-set="bwd"]'));
-  assert.strictEqual(cur(), 'bwd');
-  assert(sh.hidden, 'lembar menutup');
-  click(sh.querySelector('[data-theme-set="bwd"]') || $('thm'));
+  assert(!sh.querySelector('[data-theme-set]'), 'pilihan tema dihapus dari lembar Lainnya');
   w.setTheme('auto');
   assert.strictEqual(cur(), 'auto');
 

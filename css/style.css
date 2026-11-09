@@ -1360,6 +1360,13 @@ nav {
 .kch-x span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .kch-x span:first-child { transform: none; }
 .kch-x span:last-child { transform: translateX(-100%); }
+.lc { width: 100%; height: auto; display: block; overflow: visible; }
+.lc .lc-v { opacity: 0; stroke: var(--mut); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; transition: opacity .12s; }
+.lc .lc-d { opacity: 0; fill: var(--ac); stroke: var(--card); stroke-width: 2; transition: opacity .12s; }
+.lc .lc-d.neg { fill: var(--wr); }
+.lc .lc-p:hover .lc-v, .lc .lc-p:hover .lc-d, .lc .lc-p:focus-within .lc-v, .lc .lc-p:focus-within .lc-d { opacity: 1; }
+.lc .lc-hit:focus { outline: none; }
+.lc-foot { margin-top: 6px; }
 
 /* ===== Tema hitam-putih & panduan ===== */
 :root[data-theme="bw"] {
@@ -1390,6 +1397,8 @@ button.gdt {
 }
 button.gdt[aria-expanded="true"] { background: transparent; border-color: var(--ln); }
 .gdc[hidden] { display: none; }
+.tut { margin: 2px 0 6px 18px; padding: 0; }
+.tut li { margin: 3px 0; }
 /* ===== Perjalanan ===== */
 .itm { display: grid; grid-template-columns: 52px 1fr auto; gap: 10px; padding: 10px 0; border-top: 1px solid var(--ln); align-items: start; }
 .itm .tm { font-variant-numeric: tabular-nums; color: var(--mut); font-size: 12.5px; font-weight: 700; text-align: right; line-height: 1.3; }

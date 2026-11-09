@@ -48,13 +48,10 @@ function sheetHtml() {
     '<div class="bs-h">Rencana</div>' +
     (tripOn() ? '<button type="button" role="menuitem" data-go="item">Kelola Item</button>' : '') +
     '<button type="button" role="menuitem" data-go="sim">Simulasi</button>' +
+    '<button type="button" role="menuitemcheckbox" data-trip-toggle aria-checked="false">Tampilkan Perjalanan</button>' +
     '<div class="bs-h">Alat</div>' +
     '<a role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span>' + ext + '</a>' +
     '<a role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span>' + ext + '</a>' +
-    '<div class="bs-h">Tampilan</div>' +
-    '<button type="button" role="menuitemradio" data-theme-set="bw" aria-checked="false">Hitam-putih</button>' +
-    '<button type="button" role="menuitemradio" data-theme-set="bwd" aria-checked="false">Hitam-putih gelap</button>' +
-    '<button type="button" role="menuitemcheckbox" data-trip-toggle aria-checked="false">Tampilkan Perjalanan</button>' +
     '<div class="bs-h">Data</div>' +
     '<button type="button" role="menuitem" data-go="backup">Impor / Ekspor</button>'
   );

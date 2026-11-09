@@ -29,7 +29,7 @@ const { boot } = require('./ui.js');
   assert(!/Investasi \(aset\)/.test(hero), 'statistik investasi dihapus: ' + hero);
   assert(!/Di luar investasi/.test(hero), 'pengeluaran di luar investasi dihapus');
   assert(!$('v-rincian').querySelector('a.lnk[href*="rebalance"]'), 'tautan Rebalance dihapus');
-  assert($('v-rincian').querySelector('svg[aria-label^="Grafik arus kas"]'), 'satu grafik arus kas tampil');
+  assert($('v-rincian').querySelector('svg[aria-label^="Grafik arus saldo"]'), 'satu grafik arus saldo tampil');
   assert(!$('v-rincian').querySelector('.agenda'), 'kartu agenda dihapus');
 
   // ---------- 2. Navigasi ----------

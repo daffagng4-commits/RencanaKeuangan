@@ -25,6 +25,17 @@ function cicilanHtml() {
     '<div class="sub">Sisa <b class="pv">' + rp(sisa) + '</b> dari ' + L.length + ' item yang belum lunas' + (utang ? ' (' + utang + ' utang, ' + (L.length - utang) + ' langganan berjangka)' : '') + '. Semua selesai paling lambat <b>' + ym(akhir) + '</b>.</div>' +
     '<div class="sub mt4">Berikutnya lunas: <b>' + esc(nx.it.name) + '</b> pada ' + ym(nx.last) + '. Setelah itu tagihan ini berhenti.</div>' +
     '<div class="sub mt4">Utang = item yang diisi <b>pokok pinjaman</b> di Kelola Item. Item tanpa pokok dihitung sebagai langganan berjangka.</div>' +
+    gdBox(
+      'utang',
+      '<ol class="tut">' +
+        '<li>Buka <b>Kelola Item</b> &rarr; Tambah item.</li>' +
+        '<li>Isi <b>harga cicilan</b> dan siklusnya, mis. <b>1.500.000</b> tiap <b>1 bulan</b>.</li>' +
+        '<li>Pilih <b>Berhenti</b> &rarr; <b>Setelah beberapa kali bayar</b>, lalu isi total tenor, mis. <b>24</b>.</li>' +
+        '<li>Isi <b>Pokok pinjaman</b> = uang yang dipinjam, mis. <b>30.000.000</b>. Ini bukan harga cicilan; dipakai menghitung total bayar dan biaya tambahan.</li>' +
+        '<li>Tandai tiap cicilan lunas di <b>Jadwal pembayaran</b>. Sisa dan progres di kartu ini ikut turun.</li>' +
+      '</ol>' +
+      '<div class="sub">Contoh: pinjam 30 jt, cicil 1,5 jt/bulan selama 24 bulan. Isi pokok 30 jt; aplikasi menghitung total bayar 36 jt dan biaya tambahan 6 jt (20%).</div>'
+    ) +
     L.map(function (x) {
       var pc = Math.round((x.paidN / x.n) * 100);
       return (

@@ -61,11 +61,19 @@ const { boot } = require('./ui.js');
   ev(row, 'pointerout');
   click($('btn-privacy'));
 
-  // grafik: satu grafik arus kas dengan titik + batang bertooltip
-  const dots = $('v-rincian').querySelectorAll('svg[aria-label^="Grafik arus kas"] circle');
+  // grafik: satu grafik arus saldo dengan 12 titik + area hover bertooltip
+  const dots = $('v-rincian').querySelectorAll('svg[aria-label^="Grafik arus saldo"] circle.lc-d');
   assert.strictEqual(dots.length, 12, '12 titik saldo akhir');
-  assert(/saldo akhir/.test(dots[0].querySelector('title').textContent), dots[0].querySelector('title').textContent);
-  assert.strictEqual($('v-rincian').querySelectorAll('svg[aria-label^="Grafik arus kas"] rect title').length, 12, '12 batang punya tooltip');
+  const hits = $('v-rincian').querySelectorAll('svg[aria-label^="Grafik arus saldo"] rect[data-tip]');
+  assert.strictEqual(hits.length, 12, '12 area hover punya tooltip');
+  assert(/saldo Rp/.test(hits[0].dataset.tip), hits[0].dataset.tip);
+  w.S.startMonth = 10;
+  w.renderAll();
+  const part = $('v-rincian').querySelectorAll('svg[aria-label^="Grafik arus saldo"] rect[data-tip]');
+  assert.strictEqual(part.length, 12, 'grafik tetap 12 bulan walau mulai November');
+  assert(/sebelum pencatatan/.test(part[0].dataset.tip), part[0].dataset.tip);
+  w.S.startMonth = 0;
+  w.renderAll();
   w.kasLinked().tx = [{ id: 'g', d: '2026-12-01', t: '+', amt: 3000000, cat: 'Gaji', note: 'Gaji' }];
   w.S.items.push(it({ id: 'd', name: 'Cicilan', price: 700000, unit: 'sekali', start: '2026-11-20' }));
   w.renderAll();
