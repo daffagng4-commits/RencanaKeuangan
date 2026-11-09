@@ -102,33 +102,60 @@ function heroHtml(c, R, lead, txCount) {
   );
 }
 
-/** Grafik arus saldo tahun aktif: saldo akhir tiap bulan, titik aktif saat disorot. */
+/** Grafik arus saldo: perubahan saldo dari tanggal paling awal sampai paling akhir di catatan kas / jadwal bayar. */
 function flowChart(R) {
-  if (!R || !R.length) return '';
-  var by = {},
-    base = +S.saldo || R[0].aw || 0;
-  R.forEach(function (r) { by[r.m] = r; });
-  var pts = [];
-  for (var m = 0; m < 12; m++) {
-    var r = by[m];
-    if (r) {
-      pts.push({
-        m: r.m,
-        v: r.ak,
-        tip: MON[r.m] + ' · awal ' + rp(r.aw) + ' · keluar ' + rp(r.sp) + ' · saldo ' + rp(r.ak)
-      });
-    } else {
-      pts.push({ m: m, v: base, tip: MON[m] + ' · sebelum pencatatan · saldo ' + rp(base) });
-    }
+  var P = kasLinked();
+  if (!P) return '';
+  var base = kasBase(P),
+    ev = [];
+  kasRows(P).forEach(function (x) {
+    ev.push({ d: x.d, delta: x.t === '+' ? x.amt : -x.amt, label: x.note || x.cat || 'Transaksi' });
+  });
+  var y = +S.year;
+  S.items.forEach(function (it) {
+    occ(it, y).forEach(function (t) {
+      var d = isoD(t),
+        k = it.id + '|' + d;
+      if (S.paid[k] || S.skip[k]) return; // yang lunas sudah ada di kasRows
+      ev.push({ d: d, delta: -priceAt(it, t), label: it.name });
+    });
+  });
+  if (!ev.length) return '';
+  ev.sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; });
+  var start = ev[0].d,
+    end = ev[ev.length - 1].d,
+    by = {};
+  ev.forEach(function (e) {
+    (by[e.d] = by[e.d] || []).push(e);
+  });
+  var dd = function (d) {
+      var z = new Date(d + 'T00:00:00Z');
+      return z.getUTCDate() + ' ' + MON[z.getUTCMonth()];
+    },
+    pts = [],
+    bal = base;
+  for (var t = Date.parse(start + 'T00:00:00Z'), last = Date.parse(end + 'T00:00:00Z'); t <= last; t += 864e5) {
+    var d = isoD(t),
+      day = by[d] || [];
+    day.forEach(function (e) { bal += e.delta; });
+    var what = day.map(function (e) {
+      return (e.delta > 0 ? '+ ' : '− ') + rp(Math.abs(e.delta)) + ' ' + e.label;
+    }).join(' · ');
+    pts.push({
+      d: d,
+      v: bal,
+      tip: dd(d) + ' · ' + (what ? what + ' · ' : '') + 'saldo ' + rp(bal)
+    });
   }
-  var low = R.reduce(function (a, b) { return b.ak < a.ak ? b : a; });
-  return saldoWave({
+  if (pts.length < 2) return '';
+  var low = pts.reduce(function (a, b) { return b.v < a.v ? b : a; });
+  return saldoLine({
     id: 'rincian',
     title: 'Arus saldo ' + S.year,
-    sub: 'Saldo akhir bulan · sorot titik untuk detail',
+    sub: 'Perubahan saldo · ' + dd(start) + ' – ' + dd(end),
     aria: 'Grafik arus saldo ' + S.year,
     pts: pts,
-    foot: 'Terendah <b class="' + (low.ak < 0 ? 'neg' : '') + '">' + rp(low.ak) + '</b> (' + MON[low.m] + ') · akhir tahun <b>' + rp(R[R.length - 1].ak) + '</b>'
+    foot: 'Terendah <b class="' + (low.v < 0 ? 'neg' : '') + '">' + rp(low.v) + '</b> (' + dd(low.d) + ') · saldo terakhir <b>' + rp(pts[pts.length - 1].v) + '</b>'
   });
 }
 
@@ -383,7 +410,7 @@ function saldoHero(c, R) {
     big = neg ? '&minus;' + rp(Math.abs(sf.free)) + '<small>kurang</small>' : rp(sf.perDay) + '<small>/ hari</small>';
     sub = neg
       ? 'Saldo ' + rp(bal) + ' belum cukup untuk ' + sf.n + ' tagihan sampai akhir bulan (butuh ' + rp(sf.due) + (sf.inv ? ', termasuk investasi ' + rp(sf.inv) : '') + ').'
-      : 'Bebas dipakai ' + rp(sf.free) + ' selama ' + sf.left + ' hari ke depan, setelah ' + sf.n + ' tagihan bulan ini (' + rp(sf.due) + (sf.inv ? ', termasuk investasi ' + rp(sf.inv) : '') + ') dibayar.';
+      : '';
     if (!sf.sameMonth)
       hint = '<span class="hm-hint">Bulan saldo (' + mName + ') bukan bulan ini &mdash; ubah &ldquo;Bulan saldo&rdquo; agar angka ini akurat.</span>';
     if (!neg)
@@ -464,7 +491,7 @@ function renderRincian() {
     '</td><td data-l="Saldo akhir">' +
     rp(c.end) +
     '</td><td></td></tr></tbody></table></div></div>';
-  $('v-rincian').innerHTML = (S.items.length ? '' : emptyItemsHtml()) + saldoHero(c, R) + flowChart(R) + categoryHtml(c) + cicilanHtml() + table;
+  $('v-rincian').innerHTML = (S.items.length ? '' : emptyItemsHtml()) + saldoHero(c, R) + flowChart(R) + categoryHtml(c) + table;
   gdApply($('v-rincian'));
 }
 

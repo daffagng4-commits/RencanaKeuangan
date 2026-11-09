@@ -169,7 +169,11 @@ function bindNav() {
       sheet(false);
       if (b.dataset.go === 'backup') document.getElementById('bk').click();
       else navGo(b.dataset.go);
-    } else if (e.target.closest('a') || e.target.closest('[data-theme-set]') || e.target.closest('[data-trip-toggle]')) sheet(false);
+    } else if (e.target.closest('[data-trip-toggle]')) {
+      e.stopPropagation();
+      setTripVisible(!tripOn());
+      sheet(false);
+    } else if (e.target.closest('a') || e.target.closest('[data-theme-set]')) sheet(false);
   };
   document.addEventListener('click', function (e) {
     var g = e.target.closest('[data-goto]');

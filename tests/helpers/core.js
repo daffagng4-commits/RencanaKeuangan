@@ -24,7 +24,7 @@ function loadCore(extra) {
       extra,
     ),
   );
-  ['util', 'schedule', 'state', 'items', 'calc', 'csv', 'reminders', 'match', 'cicilan'].forEach((f) =>
+  ['util', 'schedule', 'state', 'items', 'calc', 'csv', 'reminders', 'match'].forEach((f) =>
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', 'core', f + '.js'), 'utf8'), ctx, { filename: f + '.js' }),
   );
   // calc() memanggil fungsi Catatan Kas yang hidup di js/ui/ (butuh DOM). Di sini dipakai cerminan minimalnya;

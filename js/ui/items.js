@@ -106,7 +106,6 @@ function fItem() {
     start: $('f-start').value,
     end: st === 'date' ? $('f-end').value : '',
     cnt: st === 'cnt' ? Math.max(0, parseInt($('f-cnt').value, 10) || 0) : 0,
-    pokok: st === 'none' ? 0 : parseRp($('f-pokok').value),
     cat: $('f-cat').value.trim().slice(0, 30),
   };
 }
@@ -149,7 +148,6 @@ function resetForm() {
   $('f-stop').value = 'none';
   $('f-end').value = '';
   $('f-cnt').value = '';
-  $('f-pokok').value = '';
   $('f-cat').value = '';
   stopUI();
   $('cancel').hidden = true;
@@ -162,7 +160,6 @@ function stopUI() {
   var v = $('f-stop').value;
   $('w-end').hidden = v !== 'date';
   $('w-cnt').hidden = v !== 'cnt';
-  $('w-pokok').hidden = v === 'none';
 }
 
 /** Harga item + jumlah perubahan, untuk daftar. */
@@ -220,7 +217,6 @@ function editItem(it) {
   $('f-stop').value = it.cnt ? 'cnt' : it.end ? 'date' : 'none';
   $('f-end').value = it.end || '';
   $('f-cnt').value = it.cnt || '';
-  $('f-pokok').value = it.pokok ? it.pokok.toLocaleString('id-ID') : '';
   $('f-cat').value = it.cat || '';
   stopUI();
   $('cancel').hidden = false;
@@ -336,9 +332,6 @@ function bindItems() {
     stopUI();
     preview();
   };
-  $('f-pokok').addEventListener('input', function () {
-    fmtLive(this);
-  });
   ['f-end', 'f-cnt'].forEach(function (i) {
     $(i).oninput = preview;
     $(i).onchange = preview;

@@ -1550,6 +1550,36 @@ button.alat-item { width: 100%; border: 0; background: transparent; text-align: 
 .w100 { width:100% !important; }
 .wauto { width:auto !important; }
 [data-md][hidden] { display: none !important; }
+
+/* Filter riwayat kas */
+.kflt { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:0 0 10px; }
+.kflt label { display:block; font-size:11px; color:var(--mut); margin:0 0 3px; }
+@media (max-width:640px) { .kflt { grid-template-columns:1fr 1fr; } .kflt > div:last-child { grid-column:1 / -1; } }
+.daysep { display:flex; align-items:center; gap:8px; margin:12px 0 6px; font-size:11px; color:var(--mut); }
+.daysep::after { content:''; flex:1; height:1px; background:var(--ln); }
+.daysep span { font-weight:600; }
+
+/* Pie pemasukan vs pengeluaran */
+.pie-wrap { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+.pie { width:132px; height:132px; border-radius:50%; display:grid; place-items:center; position:relative; flex:0 0 auto; }
+.pie::after { content:''; position:absolute; inset:18px; background:var(--card); border-radius:50%; }
+.pie span { position:relative; z-index:1; font-weight:700; font-size:22px; }
+.pie-lg { display:flex; flex-direction:column; gap:8px; font-size:13px; }
+.pie-lg span { display:flex; align-items:center; gap:7px; }
+.pie-lg i { width:10px; height:10px; border-radius:3px; display:inline-block; flex:0 0 auto; }
+
+/* Utang & piutang dari kas */
+.kdebt { border-top:1px dashed var(--ln); padding-top:10px; margin-top:2px; }
+.kdebt .ck { display:flex; align-items:center; gap:7px; font-size:13px; cursor:pointer; }
+.kdebt .ck input { width:auto; margin:0; }
+.debt-sum { display:flex; gap:24px; flex-wrap:wrap; margin:0 0 10px; }
+.debt-sum div { display:flex; flex-direction:column; gap:2px; }
+.debt-sum span { font-size:11px; color:var(--mut); }
+.debt-sum b { font-size:17px; }
+.debt-row { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--ln); }
+.debt-row > div { display:flex; flex-direction:column; gap:2px; }
+.debt-row > div:last-child { flex-direction:row; align-items:center; white-space:nowrap; }
+.debt-row .sub { font-size:11px; }
 </style>
 </head>
 <body>
@@ -1602,7 +1632,7 @@ button.alat-item { width: 100%; border: 0; background: transparent; text-align: 
       <input class="fx1" id="q-input" placeholder="mis. Netflix 186k tiap tgl 15 · Listrik 350k tiap bulan · Gym 300k tiap 2 minggu mulai 2027-02-05">
       <button class="p nowrap" id="q-btn" type="button">+ Tambah</button>
     </div>
-    <div class="sub mt8 fs12">Format: <code>[Nama] [Nominal] [Siklus] [Tanggal]</code> &middot; Contoh: <code>Netflix 186k tiap tgl 15</code>, <code>Gym 300k tiap 2 minggu mulai 2027-02-05</code>, <code>Pajak 1.2jt tiap tahun 10 november 2026</code>, <code>Kado 500k sekali 2027-06-15</code>. Butuh kategori, tanggal berhenti, atau pokok pinjaman? Pakai form lengkap di bawah.</div>
+    <div class="sub mt8 fs12">Format: <code>[Nama] [Nominal] [Siklus] [Tanggal]</code> &middot; Contoh: <code>Netflix 186k tiap tgl 15</code>, <code>Gym 300k tiap 2 minggu mulai 2027-02-05</code>, <code>Pajak 1.2jt tiap tahun 10 november 2026</code>, <code>Kado 500k sekali 2027-06-15</code>. Butuh kategori atau tanggal berhenti? Pakai form lengkap di bawah.</div>
     <div class="err" id="q-err"></div>
   </div>
   <div class="card">
@@ -1615,7 +1645,6 @@ button.alat-item { width: 100%; border: 0; background: transparent; text-align: 
           <option value="bulan">bulan</option><option value="tahun">tahun</option><option value="minggu">minggu</option><option value="hari">hari</option><option value="sekali">sekali saja</option></select></div></div>
       <div><label for="f-start">Mulai tanggal</label><input id="f-start" type="date"></div>
       <div class="full" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><label for="f-stop">Berhenti</label><select id="f-stop"><option value="none">Tidak berhenti</option><option value="date">Sampai tanggal</option><option value="cnt">Setelah beberapa kali bayar</option></select></div><div><label for="f-cat">Kategori (opsional)</label><input id="f-cat" list="catlist" maxlength="30" placeholder="mis. Langganan"><datalist id="catlist"></datalist></div><div id="w-end" hidden style="grid-column:1/-1"><label for="f-end">Pembayaran terakhir paling lambat</label><input id="f-end" type="date"></div><div id="w-cnt" hidden style="grid-column:1/-1"><label for="f-cnt">Total jumlah kali bayar</label><input id="f-cnt" type="number" min="1" placeholder="mis. 12"><div class="sub mt4">Dihitung sejak tanggal mulai, termasuk tahun-tahun sebelumnya.</div></div></div>
-      <div class="full" id="w-pokok" hidden><label for="f-pokok">Pokok pinjaman (opsional)</label><input id="f-pokok" inputmode="numeric" placeholder="mis. 12.000.000"><div class="sub mt4">Diisi bila ini cicilan/utang: dipakai untuk menghitung total bunga atau biaya, dan tampil di kartu Cicilan &amp; utang.</div></div>
       <div class="full prev" id="prev"></div>
     </div>
     <div class="err" id="err"></div>
@@ -1761,7 +1790,6 @@ button.alat-item { width: 100%; border: 0; background: transparent; text-align: 
 <div class="modal" id="lg" role="dialog" aria-modal="true" hidden><div class="card"><h2>Masuk untuk sinkron</h2><p class="sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p><label for="le">Email</label><input id="le" type="email" autocomplete="email"><label class="mt10" for="lp"">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="err" id="lm"></div><div class="row2"><button class="p" id="lin">Masuk</button><button class="c" id="lgc">Tutup</button></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
-
 <script>
 /* ===== js/config.js ===== */
 /**
@@ -3260,57 +3288,6 @@ function realisasiData() {
   return { months: months, rows: rows, planPaid: tot.planPaid, act: tot.act, nPaid: tot.nPaid, nReal: tot.nReal, late: late };
 }
 
-/* ===== js/core/cicilan.js ===== */
-/**
- * Cicilan & utang: item berjadwal terbatas (berhenti setelah N kali bayar atau sampai tanggal tertentu).
- * Menghitung kemajuan, sisa kewajiban, tanggal lunas, dan (bila "pokok pinjaman" diisi) total bunga/biaya.
- * Status lunas dibaca dari data tiap tahun; tahun yang TIDAK ada datanya dan sudah lewat dianggap lunas
- * (pembayaran sebelum aplikasi dipakai), tahun mendatang tanpa data dianggap belum lunas. Tagihan yang dilewati tidak dihitung.
- * @returns urut dari yang paling cepat selesai: {it, n, paidN, paidSum, remN, remSum, total, last, next, assumed, pokok, bunga}
- */
-function cicilanData() {
-  var todayMs = Date.parse(todayISO() + 'T00:00:00Z'),
-    far = Date.UTC(+S.year + 12, 11, 31),
-    out = [];
-  S.items.forEach(function (it) {
-    if (it.unit === 'sekali' || !(+it.cnt > 0 || it.end)) return;
-    var n = 0,
-      paidN = 0,
-      paidSum = 0,
-      remN = 0,
-      remSum = 0,
-      total = 0,
-      assumed = 0,
-      next = null,
-      last = null;
-    series(it, far).forEach(function (t) {
-      var Yd = ALL.data[new Date(t).getUTCFullYear()],
-        key = it.id + '|' + isoD(t);
-      if (Yd && Yd.skip && Yd.skip[key]) return;
-      var price = priceAt(it, t),
-        paid = Yd ? !!(Yd.paid && Yd.paid[key]) : t < todayMs;
-      if (!Yd && t < todayMs) assumed++;
-      n++;
-      total += price;
-      last = t;
-      if (paid) {
-        paidN++;
-        paidSum += price;
-      } else {
-        remN++;
-        remSum += price;
-        if (next === null) next = t;
-      }
-    });
-    if (!n) return;
-    var pokok = +it.pokok || 0;
-    out.push({ it: it, n: n, paidN: paidN, paidSum: paidSum, remN: remN, remSum: remSum, total: total, last: last, next: next, assumed: assumed, pokok: pokok, bunga: pokok > 0 && total > pokok ? total - pokok : 0 });
-  });
-  return out.sort(function (a, b) {
-    return a.last - b.last;
-  });
-}
-
 /* ===== js/core/csv.js ===== */
 /**
  * Baca/tulis CSV (murni).
@@ -3610,11 +3587,12 @@ function syncUI() {
 
 /* ===== js/ui/chart.js ===== */
 /**
- * Grafik garis saldo bulanan: 12 titik, crosshair + tooltip saat kursor/fokus di area grafik.
- * o = {id, title, sub, aria, pts:[{m, v, tip}], foot}
+ * Grafik garis saldo per tanggal: sumbu x memakai tanggal asli, crosshair + tooltip
+ * saat kursor/fokus di area grafik.
+ * o = {id, title, sub, aria, pts:[{d, v, tip}], foot}
  */
-function saldoWave(o) {
-  var P = o.pts || [];
+function saldoLine(o) {
+  var P = (o.pts || []).slice();
   if (P.length < 2) return '';
   var W = 720,
     H = 238,
@@ -3633,28 +3611,39 @@ function saldoWave(o) {
   var pad = (hi - lo) * 0.14 || 1;
   lo -= pad;
   hi += pad;
-  var X = function (i) { return padL + (plotW * i) / (P.length - 1); },
+  var t0 = Date.parse(P[0].d + 'T00:00:00Z'),
+    t1 = Date.parse(P[P.length - 1].d + 'T00:00:00Z');
+  if (!(t1 > t0)) t1 = t0 + 864e5;
+  var X = function (d) { return padL + (plotW * (Date.parse(d + 'T00:00:00Z') - t0)) / (t1 - t0); },
     Y = function (v) { return padT + ((hi - v) / (hi - lo)) * plotH; },
     ax = function (v) { return (v < 0 ? '−' : '') + shortP(Math.abs(v)); },
     zero = Y(0),
-    line = 'M' + P.map(function (p, i) { return X(i).toFixed(1) + ' ' + Y(p.v).toFixed(1); }).join(' L'),
-    area = line + ' L' + X(P.length - 1).toFixed(1) + ' ' + (padT + plotH) + ' L' + padL + ' ' + (padT + plotH) + ' Z',
-    slot = plotW / (P.length - 1),
+    line = 'M' + P.map(function (p) { return X(p.d).toFixed(1) + ' ' + Y(p.v).toFixed(1); }).join(' L'),
+    area = line + ' L' + X(P[P.length - 1].d).toFixed(1) + ' ' + (padT + plotH) + ' L' + padL + ' ' + (padT + plotH) + ' Z',
     gid = 'lcg-' + (o.id || 'x');
   var groups = P.map(function (p, i) {
-    var x = X(i),
-      left = i ? x - slot / 2 : padL,
-      right = i < P.length - 1 ? x + slot / 2 : W - padR;
+    var x = X(p.d),
+      left = i ? (X(P[i - 1].d) + x) / 2 : padL,
+      right = i < P.length - 1 ? (x + X(P[i + 1].d)) / 2 : W - padR;
     return (
       '<g class="lc-p"><rect class="lc-hit" x="' + left.toFixed(1) + '" y="' + padT + '" width="' + Math.max(1, right - left).toFixed(1) + '" height="' + plotH + '" fill="transparent" tabindex="0" data-tip="' + esc(p.tip) + '"></rect>' +
       '<line class="lc-v" x1="' + x.toFixed(1) + '" y1="' + padT + '" x2="' + x.toFixed(1) + '" y2="' + (padT + plotH) + '"></line>' +
       '<circle class="lc-d' + (p.v < 0 ? ' neg' : '') + '" cx="' + x.toFixed(1) + '" cy="' + Y(p.v).toFixed(1) + '" r="4.5" data-tip="' + esc(p.tip) + '"></circle></g>'
     );
   }).join('');
-  var labels = P.map(function (p, i) {
-    var a = i === 0 ? 'start' : i === P.length - 1 ? 'end' : 'middle';
-    return '<text x="' + X(i).toFixed(1) + '" y="' + (H - 9) + '" text-anchor="' + a + '" font-size="8.8" fill="var(--mut)">' + MON[p.m] + '</text>';
-  }).join('');
+  var multiYear = P[0].d.slice(0, 4) !== P[P.length - 1].d.slice(0, 4),
+    dlabel = function (d) {
+      var z = new Date(d + 'T00:00:00Z');
+      return z.getUTCDate() + ' ' + MON[z.getUTCMonth()] + (multiYear ? ' ' + d.slice(2, 4) : '');
+    },
+    li = [0, Math.round((P.length - 1) * 0.25), Math.round((P.length - 1) * 0.5), Math.round((P.length - 1) * 0.75), P.length - 1],
+    seenL = {},
+    labels = li.map(function (i) {
+      if (seenL[i]) return '';
+      seenL[i] = 1;
+      var a = i === 0 ? 'start' : i === P.length - 1 ? 'end' : 'middle';
+      return '<text x="' + X(P[i].d).toFixed(1) + '" y="' + (H - 9) + '" text-anchor="' + a + '" font-size="8.8" fill="var(--mut)">' + dlabel(P[i].d) + '</text>';
+    }).join('');
   var yv = [mx, 0, mn],
     seen = {},
     grid = yv.map(function (v) {
@@ -3783,33 +3772,60 @@ function heroHtml(c, R, lead, txCount) {
   );
 }
 
-/** Grafik arus saldo tahun aktif: saldo akhir tiap bulan, titik aktif saat disorot. */
+/** Grafik arus saldo: perubahan saldo dari tanggal paling awal sampai paling akhir di catatan kas / jadwal bayar. */
 function flowChart(R) {
-  if (!R || !R.length) return '';
-  var by = {},
-    base = +S.saldo || R[0].aw || 0;
-  R.forEach(function (r) { by[r.m] = r; });
-  var pts = [];
-  for (var m = 0; m < 12; m++) {
-    var r = by[m];
-    if (r) {
-      pts.push({
-        m: r.m,
-        v: r.ak,
-        tip: MON[r.m] + ' · awal ' + rp(r.aw) + ' · keluar ' + rp(r.sp) + ' · saldo ' + rp(r.ak)
-      });
-    } else {
-      pts.push({ m: m, v: base, tip: MON[m] + ' · sebelum pencatatan · saldo ' + rp(base) });
-    }
+  var P = kasLinked();
+  if (!P) return '';
+  var base = kasBase(P),
+    ev = [];
+  kasRows(P).forEach(function (x) {
+    ev.push({ d: x.d, delta: x.t === '+' ? x.amt : -x.amt, label: x.note || x.cat || 'Transaksi' });
+  });
+  var y = +S.year;
+  S.items.forEach(function (it) {
+    occ(it, y).forEach(function (t) {
+      var d = isoD(t),
+        k = it.id + '|' + d;
+      if (S.paid[k] || S.skip[k]) return; // yang lunas sudah ada di kasRows
+      ev.push({ d: d, delta: -priceAt(it, t), label: it.name });
+    });
+  });
+  if (!ev.length) return '';
+  ev.sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; });
+  var start = ev[0].d,
+    end = ev[ev.length - 1].d,
+    by = {};
+  ev.forEach(function (e) {
+    (by[e.d] = by[e.d] || []).push(e);
+  });
+  var dd = function (d) {
+      var z = new Date(d + 'T00:00:00Z');
+      return z.getUTCDate() + ' ' + MON[z.getUTCMonth()];
+    },
+    pts = [],
+    bal = base;
+  for (var t = Date.parse(start + 'T00:00:00Z'), last = Date.parse(end + 'T00:00:00Z'); t <= last; t += 864e5) {
+    var d = isoD(t),
+      day = by[d] || [];
+    day.forEach(function (e) { bal += e.delta; });
+    var what = day.map(function (e) {
+      return (e.delta > 0 ? '+ ' : '− ') + rp(Math.abs(e.delta)) + ' ' + e.label;
+    }).join(' · ');
+    pts.push({
+      d: d,
+      v: bal,
+      tip: dd(d) + ' · ' + (what ? what + ' · ' : '') + 'saldo ' + rp(bal)
+    });
   }
-  var low = R.reduce(function (a, b) { return b.ak < a.ak ? b : a; });
-  return saldoWave({
+  if (pts.length < 2) return '';
+  var low = pts.reduce(function (a, b) { return b.v < a.v ? b : a; });
+  return saldoLine({
     id: 'rincian',
     title: 'Arus saldo ' + S.year,
-    sub: 'Saldo akhir bulan · sorot titik untuk detail',
+    sub: 'Perubahan saldo · ' + dd(start) + ' – ' + dd(end),
     aria: 'Grafik arus saldo ' + S.year,
     pts: pts,
-    foot: 'Terendah <b class="' + (low.ak < 0 ? 'neg' : '') + '">' + rp(low.ak) + '</b> (' + MON[low.m] + ') · akhir tahun <b>' + rp(R[R.length - 1].ak) + '</b>'
+    foot: 'Terendah <b class="' + (low.v < 0 ? 'neg' : '') + '">' + rp(low.v) + '</b> (' + dd(low.d) + ') · saldo terakhir <b>' + rp(pts[pts.length - 1].v) + '</b>'
   });
 }
 
@@ -4064,7 +4080,7 @@ function saldoHero(c, R) {
     big = neg ? '&minus;' + rp(Math.abs(sf.free)) + '<small>kurang</small>' : rp(sf.perDay) + '<small>/ hari</small>';
     sub = neg
       ? 'Saldo ' + rp(bal) + ' belum cukup untuk ' + sf.n + ' tagihan sampai akhir bulan (butuh ' + rp(sf.due) + (sf.inv ? ', termasuk investasi ' + rp(sf.inv) : '') + ').'
-      : 'Bebas dipakai ' + rp(sf.free) + ' selama ' + sf.left + ' hari ke depan, setelah ' + sf.n + ' tagihan bulan ini (' + rp(sf.due) + (sf.inv ? ', termasuk investasi ' + rp(sf.inv) : '') + ') dibayar.';
+      : '';
     if (!sf.sameMonth)
       hint = '<span class="hm-hint">Bulan saldo (' + mName + ') bukan bulan ini &mdash; ubah &ldquo;Bulan saldo&rdquo; agar angka ini akurat.</span>';
     if (!neg)
@@ -4145,7 +4161,7 @@ function renderRincian() {
     '</td><td data-l="Saldo akhir">' +
     rp(c.end) +
     '</td><td></td></tr></tbody></table></div></div>';
-  $('v-rincian').innerHTML = (S.items.length ? '' : emptyItemsHtml()) + saldoHero(c, R) + flowChart(R) + categoryHtml(c) + cicilanHtml() + table;
+  $('v-rincian').innerHTML = (S.items.length ? '' : emptyItemsHtml()) + saldoHero(c, R) + flowChart(R) + categoryHtml(c) + table;
   gdApply($('v-rincian'));
 }
 
@@ -4321,62 +4337,6 @@ function realisasiHtml() {
     (D.late.n && +S.year === +todayISO().slice(0, 4)
       ? '<div class="err mt10""">' + D.late.n + ' tagihan sudah lewat jatuh tempo dan belum lunas (' + rp(D.late.sum) + ').</div>'
       : '') +
-    '</div>'
-  );
-}
-
-/* ===== js/ui/cicilan.js ===== */
-/** Kartu "Cicilan & utang" di Rincian Bulanan (logika di js/core/cicilan.js). Tersembunyi bila tidak ada cicilan yang masih berjalan. */
-
-/** Label "per ..." untuk jadwal item. */
-function perLabel(it) {
-  var U = { hari: 'hari', minggu: 'minggu', bulan: 'bulan', tahun: 'tahun' };
-  return it.n === 1 ? U[it.unit] : it.n + ' ' + U[it.unit];
-}
-
-function cicilanHtml() {
-  var L = cicilanData().filter(function (x) {
-    return x.remN > 0;
-  });
-  if (!L.length) return '';
-  var sisa = L.reduce(function (a, x) {
-      return a + x.remSum;
-    }, 0),
-    utang = L.filter(function (x) { return x.pokok > 0; }).length,
-    akhir = L[L.length - 1].last,
-    nx = L[0],
-    ym = function (t) {
-      return fd(t, { month: 'long', year: 'numeric' });
-    };
-  return (
-    '<div class="card cicilan"><h2>Utang &amp; cicilan</h2>' +
-    '<div class="sub">Sisa <b class="pv">' + rp(sisa) + '</b> dari ' + L.length + ' item yang belum lunas' + (utang ? ' (' + utang + ' utang, ' + (L.length - utang) + ' langganan berjangka)' : '') + '. Semua selesai paling lambat <b>' + ym(akhir) + '</b>.</div>' +
-    '<div class="sub mt4">Berikutnya lunas: <b>' + esc(nx.it.name) + '</b> pada ' + ym(nx.last) + '. Setelah itu tagihan ini berhenti.</div>' +
-    '<div class="sub mt4">Utang = item yang diisi <b>pokok pinjaman</b> di Kelola Item. Item tanpa pokok dihitung sebagai langganan berjangka.</div>' +
-    gdBox(
-      'utang',
-      '<ol class="tut">' +
-        '<li>Buka <b>Kelola Item</b> &rarr; Tambah item.</li>' +
-        '<li>Isi <b>harga cicilan</b> dan siklusnya, mis. <b>1.500.000</b> tiap <b>1 bulan</b>.</li>' +
-        '<li>Pilih <b>Berhenti</b> &rarr; <b>Setelah beberapa kali bayar</b>, lalu isi total tenor, mis. <b>24</b>.</li>' +
-        '<li>Isi <b>Pokok pinjaman</b> = uang yang dipinjam, mis. <b>30.000.000</b>. Ini bukan harga cicilan; dipakai menghitung total bayar dan biaya tambahan.</li>' +
-        '<li>Tandai tiap cicilan lunas di <b>Jadwal pembayaran</b>. Sisa dan progres di kartu ini ikut turun.</li>' +
-      '</ol>' +
-      '<div class="sub">Contoh: pinjam 30 jt, cicil 1,5 jt/bulan selama 24 bulan. Isi pokok 30 jt; aplikasi menghitung total bayar 36 jt dan biaya tambahan 6 jt (20%).</div>'
-    ) +
-    L.map(function (x) {
-      var pc = Math.round((x.paidN / x.n) * 100);
-      return (
-        '<div class="cc"><div class="cc-h"><b>' + esc(x.it.name) + '</b><span class="chp">' + (x.pokok > 0 ? 'utang' : 'berjangka') + '</span><span class="sub pv">' + rp(priceAt(x.it, x.next)) + ' / ' + perLabel(x.it) + '</span></div>' +
-        '<div class="cc-bar" role="img" aria-label="' + pc + '% terbayar"><i style="width:' + pc + '%"></i></div>' +
-        '<div class="sub"><b class="pv">Sisa ' + rp(x.remSum) + '</b> · ' + x.paidN + ' dari ' + x.n + ' sudah dibayar · lunas ' + ym(x.last) + (x.assumed ? ' · ' + x.assumed + ' cicilan lama dianggap lunas' : '') + '</div>' +
-        (x.pokok > 0
-          ? '<div class="sub pv">Pinjaman ' + rp(x.pokok) + ' · total bayar ' + rp(x.total) + (x.bunga ? ' · biaya tambahan <b>' + rp(x.bunga) + '</b> (' + Math.round((x.bunga / x.pokok) * 100) + '% dari pinjaman)' : '') + '</div>'
-          : '') +
-        '</div>'
-      );
-    }).join('') +
-    '<div class="row2 mt8"><button type="button" data-goto="item">Atur pokok / batas bayar di Kelola Item</button></div>' +
     '</div>'
   );
 }
@@ -4842,7 +4802,6 @@ function fItem() {
     start: $('f-start').value,
     end: st === 'date' ? $('f-end').value : '',
     cnt: st === 'cnt' ? Math.max(0, parseInt($('f-cnt').value, 10) || 0) : 0,
-    pokok: st === 'none' ? 0 : parseRp($('f-pokok').value),
     cat: $('f-cat').value.trim().slice(0, 30),
   };
 }
@@ -4885,7 +4844,6 @@ function resetForm() {
   $('f-stop').value = 'none';
   $('f-end').value = '';
   $('f-cnt').value = '';
-  $('f-pokok').value = '';
   $('f-cat').value = '';
   stopUI();
   $('cancel').hidden = true;
@@ -4898,7 +4856,6 @@ function stopUI() {
   var v = $('f-stop').value;
   $('w-end').hidden = v !== 'date';
   $('w-cnt').hidden = v !== 'cnt';
-  $('w-pokok').hidden = v === 'none';
 }
 
 /** Harga item + jumlah perubahan, untuk daftar. */
@@ -4956,7 +4913,6 @@ function editItem(it) {
   $('f-stop').value = it.cnt ? 'cnt' : it.end ? 'date' : 'none';
   $('f-end').value = it.end || '';
   $('f-cnt').value = it.cnt || '';
-  $('f-pokok').value = it.pokok ? it.pokok.toLocaleString('id-ID') : '';
   $('f-cat').value = it.cat || '';
   stopUI();
   $('cancel').hidden = false;
@@ -5072,9 +5028,6 @@ function bindItems() {
     stopUI();
     preview();
   };
-  $('f-pokok').addEventListener('input', function () {
-    fmtLive(this);
-  });
   ['f-end', 'f-cnt'].forEach(function (i) {
     $(i).oninput = preview;
     $(i).onchange = preview;
@@ -7755,6 +7708,12 @@ var kasAct = (function () {
   })(),
   kasPer = 'all',
   kasTf = 'all', // filter Riwayat transaksi: all | + (masuk) | - (keluar)
+  kasFrom = '',
+  kasTo = '',
+  kasCat = 'all',
+  kasDebt = false,
+  kasDebtKind = '',
+  kasDebtName = '',
   kasEdit = null,
   kasT = '-',
   kpMode = 'new';
@@ -7789,43 +7748,86 @@ function kasPrevMonth(per) {
   return p[0] + Math.floor(m / 12) + '-' + pad2(((m % 12) + 12) % 12 + 1);
 }
 
-/** Grafik arus saldo tahun aktif: saldo akhir tiap bulan dari catatan kas aktual. */
-function kasChart(asc) {
-  if (!asc || !asc.length) return '';
-  var base = kasBase(kas()),
-    bal = base,
-    sums = {},
-    last = {};
-  asc.forEach(function (x) {
-    bal += x.t === '+' ? x.amt : -x.amt;
-    var m = +x.d.slice(5, 7) - 1;
-    if (m < 0 || m > 11) return;
-    if (!sums[m]) sums[m] = { i: 0, o: 0 };
-    if (x.t === '+') sums[m].i += x.amt;
-    else sums[m].o += x.amt;
-    last[m] = bal;
-  });
-  var pts = [],
-    prev = base;
-  for (var m = 0; m < 12; m++) {
-    if (last[m] != null) prev = last[m];
-    var s = sums[m] || { i: 0, o: 0 };
-    pts.push({
-      m: m,
-      v: prev,
-      tip: MON[m] + ' · masuk ' + rp(s.i) + ' · keluar ' + rp(s.o) + ' · saldo ' + rp(prev)
-    });
-  }
-  var low = pts.reduce(function (a, b) { return b.v < a.v ? b : a; });
-  return saldoWave({
-    id: 'kas',
-    title: 'Arus saldo ' + S.year,
-    sub: 'Saldo akhir bulan · sorot titik untuk detail',
-    aria: 'Grafik arus saldo ' + S.year,
-    pts: pts,
-    foot: 'Terendah <b class="' + (low.v < 0 ? 'neg' : '') + '">' + rp(low.v) + '</b> (' + MON[low.m] + ') · saldo terakhir <b>' + rp(pts[11].v) + '</b>'
-  });
+/** Grafik pie pemasukan vs pengeluaran periode aktif. */
+function kasPie(R, label) {
+  var t = R.i + R.o;
+  if (!t) return '';
+  var ip = Math.round((R.i / t) * 100),
+    op = 100 - ip;
+  return (
+    '<div class="card"><h2>Pemasukan vs pengeluaran</h2>' +
+    '<div class="sub mb8">' + label + '</div>' +
+    '<div class="pie-wrap"><div class="pie" style="background:conic-gradient(#3aa17e 0 ' + ip + '%, #d9627f ' + ip + '% 100%)"><span>' + ip + '%</span></div>' +
+    '<div class="pie-lg"><span><i style="background:#3aa17e"></i>Pemasukan <b>' + ip + '%</b> &middot; ' + rp(R.i) + '</span>' +
+    '<span><i style="background:#d9627f"></i>Pengeluaran <b>' + op + '%</b> &middot; ' + rp(R.o) + '</span></div></div></div>'
+  );
 }
+
+/** Jenis transaksi utang/piutang sesuai arah kas. */
+function debtKinds(t) {
+  return t === '-'
+    ? [['piutang', 'Piutang baru (saya pinjamkan)'], ['bayar-utang', 'Bayar utang saya']]
+    : [['utang', 'Utang baru (saya pinjam)'], ['bayar-piutang', 'Terima bayar piutang']];
+}
+
+/** Ringkasan utang/piutang dari transaksi kas yang dicentang. */
+function debtData(P) {
+  var g = {};
+  (P.tx || []).forEach(function (x) {
+    if (!x.debt) return;
+    var n = (x.debtName || x.note || x.cat || 'Tanpa nama').trim().slice(0, 40) || 'Tanpa nama',
+      o = g[n] || (g[n] = { name: n, utang: 0, piutang: 0, bayarU: 0, bayarP: 0 });
+    if (x.debtKind === 'utang') o.utang += x.amt;
+    else if (x.debtKind === 'piutang') o.piutang += x.amt;
+    else if (x.debtKind === 'bayar-utang') o.bayarU += x.amt;
+    else if (x.debtKind === 'bayar-piutang') o.bayarP += x.amt;
+  });
+  return Object.keys(g)
+    .map(function (k) {
+      var x = g[k];
+      x.sisaU = Math.max(0, x.utang - x.bayarU);
+      x.sisaP = Math.max(0, x.piutang - x.bayarP);
+      return x;
+    })
+    .filter(function (x) { return x.sisaU > 0 || x.sisaP > 0; });
+}
+
+/** Kartu utang/piutang: sisa per nama + tombol bayar yang mengisi form. */
+function debtHtml(P) {
+  var D = debtData(P);
+  if (!D.length) return '';
+  var tu = D.reduce(function (a, b) { return a + b.sisaU; }, 0),
+    tp = D.reduce(function (a, b) { return a + b.sisaP; }, 0);
+  return (
+    '<div class="card debt"><h2>Utang &amp; piutang</h2>' +
+    '<div class="debt-sum"><div><span>Saya berutang</span><b class="neg">' + rp(tu) + '</b></div><div><span>Orang berutang</span><b class="kin">' + rp(tp) + '</b></div></div>' +
+    D.map(function (x) {
+      var rows = '';
+      if (x.sisaU > 0)
+        rows += '<div class="debt-row"><div><b>' + esc(x.name) + '</b><span class="sub">Saya berutang</span></div><div><b class="neg">' + rp(x.sisaU) + '</b> <button class="g" data-debt-pay="utang" data-name="' + esc(x.name) + '" data-amt="' + x.sisaU + '">Bayar</button></div></div>';
+      if (x.sisaP > 0)
+        rows += '<div class="debt-row"><div><b>' + esc(x.name) + '</b><span class="sub">Orang berutang</span></div><div><b class="kin">' + rp(x.sisaP) + '</b> <button class="g" data-debt-pay="piutang" data-name="' + esc(x.name) + '" data-amt="' + x.sisaP + '">Terima</button></div></div>';
+      return rows;
+    }).join('') +
+    '<div class="sub mt6">Centang <b>Transaksi utang/piutang</b> di form untuk mencatat utang baru. Pembayaran bisa dicicil berkali-kali; sisa di atas otomatis berkurang. Untuk beberapa utang ke orang yang sama, pakai nama berbeda (mis. <b>Budi motor</b>, <b>Budi kos</b>) agar sisanya terpisah.</div></div>'
+  );
+}
+
+/** Isi form dengan transaksi pembayaran utang/piutang. */
+function openDebtForm(name, kind, amt) {
+  kasEdit = null;
+  kasT = kind === 'utang' ? '-' : '+';
+  kasDebt = true;
+  kasDebtKind = kind === 'utang' ? 'bayar-utang' : 'bayar-piutang';
+  kasDebtName = name;
+  renderKas();
+  var a = $('ka');
+  if (a) {
+    a.value = (+amt || 0).toLocaleString('id-ID');
+    a.focus();
+  }
+}
+
 
 /** Profil yang tergabung dengan Rencana (selalu tepat satu). */
 function kasLinked() {
@@ -7885,8 +7887,25 @@ function renderKas() {
   mo[todayISO().slice(0, 7)] = 1;
   var ms = Object.keys(mo).sort().reverse();
   if (kasPer !== 'all' && !mo[kasPer]) kasPer = 'all';
+  var minD = asc.length ? asc[0].d : todayISO(),
+    maxD = asc.length ? asc[asc.length - 1].d : todayISO(),
+    catList = [];
+  asc.forEach(function (x) {
+    var c = x.cat || '';
+    if (catList.indexOf(c) < 0) catList.push(c);
+  });
+  catList.sort();
+  var from = kasFrom || minD,
+    to = kasTo || maxD;
+  if (from < minD || from > maxD) from = minD;
+  if (to < minD || to > maxD) to = maxD;
+  if (from > to) from = to;
+  if (kasCat !== 'all' && kasCat !== '__none' && catList.indexOf(kasCat) < 0) kasCat = 'all';
   var R = kasSum(asc, kasPer),
-    L = asc
+    baseL = asc.filter(function (x) {
+      return x.d >= from && x.d <= to && (kasCat === 'all' || (x.cat || '') === (kasCat === '__none' ? '' : kasCat));
+    }),
+    L = baseL
       .filter(function (x) {
         return kasIn(x, kasPer);
       })
@@ -7952,6 +7971,11 @@ function renderKas() {
       return '<option value="' + esc(c) + '">';
     })
     .join('');
+  var debtOn = E ? !!E.debt : kasDebt,
+    kinds = debtKinds(kasT),
+    dKind = E ? E.debtKind : kasDebtKind,
+    dName = E ? E.debtName || E.note || '' : kasDebtName;
+  if (!kinds.some(function (k) { return k[0] === dKind; })) dKind = kinds[0][0];
   var form =
     '<div class="card"><h2>' +
     (E ? 'Ubah transaksi' : 'Catat transaksi') +
@@ -7971,7 +7995,14 @@ function renderKas() {
     dl +
     '</datalist></div><div><label for="kn">Catatan</label><input id="kn" maxlength="80" value="' +
     (E ? esc(E.note) : '') +
-    '"></div></div><div class="err" id="ke"></div><div class="row2"><button class="p" id="ks">' +
+    '"></div></div>' +
+    '<div class="full kdebt"><label class="ck"><input type="checkbox" id="kdebt"' + (debtOn ? ' checked' : '') + '> Transaksi utang/piutang</label>' +
+    '<div id="kdbox"' + (debtOn ? '' : ' hidden') + '><div class="kf mt8"><div><label for="kdn">Nama orang / utang</label><input id="kdn" maxlength="40" value="' + esc(dName) + '"></div><div><label for="kdk">Jenis</label><select id="kdk">' +
+    kinds.map(function (k) {
+      return '<option value="' + k[0] + '"' + (k[0] === dKind ? ' selected' : '') + '>' + k[1] + '</option>';
+    }).join('') +
+    '</select></div></div><div class="sub mt4" id="kdh">' + (kasT === '-' ? '&minus; Keluar: piutang baru (uang dipinjamkan) atau bayar utang.' : '+ Masuk: utang baru (uang dipinjam) atau terima bayar piutang.') + '</div></div></div>' +
+    '<div class="err" id="ke"></div><div class="row2"><button class="p" id="ks">' +
     (E ? 'Simpan perubahan' : 'Simpan') +
     '</button>' +
     (E ? '<button id="kx">Batal</button>' : '') +
@@ -8014,37 +8045,44 @@ function renderKas() {
       '</div>';
   var LF = kasTf === 'all' ? L : L.filter(function (x) { return x.t === kasTf; }),
     nIn = L.filter(function (x) { return x.t === '+'; }).length,
-    emptyMsg = kasTf === '+' ? 'Belum ada transaksi masuk di periode ini.' : kasTf === '-' ? 'Belum ada transaksi keluar di periode ini.' : 'Belum ada transaksi di periode ini.';
+    emptyMsg = kasTf === '+' ? 'Belum ada transaksi masuk di periode ini.' : kasTf === '-' ? 'Belum ada transaksi keluar di periode ini.' : 'Belum ada transaksi di periode ini.',
+    filt = kasTf !== 'all' || kasCat !== 'all' || from !== minD || to !== maxD,
+    catOpts = '<option value="all">Semua kategori</option>' + catList.map(function (c) {
+      return '<option value="' + (c ? esc(c) : '__none') + '"' + ((c ? c : '__none') === kasCat ? ' selected' : '') + '>' + (c ? esc(c) : 'Tanpa kategori') + '</option>';
+    }).join(''),
+    lastD = '',
+    rowsH = LF.slice(0, 200).map(function (x) {
+      var sep = x.d !== lastD ? '<div class="daysep"><span>' + fmtD(x.d) + '</span></div>' : '';
+      lastD = x.d;
+      return sep + '<div class="it2"><div><b class="' +
+        (x.t === '-' ? 'neg' : 'kin') +
+        '">' +
+        (x.t === '-' ? '&minus; ' : '+ ') +
+        rp(x.amt) +
+        '</b> <span class="sub">' +
+        fmtD(x.d) +
+        (x.cat ? ' &middot; ' + esc(x.cat) : '') +
+        '</span>' +
+        (x.note ? '<br><span class="sub">' + esc(x.note) + '</span>' : '') +
+        lkChip(x) +
+        '</div><div>' +
+        (x.ro
+          ? '<span class="sub">dari ' + (x.ro === 'tabungan' ? 'Target tabungan' : 'Jadwal Bayar') + '</span>'
+          : '<button class="g" data-ked="' + x.id + '">Ubah</button><button class="g d" data-kdel="' + x.id + '">Hapus</button>') +
+        '</div></div>';
+    }).join('');
   var lst =
-    '<div class="card"><div class="row2" style="margin:0 0 8px;align-items:center;justify-content:space-between"><h2 class="m0"">Riwayat transaksi</h2>' +
-    '<select class="wauto" id="ktf" aria-label="Filter jenis transaksi""><option value="all"' + (kasTf === 'all' ? ' selected' : '') + '>Semua</option><option value="+"' + (kasTf === '+' ? ' selected' : '') + '>+ Masuk</option><option value="-"' + (kasTf === '-' ? ' selected' : '') + '>&minus; Keluar</option></select></div>' +
-    (kasTf !== 'all' ? '<div class="sub mb6""">' + LF.length + ' dari ' + L.length + ' transaksi · ' + (kasTf === '+' ? 'hanya yang masuk' : 'hanya yang keluar') + '</div>' : '') +
-    (LF.slice(0, 200)
-      .map(function (x) {
-        return (
-          '<div class="it2"><div><b class="' +
-          (x.t === '-' ? 'neg' : 'kin') +
-          '">' +
-          (x.t === '-' ? '&minus; ' : '+ ') +
-          rp(x.amt) +
-          '</b> <span class="sub">' +
-          fmtD(x.d) +
-          (x.cat ? ' &middot; ' + esc(x.cat) : '') +
-          '</span>' +
-          (x.note ? '<br><span class="sub">' + esc(x.note) + '</span>' : '') +
-          lkChip(x) +
-          '</div><div>' +
-          (x.ro
-            ? '<span class="sub">dari ' + (x.ro === 'tabungan' ? 'Target tabungan' : 'Jadwal Bayar') + '</span>'
-            : '<button class="g" data-ked="' + x.id + '">Ubah</button><button class="g d" data-kdel="' + x.id + '">Hapus</button>') +
-          '</div></div>'
-        );
-      })
-      .join('') || '<div class="empty">' + emptyMsg + '</div>' + (!L.length ? '<div class="row2 mt8"""><button type="button" class="p" data-kfocus="1">Catat transaksi pertama</button></div>' : '')) +
-    (LF.length > 200 ? '<div class="sub">+ ' + (LF.length - 200) + ' lainnya. Pilih periode yang lebih sempit.</div>' : '') +
+    '<div class="card"><div class="row2" style="margin:0 0 8px;align-items:center;justify-content:space-between"><h2 class="m0">Riwayat transaksi</h2>' +
+    '<select class="wauto" id="ktf" aria-label="Filter jenis transaksi"><option value="all"' + (kasTf === 'all' ? ' selected' : '') + '>Semua</option><option value="+"' + (kasTf === '+' ? ' selected' : '') + '>+ Masuk</option><option value="-" ' + (kasTf === '-' ? ' selected' : '') + '>&minus; Keluar</option></select></div>' +
+    '<div class="kflt"><div><label for="kfrom">Dari</label><input type="date" id="kfrom" min="' + minD + '" max="' + maxD + '" value="' + from + '"></div>' +
+    '<div><label for="kto">Sampai</label><input type="date" id="kto" min="' + minD + '" max="' + maxD + '" value="' + to + '"></div>' +
+    '<div><label for="kcat">Kategori</label><select id="kcat">' + catOpts + '</select></div></div>' +
+    (filt ? '<div class="sub mb6">' + LF.length + ' dari ' + asc.length + ' transaksi</div>' : '') +
+    (rowsH || '<div class="empty">' + emptyMsg + '</div>' + (!asc.length ? '<div class="row2 mt8"><button type="button" class="p" data-kfocus="1">Catat transaksi pertama</button></div>' : '')) +
+    (LF.length > 200 ? '<div class="sub">+ ' + (LF.length - 200) + ' lainnya. Pilih rentang yang lebih sempit.</div>' : '') +
     '</div>';
   el.innerHTML =
-    per + matchCardHtml() + form + kasChart(asc) + catH + lst;
+    per + matchCardHtml() + form + kasPie(R, kasPer === 'all' ? 'Semua waktu' : mName) + debtHtml(P) + catH + lst;
 }
 
 function kasErr(t) {
@@ -8059,6 +8097,9 @@ function kasSave() {
   if (!ISO_RE.test(d)) return kasErr('Pilih tanggal transaksi.');
   if (kas().link && +d.slice(0, 4) !== +S.year)
     return kasErr('Profil ini tergabung dengan Rencana tahun ' + S.year + '. Pilih tanggal di tahun itu, atau ganti Tahun di atas.');
+  var debtOn = $('kdebt') && $('kdebt').checked,
+    debtName = $('kdn') ? $('kdn').value.trim().slice(0, 40) : '';
+  if (debtOn && !debtName) return kasErr('Isi nama orang / utang untuk transaksi utang/piutang.');
   var fxn = '';
   if ($('kcu') && $('kcu').value === 'fx' && kas().rate) {
     fxn = kas().cur + ' ' + a.toLocaleString('id-ID') + ' \u00b7 ';
@@ -8073,6 +8114,14 @@ function kasSave() {
       cat: $('kc').value.trim().slice(0, 30),
       note: (fxn + $('kn').value.trim()).slice(0, 80),
     };
+  if (debtOn) {
+    o.debt = true;
+    o.debtName = debtName;
+    o.debtKind = $('kdk').value;
+  }
+  kasDebt = false;
+  kasDebtKind = '';
+  kasDebtName = '';
   if (kasEdit)
     P.tx = P.tx.map(function (x) {
       return x.id === kasEdit ? o : x;
@@ -8177,6 +8226,20 @@ function bindQuickKas() {
   });
 }
 
+/** Ganti pilihan jenis utang/piutang saat arah kas berubah. */
+function syncDebtKinds() {
+  var s = $('kdk');
+  if (!s) return;
+  var cur = s.value,
+    ks = debtKinds(kasT);
+  s.innerHTML = ks.map(function (k) {
+    return '<option value="' + k[0] + '">' + k[1] + '</option>';
+  }).join('');
+  s.value = ks.some(function (k) { return k[0] === cur; }) ? cur : ks[0][0];
+  var h = $('kdh');
+  if (h) h.innerHTML = kasT === '-' ? '&minus; Keluar: piutang baru (uang dipinjamkan) atau bayar utang.' : '+ Masuk: utang baru (uang dipinjam) atau terima bayar piutang.';
+}
+
 /** Pasang event listener tab ini. */
 function bindKas() {
   $('v-kas').onclick = function (e) {
@@ -8188,15 +8251,20 @@ function bindKas() {
       Array.prototype.forEach.call(b.parentNode.children, function (x) {
         x.classList.toggle('on', x === b);
       });
+      syncDebtKinds();
     } else if (b.id === 'ks') kasSave();
     else if (b.id === 'kx') {
       kasEdit = null;
+      kasDebt = false;
+      kasDebtKind = '';
+      kasDebtName = '';
       renderKas();
     } else if (d.ked) {
       kasEdit = d.ked;
       renderKas();
       $('ka').scrollIntoView({ block: 'center' });
     } else if (d.kdel) kasDelTx(d.kdel);
+    else if (d.debtPay) openDebtForm(d.name, d.debtPay, d.amt);
     else if (d.kfocus) {
       $('ka').scrollIntoView({ block: 'center' });
       $('ka').focus();
@@ -8218,6 +8286,17 @@ function bindKas() {
     } else if (e.target.id === 'ktf') {
       kasTf = e.target.value === '+' || e.target.value === '-' ? e.target.value : 'all';
       renderKas();
+    } else if (e.target.id === 'kfrom') {
+      kasFrom = e.target.value;
+      renderKas();
+    } else if (e.target.id === 'kto') {
+      kasTo = e.target.value;
+      renderKas();
+    } else if (e.target.id === 'kcat') {
+      kasCat = e.target.value;
+      renderKas();
+    } else if (e.target.id === 'kdebt') {
+      $('kdbox').hidden = !e.target.checked;
     }
   };
   $('v-kas').addEventListener('input', function (e) {
@@ -10085,7 +10164,11 @@ function bindNav() {
       sheet(false);
       if (b.dataset.go === 'backup') document.getElementById('bk').click();
       else navGo(b.dataset.go);
-    } else if (e.target.closest('a') || e.target.closest('[data-theme-set]') || e.target.closest('[data-trip-toggle]')) sheet(false);
+    } else if (e.target.closest('[data-trip-toggle]')) {
+      e.stopPropagation();
+      setTripVisible(!tripOn());
+      sheet(false);
+    } else if (e.target.closest('a') || e.target.closest('[data-theme-set]')) sheet(false);
   };
   document.addEventListener('click', function (e) {
     var g = e.target.closest('[data-goto]');

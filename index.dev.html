@@ -70,7 +70,7 @@
       <input class="fx1" id="q-input" placeholder="mis. Netflix 186k tiap tgl 15 · Listrik 350k tiap bulan · Gym 300k tiap 2 minggu mulai 2027-02-05">
       <button class="p nowrap" id="q-btn" type="button">+ Tambah</button>
     </div>
-    <div class="sub mt8 fs12">Format: <code>[Nama] [Nominal] [Siklus] [Tanggal]</code> &middot; Contoh: <code>Netflix 186k tiap tgl 15</code>, <code>Gym 300k tiap 2 minggu mulai 2027-02-05</code>, <code>Pajak 1.2jt tiap tahun 10 november 2026</code>, <code>Kado 500k sekali 2027-06-15</code>. Butuh kategori, tanggal berhenti, atau pokok pinjaman? Pakai form lengkap di bawah.</div>
+    <div class="sub mt8 fs12">Format: <code>[Nama] [Nominal] [Siklus] [Tanggal]</code> &middot; Contoh: <code>Netflix 186k tiap tgl 15</code>, <code>Gym 300k tiap 2 minggu mulai 2027-02-05</code>, <code>Pajak 1.2jt tiap tahun 10 november 2026</code>, <code>Kado 500k sekali 2027-06-15</code>. Butuh kategori atau tanggal berhenti? Pakai form lengkap di bawah.</div>
     <div class="err" id="q-err"></div>
   </div>
   <div class="card">
@@ -83,7 +83,6 @@
           <option value="bulan">bulan</option><option value="tahun">tahun</option><option value="minggu">minggu</option><option value="hari">hari</option><option value="sekali">sekali saja</option></select></div></div>
       <div><label for="f-start">Mulai tanggal</label><input id="f-start" type="date"></div>
       <div class="full" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><label for="f-stop">Berhenti</label><select id="f-stop"><option value="none">Tidak berhenti</option><option value="date">Sampai tanggal</option><option value="cnt">Setelah beberapa kali bayar</option></select></div><div><label for="f-cat">Kategori (opsional)</label><input id="f-cat" list="catlist" maxlength="30" placeholder="mis. Langganan"><datalist id="catlist"></datalist></div><div id="w-end" hidden style="grid-column:1/-1"><label for="f-end">Pembayaran terakhir paling lambat</label><input id="f-end" type="date"></div><div id="w-cnt" hidden style="grid-column:1/-1"><label for="f-cnt">Total jumlah kali bayar</label><input id="f-cnt" type="number" min="1" placeholder="mis. 12"><div class="sub mt4">Dihitung sejak tanggal mulai, termasuk tahun-tahun sebelumnya.</div></div></div>
-      <div class="full" id="w-pokok" hidden><label for="f-pokok">Pokok pinjaman (opsional)</label><input id="f-pokok" inputmode="numeric" placeholder="mis. 12.000.000"><div class="sub mt4">Diisi bila ini cicilan/utang: dipakai untuk menghitung total bunga atau biaya, dan tampil di kartu Cicilan &amp; utang.</div></div>
       <div class="full prev" id="prev"></div>
     </div>
     <div class="err" id="err"></div>
@@ -237,14 +236,12 @@
 <script src="js/core/calc.js"></script>
 <script src="js/core/reminders.js"></script>
 <script src="js/core/match.js"></script>
-<script src="js/core/cicilan.js"></script>
 <script src="js/core/csv.js"></script>
 <script src="js/ui/dom.js"></script>
 <script src="js/ui/render.js"></script>
 <script src="js/ui/chart.js"></script>
 <script src="js/ui/rincian.js"></script>
 <script src="js/ui/realisasi.js"></script>
-<script src="js/ui/cicilan.js"></script>
 <script src="js/ui/jadwal.js"></script>
 <script src="js/ui/items.js"></script>
 <script src="js/ui/years.js"></script>
@@ -264,6 +261,5 @@
 <script src="js/ui/tip.js"></script>
 <script src="js/ui/topbar.js"></script>
 <script src="js/app.js"></script>
-
 </body>
 </html>

@@ -61,17 +61,16 @@ const { boot } = require('./ui.js');
   ev(row, 'pointerout');
   click($('btn-privacy'));
 
-  // grafik: satu grafik arus saldo dengan 12 titik + area hover bertooltip
+  // grafik: satu grafik arus saldo per tanggal + area hover bertooltip
   const dots = $('v-rincian').querySelectorAll('svg[aria-label^="Grafik arus saldo"] circle.lc-d');
-  assert.strictEqual(dots.length, 12, '12 titik saldo akhir');
+  assert(dots.length >= 1, 'titik saldo per tanggal');
   const hits = $('v-rincian').querySelectorAll('svg[aria-label^="Grafik arus saldo"] rect[data-tip]');
-  assert.strictEqual(hits.length, 12, '12 area hover punya tooltip');
+  assert.strictEqual(hits.length, dots.length, 'area hover punya tooltip');
   assert(/saldo Rp/.test(hits[0].dataset.tip), hits[0].dataset.tip);
   w.S.startMonth = 10;
   w.renderAll();
   const part = $('v-rincian').querySelectorAll('svg[aria-label^="Grafik arus saldo"] rect[data-tip]');
-  assert.strictEqual(part.length, 12, 'grafik tetap 12 bulan walau mulai November');
-  assert(/sebelum pencatatan/.test(part[0].dataset.tip), part[0].dataset.tip);
+  assert(part.length >= 1, 'grafik tetap tampil walau mulai November');
   w.S.startMonth = 0;
   w.renderAll();
   w.kasLinked().tx = [{ id: 'g', d: '2026-12-01', t: '+', amt: 3000000, cat: 'Gaji', note: 'Gaji' }];
@@ -86,9 +85,9 @@ const { boot } = require('./ui.js');
     { id: 'k3', d: '2026-03-15', t: '-', amt: 100000, cat: 'Makan', note: '' },
   ];
   w.renderAll();
-  const kr = $('v-kas').querySelectorAll('.kch rect[data-tip]');
-  assert(kr.length >= 2 && /saldo Rp/.test(kr[0].dataset.tip), 'grafik kas punya tooltip: ' + kr.length);
-  assert($('v-kas').querySelector('.catrow[data-tip]'), 'kategori kas punya tooltip');
+  const pie = $('v-kas').querySelector('.pie');
+  assert(pie, 'pie pemasukan vs pengeluaran');
+  assert(/Pemasukan/.test(txt($('v-kas'))) && /Pengeluaran/.test(txt($('v-kas'))), 'legenda warna pemasukan/pengeluaran');
 
   // ---- empty state ----
   w.kasLinked().tx = [];

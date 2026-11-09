@@ -1529,3 +1529,33 @@ button.alat-item { width: 100%; border: 0; background: transparent; text-align: 
 .w100 { width:100% !important; }
 .wauto { width:auto !important; }
 [data-md][hidden] { display: none !important; }
+
+/* Filter riwayat kas */
+.kflt { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:0 0 10px; }
+.kflt label { display:block; font-size:11px; color:var(--mut); margin:0 0 3px; }
+@media (max-width:640px) { .kflt { grid-template-columns:1fr 1fr; } .kflt > div:last-child { grid-column:1 / -1; } }
+.daysep { display:flex; align-items:center; gap:8px; margin:12px 0 6px; font-size:11px; color:var(--mut); }
+.daysep::after { content:''; flex:1; height:1px; background:var(--ln); }
+.daysep span { font-weight:600; }
+
+/* Pie pemasukan vs pengeluaran */
+.pie-wrap { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+.pie { width:132px; height:132px; border-radius:50%; display:grid; place-items:center; position:relative; flex:0 0 auto; }
+.pie::after { content:''; position:absolute; inset:18px; background:var(--card); border-radius:50%; }
+.pie span { position:relative; z-index:1; font-weight:700; font-size:22px; }
+.pie-lg { display:flex; flex-direction:column; gap:8px; font-size:13px; }
+.pie-lg span { display:flex; align-items:center; gap:7px; }
+.pie-lg i { width:10px; height:10px; border-radius:3px; display:inline-block; flex:0 0 auto; }
+
+/* Utang & piutang dari kas */
+.kdebt { border-top:1px dashed var(--ln); padding-top:10px; margin-top:2px; }
+.kdebt .ck { display:flex; align-items:center; gap:7px; font-size:13px; cursor:pointer; }
+.kdebt .ck input { width:auto; margin:0; }
+.debt-sum { display:flex; gap:24px; flex-wrap:wrap; margin:0 0 10px; }
+.debt-sum div { display:flex; flex-direction:column; gap:2px; }
+.debt-sum span { font-size:11px; color:var(--mut); }
+.debt-sum b { font-size:17px; }
+.debt-row { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--ln); }
+.debt-row > div { display:flex; flex-direction:column; gap:2px; }
+.debt-row > div:last-child { flex-direction:row; align-items:center; white-space:nowrap; }
+.debt-row .sub { font-size:11px; }

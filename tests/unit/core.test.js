@@ -368,32 +368,3 @@ test('norm: S.real dibersihkan dan profil kas membawa auto + nm', () => {
   assert.equal(n.kas.pr.u.auto, true);
   assert.deepEqual(Array.from(n.kas.pr.u.nm), ['q', '5']);
 });
-
-test('cicilanData: kemajuan, sisa, tanggal lunas, tahun tanpa data dianggap lunas, bunga dari pokok', () => {
-  const Y = newYear(c, 2051, { real: {} });
-  c.window = undefined;
-  const today = '2051-03-15';
-  c.todayISO = () => today;
-  Y.items.push(
-    item({ id: 'k', name: 'KPR Mini', price: 1000000, n: 1, unit: 'bulan', start: '2050-11-10', cnt: 6, pokok: 5500000 }),
-    item({ id: 'o', name: 'Langganan', price: 10000, n: 1, unit: 'bulan', start: '2051-01-01' }),
-    item({ id: 's', name: 'Sekali', price: 10000, unit: 'sekali', start: '2051-01-01', cnt: 1 }),
-  );
-  // 6 kali dari 10 Nov 2050: Nov, Des (2050, tanpa data -> dianggap lunas), Jan, Feb, Mar, Apr 2051
-  Y.paid['k|2051-01-10'] = 1;
-  Y.paid['k|2051-02-10'] = 1;
-  const L = c.cicilanData();
-  assert.equal(L.length, 1, 'hanya item berjadwal terbatas dan bukan sekali bayar');
-  const k = L[0];
-  assert.equal(k.n, 6);
-  assert.equal(k.assumed, 2, 'Nov dan Des 2050 tidak ada datanya');
-  assert.equal(k.paidN, 4);
-  assert.equal(k.remN, 2);
-  assert.equal(k.remSum, 2000000);
-  assert.equal(k.total, 6000000);
-  assert.equal(k.bunga, 500000);
-  assert.equal(new Date(k.last).toISOString().slice(0, 10), '2051-04-10');
-  assert.equal(new Date(k.next).toISOString().slice(0, 10), '2051-03-10');
-  Y.skip['k|2051-04-10'] = 1;
-  assert.equal(c.cicilanData()[0].n, 5, 'tagihan dilewati tidak dihitung');
-});

@@ -37,11 +37,10 @@ js/core/              logika murni, TANPA DOM -> bisa diuji sebagai unit
   csv.js              baca/tulis CSV
   reminders.js        tagihan terlambat / akan datang, tandai lunas massal
   match.js            pencocokan transaksi Catatan Kas dengan tagihan (tautan S.real) + data rencana vs realisasi
-  cicilan.js          kemajuan, sisa, dan bunga cicilan/utang
 js/ui/                tampilan + event listener (tiap file punya fungsi bindXxx())
   render.js           renderAll(): memperbarui semua tampilan dari state
   rincian.js jadwal.js items.js years.js header.js adjust.js price-modal.js reminders.js skiprange.js
-  kas.js trip.js theme.js topbar.js nav.js tip.js agenda.js realisasi.js cicilan.js io.js backup.js diag.js dom.js
+  kas.js trip.js theme.js topbar.js nav.js tip.js agenda.js realisasi.js io.js backup.js diag.js dom.js
 js/sync.js            sinkron Supabase + dialog konflik
 js/app.js             titik masuk: muat data -> bind semua -> render -> sinkron
 build.js              gabungkan index.dev.html + css + js -> index.html (+ dist/); `node build.js --check` memeriksa kesegarannya

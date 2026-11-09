@@ -1,9 +1,10 @@
 /**
- * Grafik garis saldo bulanan: 12 titik, crosshair + tooltip saat kursor/fokus di area grafik.
- * o = {id, title, sub, aria, pts:[{m, v, tip}], foot}
+ * Grafik garis saldo per tanggal: sumbu x memakai tanggal asli, crosshair + tooltip
+ * saat kursor/fokus di area grafik.
+ * o = {id, title, sub, aria, pts:[{d, v, tip}], foot}
  */
-function saldoWave(o) {
-  var P = o.pts || [];
+function saldoLine(o) {
+  var P = (o.pts || []).slice();
   if (P.length < 2) return '';
   var W = 720,
     H = 238,
@@ -22,28 +23,39 @@ function saldoWave(o) {
   var pad = (hi - lo) * 0.14 || 1;
   lo -= pad;
   hi += pad;
-  var X = function (i) { return padL + (plotW * i) / (P.length - 1); },
+  var t0 = Date.parse(P[0].d + 'T00:00:00Z'),
+    t1 = Date.parse(P[P.length - 1].d + 'T00:00:00Z');
+  if (!(t1 > t0)) t1 = t0 + 864e5;
+  var X = function (d) { return padL + (plotW * (Date.parse(d + 'T00:00:00Z') - t0)) / (t1 - t0); },
     Y = function (v) { return padT + ((hi - v) / (hi - lo)) * plotH; },
     ax = function (v) { return (v < 0 ? '−' : '') + shortP(Math.abs(v)); },
     zero = Y(0),
-    line = 'M' + P.map(function (p, i) { return X(i).toFixed(1) + ' ' + Y(p.v).toFixed(1); }).join(' L'),
-    area = line + ' L' + X(P.length - 1).toFixed(1) + ' ' + (padT + plotH) + ' L' + padL + ' ' + (padT + plotH) + ' Z',
-    slot = plotW / (P.length - 1),
+    line = 'M' + P.map(function (p) { return X(p.d).toFixed(1) + ' ' + Y(p.v).toFixed(1); }).join(' L'),
+    area = line + ' L' + X(P[P.length - 1].d).toFixed(1) + ' ' + (padT + plotH) + ' L' + padL + ' ' + (padT + plotH) + ' Z',
     gid = 'lcg-' + (o.id || 'x');
   var groups = P.map(function (p, i) {
-    var x = X(i),
-      left = i ? x - slot / 2 : padL,
-      right = i < P.length - 1 ? x + slot / 2 : W - padR;
+    var x = X(p.d),
+      left = i ? (X(P[i - 1].d) + x) / 2 : padL,
+      right = i < P.length - 1 ? (x + X(P[i + 1].d)) / 2 : W - padR;
     return (
       '<g class="lc-p"><rect class="lc-hit" x="' + left.toFixed(1) + '" y="' + padT + '" width="' + Math.max(1, right - left).toFixed(1) + '" height="' + plotH + '" fill="transparent" tabindex="0" data-tip="' + esc(p.tip) + '"></rect>' +
       '<line class="lc-v" x1="' + x.toFixed(1) + '" y1="' + padT + '" x2="' + x.toFixed(1) + '" y2="' + (padT + plotH) + '"></line>' +
       '<circle class="lc-d' + (p.v < 0 ? ' neg' : '') + '" cx="' + x.toFixed(1) + '" cy="' + Y(p.v).toFixed(1) + '" r="4.5" data-tip="' + esc(p.tip) + '"></circle></g>'
     );
   }).join('');
-  var labels = P.map(function (p, i) {
-    var a = i === 0 ? 'start' : i === P.length - 1 ? 'end' : 'middle';
-    return '<text x="' + X(i).toFixed(1) + '" y="' + (H - 9) + '" text-anchor="' + a + '" font-size="8.8" fill="var(--mut)">' + MON[p.m] + '</text>';
-  }).join('');
+  var multiYear = P[0].d.slice(0, 4) !== P[P.length - 1].d.slice(0, 4),
+    dlabel = function (d) {
+      var z = new Date(d + 'T00:00:00Z');
+      return z.getUTCDate() + ' ' + MON[z.getUTCMonth()] + (multiYear ? ' ' + d.slice(2, 4) : '');
+    },
+    li = [0, Math.round((P.length - 1) * 0.25), Math.round((P.length - 1) * 0.5), Math.round((P.length - 1) * 0.75), P.length - 1],
+    seenL = {},
+    labels = li.map(function (i) {
+      if (seenL[i]) return '';
+      seenL[i] = 1;
+      var a = i === 0 ? 'start' : i === P.length - 1 ? 'end' : 'middle';
+      return '<text x="' + X(P[i].d).toFixed(1) + '" y="' + (H - 9) + '" text-anchor="' + a + '" font-size="8.8" fill="var(--mut)">' + dlabel(P[i].d) + '</text>';
+    }).join('');
   var yv = [mx, 0, mn],
     seen = {},
     grid = yv.map(function (v) {
