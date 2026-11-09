@@ -244,7 +244,7 @@ function normKas(k) {
             return x && +x.amt > 0 && (x.t === '+' || x.t === '-') && ISO_RE.test(x.d);
           })
           .map(function (x, i) {
-            return { id: String(x.id || 't' + i), d: x.d, t: x.t, amt: +x.amt, cat: String(x.cat || '').slice(0, 30), note: String(x.note || '').slice(0, 80) };
+            return { id: String(x.id || 't' + i), d: x.d, t: x.t, amt: +x.amt, cat: String(x.cat || '').slice(0, 30), note: String(x.note || '').slice(0, 80), debt: x.debt === true, debtName: String(x.debtName || '').slice(0, 40), debtKind: /^(piutang|bayar-utang|utang|bayar-piutang)$/.test(x.debtKind) ? x.debtKind : '' };
           }),
       };
     });

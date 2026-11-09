@@ -87,6 +87,7 @@ const { boot } = require('./ui.js');
   w.renderAll();
   const pie = $('v-kas').querySelector('.pie');
   assert(pie, 'pie pemasukan vs pengeluaran');
+  assert.strictEqual(pie.querySelectorAll('.pie-slice').length, 2, 'dua potongan pie (pemasukan & pengeluaran)');
   assert(/Pemasukan/.test(txt($('v-kas'))) && /Pengeluaran/.test(txt($('v-kas'))), 'legenda warna pemasukan/pengeluaran');
 
   // ---- empty state ----

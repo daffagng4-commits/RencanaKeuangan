@@ -51,18 +51,27 @@ function kasPrevMonth(per) {
   return p[0] + Math.floor(m / 12) + '-' + pad2(((m % 12) + 12) % 12 + 1);
 }
 
-/** Grafik pie pemasukan vs pengeluaran periode aktif. */
-function kasPie(R, label) {
+/** Grafik pie pemasukan vs pengeluaran periode aktif + kategori di sebelahnya. */
+function kasPie(R, label, catHtml) {
   var t = R.i + R.o;
   if (!t) return '';
   var ip = Math.round((R.i / t) * 100),
-    op = 100 - ip;
+    op = 100 - ip,
+    C = 263.894,
+    li = (ip / 100) * C,
+    lo = C - li;
   return (
+    '<div class="kas-duo' + (catHtml ? '' : ' solo') + '">' +
     '<div class="card"><h2>Pemasukan vs pengeluaran</h2>' +
     '<div class="sub mb8">' + label + '</div>' +
-    '<div class="pie-wrap"><div class="pie" style="background:conic-gradient(#3aa17e 0 ' + ip + '%, #d9627f ' + ip + '% 100%)"><span>' + ip + '%</span></div>' +
+    '<div class="pie-wrap"><div class="pie"><svg viewBox="0 0 100 100" role="img" aria-label="Pemasukan ' + ip + '%, pengeluaran ' + op + '%">' +
+    '<circle class="pie-slice in" cx="50" cy="50" r="42" stroke="#3aa17e" stroke-dasharray="' + li + ' ' + C + '" transform="rotate(-90 50 50)"><title>Pemasukan ' + ip + '% &middot; ' + rp(R.i) + '</title></circle>' +
+    '<circle class="pie-slice out" cx="50" cy="50" r="42" stroke="#d9627f" stroke-dasharray="' + lo + ' ' + C + '" stroke-dashoffset="' + -li + '" transform="rotate(-90 50 50)"><title>Pengeluaran ' + op + '% &middot; ' + rp(R.o) + '</title></circle>' +
+    '</svg><span>' + ip + '%</span></div>' +
     '<div class="pie-lg"><span><i style="background:#3aa17e"></i>Pemasukan <b>' + ip + '%</b> &middot; ' + rp(R.i) + '</span>' +
-    '<span><i style="background:#d9627f"></i>Pengeluaran <b>' + op + '%</b> &middot; ' + rp(R.o) + '</span></div></div></div>'
+    '<span><i style="background:#d9627f"></i>Pengeluaran <b>' + op + '%</b> &middot; ' + rp(R.o) + '</span></div></div></div>' +
+    (catHtml || '') +
+    '</div>'
   );
 }
 
@@ -109,7 +118,7 @@ function debtHtml(P) {
       if (x.sisaU > 0)
         rows += '<div class="debt-row"><div><b>' + esc(x.name) + '</b><span class="sub">Saya berutang</span></div><div><b class="neg">' + rp(x.sisaU) + '</b> <button class="g" data-debt-pay="utang" data-name="' + esc(x.name) + '" data-amt="' + x.sisaU + '">Bayar</button></div></div>';
       if (x.sisaP > 0)
-        rows += '<div class="debt-row"><div><b>' + esc(x.name) + '</b><span class="sub">Orang berutang</span></div><div><b class="kin">' + rp(x.sisaP) + '</b> <button class="g" data-debt-pay="piutang" data-name="' + esc(x.name) + '" data-amt="' + x.sisaP + '">Terima</button></div></div>';
+        rows += '<div class="debt-row"><div><b>' + esc(x.name) + '</b><span class="sub">Orang berutang</span></div><div><b class="kin">' + rp(x.sisaP) + '</b> <button class="g" data-debt-pay="piutang" data-name="' + esc(x.name) + '" data-amt="' + x.sisaP + '">Bayar</button></div></div>';
       return rows;
     }).join('') +
     '<div class="sub mt6">Centang <b>Transaksi utang/piutang</b> di form untuk mencatat utang baru. Pembayaran bisa dicicil berkali-kali; sisa di atas otomatis berkurang. Untuk beberapa utang ke orang yang sama, pakai nama berbeda (mis. <b>Budi motor</b>, <b>Budi kos</b>) agar sisanya terpisah.</div></div>'
@@ -379,13 +388,14 @@ function renderKas() {
     '<select class="wauto" id="ktf" aria-label="Filter jenis transaksi"><option value="all"' + (kasTf === 'all' ? ' selected' : '') + '>Semua</option><option value="+"' + (kasTf === '+' ? ' selected' : '') + '>+ Masuk</option><option value="-" ' + (kasTf === '-' ? ' selected' : '') + '>&minus; Keluar</option></select></div>' +
     '<div class="kflt"><div><label for="kfrom">Dari</label><input type="date" id="kfrom" min="' + minD + '" max="' + maxD + '" value="' + from + '"></div>' +
     '<div><label for="kto">Sampai</label><input type="date" id="kto" min="' + minD + '" max="' + maxD + '" value="' + to + '"></div>' +
-    '<div><label for="kcat">Kategori</label><select id="kcat">' + catOpts + '</select></div></div>' +
+    '<div><label for="kcat">Kategori</label><select id="kcat">' + catOpts + '</select></div>' +
+    '<button type="button" class="g kreset" id="krst" title="Kembalikan rentang tanggal ke default">Reset</button></div>' +
     (filt ? '<div class="sub mb6">' + LF.length + ' dari ' + asc.length + ' transaksi</div>' : '') +
     (rowsH || '<div class="empty">' + emptyMsg + '</div>' + (!asc.length ? '<div class="row2 mt8"><button type="button" class="p" data-kfocus="1">Catat transaksi pertama</button></div>' : '')) +
     (LF.length > 200 ? '<div class="sub">+ ' + (LF.length - 200) + ' lainnya. Pilih rentang yang lebih sempit.</div>' : '') +
     '</div>';
   el.innerHTML =
-    per + matchCardHtml() + form + kasPie(R, kasPer === 'all' ? 'Semua waktu' : mName) + debtHtml(P) + catH + lst;
+    per + form + kasPie(R, kasPer === 'all' ? 'Semua waktu' : mName, catH) + debtHtml(P) + lst;
 }
 
 function kasErr(t) {
@@ -556,7 +566,11 @@ function bindKas() {
       });
       syncDebtKinds();
     } else if (b.id === 'ks') kasSave();
-    else if (b.id === 'kx') {
+    else if (b.id === 'krst') {
+      kasFrom = '';
+      kasTo = '';
+      renderKas();
+    } else if (b.id === 'kx') {
       kasEdit = null;
       kasDebt = false;
       kasDebtKind = '';
@@ -571,19 +585,10 @@ function bindKas() {
     else if (d.kfocus) {
       $('ka').scrollIntoView({ block: 'center' });
       $('ka').focus();
-    } else if (d.mok) kasApplyMatch(d.mok);
-    else if (d.mno) kasDismissMatch(d.mno);
-    else if (b.id === 'mall') kasApplyAll();
+    }
   };
   $('v-kas').onchange = function (e) {
-    if (e.target.id === 'mauto') {
-      var LP = kasLinked();
-      if (LP) {
-        LP.auto = !!e.target.checked;
-        save();
-        renderKas();
-      }
-    } else if (e.target.id === 'kper') {
+    if (e.target.id === 'kper') {
       kasPer = e.target.value;
       renderKas();
     } else if (e.target.id === 'ktf') {

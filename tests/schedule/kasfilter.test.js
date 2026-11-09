@@ -7,7 +7,7 @@ const ok = (c, m) => { assert(c, m); pass++; console.log("ok -", m); };
 (async () => {
   const t = boot();
   await t.ready();
-  const { w, $, fire } = t;
+  const { w, $, fire, click } = t;
   const tick = () => new Promise((r) => setTimeout(r, 30));
   w.__today = "2026-12-05";
   w.switchYear(2026);
@@ -38,6 +38,13 @@ const ok = (c, m) => { assert(c, m); pass++; console.log("ok -", m); };
 
   $("ktf").value = "all"; fire($("ktf"), "change"); await tick();
   ok(rows().length === 7 && !/dari 7 transaksi/.test($("v-kas").textContent), "kembali ke Semua: 7 transaksi, keterangan hilang");
+
+  // reset rentang tanggal
+  $("kfrom").value = "2026-11-01"; fire($("kfrom"), "change"); await tick();
+  $("kto").value = "2026-11-30"; fire($("kto"), "change"); await tick();
+  ok(rows().length === 3, "rentang 1-30 Nov: 3 transaksi");
+  click($("krst")); await tick();
+  ok($("kfrom").value === "2026-10-30" && $("kto").value === "2026-12-01" && rows().length === 7, "Reset mengembalikan rentang ke default dan semua transaksi tampil");
 
   // filter periode + jenis berjalan bersama
   $("kper").value = "2026-11"; fire($("kper"), "change"); await tick();

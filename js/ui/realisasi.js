@@ -19,69 +19,7 @@ function toastLinked(c) {
   });
 }
 
-/** Kartu "Cocokkan dengan tagihan" di tab Kas (hanya untuk profil tergabung yang sedang dibuka). */
-function matchCardHtml() {
-  var P = kasLinked();
-  if (!P || kas() !== P) return '';
-  var L = suggestMatches(),
-    rows = L.map(function (s) {
-      var c = s.cand;
-      return (
-        '<div class="it2"><div><b class="neg">&minus; ' + rp(s.tx.amt) + '</b> <span class="sub">' + fmtD(s.tx.d) +
-        (s.tx.cat ? ' &middot; ' + esc(s.tx.cat) : '') + '</span>' +
-        (s.tx.note ? '<br><span class="sub">' + esc(s.tx.note) + '</span>' : '') +
-        '<br><span class="sub">' + (s.kind === 'paid' ? 'tagihan <b>' + esc(c.it.name) + '</b> (' + fmtD(c.iso) + ') sudah lunas; gabungkan agar tidak terhitung dua kali' : 'cocok dengan <b>' + esc(c.it.name) + '</b> &middot; jatuh tempo ' + fmtD(c.iso) + ', rencana ' + rp(c.plan)) + '</span></div>' +
-        '<div><button class="g" data-mok="' + s.tx.id + '|' + c.key + '">' + (s.kind === 'paid' ? 'Gabungkan' : 'Cocokkan') + '</button><button class="g" data-mno="' + s.tx.id + '">Bukan</button></div></div>'
-      );
-    }).join('');
-  return (
-    '<div class="card"><h2>Cocokkan dengan tagihan</h2>' +
-    (L.length
-      ? '<div class="sub mb6""">' + L.length + ' transaksi keluar mirip dengan tagihan di Jadwal Bayar. Dicocokkan = tagihan ditandai lunas dan jumlah realisasinya mengikuti transaksi.</div>' + rows +
-        (L.length > 1 ? '<div class="row2 mt8"""><button id="mall">Cocokkan semua (' + L.length + ')</button></div>' : '')
-      : '<div class="sub">Tidak ada transaksi keluar yang menunggu dicocokkan dengan tagihan.</div>') +
-    '<label class="chk sub"><input type="checkbox" id="mauto"' + (P.auto !== false ? ' checked' : '') + '> Lunaskan otomatis bila transaksi baru sangat cocok dengan satu tagihan</label></div>'
-  );
-}
 
-/** Terima satu saran 'idTransaksi|kunciTagihan'. */
-function kasApplyMatch(spec) {
-  var i = spec.indexOf('|'),
-    txid = spec.slice(0, i),
-    key = spec.slice(i + 1),
-    it = item(key.split('|')[0]),
-    sn = snap('Sebelum mencocokkan transaksi');
-  applyLink(key, txid);
-  save();
-  renderAll();
-  toast((it ? '"' + it.name + '"' : 'Tagihan') + ' ditandai lunas dan ditautkan ke transaksi.', function () {
-    restoreSnap(sn.t);
-  });
-}
-
-/** Terima semua saran sekaligus. */
-function kasApplyAll() {
-  var L = suggestMatches(),
-    sn = snap('Sebelum mencocokkan semua transaksi');
-  L.forEach(function (s) {
-    applyLink(s.cand.key, s.tx.id);
-  });
-  save();
-  renderAll();
-  toast(L.length + ' transaksi dicocokkan dengan tagihan.', function () {
-    restoreSnap(sn.t);
-  });
-}
-
-/** Tolak saran untuk transaksi `txid` (tidak diusulkan lagi). */
-function kasDismissMatch(txid) {
-  var P = kasLinked();
-  if (!P) return;
-  P.nm = P.nm || [];
-  if (P.nm.indexOf(txid) < 0) P.nm.push(txid);
-  save();
-  renderKas();
-}
 function realisasiHtml() {
   var D = realisasiData(),
     head = '<div class="card"><h2>Rencana vs realisasi ' + S.year + '</h2>';
