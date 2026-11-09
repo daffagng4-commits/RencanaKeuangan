@@ -289,6 +289,8 @@ nav button[aria-selected="true"] {
   display: block;
   font-size: 16px;
 }
+.hero .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; }
+.hero .stats > div:last-child:nth-child(odd) { grid-column: span 2; }
 .stats span {
   font-size: 12px;
   color: var(--mut);
@@ -911,6 +913,28 @@ a.yp.yp-tool:hover .arr-icon {
 }
 
 /* Topbar ringkas: aksi jadi satu kapsul berisi ikon (label tetap ada untuk pembaca layar, tooltip di title) */
+.acct {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 0;
+  padding: 0;
+  align-self: center;
+  border-radius: 50%;
+  border: 1px solid var(--ln);
+  background: var(--sf);
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1;
+  margin-right: 3px;
+  cursor: pointer;
+}
+.acct:hover { background: color-mix(in srgb, var(--ink) 8%, var(--sf)); }
+.acct.on { background: var(--ac); border-color: var(--ac); color: #fff; }
 .topbar-btn[hidden] { display: none; }
 .topbar-actions {
   gap: 2px;
@@ -962,6 +986,7 @@ a.yp.yp-tool:hover .arr-icon {
 /* Target sentuh minimal di layar sentuh */
 @media (pointer: coarse) {
   .topbar-actions .topbar-btn { width: 44px; min-width: 44px; height: 44px; min-height: 44px; }
+  .acct { width: 40px; height: 40px; min-width: 40px; }
   .yp, a.yp { min-height: 40px; }
 }
 body.privacy-mode .num,
@@ -1552,6 +1577,36 @@ button.alat-item { width: 100%; border: 0; background: transparent; text-align: 
 .kas-cat .catrow { margin:9px 0; }
 .kas-cat .catrow:first-of-type { margin-top:0; }
 @media (max-width:700px) { .kas-split { grid-template-columns:1fr; gap:16px; } .kas-cat { border-left:0; border-top:1px solid var(--ln); padding-left:0; padding-top:14px; } }
+/* Grafik arus saldo + pie pemasukan/pengeluaran berdampingan */
+.flow-split { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(250px,.65fr); gap:16px; margin-bottom:16px; align-items:stretch; }
+.flow-split.solo { grid-template-columns:1fr; }
+.flow-split > .card { margin:0; min-width:0; }
+.flow-pie { display:flex; flex-direction:column; justify-content:center; }
+.flow-pie .pie-wrap { margin-top:8px; }
+@media (max-width:700px) { .flow-split { grid-template-columns:1fr; gap:14px; } }
+/* Pengeluaran per kategori: tab periode + donat + bar */
+.cat-dash { margin-bottom:16px; }
+.cat-tabs { display:inline-flex; gap:2px; padding:2px; border:1px solid var(--ln); border-radius:999px; margin:8px 0 2px; background:var(--bg); }
+.cat-tab { border:0; background:transparent; color:var(--mut); border-radius:999px; padding:5px 11px; font-size:12px; font-weight:600; min-height:28px; cursor:pointer; }
+.cat-tab:hover { color:var(--ink); }
+.cat-tab.on { background:var(--sf); color:var(--ink); box-shadow:0 1px 2px rgba(0,0,0,.08); }
+.cat-kpis { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:12px 0 14px; padding:12px 0; border-top:1px solid var(--ln); border-bottom:1px solid var(--ln); }
+.cat-kpis span { display:block; font-size:12px; color:var(--mut); }
+.cat-kpis b { display:block; font-size:18px; line-height:1.25; }
+.cat-split { display:grid; grid-template-columns:minmax(170px,200px) minmax(0,1fr); gap:20px; align-items:center; }
+.cat-pie-wrap { display:flex; justify-content:center; }
+.cat-pie { width:180px; height:180px; }
+.cat-pie .pie-slice { stroke-width:14; }
+.cat-pie .pie-slice:hover { stroke-width:18; }
+.cat-pie span { font-size:20px; }
+.cat-list .catrow { margin:10px 0; }
+.cat-list .catrow:first-child { margin-top:0; }
+@media (max-width:700px) {
+  .cat-split { grid-template-columns:1fr; gap:10px; }
+  .cat-pie { width:150px; height:150px; }
+  .cat-pie span { font-size:18px; }
+  .cat-kpis b { font-size:16px; }
+}
 .pie-wrap { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
 .pie { width:148px; height:148px; border-radius:50%; display:grid; place-items:center; position:relative; flex:0 0 auto; }
 .pie svg { position:absolute; inset:0; width:100%; height:100%; animation:pieIn .38s ease-out both; }

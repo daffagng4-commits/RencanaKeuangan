@@ -32,7 +32,7 @@ function clock() {
 /** Buat klien Supabase bila SB_URL/SB_KEY valid dan pustaka termuat. */
 function sbInit() {
   if (!SB_URL || !SB_KEY || !window.supabase) {
-    $('lgb').hidden = true;
+    acctUI(null);
     sbStat('Mode lokal (Supabase belum diisi)');
     return;
   }
@@ -40,7 +40,7 @@ function sbInit() {
   try {
     u0 = new URL(SB_URL.trim()).origin;
   } catch (e) {
-    $('lgb').hidden = true;
+    acctUI(null);
     sbStat('SB_URL tidak valid. Harus berbentuk https://xxxx.supabase.co', 1);
     return;
   }
@@ -54,13 +54,24 @@ function sbInit() {
   });
 }
 
+/** Tombol akun bulat: "D" bila masuk, "?" bila belum. */
+function acctUI(u) {
+  var b = $('acct'),
+    ini = $('acct-ini');
+  if (!b || !ini) return;
+  b.classList.toggle('on', !!u);
+  ini.textContent = u ? 'D' : '?';
+  b.title = u ? (u.email || 'Akun') + ' · klik untuk keluar' : 'Masuk / daftar untuk sinkron';
+}
+
 /** Dipanggil saat sesi login berubah; memulai tarik data setelah login. */
 function setUser(s) {
-  var u = (s && s.user) || null;
-  if ((u && u.id) === (sbUser && sbUser.id)) return;
+  var u = (s && s.user) || null,
+    was = sbUser;
+  acctUI(u);
+  if ((u && u.id) === (was && was.id)) return;
   sbUser = u;
   syncBlocked = false;
-  $('lgb').textContent = u ? 'Keluar' : 'Masuk';
   if (u) {
     sbStat('Menyinkronkan...');
     pull();
@@ -340,9 +351,14 @@ function bindSync() {
       pull();
     }
   });
-  $('lgb').onclick = function () {
+  $('acct').onclick = function () {
+    if (!sb) {
+      toast('Sinkron belum aktif. Isi Supabase di js/config.js.');
+      return;
+    }
     if (sbUser) {
       sb.auth.signOut();
+      toast('Keluar dari akun. Data lokal tetap ada.');
       return;
     }
     $('lm').textContent = '';

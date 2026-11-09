@@ -95,18 +95,13 @@ const { boot } = require('./ui.js');
   w.S.items.push(it({ id: 'd', name: 'Cicilan', price: 700000, unit: 'sekali', start: '2026-11-20' }));
   w.renderAll();
 
-  // grafik kas
-  w.tab('kas');
-  w.kasLinked().tx = [
-    { id: 'k1', d: '2026-03-01', t: '+', amt: 1000000, cat: 'Gaji', note: '' },
-    { id: 'k2', d: '2026-03-09', t: '-', amt: 250000, cat: 'Makan', note: '' },
-    { id: 'k3', d: '2026-03-15', t: '-', amt: 100000, cat: 'Makan', note: '' },
-  ];
+  // pie pemasukan vs pengeluaran pindah ke Rincian Bulanan, di samping grafik arus saldo
+  w.tab('rincian');
   w.renderAll();
-  const pie = $('v-kas').querySelector('.pie');
-  assert(pie, 'pie pemasukan vs pengeluaran');
+  const pie = $('v-rincian').querySelector('.flow-pie .pie');
+  assert(pie, 'pie pemasukan vs pengeluaran di Rincian Bulanan');
   assert.strictEqual(pie.querySelectorAll('.pie-slice').length, 2, 'dua potongan pie (pemasukan & pengeluaran)');
-  assert(/Pemasukan/.test(txt($('v-kas'))) && /Pengeluaran/.test(txt($('v-kas'))), 'legenda warna pemasukan/pengeluaran');
+  assert(/Masuk/.test(txt($('v-rincian'))) && /Keluar/.test(txt($('v-rincian'))), 'legenda warna pemasukan/pengeluaran');
 
   // ---- empty state ----
   w.kasLinked().tx = [];
@@ -118,9 +113,7 @@ const { boot } = require('./ui.js');
   w.S.items = [it({ id: 'z', name: 'Z', price: 100000, cat: '' })];
   w.tab('rincian');
   w.renderAll();
-  assert(/Belum ada kategori/.test(txt($('v-rincian'))));
-  click($('v-rincian').querySelector('.card [data-goto="item"]'));
-  assert.strictEqual(w.curTab, 'item', 'CTA kategori membuka Kelola Item');
+  assert(/Tagihan/.test(txt($('v-rincian'))), 'tagihan tanpa kategori tetap tampil di kategori');
   w.S.items = [];
   w.tab('rincian');
   w.renderAll();

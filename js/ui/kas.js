@@ -40,30 +40,6 @@ function kasSum(tx) {
   });
   return r;
 }
-/** Satu kartu: pie pemasukan vs pengeluaran + rincian kategori di sebelahnya. */
-function kasPie(R, catHtml) {
-  var t = R.i + R.o;
-  if (!t) return '';
-  var ip = Math.round((R.i / t) * 100),
-    op = 100 - ip,
-    C = 238.761,
-    li = (ip / 100) * C,
-    lo = C - li;
-  return (
-    '<div class="card kas-dash">' +
-    '<h2>Pemasukan vs pengeluaran</h2>' +
-    '<div class="kas-split' + (catHtml ? '' : ' solo') + '">' +
-    '<div class="kas-pie"><div class="pie-wrap"><div class="pie"><svg viewBox="0 0 100 100" role="img" aria-label="Pemasukan ' + ip + '%, pengeluaran ' + op + '%">' +
-    '<circle class="pie-slice in" cx="50" cy="50" r="38" stroke="#3aa17e" stroke-dasharray="' + li + ' ' + C + '" transform="rotate(-90 50 50)"><title>Pemasukan ' + ip + '% &middot; ' + rp(R.i) + '</title></circle>' +
-    '<circle class="pie-slice out" cx="50" cy="50" r="38" stroke="#d9627f" stroke-dasharray="' + lo + ' ' + C + '" stroke-dashoffset="' + -li + '" transform="rotate(-90 50 50)"><title>Pengeluaran ' + op + '% &middot; ' + rp(R.o) + '</title></circle>' +
-    '</svg><span>' + ip + '%</span></div>' +
-    '<div class="pie-lg"><span><i style="background:#3aa17e"></i>Pemasukan <b>' + ip + '%</b> &middot; ' + rp(R.i) + '</span>' +
-    '<span><i style="background:#d9627f"></i>Pengeluaran <b>' + op + '%</b> &middot; ' + rp(R.o) + '</span></div></div></div>' +
-    (catHtml || '') +
-    '</div></div>'
-  );
-}
-
 /** Jenis transaksi utang/piutang sesuai arah kas. */
 function debtKinds(t) {
   return t === '-'
@@ -320,42 +296,6 @@ function renderKas() {
     '</button>' +
     (E ? '<button id="kx">Batal</button>' : '') +
     '</div></div>';
-  var bc = {};
-  L.forEach(function (x) {
-    if (x.t === '-') {
-      var k = x.cat || 'Tanpa kategori';
-      bc[k] = (bc[k] || 0) + x.amt;
-    }
-  });
-  var cl = Object.keys(bc).sort(function (a, b) {
-      return bc[b] - bc[a];
-    }),
-    catH = '';
-  if (cl.length)
-    catH =
-      '<div class="kas-cat"><div class="kas-cat-h">Pengeluaran per kategori</div>' +
-      cl
-        .map(function (k, i) {
-          var pc = (bc[k] / R.o) * 100,
-            c = catColor(k);
-          return (
-            '<div class="catrow" tabindex="0" data-tip="' + esc(k + ': ' + rp(bc[k]) + ' (' + (pc < 1 ? '<1' : Math.round(pc)) + '% dari total)') + '"><div class="cathd"><span><i class="dot" style="background:' +
-            c +
-            '"></i>' +
-            esc(k) +
-            '</span><b>' +
-            rp(bc[k]) +
-            ' <span class="sub">' +
-            (pc < 1 ? '<1' : Math.round(pc)) +
-            '%</span></b></div><div class="catbar"><i style="width:' +
-            pc.toFixed(1) +
-            '%;background:' +
-            c +
-            '"></i></div></div>'
-          );
-        })
-        .join('') +
-      '</div>';
   var LF = kasTf === 'all' ? L : L.filter(function (x) { return x.t === kasTf; }),
     nIn = L.filter(function (x) { return x.t === '+'; }).length,
     emptyMsg = kasTf === '+' ? 'Belum ada transaksi masuk di periode ini.' : kasTf === '-' ? 'Belum ada transaksi keluar di periode ini.' : 'Belum ada transaksi di periode ini.',
@@ -393,8 +333,7 @@ function renderKas() {
     (rowsH || '<div class="empty">' + emptyMsg + '</div>' + (!asc.length ? '<div class="row2 mt8"><button type="button" class="p" data-kfocus="1">Catat transaksi pertama</button></div>' : '')) +
     (LF.length > 200 ? '<div class="sub">+ ' + (LF.length - 200) + ' lainnya. Pilih rentang yang lebih sempit.</div>' : '') +
     '</div>';
-  el.innerHTML =
-    form + kasPie(R, catH) + debtHtml(P) + lst;
+  el.innerHTML = form + debtHtml(P) + lst;
 }
 
 function kasErr(t) {
