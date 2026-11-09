@@ -410,10 +410,8 @@ function renderKas() {
         '">' +
         (x.t === '-' ? '&minus; ' : '+ ') +
         rp(x.amt) +
-        '</b> <span class="sub">' +
-        fmtD(x.d) +
-        (x.cat ? ' &middot; ' + esc(x.cat) : '') +
-        '</span>' +
+        '</b>' +
+        (x.cat ? ' <span class="sub">' + esc(x.cat) + '</span>' : '') +
         (x.note ? '<br><span class="sub">' + esc(x.note) + '</span>' : '') +
         lkChip(x) +
         '</div><div>' +
