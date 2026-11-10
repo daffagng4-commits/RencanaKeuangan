@@ -266,7 +266,7 @@ a.yp.yp-tool:hover .arr-icon { opacity: 1; transform: translate(1px, -1px); }
 .acct:hover { background: color-mix(in srgb, var(--ink) 7%, var(--sf)); }
 .acct.on { background: var(--ac); border-color: var(--ac); color: var(--ac-ink); }
 .yr-pop { position: relative; }
-.yr-plus { font-size: 19px; font-weight: 500; color: var(--ink); line-height: 1; }
+.yr-plus { font-size: 19px; font-weight: 500; color: var(--ink); line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
 .yr-btn {
   display: inline-flex;
   align-items: center;
@@ -1257,15 +1257,34 @@ a.lnk:hover { text-decoration: underline; text-underline-offset: 3px; }
 .dh h2 { margin: 0; }
 .dti { width: 100%; font-size: 13px; margin: 2px 0 10px; }
 .pgrp { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
-.daysep { display: flex; align-items: center; gap: 8px; margin: 14px 0 6px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mut); }
-.daysep::after { content: ""; flex: 1; height: 1px; background: var(--ln); }
+.daysep { display: flex; align-items: baseline; gap: 10px; padding: 0 13px; margin: 16px 0 7px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--mut); }
+.daysep b { margin-left: auto; font-size: 12px; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
 .daysep span { font-weight: inherit; }
 .itm { display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; padding: 11px 0; border-top: 1px solid var(--ln); align-items: start; }
 .itm .tm { font-variant-numeric: tabular-nums; color: var(--mut); font-size: 12px; font-weight: 700; text-align: right; line-height: 1.4; }
 .itm .ttl { font-weight: 650; letter-spacing: -0.01em; }
 .itm .co { text-align: right; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .itm .ac { display: flex; flex-wrap: wrap; gap: 2px; justify-content: flex-end; margin-top: 4px; }
-.kit { border-bottom: 0; padding: 8px 0; }
+.kit {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 14px;
+  align-items: center;
+  padding: 11px 13px;
+  margin: 0 0 8px;
+  background: var(--sf);
+  border: 1px solid var(--ln);
+  border-radius: var(--r);
+}
+.kitm { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.kitt { font-weight: 650; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.kits { font-size: 11.5px; color: var(--mut); }
+.kitm .chp { align-self: flex-start; margin-top: 4px; }
+.kita { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; text-align: right; }
+.kita > b { font-size: 14.5px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kitr { font-size: 11.5px; color: var(--mut); }
+.kitx { display: flex; gap: 4px; }
+.kitx button { min-height: 26px; padding: 2px 9px; font-size: 11.5px; }
 .tbk {
   display: inline-flex;
   align-items: center;
@@ -1373,9 +1392,9 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
 }
 
 @media (pointer: coarse) {
-  .topbar-actions .topbar-btn, .acct, .yr-plus { width: 38px; height: 38px; min-width: 38px; }
+  .topbar-actions .topbar-btn, .acct { width: 38px; height: 38px; min-width: 38px; }
   .yp, a.yp, .topbar-btn, .gdt { min-height: 36px; }
-  .cat-dirs .cat-tab { min-height: 34px; }
+  .cat-dirs .cat-tab, .kitx button { min-height: 34px; }
 }
 
 @media (max-width: 640px) {
@@ -1388,7 +1407,7 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
   .topbar { margin-bottom: 14px; padding-bottom: 12px; gap: 8px; }
   .kt { gap: 4px; }
   .topbar-actions { gap: 0; padding: 2px; }
-  .topbar-actions .topbar-btn { width: 32px; min-width: 32px; height: 32px; }
+  .topbar-actions .topbar-btn, .acct { width: 32px; min-width: 32px; height: 32px; }
   .yp, a.yp { font-size: 12px; padding: 5px 10px; min-height: 30px; }
   a.yp.yp-tool { font-size: 11.5px; }
   nav { display: none; }
@@ -4431,7 +4450,7 @@ function bindRincian() {
 function lkChip(x) {
   var k = linkedTxIds()[x.id],
     it = k && item(k.split('|')[0]);
-  return it ? '<br><span class="chp on">melunasi: ' + esc(it.name) + ' (' + fmtD(k.split('|')[1]) + ')</span>' : '';
+  return it ? '<span class="chp on">melunasi: ' + esc(it.name) + ' (' + fmtD(k.split('|')[1]) + ')</span>' : '';
 }
 
 /** Toast + urungkan setelah transaksi baru otomatis dicocokkan dengan tagihan. */
@@ -8239,22 +8258,29 @@ function renderKas() {
       return '<option value="' + (c ? esc(c) : '__none') + '"' + ((c ? c : '__none') === kasCat ? ' selected' : '') + '>' + (c ? esc(c) : 'Tanpa kategori') + '</option>';
     }).join(''),
     lastD = '',
+    daySum = function (d) {
+      var s = 0;
+      LF.forEach(function (y) { if (y.d === d) s += y.t === '-' ? -y.amt : y.amt; });
+      return '<b class="' + (s < 0 ? 'neg' : 'kin') + '">' + (s < 0 ? '&minus; ' : '+ ') + rp(Math.abs(s)) + '</b>';
+    },
     rowsH = LF.slice(0, 200).map(function (x) {
-      var sep = x.d !== lastD ? '<div class="daysep"><span>' + fmtD(x.d) + '</span></div>' : '';
+      var sep = x.d !== lastD ? '<div class="daysep"><span>' + fmtD(x.d) + '</span>' + daySum(x.d) + '</div>' : '';
       lastD = x.d;
-      return sep + '<div class="it2 kit"><div><b class="' +
+      return sep + '<div class="it2 kit"><div class="kitm"><b class="kitt">' +
+        esc(x.note || x.cat || (x.t === '-' ? 'Pengeluaran' : 'Pemasukan')) +
+        '</b><span class="kits">' +
+        (x.cat && x.note ? esc(x.cat) + ' &middot; ' : '') +
+        x.d.slice(8, 10) + '/' + x.d.slice(5, 7) +
+        '</span>' + lkChip(x) +
+        '</div><div class="kita"><b class="' +
         (x.t === '-' ? 'neg' : 'kin') +
         '">' +
         (x.t === '-' ? '&minus; ' : '+ ') +
         rp(x.amt) +
         '</b>' +
-        (x.cat ? ' <span class="sub">' + esc(x.cat) + '</span>' : '') +
-        (x.note ? '<br><span class="sub">' + esc(x.note) + '</span>' : '') +
-        lkChip(x) +
-        '</div><div>' +
         (x.ro
-          ? '<span class="sub">dari ' + (x.ro === 'tabungan' ? 'Target tabungan' : 'Jadwal Bayar') + '</span>'
-          : '<button class="g" data-ked="' + x.id + '">Ubah</button><button class="g d" data-kdel="' + x.id + '">Hapus</button>') +
+          ? '<span class="kitr">dari ' + (x.ro === 'tabungan' ? 'Target tabungan' : 'Jadwal Bayar') + '</span>'
+          : '<span class="kitx"><button class="g" data-ked="' + x.id + '">Ubah</button><button class="g d" data-kdel="' + x.id + '">Hapus</button></span>') +
         '</div></div>';
     }).join('');
   var lst =

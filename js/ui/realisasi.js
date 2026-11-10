@@ -7,7 +7,7 @@
 function lkChip(x) {
   var k = linkedTxIds()[x.id],
     it = k && item(k.split('|')[0]);
-  return it ? '<br><span class="chp on">melunasi: ' + esc(it.name) + ' (' + fmtD(k.split('|')[1]) + ')</span>' : '';
+  return it ? '<span class="chp on">melunasi: ' + esc(it.name) + ' (' + fmtD(k.split('|')[1]) + ')</span>' : '';
 }
 
 /** Toast + urungkan setelah transaksi baru otomatis dicocokkan dengan tagihan. */
