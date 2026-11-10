@@ -21,7 +21,7 @@ const spend=()=>w.calc().rows.map(r=>r.sp);
 // 1. data awal vs Excel
 ok(w.S.items.length===12,'seed 12 item');
 ok(spend().join()==='2300000,1415000,2075000,1865000,1550000,1965000,2000000,1415000,2075000,1865000,2300000,1615000','total per bulan sama dg Excel: '+spend().join());
-ok($('v-rincian').innerHTML.includes('Rincian arus kas 2027'),'rincian render');
+ok($('v-rincian').innerHTML.includes('Rincian arus tagihan 2027'),'rincian render');
 
 // 2. item baru lewat form
 function addItem(o){set('f-name',o.name);set('f-price',o.price);set('f-n',o.n||1);set('f-unit',o.unit||'bulan');set('f-start',o.start);

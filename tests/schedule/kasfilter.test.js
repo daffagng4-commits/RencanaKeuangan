@@ -22,7 +22,7 @@ const ok = (c, m) => { assert(c, m); pass++; console.log("ok -", m); };
   ];
   w.tab("kas"); w.renderAll(); await tick();
   const rows = () => [...w.document.querySelectorAll("#v-kas .it2")];
-  const amounts = () => rows().map((r) => r.querySelector(".kita > b").className);
+  const amounts = () => rows().map((r) => r.querySelector("b").className);
 
   ok($("ktf") && [...$("ktf").options].map((o) => o.value).join() === "all,+,-", "dropdown ada dengan 3 pilihan: all, +, -");
   ok([...$("ktf").options].map((o) => o.textContent.trim()).join("|") === "Semua|+ Masuk|− Keluar", "label: Semua | + Masuk | − Keluar");

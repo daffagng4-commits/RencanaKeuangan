@@ -641,7 +641,7 @@ function renderRincian() {
     );
   }).join('');
   var table =
-    '<div class="card"><h2>Rincian arus kas ' +
+    '<div class="card"><h2>Rincian arus tagihan ' +
     y +
     '</h2>' +
     gdBox(

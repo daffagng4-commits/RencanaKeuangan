@@ -304,29 +304,22 @@ function renderKas() {
       return '<option value="' + (c ? esc(c) : '__none') + '"' + ((c ? c : '__none') === kasCat ? ' selected' : '') + '>' + (c ? esc(c) : 'Tanpa kategori') + '</option>';
     }).join(''),
     lastD = '',
-    daySum = function (d) {
-      var s = 0;
-      LF.forEach(function (y) { if (y.d === d) s += y.t === '-' ? -y.amt : y.amt; });
-      return '<b class="' + (s < 0 ? 'neg' : 'kin') + '">' + (s < 0 ? '&minus; ' : '+ ') + rp(Math.abs(s)) + '</b>';
-    },
     rowsH = LF.slice(0, 200).map(function (x) {
-      var sep = x.d !== lastD ? '<div class="daysep"><span>' + fmtD(x.d) + '</span>' + daySum(x.d) + '</div>' : '';
+      var sep = x.d !== lastD ? '<div class="daysep"><span>' + fmtD(x.d) + '</span></div>' : '';
       lastD = x.d;
-      return sep + '<div class="it2 kit"><div class="kitm"><b class="kitt">' +
-        esc(x.note || x.cat || (x.t === '-' ? 'Pengeluaran' : 'Pemasukan')) +
-        '</b><span class="kits">' +
-        (x.cat && x.note ? esc(x.cat) + ' &middot; ' : '') +
-        x.d.slice(8, 10) + '/' + x.d.slice(5, 7) +
-        '</span>' + lkChip(x) +
-        '</div><div class="kita"><b class="' +
+      return sep + '<div class="it2 kit"><div><b class="' +
         (x.t === '-' ? 'neg' : 'kin') +
         '">' +
         (x.t === '-' ? '&minus; ' : '+ ') +
         rp(x.amt) +
         '</b>' +
+        (x.cat ? ' <span class="sub">' + esc(x.cat) + '</span>' : '') +
+        (x.note ? '<br><span class="sub">' + esc(x.note) + '</span>' : '') +
+        lkChip(x) +
+        '</div><div>' +
         (x.ro
-          ? '<span class="kitr">dari ' + (x.ro === 'tabungan' ? 'Target tabungan' : 'Jadwal Bayar') + '</span>'
-          : '<span class="kitx"><button class="g" data-ked="' + x.id + '">Ubah</button><button class="g d" data-kdel="' + x.id + '">Hapus</button></span>') +
+          ? '<span class="sub">dari ' + (x.ro === 'tabungan' ? 'Target tabungan' : 'Jadwal Bayar') + '</span>'
+          : '<button class="g" data-ked="' + x.id + '">Ubah</button><button class="g d" data-kdel="' + x.id + '">Hapus</button>') +
         '</div></div>';
     }).join('');
   var lst =
