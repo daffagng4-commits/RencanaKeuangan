@@ -274,23 +274,10 @@ function heroHtml(c, R, lead, txCount, C) {
     if (C.byMonth[r.m] > C.byMonth[hv.m]) hv = r;
     if (C.byMonth[r.m] < C.byMonth[mn.m]) mn = r;
   });
-  var pv = function (v) {
-      return '<b class="pv">' + rp(v) + '</b>';
-    },
-    note =
-      c.end < 0
-        ? '<div class="err">Saldo habis sebelum akhir tahun. Kurangi item atau tambah saldo awal.</div>'
-        : '<div class="sub">dari saldo awal ' +
-          pv(S.saldo) +
-          (c.adjIn
-            ? ' ' + (c.adjIn > 0 ? '+' : '−') + ' ' + pv(Math.abs(c.adjIn)) + ' penyesuaian = ' + pv(c.open)
-            : '') +
-          ' di awal ' +
-          MON[+S.startMonth || 0] +
-          (c.adjLate
-            ? ' (' + (c.adjLate > 0 ? '+' : '−') + pv(Math.abs(c.adjLate)) + ' penyesuaian di bulan berikutnya)'
-            : '') +
-          '</div>';
+  var note =
+    c.end < 0
+      ? '<div class="err">Saldo habis sebelum akhir tahun. Kurangi item atau tambah saldo awal.</div>'
+      : '';
   var stat = function (label, value, sub, cls, blur) {
     return (
       '<div><span>' +
@@ -312,9 +299,7 @@ function heroHtml(c, R, lead, txCount, C) {
     (jatah == null ? '—' : rp(jatah)) +
     '</div>' +
     note +
-    '<div class="sub mt4">Sisa saldo akhir tahun dibagi ' +
-    n +
-    ' bulan.</div></div>';
+    '</div>';
   var plain =
     '<div class="card m0"><div class="sub">Sisa saldo akhir Des ' +
     S.year +
@@ -329,8 +314,8 @@ function heroHtml(c, R, lead, txCount, C) {
     '<div class="hero">' +
     (lead ? lead() : plain) +
     '<div class="card stats m0">' +
-    stat('Rata-rata per bulan', rp(C.out / n)) +
     stat('Bulan terberat', rp(C.byMonth[hv.m]), MON[hv.m]) +
+    stat('Rata-rata per bulan', rp(C.out / n)) +
     stat('Bulan teringan', rp(C.byMonth[mn.m]), MON[mn.m]) +
     (txCount != null ? stat('Transaksi kas', String(txCount), 'catatan kas', '', false) : '') +
     jatahHtml +

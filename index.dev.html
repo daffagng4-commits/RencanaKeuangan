@@ -31,14 +31,7 @@
       <div class="topbar-actions">
         <button type="button" id="acct" class="acct" title="Masuk / daftar untuk sinkron" aria-label="Akun"><span id="acct-ini">?</span></button>
         <div class="yr-pop" id="yr-pop">
-          <button type="button" class="acct yr-plus" id="yr-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="yr-panel" title="Tahun, bulan saldo, dan saldo awal" aria-label="Tahun, bulan saldo, dan saldo awal">+</button>
-          <div class="yr-panel" id="yr-panel" role="dialog" aria-label="Tahun, bulan saldo, dan saldo awal" hidden>
-            <div class="sub fw6" id="yr-sum">2027 · Jan · Rp 25.000.000</div>
-            <div class="yr-field"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
-            <div class="yr-field"><label for="sm">Bulan saldo</label><select id="sm"></select></div>
-            <div class="yr-field"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub mt4" id="adjs"></div></div>
-            <button type="button" class="p yr-done" id="yr-done">Selesai</button>
-          </div>
+          <button type="button" class="topbar-btn yr-plus" id="yr-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="yr-panel" title="Tahun, bulan saldo, dan saldo awal" aria-label="Tahun, bulan saldo, dan saldo awal">+</button>
         </div>
         <button type="button" id="btn-privacy" class="topbar-btn" data-more title="Mode Privasi (Kaburkan Nominal)" aria-label="Mode Privasi" aria-pressed="false"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Privasi</span></button>
         <button type="button" id="btn-notif" class="topbar-btn" data-more title="Aktifkan pengingat notifikasi tagihan" aria-label="Notifikasi tagihan"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>Notifikasi</span></button>
@@ -46,9 +39,20 @@
         <button type="button" id="tb-more" class="topbar-btn tb-more" aria-expanded="true" title="Sembunyikan tombol lain" aria-label="Sembunyikan tombol lain"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>
       </div>
 </div>
+<div class="modal" id="yr-panel" role="dialog" aria-modal="true" aria-label="Tahun, bulan saldo, dan saldo awal" hidden>
+  <div class="card">
+    <h2>Tahun, bulan saldo, saldo awal</h2>
+    <div class="sub mb10" id="yr-sum">2027 · Jan · Rp 25.000.000</div>
+    <div class="yr-fields">
+      <div class="yr-field"><label for="year">Tahun</label><input id="year" type="number" min="1900" max="2200" inputmode="numeric" list="yl"><datalist id="yl"></datalist></div>
+      <div class="yr-field"><label for="sm">Bulan saldo</label><select id="sm"></select></div>
+      <div class="yr-field"><label for="saldo">Saldo awal (Rp)</label><input id="saldo" inputmode="numeric" placeholder="25.000.000"><div class="sub mt4" id="adjs"></div></div>
+    </div>
+    <div class="row2 mt12"><button type="button" class="p" id="yr-done">Simpan</button><button type="button" class="c" id="yr-close">Tutup</button></div>
+  </div>
+</div>
 <header>
   <div><h1>Rencana Keuangan</h1><div class="sub fs115 cmut mt2"" id="ver-info"" title="Versi program terbaru">v-r21 · 9 Nov 2026</div><div class="sub" id="status" style="display:none"></div><div class="sub" id="sbs" style="display:none"></div></div>
-</header>
 <nav role="tablist">
   <button role="tab" data-t="rincian" aria-selected="true">Rincian Bulanan</button>
   <button role="tab" data-t="kas" aria-selected="false">Catatan Kas</button>
@@ -56,6 +60,7 @@
   <button role="tab" data-t="item" aria-selected="false">Kelola Item</button>
   <button role="tab" data-t="sim" aria-selected="false">Simulasi</button>
 </nav>
+</header>
 
 <div class="yb" id="yb"></div>
 <button type="button" class="rem" id="rem" hidden></button>

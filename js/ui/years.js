@@ -122,11 +122,20 @@ function bindYears() {
     };
     var done = $('yr-done');
     if (done) done.onclick = function () {
+      save();
       setOpen(false);
       btn.focus();
     };
+    var close = $('yr-close');
+    if (close) close.onclick = function () {
+      setOpen(false);
+      btn.focus();
+    };
+    panel.onclick = function (e) {
+      if (e.target === panel) setOpen(false);
+    };
     document.addEventListener('click', function (e) {
-      if (!panel.hidden && !pop.contains(e.target)) setOpen(false);
+      if (!panel.hidden && !panel.contains(e.target) && !pop.contains(e.target)) setOpen(false);
     });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && !panel.hidden) {
