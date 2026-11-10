@@ -161,6 +161,13 @@ test('@pakai mengganti tahun aktif, @tahun mendaftar', () => {
   assert.ok(reply('@pakai 1999', all).text.includes('tidak ada'));
 });
 
+test('nama bulan lengkap & alias diterima', () => {
+  const all = fixture();
+  for (const q of ['@rekap november', '@rekap November 2027', '@rekap nopember', '@rekap 11', '@jadwal november'])
+    assert.ok(/(November|Jadwal November)/.test(reply(q, all).text), q + ' -> ' + reply(q, all).text);
+  assert.ok(reply('@rekap januari', all).text.includes('Januari'));
+});
+
 test('worker: webhook menyimpan state dan membalas chat', async () => {
   const { default: worker } = await import('../bot/worker.mjs');
   const orig = globalThis.fetch, calls = [];

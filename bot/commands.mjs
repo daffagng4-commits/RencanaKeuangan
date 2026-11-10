@@ -7,6 +7,7 @@ if (!T) {
 }
 
 const list = [
+  ['keterangan', 'Daftar semua perintah'],
   ['start', 'Mulai & daftar perintah'],
   ['saldo', 'Saldo realtime, bulan ini, sisa akhir tahun'],
   ['jatah', 'Jatah jajan per bulan'],

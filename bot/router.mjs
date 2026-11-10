@@ -202,12 +202,16 @@ function cariText(arg) {
     '• ' + it.name + ' — ' + rp(it.price) + ' tiap ' + (it.n > 1 ? it.n + ' ' : '') + it.unit + ' (id ' + it.id + ')').join('\n');
 }
 
+const ALIAS_MON = { nopember: 'november', pebruari: 'februari', okt: 'oktober', des: 'desember' };
+
 function monthArg(key) {
   key = String(key || '').toLowerCase().trim();
   if (!key) return Math.min(11, Math.max(0, new Date().getUTCMonth()));
-  const names = FULL_MON.map((x) => x.toLowerCase());
-  let i = names.findIndex((x) => x.indexOf(key) === 0);
-  if (i < 0) i = MON.map((x) => x.toLowerCase()).indexOf(key);
+  if (ALIAS_MON[key]) key = ALIAS_MON[key];
+  const names = FULL_MON.map((x) => x.toLowerCase()), short = MON.map((x) => x.toLowerCase());
+  let i = names.indexOf(key);
+  if (i < 0) i = names.findIndex((x) => x.indexOf(key) === 0 && key.length >= 3);
+  if (i < 0) i = short.indexOf(key);
   if (i >= 0) return i;
   if (/^\d{1,2}$/.test(key)) return Math.min(11, Math.max(0, +key - 1));
   return null;
@@ -363,17 +367,29 @@ function utangPay(arg, kind) {
   return r.err || (r.ok + '\nSisa ' + hit.name + ': ' + rp(sisa - use));
 }
 
+function tahunList() {
+  const all = CUR || {};
+  return Object.keys(all.data || {}).map(Number).sort();
+}
+
 function tahunText() {
-  const all = CUR || {}, ys = Object.keys(all.data || {}).map(Number).sort();
-  return ['📅 Tahun tersedia: ' + (ys.join(', ') || '-'),
-    'Aktif: ' + all.year,
-    'Ganti tahun: @pakai 2027',
-    'Tahun lain: @rekap nov 2027'].join('\n');
+  const all = CUR || {}, ys = tahunList();
+  const rows = ys.map((y) => {
+    const d = all.data[y] || {};
+    return (y === +all.year ? '▶️ ' : '• ') + y + ' — ' + (d.items || []).length + ' item, saldo awal ' + rp(+d.saldo || 0);
+  });
+  return ['📅 Tahun di data bot (sumber: Supabase):', ...(rows.length ? rows : ['(kosong)']),
+    '', 'Aktif: ' + all.year,
+    'Ganti: @pakai ' + (ys.filter((y) => y !== +all.year)[0] || ys[0] || '2027'),
+    'Bulan lain: @rekap november 2026'].join('\n');
 }
 
 function pakaiText(arg) {
-  const y = +String(arg || '').trim();
-  if (!y || !CUR || !CUR.data || !CUR.data[y]) return '⚠️ Tahun "' + (arg || '') + '" tidak ada. Lihat @tahun';
+  const y = +String(arg || '').trim(), ys = tahunList();
+  if (!y || !CUR || !CUR.data || !CUR.data[y]) {
+    return '⚠️ Tahun "' + (arg || '') + '" tidak ada di data bot.\nTersedia: ' + (ys.join(', ') || '-') +
+      '\nKalau di web tahun itu ada, berarti web belum menyimpannya ke Supabase: buka web, pastikan sinkronisasi aktif, simpan sekali, lalu coba lagi.';
+  }
   CUR.year = y;
   bind(CUR);
   return '✅ Tahun aktif: ' + y + '\n\n' + saldoText();
