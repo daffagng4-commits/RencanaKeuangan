@@ -708,7 +708,8 @@ tr.det { cursor: pointer; }
   box-shadow: var(--sh);
 }
 #tip[hidden] { display: none; }
-[data-tip] { outline-offset: 2px; }
+[data-tip]:focus { outline: none; }
+[data-tip]:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; border-radius: 6px; }
 .flashb { animation: fl 2.6s ease-out; }
 @keyframes fl { from { background: var(--acs); } to { background: transparent; } }
 tr.flash td { animation: fl 2.6s ease-out; }
@@ -975,7 +976,11 @@ button.alat-item { width: 100%; border: 0; background: transparent; text-align: 
   background: var(--wrs);
 }
 .pd.chg { border-color: var(--bl); border-style: dashed; color: var(--bl); }
-.pd .cp { display: block; font-size: 10.5px; line-height: 1.2; font-weight: 700; color: var(--bl); }
+.pd .cp { display: block; font-size: 10.5px; line-height: 1.2; font-weight: 700; color: inherit; }
+/* Warna status (lunas/terlambat/dilewati) menang atas warna "harga berubah". */
+.pd.on.chg { color: var(--ac-ink); }
+.pd.wr.chg, .pd.late.chg { color: var(--wr); border-color: var(--wr); }
+.pd.wr.on.chg, .pd.late.on.chg { color: var(--sf); }
 .pd.late:not(.old) { animation: none; }
 .pd.fx-skip { animation: skipfx 0.55s ease-out; }
 @keyframes skipfx {
@@ -1161,7 +1166,10 @@ a.lnk:hover { text-decoration: underline; text-underline-offset: 3px; }
 .pie svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .pie-slice { fill: none; stroke-width: 16; cursor: pointer; pointer-events: stroke; transition: stroke-width 0.15s ease, filter 0.15s ease; }
 .pie-slice:hover { stroke-width: 21; filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.18)); }
-.pie-slice:focus-visible { outline: none; filter: brightness(1.12); }
+.pie-slice:focus { outline: none; }
+.pie-slice:focus-visible { outline: none; stroke-width: 21; filter: brightness(1.12); }
+.pie:focus { outline: none; }
+.pie:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--ac); }
 .pie span { position: relative; z-index: 1; font-weight: 700; font-size: 22px; letter-spacing: -0.02em; }
 .pie-lg { display: flex; flex-direction: column; gap: 7px; font-size: 12.5px; }
 .pie-lg span { display: flex; align-items: center; gap: 7px; }
