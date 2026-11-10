@@ -48,7 +48,7 @@ function sheetHtml() {
     '<div class="bs-h">Rencana</div>' +
     (tripOn() ? '<button type="button" role="menuitem" data-go="item">Kelola Item</button>' : '') +
     '<button type="button" role="menuitem" data-go="sim">Simulasi</button>' +
-    '<button type="button" role="menuitemcheckbox" data-trip-toggle aria-checked="false">Tampilkan Perjalanan</button>' +
+    '<button type="button" role="menuitem" data-go="trip">Perjalanan</button>' +
     '<div class="bs-h">Alat</div>' +
     '<a role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span>' + ext + '</a>' +
     '<a role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span>' + ext + '</a>' +
@@ -135,8 +135,10 @@ function bindNav() {
       e.stopPropagation();
       alat(am.hidden);
     };
-    am.onclick = function () {
+    am.onclick = function (e) {
+      var g = e.target.closest('[data-go]');
       alat(false);
+      if (g) navGo(g.dataset.go);
     };
   }
 
@@ -169,10 +171,6 @@ function bindNav() {
       sheet(false);
       if (b.dataset.go === 'backup') document.getElementById('bk').click();
       else navGo(b.dataset.go);
-    } else if (e.target.closest('[data-trip-toggle]')) {
-      e.stopPropagation();
-      setTripVisible(!tripOn());
-      sheet(false);
     } else if (e.target.closest('a') || e.target.closest('[data-theme-set]')) sheet(false);
   };
   document.addEventListener('click', function (e) {
@@ -180,7 +178,6 @@ function bindNav() {
     if (g) navGo(g.dataset.goto);
     var ts = e.target.closest('[data-theme-set]');
     if (ts) setTheme(themeCur() === ts.dataset.themeSet ? 'auto' : ts.dataset.themeSet);
-    if (e.target.closest('[data-trip-toggle]')) setTripVisible(!tripOn());
     if (!e.target.closest('#alat')) alat(false);
     if (!sh.hidden && !e.target.closest('#botsheet') && !e.target.closest('#botnav')) sheet(false);
   });

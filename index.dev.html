@@ -27,9 +27,9 @@
   <div class="kt" id="mdbar">
     <button type="button" class="yp on" data-md="rencana">Rencana Keuangan</button>
     <button type="button" class="yp" data-md="trip">Perjalanan</button>
-    <div class="alat" id="alat"><button type="button" class="yp" id="alat-btn" aria-haspopup="true" aria-expanded="false"><span>Alat</span><svg class="arr-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button><div class="alat-menu" id="alat-menu" role="menu" hidden><a class="alat-item" role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><a class="alat-item" role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><button type="button" class="alat-item" role="menuitem" id="bk"><span>Impor / Ekspor</span></button><button type="button" class="alat-item" role="menuitem" id="pwa" hidden><span>Pasang aplikasi</span></button><button type="button" class="alat-item" role="menuitemcheckbox" data-trip-toggle aria-checked="false"><span>Tampilkan Perjalanan</span></button></div></div>
       </div>
       <div class="topbar-actions">
+    <div class="alat" id="alat"><button type="button" class="yp" id="alat-btn" aria-haspopup="true" title="Alat & laporan" aria-label="Alat" aria-expanded="false"><svg class="arr-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><div class="alat-menu" id="alat-menu" role="menu" hidden><a class="alat-item" role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><a class="alat-item" role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><div class="bs-h">Laporan</div><button type="button" class="alat-item" role="menuitem" data-rep="d"><span>Hari ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="w"><span>Minggu ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="m"><span>Bulan ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="y"><span>Tahun ini</span></button><button type="button" class="alat-item" role="menuitem" data-go="trip"><span>Perjalanan</span></button><button type="button" class="alat-item" role="menuitem" id="bk"><span>Impor / Ekspor</span></button><button type="button" class="alat-item" role="menuitem" id="pwa" hidden><span>Pasang aplikasi</span></button></div></div>
         <button type="button" id="acct" class="acct" title="Masuk / daftar untuk sinkron" aria-label="Akun"><span id="acct-ini">?</span></button>
         <div class="yr-pop" id="yr-pop">
           <button type="button" class="topbar-btn yr-plus" id="yr-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="yr-panel" title="Tahun, bulan saldo, dan saldo awal" aria-label="Tahun, bulan saldo, dan saldo awal"><svg class="arr-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -39,7 +39,6 @@
         <button type="button" id="thm" class="topbar-btn" data-more title="Ketuk untuk ganti tema" aria-label="Ganti tema"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span id="thm-txt">Tema</span></button>
         <button type="button" id="tb-more" class="topbar-btn tb-more" aria-expanded="true" title="Sembunyikan tombol lain" aria-label="Sembunyikan tombol lain"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>
       </div>
-</div>
 <div class="modal" id="yr-panel" role="dialog" aria-modal="true" aria-label="Tahun, bulan saldo, dan saldo awal" hidden>
   <div class="card">
     <h2>Tahun, bulan saldo, saldo awal</h2>
@@ -53,17 +52,16 @@
   </div>
 </div>
 <header>
-  <div><h1>Rencana Keuangan</h1><div class="sub fs115 cmut mt2"" id="ver-info"" title="Versi program terbaru">v-r21 · 9 Nov 2026</div><div class="sub" id="status" style="display:none"></div><div class="sub" id="sbs" style="display:none"></div></div>
+  <div><div class="yb" id="yb"></div><div class="sub fs115 cmut" id="ver-info" hidden title="Versi program terbaru"></div><div class="sub" id="status" style="display:none"></div><div class="sub" id="sbs" style="display:none"></div></div>
 <nav role="tablist">
   <button role="tab" data-t="rincian" aria-selected="true">Rincian Bulanan</button>
-  <button role="tab" data-t="kas" aria-selected="false">Catatan Kas</button>
-  <button role="tab" data-t="jadwal" aria-selected="false">Jadwal Bayar</button>
+  <button role="tab" data-t="kas" aria-selected="false">Transaksi</button>
+  <button role="tab" data-t="jadwal" aria-selected="false">Jadwal Tagihan</button>
   <button role="tab" data-t="item" aria-selected="false">Kelola Item</button>
   <button role="tab" data-t="sim" aria-selected="false">Simulasi</button>
 </nav>
 </header>
 
-<div class="yb" id="yb"></div>
 <button type="button" class="rem" id="rem" hidden></button>
 <section id="v-rincian"></section>
 <section id="v-jadwal" hidden></section>
@@ -269,6 +267,7 @@
 <script src="js/ui/theme.js"></script>
 <script src="js/ui/kas.js"></script>
 <script src="js/ui/trip.js"></script>
+<script src="js/ui/report.js"></script>
 <script src="js/ui/nav.js"></script>
 <script src="js/ui/tip.js"></script>
 <script src="js/ui/topbar.js"></script>

@@ -11,7 +11,6 @@ function renderYears() {
   var sum = $('yr-sum');
   if (sum) sum.textContent = S.year + ' · ' + MON[+S.startMonth || 0] + ' · ' + rp(+S.saldo || 0);
   $('yb').innerHTML =
-    '<span class="sub">Data tahun:</span>' +
     ks
       .map(function (k) {
         return (

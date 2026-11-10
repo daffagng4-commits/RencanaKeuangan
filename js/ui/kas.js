@@ -318,7 +318,7 @@ function renderKas() {
         lkChip(x) +
         '</div><div>' +
         (x.ro
-          ? '<span class="sub">dari ' + (x.ro === 'tabungan' ? 'Target tabungan' : 'Jadwal Bayar') + '</span>'
+          ? '<span class="sub">dari ' + (x.ro === 'tabungan' ? 'Target tabungan' : 'Jadwal Tagihan') + '</span>'
           : '<button class="g" data-ked="' + x.id + '">Ubah</button><button class="g d" data-kdel="' + x.id + '">Hapus</button>') +
         '</div></div>';
     }).join('');

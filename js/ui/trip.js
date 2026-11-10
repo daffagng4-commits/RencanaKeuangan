@@ -531,7 +531,6 @@ function modeUi() {
   var ctl = document.querySelector('.ctl');
   if (ctl) ctl.style.display = O ? 'none' : '';
   $('rem').style.display = O ? 'none' : '';
-  document.querySelector('h1').textContent = T ? 'Perjalanan' : X ? TOOLS[mode].title : 'Rencana Keuangan';
   if (O) {
     ['rincian', 'jadwal', 'item', 'kas', 'sim'].forEach(function (x) {
       $('v-' + x).hidden = true;

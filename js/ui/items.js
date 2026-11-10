@@ -122,7 +122,7 @@ function preview() {
   var d = nextDates(f, f.unit === 'sekali' ? 1 : 5);
   var tail = f.unit === 'sekali' ? '' : d.length >= 5 && !(+f.cnt && +f.cnt <= 5) ? ' …' : '';
   p.textContent =
-    'Jadwal bayar: ' +
+    'Jadwal Tagihan: ' +
     d
       .map(function (t) {
         return fd(t);

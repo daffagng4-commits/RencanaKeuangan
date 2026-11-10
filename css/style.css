@@ -718,6 +718,7 @@ tr.flash td { animation: fl 2.6s ease-out; }
    6. Menu Alat, bottom nav (HP), utilitas
    ============================================================ */
 .alat { position: relative; }
+.topbar-actions .alat-menu { left: auto; right: 0; }
 .alat .yp { display: inline-flex; align-items: center; gap: 6px; }
 .alat-menu {
   position: absolute;

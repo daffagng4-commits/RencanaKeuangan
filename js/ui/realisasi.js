@@ -26,8 +26,8 @@ function realisasiHtml() {
   if (!D.nPaid)
     return (
       head +
-      '<div class="empty">Belum ada tagihan yang dilunasi di tahun ini. Tandai lunas di Jadwal Bayar, atau catat pengeluaran di Catatan Kas agar otomatis dicocokkan dengan tagihan.</div>' +
-      '<div class="row2 mt8"""><button type="button" data-goto="jadwal">Buka Jadwal Bayar</button><button type="button" data-goto="kas">Buka Catatan Kas</button></div></div>'
+      '<div class="empty">Belum ada tagihan yang dilunasi di tahun ini. Tandai lunas di Jadwal Tagihan, atau catat pengeluaran di Transaksi agar otomatis dicocokkan dengan tagihan.</div>' +
+      '<div class="row2 mt8"""><button type="button" data-goto="jadwal">Buka Jadwal Tagihan</button><button type="button" data-goto="kas">Buka Transaksi</button></div></div>'
     );
   var diff = D.act - D.planPaid,
     cls = function (v) {

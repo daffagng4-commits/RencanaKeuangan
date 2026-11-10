@@ -68,7 +68,9 @@ function saldoLine(o) {
     }).join('');
   return (
     '<div class="card"><div class="dflex jcsb aic fwrap g8 mb6"><h2 style="margin:0">' + o.title + '</h2>' +
-    (o.sub ? '<span class="sub fs12">' + o.sub + '</span>' : '') + '</div>' +
+    (o.sub ? '<span class="sub fs12">' + o.sub + '</span>' : '') +
+    (o.tabs ? '<div class="cat-tabs" role="tablist">' + o.tabs + '</div>' : '') +
+    '</div>' +
     '<svg class="lc kch" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(o.aria || o.title) + '">' +
     '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--ac)" stop-opacity=".18"></stop><stop offset="1" stop-color="var(--ac)" stop-opacity="0"></stop></linearGradient></defs>' +
     grid +

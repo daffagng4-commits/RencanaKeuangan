@@ -1,4 +1,4 @@
-// Tahap 3 (item 14): Perjalanan disembunyikan bila belum ada datanya; bisa ditampilkan/disembunyikan dari menu.
+// Perjalanan disembunyikan bila belum ada datanya; menu memakai item navigasi langsung (bukan toggle).
 const assert = require('assert');
 const { boot } = require('./ui.js');
 
@@ -20,36 +20,23 @@ const { boot } = require('./ui.js');
   assert(!w.document.querySelector('#botsheet [data-go="item"]'), 'Kelola Item tidak diulang di lembar');
   assert(w.getComputedStyle(tripBtn()).display === 'none');
 
-  // menyalakan dari menu Alat
-  assert.strictEqual(alatToggle().getAttribute('aria-checked'), 'false');
-  click($('alat-btn'));
-  click(alatToggle());
-  assert.strictEqual(w.tripOn(), true);
-  assert.strictEqual(w.localStorage.getItem('rk-trip-vis'), '1');
-  assert(!tripBtn().hidden, 'tombol mode tampil');
-  assert.deepStrictEqual(keys(), ['rincian', 'kas', 'jadwal', 'trip', 'more'], 'bilah bawah memakai Perjalanan');
-  assert(w.document.querySelector('#botsheet [data-go="item"]'), 'Kelola Item pindah ke lembar Lainnya');
-  assert(alatToggle().classList.contains('on') && alatToggle().getAttribute('aria-checked') === 'true');
+  // menu: toggle hilang, item Perjalanan langsung navigasi
+  w.document.querySelector('#alat-menu').hidden = false;
+  const tripItem = w.document.querySelector('#alat-menu [data-go="trip"]');
+  assert(tripItem, 'menu Alat punya item Perjalanan');
+  assert.strictEqual(tripItem.textContent.trim(), 'Perjalanan');
+  assert(!w.document.querySelector('#alat-menu [data-trip-toggle]'), 'toggle Perjalanan dihapus');
+  assert.strictEqual(w.tripOn(), false, 'menu tidak mengubah visibilitas');
 
-  // masuk mode Perjalanan lalu sembunyikan -> kembali ke Rencana
-  click(bar.querySelector('[data-k="trip"]'));
-  assert.strictEqual(w.mode, 'trip');
-  click($('alat-btn'));
-  click(alatToggle());
-  assert.strictEqual(w.tripOn(), false);
-  assert.strictEqual(w.mode, 'rencana', 'keluar dari mode Perjalanan saat disembunyikan');
-  assert(!$('v-rincian').hidden || !$('v-jadwal').hidden || !$('v-kas').hidden, 'tampilan Rencana kembali');
-  assert($('v-trip').hidden);
-
-  // lembar Lainnya (HP) juga bisa menyalakan; tombol 'item' aktif saat tab Item terbuka
-  click(bar.querySelector('[data-k="item"]'));
-  assert.strictEqual(w.curTab, 'item');
-  assert(bar.querySelector('[data-k="item"]').classList.contains('on'), 'Item menyala');
+  // lembar Lainnya (HP): item Perjalanan langsung ke mode perjalanan
   click(bar.querySelector('[data-k="more"]'));
-  click(w.document.querySelector('#botsheet [data-trip-toggle]'));
-  assert.strictEqual(w.tripOn(), true);
-  assert($('botsheet').hidden, 'lembar menutup');
-  assert(bar.querySelector('[data-k="more"]').classList.contains('on'), 'Lainnya menyala untuk tab Item bila Perjalanan tampil');
+  const sheetTrip = w.document.querySelector('#botsheet [data-go="trip"]');
+  assert(sheetTrip, 'lembar punya item Perjalanan');
+  assert.strictEqual(sheetTrip.textContent.trim(), 'Perjalanan');
+  click(sheetTrip);
+  assert.strictEqual(w.mode, 'trip', 'langsung ke halaman Perjalanan');
+  assert(!$('v-trip').hidden);
+  assert(w.localStorage.getItem('rk-trip-vis') !== '1', 'tanpa set visibilitas eksplisit');
 
   // data perjalanan ada + belum ada pilihan eksplisit -> tampil otomatis
   w.localStorage.removeItem('rk-trip-vis');

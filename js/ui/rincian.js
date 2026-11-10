@@ -4,6 +4,7 @@
 
 var openRows = {};
 var catPeriod = 'y';
+var flowPeriod = 'y';
 var catDir = '-';
 
 /** Legenda chip di kolom "Item berkala" (dipakai juga oleh panduan yang bisa disembunyikan). */
@@ -130,27 +131,30 @@ function cashPeriod(C, p) {
   return { from: from, to: to, inc: inc, out: out, total: out, n: n, nin: nin, byCat: byCat, incByCat: incByCat, avg: out / days };
 }
 
-/** Tombol periode yang mengendalikan pie dan bar kategori sekaligus. */
-function cashPeriodTabs() {
-  return [
-    ['w', '7 hari'],
-    ['m', 'Bulan'],
-    ['y', 'Tahun']
-  ]
+/** Tombol periode 7 hari / bulan / tahun; attr = nama data-atribut pemicunya. */
+function periodTabs(attr, cur) {
+  return [['w', '7 hari'], ['m', 'Bulan'], ['y', 'Tahun']]
     .map(function (t) {
       return (
         '<button type="button" class="cat-tab' +
-        (catPeriod === t[0] ? ' on' : '') +
-        '" data-catp="' +
+        (cur === t[0] ? ' on' : '') +
+        '" data-' +
+        attr +
+        '="' +
         t[0] +
         '" aria-pressed="' +
-        (catPeriod === t[0] ? 'true' : 'false') +
+        (cur === t[0] ? 'true' : 'false') +
         '">' +
         t[1] +
         '</button>'
       );
     })
     .join('');
+}
+
+/** Tombol periode yang mengendalikan pie dan bar kategori sekaligus. */
+function cashPeriodTabs() {
+  return periodTabs('catp', catPeriod);
 }
 
 /** Satu kartu: pie pemasukan/pengeluaran + bar per kategori, disatukan periode. */
@@ -352,8 +356,30 @@ function flowChart(R) {
   if (!ev.length) return '';
   ev.sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; });
   var start = ev[0].d,
-    end = ev[ev.length - 1].d,
+    end = ev[ev.length - 1].d;
+  // Rentang mengikuti tab periode (7 hari / bulan / tahun); jangkar = hari ini atau data terakhir.
+  var y = +S.year,
+    today = todayISO(),
+    anchor = +today.slice(0, 4) === y ? today : +today.slice(0, 4) < y ? end : y + today.slice(4),
+    from,
+    to;
+  if (flowPeriod === 'w') {
+    from = addDaysISO(anchor, -6);
+    to = anchor;
+  } else if (flowPeriod === 'm') {
+    from = anchor.slice(0, 7) + '-01';
+    to = isoD(Date.UTC(y, +anchor.slice(5, 7), 0));
+  } else {
+    from = y + '-01-01';
+    to = y + '-12-31';
+  }
+  var a0 = start < from ? from : start,
+    a1 = end > to ? to : end,
+    pre = 0,
     by = {};
+  ev.forEach(function (e) {
+    if (e.d < a0) pre += e.delta;
+  });
   ev.forEach(function (e) {
     (by[e.d] = by[e.d] || []).push(e);
   });
@@ -362,8 +388,8 @@ function flowChart(R) {
       return z.getUTCDate() + ' ' + MON[z.getUTCMonth()];
     },
     pts = [],
-    bal = base;
-  for (var t = Date.parse(start + 'T00:00:00Z'), last = Date.parse(end + 'T00:00:00Z'); t <= last; t += 864e5) {
+    bal = base + pre;
+  for (var t = Date.parse(a0 + 'T00:00:00Z'), last = Date.parse(a1 + 'T00:00:00Z'); t <= last; t += 864e5) {
     var d = isoD(t),
       day = by[d] || [];
     day.forEach(function (e) { bal += e.delta; });
@@ -381,7 +407,8 @@ function flowChart(R) {
   return saldoLine({
     id: 'rincian',
     title: 'Arus saldo ' + S.year,
-    sub: 'Perubahan saldo · ' + dd(start) + ' – ' + dd(end),
+    sub: 'Perubahan saldo · ' + dd(a0) + ' – ' + dd(a1),
+    tabs: periodTabs('flowp', flowPeriod),
     aria: 'Grafik arus saldo ' + S.year,
     pts: pts,
     foot: 'Terendah <b class="pv' + (low.v < 0 ? ' neg' : '') + '">' + rp(low.v) + '</b> (' + dd(low.d) + ') · saldo terakhir <b class="pv">' + rp(pts[pts.length - 1].v) + '</b>'
@@ -691,6 +718,12 @@ function bindRincian() {
     var cp = e.target.closest('[data-catp]');
     if (cp) {
       catPeriod = cp.dataset.catp;
+      renderRincian();
+      return;
+    }
+    var fpb = e.target.closest('[data-flowp]');
+    if (fpb) {
+      flowPeriod = fpb.dataset.flowp;
       renderRincian();
       return;
     }
