@@ -910,6 +910,13 @@ function savePm() {
       });
     });
     d.cs.forEach(function (c) {
+      // Siklus baru pada tanggal yang sama menggantikan geseran lama; jika tidak,
+      // segmen "sekali" lama terus menutupi jadwal berulang yang baru.
+      if (c.n || c.unit) {
+        it.ch = (it.ch || []).filter(function (q) {
+          return !(q.anchor && q.anchor === c.from && !q.mv && !q.dates);
+        });
+      }
       it.ch.push(c);
     });
     it.ch.sort(cmpFrom);

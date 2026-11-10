@@ -4,6 +4,7 @@ const { boot } = require("./ui");
 (async () => {
   console.log("=== Menguji Modal Ubah Harga / Jadwal untuk Item 'Sekali Saja' ===");
   const { w, $, click, fire } = boot();
+  w.S.year = 2026;
 
   const itemSekali = {
     id: 888,
@@ -51,6 +52,7 @@ const { boot } = require("./ui");
   assert.strictEqual(dates.length, 1);
 
   // 3. Uji 'Geser tanggal bayar' ke tanggal lebih awal (misal 2026-11-10)
+  click($("pbk2")); // tutup dulu agar prefill memakai jadwal terbaru
   w.openPm(888);
   click(w.document.querySelector('#psc button[data-sc="geser"]'));
   $("pdt").value = "2026-11-10";
@@ -63,6 +65,7 @@ const { boot } = require("./ui");
   assert.strictEqual(dates.length, 1);
 
   // 4. Uji 'Ganti seberapa sering bayar' (dari sekali menjadi tiap 1 bulan)
+  click($("pbk2"));
   w.openPm(888);
   click(w.document.querySelector('#psc button[data-sc="siklus"]'));
   assert.strictEqual($("pcad").hidden, false, "Isian seberapa sering bayar (#pcad) harus terlihat");

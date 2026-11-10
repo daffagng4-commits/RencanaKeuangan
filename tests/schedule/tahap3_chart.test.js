@@ -16,7 +16,7 @@ const { boot } = require('./ui.js');
   assert.strictEqual(w.catColor('Investasi'), '#6366f1');
   assert.strictEqual(w.catColor('DCA saham'), '#6366f1');
   const makan = w.catColor('Makan'), a = w.catColor('Hiburan');
-  assert(/^#[0-9a-f]{6}$/.test(makan));
+  assert(/^(#[0-9a-f]{6}|hsl\()/.test(makan), makan);
   assert.strictEqual(w.catColor('Makan'), makan, 'deterministik');
 
   w.__today = '2026-11-08';

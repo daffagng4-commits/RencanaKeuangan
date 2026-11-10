@@ -4,6 +4,7 @@
 
 var openRows = {};
 var catPeriod = 'y';
+var catDir = '-';
 
 /** Legenda chip di kolom "Item berkala" (dipakai juga oleh panduan yang bisa disembunyikan). */
 var RINCIAN_LEGEND =
@@ -13,9 +14,8 @@ var RINCIAN_LEGEND =
   '<span><span class="chip wr">Listrik ▲ 720rb (lonjakan)</span>Lonjakan ≥20% dari harga awal</span>' +
   '<span><span class="chip sk">Gym</span>Dilewati bulan ini</span>' +
   '</div>';
-var CAT_PALETTE = ['#3aa17e', '#5b8fd9', '#e08a5c', '#9c7fd0', '#d1b04a', '#4fb3bf', '#d9627f', '#7e9b3f', '#b57a52', '#6c7ae0'];
 
-/** Warna kategori yang STABIL: bergantung pada nama (tanpa beda huruf besar/kecil), bukan urutan nilai. Investasi selalu indigo, tanpa kategori abu-abu. */
+/** Warna kategori: hue golden-angle dari urutan kategori (bukan nominal), fallback hash nama untuk kategori tak terdaftar. */
 function catColor(name) {
   if (!name || name === 'Tanpa kategori') return '#8a99a3';
   if (isInvestCat(name)) return '#6366f1';
@@ -28,11 +28,14 @@ function catColor(name) {
       break;
     }
   }
-  if (i < 0) {
-    i = 0;
-    for (var j = 0; j < key.length; j++) i = (i * 31 + key.charCodeAt(j)) >>> 0;
+  var hue;
+  if (i >= 0) hue = Math.round((i * 137.508 + 18) % 360);
+  else {
+    var hash = 0;
+    for (var j = 0; j < key.length; j++) hash = (hash * 31 + key.charCodeAt(j)) >>> 0;
+    hue = hash % 360;
   }
-  return CAT_PALETTE[i % CAT_PALETTE.length];
+  return 'hsl(' + hue + ' 62% 56%)';
 }
 
 /** "+ Rp 1.000" atau "− Rp 1.000". */
@@ -100,13 +103,17 @@ function cashPeriod(C, p) {
     to = y + '-12-31';
   }
   var byCat = {},
+    incByCat = {},
     inc = 0,
     out = 0,
-    n = 0;
+    n = 0,
+    nin = 0;
   C.entries.forEach(function (e) {
     if (e.d < from || e.d > to) return;
     if (e.t === '+') {
       inc += e.amt;
+      nin++;
+      incByCat[e.cat] = (incByCat[e.cat] || 0) + e.amt;
       return;
     }
     out += e.amt;
@@ -114,7 +121,7 @@ function cashPeriod(C, p) {
     byCat[e.cat] = (byCat[e.cat] || 0) + e.amt;
   });
   var days = Math.max(1, Math.round((Date.parse(to + 'T00:00:00Z') - Date.parse(from + 'T00:00:00Z')) / 864e5) + 1);
-  return { from: from, to: to, inc: inc, out: out, total: out, n: n, byCat: byCat, avg: out / days };
+  return { from: from, to: to, inc: inc, out: out, total: out, n: n, nin: nin, byCat: byCat, incByCat: incByCat, avg: out / days };
 }
 
 /** Tombol periode yang mengendalikan pie dan bar kategori sekaligus. */
@@ -140,7 +147,7 @@ function cashPeriodTabs() {
     .join('');
 }
 
-/** Satu kartu: pie pemasukan/pengeluaran + bar pengeluaran per kategori, disatukan periode. */
+/** Satu kartu: pie pemasukan/pengeluaran + bar per kategori, disatukan periode. */
 function insightCard(C) {
   var p = cashPeriod(C, catPeriod),
     total = p.inc + p.out,
@@ -165,20 +172,25 @@ function insightCard(C) {
     li = (CC * ip) / 100,
     lo = CC - li;
   var center = p.inc ? Math.round(ip) + '%<small>masuk</small>' : '100%<small>keluar</small>';
+  var tipIn = esc('Masuk: ' + rp(p.inc) + ' (' + (p.inc ? Math.round(ip) : 0) + '%)'),
+    tipOut = esc('Keluar: ' + rp(p.out) + ' (' + Math.round(p.inc ? 100 - ip : 100) + '%)'),
+    tipAll = esc('Masuk: ' + rp(p.inc) + ' · Keluar: ' + rp(p.out));
   var pie =
-    '<div class="insight-pie"><div class="pie"><svg viewBox="0 0 100 100" role="img" aria-label="Pemasukan vs pengeluaran">' +
+    '<div class="insight-pie"><div class="pie" tabindex="0" data-tip="' +
+    tipAll +
+    '"><svg viewBox="0 0 100 100" role="img" aria-label="Pemasukan vs pengeluaran">' +
     '<circle class="pie-slice" cx="50" cy="50" r="38" transform="rotate(-90 50 50)" stroke="#3aa17e" stroke-dasharray="' +
     li +
     ' ' +
     CC +
-    '" stroke-dashoffset="0"/>' +
+    '" stroke-dashoffset="0" tabindex="0" data-tip="' + tipIn + '"/>' +
     '<circle class="pie-slice" cx="50" cy="50" r="38" transform="rotate(-90 50 50)" stroke="#d9627f" stroke-dasharray="' +
     lo +
     ' ' +
     CC +
     '" stroke-dashoffset="' +
     -li +
-    '" stroke-width="16"/></svg><span>' +
+    '" stroke-width="16" tabindex="0" data-tip="' + tipOut + '"/></svg><span>' +
     center +
     '</span></div>' +
     '<div class="pie-lg"><span><i style="background:#3aa17e"></i>Masuk <b class="pv">' +
@@ -186,9 +198,13 @@ function insightCard(C) {
     '</b></span><span><i style="background:#d9627f"></i>Keluar <b class="pv">' +
     rp(p.out) +
     '</b></span></div></div>';
-  var list = Object.keys(p.byCat)
+  var income = catDir === '+',
+    src = income ? p.incByCat : p.byCat,
+    sum = income ? p.inc : p.out,
+    cnt = income ? p.nin : p.n;
+  var list = Object.keys(src)
     .map(function (k) {
-      return { name: k || 'Tanpa kategori', v: p.byCat[k], none: !k };
+      return { name: k || 'Tanpa kategori', v: src[k], none: !k };
     })
     .sort(function (a, b) {
       return b.v - a.v;
@@ -198,7 +214,7 @@ function insightCard(C) {
   });
   var bars = list
     .map(function (e) {
-      var pct = (e.v / p.total) * 100;
+      var pct = sum ? (e.v / sum) * 100 : 0;
       return (
         '<div class="catrow" tabindex="0" data-tip="' +
         esc(e.name + ': ' + rp(e.v) + ' (' + (pct < 1 ? '<1' : Math.round(pct)) + '% dari total)') +
@@ -220,24 +236,30 @@ function insightCard(C) {
     })
     .join('');
   var cat =
-    '<div class="insight-cat"><div class="dflex jcsb aic fwrap g8"><h3 class="insight-h3">Pengeluaran per kategori</h3><span class="sub">Total <b class="pv">' +
-    rp(p.out) +
-    '</b></span></div>' +
-    (p.out
+    '<div class="insight-cat"><div class="dflex jcsb aic fwrap g8"><h3 class="insight-h3">' +
+    (income ? 'Pemasukan' : 'Pengeluaran') +
+    ' per kategori</h3><div class="dflex aic g8 fwrap"><span class="sub">Total <b class="pv">' +
+    rp(sum) +
+    '</b></span><div class="cat-tabs cat-dirs" role="tablist">' +
+    '<button type="button" class="cat-tab' +
+    (income ? '' : ' on') +
+    '" data-catd="-" aria-pressed="' +
+    (income ? 'false' : 'true') +
+    '">Keluar</button>' +
+    '<button type="button" class="cat-tab' +
+    (income ? ' on' : '') +
+    '" data-catd="+" aria-pressed="' +
+    (income ? 'true' : 'false') +
+    '">Masuk</button></div></div></div>' +
+    (sum
       ? '<div class="cat-list">' + bars + '</div>'
-      : '<div class="empty mt8">Belum ada pengeluaran pada periode ini.</div>') +
+      : '<div class="empty mt8">Belum ada ' + (income ? 'pemasukan' : 'pengeluaran') + ' pada periode ini.</div>') +
     '<div class="sub mt12">' +
-    (p.out ? 'Rata-rata <b class="pv">' + rp(p.avg) + '</b> per hari · ' : '') +
-    p.n +
+    (income ? '' : p.out ? 'Rata-rata <b class="pv">' + rp(p.avg) + '</b> per hari · ' : '') +
+    cnt +
     ' transaksi</div></div>';
   return (
-    '<div class="card insight">' +
-    head +
-    '<div class="insight-body">' +
-    pie +
-    '<div class="insight-div" aria-hidden="true"></div>' +
-    cat +
-    '</div></div>'
+    '<div class="card insight">' + head + '<div class="insight-body">' + pie + '<div class="insight-div" aria-hidden="true"></div>' + cat + '</div></div>'
   );
 }
 
@@ -283,22 +305,35 @@ function heroHtml(c, R, lead, txCount, C) {
       '</div>'
     );
   };
-  var plain =
-    '<div class="card m0"><div class="sub">Jatah jajan per bulan</div><div class="big' +
+  var jatahHtml =
+    '<div class="jatah"><div class="sub fw6">Jatah jajan per bulan</div><div class="big jv' +
     (c.end < 0 ? ' neg' : '') +
     '">' +
     (jatah == null ? '—' : rp(jatah)) +
     '</div>' +
     note +
+    '<div class="sub mt4">Sisa saldo akhir tahun dibagi ' +
+    n +
+    ' bulan.</div></div>';
+  var plain =
+    '<div class="card m0"><div class="sub">Sisa saldo akhir Des ' +
+    S.year +
+    '</div><div class="big' +
+    (c.end < 0 ? ' neg' : '') +
+    '">' +
+    rp(c.end) +
+    '</div>' +
+    note +
     '</div>';
   return (
     '<div class="hero">' +
-    (lead ? lead(note) : plain) +
+    (lead ? lead() : plain) +
     '<div class="card stats m0">' +
     stat('Rata-rata per bulan', rp(C.out / n)) +
     stat('Bulan terberat', rp(C.byMonth[hv.m]), MON[hv.m]) +
     stat('Bulan teringan', rp(C.byMonth[mn.m]), MON[mn.m]) +
     (txCount != null ? stat('Transaksi kas', String(txCount), 'catatan kas', '', false) : '') +
+    jatahHtml +
     '</div></div>'
   );
 }
@@ -506,10 +541,10 @@ function kasStatusHtml(P, bal) {
   var rw = kasRunway(P, bal);
   if (!rw) return '';
   if (rw.status === 'deficit') {
-    return '<div class="runway-box runway-deficit">&#9888; Saldo sudah minus ' + rp(rw.deficit) + '. Tambah saldo awal atau kurangi tagihan.</div>';
+    return '<div class="runway-box runway-deficit">&#9888; Saldo sudah minus <b class="pv">' + rp(rw.deficit) + '</b>. Tambah saldo awal atau kurangi tagihan.</div>';
   }
   if (rw.status === 'warning') {
-    return '<div class="runway-box runway-warning">&#9203; Kas cukup sampai ' + fmtD(rw.date) + ' (' + rw.days + ' hari lagi). Setelah itu saldo akan minus ' + rp(rw.deficit) + '.</div>';
+    return '<div class="runway-box runway-warning">&#9203; Kas cukup sampai ' + fmtD(rw.date) + ' (' + rw.days + ' hari lagi). Setelah itu saldo akan minus <b class="pv">' + rp(rw.deficit) + '</b>.</div>';
   }
   if (rw.status === 'ok') {
     return '<div class="runway-box runway-safe">&#10003; Tidak ada tagihan besar dalam 30 hari ke depan.</div>';
@@ -527,7 +562,7 @@ function kasBal(P) {
   return { sm: sm, mName: typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm], A: A, bal: kasBase(P) + A.i - A.o };
 }
 
-/** Satu kartu saldo di Rincian Bulanan: jatah jajan per bulan, Saldo Realtime, dan sisa akhir tahun. */
+/** Satu kartu saldo di Rincian Bulanan: saldo realtime, sisa akhir tahun, dan jatah jajan di kartu statistik. */
 function saldoHero(c, R) {
   var P = kasLinked(),
     C = yearCash();
@@ -536,36 +571,24 @@ function saldoHero(c, R) {
     mName = KB.mName,
     A = KB.A,
     bal = KB.bal,
-    jatah = c.end > 0 ? c.end / (R.length || 1) : null,
-    neg = c.end < 0,
     chip = '<span class="chip on" style="margin:0;font-size:11px;font-weight:700">' + esc(P.name) + '</span>';
   return heroHtml(
     c,
     R,
-    function (note) {
+    function () {
       var st = kasStatusHtml(P, bal);
       if (st.indexOf('runway-safe') >= 0) st = '';
       return (
-        '<div class="card hm m0"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
-        '<div class="sub fw6">Jatah jajan per bulan</div>' +
+        '<div class="card hm m0"><div class="dflex jcsb aic g8">' +
+        '<div class="sub fw6">Saldo Realtime &middot; ' + mName + '</div>' +
         chip +
         '</div>' +
-        '<div class="big' +
-        (neg ? ' neg' : '') +
-        '" style="margin:6px 0 4px">' +
-        (jatah == null ? '—' : rp(jatah)) +
-        '</div>' +
-        note +
-        '<div class="sub mt4">Sisa saldo akhir tahun dibagi ' +
-        (R.length || 1) +
-        ' bulan.</div>' +
-        '<div class="hm-bal"><div><span>Saldo Realtime &middot; ' +
-        mName +
-        '</span><b class="pv' +
+        '<div class="hm-big pv' +
         (bal < 0 ? ' neg' : '') +
         '">' +
         rp(bal) +
-        '</b></div><div><span>Sisa saldo akhir Des ' +
+        '</div>' +
+        '<div class="hm-bal one"><div><span>Sisa saldo akhir Des ' +
         S.year +
         '</span><b class="pv' +
         (c.end < 0 ? ' neg' : '') +
@@ -675,6 +698,12 @@ function bindRincian() {
     var cp = e.target.closest('[data-catp]');
     if (cp) {
       catPeriod = cp.dataset.catp;
+      renderRincian();
+      return;
+    }
+    var cd = e.target.closest('[data-catd]');
+    if (cd) {
+      catDir = cd.dataset.catd;
       renderRincian();
       return;
     }

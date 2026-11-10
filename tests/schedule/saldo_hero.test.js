@@ -9,8 +9,8 @@ const {boot}=require('./ui.js');
  w.switchYear(2026);
  w.S.adj=[]; w.S.startMonth=10; w.S.saldo=5000000;
  w.S.items=[
-  {id:'a',name:'Listrik',price:200000,n:1,unit:'sekali',start:'2026-11-20',ch:[]},
-  {id:'b',name:'Internet, Rumah',price:300000,n:1,unit:'sekali',start:'2026-11-30',ch:[]},
+  {id:'a',name:'Listrik',price:200000,n:1,unit:'sekali',start:'2026-11-20',cat:'Listrik',ch:[]},
+  {id:'b',name:'Internet, Rumah',price:300000,n:1,unit:'sekali',start:'2026-11-30',cat:'Internet',ch:[]},
   {id:'c',name:'Telat',price:100000,n:1,unit:'sekali',start:'2026-11-02',ch:[]},
   {id:'d',name:'Lunas',price:50000,n:1,unit:'sekali',start:'2026-11-25',ch:[]}];
  w.S.paid={'d|2026-11-25':1}; w.S.skip={};
@@ -25,7 +25,15 @@ const {boot}=require('./ui.js');
  assert(!/Total pemasukan/.test(txt()),'total pemasukan dihapus');
  assert(!/Total pengeluaran/.test(txt()),'total pengeluaran dihapus');
  assert(hero().querySelectorAll('.hm').length===1,'satu kartu gabungan');
+ assert(hero().querySelector('.stats .jatah'),'jatah jajan di kartu statistik kanan');
+ assert(!hero().querySelector('.hm .jatah'),'jatah tidak lagi di kartu saldo');
+ assert(hero().querySelector('.hm .hm-big'),'saldo realtime dibesarkan');
+ assert(hero().querySelector('.hm .hm-bal.one'),'sisa saldo akhir di kartu saldo');
  assert($('v-rincian').querySelector('.insight .pie'),'pie pemasukan/pengeluaran di kartu kategori');
+ assert($('v-rincian').querySelector('.pie-slice[data-tip]'),'arc pie punya tooltip');
+ assert($('v-rincian').querySelector('.cat-dirs'),'toggle masuk/keluar kategori');
+ const dots=[...$('v-rincian').querySelectorAll('.catrow .dot')].map(x=>x.getAttribute('style'));
+ assert(dots.length>1 && new Set(dots).size===dots.length,'warna tiap kategori unik');
  assert($('v-rincian').querySelector('.cat-tabs'),'tab periode kategori');
  console.log('--- Kasus 2 (saldo kurang) ---'); P.tx=[]; w.S.saldo=400000; w.renderAll(); console.log(txt());
  assert(/kurang|Saldo habis/.test(txt())&&hero().querySelector('.big.neg'),'merah & saldo minus');
@@ -42,8 +50,9 @@ const {boot}=require('./ui.js');
  const catVal=$('v-rincian').querySelector('.catrow b');
  const catPie=$('v-rincian').querySelector('.insight .pie-lg b');
  const rincianTable=$('v-rincian').querySelector('.c-s');
- console.log('elemen privasi:',!!stat,!!hmBal,!!catVal,!!catPie,!!rincianTable);
- assert(stat&&hmBal&&catVal&&catPie&&rincianTable,'semua elemen privasi ada');
+ const saldoAwal=$('v-rincian').querySelector('.c-a');
+ console.log('elemen privasi:',!!stat,!!hmBal,!!catVal,!!catPie,!!rincianTable,!!saldoAwal);
+ assert(stat&&hmBal&&catVal&&catPie&&rincianTable&&saldoAwal,'semua elemen privasi ada');
  console.log('privasi aktif -> .big:',cs(hero().querySelector('.big')),'| stat:',cs(stat),'| saldo realtime:',cs(hmBal),'| kategori:',cs(catVal),'| legenda pie:',cs(catPie));
  assert(/blur/.test(cs(hero().querySelector('.big'))),'jatah disensor');
  assert(/blur/.test(cs(stat)),'statistik disensor');
@@ -51,6 +60,7 @@ const {boot}=require('./ui.js');
  assert(/blur/.test(cs(catVal)),'pengeluaran kategori disensor');
  assert(/blur/.test(cs(catPie)),'legenda pie disensor');
  assert(/blur/.test(cs(rincianTable)),'pengeluaran rincian arus kas disensor');
+ assert(/blur/.test(cs(saldoAwal)),'saldo awal rincian arus kas disensor');
  click($('btn-privacy'));
  // tab periode menyinkronkan pie dan bar kategori
  const ins=$('v-rincian').querySelector('.insight');
@@ -63,6 +73,12 @@ const {boot}=require('./ui.js');
  assert(pieAfter!==pieBefore,'tab 7 hari mengubah pie');
  assert(barAfter!==barBefore,'tab 7 hari mengubah bar kategori');
  click($('v-rincian').querySelector('[data-catp="y"]'));
+ click($('v-rincian').querySelector('[data-catd="+"]'));
+ const ins3=$('v-rincian').querySelector('.insight');
+ assert(/Pemasukan per kategori/.test(ins3.querySelector('.insight-h3').textContent),'toggle masuk menampilkan pemasukan per kategori');
+ assert(/Gaji/.test(ins3.querySelector('.catrow').textContent),'kategori pemasukan muncul');
+ assert(ins3.querySelector('.pie-slice').getAttribute('data-tip').indexOf('Masuk:')===0,'tooltip arc pie terisi');
+ click($('v-rincian').querySelector('[data-catd="-"]'));
  // akun bulat
  assert($('acct') && $('acct-ini').textContent==='?','tombol akun bulat default ?');
  assert(!$('lgb'),'tombol Masuk lama dihapus');
