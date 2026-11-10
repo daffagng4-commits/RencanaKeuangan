@@ -1,0 +1,14 @@
+name = "rencana-bot"
+main = "bot/worker.mjs"
+compatibility_date = "2026-11-01"
+
+# Secret (jangan ditulis di sini):
+#   wrangler secret put TG_TOKEN     (token @BotFather)
+#   wrangler secret put TG_SECRET    (string acak; dipakai saat setWebhook secret_token)
+#   wrangler secret put MY_TG        (chat id Anda, mis. 123456789)
+#   wrangler secret put SB_URL       (https://xxxx.supabase.co)
+#   wrangler secret put SB_KEY       (service_role key)
+
+# Fase 2 (laporan PDF terjadwal tgl 1):
+[triggers]
+crons = ["0 1 1 * *"]

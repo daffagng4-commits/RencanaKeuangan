@@ -5,6 +5,10 @@
   "description": "Perencana keuangan berbasis jadwal tagihan (GitHub Pages + Supabase)",
   "scripts": {
     "build": "node build.js",
+    "build:bot": "node build-bot.js",
+    "test:bot": "node build-bot.js && node --test tests/bot.test.mjs",
+    "bot": "node bot/dev.mjs",
+    "bot:poll": "node bot/poll.mjs",
     "test": "node build.js && node tests/check-bundle.js && node tests/run-unit.js && node tests/run-schedule.js",
     "test:unit": "node tests/run-unit.js",
     "test:e2e": "node build.js && node tests/run-e2e.js",
@@ -15,5 +19,8 @@
   },
   "devDependencies": {
     "jsdom": "^24.0.0"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1"
   }
 }

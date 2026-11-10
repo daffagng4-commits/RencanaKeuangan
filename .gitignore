@@ -1,0 +1,4 @@
+node_modules/
+bot/state.local.json
+bot/secrets.json
+.dev.vars
