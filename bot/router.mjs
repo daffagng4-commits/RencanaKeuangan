@@ -196,8 +196,9 @@ function rekapText(arg) {
     if (x.t === '+') masuk += x.amt; else keluar += x.amt;
   });
   const out = ['📊 Rekap ' + FULL_MON[mi] + ' ' + y];
-  if (P) out.push('📥 Masuk ' + rp(masuk), '💸 Keluar ' + rp(keluar));
-  out.push('🧾 Tagihan ' + rp(row ? row.sp : 0));
+  if (P) out.push('📥 Masuk ' + rp(masuk));
+  const jadwal = row ? row.sp : 0;
+  out.push('💸 Keluar ' + rp(jadwal + keluar) + ' (jadwal ' + rp(jadwal) + ' + kas ' + rp(keluar) + ')');
   if (row) out.push('📈 Saldo akhir bulan ' + rp(row.ak));
   else out.push('ℹ️ Bulan ini di luar rentang tahun aktif (mulai ' + FULL_MON[+S.startMonth || 0] + ').');
   return out.join('\n');
