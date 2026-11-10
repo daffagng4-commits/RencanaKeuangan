@@ -3992,7 +3992,13 @@ function cashPeriod(C, p) {
         return e.d;
       })
       .sort(),
-    anchor = y === +today.slice(0, 4) ? today : dates.length ? dates[dates.length - 1] : y + '-12-31',
+    anchor = (function () {
+      var ty = +today.slice(0, 4);
+      if (y === ty) return today;
+      // Tahun mendatang: pakai bulan-hari yang sama supaya periode 7 hari/bulan tetap bermakna.
+      if (y > ty) return y + today.slice(4);
+      return dates.length ? dates[dates.length - 1] : y + '-12-31';
+    })(),
     from,
     to;
   if (p === 'w') {
@@ -4056,7 +4062,9 @@ function insightCard(C) {
     total = p.inc + p.out,
     tabs = cashPeriodTabs();
   var head =
-    '<div class="insight-head"><div class="insight-title"><div class="dflex aic fwrap g8"><h2 class="m0">Pemasukan vs pengeluaran</h2><span class="sub fs12">Jadwal + kas</span></div>' +
+    '<div class="insight-head"><div class="insight-title"><div class="dflex aic fwrap g8"><h2 class="m0">Pemasukan vs pengeluaran</h2><span class="sub fs12">Jadwal + kas' +
+    (+S.year === +todayISO().slice(0, 4) ? '' : ' · rencana') +
+    '</span></div>' +
     '<div class="sub">' +
     fmtD(p.from) +
     ' – ' +

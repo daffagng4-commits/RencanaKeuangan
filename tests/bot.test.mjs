@@ -168,6 +168,21 @@ test('nama bulan lengkap & alias diterima', () => {
   assert.ok(reply('@rekap januari', all).text.includes('Januari'));
 });
 
+test('laporan bisa meminta tahun lain tanpa mengubah tahun aktif', async () => {
+  const { build } = await import('../bot/report.mjs');
+  const { toPdf } = await import('../bot/pdf.mjs');
+  const all = fixture();
+  all.data['2026'] = { year: 2026, saldo: 5000000, startMonth: 0, items: [{ id: 'x1', name: 'Kos', price: 1000000, n: 1, unit: 'bulan', start: '2026-01-01', cat: 'Tempat tinggal' }], paid: {}, skip: {}, adj: [] };
+  const rep = build('tahun', '2026', all);
+  assert.ok(!rep.error, rep.error);
+  assert.ok(rep.subtitle.includes('2026') && !rep.subtitle.includes('2027'), rep.subtitle);
+  assert.equal(+all.year, 2027, 'tahun aktif tidak boleh berubah');
+  assert.ok((await toPdf(rep)).length > 1200);
+  const nov = build('bulanan', 'november 2026', all);
+  assert.ok(!nov.error && nov.subtitle === 'November 2026', nov.subtitle || nov.error);
+  assert.ok(build('tahun', '2019', all).error, 'tahun tanpa data harus error');
+});
+
 test('worker: webhook menyimpan state dan membalas chat', async () => {
   const { default: worker } = await import('../bot/worker.mjs');
   const orig = globalThis.fetch, calls = [];

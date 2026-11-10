@@ -1,6 +1,6 @@
 // Susun data laporan (harian/mingguan/bulanan/tahunan) dari state yang sama dengan web.
 import { bind } from './router.mjs';
-import { calc, occ, priceAt, isoD, rp, MON, FULL_MON, kasLinked, kasRows, todayISO, state } from './core.mjs';
+import { calc, occ, priceAt, isoD, rp, MON, FULL_MON, kasLinked, kasRows, todayISO, state, setS } from './core.mjs';
 
 const KINDS = {
   laporanhariini: 'harian', laporanharian: 'harian', hariini: 'harian',
@@ -24,10 +24,13 @@ const addD = (iso, n) => isoD(D(iso).getTime() + n * 864e5);
 const tglID = (iso) => +iso.slice(8, 10) + ' ' + MON[+iso.slice(5, 7) - 1] + ' ' + iso.slice(0, 4);
 
 function monthFromArg(arg) {
-  const key = String(arg || '').toLowerCase().trim();
+  let key = String(arg || '').toLowerCase().trim();
   if (!key) return new Date().getUTCMonth();
+  if (key === 'nopember') key = 'november';
+  if (key === 'pebruari') key = 'februari';
   const names = FULL_MON.map((x) => x.toLowerCase());
-  const i = names.findIndex((x) => x.indexOf(key) === 0);
+  let i = names.indexOf(key);
+  if (i < 0) i = names.findIndex((x) => x.indexOf(key) === 0 && key.length >= 3);
   if (i >= 0) return i;
   if (/^\d{1,2}$/.test(key) && +key >= 1 && +key <= 12) return +key - 1;
   return -1;
@@ -78,7 +81,28 @@ function sums(tx) {
 }
 
 export function build(kind, arg, all) {
-  const S = bind(all), c = calc(), y = +S.year, today = todayISO();
+  const S0 = bind(all);
+  const words = String(arg || '').trim().split(/\s+/).filter(Boolean);
+  let y = null;
+  const rest = [];
+  words.forEach((w) => {
+    const m = w.match(/^(\d{4})(?:-\d{2}-\d{2})?$/);
+    if (!y && m) { y = +m[1]; if (m[0].length > 4) rest.push(m[0]); } else rest.push(w);
+  });
+  y = y || +S0.year;
+  const target = all.data && all.data[y];
+  if (!target) return { error: 'Tahun ' + y + ' tidak ada di data. Lihat @tahun' };
+  const today = todayISO();
+  // Tahun lain dihitung sementara, tahun aktif tidak diubah.
+  if (target !== S0) {
+    setS(all, target);
+    try { return layout(kind, rest.join(' '), y, today); } finally { setS(all, S0); }
+  }
+  return layout(kind, rest.join(' '), y, today);
+}
+
+function layout(kind, arg, y, today) {
+  const S = state().s, c = calc();
   const sum = (tx) => { const s = sums(tx); return [['Masuk', rp(s.i)], ['Keluar', rp(s.o)], ['Selisih', rp(s.n)]]; };
 
   if (kind === 'harian') {
@@ -94,7 +118,7 @@ export function build(kind, arg, all) {
   }
 
   if (kind === 'mingguan') {
-    const to = today, from = addD(today, -6);
+    const to = y === +today.slice(0, 4) ? today : y + today.slice(4), from = addD(to, -6);
     const { tx, bil } = collect(from, to);
     return {
       filename: 'laporan-mingguan-' + to + '.pdf',
