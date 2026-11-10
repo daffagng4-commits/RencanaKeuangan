@@ -17,8 +17,8 @@ var RINCIAN_LEGEND =
 
 /** Warna kategori: hue golden-angle dari urutan kategori (bukan nominal), fallback hash nama untuk kategori tak terdaftar. */
 function catColor(name) {
-  if (!name || name === 'Tanpa kategori') return '#8a99a3';
-  if (isInvestCat(name)) return '#6366f1';
+  if (!name || name === 'Tanpa kategori') return 'var(--mut)';
+    if (isInvestCat(name)) return 'var(--bl)';
   var key = name.trim().toLowerCase(),
     cats = allCategories(),
     i = -1;
@@ -35,7 +35,7 @@ function catColor(name) {
     for (var j = 0; j < key.length; j++) hash = (hash * 31 + key.charCodeAt(j)) >>> 0;
     hue = hash % 360;
   }
-  return 'hsl(' + hue + ' 62% 56%)';
+  return 'hsl(' + hue + ' 44% 46%)';
 }
 
 /** "+ Rp 1.000" atau "− Rp 1.000". */
@@ -187,12 +187,12 @@ function insightCard(C) {
     '<div class="insight-pie"><div class="pie" tabindex="0" data-tip="' +
     tipAll +
     '"><svg viewBox="0 0 100 100" role="img" aria-label="Pemasukan vs pengeluaran">' +
-    '<circle class="pie-slice" cx="50" cy="50" r="38" transform="rotate(-90 50 50)" stroke="#3aa17e" stroke-dasharray="' +
+    '<circle class="pie-slice" cx="50" cy="50" r="38" transform="rotate(-90 50 50)" stroke="var(--in)" stroke-dasharray="' +
     li +
     ' ' +
     CC +
     '" stroke-dashoffset="0" tabindex="0" data-tip="' + tipIn + '"/>' +
-    '<circle class="pie-slice" cx="50" cy="50" r="38" transform="rotate(-90 50 50)" stroke="#d9627f" stroke-dasharray="' +
+    '<circle class="pie-slice" cx="50" cy="50" r="38" transform="rotate(-90 50 50)" stroke="var(--wr)" stroke-dasharray="' +
     lo +
     ' ' +
     CC +
@@ -201,9 +201,9 @@ function insightCard(C) {
     '" stroke-width="16" tabindex="0" data-tip="' + tipOut + '"/></svg><span>' +
     center +
     '</span></div>' +
-    '<div class="pie-lg"><span><i style="background:#3aa17e"></i>Masuk <b class="pv">' +
+    '<div class="pie-lg"><span><i style="background:var(--in)"></i>Masuk <b class="pv">' +
     rp(p.inc) +
-    '</b></span><span><i style="background:#d9627f"></i>Keluar <b class="pv">' +
+    '</b></span><span><i style="background:var(--wr)"></i>Keluar <b class="pv">' +
     rp(p.out) +
     '</b></span></div></div>';
   var income = catDir === '+',

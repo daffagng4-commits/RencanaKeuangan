@@ -8,7 +8,7 @@ function saldoLine(o) {
   if (P.length < 2) return '';
   var W = 720,
     H = 238,
-    padL = 44,
+    padL = 56,
     padR = 14,
     padT = 18,
     padB = 32,
@@ -55,7 +55,7 @@ function saldoLine(o) {
       if (seenL[i]) return '';
       seenL[i] = 1;
       var a = i === 0 ? 'start' : i === P.length - 1 ? 'end' : 'middle';
-      return '<text x="' + X(P[i].d).toFixed(1) + '" y="' + (H - 9) + '" text-anchor="' + a + '" font-size="8.8" fill="var(--mut)">' + dlabel(P[i].d) + '</text>';
+      return '<text x="' + X(P[i].d).toFixed(1) + '" y="' + (H - 9) + '" text-anchor="' + a + '" font-size="10" fill="var(--mut)">' + dlabel(P[i].d) + '</text>';
     }).join('');
   var yv = [mx, 0, mn],
     seen = {},
@@ -64,7 +64,7 @@ function saldoLine(o) {
       if (seen[y]) return '';
       seen[y] = 1;
       return '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '" stroke="var(--ln)" stroke-width="1" opacity=".55"></line>' +
-        '<text x="' + (padL - 6) + '" y="' + (+y + 3) + '" text-anchor="end" font-size="8.6" fill="var(--mut)">' + ax(v) + '</text>';
+        '<text x="' + (padL - 6) + '" y="' + (+y + 3) + '" text-anchor="end" font-size="10" fill="var(--mut)">' + ax(v) + '</text>';
     }).join('');
   return (
     '<div class="card"><div class="dflex jcsb aic fwrap g8 mb6"><h2 style="margin:0">' + o.title + '</h2>' +

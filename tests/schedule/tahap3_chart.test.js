@@ -11,10 +11,10 @@ const { boot } = require('./ui.js');
   const it = (o) => Object.assign({ id: 'x', name: 'T', price: 1000, n: 1, unit: 'bulan', start: '2026-01-05', ch: [], cat: '', end: '', cnt: 0 }, o);
 
   // ---- warna kategori stabil ----
-  assert.strictEqual(w.catColor(''), '#8a99a3');
-  assert.strictEqual(w.catColor('Tanpa kategori'), '#8a99a3');
-  assert.strictEqual(w.catColor('Investasi'), '#6366f1');
-  assert.strictEqual(w.catColor('DCA saham'), '#6366f1');
+  assert.strictEqual(w.catColor(''), 'var(--mut)');
+  assert.strictEqual(w.catColor('Tanpa kategori'), 'var(--mut)');
+  assert.strictEqual(w.catColor('Investasi'), 'var(--bl)');
+  assert.strictEqual(w.catColor('DCA saham'), 'var(--bl)');
   const makan = w.catColor('Makan'), a = w.catColor('Hiburan');
   assert(/^(#[0-9a-f]{6}|hsl\()/.test(makan), makan);
   assert.strictEqual(w.catColor('Makan'), makan, 'deterministik');
