@@ -9,6 +9,7 @@
     "test:bot": "node build-bot.js && node --test tests/bot.test.mjs",
     "bot": "node bot/dev.mjs",
     "bot:poll": "node bot/poll.mjs",
+    "bot:menu": "node bot/commands.mjs",
     "test": "node build.js && node tests/check-bundle.js && node tests/run-unit.js && node tests/run-schedule.js",
     "test:unit": "node tests/run-unit.js",
     "test:e2e": "node build.js && node tests/run-e2e.js",

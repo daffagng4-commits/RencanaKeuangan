@@ -2,27 +2,43 @@
 // Angka dihitung oleh modul aplikasi (core.mjs), bukan rumus baru.
 import {
   setS, state, calc, occ, priceAt, isoD, rp, MON, FULL_MON, parseQuickItem,
-  kasLinked, kasBase, kasRows, kasSum, todayISO, mNorm, esc,
+  kasLinked, kasBase, kasRows, kasSum, todayISO, mNorm, esc, parseRp,
 } from './core.mjs';
 
 const HELP = [
   '🤖 Rencana Keuangan — perintah',
   '',
-  '@keterangan — daftar ini',
-  '@saldo — saldo realtime & sisa akhir tahun',
+  '📊 Lihat:',
+  '@saldo — saldo realtime, bulan ini, sisa akhir tahun',
   '@jatah — jatah jajan per bulan',
   '@tagihan — jatuh tempo 7 hari & yang telat',
-  '@rekap [bulan] — ringkas satu bulan (mis. @rekap nov)',
+  '@jadwal [bln] — semua tagihan satu bulan',
+  '@rekap [bln] [thn] — ringkas satu bulan (mis. @rekap nov 2027)',
+  '@kas [n] — transaksi kas terakhir',
   '@cari <kata> — cari item',
-  '@debug — sidik state yang dipakai bot (bandingkan dengan web)',
+  '@debug — sidik state yang dipakai bot',
   '',
+  '💸 Catat kas:',
+  '@masuk 500k gaji — uang masuk',
+  '@keluar 25k kopi — uang keluar',
+  '',
+  '💳 Utang & piutang:',
+  '@utang Budi motor 500k — saya berutang',
+  '@piutang Ani 200k — orang berutang',
+  '@bayarutang Budi motor 300k — bayar (boleh dicicil)',
+  '@bayarpiutang Ani — terima pembayaran penuh',
+  '@utangku — sisa utang & piutang',
+  '',
+  '📅 Item:',
   '@beli <teks> — Tambah Cepat (format sama dengan tab Kelola Item)',
   '   contoh: @beli Netflix 186k tiap tgl 15',
   '           @beli Gym 300k tiap 2 minggu mulai 2027-02-05',
   '@lunas <nama> [tgl] — tandai tagihan lunas',
   '@hapus <nama|id> — hapus item',
+  '@tahun — daftar tahun & yang aktif',
+  '@pakai 2027 — ganti tahun aktif',
   '',
-  'Laporan PDF:',
+  '📄 Laporan PDF:',
   '@laporanharian [tgl] — laporan hari ini (atau 2027-11-05)',
   '@laporanmingguan — 7 hari terakhir',
   '@laporanbulanan [bln] — sebulan (mis. @laporanbulanan nov)',
@@ -186,27 +202,181 @@ function cariText(arg) {
     '• ' + it.name + ' — ' + rp(it.price) + ' tiap ' + (it.n > 1 ? it.n + ' ' : '') + it.unit + ' (id ' + it.id + ')').join('\n');
 }
 
+function monthArg(key) {
+  key = String(key || '').toLowerCase().trim();
+  if (!key) return Math.min(11, Math.max(0, new Date().getUTCMonth()));
+  const names = FULL_MON.map((x) => x.toLowerCase());
+  let i = names.findIndex((x) => x.indexOf(key) === 0);
+  if (i < 0) i = MON.map((x) => x.toLowerCase()).indexOf(key);
+  if (i >= 0) return i;
+  if (/^\d{1,2}$/.test(key)) return Math.min(11, Math.max(0, +key - 1));
+  return null;
+}
+
+// @rekap [bln] [thn] — tahun lain dihitung sementara tanpa mengubah tahun aktif.
 function rekapText(arg) {
-  const S = state().s, c = calc(), y = +S.year;
-  const key = (arg || '').toLowerCase().trim();
-  let mi = null;
-  if (!key) mi = Math.min(11, Math.max(0, new Date().getUTCMonth()));
-  else {
-    const names = FULL_MON.map((x) => x.toLowerCase());
-    const i = names.findIndex((x) => x.indexOf(key) === 0 || MON[names.indexOf(x)].toLowerCase() === key);
-    if (i >= 0) mi = i;
-    else if (/^\d{1,2}$/.test(key)) mi = Math.min(11, Math.max(0, +key - 1));
-    else return '⚠️ Bulan tidak dikenal. Contoh: @rekap nov atau @rekap 11.';
+  const parts = String(arg || '').trim().split(/\s+/).filter(Boolean);
+  let y = null;
+  const words = [];
+  parts.forEach((p) => { if (!y && /^\d{4}$/.test(p)) y = +p; else words.push(p); });
+  const mi = monthArg(words.join(' '));
+  if (mi === null) return '⚠️ Bulan tidak dikenal. Contoh: @rekap nov atau @rekap nov 2027';
+  const S0 = state().s;
+  if (y && y !== +S0.year) {
+    const target = CUR && CUR.data && CUR.data[y];
+    if (!target) return '⚠️ Tahun ' + y + ' belum ada. Lihat @tahun';
+    setS(CUR, target);
+    try { return rekapBody(mi, y); } finally { setS(CUR, S0); }
   }
-  const row = c.rows.find((r) => r.m === mi);
-  const M = monthKas(mi);
-  const P = kasLinked();
+  return rekapBody(mi, +S0.year);
+}
+
+function rekapBody(mi, y) {
+  const S = state().s, c = calc(), row = c.rows.find((r) => r.m === mi), M = monthKas(mi), P = kasLinked();
   const out = ['📊 Rekap ' + FULL_MON[mi] + ' ' + y];
   if (P) out.push('📥 Masuk ' + rp(M.masuk));
   out.push('💸 Keluar ' + rp(M.jadwal + M.keluar) + ' (jadwal ' + rp(M.jadwal) + ' + kas ' + rp(M.keluar) + ')');
   if (row) out.push('📈 Saldo akhir bulan ' + rp(row.ak));
   else out.push('ℹ️ Bulan ini di luar rentang tahun aktif (mulai ' + FULL_MON[+S.startMonth || 0] + ').');
   return out.join('\n');
+}
+
+/* ---------- Catatan kas, jadwal, utang, tahun ---------- */
+
+// Transaksi baru pada profil kas terpilih; bentuknya sama dengan form web.
+function newTx(o) {
+  const P = kasLinked();
+  if (!P) return { err: '⚠️ Belum ada profil Catatan Kas.' };
+  P.tx = P.tx || [];
+  P.tx.push(Object.assign({
+    id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+    d: todayISO(), cat: '', note: '',
+  }, o));
+  const KB = kasBal(), ty = todayISO().slice(0, 4), ay = String(state().s.year);
+  return { ok: '✅ ' + (o.t === '+' ? 'Masuk' : 'Keluar') + ' ' + rp(o.amt) +
+    (o.note ? ' · ' + o.note : '') + '\n💰 Saldo realtime ' + (KB ? rp(KB.bal) : '-') +
+    (ty !== ay ? '\nℹ️ Tanggal ' + tgl(todayISO()) + ' masuk tahun ' + ty + ', bukan tahun aktif ' + ay +
+      '. Ganti dengan @pakai ' + ty + ' bila ingin dihitung.' : '') };
+}
+
+// "Budi motor 500k" -> { name:'Budi motor', amt:500000, note:'' }
+function splitAmtName(arg) {
+  const parts = String(arg || '').trim().split(/\s+/).filter(Boolean);
+  const i = parts.findIndex((p) => parseRp(p) > 0);
+  if (i < 0) return null;
+  return {
+    amt: parseRp(parts[i]),
+    name: parts.slice(0, i).join(' ').trim(),
+    note: parts.slice(i + 1).join(' ').trim(),
+  };
+}
+
+function kasInOut(arg, t) {
+  const p = splitAmtName(arg);
+  if (!p) return '⚠️ Format: @' + (t === '+' ? 'masuk' : 'keluar') + ' 500k gaji';
+  const note = (p.name + ' ' + p.note).trim().slice(0, 80);
+  const r = newTx({ t, amt: p.amt, note });
+  return r.err || r.ok;
+}
+
+function kasText(arg) {
+  const P = kasLinked();
+  if (!P) return '⚠️ Belum ada profil Catatan Kas.';
+  const n = Math.min(30, Math.max(1, parseInt(arg, 10) || 10));
+  const tx = kasRows(P).slice().sort((a, b) => (a.d < b.d ? 1 : a.d > b.d ? -1 : 0)).slice(0, n);
+  if (!tx.length) return 'Belum ada transaksi kas.';
+  return ['🧾 ' + tx.length + ' transaksi terakhir',
+    ...tx.map((x) => (x.t === '+' ? '📥 ' : '📤 ') + rp(x.amt) + ' · ' + tgl(x.d) + (x.note ? ' · ' + x.note : ''))].join('\n');
+}
+
+function jadwalText(arg) {
+  const S = state().s, y = +S.year, mi = monthArg(arg);
+  if (mi === null) return '⚠️ Bulan tidak dikenal. Contoh: @jadwal nov';
+  const rows = [];
+  let total = 0, unpaid = 0;
+  S.items.forEach((it) => occ(it, y).forEach((t) => {
+    const ds = isoD(t);
+    if (+ds.slice(5, 7) - 1 !== mi) return;
+    const k = it.id + '|' + ds, amt = priceAt(it, t);
+    const done = !!S.paid[k], skip = !!S.skip[k];
+    total += amt;
+    if (!done && !skip) unpaid += amt;
+    rows.push({ d: ds, name: it.name, amt, done, skip });
+  }));
+  if (!rows.length) return '📭 Tidak ada tagihan terjadwal di ' + FULL_MON[mi] + ' ' + y + '.';
+  rows.sort((a, b) => (a.d < b.d ? -1 : 1));
+  return ['🗓️ Jadwal ' + FULL_MON[mi] + ' ' + y + ' (' + rows.length + ' tagihan)',
+    ...rows.map((r) => (r.done ? '✅ ' : r.skip ? '⏭️ ' : '• ') + +r.d.slice(8, 10) + ' ' + r.name + ' — ' + rp(r.amt)),
+    'Total ' + rp(total) + ' · belum lunas ' + rp(unpaid)].join('\n');
+}
+
+// Sisa utang/piutang per nama — logika sama dengan kartu "Utang & piutang" di web.
+function debtRows() {
+  const P = kasLinked(), g = {};
+  ((P && P.tx) || []).forEach((x) => {
+    if (!x.debt || x.debtDone) return;
+    const n = (x.debtName || x.note || x.cat || 'Tanpa nama').trim().slice(0, 40) || 'Tanpa nama';
+    const o = g[n] || (g[n] = { name: n, u: 0, p: 0, bu: 0, bp: 0 });
+    if (x.debtKind === 'utang') o.u += x.amt;
+    else if (x.debtKind === 'piutang') o.p += x.amt;
+    else if (x.debtKind === 'bayar-utang') o.bu += x.amt;
+    else if (x.debtKind === 'bayar-piutang') o.bp += x.amt;
+  });
+  return Object.keys(g)
+    .map((k) => { const o = g[k]; o.su = Math.max(0, o.u - o.bu); o.sp = Math.max(0, o.p - o.bp); return o; })
+    .filter((o) => o.su > 0 || o.sp > 0);
+}
+
+function utangText() {
+  const D = debtRows();
+  if (!D.length) return '✅ Tidak ada utang atau piutang tercatat.';
+  const su = D.reduce((a, b) => a + b.su, 0), sp = D.reduce((a, b) => a + b.sp, 0);
+  const out = ['💳 Saya berutang: ' + rp(su), '🤝 Orang berutang: ' + rp(sp)];
+  D.forEach((x) => {
+    if (x.su) out.push('• ' + x.name + ' — saya berutang ' + rp(x.su));
+    if (x.sp) out.push('• ' + x.name + ' — orang berutang ' + rp(x.sp));
+  });
+  out.push('Bayar: @bayarutang <nama> [jumlah]');
+  return out.join('\n');
+}
+
+function utangNew(arg, kind) {
+  const p = splitAmtName(arg);
+  if (!p || !p.name) return '⚠️ Format: @' + (kind === 'utang' ? 'utang' : 'piutang') + ' Budi motor 500k';
+  const r = newTx({ t: kind === 'utang' ? '+' : '-', amt: p.amt, note: p.note || p.name, debt: true, debtName: p.name, debtKind: kind });
+  return r.err || r.ok;
+}
+
+function utangPay(arg, kind) {
+  const parts = String(arg || '').trim().split(/\s+/).filter(Boolean);
+  let amt = 0;
+  if (parts.length > 1 && parseRp(parts[parts.length - 1]) > 0) amt = parseRp(parts.pop());
+  const name = parts.join(' ').trim();
+  if (!name) return '⚠️ Format: @' + (kind === 'bayar-utang' ? 'bayarutang' : 'bayarpiutang') + ' Budi motor 300k';
+  const D = debtRows(), n = name.toLowerCase();
+  const hit = D.find((x) => x.name.toLowerCase() === n) || D.find((x) => x.name.toLowerCase().indexOf(n) >= 0);
+  if (!hit) return '⚠️ Tidak ada utang/piutang "' + name + '". Lihat @utangku';
+  const sisa = kind === 'bayar-utang' ? hit.su : hit.sp;
+  if (sisa <= 0) return '✅ ' + hit.name + ' sudah lunas.';
+  const use = amt > 0 ? Math.min(amt, sisa) : sisa;
+  const r = newTx({ t: kind === 'bayar-utang' ? '-' : '+', amt: use, note: hit.name, debt: true, debtName: hit.name, debtKind: kind });
+  return r.err || (r.ok + '\nSisa ' + hit.name + ': ' + rp(sisa - use));
+}
+
+function tahunText() {
+  const all = CUR || {}, ys = Object.keys(all.data || {}).map(Number).sort();
+  return ['📅 Tahun tersedia: ' + (ys.join(', ') || '-'),
+    'Aktif: ' + all.year,
+    'Ganti tahun: @pakai 2027',
+    'Tahun lain: @rekap nov 2027'].join('\n');
+}
+
+function pakaiText(arg) {
+  const y = +String(arg || '').trim();
+  if (!y || !CUR || !CUR.data || !CUR.data[y]) return '⚠️ Tahun "' + (arg || '') + '" tidak ada. Lihat @tahun';
+  CUR.year = y;
+  bind(CUR);
+  return '✅ Tahun aktif: ' + y + '\n\n' + saldoText();
 }
 
 /** Balas satu pesan. Mengembalikan teks balasan; `changed` = state perlu disimpan. */
@@ -239,6 +409,28 @@ export function reply(raw, all) {
       return { text: cariText(arg), changed: false };
     case 'rekap':
       return { text: rekapText(arg), changed: false };
+    case 'jadwal': case 'jadwalbayar': case 'agenda':
+      return { text: jadwalText(arg), changed: false };
+    case 'kas': case 'riwayat': case 'catatan':
+      return { text: kasText(arg), changed: false };
+    case 'masuk': case 'masukin': case 'in': case 'terima':
+      return mut(() => kasInOut(arg, '+'));
+    case 'keluar': case 'out': case 'belanja':
+      return mut(() => kasInOut(arg, '-'));
+    case 'utang': case 'hutang':
+      return arg ? mut(() => utangNew(arg, 'utang')) : { text: utangText(), changed: false };
+    case 'utangku': case 'hutangku': case 'piutangku':
+      return { text: utangText(), changed: false };
+    case 'piutang':
+      return arg ? mut(() => utangNew(arg, 'piutang')) : { text: utangText(), changed: false };
+    case 'bayarutang': case 'bayarhutang':
+      return arg ? mut(() => utangPay(arg, 'bayar-utang')) : { text: '⚠️ Format: @bayarutang Budi motor 300k', changed: false };
+    case 'bayarpiutang':
+      return arg ? mut(() => utangPay(arg, 'bayar-piutang')) : { text: '⚠️ Format: @bayarpiutang Ani 200k', changed: false };
+    case 'tahun': case 'daftartahun':
+      return { text: tahunText(), changed: false };
+    case 'pakai': case 'gantitahun': case 'tahunaktif':
+      return mut(() => pakaiText(arg));
     default:
       return { text: '❓ Perintah tidak dikenal: ' + (cmd || text) + '\nKirim @keterangan untuk daftar perintah.', changed: false };
   }

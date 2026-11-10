@@ -82,7 +82,7 @@ test('perintah tak dikenal tidak mengubah data', () => {
   assert.equal(JSON.stringify({ data: all.data, kas: all.kas }), snap);
 });
 
-test('@rekap menjumlahkan bulan yang diminta', () => {
+test('@rekap feb menjumlahkan bulan yang diminta', () => {
   const all = fixture();
   const r = reply('@rekap feb', all);
   assert.ok(r.text.includes('Februari'), r.text);
@@ -102,6 +102,63 @@ test('laporan PDF: semua jenis ter-render, teks di dalam margin', async () => {
   }
   const bad = build('bulanan', 'zzz', fixture());
   assert.ok(bad.error, 'bulan tak dikenal harus error');
+});
+
+test('@masuk/@keluar menambah transaksi kas dengan bentuk sama seperti web', () => {
+  const all = fixture();
+  const before = (all.kas.pr.p1.tx || []).length;
+  const r1 = reply('@masuk 500k gaji', all);
+  assert.equal(r1.changed, true, r1.text);
+  const tx = all.kas.pr.p1.tx[all.kas.pr.p1.tx.length - 1];
+  assert.equal(tx.t, '+');
+  assert.equal(tx.amt, 500000);
+  assert.equal(tx.note, 'gaji');
+  assert.match(tx.d, /^\d{4}-\d{2}-\d{2}$/);
+  const r2 = reply('@keluar 25k kopi', all);
+  assert.equal(r2.changed, true);
+  assert.equal(all.kas.pr.p1.tx.length, before + 2);
+  assert.equal(all.kas.pr.p1.tx[all.kas.pr.p1.tx.length - 1].t, '-');
+});
+
+test('@utang + @bayarutang mengurangi sisa seperti kartu web', () => {
+  const all = fixture();
+  reply('@utang Budi motor 500k', all);
+  let t = reply('@utangku', all).text;
+  assert.ok(t.includes('Budi motor') && t.includes(rp(500000)), t);
+  reply('@bayarutang Budi 200k', all);
+  t = reply('@utangku', all).text;
+  assert.ok(t.includes(rp(300000)), 'sisa harus 300.000: ' + t);
+  assert.ok(!t.includes(rp(500000)), 'utang awal tidak boleh tampil lagi: ' + t);
+});
+
+test('@jadwal menyebut tagihan bulan itu dan status lunas', () => {
+  const all = fixture();
+  const t1 = reply('@jadwal jan', all).text;
+  assert.ok(t1.includes('BPJS') && t1.includes(rp(150000)), t1);
+  assert.ok(t1.includes('Total'), t1);
+  reply('@lunas BPJS', all);
+  const t2 = reply('@jadwal jan', all).text;
+  assert.ok(t2.includes('✅ 1 BPJS'), t2);
+  assert.ok(t2.includes('belum lunas ' + rp(620000)), t2);
+});
+
+test('@rekap mendukung tahun lain tanpa mengubah tahun aktif', () => {
+  const all = fixture();
+  all.data['2026'] = { year: 2026, saldo: 1000000, startMonth: 0, items: [], paid: {}, skip: {}, adj: [] };
+  const r = reply('@rekap jan 2026', all);
+  assert.ok(r.text.includes('Januari 2026'), r.text);
+  assert.equal(+all.year, 2027, 'tahun aktif tidak boleh berubah');
+});
+
+test('@pakai mengganti tahun aktif, @tahun mendaftar', () => {
+  const all = fixture();
+  all.data['2026'] = { year: 2026, saldo: 1000000, startMonth: 0, items: [], paid: {}, skip: {}, adj: [] };
+  const r = reply('@pakai 2026', all);
+  assert.equal(r.changed, true, r.text);
+  assert.equal(+all.year, 2026);
+  const t = reply('@tahun', all).text;
+  assert.ok(t.includes('2026') && t.includes('2027') && t.includes('Aktif: 2026'), t);
+  assert.ok(reply('@pakai 1999', all).text.includes('tidak ada'));
 });
 
 test('worker: webhook menyimpan state dan membalas chat', async () => {

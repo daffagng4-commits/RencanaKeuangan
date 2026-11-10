@@ -33,7 +33,14 @@ node bot/dev.mjs --pdf bulanan jan      # tulis PDF ke folder temp
 | `@saldo` | saldo realtime (kas) + sisa akhir tahun + total tagihan |
 | `@jatah` | jatah jajan per bulan |
 | `@tagihan` | telat + jatuh tempo 7 hari |
-| `@rekap [bulan]` | masuk/keluar/tagihan/saldo akhir bulan |
+| `@rekap [bln] [thn]` | masuk/keluar (jadwal+kas)/saldo akhir bulan |
+| `@jadwal [bln]` | semua tagihan bulan itu + status lunas |
+| `@kas [n]` | transaksi kas terakhir |
+| `@masuk <amt> <ket>` / `@keluar <amt> <ket>` | catat kas masuk/keluar |
+| `@utang <nama> <amt>` / `@piutang <nama> <amt>` | catat utang/piutang |
+| `@bayarutang <nama> [amt]` / `@bayarpiutang <nama>` | bayar atau cicil |
+| `@utangku` | sisa utang & piutang |
+| `@tahun` / `@pakai <thn>` | daftar & ganti tahun aktif |
 | `@cari <kata>` | cari item |
 | `@beli <teks>` | Tambah Cepat (parser sama dengan tab Kelola Item) |
 | `@lunas <nama> [tgl]` | tandai lunas |
