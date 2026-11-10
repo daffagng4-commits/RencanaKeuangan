@@ -63,17 +63,27 @@ function kasBal() {
   return { bal: kasBase(P) + kasSum(rows).i - kasSum(rows).o, A: kasSum(rows), mName: FULL_MON[sm] };
 }
 
+// Angka satu bulan persis seperti kartu "Pemasukan vs pengeluaran" (jadwal + kas).
+function monthKas(mi) {
+  const S = state().s, P = kasLinked(), y = +S.year;
+  let masuk = 0, keluar = 0;
+  if (P) kasRows(P).forEach((x) => {
+    if (x.d.slice(0, 7) !== y + '-' + String(mi + 1).padStart(2, '0')) return;
+    if (x.t === '+') masuk += x.amt; else keluar += x.amt;
+  });
+  const row = calc().rows.find((r) => r.m === mi);
+  return { masuk, keluar, jadwal: row ? row.sp : 0, ak: row ? row.ak : null };
+}
+
 function saldoText() {
-  const S = state().s, c = calc(), KB = kasBal();
+  const S = state().s, c = calc(), KB = kasBal(), sm = +S.startMonth || 0, M = monthKas(sm);
   const out = [];
-  if (KB) {
-    out.push('💰 Saldo realtime ' + KB.mName + ': ' + rp(KB.bal));
-    out.push('📥 Masuk ' + rp(KB.A.i) + ' · 📤 Keluar ' + rp(KB.A.o) + ' (' + KB.A.n + ' transaksi)');
-  } else {
-    out.push('💰 Saldo awal ' + S.year + ': ' + rp(S.saldo));
-  }
+  if (KB) out.push('💰 Saldo realtime ' + KB.mName + ': ' + rp(KB.bal));
+  else out.push('💰 Saldo awal ' + S.year + ': ' + rp(S.saldo));
+  out.push('📊 ' + KB.mName + ': masuk ' + rp(M.masuk) + ' · keluar ' + rp(M.jadwal + M.keluar) +
+    ' (jadwal ' + rp(M.jadwal) + ' + kas ' + rp(M.keluar) + ')');
   out.push('📉 Sisa akhir Des ' + S.year + ': ' + rp(c.end));
-  out.push('🧾 Total tagihan ' + S.year + ': ' + rp(c.total));
+  out.push('🧾 Rencana tagihan ' + S.year + ': ' + rp(c.total));
   return out.join('\n');
 }
 
@@ -189,16 +199,11 @@ function rekapText(arg) {
     else return '⚠️ Bulan tidak dikenal. Contoh: @rekap nov atau @rekap 11.';
   }
   const row = c.rows.find((r) => r.m === mi);
+  const M = monthKas(mi);
   const P = kasLinked();
-  let masuk = 0, keluar = 0;
-  if (P) kasRows(P).forEach((x) => {
-    if (x.d.slice(0, 7) !== y + '-' + String(mi + 1).padStart(2, '0')) return;
-    if (x.t === '+') masuk += x.amt; else keluar += x.amt;
-  });
   const out = ['📊 Rekap ' + FULL_MON[mi] + ' ' + y];
-  if (P) out.push('📥 Masuk ' + rp(masuk));
-  const jadwal = row ? row.sp : 0;
-  out.push('💸 Keluar ' + rp(jadwal + keluar) + ' (jadwal ' + rp(jadwal) + ' + kas ' + rp(keluar) + ')');
+  if (P) out.push('📥 Masuk ' + rp(M.masuk));
+  out.push('💸 Keluar ' + rp(M.jadwal + M.keluar) + ' (jadwal ' + rp(M.jadwal) + ' + kas ' + rp(M.keluar) + ')');
   if (row) out.push('📈 Saldo akhir bulan ' + rp(row.ak));
   else out.push('ℹ️ Bulan ini di luar rentang tahun aktif (mulai ' + FULL_MON[+S.startMonth || 0] + ').');
   return out.join('\n');
