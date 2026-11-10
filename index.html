@@ -866,27 +866,37 @@ button.alat-item { width: 100%; border: 0; background: transparent; text-align: 
 }
 .hm-big.neg { color: var(--wr); }
 .hm .hm-hint { display: block; margin-top: 6px; color: var(--wr); font-size: 12px; }
+/* Garis tengah: pemisah halus antara saldo realtime dan sisa akhir tahun.
+   Ujungnya memudar supaya terbaca sebagai pemisah, bukan border kartu. */
 .hm-bal {
+  position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid var(--ln);
+  margin-top: 18px;
+  padding-top: 17px;
 }
-.hm-bal.one { grid-template-columns: 1fr; gap: 0; margin-top: 0; padding-top: 0; border-top: 0; }
-.hm .hm-bal.one { margin-top: 20px; padding-top: 0; border-top: 0; }
-.hm-bal.one b { font-size: 34px; font-weight: 700; letter-spacing: -0.035em; line-height: 1.1; margin: 8px 0 2px; }
-.hm-bal.one span { font-size: 12px; font-weight: 600; }
+.hm-bal::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  opacity: 0.55;
+  background: linear-gradient(90deg, transparent, var(--mut) 15%, var(--mut) 85%, transparent);
+}
+.hm-bal.one { grid-template-columns: 1fr; gap: 0; }
+.hm .hm-bal.one { margin-top: 18px; }
 .hm-bal > div { min-width: 0; }
-.hm-bal span { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--mut); line-height: 1.35; }
+.hm-bal span { display: block; font-size: 12.5px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--mut); line-height: 1.45; }
 .hm-bal b {
   display: block;
-  font-size: 20px;
+  font-size: 34px;
   font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
-  margin-top: 3px;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  margin: 8px 0 2px;
   font-variant-numeric: tabular-nums;
 }
 .hm-bal b.neg { color: var(--wr); }
@@ -1351,8 +1361,7 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
   .hero { grid-template-columns: 1fr; }
   .hero > .card { padding: 18px; }
   .hero > .card + .card { border-left: 0; border-top: 1px solid var(--ln); }
-  .hm-big, .hm-bal.one b { font-size: 30px; }
-  .hm-bal b { font-size: 19px; }
+  .hm-big, .hm-bal b { font-size: 28px; }
   .kas-split { grid-template-columns: 1fr; gap: 18px; }
   .kas-cat { border-left: 0; border-top: 1px solid var(--ln); padding-left: 0; padding-top: 16px; }
   .insight-body { grid-template-columns: 1fr; gap: 18px; }
