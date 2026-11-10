@@ -50,3 +50,22 @@ function bindA11y() {
     m.setAttribute('aria-labelledby', h2.id);
   });
 }
+
+/** Kapsul topbar: chevron sembunyikan tombol Privasi/Notifikasi/Tema, sisakan Akun + "+". Pilihan diingat. */
+function bindTopbarMore() {
+  var box = document.querySelector('.topbar-actions'),
+    b = document.getElementById('tb-more');
+  if (!box || !b) return;
+  function set(min) {
+    box.classList.toggle('min', min);
+    b.setAttribute('aria-expanded', min ? 'false' : 'true');
+    var t = min ? 'Tampilkan tombol lain' : 'Sembunyikan tombol lain';
+    b.title = t;
+    b.setAttribute('aria-label', t);
+    try { localStorage.setItem('rk-tb-min', min ? '1' : '0'); } catch (e) {}
+  }
+  var v = null;
+  try { v = localStorage.getItem('rk-tb-min'); } catch (e) {}
+  set(v ? v === '1' : window.innerWidth < 700);
+  b.onclick = function () { set(!box.classList.contains('min')); };
+}

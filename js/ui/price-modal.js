@@ -924,7 +924,7 @@ function savePm() {
   save();
   $("pm").hidden = true;
   renderAll();
-  $("status").textContent = 'Perubahan untuk "' + it.name + '" disimpan.';
+  toast('Perubahan untuk "' + it.name + '" disimpan.');
   var r = document.querySelector('#v-jadwal tr[data-r="' + it.id + '"]');
   if (r) {
     r.classList.add("flash");

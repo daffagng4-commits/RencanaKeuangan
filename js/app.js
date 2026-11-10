@@ -23,6 +23,7 @@ function main() {
   bindXl();
   bindPwa();
   bindPrivacy();
+  bindTopbarMore();
   bindA11y();
   bindNav();
   bindTip();

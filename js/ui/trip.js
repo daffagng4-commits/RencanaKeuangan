@@ -1653,20 +1653,30 @@ function bindPwa() {
       if (reg && reg.update) reg.update();
     }).catch(function () {});
   }
-  var ev = null;
+  var ev = null,
+    btn = $('pwa');
   window.addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault();
     ev = e;
-    $('pwa').hidden = false;
+    btn.hidden = false;
   });
   window.addEventListener('appinstalled', function () {
-    $('pwa').hidden = true;
+    btn.hidden = true;
   });
-  $('pwa').onclick = function () {
-    if (!ev) return;
-    ev.prompt();
-    ev = null;
-    $('pwa').hidden = true;
+  // Tetap tampil walau browser tak memberi prompt (iOS Safari / Firefox), agar ada petunjuk pasang.
+  if (!matchMedia('(display-mode: standalone)').matches && !navigator.standalone) btn.hidden = false;
+  btn.onclick = function () {
+    if (ev) {
+      ev.prompt();
+      ev = null;
+      btn.hidden = true;
+      return;
+    }
+    toast(
+      /iphone|ipad|ipod/i.test(navigator.userAgent)
+        ? 'Ketuk ikon Bagikan, lalu "Tambah ke Layar Utama".'
+        : 'Buka menu browser, lalu pilih "Instal aplikasi" / "Tambahkan ke layar utama".'
+    );
   };
   var notifBtn = $('btn-notif');
   if (notifBtn) {
