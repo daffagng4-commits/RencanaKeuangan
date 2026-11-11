@@ -61,34 +61,35 @@ const { boot } = require('./ui.js');
   ev(row, 'pointerout');
   click($('btn-privacy'));
 
-  // grafik: satu grafik arus saldo per tanggal + area hover bertooltip
-  const dots = $('v-rincian').querySelectorAll('svg[aria-label^="Grafik arus saldo"] circle.lc-d');
-  assert(dots.length >= 1, 'titik saldo per tanggal');
-  const hits = $('v-rincian').querySelectorAll('svg[aria-label^="Grafik arus saldo"] rect[data-tip]');
-  assert.strictEqual(hits.length, dots.length, 'area hover punya tooltip');
-  assert(/saldo Rp/.test(hits[0].dataset.tip), hits[0].dataset.tip);
-
-  // geser jari (touch): titik aktif mengikuti posisi jari
-  const chart = $('v-rincian').querySelector('svg.lc');
-  chart.getBoundingClientRect = () => ({ left: 0, top: 0, width: 720, height: 238, right: 720, bottom: 238 });
+  // grafik: kurva halus + crosshair/tooltip interaktif
+  const chart = $('v-rincian').querySelector('svg[aria-label^="Grafik arus saldo"]');
+  assert(chart, 'grafik arus saldo ada');
+  const line = chart.querySelector('.lc-line');
+  assert(line.getAttribute('d') && line.getAttribute('d').split('L').length > 10, 'kurva halus banyak titik');
+  const big = chart.closest('.lc-card').querySelector('.lc-big');
+  assert(/Rp/.test(big.textContent), 'nominal besar terisi: ' + big.textContent);
+  assert(/^[▲▼] \d/.test(chart.closest('.lc-card').querySelector('.lc-pct').textContent), 'chip persen perubahan');
+  const ctip = chart.closest('.lc-card').querySelector('.lc-tip');
+  chart.getBoundingClientRect = () => ({ left: 0, top: 0, width: 720, height: 250, right: 720, bottom: 250 });
   const pe = (type, x) => {
     const e = new w.Event(type, { bubbles: true, cancelable: true });
     Object.defineProperty(e, 'pointerType', { value: 'touch' });
     e.pointerId = 1; e.clientX = x; e.clientY = 40;
-    hits[0].dispatchEvent(e);
+    chart.dispatchEvent(e);
   };
-  const activeIdx = () => [...chart.querySelectorAll('.lc-p')].findIndex((g) => g.classList.contains('active'));
-  pe('pointerdown', 2);
-  assert.strictEqual(activeIdx(), 0, 'sentuh kiri: titik pertama aktif');
-  pe('pointermove', 718);
-  assert.strictEqual(activeIdx(), dots.length - 1, 'geser ke kanan: titik terakhir aktif');
-  assert(!$('tip').hidden, 'geser jari menampilkan tooltip');
-  w.document.dispatchEvent(new w.Event('pointercancel'));
-  assert.strictEqual(activeIdx(), -1, 'lepas jari menghapus titik aktif');
+  pe('pointerdown', 4);
+  assert(chart.querySelector('.lc-cur').style.display !== 'none', 'crosshair muncul saat disentuh');
+  assert.strictEqual(ctip.style.opacity, '1', 'tooltip tampil');
+  assert(/Rp/.test(ctip.lastElementChild.textContent), 'tooltip berisi nominal: ' + ctip.lastElementChild.textContent);
+  const cx0 = +chart.querySelector('.lc-cd').getAttribute('cx');
+  pe('pointermove', 716);
+  assert(+chart.querySelector('.lc-cd').getAttribute('cx') > cx0, 'crosshair ikut bergeser');
+  chart.dispatchEvent(new w.Event('pointerleave', { bubbles: true }));
+  assert.strictEqual(chart.querySelector('.lc-cur').style.display, 'none', 'lepas menutup crosshair');
   w.S.startMonth = 10;
   w.renderAll();
-  const part = $('v-rincian').querySelectorAll('svg[aria-label^="Grafik arus saldo"] rect[data-tip]');
-  assert(part.length >= 1, 'grafik tetap tampil walau mulai November');
+  const c2 = $('v-rincian').querySelector('svg[aria-label^="Grafik arus saldo"]');
+  assert(c2 && c2.querySelector('.lc-line').getAttribute('d'), 'grafik tetap tampil walau mulai November');
   w.S.startMonth = 0;
   w.renderAll();
   w.kasLinked().tx = [{ id: 'g', d: '2026-12-01', t: '+', amt: 3000000, cat: 'Gaji', note: 'Gaji' }];
@@ -98,10 +99,11 @@ const { boot } = require('./ui.js');
   // pie pemasukan vs pengeluaran pindah ke Rincian Bulanan, di samping grafik arus saldo
   w.tab('rincian');
   w.renderAll();
-  const pie = $('v-rincian').querySelector('.insight .pie');
-  assert(pie, 'pie pemasukan vs pengeluaran di Rincian Bulanan');
-  assert.strictEqual(pie.querySelectorAll('.pie-slice').length, 2, 'dua potongan pie (pemasukan & pengeluaran)');
-  assert(/Masuk/.test(txt($('v-rincian'))) && /Keluar/.test(txt($('v-rincian'))), 'legenda warna pemasukan/pengeluaran');
+  const dn = $('v-rincian').querySelector('.insight .dn');
+  assert(dn, 'donut pemasukan vs pengeluaran di Rincian Bulanan');
+  assert.strictEqual(dn.querySelectorAll('.dn-slice').length, 2, 'dua irisan donut (pemasukan & pengeluaran)');
+  assert.strictEqual(dn.querySelectorAll('.dn-lg button').length, 2, 'legenda bisa diklik');
+  assert(/Masuk/.test(txt(dn)) && /Keluar/.test(txt(dn)), 'legenda warna pemasukan/pengeluaran');
 
   // ---- empty state ----
   w.kasLinked().tx = [];

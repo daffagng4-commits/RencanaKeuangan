@@ -180,37 +180,13 @@ function insightCard(C) {
       head +
       '<div class="empty">Belum ada pemasukan atau pengeluaran pada periode ini.</div></div>'
     );
-  var ip = (p.inc / total) * 100,
-    CC = 238.761,
-    li = (CC * ip) / 100,
-    lo = CC - li;
-  var center = p.inc ? Math.round(ip) + '%<small>masuk</small>' : '100%<small>keluar</small>';
-  var tipIn = esc('Masuk: ' + rp(p.inc) + ' (' + (p.inc ? Math.round(ip) : 0) + '%)'),
-    tipOut = esc('Keluar: ' + rp(p.out) + ' (' + Math.round(p.inc ? 100 - ip : 100) + '%)'),
-    tipAll = esc('Masuk: ' + rp(p.inc) + ' · Keluar: ' + rp(p.out));
-  var pie =
-    '<div class="insight-pie"><div class="pie" tabindex="0" data-tip="' +
-    tipAll +
-    '"><svg viewBox="0 0 100 100" role="img" aria-label="Pemasukan vs pengeluaran">' +
-    '<circle class="pie-slice" cx="50" cy="50" r="38" transform="rotate(-90 50 50)" stroke="var(--in)" stroke-dasharray="' +
-    li +
-    ' ' +
-    CC +
-    '" stroke-dashoffset="0" tabindex="0" data-tip="' + tipIn + '"/>' +
-    '<circle class="pie-slice" cx="50" cy="50" r="38" transform="rotate(-90 50 50)" stroke="var(--wr)" stroke-dasharray="' +
-    lo +
-    ' ' +
-    CC +
-    '" stroke-dashoffset="' +
-    -li +
-    '" stroke-width="16" tabindex="0" data-tip="' + tipOut + '"/></svg><span>' +
-    center +
-    '</span></div>' +
-    '<div class="pie-lg"><span><i style="background:var(--in)"></i>Masuk <b class="pv">' +
-    rp(p.inc) +
-    '</b></span><span><i style="background:var(--wr)"></i>Keluar <b class="pv">' +
-    rp(p.out) +
-    '</b></span></div></div>';
+  var pie = donutHtml({
+    aria: 'Pemasukan ' + rp(p.inc) + ', pengeluaran ' + rp(p.out),
+    data: [
+      { label: 'Masuk', value: p.inc, color: 'var(--in)' },
+      { label: 'Keluar', value: p.out, color: 'var(--wr)' }
+    ]
+  });
   var income = catDir === '+',
     src = income ? p.incByCat : p.byCat,
     sum = income ? p.inc : p.out,
@@ -733,6 +709,8 @@ function recentTxCard() {
 
 /** Render tab Rincian Bulanan. */
 function renderRincian() {
+  LCQ = [];
+  DNQ = [];
   var c = calc(),
     y = S.year,
     R = c.rows,
@@ -792,6 +770,7 @@ function renderRincian() {
     insightCard(C) +
     '</div>' +
     (tx ? '<div class="splitR">' + table + tx + '</div>' : table);
+  chartMount($('v-rincian'));
   gdApply($('v-rincian'));
 }
 
