@@ -514,6 +514,8 @@ button.g {
 button.g:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); border-color: transparent; color: var(--ink); }
 button.g.d:hover { background: var(--wrs); color: var(--wr); }
 button.d { color: var(--wr); border-color: transparent; background: transparent; }
+.cfm button.d { border-color: color-mix(in srgb, var(--wr) 55%, transparent); }
+.cfm button.d:hover { background: var(--wrs); border-color: var(--wr); }
 button.c,
 .modal button.c,
 #pcl, #cl, #rmc, #kpc, #shx, #lgc, #skc, #xlc, [data-cf="later"] {
