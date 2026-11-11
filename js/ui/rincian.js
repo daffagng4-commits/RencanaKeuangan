@@ -180,17 +180,10 @@ function insightCard(C) {
       head +
       '<div class="empty">Belum ada pemasukan atau pengeluaran pada periode ini.</div></div>'
     );
-  var pie = donutHtml({
-    aria: 'Pemasukan ' + rp(p.inc) + ', pengeluaran ' + rp(p.out),
-    data: [
-      { label: 'Masuk', value: p.inc, color: 'var(--in)' },
-      { label: 'Keluar', value: p.out, color: 'var(--wr)' }
-    ]
-  });
   var income = catDir === '+',
     src = income ? p.incByCat : p.byCat,
     sum = income ? p.inc : p.out,
-    cnt = income ? p.nin : p.n;
+    dir = income ? 'Pemasukan' : 'Pengeluaran';
   var list = Object.keys(src)
     .map(function (k) {
       return { name: k || 'Tanpa kategori', v: src[k], none: !k };
@@ -201,35 +194,27 @@ function insightCard(C) {
   list.forEach(function (e) {
     e.color = catColor(e.none ? '' : e.name);
   });
-  var bars = list
-    .map(function (e) {
-      var pct = sum ? (e.v / sum) * 100 : 0;
-      return (
-        '<div class="catrow" tabindex="0" data-tip="' +
-        esc(e.name + ': ' + rp(e.v) + ' (' + (pct < 1 ? '<1' : Math.round(pct)) + '% dari total)') +
-        '"><div class="cathd"><span><i class="dot" style="background:' +
-        e.color +
-        '"></i>' +
-        esc(e.name) +
-        (isInvestCat(e.name) ? ' <span class="chp">aset</span>' : '') +
-        '</span><b class="pv">' +
-        rp(e.v) +
-        ' <span class="sub">' +
-        (pct < 1 ? '<1' : Math.round(pct)) +
-        '%</span></b></div><div class="catbar"><i style="width:' +
-        pct.toFixed(1) +
-        '%;background:' +
-        e.color +
-        '"></i></div></div>'
-      );
+  var donut = donutHtml({
+    aria: dir + ' per kategori',
+    data: list.map(function (e) {
+      return { label: e.name, value: e.v, color: e.color };
     })
-    .join('');
+  });
+  var foot =
+    '<div class="sub mt12">Masuk <b class="pv">' +
+    rp(p.inc) +
+    '</b> · Keluar <b class="pv">' +
+    rp(p.out) +
+    '</b>' +
+    ' · ' +
+    (p.n + p.nin) +
+    ' transaksi' +
+    (p.out ? ' · rata-rata <b class="pv">' + rp(p.avg) + '/hari</b>' : '') +
+    '</div>';
   var cat =
     '<div class="insight-cat"><div class="dflex jcsb aic fwrap g8"><h3 class="insight-h3">' +
-    (income ? 'Pemasukan' : 'Pengeluaran') +
-    ' per kategori</h3><div class="dflex aic g8 fwrap"><span class="sub">Total <b class="pv">' +
-    rp(sum) +
-    '</b></span><div class="cat-tabs cat-dirs" role="tablist">' +
+    dir +
+    ' per kategori</h3><div class="dflex aic g8 fwrap"><div class="cat-tabs cat-dirs" role="tablist">' +
     '<button type="button" class="cat-tab' +
     (income ? '' : ' on') +
     '" data-catd="-" aria-pressed="' +
@@ -241,15 +226,11 @@ function insightCard(C) {
     (income ? 'true' : 'false') +
     '">Masuk</button></div></div></div>' +
     (sum
-      ? '<div class="cat-list">' + bars + '</div>'
-      : '<div class="empty mt8">Belum ada ' + (income ? 'pemasukan' : 'pengeluaran') + ' pada periode ini.</div>') +
-    '<div class="sub mt12">' +
-    (income ? '' : p.out ? 'Rata-rata <b class="pv">' + rp(p.avg) + '</b> per hari · ' : '') +
-    cnt +
-    ' transaksi</div></div>';
-  return (
-    '<div class="card insight">' + head + '<div class="insight-body">' + pie + '<div class="insight-div" aria-hidden="true"></div>' + cat + '</div></div>'
-  );
+      ? '<div class="insight-dn">' + donut + '</div>'
+      : '<div class="empty mt8">Belum ada ' + dir.toLowerCase() + ' pada periode ini.</div>') +
+    foot +
+    '</div>';
+  return '<div class="card insight">' + head + '<div class="insight-body">' + cat + '</div></div>';
 }
 
 /** Kartu saldo + statistik. */

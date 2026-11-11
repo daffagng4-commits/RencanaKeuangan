@@ -28,8 +28,8 @@ const { boot } = require('./ui.js');
   w.tab('rincian');
   w.renderAll();
   const dotColor = (name) => {
-    const row = [...$('v-rincian').querySelectorAll('.catrow')].filter((r) => r.querySelector('.cathd span').textContent.trim().startsWith(name))[0];
-    return row.querySelector('.catbar i').style.background;
+    const row = [...$('v-rincian').querySelectorAll('.insight .dn-lg button')].filter((b) => b.querySelector('.n').textContent.trim() === name)[0];
+    return row.querySelector('i').style.background;
   };
   const before = { h: dotColor('Hiburan'), m: dotColor('Makan') };
   w.S.items[1].price = 5000000; // urutan nilai berubah (Makan jadi terbesar)
@@ -40,26 +40,17 @@ const { boot } = require('./ui.js');
   w.renderAll();
 
   // ---- tooltip ----
-  const row = $('v-rincian').querySelector('.catrow[data-tip]');
-  assert(/Rp [\d.]+ \(\d+% dari total\)/.test(row.dataset.tip), row.dataset.tip);
-  const tip = $('tip');
-  assert(tip && tip.hidden, 'tooltip tersembunyi awalnya');
-  ev(row, 'pointerover');
-  assert(!tip.hidden && tip.textContent === row.dataset.tip, 'hover menampilkan tooltip');
-  ev(row, 'pointerout');
-  assert(tip.hidden, 'pointerout menyembunyikan');
-  click(row);
-  assert(!tip.hidden, 'ketuk menampilkan');
-  click(row);
-  assert(tip.hidden, 'ketuk lagi menyembunyikan');
-  click(row);
-  w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-  assert(tip.hidden, 'Escape menutup');
-  click($('btn-privacy'));
-  ev(row, 'pointerover');
-  assert(!/\d{3}/.test(tip.textContent.replace(/\d+%/, '')) && /Rp \u2022\u2022\u2022\u2022/.test(tip.textContent), 'nominal disamarkan saat privasi aktif: ' + tip.textContent);
-  ev(row, 'pointerout');
-  click($('btn-privacy'));
+  const brow = $('v-rincian').querySelector('.insight .dn-lg button');
+  const ctr = $('v-rincian').querySelector('.insight .dn-c');
+  ev(brow, 'pointerover');
+  assert(/Rp [\d.]+/.test(ctr.textContent) && /% dari total/.test(ctr.textContent), 'hover keterangan menyalakan irisan: ' + ctr.textContent);
+  assert(brow.classList.contains('on'), 'baris keterangan ikut tersorot');
+  ev(brow, 'pointerleave');
+  assert(/^TotalRp / .test(ctr.textContent.replace(/\s+/g,' ')) || /Total/.test(ctr.textContent), 'lepas kursor mengembalikan total: ' + ctr.textContent);
+  click(brow);
+  assert.strictEqual(brow.getAttribute('aria-pressed'), 'false', 'ketuk keterangan menyembunyikan irisan');
+  click(brow);
+  assert.strictEqual(brow.getAttribute('aria-pressed'), 'true', 'ketuk lagi menampilkan irisan');
 
   // grafik: kurva halus + crosshair/tooltip interaktif
   const chart = $('v-rincian').querySelector('svg[aria-label^="Grafik arus saldo"]');
@@ -100,10 +91,14 @@ const { boot } = require('./ui.js');
   w.tab('rincian');
   w.renderAll();
   const dn = $('v-rincian').querySelector('.insight .dn');
-  assert(dn, 'donut pemasukan vs pengeluaran di Rincian Bulanan');
-  assert.strictEqual(dn.querySelectorAll('.dn-slice').length, 2, 'dua irisan donut (pemasukan & pengeluaran)');
-  assert.strictEqual(dn.querySelectorAll('.dn-lg button').length, 2, 'legenda bisa diklik');
-  assert(/Masuk/.test(txt(dn)) && /Keluar/.test(txt(dn)), 'legenda warna pemasukan/pengeluaran');
+  assert(dn, 'donut per kategori di Rincian Bulanan');
+  const ns = dn.querySelectorAll('.dn-slice').length,
+    nr = dn.querySelectorAll('.dn-lg button').length;
+  assert(ns > 1, 'donut punya irisan per kategori: ' + ns);
+  assert.strictEqual(nr, ns, 'satu baris keterangan per irisan');
+  const vals = [].map.call(dn.querySelectorAll('.dn-lg .v'), function (v) { return Number(v.textContent.replace(/[^\d]/g, '')); });
+  assert(vals.every(function (v, i) { return i === 0 || vals[i - 1] >= v; }), 'keterangan urut dari terbesar');
+  assert(/transaksi/.test(txt($('v-rincian').querySelector('.insight-cat'))), 'footer transaksi tetap ada');
 
   // ---- empty state ----
   w.kasLinked().tx = [];

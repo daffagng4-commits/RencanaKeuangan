@@ -428,6 +428,9 @@ function donutInit(host, cfg) {
     slices.forEach(function (s, k) {
       s.classList.toggle('on', k === i);
     });
+    [].forEach.call(legend.children, function (li, k) {
+      li.firstChild.classList.toggle('on', k === i);
+    });
     paint();
   }
 

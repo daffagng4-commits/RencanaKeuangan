@@ -1272,6 +1272,8 @@ svg.lc .lc-cd { fill: var(--ac); stroke: var(--card); stroke-width: 2; }
 .dn-lg i { width: 9px; height: 9px; border-radius: 50%; }
 .dn-lg .v, .dn-lg .p { text-align: right; font-variant-numeric: tabular-nums; }
 .dn-lg .p { color: var(--mut); }
+.dn-lg button.on { background: var(--sf2); border-radius: 8px; }
+.dn-lg button.on .n { font-weight: 600; }
 .dn-lg button[aria-pressed="false"] { opacity: 0.45; }
 .dn-lg button[aria-pressed="false"] .n { text-decoration: line-through; }
 .dn-lg button:focus-visible { outline: 2px solid var(--ac); outline-offset: -2px; border-radius: 8px; }
@@ -1322,7 +1324,10 @@ svg.lc .lc-cd { fill: var(--ac); stroke: var(--card); stroke-width: 2; }
 .insight-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .insight-title .sub { margin-top: 2px; }
 .insight .cat-tabs { margin: 0; }
-.insight-body { display: grid; grid-template-columns: minmax(170px, 210px) 1px minmax(0, 1fr); gap: 22px; align-items: stretch; }
+.insight-body { display: block; }
+.insight-dn { margin-top: 12px; }
+.insight-dn .dn { display: grid; grid-template-columns: minmax(150px, 190px) minmax(0, 1fr); gap: 6px 20px; align-items: center; }
+.insight-dn .dn-ring { margin: 0 auto; }
 .insight-body .dn { min-width: 0; align-self: center; }
 .insight-div { align-self: stretch; width: 1px; background: var(--ln); border-radius: 1px; }
 .insight-cat { min-width: 0; }
@@ -1427,9 +1432,9 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
   .hm-big, .hm-bal b { font-size: 28px; }
   .kas-split { grid-template-columns: 1fr; gap: 18px; }
   .kas-cat { border-left: 0; border-top: 1px solid var(--ln); padding-left: 0; padding-top: 16px; }
-  .insight-body { grid-template-columns: 1fr; gap: 18px; }
-  .insight-div { width: auto; height: 1px; background: var(--ln); }
-  .insight-body .dn { max-width: 300px; }
+  .insight-dn .dn { grid-template-columns: 1fr; gap: 4px; }
+  .insight .dn-c strong { font-size: 14px; }
+  .insight-dn .dn-lg { border-top: 0; margin-top: 10px; }
   .it { grid-template-columns: 1fr auto; }
   .it .cell:nth-child(2), .it .cell:nth-child(3) { grid-column: 1; }
   .kflt { grid-template-columns: 1fr 1fr; }
@@ -4225,6 +4230,9 @@ function donutInit(host, cfg) {
     slices.forEach(function (s, k) {
       s.classList.toggle('on', k === i);
     });
+    [].forEach.call(legend.children, function (li, k) {
+      li.firstChild.classList.toggle('on', k === i);
+    });
     paint();
   }
 
@@ -4457,17 +4465,10 @@ function insightCard(C) {
       head +
       '<div class="empty">Belum ada pemasukan atau pengeluaran pada periode ini.</div></div>'
     );
-  var pie = donutHtml({
-    aria: 'Pemasukan ' + rp(p.inc) + ', pengeluaran ' + rp(p.out),
-    data: [
-      { label: 'Masuk', value: p.inc, color: 'var(--in)' },
-      { label: 'Keluar', value: p.out, color: 'var(--wr)' }
-    ]
-  });
   var income = catDir === '+',
     src = income ? p.incByCat : p.byCat,
     sum = income ? p.inc : p.out,
-    cnt = income ? p.nin : p.n;
+    dir = income ? 'Pemasukan' : 'Pengeluaran';
   var list = Object.keys(src)
     .map(function (k) {
       return { name: k || 'Tanpa kategori', v: src[k], none: !k };
@@ -4478,35 +4479,27 @@ function insightCard(C) {
   list.forEach(function (e) {
     e.color = catColor(e.none ? '' : e.name);
   });
-  var bars = list
-    .map(function (e) {
-      var pct = sum ? (e.v / sum) * 100 : 0;
-      return (
-        '<div class="catrow" tabindex="0" data-tip="' +
-        esc(e.name + ': ' + rp(e.v) + ' (' + (pct < 1 ? '<1' : Math.round(pct)) + '% dari total)') +
-        '"><div class="cathd"><span><i class="dot" style="background:' +
-        e.color +
-        '"></i>' +
-        esc(e.name) +
-        (isInvestCat(e.name) ? ' <span class="chp">aset</span>' : '') +
-        '</span><b class="pv">' +
-        rp(e.v) +
-        ' <span class="sub">' +
-        (pct < 1 ? '<1' : Math.round(pct)) +
-        '%</span></b></div><div class="catbar"><i style="width:' +
-        pct.toFixed(1) +
-        '%;background:' +
-        e.color +
-        '"></i></div></div>'
-      );
+  var donut = donutHtml({
+    aria: dir + ' per kategori',
+    data: list.map(function (e) {
+      return { label: e.name, value: e.v, color: e.color };
     })
-    .join('');
+  });
+  var foot =
+    '<div class="sub mt12">Masuk <b class="pv">' +
+    rp(p.inc) +
+    '</b> · Keluar <b class="pv">' +
+    rp(p.out) +
+    '</b>' +
+    ' · ' +
+    (p.n + p.nin) +
+    ' transaksi' +
+    (p.out ? ' · rata-rata <b class="pv">' + rp(p.avg) + '/hari</b>' : '') +
+    '</div>';
   var cat =
     '<div class="insight-cat"><div class="dflex jcsb aic fwrap g8"><h3 class="insight-h3">' +
-    (income ? 'Pemasukan' : 'Pengeluaran') +
-    ' per kategori</h3><div class="dflex aic g8 fwrap"><span class="sub">Total <b class="pv">' +
-    rp(sum) +
-    '</b></span><div class="cat-tabs cat-dirs" role="tablist">' +
+    dir +
+    ' per kategori</h3><div class="dflex aic g8 fwrap"><div class="cat-tabs cat-dirs" role="tablist">' +
     '<button type="button" class="cat-tab' +
     (income ? '' : ' on') +
     '" data-catd="-" aria-pressed="' +
@@ -4518,15 +4511,11 @@ function insightCard(C) {
     (income ? 'true' : 'false') +
     '">Masuk</button></div></div></div>' +
     (sum
-      ? '<div class="cat-list">' + bars + '</div>'
-      : '<div class="empty mt8">Belum ada ' + (income ? 'pemasukan' : 'pengeluaran') + ' pada periode ini.</div>') +
-    '<div class="sub mt12">' +
-    (income ? '' : p.out ? 'Rata-rata <b class="pv">' + rp(p.avg) + '</b> per hari · ' : '') +
-    cnt +
-    ' transaksi</div></div>';
-  return (
-    '<div class="card insight">' + head + '<div class="insight-body">' + pie + '<div class="insight-div" aria-hidden="true"></div>' + cat + '</div></div>'
-  );
+      ? '<div class="insight-dn">' + donut + '</div>'
+      : '<div class="empty mt8">Belum ada ' + dir.toLowerCase() + ' pada periode ini.</div>') +
+    foot +
+    '</div>';
+  return '<div class="card insight">' + head + '<div class="insight-body">' + cat + '</div></div>';
 }
 
 /** Kartu saldo + statistik. */

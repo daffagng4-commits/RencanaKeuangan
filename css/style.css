@@ -1250,6 +1250,8 @@ svg.lc .lc-cd { fill: var(--ac); stroke: var(--card); stroke-width: 2; }
 .dn-lg i { width: 9px; height: 9px; border-radius: 50%; }
 .dn-lg .v, .dn-lg .p { text-align: right; font-variant-numeric: tabular-nums; }
 .dn-lg .p { color: var(--mut); }
+.dn-lg button.on { background: var(--sf2); border-radius: 8px; }
+.dn-lg button.on .n { font-weight: 600; }
 .dn-lg button[aria-pressed="false"] { opacity: 0.45; }
 .dn-lg button[aria-pressed="false"] .n { text-decoration: line-through; }
 .dn-lg button:focus-visible { outline: 2px solid var(--ac); outline-offset: -2px; border-radius: 8px; }
@@ -1300,7 +1302,10 @@ svg.lc .lc-cd { fill: var(--ac); stroke: var(--card); stroke-width: 2; }
 .insight-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .insight-title .sub { margin-top: 2px; }
 .insight .cat-tabs { margin: 0; }
-.insight-body { display: grid; grid-template-columns: minmax(170px, 210px) 1px minmax(0, 1fr); gap: 22px; align-items: stretch; }
+.insight-body { display: block; }
+.insight-dn { margin-top: 12px; }
+.insight-dn .dn { display: grid; grid-template-columns: minmax(150px, 190px) minmax(0, 1fr); gap: 6px 20px; align-items: center; }
+.insight-dn .dn-ring { margin: 0 auto; }
 .insight-body .dn { min-width: 0; align-self: center; }
 .insight-div { align-self: stretch; width: 1px; background: var(--ln); border-radius: 1px; }
 .insight-cat { min-width: 0; }
@@ -1405,9 +1410,9 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
   .hm-big, .hm-bal b { font-size: 28px; }
   .kas-split { grid-template-columns: 1fr; gap: 18px; }
   .kas-cat { border-left: 0; border-top: 1px solid var(--ln); padding-left: 0; padding-top: 16px; }
-  .insight-body { grid-template-columns: 1fr; gap: 18px; }
-  .insight-div { width: auto; height: 1px; background: var(--ln); }
-  .insight-body .dn { max-width: 300px; }
+  .insight-dn .dn { grid-template-columns: 1fr; gap: 4px; }
+  .insight .dn-c strong { font-size: 14px; }
+  .insight-dn .dn-lg { border-top: 0; margin-top: 10px; }
   .it { grid-template-columns: 1fr auto; }
   .it .cell:nth-child(2), .it .cell:nth-child(3) { grid-column: 1; }
   .kflt { grid-template-columns: 1fr 1fr; }
