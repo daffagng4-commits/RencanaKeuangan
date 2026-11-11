@@ -1721,11 +1721,48 @@ nav .nav-pill {
 .topbar-actions { margin-left: auto; }
 
 /* Filter arah tetap di tempat: grup kanan dipatok ke tepi kartu, jadi posisi tab tidak ikut panjang label/nominal. */
-.insight-cat > .dflex > .dflex { margin-left: auto; }
 .insight-cat .cat-dirs { margin: 0; }
 
 @media (max-width: 640px) {
-  .insight-cat > .dflex > .insight-h3 { flex: 1 0 100%; }
   .runway-box { font-size: 12px; padding: 8px 10px; line-height: 1.5; }
   .runway-box .rw2 { display: block; margin-top: 3px; }
 }
+
+/* Arus saldo: angka terkini + delta periode, kurva digambar sekali saat muncul. */
+.lc-stat { margin-left: auto; display: flex; align-items: baseline; gap: 8px; }
+.lc-stat > b { font-size: 21px; letter-spacing: -0.02em; }
+.lc-line { stroke-dasharray: 1; animation: lcDraw 0.8s cubic-bezier(0.25, 0.8, 0.3, 1) both; }
+@keyframes lcDraw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+
+/* Donut: celah antar irisan, ujung membulat, busur tumbuh saat kartu muncul. */
+.pie-slice { stroke-linecap: round; animation: arcIn 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes arcIn { from { stroke-dasharray: 0 var(--cc); stroke-dashoffset: 0; } }
+.pie-slice.on, .pie-slice:focus-visible { stroke-width: 21; filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.18)); }
+.pie-slice.off { opacity: 0.16; }
+.pie-c { display: block; line-height: 1; }
+.pie-c b { display: block; font-size: 24px; letter-spacing: -0.02em; }
+.pie-c small { display: block; font-size: 10px; font-weight: 600; color: var(--fg); opacity: 0.72; letter-spacing: 0.03em; margin-top: 4px; }
+.pie-k { display: flex; align-items: center; gap: 7px; width: 100%; margin: 0 -6px; padding: 4px 6px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: 12.5px; color: inherit; text-align: left; cursor: pointer; }
+.pie-k:hover, .pie-k.on { background: var(--acs); }
+.pie-k.off { opacity: 0.5; }
+.pie-k.off span { text-decoration: line-through; }
+.pie-k b { margin-left: auto; }
+@media (prefers-reduced-motion: reduce) { .pie-slice, .lc-line { animation: none; } }
+
+/* Kalender popover (pengganti pemilih tanggal bawaan browser). */
+.dp { position: fixed; z-index: 4000; width: 250px; padding: 7px; border: 1px solid var(--ln2); border-radius: var(--r); background: var(--card); box-shadow: 0 18px 40px -18px rgba(20, 24, 27, 0.38); }
+.dp-h { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 6px; }
+.dp-h b { font-size: 12.5px; }
+.dp-h button, .dp-f button { border: 0; background: none; color: inherit; font: inherit; font-size: 12.5px; border-radius: 8px; cursor: pointer; padding: 5px 9px; }
+.dp-h button { min-width: 30px; font-size: 15px; line-height: 1; color: var(--mut); }
+.dp-h button:hover, .dp-f button:hover { background: var(--acs); color: var(--ac); }
+.dp-g { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.dp-w { text-align: center; font-size: 9.5px; font-weight: 600; color: var(--mut); padding: 2px 0 4px; }
+.dp-d { border: 0; background: none; color: inherit; font: inherit; font-size: 12px; font-variant-numeric: tabular-nums; height: 28px; border-radius: 8px; cursor: pointer; }
+.dp-d:hover { background: var(--acs); color: var(--ac); }
+.dp-d.td { box-shadow: inset 0 0 0 1px var(--ln2); }
+.dp-d.on { background: var(--ac); color: var(--ac-ink); font-weight: 700; box-shadow: none; }
+.dp-d:disabled { opacity: 0.3; cursor: default; background: none; }
+.dp-f { margin-top: 6px; border-top: 1px solid var(--ln); padding-top: 6px; display: flex; justify-content: flex-end; }
+
+@media (max-width: 640px) { .lc-stat { margin-left: 0; gap: 6px; } .lc-stat > b { font-size: 18px; } }
