@@ -636,12 +636,12 @@ function emptyItemsHtml() {
 
 /** Kartu "Jadwal tagihan": tagihan belum lunas 14 hari ke depan, dengan tautan implisit ke tab Jadwal. */
 function billsCard() {
-  var soon = reminders(14).soon,
+  var soon = reminders(30).soon,
     sum = soon.reduce(function (a, r) {
       return a + r.price;
     }, 0),
     body = soon
-      .slice(0, 6)
+      .slice(0, 8)
       .map(function (r) {
         return (
           '<div class="it2 kit"><div><b class="fw6">' +
@@ -660,10 +660,11 @@ function billsCard() {
     '<div class="card"><div class="dflex jcsb aic fwrap g8"><h2 class="m0">Jadwal tagihan</h2>' +
     '<button type="button" class="lk" data-goto="jadwal">Semua tagihan' +
     LK_ARROW +
-    '</button></div><div class="sub mb8">14 hari ke depan' +
+    '</button></div><div class="sub mb8">30 hari ke depan' +
     (soon.length ? ' &middot; ' + soon.length + ' tagihan &middot; ' + rp(sum) : '') +
     '</div><div class="grow">' +
-    (body || '<div class="empty">Tidak ada tagihan dalam 14 hari ke depan.</div>') +
+    (body || '<div class="empty">Tidak ada tagihan dalam 30 hari ke depan.</div>') +
+    (soon.length > 8 ? '<div class="sub mt8">+' + (soon.length - 8) + ' tagihan lain</div>' : '') +
     '</div></div>'
   );
 }
@@ -707,8 +708,11 @@ function recentTxCard() {
     );
   }).join('');
   return (
-    '<div class="card"><div class="dflex jcsb aic fwrap g8"><h2 class="m0">Transaksi terakhir</h2>' +
-    '<div class="dflex aic g8"><div class="cat-tabs cat-dirs" role="tablist">' +
+    '<div class="card"><div class="dflex jcsb aic g8"><h2 class="m0">Transaksi terakhir</h2>' +
+    '<button type="button" class="lk" data-hist="1">Semua transaksi' +
+    LK_ARROW +
+    '</button></div>' +
+    '<div class="dflex aic fwrap g8 mt8"><div class="cat-tabs cat-dirs" role="tablist">' +
     '<button type="button" class="cat-tab' +
     (inn ? '' : ' on') +
     '" data-txd="-" aria-pressed="' +
@@ -718,13 +722,9 @@ function recentTxCard() {
     (inn ? ' on' : '') +
     '" data-txd="+" aria-pressed="' +
     (inn ? 'true' : 'false') +
-    '">Masuk</button></div>' +
-    '<button type="button" class="lk" data-hist="1">Semua transaksi' +
-    LK_ARROW +
-    '</button></div></div>' +
-    '<div class="sub mb8">' +
+    '">Masuk</button></div><span class="sub">' +
     (inn ? 'Uang masuk' : 'Uang keluar') +
-    ' 7 hari terakhir</div><div class="grow">' +
+    ' 7 hari terakhir</span></div><div class="grow mt8">' +
     (body || '<div class="empty">Belum ada transaksi ' + (inn ? 'masuk' : 'keluar') + ' dalam 7 hari terakhir.</div>') +
     '</div></div>'
   );
@@ -782,7 +782,7 @@ function renderRincian() {
   var tx = recentTxCard();
   $('v-rincian').innerHTML =
     (S.items.length ? '' : emptyItemsHtml()) +
-    '<div class="splitH">' +
+    '<div class="splitH three">' +
     saldoHero(c, R) +
     billsCard() +
     '</div>' +

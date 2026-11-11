@@ -149,6 +149,7 @@ function placeMenu(btn, m) {
     m.style.maxHeight = '';
     m.style.overflowY = '';
   }
+  m.style.zIndex = '800';
   m.style.position = 'fixed';
   m.style.left = left + 'px';
   m.style.top = top + 'px';
@@ -195,6 +196,16 @@ function bindNav() {
       alat(am.hidden);
     };
     am.onclick = function (e) {
+      var more = e.target.closest('#alat-more');
+      if (more) {
+        var rest = $('alat-rest');
+        if (rest) {
+          rest.hidden = !rest.hidden;
+          more.setAttribute('aria-expanded', rest.hidden ? 'false' : 'true');
+          placeMenu(ab, am);
+        }
+        return;
+      }
       if (e.target.closest('#thm')) return; // tema berganti tanpa menutup menu
       var g = e.target.closest('[data-go]');
       alat(false);
