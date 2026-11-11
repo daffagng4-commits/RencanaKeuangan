@@ -165,6 +165,8 @@ function railMove() {
     yp = $('yr-pop'),
     al = $('alat');
   if (!nav || !bar || !acct || !yp || !al) return;
+  var tm = $('tb-more');
+  if (tm && tm.parentNode !== bar) bar.appendChild(tm);
   var big = matchMedia('(min-width:1024px)').matches;
   if (big === (acct.parentNode === nav)) return;
   if (big) {

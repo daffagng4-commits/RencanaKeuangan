@@ -134,7 +134,7 @@ body {
 body, input, button, select, textarea, table, kbd, code { font-feature-settings: "tnum" 1; }
 ::selection { background: color-mix(in srgb, var(--ac) 22%, transparent); }
 .w { max-width: 1440px; margin: 0 auto; padding: 18px 20px 72px; }
-.splitR { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
+.splitR { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
 .splitR > .card { margin: 0; min-width: 0; display: flex; flex-direction: column; }
 .splitR .grow { flex: 1; }
 @media (max-width: 1000px) { .splitR { grid-template-columns: 1fr; } }
@@ -143,20 +143,35 @@ body, input, button, select, textarea, table, kbd, code { font-feature-settings:
 .splitR .kit b { font-variant-numeric: tabular-nums; }
 .splitH { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; margin-bottom: 16px; align-items: stretch; }
 .splitH > .card, .splitH > .hero { margin: 0; min-width: 0; }
-/* Baris 3 kartu: hero diurai jadi dua kartu sejajar (display:contents) supaya semua sel sama ukuran. */
-.splitH.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.splitH.three > .hero { display: contents; }
-.splitH.three > .hero > .card { background: var(--sf); border: 1px solid var(--ln); border-radius: var(--r-lg); padding: 18px; }
 .splitH > .card { display: flex; flex-direction: column; }
-.splitH .grow { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+.splitH > .hero { grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr); }
+.splitH .hero > .card:first-child { justify-content: center; gap: 6px; }
+.splitH .hero > .card { padding: 15px 16px; }
+.splitH .hm-big { font-size: 25px; margin: 6px 0 2px; }
+.splitH .hero .big { font-size: 19px; }
+.splitH .hero .jatah .big { font-size: 16px; }
+.splitH .hero .stats { column-gap: 14px; row-gap: 10px; align-content: space-between; }
+.splitH .hero .stats b { font-size: 13.5px; }
+.splitH .hero .stats span { font-size: 10.5px; }
+.splitH .hero .err { font-size: 11px; margin-top: 6px; }
+.splitH .hero .hm-bal { margin-top: 8px; }
+.splitH .hero .hm-bal b { font-size: 15px; }
+.splitH .kch { flex: 1 1 0; height: auto; min-height: 130px; }
+.splitH .grow { flex: 1; display: flex; flex-direction: column; justify-content: flex-start; }
+.splitH .kit { position: relative; border-top: 0; padding: 8px 0; }
+.splitH .kit:first-child { padding-top: 2px; }
+.splitH .kit:last-child { padding-bottom: 2px; }
+.splitH .kit + .kit::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, currentColor 32%, transparent) 8%, color-mix(in srgb, currentColor 32%, transparent) 92%, transparent); }
 .alat-rest[hidden] { display: none; }
+#alat { position: relative; z-index: 900; }
 #alat-more { font-weight: 650; }
 #alat-more[aria-expanded="true"] { background: var(--acs); color: var(--ac); }
 #alat-more svg { transition: transform 0.16s var(--ease); }
 #alat-more[aria-expanded="true"] svg { transform: rotate(180deg); }
+.splitH .am { flex-direction: row; align-items: baseline; gap: 6px; }
 .am { margin-left: auto; text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
 .am b, .am span { font-variant-numeric: tabular-nums; }
-@media (max-width: 1000px) { .splitH, .splitH.three { grid-template-columns: 1fr; } }
+@media (max-width: 1000px) { .splitH { grid-template-columns: 1fr; } }
 /* Tautan implisit (tanpa kotak/tombol): teks + chevron. */
 .lk { display: inline-flex; align-items: center; gap: 3px; border: 0; background: transparent; padding: 0; font: inherit; font-size: 12px; font-weight: 600; color: var(--ac); cursor: pointer; white-space: nowrap; min-height: 0; border-radius: 0; }
 .lk:hover { text-decoration: underline; }
@@ -4552,12 +4567,12 @@ function emptyItemsHtml() {
 
 /** Kartu "Jadwal tagihan": tagihan belum lunas 14 hari ke depan, dengan tautan implisit ke tab Jadwal. */
 function billsCard() {
-  var soon = reminders(30).soon,
+  var soon = reminders(400).soon.slice(0, 6),
     sum = soon.reduce(function (a, r) {
       return a + r.price;
     }, 0),
     body = soon
-      .slice(0, 8)
+      .slice(0, 6)
       .map(function (r) {
         return (
           '<div class="it2 kit"><div><b class="fw6">' +
@@ -4576,11 +4591,10 @@ function billsCard() {
     '<div class="card"><div class="dflex jcsb aic fwrap g8"><h2 class="m0">Jadwal tagihan</h2>' +
     '<button type="button" class="lk" data-goto="jadwal">Semua tagihan' +
     LK_ARROW +
-    '</button></div><div class="sub mb8">30 hari ke depan' +
-    (soon.length ? ' &middot; ' + soon.length + ' tagihan &middot; ' + rp(sum) : '') +
+    '</button></div><div class="sub mb8">6 tagihan ke depan' +
+    (soon.length ? ' &middot; ' + rp(sum) : '') +
     '</div><div class="grow">' +
-    (body || '<div class="empty">Tidak ada tagihan dalam 30 hari ke depan.</div>') +
-    (soon.length > 8 ? '<div class="sub mt8">+' + (soon.length - 8) + ' tagihan lain</div>' : '') +
+    (body || '<div class="empty">Belum ada tagihan terjadwal.</div>') +
     '</div></div>'
   );
 }
@@ -4698,7 +4712,7 @@ function renderRincian() {
   var tx = recentTxCard();
   $('v-rincian').innerHTML =
     (S.items.length ? '' : emptyItemsHtml()) +
-    '<div class="splitH three">' +
+    '<div class="splitH">' +
     saldoHero(c, R) +
     billsCard() +
     '</div>' +
@@ -10976,6 +10990,8 @@ function railMove() {
     yp = $('yr-pop'),
     al = $('alat');
   if (!nav || !bar || !acct || !yp || !al) return;
+  var tm = $('tb-more');
+  if (tm && tm.parentNode !== bar) bar.appendChild(tm);
   var big = matchMedia('(min-width:1024px)').matches;
   if (big === (acct.parentNode === nav)) return;
   if (big) {

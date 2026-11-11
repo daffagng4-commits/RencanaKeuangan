@@ -636,12 +636,12 @@ function emptyItemsHtml() {
 
 /** Kartu "Jadwal tagihan": tagihan belum lunas 14 hari ke depan, dengan tautan implisit ke tab Jadwal. */
 function billsCard() {
-  var soon = reminders(30).soon,
+  var soon = reminders(400).soon.slice(0, 6),
     sum = soon.reduce(function (a, r) {
       return a + r.price;
     }, 0),
     body = soon
-      .slice(0, 8)
+      .slice(0, 6)
       .map(function (r) {
         return (
           '<div class="it2 kit"><div><b class="fw6">' +
@@ -660,11 +660,10 @@ function billsCard() {
     '<div class="card"><div class="dflex jcsb aic fwrap g8"><h2 class="m0">Jadwal tagihan</h2>' +
     '<button type="button" class="lk" data-goto="jadwal">Semua tagihan' +
     LK_ARROW +
-    '</button></div><div class="sub mb8">30 hari ke depan' +
-    (soon.length ? ' &middot; ' + soon.length + ' tagihan &middot; ' + rp(sum) : '') +
+    '</button></div><div class="sub mb8">6 tagihan ke depan' +
+    (soon.length ? ' &middot; ' + rp(sum) : '') +
     '</div><div class="grow">' +
-    (body || '<div class="empty">Tidak ada tagihan dalam 30 hari ke depan.</div>') +
-    (soon.length > 8 ? '<div class="sub mt8">+' + (soon.length - 8) + ' tagihan lain</div>' : '') +
+    (body || '<div class="empty">Belum ada tagihan terjadwal.</div>') +
     '</div></div>'
   );
 }
@@ -782,7 +781,7 @@ function renderRincian() {
   var tx = recentTxCard();
   $('v-rincian').innerHTML =
     (S.items.length ? '' : emptyItemsHtml()) +
-    '<div class="splitH three">' +
+    '<div class="splitH">' +
     saldoHero(c, R) +
     billsCard() +
     '</div>' +
