@@ -112,6 +112,13 @@ body {
 body, input, button, select, textarea, table, kbd, code { font-feature-settings: "tnum" 1; }
 ::selection { background: color-mix(in srgb, var(--ac) 22%, transparent); }
 .w { max-width: 1260px; margin: 0 auto; padding: 18px 20px 72px; }
+.splitR { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.splitR > .card { margin: 0; min-width: 0; }
+@media (max-width: 1000px) { .splitR { grid-template-columns: 1fr; } }
+.splitR .kit { border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent); border-radius: 0; }
+.splitR .kit:first-of-type { border-top: 0; }
+.splitR .kit b { font-variant-numeric: tabular-nums; }
+.splitR [data-hist] { display: flex; justify-content: center; width: 100%; margin-top: 14px; }
 h1 { font-size: 23px; font-weight: 700; letter-spacing: -0.028em; line-height: 1.2; margin: 0; }
 h2 { font-size: 15.5px; font-weight: 700; letter-spacing: -0.012em; margin: 0 0 12px; }
 .sub { color: var(--mut); font-size: 12.5px; line-height: 1.45; }
@@ -768,6 +775,9 @@ tr.flash td { animation: fl 2.6s ease-out; }
   margin-top: 6px;
 }
 button.alat-item { width: 100%; border: 0; background: transparent; text-align: left; cursor: pointer; font-family: inherit; }
+.alat-item.i { justify-content: flex-start; }
+.alat-item.i svg { flex: none; opacity: 0.75; }
+.alat-item.i:hover svg, .alat-item.i:focus-visible svg { opacity: 1; }
 .alat-sep { height: 1px; background: var(--ln); margin: 6px 6px; }
 
 #botnav, #botsheet { display: none; }

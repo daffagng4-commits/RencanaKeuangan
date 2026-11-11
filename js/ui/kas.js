@@ -323,7 +323,7 @@ function renderKas() {
         '</div></div>';
     }).join('');
   var lst =
-    '<div class="card"><div class="row2" style="margin:0 0 8px;align-items:center;justify-content:space-between"><h2 class="m0">Riwayat transaksi</h2>' +
+    '<div class="card" id="kas-hist"><div class="row2" style="margin:0 0 8px;align-items:center;justify-content:space-between"><h2 class="m0">Riwayat transaksi</h2>' +
     '<select class="wauto" id="ktf" aria-label="Filter jenis transaksi"><option value="all"' + (kasTf === 'all' ? ' selected' : '') + '>Semua</option><option value="+"' + (kasTf === '+' ? ' selected' : '') + '>+ Masuk</option><option value="-" ' + (kasTf === '-' ? ' selected' : '') + '>&minus; Keluar</option></select></div>' +
     '<div class="kflt"><div><label for="kfrom">Dari</label><input type="date" id="kfrom" min="' + minD + '" max="' + maxD + '" value="' + from + '"></div>' +
     '<div><label for="kto">Sampai</label><input type="date" id="kto" min="' + minD + '" max="' + maxD + '" value="' + to + '"></div>' +

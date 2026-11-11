@@ -633,6 +633,40 @@ function emptyItemsHtml() {
   );
 }
 
+/** Kartu "Transaksi terakhir": 7 hari terakhir dari Riwayat transaksi, dengan pintasan ke tab Transaksi. */
+function recentTxCard() {
+  var P = kasLinked();
+  if (!P) return '';
+  var rows = kasRows(P).slice().sort(function (a, b) {
+      return a.d < b.d ? 1 : a.d > b.d ? -1 : 0;
+    }),
+    cut = addDaysISO(todayISO(), -6),
+    L = rows.filter(function (x) {
+      return x.d >= cut;
+    }).slice(0, 7);
+  if (!L.length) L = rows.slice(0, 7);
+  var body = L.map(function (x) {
+    return (
+      '<div class="it2 kit"><div><b class="' +
+      (x.t === '-' ? 'neg' : 'kin') +
+      '">' +
+      (x.t === '-' ? '&minus; ' : '+ ') +
+      rp(x.amt) +
+      '</b>' +
+      (x.cat ? ' <span class="sub">' + esc(x.cat) + '</span>' : '') +
+      (x.note ? '<br><span class="sub">' + esc(x.note) + '</span>' : '') +
+      '</div><span class="sub">' +
+      fmtD(x.d) +
+      '</span></div>'
+    );
+  }).join('');
+  return (
+    '<div class="card"><h2>Transaksi terakhir</h2><div class="sub mb8">7 hari terakhir</div>' +
+    (body || '<div class="empty">Belum ada transaksi dalam 7 hari terakhir.</div>') +
+    '<button type="button" class="tbk" data-hist="1">Lihat semua transaksi</button></div>'
+  );
+}
+
 /** Render tab Rincian Bulanan. */
 function renderRincian() {
   var c = calc(),
@@ -682,12 +716,13 @@ function renderRincian() {
     '</td><td data-l="Saldo akhir">' +
     rp(c.end) +
     '</td><td></td></tr></tbody></table></div></div>';
+  var tx = recentTxCard();
   $('v-rincian').innerHTML =
     (S.items.length ? '' : emptyItemsHtml()) +
     saldoHero(c, R) +
     fc +
     insightCard(C) +
-    table;
+    (tx ? '<div class="splitR">' + table + tx + '</div>' : table);
   gdApply($('v-rincian'));
 }
 
@@ -731,6 +766,13 @@ function bindRincian() {
     if (cd) {
       catDir = cd.dataset.catd;
       renderRincian();
+      return;
+    }
+    var hs = e.target.closest('[data-hist]');
+    if (hs) {
+      tab('kas');
+      var hc = document.getElementById('kas-hist');
+      if (hc) setTimeout(function () { hc.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
       return;
     }
     var r = e.target.closest('tr.row');

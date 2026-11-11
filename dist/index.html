@@ -134,6 +134,13 @@ body {
 body, input, button, select, textarea, table, kbd, code { font-feature-settings: "tnum" 1; }
 ::selection { background: color-mix(in srgb, var(--ac) 22%, transparent); }
 .w { max-width: 1260px; margin: 0 auto; padding: 18px 20px 72px; }
+.splitR { display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.splitR > .card { margin: 0; min-width: 0; }
+@media (max-width: 1000px) { .splitR { grid-template-columns: 1fr; } }
+.splitR .kit { border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent); border-radius: 0; }
+.splitR .kit:first-of-type { border-top: 0; }
+.splitR .kit b { font-variant-numeric: tabular-nums; }
+.splitR [data-hist] { display: flex; justify-content: center; width: 100%; margin-top: 14px; }
 h1 { font-size: 23px; font-weight: 700; letter-spacing: -0.028em; line-height: 1.2; margin: 0; }
 h2 { font-size: 15.5px; font-weight: 700; letter-spacing: -0.012em; margin: 0 0 12px; }
 .sub { color: var(--mut); font-size: 12.5px; line-height: 1.45; }
@@ -790,6 +797,9 @@ tr.flash td { animation: fl 2.6s ease-out; }
   margin-top: 6px;
 }
 button.alat-item { width: 100%; border: 0; background: transparent; text-align: left; cursor: pointer; font-family: inherit; }
+.alat-item.i { justify-content: flex-start; }
+.alat-item.i svg { flex: none; opacity: 0.75; }
+.alat-item.i:hover svg, .alat-item.i:focus-visible svg { opacity: 1; }
 .alat-sep { height: 1px; background: var(--ln); margin: 6px 6px; }
 
 #botnav, #botsheet { display: none; }
@@ -1686,10 +1696,10 @@ nav .nav-pill {
     </div>
     <button type="button" id="btn-privacy" class="topbar-btn" data-more title="Mode Privasi (Kaburkan Nominal)" aria-label="Mode Privasi" aria-pressed="false"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Privasi</span></button>
     <button type="button" id="btn-notif" class="topbar-btn" data-more title="Aktifkan pengingat notifikasi tagihan" aria-label="Notifikasi tagihan"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>Notifikasi</span></button>
-    <button type="button" id="thm" class="topbar-btn" data-more title="Ketuk untuk ganti tema" aria-label="Ganti tema"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span id="thm-txt">Tema</span></button>
-    <button type="button" class="topbar-btn" id="pwa" title="Pasang aplikasi ini di perangkat" aria-label="Pasang aplikasi ini di perangkat" hidden><svg class="arr-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10.5 18.5h3"/></svg><span>Pasang aplikasi</span></button>
     <div class="alat" id="alat"><button type="button" class="topbar-btn" id="alat-btn" aria-haspopup="true" title="Alat &amp; laporan" aria-label="Alat &amp; laporan" aria-expanded="false"><svg class="arr-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
-    <div class="alat-menu" id="alat-menu" role="menu" hidden><a class="alat-item" role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><a class="alat-item" role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><div class="bs-h">Laporan</div><button type="button" class="alat-item" role="menuitem" data-rep="d"><span>Hari ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="w"><span>Minggu ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="m"><span>Bulan ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="y"><span>Tahun ini</span></button><div class="alat-sep"></div><button type="button" class="alat-item" role="menuitem" data-go="trip"><span>Perjalanan</span></button><button type="button" class="alat-item" role="menuitem" id="bk"><span>Impor / Ekspor</span></button></div></div>
+    <div class="alat-menu" id="alat-menu" role="menu" hidden><a class="alat-item" role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><a class="alat-item" role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><div class="bs-h">Laporan</div><button type="button" class="alat-item" role="menuitem" data-rep="d"><span>Hari ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="w"><span>Minggu ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="m"><span>Bulan ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="y"><span>Tahun ini</span></button><div class="alat-sep"></div>
+
+<button type="button" class="alat-item" role="menuitem" data-go="trip"><span>Perjalanan</span></button><button type="button" class="alat-item" role="menuitem" id="bk"><span>Impor / Ekspor</span></button><button type="button" role="menuitem" id="thm" class="alat-item i" title="Ketuk untuk ganti tema" aria-label="Ganti tema"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span id="thm-txt">Tema</span></button><button type="button" role="menuitem" class="alat-item i" id="pwa" title="Pasang aplikasi ini di perangkat" aria-label="Pasang aplikasi ini di perangkat" hidden><svg class="arr-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10.5 18.5h3"/></svg><span>Pasang aplikasi</span></button></div></div>
     <button type="button" id="tb-more" class="topbar-btn tb-more" aria-expanded="true" title="Sembunyikan tombol lain" aria-label="Sembunyikan tombol lain"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></button>
   
 </div>
@@ -4500,6 +4510,40 @@ function emptyItemsHtml() {
   );
 }
 
+/** Kartu "Transaksi terakhir": 7 hari terakhir dari Riwayat transaksi, dengan pintasan ke tab Transaksi. */
+function recentTxCard() {
+  var P = kasLinked();
+  if (!P) return '';
+  var rows = kasRows(P).slice().sort(function (a, b) {
+      return a.d < b.d ? 1 : a.d > b.d ? -1 : 0;
+    }),
+    cut = addDaysISO(todayISO(), -6),
+    L = rows.filter(function (x) {
+      return x.d >= cut;
+    }).slice(0, 7);
+  if (!L.length) L = rows.slice(0, 7);
+  var body = L.map(function (x) {
+    return (
+      '<div class="it2 kit"><div><b class="' +
+      (x.t === '-' ? 'neg' : 'kin') +
+      '">' +
+      (x.t === '-' ? '&minus; ' : '+ ') +
+      rp(x.amt) +
+      '</b>' +
+      (x.cat ? ' <span class="sub">' + esc(x.cat) + '</span>' : '') +
+      (x.note ? '<br><span class="sub">' + esc(x.note) + '</span>' : '') +
+      '</div><span class="sub">' +
+      fmtD(x.d) +
+      '</span></div>'
+    );
+  }).join('');
+  return (
+    '<div class="card"><h2>Transaksi terakhir</h2><div class="sub mb8">7 hari terakhir</div>' +
+    (body || '<div class="empty">Belum ada transaksi dalam 7 hari terakhir.</div>') +
+    '<button type="button" class="tbk" data-hist="1">Lihat semua transaksi</button></div>'
+  );
+}
+
 /** Render tab Rincian Bulanan. */
 function renderRincian() {
   var c = calc(),
@@ -4549,12 +4593,13 @@ function renderRincian() {
     '</td><td data-l="Saldo akhir">' +
     rp(c.end) +
     '</td><td></td></tr></tbody></table></div></div>';
+  var tx = recentTxCard();
   $('v-rincian').innerHTML =
     (S.items.length ? '' : emptyItemsHtml()) +
     saldoHero(c, R) +
     fc +
     insightCard(C) +
-    table;
+    (tx ? '<div class="splitR">' + table + tx + '</div>' : table);
   gdApply($('v-rincian'));
 }
 
@@ -4598,6 +4643,13 @@ function bindRincian() {
     if (cd) {
       catDir = cd.dataset.catd;
       renderRincian();
+      return;
+    }
+    var hs = e.target.closest('[data-hist]');
+    if (hs) {
+      tab('kas');
+      var hc = document.getElementById('kas-hist');
+      if (hc) setTimeout(function () { hc.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
       return;
     }
     var r = e.target.closest('tr.row');
@@ -8457,7 +8509,7 @@ function renderKas() {
         '</div></div>';
     }).join('');
   var lst =
-    '<div class="card"><div class="row2" style="margin:0 0 8px;align-items:center;justify-content:space-between"><h2 class="m0">Riwayat transaksi</h2>' +
+    '<div class="card" id="kas-hist"><div class="row2" style="margin:0 0 8px;align-items:center;justify-content:space-between"><h2 class="m0">Riwayat transaksi</h2>' +
     '<select class="wauto" id="ktf" aria-label="Filter jenis transaksi"><option value="all"' + (kasTf === 'all' ? ' selected' : '') + '>Semua</option><option value="+"' + (kasTf === '+' ? ' selected' : '') + '>+ Masuk</option><option value="-" ' + (kasTf === '-' ? ' selected' : '') + '>&minus; Keluar</option></select></div>' +
     '<div class="kflt"><div><label for="kfrom">Dari</label><input type="date" id="kfrom" min="' + minD + '" max="' + maxD + '" value="' + from + '"></div>' +
     '<div><label for="kto">Sampai</label><input type="date" id="kto" min="' + minD + '" max="' + maxD + '" value="' + to + '"></div>' +
@@ -10694,6 +10746,8 @@ function sheetHtml() {
     '<button type="button" role="menuitem" data-rep="m">Bulan ini</button>' +
     '<button type="button" role="menuitem" data-rep="y">Tahun ini</button>' +
     '<div class="bs-h">Alat</div>' +
+    '<button type="button" role="menuitem" data-thm>Tema: ' + THEME_NAME[themeCur()] + '</button>' +
+    '<button type="button" role="menuitem" data-pwa hidden>Pasang aplikasi</button>' +
     '<a role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span>' + ext + '</a>' +
     '<a role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span>' + ext + '</a>' +
     '<div class="bs-h">Data</div>' +
@@ -10716,6 +10770,9 @@ function renderBotNav() {
     })
     .join('');
   sh.innerHTML = sheetHtml();
+  var pw = sh.querySelector('[data-pwa]'),
+    pb = $('pwa');
+  if (pw && pb) pw.hidden = pb.hidden;
   syncNav();
   tripShow();
   if (typeof themeShow === 'function') themeShow();
@@ -10780,6 +10837,7 @@ function bindNav() {
       alat(am.hidden);
     };
     am.onclick = function (e) {
+      if (e.target.closest('#thm')) return; // tema berganti tanpa menutup menu
       var g = e.target.closest('[data-go]');
       alat(false);
       if (g) navGo(g.dataset.go);
@@ -10810,6 +10868,19 @@ function bindNav() {
     navGo(b.dataset.k);
   };
   sh.onclick = function (e) {
+    var th = e.target.closest('[data-thm]');
+    if (th) {
+      setTheme(THEME_CYCLE[(THEME_CYCLE.indexOf(themeCur()) + 1) % THEME_CYCLE.length]);
+      th.textContent = 'Tema: ' + THEME_NAME[themeCur()];
+      return;
+    }
+    var pw = e.target.closest('[data-pwa]');
+    if (pw) {
+      sheet(false);
+      var pb = $('pwa');
+      if (pb) pb.click();
+      return;
+    }
     var b = e.target.closest('[data-go]');
     if (b) {
       sheet(false);

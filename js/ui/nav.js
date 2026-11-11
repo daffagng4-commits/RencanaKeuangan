@@ -54,6 +54,8 @@ function sheetHtml() {
     '<button type="button" role="menuitem" data-rep="m">Bulan ini</button>' +
     '<button type="button" role="menuitem" data-rep="y">Tahun ini</button>' +
     '<div class="bs-h">Alat</div>' +
+    '<button type="button" role="menuitem" data-thm>Tema: ' + THEME_NAME[themeCur()] + '</button>' +
+    '<button type="button" role="menuitem" data-pwa hidden>Pasang aplikasi</button>' +
     '<a role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span>' + ext + '</a>' +
     '<a role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span>' + ext + '</a>' +
     '<div class="bs-h">Data</div>' +
@@ -76,6 +78,9 @@ function renderBotNav() {
     })
     .join('');
   sh.innerHTML = sheetHtml();
+  var pw = sh.querySelector('[data-pwa]'),
+    pb = $('pwa');
+  if (pw && pb) pw.hidden = pb.hidden;
   syncNav();
   tripShow();
   if (typeof themeShow === 'function') themeShow();
@@ -140,6 +145,7 @@ function bindNav() {
       alat(am.hidden);
     };
     am.onclick = function (e) {
+      if (e.target.closest('#thm')) return; // tema berganti tanpa menutup menu
       var g = e.target.closest('[data-go]');
       alat(false);
       if (g) navGo(g.dataset.go);
@@ -170,6 +176,19 @@ function bindNav() {
     navGo(b.dataset.k);
   };
   sh.onclick = function (e) {
+    var th = e.target.closest('[data-thm]');
+    if (th) {
+      setTheme(THEME_CYCLE[(THEME_CYCLE.indexOf(themeCur()) + 1) % THEME_CYCLE.length]);
+      th.textContent = 'Tema: ' + THEME_NAME[themeCur()];
+      return;
+    }
+    var pw = e.target.closest('[data-pwa]');
+    if (pw) {
+      sheet(false);
+      var pb = $('pwa');
+      if (pb) pb.click();
+      return;
+    }
     var b = e.target.closest('[data-go]');
     if (b) {
       sheet(false);
