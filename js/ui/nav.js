@@ -130,6 +130,32 @@ function setTripVisible(on) {
   applyTripVis(true);
 }
 
+/** Letakkan menu mengambang di dalam viewport: di bawah tombol bila muat, kalau tidak di atasnya; bisa digulir. */
+function placeMenu(btn, m) {
+  var pad = 8,
+    r = btn.getBoundingClientRect(),
+    w = m.offsetWidth,
+    h = m.offsetHeight,
+    vw = innerWidth,
+    vh = innerHeight,
+    below = r.bottom + 8,
+    top = below + h > vh - pad ? Math.max(pad, r.top - h - 8) : below,
+    left = r.right + 8 + w <= vw - pad ? r.right + 8 : Math.max(pad, Math.min(r.right - w, vw - w - pad));
+  if (top + h > vh - pad) {
+    top = pad;
+    m.style.maxHeight = vh - 2 * pad + 'px';
+    m.style.overflowY = 'auto';
+  } else {
+    m.style.maxHeight = '';
+    m.style.overflowY = '';
+  }
+  m.style.position = 'fixed';
+  m.style.left = left + 'px';
+  m.style.top = top + 'px';
+  m.style.right = 'auto';
+  m.style.bottom = 'auto';
+}
+
 /** Akun, tombol +, dan Alat pindah ke rail kiri pada layar lebar; kembali ke topbar di layar kecil. */
 function railMove() {
   var nav = document.querySelector('header nav'),
@@ -161,6 +187,7 @@ function bindNav() {
     if (!ab || !am) return;
     am.hidden = !open;
     ab.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) placeMenu(ab, am);
   }
   if (ab && am) {
     ab.onclick = function (e) {
