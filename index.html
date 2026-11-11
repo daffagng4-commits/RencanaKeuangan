@@ -301,13 +301,15 @@ a.yp.yp-tool:hover .arr-icon { opacity: 1; transform: translate(1px, -1px); }
 
 header {
   display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
+  flex-wrap: nowrap;
+  gap: 10px;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 4px;
 }
-header nav { margin-bottom: 0; max-width: 100%; }
+header .yb { margin-bottom: 0; flex: 0 0 auto; }
+header nav { margin-bottom: 0; max-width: 100%; margin-left: auto; flex: 1 1 auto; min-width: 0; }
+.topbar-actions .yp { min-height: 30px; padding: 0 12px; font-size: 12.5px; }
 nav {
   display: flex;
   gap: 2px;
@@ -781,6 +783,7 @@ tr.flash td { animation: fl 2.6s ease-out; }
   margin-top: 6px;
 }
 button.alat-item { width: 100%; border: 0; background: transparent; text-align: left; cursor: pointer; font-family: inherit; }
+.alat-sep { height: 1px; background: var(--ln); margin: 6px 6px; }
 
 #botnav, #botsheet { display: none; }
 #sparkline-kas { position: relative; overflow: hidden; }
@@ -1405,8 +1408,9 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
   .hero > .card { padding: 15px; }
   .topbar { margin-bottom: 14px; padding-bottom: 12px; gap: 8px; }
   .kt { gap: 4px; }
-  .topbar-actions { gap: 0; padding: 2px; }
+  .topbar-actions { gap: 0; padding: 2px; margin-left: auto; }
   .topbar-actions .topbar-btn, .acct { width: 32px; min-width: 32px; height: 32px; }
+  .topbar-actions .yp { min-height: 28px; font-size: 11.5px; padding: 0 9px; }
   .yp, a.yp { font-size: 12px; padding: 5px 10px; min-height: 30px; }
   a.yp.yp-tool { font-size: 11.5px; }
   nav { display: none; }
@@ -1568,18 +1572,21 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
   <div class="kt" id="mdbar">
     <button type="button" class="yp on" data-md="rencana">Rencana Keuangan</button>
     <button type="button" class="yp" data-md="trip">Perjalanan</button>
-      </div>
-      <div class="topbar-actions">
-    <div class="alat" id="alat"><button type="button" class="yp" id="alat-btn" aria-haspopup="true" title="Alat & laporan" aria-label="Alat" aria-expanded="false"><svg class="arr-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><div class="alat-menu" id="alat-menu" role="menu" hidden><a class="alat-item" role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><a class="alat-item" role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><div class="bs-h">Laporan</div><button type="button" class="alat-item" role="menuitem" data-rep="d"><span>Hari ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="w"><span>Minggu ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="m"><span>Bulan ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="y"><span>Tahun ini</span></button><button type="button" class="alat-item" role="menuitem" data-go="trip"><span>Perjalanan</span></button><button type="button" class="alat-item" role="menuitem" id="bk"><span>Impor / Ekspor</span></button><button type="button" class="alat-item" role="menuitem" id="pwa" hidden><span>Pasang aplikasi</span></button></div></div>
-        <button type="button" id="acct" class="acct" title="Masuk / daftar untuk sinkron" aria-label="Akun"><span id="acct-ini">?</span></button>
-        <div class="yr-pop" id="yr-pop">
-          <button type="button" class="topbar-btn yr-plus" id="yr-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="yr-panel" title="Tahun, bulan saldo, dan saldo awal" aria-label="Tahun, bulan saldo, dan saldo awal"><svg class="arr-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-        </div>
-        <button type="button" id="btn-privacy" class="topbar-btn" data-more title="Mode Privasi (Kaburkan Nominal)" aria-label="Mode Privasi" aria-pressed="false"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Privasi</span></button>
-        <button type="button" id="btn-notif" class="topbar-btn" data-more title="Aktifkan pengingat notifikasi tagihan" aria-label="Notifikasi tagihan"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>Notifikasi</span></button>
-        <button type="button" id="thm" class="topbar-btn" data-more title="Ketuk untuk ganti tema" aria-label="Ganti tema"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span id="thm-txt">Tema</span></button>
-        <button type="button" id="tb-more" class="topbar-btn tb-more" aria-expanded="true" title="Sembunyikan tombol lain" aria-label="Sembunyikan tombol lain"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>
-      </div>
+  </div>
+  <div class="topbar-actions">
+    <button type="button" class="yp" id="pwa" title="Pasang aplikasi ini di perangkat" hidden>Pasang aplikasi</button>
+    <div class="alat" id="alat"><button type="button" class="topbar-btn" id="alat-btn" aria-haspopup="true" title="Alat &amp; laporan" aria-label="Alat &amp; laporan" aria-expanded="false"><svg class="arr-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    <div class="alat-menu" id="alat-menu" role="menu" hidden><a class="alat-item" role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><a class="alat-item" role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><div class="bs-h">Laporan</div><button type="button" class="alat-item" role="menuitem" data-rep="d"><span>Hari ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="w"><span>Minggu ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="m"><span>Bulan ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="y"><span>Tahun ini</span></button><div class="alat-sep"></div><button type="button" class="alat-item" role="menuitem" data-go="trip"><span>Perjalanan</span></button><button type="button" class="alat-item" role="menuitem" id="bk"><span>Impor / Ekspor</span></button></div></div>
+    <button type="button" id="acct" class="acct" title="Masuk / daftar untuk sinkron" aria-label="Akun"><span id="acct-ini">?</span></button>
+    <div class="yr-pop" id="yr-pop">
+      <button type="button" class="topbar-btn yr-plus" id="yr-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="yr-panel" title="Tahun, bulan saldo, dan saldo awal" aria-label="Tahun, bulan saldo, dan saldo awal"><svg class="arr-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+    </div>
+    <button type="button" id="btn-privacy" class="topbar-btn" data-more title="Mode Privasi (Kaburkan Nominal)" aria-label="Mode Privasi" aria-pressed="false"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Privasi</span></button>
+    <button type="button" id="btn-notif" class="topbar-btn" data-more title="Aktifkan pengingat notifikasi tagihan" aria-label="Notifikasi tagihan"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>Notifikasi</span></button>
+    <button type="button" id="thm" class="topbar-btn" data-more title="Ketuk untuk ganti tema" aria-label="Ganti tema"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span id="thm-txt">Tema</span></button>
+    <button type="button" id="tb-more" class="topbar-btn tb-more" aria-expanded="true" title="Sembunyikan tombol lain" aria-label="Sembunyikan tombol lain"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>
+  </div>
+</div>
 <div class="modal" id="yr-panel" role="dialog" aria-modal="true" aria-label="Tahun, bulan saldo, dan saldo awal" hidden>
   <div class="card">
     <h2>Tahun, bulan saldo, saldo awal</h2>
@@ -1593,7 +1600,10 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
   </div>
 </div>
 <header>
-  <div><div class="yb" id="yb"></div><div class="sub fs115 cmut" id="ver-info" hidden title="Versi program terbaru"></div><div class="sub" id="status" style="display:none"></div><div class="sub" id="sbs" style="display:none"></div></div>
+  <div class="yb" id="yb"></div>
+  <div class="sub fs115 cmut" id="ver-info" hidden title="Versi program terbaru"></div>
+  <div class="sub" id="status" style="display:none"></div>
+  <div class="sub" id="sbs" style="display:none"></div>
 <nav role="tablist">
   <button role="tab" data-t="rincian" aria-selected="true">Rincian Bulanan</button>
   <button role="tab" data-t="kas" aria-selected="false">Transaksi</button>
@@ -1613,7 +1623,7 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
 <section id="v-ibkr" hidden></section>
 <section id="v-item" hidden>
   <div class="card" id="card-quick-add">
-    <div class="dflex jcsb aic mb8"">
+    <div class="dflex jcsb aic mb8">
       <h2 style="margin:0;font-size:15px;color:var(--ac);display:flex;align-items:center;gap:6px">⚡ Tambah Cepat</h2>
       <span class="sub fs115"><kbd>Enter</kbd> untuk simpan</span>
     </div>
@@ -1644,42 +1654,42 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
 </div>
 
 <input type="file" id="xlf" accept=".xlsx,.xls,.csv" hidden>
-<div class="modal" id="xlm" role="dialog" aria-modal="true" hidden><div class="card"><h2>Impor dari Excel</h2><div class="sub mb10"" id="xls""></div>
+<div class="modal" id="xlm" role="dialog" aria-modal="true" hidden><div class="card"><h2>Impor dari Excel</h2><div class="sub mb10" id="xls"></div>
 <label for="xln">Nama perjalanan</label><input id="xln" maxlength="30">
-<div class="kf mt12"""><div><label for="xlu">Mata uang asing</label><input id="xlu" maxlength="3" placeholder="JPY"></div><div><label for="xlk">Kurs (Rp per 1)</label><input id="xlk" inputmode="decimal" placeholder="119,4"></div></div>
+<div class="kf mt12"><div><label for="xlu">Mata uang asing</label><input id="xlu" maxlength="3" placeholder="JPY"></div><div><label for="xlk">Kurs (Rp per 1)</label><input id="xlk" inputmode="decimal" placeholder="119,4"></div></div>
 <div class="err" id="xle"></div><div class="row2"><button class="p" id="xlok">Impor</button><button class="c" id="xlc">Batal</button></div></div></div>
 <div class="modal" id="shm" role="dialog" aria-modal="true" hidden><div class="card"><h2>Bagikan itinerary</h2>
-<label style="display:flex;gap:8px;align-items:center;margin:4px 0 12px"><input class="wauto" type="checkbox" id="shc""> Sertakan biaya</label>
+<label style="display:flex;gap:8px;align-items:center;margin:4px 0 12px"><input class="wauto" type="checkbox" id="shc"> Sertakan biaya</label>
 <div class="acts"><button class="p" data-sh="wa">Kirim teks (WhatsApp)</button><button data-sh="copy">Salin teks</button><button data-sh="pdf">Cetak / simpan PDF</button></div>
 <div class="sub" id="shs" style="margin:10px 0"></div><div class="row2"><button class="c" id="shx">Tutup</button></div></div></div>
 <div class="modal" id="kpm" role="dialog" aria-modal="true" hidden><div class="card"><h2 id="kpt">Perjalanan baru</h2>
 <label for="kpn">Nama perjalanan</label><input id="kpn" maxlength="30" placeholder="mis. Tokyo - Osaka 9D8N">
-<div class="kf mt12"""><div><label for="kpa">Mulai</label><input id="kpa" type="date"></div><div><label for="kpb">Selesai</label><input id="kpb" type="date"></div></div>
-<div class="mt12""><label for="kpgm">Anggaran</label><select id="kpgm"><option value="0">Belum menentukan anggaran</option><option value="1">Tetapkan anggaran</option></select></div>
-<div class="mt8" id="kpgw"" hidden><label for="kpg">Anggaran total (Rp)</label><input id="kpg" inputmode="numeric" placeholder="25.000.000"></div>
-<div class="kf mt12"""><div><label for="kpu">Mata uang asing (opsional)</label><input class="upper" id="kpu" maxlength="3" placeholder="JPY""></div><div><label for="kpk">Kurs: Rp per 1 mata uang</label><input id="kpk" type="number" step="0.01" min="0" inputmode="decimal" placeholder="119.4"></div></div>
+<div class="kf mt12"><div><label for="kpa">Mulai</label><input id="kpa" type="date"></div><div><label for="kpb">Selesai</label><input id="kpb" type="date"></div></div>
+<div class="mt12"><label for="kpgm">Anggaran</label><select id="kpgm"><option value="0">Belum menentukan anggaran</option><option value="1">Tetapkan anggaran</option></select></div>
+<div class="mt8" id="kpgw" hidden><label for="kpg">Anggaran total (Rp)</label><input id="kpg" inputmode="numeric" placeholder="25.000.000"></div>
+<div class="kf mt12"><div><label for="kpu">Mata uang asing (opsional)</label><input class="upper" id="kpu" maxlength="3" placeholder="JPY"></div><div><label for="kpk">Kurs: Rp per 1 mata uang</label><input id="kpk" type="number" step="0.01" min="0" inputmode="decimal" placeholder="119.4"></div></div>
 <div class="err" id="kpe"></div><div class="row2"><button class="p" id="kpsv">Simpan</button><button class="c" id="kpc">Tutup</button></div></div></div>
 <div class="modal" id="cf" role="dialog" aria-modal="true" hidden><div class="card"><h2>Data berbeda di cloud dan di perangkat ini</h2>
 <p class="sub">Pilih data yang dipakai. Data yang tidak dipilih disimpan sebagai cadangan otomatis, jadi masih bisa dipulihkan.</p>
 <div class="g2"><div class="cfc" id="cf-l"></div><div class="cfc" id="cf-r"></div></div>
 <div class="row2"><button class="p" data-cf="remote">Pakai data cloud</button><button data-cf="local">Pakai data perangkat ini</button></div>
-<div class="row2 mt6"""><button data-cf="merge">Gabungkan keduanya</button><button class="c" data-cf="later">Nanti saja</button></div>
-<div class="sub mt8"""><b>Gabungkan</b>: menambah tahun dan item dari cloud yang belum ada di perangkat ini, tidak ada yang dihapus. Angka saldo awal mengikuti perangkat ini. <b>Nanti saja</b>: sinkron ditunda sampai Anda memilih.</div>
+<div class="row2 mt6"><button data-cf="merge">Gabungkan keduanya</button><button class="c" data-cf="later">Nanti saja</button></div>
+<div class="sub mt8"><b>Gabungkan</b>: menambah tahun dan item dari cloud yang belum ada di perangkat ini, tidak ada yang dihapus. Angka saldo awal mengikuti perangkat ini. <b>Nanti saja</b>: sinkron ditunda sampai Anda memilih.</div>
 </div></div>
 <div class="modal" id="rm" role="dialog" aria-modal="true" hidden><div class="card"><h2>Pengingat tagihan</h2>
-<div class="row2" style="margin:0 0 6px;align-items:center"><label class="m0" for="rmh"">Tampilkan yang jatuh tempo dalam</label><select class="wauto" id="rmh""><option value="3">3 hari</option><option value="7">7 hari</option><option value="14">14 hari</option><option value="30">30 hari</option></select></div>
+<div class="row2" style="margin:0 0 6px;align-items:center"><label class="m0" for="rmh">Tampilkan yang jatuh tempo dalam</label><select class="wauto" id="rmh"><option value="3">3 hari</option><option value="7">7 hari</option><option value="14">14 hari</option><option value="30">30 hari</option></select></div>
 <div id="rml"></div>
 <div class="row2"><button id="rmb" hidden>Tandai semua yang sudah lewat tanggal sebagai lunas</button><button class="c" id="rmc">Tutup</button></div></div></div>
 <div class="modal" id="sk" role="dialog" aria-modal="true" hidden><div class="card"><h2 id="skt">Ubah beberapa tagihan</h2>
 <p class="sub">Ubah status semua tagihan item ini dalam rentang tanggal sekaligus.</p>
 <div class="g2"><div><label for="skf">Dari tanggal</label><input id="skf" type="date"></div><div><label for="skto">Sampai tanggal</label><input id="skto" type="date"></div></div>
-<div class="mt12""><label for="ska">Ubah menjadi</label><select id="ska"><option value="skip">Lewati (tidak bayar)</option><option value="paid">Sudah dibayar</option><option value="none">Belum dibayar</option></select></div>
-<div class="prev mt12"" id="skp""></div><div class="err" id="ske"></div>
+<div class="mt12"><label for="ska">Ubah menjadi</label><select id="ska"><option value="skip">Lewati (tidak bayar)</option><option value="paid">Sudah dibayar</option><option value="none">Belum dibayar</option></select></div>
+<div class="prev mt12" id="skp"></div><div class="err" id="ske"></div>
 <div class="row2"><button class="p" id="sks">Terapkan</button><button class="c" id="skc">Batal</button></div></div></div>
 <div class="tt" id="tt" hidden><span id="ttm"></span><button id="ttu" type="button">Urungkan</button></div>
 <div class="cm" id="cm" hidden></div>
 <div class="modal" id="pm" role="dialog" aria-modal="true" hidden><div class="card"><h2 id="pmt">Ubah harga / jadwal</h2><p class="sub" id="pmi"></p>
-<div class="h3 mt10""">Apa yang mau diubah?</div>
+<div class="h3 mt10">Apa yang mau diubah?</div>
 <div class="sc" id="psc">
 <button type="button" data-sc="harga"><b>Harga berubah</b><span>Contoh: naik jadi 300k mulai Juli</span></button>
 <button type="button" data-sc="sementara"><b>Harga sementara</b><span>Contoh: promo 3 bulan, lalu kembali normal</span></button>
@@ -1690,7 +1700,7 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
 </div>
 <div id="pform" hidden>
 <p class="sub" id="phint" style="margin:12px 0 0"></p>
-<div class="mt10" id="pdw"">
+<div class="mt10" id="pdw">
 <div id="pgw" hidden style="margin:0 0 12px"><label for="pgm">Bulan mana yang digeser?</label><select id="pgm"><option value="satu">Hanya satu bulan (yang lain tidak berubah)</option><option value="semua" selected>Bulan ini dan semua bulan sesudahnya</option><option value="pilih">Pilih sendiri beberapa bulan</option></select></div>
 <label id="l-pdt">Tanggal tagihan</label>
 <div class="dchips" id="pdc"></div>
@@ -1698,28 +1708,28 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
 <label class="mt8" id="lgs" for="pdt" hidden">Ganti jadi tanggal</label>
 <div class="dcus" id="pdcus"><input id="pdt" type="date" aria-label="Tanggal kustom"><button type="button" id="pda">+ Tambah</button></div>
 <div class="dsel" id="pds"></div>
-<div class="mt8" id="pgdw" hidden"><label for="pgd">Pindah ke tanggal (1-31)</label><input id="pgd" type="number" min="1" max="31" inputmode="numeric" placeholder="mis. 10"><div class="sub mt4""">Semua bulan yang dipilih dipindah ke tanggal ini.</div></div>
-<div class="mt12" id="phmw"" hidden><label for="phm">Berlaku</label><select id="phm"><option value="seterusnya">Mulai tanggal pertama terpilih dan seterusnya</option><option value="terpilih">Hanya tanggal yang dipilih</option></select></div>
+<div class="mt8" id="pgdw" hidden"><label for="pgd">Pindah ke tanggal (1-31)</label><input id="pgd" type="number" min="1" max="31" inputmode="numeric" placeholder="mis. 10"><div class="sub mt4">Semua bulan yang dipilih dipindah ke tanggal ini.</div></div>
+<div class="mt12" id="phmw" hidden><label for="phm">Berlaku</label><select id="phm"><option value="seterusnya">Mulai tanggal pertama terpilih dan seterusnya</option><option value="terpilih">Hanya tanggal yang dipilih</option></select></div>
 <label id="prgw" class="chk" hidden><input type="checkbox" id="prg" checked>Isi semua tagihan di antara tanggal pertama dan terakhir</label>
 </div>
-<div class="mt12" id="g-to"" hidden><label for="pto">Sampai tanggal (termasuk)</label><input id="pto" type="date"></div>
-<div class="mt12" id="g-price""><label for="pp" id="l-pp">Harga per bayar</label><input id="pp" inputmode="numeric" placeholder="300k atau 300.000"><div class="pchips" id="ppc" hidden><span class="sub">Cepat:</span><button type="button" data-pct="5">+5%</button><button type="button" data-pct="10">+10%</button><button type="button" data-pct="15">+15%</button><button type="button" data-pct="-10">&minus;10%</button></div></div>
-<div class="mt12" id="pcad"" hidden><label>Seberapa sering bayar</label><div class="every2"><span class="sub">tiap</span><input id="pn" type="number" min="1"><select id="pu"><option value="bulan">bulan</option><option value="tahun">tahun</option><option value="minggu">minggu</option><option value="hari">hari</option></select></div></div>
-<div id="pman" hidden><div class="mt12""><label for="pa">Tanggal bayar</label><select id="pa"><option value="keep">Tetap seperti jadwal sekarang</option><option value="restart">Mulai ulang jadwal dari tanggal di atas</option></select><div class="sub mt4""" id="pah"></div></div><div class="mt12""><label for="pw">Berlaku</label><select id="pw"><option value="forever">Seterusnya</option><option value="until">Sementara, lalu kembali ke awal</option></select></div></div>
-<div class="mt12" id="pcw"" hidden><label for="pcut">Tagihan sebelum tanggal ini</label><select id="pcut"><option value="keep">Biarkan seperti semula</option><option value="drop">Hapus (jadwal lama diganti total)</option></select></div>
-<div class="prev mt12"" id="ppv""></div><div class="err" id="pme"></div>
+<div class="mt12" id="g-to" hidden><label for="pto">Sampai tanggal (termasuk)</label><input id="pto" type="date"></div>
+<div class="mt12" id="g-price"><label for="pp" id="l-pp">Harga per bayar</label><input id="pp" inputmode="numeric" placeholder="300k atau 300.000"><div class="pchips" id="ppc" hidden><span class="sub">Cepat:</span><button type="button" data-pct="5">+5%</button><button type="button" data-pct="10">+10%</button><button type="button" data-pct="15">+15%</button><button type="button" data-pct="-10">&minus;10%</button></div></div>
+<div class="mt12" id="pcad" hidden><label>Seberapa sering bayar</label><div class="every2"><span class="sub">tiap</span><input id="pn" type="number" min="1"><select id="pu"><option value="bulan">bulan</option><option value="tahun">tahun</option><option value="minggu">minggu</option><option value="hari">hari</option></select></div></div>
+<div id="pman" hidden><div class="mt12"><label for="pa">Tanggal bayar</label><select id="pa"><option value="keep">Tetap seperti jadwal sekarang</option><option value="restart">Mulai ulang jadwal dari tanggal di atas</option></select><div class="sub mt4" id="pah"></div></div><div class="mt12"><label for="pw">Berlaku</label><select id="pw"><option value="forever">Seterusnya</option><option value="until">Sementara, lalu kembali ke awal</option></select></div></div>
+<div class="mt12" id="pcw" hidden><label for="pcut">Tagihan sebelum tanggal ini</label><select id="pcut"><option value="keep">Biarkan seperti semula</option><option value="drop">Hapus (jadwal lama diganti total)</option></select></div>
+<div class="prev mt12" id="ppv"></div><div class="err" id="pme"></div>
 </div>
 <div class="row2"><button id="pbk2" hidden>&larr; Kembali</button><button class="p" id="pps" hidden>Simpan perubahan</button><button class="c" id="pcl">Tutup</button></div>
 <div class="h3">Perubahan yang sudah ada</div><div id="phl"></div></div></div>
 <div class="modal" id="m" role="dialog" aria-modal="true" hidden><div class="card" style="max-width:540px">
   <h2>Cadangan &amp; Pemulihan Data</h2>
   <div style="background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:12px;margin-bottom:12px">
-    <div class="fw6 mb4"">Cadangan Lengkap (.json)</div>
-    <div class="sub mb8""">Unduh semua tahun, item, saldo, dan status lunas untuk backup atau pindah perangkat.</div>
+    <div class="fw6 mb4">Cadangan Lengkap (.json)</div>
+    <div class="sub mb8">Unduh semua tahun, item, saldo, dan status lunas untuk backup atau pindah perangkat.</div>
     <div id="exb">
-      <div class="xr mb6"""><button class="p w100"" data-ex="json"">Unduh Cadangan Lengkap (.json)</button></div>
-      <details class="mt6"">
-        <summary class="sub cp""">Ekspor laporan (.csv / .ics)</summary>
+      <div class="xr mb6"><button class="p w100" data-ex="json">Unduh Cadangan Lengkap (.json)</button></div>
+      <details class="mt6">
+        <summary class="sub cp">Ekspor laporan (.csv / .ics)</summary>
         <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">
           <div class="xr"><button data-ex="items">Item tahun ini (.csv)</button><span class="sub"><span class="chip">Bisa diimpor</span> Format tabel item aktif.</span></div>
           <div class="xr"><button data-ex="hist">Riwayat pembayaran (.csv)</button><span class="sub"><span class="chip n">Laporan</span> Satu baris per tagihan.</span></div>
@@ -1731,22 +1741,22 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
   </div>
 
   <div style="background:var(--sf);border:1px solid var(--ln);border-radius:8px;padding:12px;margin-bottom:12px">
-    <div class="fw6 mb4"">Impor Data (.json / .csv)</div>
-    <div class="sub mb8""">Pilih file cadangan untuk memulihkan atau menambahkan data.</div>
-    <div class="row2" style="margin-top:0"><input type="file" id="fi" accept=".json,.csv,text/csv,application/json" style="flex:1;min-width:180px"><select class="wauto" id="im""><option value="merge">Gabungkan</option><option value="replace">Timpa data</option></select></div>
-    <div class="gdb"><button type="button" class="g gdt" data-gd="impor"></button><div class="gdc"><div class="sub mt6"""><b>Gabungkan</b>: menambah data baru tanpa menghapus data sekarang.<br><b>Timpa</b>: mengganti seluruh data dengan isi file cadangan.</div></div></div>
+    <div class="fw6 mb4">Impor Data (.json / .csv)</div>
+    <div class="sub mb8">Pilih file cadangan untuk memulihkan atau menambahkan data.</div>
+    <div class="row2" style="margin-top:0"><input type="file" id="fi" accept=".json,.csv,text/csv,application/json" style="flex:1;min-width:180px"><select class="wauto" id="im"><option value="merge">Gabungkan</option><option value="replace">Timpa data</option></select></div>
+    <div class="gdb"><button type="button" class="g gdt" data-gd="impor"></button><div class="gdc"><div class="sub mt6"><b>Gabungkan</b>: menambah data baru tanpa menghapus data sekarang.<br><b>Timpa</b>: mengganti seluruh data dengan isi file cadangan.</div></div></div>
     <div class="err" id="xm"></div>
   </div>
 
-  <details class="mb12"">
-    <summary class="sub cp fw6""">Alat lanjutan: Otomatis, diagnostik &amp; teks</summary>
+  <details class="mb12">
+    <summary class="sub cp fw6">Alat lanjutan: Otomatis, diagnostik &amp; teks</summary>
     <div style="padding-top:8px">
       <div class="h3">Cadangan otomatis (5 terakhir)</div>
       <div id="sl"></div>
-      <div class="h3 mt8""">Cek sistem &amp; diagnostik</div>
-      <div class="row2 mt4"""><button id="dgb">Jalankan cek sistem</button><button id="dgd">Tes unduh file</button></div>
+      <div class="h3 mt8">Cek sistem &amp; diagnostik</div>
+      <div class="row2 mt4"><button id="dgb">Jalankan cek sistem</button><button id="dgd">Tes unduh file</button></div>
       <div id="dgr"></div>
-      <details class="mt8" id="dt""><summary class="sub cp""">Cara teks (salin / tempel)</summary>
+      <details class="mt8" id="dt"><summary class="sub cp">Cara teks (salin / tempel)</summary>
         <p class="sub" style="margin:4px 0">Data tersimpan otomatis di browser. Salin teks atau tempel data lama:</p>
         <textarea id="ta" spellcheck="false" style="height:70px"></textarea>
         <div class="err" id="merr"></div>
@@ -1759,7 +1769,7 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
 
 <div class="modal" id="qkm" role="dialog" aria-modal="true" hidden><div class="card" style="max-width:440px">
   <h2>Catat transaksi kilat <span class="sub">(Shortcut: N)</span></h2>
-  <div class="kt mb12""">
+  <div class="kt mb12">
     <button type="button" class="yp on" id="qk-out" data-kt="-">&minus; Keluar</button>
     <button type="button" class="yp" id="qk-in" data-kt="+">+ Masuk</button>
   </div>
@@ -1770,13 +1780,13 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
     <div><label for="qkd">Tanggal</label><input id="qkd" type="date"></div>
   </div>
   <div class="err" id="qke"></div>
-  <div class="row2 mt14""">
+  <div class="row2 mt14">
     <button class="p" id="qks">Simpan transaksi</button>
     <button class="c" id="qk-cl">Tutup</button>
   </div>
 </div></div>
 
-<div class="modal" id="lg" role="dialog" aria-modal="true" hidden><div class="card"><h2>Masuk untuk sinkron</h2><p class="sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p><label for="le">Email</label><input id="le" type="email" autocomplete="email"><label class="mt10" for="lp"">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="err" id="lm"></div><div class="row2"><button class="p" id="lin">Masuk</button><button class="c" id="lgc">Tutup</button></div></div></div>
+<div class="modal" id="lg" role="dialog" aria-modal="true" hidden><div class="card"><h2>Masuk untuk sinkron</h2><p class="sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p><label for="le">Email</label><input id="le" type="email" autocomplete="email"><label class="mt10" for="lp">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="err" id="lm"></div><div class="row2"><button class="p" id="lin">Masuk</button><button class="c" id="lgc">Tutup</button></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
 <script>
@@ -4360,7 +4370,7 @@ function emptyItemsHtml() {
   return (
     '<div class="card"><h2>Mulai dari item pertama</h2><div class="empty">Belum ada item untuk tahun ' + S.year +
     '. Item adalah tagihan atau pengeluaran berulang, mis. listrik, langganan, cicilan, atau DCA.</div>' +
-    '<div class="row2 mt8"""><button type="button" class="p" data-goto="item">Tambah item</button></div></div>'
+    '<div class="row2 mt8"><button type="button" class="p" data-goto="item">Tambah item</button></div></div>'
   );
 }
 
@@ -4502,7 +4512,7 @@ function realisasiHtml() {
     return (
       head +
       '<div class="empty">Belum ada tagihan yang dilunasi di tahun ini. Tandai lunas di Jadwal Tagihan, atau catat pengeluaran di Transaksi agar otomatis dicocokkan dengan tagihan.</div>' +
-      '<div class="row2 mt8"""><button type="button" data-goto="jadwal">Buka Jadwal Tagihan</button><button type="button" data-goto="kas">Buka Transaksi</button></div></div>'
+      '<div class="row2 mt8"><button type="button" data-goto="jadwal">Buka Jadwal Tagihan</button><button type="button" data-goto="kas">Buka Transaksi</button></div></div>'
     );
   var diff = D.act - D.planPaid,
     cls = function (v) {
@@ -4548,7 +4558,7 @@ function realisasiHtml() {
           .join('')
       : '') +
     (D.late.n && +S.year === +todayISO().slice(0, 4)
-      ? '<div class="err mt10""">' + D.late.n + ' tagihan sudah lewat jatuh tempo dan belum lunas (' + rp(D.late.sum) + ').</div>'
+      ? '<div class="err mt10">' + D.late.n + ' tagihan sudah lewat jatuh tempo dan belum lunas (' + rp(D.late.sum) + ').</div>'
       : '') +
     '</div>'
   );
@@ -4733,10 +4743,10 @@ function renderJadwal() {
     '<div class="card"><h2>Jadwal pembayaran ' +
     y +
     '</h2>' +
-    (S.startMonth ? '<div class="sub mb8""">Bulan sebelum ' + MON[S.startMonth] + ' tidak dihitung.</div>' : '') +
+    (S.startMonth ? '<div class="sub mb8">Bulan sebelum ' + MON[S.startMonth] + ' tidak dihitung.</div>' : '') +
     gdBox(
       'jadwal',
-      '<div class="sub mb8""">Klik tanggal untuk memilih: sudah dibayar, dilewati (tidak bayar), atau belum dibayar. ' +
+      '<div class="sub mb8">Klik tanggal untuk memilih: sudah dibayar, dilewati (tidak bayar), atau belum dibayar. ' +
         'Pakai "Ubah harga / jadwal" untuk mengubah harga atau siklus mulai tanggal tertentu.</div>' +
         LEGEND_HTML
     ) +
@@ -4939,7 +4949,7 @@ function carryHtml() {
     })
     .pop();
   return (
-    '<div class="h3" style="width:100%;margin:6px 0 0">Bawa jadwal tagihan dari tahun lain</div><select class="wauto" id="cy"">' +
+    '<div class="h3" style="width:100%;margin:6px 0 0">Bawa jadwal tagihan dari tahun lain</div><select class="wauto" id="cy">' +
     years
       .map(function (k) {
         return '<option' + (+k === prev ? ' selected' : '') + '>' + k + '</option>';
@@ -4951,7 +4961,7 @@ function carryHtml() {
     '<label style="display:flex;gap:8px;align-items:center;margin:0;width:100%;font-weight:500"><input type="checkbox" id="cs" style="width:auto;min-height:0">Jadikan saldo akhir tahun itu sebagai saldo awal ' +
     S.year +
     '</label>' +
-    '<div class="sub w100""">Item sekali bayar atau yang sudah selesai (lewat tanggal/jumlah berhenti) tidak ikut dibawa. Perubahan harga ikut terbawa. Status lunas tidak dibawa.</div>'
+    '<div class="sub w100">Item sekali bayar atau yang sudah selesai (lewat tanggal/jumlah berhenti) tidak ikut dibawa. Perubahan harga ikut terbawa. Status lunas tidak dibawa.</div>'
   );
 }
 
@@ -5487,9 +5497,9 @@ function renderYears() {
         );
       })
       .join('') +
-    '<button class="g d" data-dy="1" title="Hapus semua data tahun ini">Hapus tahun ' +
+    '<button class="g d" data-dy="1" title="Hapus semua data tahun ' +
     S.year +
-    '</button>';
+    '">Hapus</button>';
 }
 
 /** Pindah ke tahun v (dibuat kosong bila belum ada). */
@@ -7049,7 +7059,7 @@ function dgRow(r) {
     col +
     ';font-weight:700;min-width:18px">' +
     ic +
-    '</span><div class="fx1""><b>' +
+    '</span><div class="fx1"><b>' +
     r[1] +
     '</b><div class="sub">' +
     esc(r[2]) +
@@ -7228,7 +7238,7 @@ async function runDiag() {
   }
   out.innerHTML =
     R.map(dgRow).join('') +
-    '<div class="sub mt6""">Selesai ' +
+    '<div class="sub mt6">Selesai ' +
     new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) +
     '.</div>';
 }
@@ -8209,7 +8219,7 @@ function renderKas() {
     return '<div><span>' + l + '</span><b>' + v + '</b>' + (s ? '<span>' + s + '</span>' : '') + '</div>';
   };
   var hero =
-    '<div class="hero"><div class="card m0"""><div class="sub">Saldo &quot;' +
+    '<div class="hero"><div class="card m0"><div class="sub">Saldo &quot;' +
     esc(P.name) +
     '&quot; Realtime &middot; ' +
     mName +
@@ -8226,7 +8236,7 @@ function renderKas() {
     rp(A.o) +
     '</div>' +
     kasStatusHtml(P, bal) +
-    '</div><div class="card stats m0""">' +
+    '</div><div class="card stats m0">' +
     stat('Masuk', rp(R.i)) +
     stat('Keluar', rp(R.o)) +
     stat('Selisih', R.i === R.o ? rp(0) : signed(R.i - R.o)) +
@@ -8253,14 +8263,14 @@ function renderKas() {
   var form =
     '<div class="card"><h2>' +
     (E ? 'Ubah transaksi' : 'Catat transaksi') +
-    '</h2><div class="kt mb12"""><button type="button" class="yp' +
+    '</h2><div class="kt mb12"><button type="button" class="yp' +
     (kasT === '+' ? ' on' : '') +
     '" data-kt="+">+ Masuk</button><button type="button" class="yp' +
     (kasT === '-' ? ' on' : '') +
-    '" data-kt="-">&minus; Keluar</button></div><div class="kf"><div><label for="ka">Jumlah</label><div class="dflex g6""><input id="ka" inputmode="numeric" placeholder="50k atau 50.000" value="' +
+    '" data-kt="-">&minus; Keluar</button></div><div class="kf"><div><label for="ka">Jumlah</label><div class="dflex g6"><input id="ka" inputmode="numeric" placeholder="50k atau 50.000" value="' +
     (E ? E.amt.toLocaleString('id-ID') : '') +
     '">' +
-    (mode === 'trip' && P.cur && P.rate ? '<select class="wauto" id="kcu""><option value="idr">Rp</option><option value="fx">' + P.cur + '</option></select>' : '') +
+    (mode === 'trip' && P.cur && P.rate ? '<select class="wauto" id="kcu"><option value="idr">Rp</option><option value="fx">' + P.cur + '</option></select>' : '') +
     '</div></div><div><label for="kd">Tanggal</label><input id="kd" type="date" value="' +
     (E ? E.d : todayISO()) +
     '"></div><div><label for="kc">Kategori</label><input id="kc" list="kcl" maxlength="30" value="' +
@@ -8678,8 +8688,8 @@ function tripPlan(P) {
 
 function tripBadge(P) {
   var T = tripToday(P), x = T.L[T.cur >= 0 ? T.cur : T.nxt];
-  return '<div class="mb4""><span class="chp on">Sedang berlangsung &middot; Hari ' + (dayNo(todayISO(), P.start) + 1) + '/' + (dayNo(P.end, P.start) + 1) + '</span></div>' +
-    (x ? '<div class="sub mb4""">' + (T.cur >= 0 ? 'Sekarang' : 'Berikutnya') + ': <b>' + (tmShow(x.time) ? tmShow(x.time) + ' ' : '') + esc(x.place) + '</b></div>' : '');
+  return '<div class="mb4"><span class="chp on">Sedang berlangsung &middot; Hari ' + (dayNo(todayISO(), P.start) + 1) + '/' + (dayNo(P.end, P.start) + 1) + '</span></div>' +
+    (x ? '<div class="sub mb4">' + (T.cur >= 0 ? 'Sekarang' : 'Berikutnya') + ': <b>' + (tmShow(x.time) ? tmShow(x.time) + ' ' : '') + esc(x.place) + '</b></div>' : '');
 }
 function tripList() {
   var L = trips();
@@ -8688,7 +8698,7 @@ function tripList() {
     (L.map(function (P) {
       var pl = tripPlan(P);
       return (
-        '<div class="card cp"" data-trip="' + P.id + '""><h2>' + esc(P.name) + '</h2>' + (tripActive(P) ? tripBadge(P) : '') + '<div class="sub">' +
+        '<div class="card cp" data-trip="' + P.id + '"><h2>' + esc(P.name) + '</h2>' + (tripActive(P) ? tripBadge(P) : '') + '<div class="sub">' +
         (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) + ' · ' + (dayNo(P.end, P.start) + 1) + ' hari' : 'Tanggal belum diisi') + '</div>' +
         (P.budget ? bar(pl.t, P.budget) + '<div class="sub">Rencana biaya ' + rp(pl.t) + ' dari anggaran ' + rp(P.budget) + '</div>' : '<div class="sub">Rencana biaya ' + rp(pl.t) + ' · anggaran belum ditentukan</div>') + '</div>'
       );
@@ -8730,9 +8740,9 @@ function tripRing(P) {
     return '<div class="catrow"><div class="cathd"><span>' + (c ? '<i class="dot" style="background:' + c + '"></i>' : '') + k + '</span><b>' + extra + '</b></div><div class="catbar"><i style="width:' + pc.toFixed(1) + '%;background:' + (c || 'var(--ac)') + '"></i></div></div>';
   };
   return (
-    '<div class="hero"><div class="card m0"""><div class="sub">Total rencana biaya</div><div class="big">' + rp(pl.t) + '</div><div class="sub">pemesanan ' + rp(pl.b) + ' + estimasi harian ' + rp(pl.d) + '</div>' +
+    '<div class="hero"><div class="card m0"><div class="sub">Total rencana biaya</div><div class="big">' + rp(pl.t) + '</div><div class="sub">pemesanan ' + rp(pl.b) + ' + estimasi harian ' + rp(pl.d) + '</div>' +
     (P.budget ? bar(pl.t, P.budget) + '<div class="sub">dari anggaran ' + rp(P.budget) + '</div>' : '<div class="sub">Anggaran belum ditentukan (atur lewat tombol Ubah).</div>') +
-    (P.cur && P.rate ? '<div class="sub">Kurs 1 ' + esc(P.cur) + ' = ' + rp(P.rate) + '</div>' : '') + '</div><div class="card stats m0""">' + cells + '</div></div>' +
+    (P.cur && P.rate ? '<div class="sub">Kurs 1 ' + esc(P.cur) + ' = ' + rp(P.rate) + '</div>' : '') + '</div><div class="card stats m0">' + cells + '</div></div>' +
     (ck.length
       ? '<div class="card"><h2>Siapkan tunai / kartu</h2>' + ck.map(function (k) {
           var c = pl.cash[k];
@@ -8767,9 +8777,9 @@ function fxPrev(a, u) {
 /** Kotak biaya: jumlah + pilihan mata uang (Rp / asing). */
 function amtField(P, id, uid, v, fx) {
   return (
-    '<div class="dflex g6""><input id="' + id + '" inputmode="numeric" placeholder="0" style="flex:1;min-width:0;font-size:16px;font-weight:600" value="' + (v ? v.toLocaleString('id-ID') : '') + '">' +
+    '<div class="dflex g6"><input id="' + id + '" inputmode="numeric" placeholder="0" style="flex:1;min-width:0;font-size:16px;font-weight:600" value="' + (v ? v.toLocaleString('id-ID') : '') + '">' +
     '<select id="' + uid + '" style="width:84px;min-width:0;flex:none;font-weight:600;padding-left:8px;padding-right:4px" aria-label="Mata uang"><option value="idr">Rp</option>' + (P.cur ? '<option value="fx"' + (fx ? ' selected' : '') + '>' + esc(P.cur) + '</option>' : '') + '</select></div>' +
-    '<div class="sub mt4"" id="' + id + 'h"">' + (P.cur ? '' : 'Mata uang asing: atur lewat Ubah.') + '</div>'
+    '<div class="sub mt4" id="' + id + 'h">' + (P.cur ? '' : 'Mata uang asing: atur lewat Ubah.') + '</div>'
   );
 }
 
@@ -8785,9 +8795,9 @@ function tripItin(P) {
       '<div class="fw" style="flex:1 1 140px"><label for="itp">Kegiatan</label><input id="itp" maxlength="120" placeholder="mis. Senso-ji Temple" value="' + (E ? esc(E.place) : '') + '"></div></div>' +
       '<div class="fr wr"><div class="fw" style="flex:2 1 0"><label for="ite">Biaya</label>' + amtField(P, 'ite', 'itu', E ? E.est : 0, E && E.fx) + '</div>' +
       '<div style="flex:1.3 1 0"><label for="itm">Pembayaran</label><select id="itm" title="Online: dicatat di Pemesanan">' + opts([['', 'Belum ditentukan'], ['ic', 'Kartu IC'], ['on', 'Online'], ['cash', 'Cash']], E ? E.pay : '') + '</select></div>' +
-      '<div class="fx110""><label for="itk">Kategori</label><select id="itk">' + opts(ICAT, E ? E.cat : 'Transport') + '</select></div></div>' +
-      '<div class="fr wr"><div class="fw fx110"""><label for="itl">Tautan (peta / tiket) (opsional)</label><input id="itl" inputmode="url" placeholder="https://maps.app.goo.gl/..." value="' + (E ? esc(E.link) : '') + '"></div>' +
-      '<div class="fw fx110"""><label for="itn">Catatan (opsional)</label><input id="itn" maxlength="200" value="' + (E ? esc(E.note) : '') + '"></div></div>' +
+      '<div class="fx110"><label for="itk">Kategori</label><select id="itk">' + opts(ICAT, E ? E.cat : 'Transport') + '</select></div></div>' +
+      '<div class="fr wr"><div class="fw fx110"><label for="itl">Tautan (peta / tiket) (opsional)</label><input id="itl" inputmode="url" placeholder="https://maps.app.goo.gl/..." value="' + (E ? esc(E.link) : '') + '"></div>' +
+      '<div class="fw fx110"><label for="itn">Catatan (opsional)</label><input id="itn" maxlength="200" value="' + (E ? esc(E.note) : '') + '"></div></div>' +
       '<div class="err" id="iter"></div><div class="row2"><button class="p" data-its="1">' + (E ? 'Simpan perubahan' : 'Tambah') + '</button>' + (E ? '<button data-itx="1">Batal</button>' : '') + '</div></div>';
   return (
     form +
@@ -8803,8 +8813,8 @@ function tripItin(P) {
       return (
         '<div class="card"><div class="dh"><h2>' + esc(dayLabel(P, d)) + '</h2>' + (d === td ? '<span class="chp ic">Hari ini</span>' : '') + '</div>' +
         '<input class="dti" data-dt="' + d + '" maxlength="60" placeholder="Judul hari, mis. Jakarta – Tokyo" value="' + esc(P.dt[d] || '') + '">' +
-        (stay.length ? '<div class="sub mb6""">&#127976; Menginap: ' + stay.map(function (b) { return esc(b.title); }).join(', ') + '</div>' : '') +
-        (tot ? '<div class="sub mb4""">Estimasi hari ini <b>' + rp(tot) + '</b>' + (Object.keys(fxm).length ? ' · ' + Object.keys(fxm).map(function (k) { return k + ' ' + fxs(P, fxm[k]); }).join(' · ') : '') + '</div>' : '') +
+        (stay.length ? '<div class="sub mb6">&#127976; Menginap: ' + stay.map(function (b) { return esc(b.title); }).join(', ') + '</div>' : '') +
+        (tot ? '<div class="sub mb4">Estimasi hari ini <b>' + rp(tot) + '</b>' + (Object.keys(fxm).length ? ' · ' + Object.keys(fxm).map(function (k) { return k + ' ' + fxs(P, fxm[k]); }).join(' · ') : '') + '</div>' : '') +
         (L.map(function (x) {
           return (
             '<div class="itm"><div class="tm">' + tmShow(x.time) + (x.time2 ? '<br>' + tmShow(x.time2) : '') + '</div><div><div class="ttl"' + (x.done ? ' style="text-decoration:line-through;opacity:.6"' : '') + '>' + esc(x.place) + '</div><div>' +
@@ -8825,10 +8835,10 @@ function tripBook(P) {
       '<div class="card"><h2>' + (E ? 'Ubah pemesanan' : 'Tambah pemesanan') + '</h2>' +
       '<div class="fr wrb"><div class="fw" style="flex:2 1 0"><label for="bkt">Nama (tiket, hotel, tour)</label><input id="bkt" maxlength="120" placeholder="mis. Tiket pesawat CGK-HND" value="' + (E ? esc(E.title) : '') + '"></div>' +
       '<div class="fw" style="flex:1.4 1 0"><label for="bke">Jumlah</label>' + amtField(P, 'bke', 'bku', E ? E.amt : 0, E && E.fx) + '</div></div>' +
-      '<div class="fr wrb"><div class="fx110""><label for="bka">Mulai / check-in</label><input id="bka" type="date" value="' + (E ? E.a : '') + '"></div>' +
-      '<div class="fx110""><label for="bkb">Selesai / check-out</label><input id="bkb" type="date" value="' + (E ? E.b : '') + '"></div>' +
-      '<div class="fx110""><label for="bkm">Pembayaran</label><select id="bkm">' + opts([['on', 'Online'], ['cash', 'Cash'], ['ic', 'Kartu IC'], ['', 'Belum ditentukan']], E ? E.pay : 'on') + '</select></div></div>' +
-      '<div class="fr"><div class="fw fx110"""><label for="bkl">Tautan (opsional)</label><input id="bkl" inputmode="url" placeholder="https://..." value="' + (E ? esc(E.link) : '') + '"></div></div>' +
+      '<div class="fr wrb"><div class="fx110"><label for="bka">Mulai / check-in</label><input id="bka" type="date" value="' + (E ? E.a : '') + '"></div>' +
+      '<div class="fx110"><label for="bkb">Selesai / check-out</label><input id="bkb" type="date" value="' + (E ? E.b : '') + '"></div>' +
+      '<div class="fx110"><label for="bkm">Pembayaran</label><select id="bkm">' + opts([['on', 'Online'], ['cash', 'Cash'], ['ic', 'Kartu IC'], ['', 'Belum ditentukan']], E ? E.pay : 'on') + '</select></div></div>' +
+      '<div class="fr"><div class="fw fx110"><label for="bkl">Tautan (opsional)</label><input id="bkl" inputmode="url" placeholder="https://..." value="' + (E ? esc(E.link) : '') + '"></div></div>' +
       '<div class="fr"><div class="fw" style="flex:0 1 280px"><label for="bkc">Kategori</label><select id="bkc">' + opts(BCAT, E ? E.cat : 'Transport') + '</select></div></div>' +
       '<div class="err" id="bker"></div><div class="row2"><button class="p" data-bks="1">' + (E ? 'Simpan perubahan' : 'Tambah') + '</button>' + (E ? '<button data-bkx="1">Batal</button>' : '') + '</div></div>',
     cats = BCAT.concat(P.bk.map(function (x) { return x.cat; })).filter(function (c, i, a) { return a.indexOf(c) === i; });
@@ -8840,11 +8850,11 @@ function tripBook(P) {
       if (!L.length) return '';
       L.forEach(function (x) { sum += val(P, x.amt, x.fx); });
       return (
-        '<div class="card"><div class="pgrp"><h2 class="m0"">' + esc(c) + '</h2><b>' + rp(sum) + '</b></div>' +
+        '<div class="card"><div class="pgrp"><h2 class="m0">' + esc(c) + '</h2><b>' + rp(sum) + '</b></div>' +
         L.map(function (x) {
           return (
             '<div class="itm" style="grid-template-columns:1fr auto"><div><div class="ttl">' + esc(x.title) + '</div><div>' + pchip(x.pay) + (x.a ? '<span class="sub">' + dShort(x.a) + (x.b ? ' – ' + dShort(x.b) : '') + '</span> ' : '') + lnk(x.link) +
-            '</div><div class="ac jcfs"""><button class="g" data-bkpay="' + x.id + '">' + (x.paid ? '&#9745; Lunas' : '&#9744; Tandai lunas') + '</button><button class="g" data-bked="' + x.id + '">Ubah</button><button class="g d" data-bkdel="' + x.id + '">Hapus</button></div></div>' +
+            '</div><div class="ac jcfs"><button class="g" data-bkpay="' + x.id + '">' + (x.paid ? '&#9745; Lunas' : '&#9744; Tandai lunas') + '</button><button class="g" data-bked="' + x.id + '">Ubah</button><button class="g d" data-bkdel="' + x.id + '">Hapus</button></div></div>' +
             '<div class="co">' + amtTxt(P, x.amt, x.fx) + '</div></div>'
           );
         }).join('') + '</div>'
@@ -8856,7 +8866,7 @@ function tripBook(P) {
 function tripCek(P) {
   var n = P.ck.filter(function (x) { return x.done; }).length;
   return (
-    '<div class="card"><h2>Checklist barang bawaan</h2><div class="sub mb8""">' + n + ' dari ' + P.ck.length + ' siap</div>' +
+    '<div class="card"><h2>Checklist barang bawaan</h2><div class="sub mb8">' + n + ' dari ' + P.ck.length + ' siap</div>' +
     (P.ck.length ? bar(n, P.ck.length).replace('var(--wr)', 'var(--ac)') : '') +
     '<div class="row2" style="margin:10px 0"><input id="ckn" maxlength="60" placeholder="mis. Topi, Sunscreen"><button class="p" data-cka="1">Tambah</button></div>' +
     (P.ck.map(function (x) {
@@ -8868,10 +8878,10 @@ function tripCek(P) {
 
 function tripCat(P) {
   return (
-    '<div class="card"><h2>Tautan berguna</h2><div class="sub mb8""">Video panduan, situs tiket, peta, dan lainnya.</div><div class="kf"><div><input id="lkt" maxlength="80" placeholder="Judul, mis. Cara bayar bus pakai IC card"></div><div><input id="lku" inputmode="url" placeholder="https://..."></div></div>' +
-    '<div class="err" id="lker"></div><div class="row2 mb8"""><button class="p" data-lka="1">Tambah</button></div>' +
+    '<div class="card"><h2>Tautan berguna</h2><div class="sub mb8">Video panduan, situs tiket, peta, dan lainnya.</div><div class="kf"><div><input id="lkt" maxlength="80" placeholder="Judul, mis. Cara bayar bus pakai IC card"></div><div><input id="lku" inputmode="url" placeholder="https://..."></div></div>' +
+    '<div class="err" id="lker"></div><div class="row2 mb8"><button class="p" data-lka="1">Tambah</button></div>' +
     P.lk.map(function (x) { return '<div class="it2"><div>' + esc(x.title) + '</div><div>' + lnk(x.url) + '<button class="g d" data-lkdel="' + x.id + '">Hapus</button></div></div>'; }).join('') + '</div>' +
-    '<div class="card"><h2>Catatan penting</h2><div class="sub mb8""">Kode booking, alamat, kontak darurat. Tersimpan otomatis.</div><textarea id="tnote" maxlength="2000" placeholder="mis. Hotel: ... Kode booking: ...">' + esc(P.note) + '</textarea></div>'
+    '<div class="card"><h2>Catatan penting</h2><div class="sub mb8">Kode booking, alamat, kontak darurat. Tersimpan otomatis.</div><textarea id="tnote" maxlength="2000" placeholder="mis. Hotel: ... Kode booking: ...">' + esc(P.note) + '</textarea></div>'
   );
 }
 
@@ -8889,8 +8899,8 @@ function renderTrip() {
   if (tripTab === 'now' && !tripActive(P)) tripTab = 'ring';
   var tabs = (tripActive(P) ? [['now', 'Hari ini']] : []).concat([['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['cek', 'Checklist'], ['cat', 'Catatan'], ['sv', 'Tabungan']]);
   el.innerHTML =
-    '<div class="kp"><button class="tbk" data-tback="1">&larr; Semua perjalanan</button><button class="g" data-tshare="1">Bagikan</button><button class="g" data-ted="1">Ubah</button><button class="g d" data-tdel="1">Hapus</button></div><h2 style="margin:0 0 2px">' + esc(P.name) + '</h2><div class="sub mb12""">' +
-    (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) : 'Tanggal belum diisi') + (P.cur && P.rate ? ' · 1 ' + P.cur + ' = ' + rp(P.rate) : '') + '</div><div class="kt fwrap mb14""">' +
+    '<div class="kp"><button class="tbk" data-tback="1">&larr; Semua perjalanan</button><button class="g" data-tshare="1">Bagikan</button><button class="g" data-ted="1">Ubah</button><button class="g d" data-tdel="1">Hapus</button></div><h2 style="margin:0 0 2px">' + esc(P.name) + '</h2><div class="sub mb12">' +
+    (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) : 'Tanggal belum diisi') + (P.cur && P.rate ? ' · 1 ' + P.cur + ' = ' + rp(P.rate) : '') + '</div><div class="kt fwrap mb14">' +
     tabs.map(function (t) { return '<button type="button" class="yp' + (tripTab === t[0] ? ' on' : '') + '" data-tt="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
     (tripTab === 'now' ? tripNow(P) : tripTab === 'itin' ? tripItin(P) : tripTab === 'book' ? tripBook(P) : tripTab === 'cek' ? tripCek(P) : tripTab === 'cat' ? tripCat(P) : tripTab === 'sv' ? goalCard(P, tripPlan(P)) : tripRing(P));
   if (P.cur) {
@@ -9217,20 +9227,20 @@ function goalCard(P, pl) {
     return (
       '<div class="card"><h2>Target tabungan</h2><div class="sub">Terkumpul <b>' + rp(got) + '</b> dari ' + rp(g.t) + '</div>' + bar(got, g.t) +
       '<div class="sub">Sisihkan <b>' + rp(g.per) + '</b> per bulan &middot; ' + monthLbl(g.from) + ' – ' + monthLbl(g.to) + ' &middot; bulan ke ' + Math.min(el, ms.length) + ' dari ' + ms.length + '</div>' +
-      '<div class="sub mt6""">' + (lk ? 'Tersambung ke Rencana Keuangan: tabungan ini otomatis dihitung sebagai pengeluaran bulanan di <b>Rincian Bulanan</b>.' : 'Tidak tersambung ke Rencana Keuangan: hanya sebagai pencatat, tidak memengaruhi Rincian Bulanan.') + '</div>' +
+      '<div class="sub mt6">' + (lk ? 'Tersambung ke Rencana Keuangan: tabungan ini otomatis dihitung sebagai pengeluaran bulanan di <b>Rincian Bulanan</b>.' : 'Tidak tersambung ke Rencana Keuangan: hanya sebagai pencatat, tidak memengaruhi Rincian Bulanan.') + '</div>' +
       (lk && !goalMonthsIn(g, +S.year).length
-        ? '<div" class="chp ic mt8"">Bulan menabung ada di tahun ' + Object.keys(ms.reduce(function (o, k) { o[k.slice(0, 4)] = 1; return o; }, {})).join(' & ') + '. Ganti Tahun di mode Rencana untuk melihat dampaknya.</div>'
+        ? '<div" class="chp ic mt8">Bulan menabung ada di tahun ' + Object.keys(ms.reduce(function (o, k) { o[k.slice(0, 4)] = 1; return o; }, {})).join(' & ') + '. Ganti Tahun di mode Rencana untuk melihat dampaknya.</div>'
         : '') +
-      (lk && low && goalMonthsIn(g, +S.year).length ? '<div" class="chp ' + (neg.length ? 'cash' : 'on') + ' mt8"">' + (neg.length ? 'Saldo Rencana ' + S.year + ' negatif di ' + neg.map(function (r) { return MON[r.m]; }).join(', ') : 'Saldo Rencana ' + S.year + ' tetap positif (terendah ' + rp(low.ak) + ' di ' + MON[low.m] + ')') + '</div>' : '') +
-      '<div class="acts mt8"""><button class="g" data-gedit="1">Ubah target</button><button class="g" data-glink="1">' + (lk ? 'Putuskan dari Rencana' : 'Sambungkan ke Rencana') + '</button><button class="g d" data-gdel="1">Hapus target</button></div></div>'
+      (lk && low && goalMonthsIn(g, +S.year).length ? '<div" class="chp ' + (neg.length ? 'cash' : 'on') + ' mt8">' + (neg.length ? 'Saldo Rencana ' + S.year + ' negatif di ' + neg.map(function (r) { return MON[r.m]; }).join(', ') : 'Saldo Rencana ' + S.year + ' tetap positif (terendah ' + rp(low.ak) + ' di ' + MON[low.m] + ')') + '</div>' : '') +
+      '<div class="acts mt8"><button class="g" data-gedit="1">Ubah target</button><button class="g" data-glink="1">' + (lk ? 'Putuskan dari Rencana' : 'Sambungkan ke Rencana') + '</button><button class="g d" data-gdel="1">Hapus target</button></div></div>'
     );
   }
   if (!opts.length) return '<div class="card"><h2>Target tabungan</h2><div class="sub">Perjalanan ini sudah dimulai, jadi tidak ada bulan tersisa untuk menabung.</div></div>';
   var t0 = g ? g.t : Math.ceil(pl.t / 1000) * 1000, last = opts[opts.length - 1], before = opts.length > 1 ? opts[opts.length - 2] : last;
   return (
-    '<div class="card"><h2>Target tabungan</h2><div class="sub mb8""">Hitung berapa yang perlu disisihkan tiap bulan sebelum berangkat.</div><div class="kf"><div><label for="gt">Target (Rp)</label><input id="gt" inputmode="numeric" value="' + (t0 ? t0.toLocaleString('id-ID') : '') +
+    '<div class="card"><h2>Target tabungan</h2><div class="sub mb8">Hitung berapa yang perlu disisihkan tiap bulan sebelum berangkat.</div><div class="kf"><div><label for="gt">Target (Rp)</label><input id="gt" inputmode="numeric" value="' + (t0 ? t0.toLocaleString('id-ID') : '') +
     '"></div><div><label for="gs">Sudah terkumpul (Rp)</label><input id="gs" inputmode="numeric" placeholder="0" value="' + (g && g.s0 ? g.s0.toLocaleString('id-ID') : '') + '"></div><div><label for="gf">Mulai menabung</label>' + goalSel('gf', opts, g ? g.from : opts[0]) +
-    '</div><div><label for="gz">Terakhir menabung</label>' + goalSel('gz', opts, g ? g.to : before) + '</div><div class="gcall""><label for="gl">Sambungkan ke Rencana Keuangan?</label><select id="gl"><option value="1"' + (lk ? ' selected' : '') + '>Ya, hitung sebagai pengeluaran bulanan di Rincian</option><option value="0"' + (lk ? '' : ' selected') + '>Tidak, hanya pencatat target</option></select></div></div><div class="sub" id="gprev" style="margin:8px 0"></div><div class="err" id="gerr"></div><div class="row2"><button class="p" data-gset="1">Simpan target</button>' + (g ? '<button data-gcancel="1">Batal</button>' : '') + '</div></div>'
+    '</div><div><label for="gz">Terakhir menabung</label>' + goalSel('gz', opts, g ? g.to : before) + '</div><div class="gcall"><label for="gl">Sambungkan ke Rencana Keuangan?</label><select id="gl"><option value="1"' + (lk ? ' selected' : '') + '>Ya, hitung sebagai pengeluaran bulanan di Rincian</option><option value="0"' + (lk ? '' : ' selected') + '>Tidak, hanya pencatat target</option></select></div></div><div class="sub" id="gprev" style="margin:8px 0"></div><div class="err" id="gerr"></div><div class="row2"><button class="p" data-gset="1">Simpan target</button>' + (g ? '<button data-gcancel="1">Batal</button>' : '') + '</div></div>'
   );
 }
 function goalCalc() {
@@ -9348,8 +9358,8 @@ function simSyncDates() {
 }
 function simExtra(firstId) {
   if (simK === 'cycle')
-    return '<div><label for="smn2">Bayar tiap</label><input id="smn2" type="number" min="1" value="3"></div><div><label for="smu">Satuan</label><select id="smu"><option value="bulan">bulan</option><option value="tahun">tahun</option><option value="minggu">minggu</option><option value="hari">hari</option></select></div><div class="gcall""><label for="smd">Mulai berlaku dari tanggal</label><input id="smd" type="date"><div class="sub mt4""">Siklus baru dimulai di tanggal ini; jadwal lama sesudahnya diganti.</div></div>';
-  return '<div class="gcall""><label for="smf">Tagihan yang digeser</label><select id="smf">' + simItemDates(firstId) + '</select><div class="sub mt4""">Tagihan ini dan semua sesudahnya mengikuti tanggal baru dengan siklus yang sama.</div></div><div class="gcall""><label for="smt">Ganti jadi tanggal</label><input id="smt" type="date"><div class="sub mt4"" id="smth""></div></div>';
+    return '<div><label for="smn2">Bayar tiap</label><input id="smn2" type="number" min="1" value="3"></div><div><label for="smu">Satuan</label><select id="smu"><option value="bulan">bulan</option><option value="tahun">tahun</option><option value="minggu">minggu</option><option value="hari">hari</option></select></div><div class="gcall"><label for="smd">Mulai berlaku dari tanggal</label><input id="smd" type="date"><div class="sub mt4">Siklus baru dimulai di tanggal ini; jadwal lama sesudahnya diganti.</div></div>';
+  return '<div class="gcall"><label for="smf">Tagihan yang digeser</label><select id="smf">' + simItemDates(firstId) + '</select><div class="sub mt4">Tagihan ini dan semua sesudahnya mengikuti tanggal baru dengan siklus yang sama.</div></div><div class="gcall"><label for="smt">Ganti jadi tanggal</label><input id="smt" type="date"><div class="sub mt4" id="smth"></div></div>';
 }
 /** Perubahan jadwal (ch) untuk skenario siklus / geser. */
 function simChg(it, x) {
@@ -9396,9 +9406,9 @@ function renderSim() {
     two = simK === 'in' || simK === 'out',
     nb = simK === 'cycle' || simK === 'shift',
     form =
-      '<div class="card"><h2>Simulasi &quot;bagaimana jika&quot; &middot; ' + S.year + '</h2><div class="sub mb10""">Coba perubahan tanpa mengubah data. Hasilnya langsung terlihat di grafik.</div><div class="kf"><div class="gcall""><label for="smk">Skenario</label><select id="smk">' +
+      '<div class="card"><h2>Simulasi &quot;bagaimana jika&quot; &middot; ' + S.year + '</h2><div class="sub mb10">Coba perubahan tanpa mengubah data. Hasilnya langsung terlihat di grafik.</div><div class="kf"><div class="gcall"><label for="smk">Skenario</label><select id="smk">' +
       [['out', 'Tambah pengeluaran / cicilan'], ['in', 'Tambah pemasukan'], ['stop', 'Hentikan item'], ['price', 'Ubah harga item'], ['cycle', 'Ganti seberapa sering bayar'], ['shift', 'Geser tanggal bayar']].map(function (o) { return '<option value="' + o[0] + '"' + (simK === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
-      (two ? '<div class="gcall""><label for="smn">Nama</label><input id="smn" maxlength="30" placeholder="mis. Cicilan motor"></div>' : '<div class="gcall""><label for="smi">Item</label><select id="smi">' + items + '</select></div>') +
+      (two ? '<div class="gcall"><label for="smn">Nama</label><input id="smn" maxlength="30" placeholder="mis. Cicilan motor"></div>' : '<div class="gcall"><label for="smi">Item</label><select id="smi">' + items + '</select></div>') +
       (nb ? simExtra(firstId) : '<div><label for="sma">' + (simK === 'stop' ? 'Jumlah (tidak dipakai)' : simK === 'price' ? 'Harga baru (Rp)' : 'Jumlah (Rp)') + '</label><input id="sma" inputmode="numeric" placeholder="0"' + (simK === 'stop' ? ' disabled' : '') + '></div><div><label for="smm">Mulai bulan</label><select id="smm">' + (two ? mo : simMonthOpts(firstId)) + '</select></div>') +
       (two ? '<div><label for="smr">Berapa kali</label><select id="smr"><option value="bulan">Tiap bulan sampai Des</option><option value="sekali">Sekali saja</option><option value="n">Sekian kali</option></select></div><div id="smcw" hidden><label for="smc">Jumlah bulan</label><input id="smc" type="number" min="1" max="12" value="3"></div>' : '') +
       '</div><div class="err" id="smerr"></div><div class="row2"><button class="p" data-smadd="1">Tambah ke simulasi</button></div></div>';
@@ -9412,8 +9422,8 @@ function renderSim() {
     negs = function (C) { return C.rows.filter(function (r) { return r.ak < 0; }).map(function (r) { return MON[r.m]; }); }, nb = negs(B);
   out +=
     '<div class="card"><h2>Skenario aktif</h2>' + SIM.map(function (x, i) { return '<div class="it2"><div>' + simDesc(x) + '</div><div><button class="g d" data-smdel="' + i + '" aria-label="Hapus skenario">&#10005;</button></div></div>'; }).join('') +
-    '<div class="acts mt8"""><button class="p" data-smapply="1">Terapkan ke data</button><button class="g d" data-smclear="1">Buang semua</button></div></div>' +
-    '<div class="card"><h2>Dampak</h2><div class="hero m0"""><div class="card m0"""><div class="sub">Saldo akhir Des ' + S.year + '</div><div class="big' + (B.end < 0 ? ' neg' : '') + '">' + rp(B.end) + '</div><div class="sub">asli ' + rp(A.end) + ' &middot; <b>' + (d >= 0 ? 'naik ' : 'turun ') + rp(Math.abs(d)) + '</b></div></div><div class="card stats m0"""><div><span>Saldo terendah asli</span><b>' + rp(la.ak) + '</b><span>' + MON[la.m] +
+    '<div class="acts mt8"><button class="p" data-smapply="1">Terapkan ke data</button><button class="g d" data-smclear="1">Buang semua</button></div></div>' +
+    '<div class="card"><h2>Dampak</h2><div class="hero m0"><div class="card m0"><div class="sub">Saldo akhir Des ' + S.year + '</div><div class="big' + (B.end < 0 ? ' neg' : '') + '">' + rp(B.end) + '</div><div class="sub">asli ' + rp(A.end) + ' &middot; <b>' + (d >= 0 ? 'naik ' : 'turun ') + rp(Math.abs(d)) + '</b></div></div><div class="card stats m0"><div><span>Saldo terendah asli</span><b>' + rp(la.ak) + '</b><span>' + MON[la.m] +
     '</span></div><div><span>Saldo terendah simulasi</span><b>' + rp(lb.ak) + '</b><span>' + MON[lb.m] + '</span></div></div></div>' + '<div class="chp ' + (nb.length ? 'cash' : 'on') + '" style="margin:10px 0 6px">' + (nb.length ? 'Saldo negatif di ' + nb.join(', ') : 'Saldo tetap positif sepanjang tahun') + '</div>' + simChart(A, B) + '</div>' +
     '<div class="card"><h2>Per bulan</h2>' + B.rows.map(function (r, i) { var a = A.rows[i].ak, df = r.ak - a; return '<div class="it2"><div><b>' + MON[r.m] + '</b> <span class="sub">asli ' + rp(a) + '</span></div><div><b' + (r.ak < 0 ? ' style="color:var(--wr)"' : '') + '>' + rp(r.ak) + '</b> <span class="sub">' + (df === 0 ? '' : (df > 0 ? '+' : '&minus;') + rp(Math.abs(df))) + '</span></div></div>'; }).join('') + '</div>';
   el.innerHTML = out;
@@ -9545,7 +9555,7 @@ function tripNow(P) {
       return (
         '<div class="itm"><div class="tm">' + tmShow(x.time) + (x.time2 ? '<br>' + tmShow(x.time2) + '' : '') + '</div><div><div class="ttl"' + (x.done ? ' style="text-decoration:line-through;opacity:.6"' : '') + '>' + esc(x.place) + '</div><div>' + mk +
         (x.cat ? '<span class="chp" style="background:transparent;border:1px solid var(--ln)">' + esc(x.cat) + '</span>' : '') + pchip(x.pay) + lnk(x.link) + '</div>' + (x.note ? '<div class="sub">' + esc(x.note) + '</div>' : '') +
-        '<div class="ac jcfs"""><button class="g" data-itdone="' + x.id + '">' + (x.done ? '&#9745; Selesai' : '&#9744; Tandai selesai') + '</button></div></div><div class="co">' + (x.est ? amtTxt(P, x.est, x.fx) : '') + '</div></div>'
+        '<div class="ac jcfs"><button class="g" data-itdone="' + x.id + '">' + (x.done ? '&#9745; Selesai' : '&#9744; Tandai selesai') + '</button></div></div><div class="co">' + (x.est ? amtTxt(P, x.est, x.fx) : '') + '</div></div>'
       );
     }).join('') || '<div class="sub">Belum ada kegiatan untuk hari ini. Tambahkan di tab Itinerary.</div>') + '</div>' +
     (B.length
@@ -10229,8 +10239,13 @@ function bindPwa() {
 }
 
 /* ===== js/ui/report.js ===== */
-/** Unduh laporan (hari/minggu/bulan/tahun ini) sebagai file HTML siap cetak. */
+/**
+ * Unduh laporan (hari/minggu/bulan/tahun ini) sebagai file HTML siap cetak.
+ * Isi & susunan mengikuti laporan bot Telegram (bot/report.mjs): judul, subjudul, ringkasan, tabel TRANSAKSI KAS & TAGIHAN.
+ */
 'use strict';
+
+var REP_TGL = function (iso) { return +iso.slice(8, 10) + ' ' + MON[+iso.slice(5, 7) - 1] + ' ' + iso.slice(0, 4); };
 
 /** Rentang tanggal untuk periode p: d=hari ini, w=7 hari terakhir, m=bulan ini, y=tahun berjalan. */
 function repRange(p) {
@@ -10242,73 +10257,145 @@ function repRange(p) {
   return { from: y + '-01-01', to: y + '-12-31' };
 }
 
-/** Tagihan jatuh tempo dalam rentang [from, to] (yang belum lunas/diskip). */
-function repTagihan(from, to) {
-  var out = [];
+/** Transaksi kas & tagihan dalam rentang (inklusif); status tagihan Lunas/Dilewati/Belum. */
+function repCollect(from, to) {
+  var P = kasLinked(),
+    tx = [],
+    bil = [];
+  if (P)
+    kasRows(P).forEach(function (x) {
+      if (x.d >= from && x.d <= to) tx.push({ d: x.d, cat: x.cat || '-', note: x.note || '', t: x.t, amt: x.amt });
+    });
   S.items.forEach(function (it) {
     occ(it, +from.slice(0, 4)).forEach(function (t) {
-      var d = isoD(t);
-      if (d < from || d > to || d.slice(0, 4) !== from.slice(0, 4)) return;
-      if (S.paid[it.id + '|' + d] || S.skip[it.id + '|' + d]) return;
-      out.push({ d: d, name: it.name, price: priceAt(it, t) });
+      var ds = isoD(t);
+      if (ds < from || ds > to) return;
+      var k = it.id + '|' + ds;
+      bil.push({ d: ds, name: it.name, cat: it.cat || '-', amt: priceAt(it, t), st: S.paid[k] ? 'Lunas' : S.skip[k] ? 'Dilewati' : 'Belum' });
     });
   });
-  return out.sort(function (a, b) { return a.d < b.d ? -1 : 1; });
+  var byD = function (a, b) { return a.d < b.d ? -1 : 1; };
+  return { tx: tx.sort(byD), bil: bil.sort(byD) };
 }
 
-/** Susun HTML laporan: ringkasan, transaksi semua profil, tagihan jatuh tempo. */
-function laporanHtml(p) {
+function repSum(tx) {
+  var i = 0, o = 0;
+  tx.forEach(function (x) { if (x.t === '+') i += x.amt; else o += x.amt; });
+  return [['Masuk', rp(i)], ['Keluar', rp(o)], ['Selisih', rp(i - o)]];
+}
+
+/** Satu tabel gaya bot: head, kolom {t, align, bold}, baris, total. */
+function repTable(t) {
+  var n = t.cols.length,
+    cl = function (c) { return c.align === 'r' ? ' class="n"' : ''; },
+    h = ['<h2>' + t.head + '</h2><table><tr>' + t.cols.map(function (c) { return '<th' + cl(c) + '>' + c.t + '</th>'; }).join('') + '</tr>'];
+  t.rows.forEach(function (r) {
+    h.push('<tr>' + t.cols.map(function (c, k) {
+      var v = r[k] == null ? '' : r[k];
+      return '<td' + cl(c) + '>' + (c.bold ? '<b>' + v + '</b>' : v) + '</td>';
+    }).join('') + '</tr>');
+  });
+  if (t.total) h.push('<tr><td colspan="' + Math.max(1, n - 1) + '"><b>' + t.total[0] + '</b></td><td class="n"><b>' + t.total[1] + '</b></td></tr>');
+  h.push('</table>');
+  return h.join('');
+}
+
+function repTables(tx, bil) {
+  var net = tx.reduce(function (s, x) { return s + (x.t === '+' ? x.amt : -x.amt); }, 0);
+  return [
+    {
+      head: 'TRANSAKSI KAS',
+      cols: [{ t: 'TANGGAL' }, { t: 'KETERANGAN' }, { t: 'KATEGORI' }, { t: 'NOMINAL', align: 'r', bold: true }],
+      rows: tx.length
+        ? tx.map(function (x) { return [REP_TGL(x.d), x.note || x.cat, x.cat, (x.t === '+' ? '+ ' : '- ') + rp(x.amt)]; })
+        : [['-', 'tidak ada transaksi', '-', '-']],
+      total: tx.length ? ['Total', (net >= 0 ? '+ ' : '- ') + rp(Math.abs(net))] : null,
+    },
+    {
+      head: 'TAGIHAN',
+      cols: [{ t: 'TANGGAL' }, { t: 'ITEM' }, { t: 'STATUS' }, { t: 'NOMINAL', align: 'r', bold: true }],
+      rows: bil.length
+        ? bil.map(function (b) { return [REP_TGL(b.d), b.name, b.st, rp(b.amt)]; })
+        : [['-', 'tidak ada tagihan', '-', '-']],
+      total: bil.length ? ['Total tagihan', rp(bil.reduce(function (s, b) { return s + b.amt; }, 0))] : null,
+    },
+  ];
+}
+
+/** Isi laporan untuk periode p: {title, subtitle, summary, tables}. */
+function repData(p) {
   var R = repRange(p),
-    tx = [],
-    tin = 0,
-    tout = 0;
-  Object.keys(ALL.kas.pr).forEach(function (id) {
-    var P = ALL.kas.pr[id];
-    P.tx.forEach(function (x) {
-      if (x.d < R.from || x.d > R.to) return;
-      if (x.t === '+') tin += x.amt;
-      else tout += x.amt;
-      tx.push({ d: x.d, p: P.name, note: x.note || x.cat || 'Transaksi', t: x.t, amt: x.amt });
-    });
-  });
-  tx.sort(function (a, b) { return a.d < b.d ? -1 : 1; });
-  var tg = repTagihan(R.from, R.to),
-    tsum = tg.reduce(function (a, b) { return a + b.price; }, 0),
-    row = function (c) { return '<tr>' + c.map(function (x) { return x.slice(0, 4) === '<td ' ? x : '<td>' + x + '</td>'; }).join('') + '</tr>'; },
-    dId = { d: 'hari-ini', w: 'minggu-ini', m: 'bulan-ini', y: 'tahun-ini' }[p] || p,
-    L = [
-      '<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Laporan ' + dId + '</title>',
-      '<style>body{font-family:system-ui,Segoe UI,sans-serif;margin:24px;color:#111}h1{font-size:20px;margin:0 0 2px}',
-      'table{border-collapse:collapse;width:100%;margin:10px 0 22px;font-size:13px}td,th{border:1px solid #ccc;padding:6px 8px;text-align:left}',
-      'th{background:#f2f2f2}td.n,th.n{text-align:right}h2{font-size:15px;margin:18px 0 4px}.mut{color:#666;font-size:13px}@media print{button{display:none}}</style></head><body>',
-      '<h1>Laporan ' + R.from.slice(0, 4) + '</h1>',
-      '<div class="mut">Periode ' + fmtD(R.from) + ' – ' + fmtD(R.to) + ' · dibuat ' + fmtD(todayISO()) + '</div>',
-      '<h2>Ringkasan</h2><table>',
-      row(['Total masuk', '<td class="n">' + rp(tin) + '</td>']),
-      row(['Total keluar', '<td class="n">' + rp(tout) + '</td>']),
-      row(['Selisih (masuk − keluar)', '<td class="n">' + rp(tin - tout) + '</td>']),
-      row(['Saldo realtime' + (kasLinked() ? ' · ' + esc(kasLinked().name) : ''), '<td class="n">' + (kasLinked() ? rp(kasBal(kasLinked()).bal) : '—') + '</td>']),
-      '</table>',
-      '<h2>Transaksi (' + tx.length + ')</h2>',
-      tx.length
-        ? '<table><tr><th>Tanggal</th><th>Profil</th><th>Keterangan</th><th class="n">Masuk</th><th class="n">Keluar</th></tr>' +
-          tx.map(function (x) {
-            return row([fmtD(x.d), esc(x.p), esc(x.note), '<td class="n">' + (x.t === '+' ? rp(x.amt) : '') + '</td>', '<td class="n">' + (x.t === '+' ? '' : rp(x.amt)) + '</td>']);
-          }).join('') + '</table>'
-        : '<p class="mut">Tidak ada transaksi pada periode ini.</p>',
-      '<h2>Tagihan jatuh tempo (' + tg.length + ')</h2>',
-      tg.length
-        ? '<table><tr><th>Tanggal</th><th>Tagihan</th><th class="n">Nominal</th></tr>' +
-          tg.map(function (x) { return row([fmtD(x.d), esc(x.name), '<td class="n">' + rp(x.price) + '</td>']); }).join('') +
-          row(['<b>Total</b>', '', '<td class="n"><b>' + rp(tsum) + '</b></td>']) + '</table>'
-        : '<p class="mut">Tidak ada tagihan jatuh tempo pada periode ini.</p>',
-      '<button onclick="print()">Cetak / simpan PDF</button>',
-      '</body></html>'
-    ];
-  return L.join('');
+    y = +R.from.slice(0, 4),
+    c = calc(),
+    C;
+  if (p === 'm') {
+    var mi = +R.from.slice(5, 7) - 1,
+      row = c.rows.filter(function (r) { return r.m === mi; })[0];
+    C = repCollect(R.from, R.to);
+    return {
+      title: 'Laporan Bulanan',
+      subtitle: FULL_MON[mi] + ' ' + y,
+      summary: repSum(C.tx).concat([
+        ['Tagihan bulan', rp(C.bil.reduce(function (s, b) { return s + b.amt; }, 0))],
+        ['Saldo akhir bulan', row ? rp(row.ak) : '-'],
+      ]),
+      tables: repTables(C.tx, C.bil),
+    };
+  }
+  if (p === 'y') {
+    C = repCollect(R.from, R.to);
+    return {
+      title: 'Laporan Tahunan',
+      subtitle: y + ' | ' + S.items.length + ' item aktif',
+      summary: repSum(C.tx).concat([['Total tagihan', rp(c.total)]]),
+      tables: [{
+        head: 'PER BULAN',
+        cols: [{ t: 'BULAN' }, { t: 'MASUK', align: 'r' }, { t: 'KELUAR', align: 'r' }, { t: 'TAGIHAN', align: 'r' }, { t: 'SALDO AKHIR', align: 'r', bold: true }],
+        rows: c.rows.map(function (r) {
+          var mk = y + '-' + String(r.m + 1).padStart(2, '0'),
+            t = C.tx.filter(function (x) { return x.d.slice(0, 7) === mk; }),
+            si = 0,
+            so = 0;
+          t.forEach(function (x) { if (x.t === '+') si += x.amt; else so += x.amt; });
+          return [FULL_MON[r.m], si ? rp(si) : '-', so ? rp(so) : '-', rp(r.sp), rp(r.ak)];
+        }),
+        total: ['Sisa akhir Des ' + y, rp(c.end)],
+      }],
+    };
+  }
+  C = repCollect(R.from, R.to);
+  return {
+    title: p === 'd' ? 'Laporan Harian' : 'Laporan Mingguan',
+    subtitle: p === 'd' ? REP_TGL(R.from) + ' | ' + y : REP_TGL(R.from) + ' - ' + REP_TGL(R.to) + ' | ' + y,
+    summary: repSum(C.tx).concat([[p === 'd' ? 'Tagihan jatuh tempo' : 'Tagihan 7 hari', rp(C.bil.reduce(function (s, b) { return s + b.amt; }, 0))]]),
+    tables: repTables(C.tx, C.bil),
+  };
 }
 
-/** Klik tombol laporan di menu Alat: rakit HTML lalu unduh. */
+/** HTML lengkap laporan (siap cetak / simpan PDF). */
+function laporanHtml(p) {
+  var D = repData(p);
+  return [
+    '<!doctype html><html lang="id"><head><meta charset="utf-8"><title>' + D.title + '</title><style>',
+    'body{font-family:system-ui,Segoe UI,sans-serif;margin:24px;color:#111}',
+    'h1{font-size:20px;margin:0 0 2px}h2{font-size:12px;letter-spacing:.06em;margin:22px 0 6px;color:#444}',
+    '.sub{color:#666;font-size:13px;margin-bottom:14px}',
+    'table{border-collapse:collapse;width:100%;margin:0 0 8px;font-size:13px}',
+    'td,th{border:1px solid #ccc;padding:6px 8px;text-align:left}th{background:#f2f2f2;font-size:11px;letter-spacing:.04em}',
+    'td.n,th.n{text-align:right}',
+    '.sum{display:flex;flex-wrap:wrap;gap:6px 26px;font-size:13px;margin:0 0 6px}',
+    '.sum i{font-style:normal;color:#666;margin-right:6px}',
+    '@media print{button{display:none}}',
+    '</style></head><body>',
+    '<h1>' + D.title + '</h1><div class="sub">' + D.subtitle + '</div>',
+    '<div class="sum">' + D.summary.map(function (s) { return '<span><i>' + s[0] + '</i><b>' + s[1] + '</b></span>'; }).join('') + '</div>',
+    D.tables.map(repTable).join(''),
+    '<button onclick="print()">Cetak / simpan PDF</button>',
+    '</body></html>',
+  ].join('');
+}
+
+/** Klik tombol laporan (menu Alat / lembar Lainnya): rakit HTML lalu unduh. */
 document.addEventListener('click', function (e) {
   var b = e.target.closest('[data-rep]');
   if (!b) return;
@@ -10316,7 +10403,12 @@ document.addEventListener('click', function (e) {
   var p = b.dataset.rep,
     d = new Date(),
     pad = function (n) { return (n < 10 ? '0' : '') + n; },
-    name = 'laporan-' + { d: 'hari', w: 'minggu', m: 'bulan', y: 'tahun' }[p] + '-' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '.html';
+    kind = { d: 'harian', w: 'mingguan', m: 'bulanan', y: 'tahunan' }[p] || p,
+    name = 'laporan-' + kind + '-' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '.html',
+    sh = document.getElementById('botsheet'),
+    am = document.getElementById('alat-menu');
+  if (sh) sh.hidden = true;
+  if (am) am.hidden = true;
   try {
     var a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([laporanHtml(p)], { type: 'text/html;charset=utf-8' }));
@@ -10369,9 +10461,9 @@ function tripOn() {
   });
 }
 
-/** Item bilah bawah: Perjalanan hanya bila tampil, kalau tidak diganti Item. */
+/** Item bilah bawah: Rincian/Kas/Jadwal + Kelola Item + Lainnya. */
 function botItems() {
-  return BOT_BASE.concat([tripOn() ? BOT_TRIP : BOT_ITEM, BOT_MORE]);
+  return BOT_BASE.concat([BOT_ITEM, BOT_MORE]);
 }
 
 /** Isi lembar "Lainnya" menyesuaikan apa yang ada di bilah bawah. */
@@ -10380,9 +10472,13 @@ function sheetHtml() {
     '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>';
   return (
     '<div class="bs-h">Rencana</div>' +
-    (tripOn() ? '<button type="button" role="menuitem" data-go="item">Kelola Item</button>' : '') +
     '<button type="button" role="menuitem" data-go="sim">Simulasi</button>' +
     '<button type="button" role="menuitem" data-go="trip">Perjalanan</button>' +
+    '<div class="bs-h">Laporan</div>' +
+    '<button type="button" role="menuitem" data-rep="d">Hari ini</button>' +
+    '<button type="button" role="menuitem" data-rep="w">Minggu ini</button>' +
+    '<button type="button" role="menuitem" data-rep="m">Bulan ini</button>' +
+    '<button type="button" role="menuitem" data-rep="y">Tahun ini</button>' +
     '<div class="bs-h">Alat</div>' +
     '<a role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span>' + ext + '</a>' +
     '<a role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span>' + ext + '</a>' +
@@ -10415,7 +10511,7 @@ function renderBotNav() {
 function syncNav() {
   var bar = document.getElementById('botnav');
   if (!bar) return;
-  var cur = mode === 'trip' ? 'trip' : curTab === 'sim' ? 'more' : curTab === 'item' ? (tripOn() ? 'more' : 'item') : curTab;
+  var cur = mode === 'trip' || curTab === 'sim' ? 'more' : curTab;
   Array.prototype.forEach.call(bar.querySelectorAll('button'), function (b) {
     var on = b.dataset.k === cur;
     b.classList.toggle('on', on);

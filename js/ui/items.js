@@ -30,7 +30,7 @@ function carryHtml() {
     })
     .pop();
   return (
-    '<div class="h3" style="width:100%;margin:6px 0 0">Bawa jadwal tagihan dari tahun lain</div><select class="wauto" id="cy"">' +
+    '<div class="h3" style="width:100%;margin:6px 0 0">Bawa jadwal tagihan dari tahun lain</div><select class="wauto" id="cy">' +
     years
       .map(function (k) {
         return '<option' + (+k === prev ? ' selected' : '') + '>' + k + '</option>';
@@ -42,7 +42,7 @@ function carryHtml() {
     '<label style="display:flex;gap:8px;align-items:center;margin:0;width:100%;font-weight:500"><input type="checkbox" id="cs" style="width:auto;min-height:0">Jadikan saldo akhir tahun itu sebagai saldo awal ' +
     S.year +
     '</label>' +
-    '<div class="sub w100""">Item sekali bayar atau yang sudah selesai (lewat tanggal/jumlah berhenti) tidak ikut dibawa. Perubahan harga ikut terbawa. Status lunas tidak dibawa.</div>'
+    '<div class="sub w100">Item sekali bayar atau yang sudah selesai (lewat tanggal/jumlah berhenti) tidak ikut dibawa. Perubahan harga ikut terbawa. Status lunas tidak dibawa.</div>'
   );
 }
 

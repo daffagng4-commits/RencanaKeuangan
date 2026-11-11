@@ -279,13 +279,15 @@ a.yp.yp-tool:hover .arr-icon { opacity: 1; transform: translate(1px, -1px); }
 
 header {
   display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
+  flex-wrap: nowrap;
+  gap: 10px;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 4px;
 }
-header nav { margin-bottom: 0; max-width: 100%; }
+header .yb { margin-bottom: 0; flex: 0 0 auto; }
+header nav { margin-bottom: 0; max-width: 100%; margin-left: auto; flex: 1 1 auto; min-width: 0; }
+.topbar-actions .yp { min-height: 30px; padding: 0 12px; font-size: 12.5px; }
 nav {
   display: flex;
   gap: 2px;
@@ -759,6 +761,7 @@ tr.flash td { animation: fl 2.6s ease-out; }
   margin-top: 6px;
 }
 button.alat-item { width: 100%; border: 0; background: transparent; text-align: left; cursor: pointer; font-family: inherit; }
+.alat-sep { height: 1px; background: var(--ln); margin: 6px 6px; }
 
 #botnav, #botsheet { display: none; }
 #sparkline-kas { position: relative; overflow: hidden; }
@@ -1383,8 +1386,9 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
   .hero > .card { padding: 15px; }
   .topbar { margin-bottom: 14px; padding-bottom: 12px; gap: 8px; }
   .kt { gap: 4px; }
-  .topbar-actions { gap: 0; padding: 2px; }
+  .topbar-actions { gap: 0; padding: 2px; margin-left: auto; }
   .topbar-actions .topbar-btn, .acct { width: 32px; min-width: 32px; height: 32px; }
+  .topbar-actions .yp { min-height: 28px; font-size: 11.5px; padding: 0 9px; }
   .yp, a.yp { font-size: 12px; padding: 5px 10px; min-height: 30px; }
   a.yp.yp-tool { font-size: 11.5px; }
   nav { display: none; }

@@ -119,22 +119,22 @@ function agendaHtml() {
   if (!P || +S.year !== +todayISO().slice(0, 4)) return '';
   var KB = kasBal(P),
     A = agendaData(KB.bal, AGENDA_DAYS, P, KB.sm),
-    head = '<div class="card agenda mt14"""><h2>Agenda ' + A.days + ' hari ke depan</h2>',
+    head = '<div class="card agenda mt14"><h2>Agenda ' + A.days + ' hari ke depan</h2>',
     from =
       '<div class="sub">Mulai dari Saldo Realtime <b class="pv">' + rp(A.start) + '</b>. Dihitung: tagihan belum lunas dan catatan kas bulan-bulan berikutnya (mis. gaji).</div>';
   if (!A.rows.length)
-    return head + from + '<div class="sub mt8""">Tidak ada tagihan atau catatan kas yang akan datang dalam ' + A.days + ' hari.</div></div>';
+    return head + from + '<div class="sub mt8">Tidak ada tagihan atau catatan kas yang akan datang dalam ' + A.days + ' hari.</div></div>';
   var lowRow = A.lowIdx >= 0 ? A.rows[A.lowIdx] : null,
     note = !lowRow
-      ? '<div class="sub mt8""">Saldo tidak turun di bawah titik awal sepanjang ' + A.days + ' hari.</div>'
+      ? '<div class="sub mt8">Saldo tidak turun di bawah titik awal sepanjang ' + A.days + ' hari.</div>'
       : A.low < 0
-        ? '<div class="err mt8""">Saldo diperkirakan <b>habis</b> setelah ' + esc(lowRow.name) + ' (' + (lowRow.late ? 'terlambat' : fd(lowRow.t, { day: 'numeric', month: 'short' })) + '). Terendah <span class="pv">' + rp(A.low) + '</span>.</div>'
-        : '<div class="sub mt8""">Saldo terendah <b class="pv">' + rp(A.low) + '</b> setelah ' + esc(lowRow.name) + ' (' + (lowRow.late ? 'terlambat' : fd(lowRow.t, { day: 'numeric', month: 'short' })) + '); masih aman, tidak sampai nol.</div>',
+        ? '<div class="err mt8">Saldo diperkirakan <b>habis</b> setelah ' + esc(lowRow.name) + ' (' + (lowRow.late ? 'terlambat' : fd(lowRow.t, { day: 'numeric', month: 'short' })) + '). Terendah <span class="pv">' + rp(A.low) + '</span>.</div>'
+        : '<div class="sub mt8">Saldo terendah <b class="pv">' + rp(A.low) + '</b> setelah ' + esc(lowRow.name) + ' (' + (lowRow.late ? 'terlambat' : fd(lowRow.t, { day: 'numeric', month: 'short' })) + '); masih aman, tidak sampai nol.</div>',
     rows = A.rows.map(agendaRow),
     shown = rows.slice(0, AGENDA_SHOW).join(''),
     more =
       rows.length > AGENDA_SHOW
         ? '<details class="ag-more"><summary>+' + (rows.length - AGENDA_SHOW) + ' lagi</summary>' + rows.slice(AGENDA_SHOW).join('') + '</details>'
         : '';
-  return head + from + agendaChart(A) + note + '<div class="mt6"">' + shown + more + '</div></div>';
+  return head + from + agendaChart(A) + note + '<div class="mt6">' + shown + more + '</div></div>';
 }

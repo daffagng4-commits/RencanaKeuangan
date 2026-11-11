@@ -224,7 +224,7 @@ function renderKas() {
     return '<div><span>' + l + '</span><b>' + v + '</b>' + (s ? '<span>' + s + '</span>' : '') + '</div>';
   };
   var hero =
-    '<div class="hero"><div class="card m0"""><div class="sub">Saldo &quot;' +
+    '<div class="hero"><div class="card m0"><div class="sub">Saldo &quot;' +
     esc(P.name) +
     '&quot; Realtime &middot; ' +
     mName +
@@ -241,7 +241,7 @@ function renderKas() {
     rp(A.o) +
     '</div>' +
     kasStatusHtml(P, bal) +
-    '</div><div class="card stats m0""">' +
+    '</div><div class="card stats m0">' +
     stat('Masuk', rp(R.i)) +
     stat('Keluar', rp(R.o)) +
     stat('Selisih', R.i === R.o ? rp(0) : signed(R.i - R.o)) +
@@ -268,14 +268,14 @@ function renderKas() {
   var form =
     '<div class="card"><h2>' +
     (E ? 'Ubah transaksi' : 'Catat transaksi') +
-    '</h2><div class="kt mb12"""><button type="button" class="yp' +
+    '</h2><div class="kt mb12"><button type="button" class="yp' +
     (kasT === '+' ? ' on' : '') +
     '" data-kt="+">+ Masuk</button><button type="button" class="yp' +
     (kasT === '-' ? ' on' : '') +
-    '" data-kt="-">&minus; Keluar</button></div><div class="kf"><div><label for="ka">Jumlah</label><div class="dflex g6""><input id="ka" inputmode="numeric" placeholder="50k atau 50.000" value="' +
+    '" data-kt="-">&minus; Keluar</button></div><div class="kf"><div><label for="ka">Jumlah</label><div class="dflex g6"><input id="ka" inputmode="numeric" placeholder="50k atau 50.000" value="' +
     (E ? E.amt.toLocaleString('id-ID') : '') +
     '">' +
-    (mode === 'trip' && P.cur && P.rate ? '<select class="wauto" id="kcu""><option value="idr">Rp</option><option value="fx">' + P.cur + '</option></select>' : '') +
+    (mode === 'trip' && P.cur && P.rate ? '<select class="wauto" id="kcu"><option value="idr">Rp</option><option value="fx">' + P.cur + '</option></select>' : '') +
     '</div></div><div><label for="kd">Tanggal</label><input id="kd" type="date" value="' +
     (E ? E.d : todayISO()) +
     '"></div><div><label for="kc">Kategori</label><input id="kc" list="kcl" maxlength="30" value="' +

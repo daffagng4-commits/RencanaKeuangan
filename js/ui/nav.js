@@ -35,9 +35,9 @@ function tripOn() {
   });
 }
 
-/** Item bilah bawah: Perjalanan hanya bila tampil, kalau tidak diganti Item. */
+/** Item bilah bawah: Rincian/Kas/Jadwal + Kelola Item + Lainnya. */
 function botItems() {
-  return BOT_BASE.concat([tripOn() ? BOT_TRIP : BOT_ITEM, BOT_MORE]);
+  return BOT_BASE.concat([BOT_ITEM, BOT_MORE]);
 }
 
 /** Isi lembar "Lainnya" menyesuaikan apa yang ada di bilah bawah. */
@@ -46,9 +46,13 @@ function sheetHtml() {
     '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>';
   return (
     '<div class="bs-h">Rencana</div>' +
-    (tripOn() ? '<button type="button" role="menuitem" data-go="item">Kelola Item</button>' : '') +
     '<button type="button" role="menuitem" data-go="sim">Simulasi</button>' +
     '<button type="button" role="menuitem" data-go="trip">Perjalanan</button>' +
+    '<div class="bs-h">Laporan</div>' +
+    '<button type="button" role="menuitem" data-rep="d">Hari ini</button>' +
+    '<button type="button" role="menuitem" data-rep="w">Minggu ini</button>' +
+    '<button type="button" role="menuitem" data-rep="m">Bulan ini</button>' +
+    '<button type="button" role="menuitem" data-rep="y">Tahun ini</button>' +
     '<div class="bs-h">Alat</div>' +
     '<a role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span>' + ext + '</a>' +
     '<a role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span>' + ext + '</a>' +
@@ -81,7 +85,7 @@ function renderBotNav() {
 function syncNav() {
   var bar = document.getElementById('botnav');
   if (!bar) return;
-  var cur = mode === 'trip' ? 'trip' : curTab === 'sim' ? 'more' : curTab === 'item' ? (tripOn() ? 'more' : 'item') : curTab;
+  var cur = mode === 'trip' || curTab === 'sim' ? 'more' : curTab;
   Array.prototype.forEach.call(bar.querySelectorAll('button'), function (b) {
     var on = b.dataset.k === cur;
     b.classList.toggle('on', on);

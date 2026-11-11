@@ -629,7 +629,7 @@ function emptyItemsHtml() {
   return (
     '<div class="card"><h2>Mulai dari item pertama</h2><div class="empty">Belum ada item untuk tahun ' + S.year +
     '. Item adalah tagihan atau pengeluaran berulang, mis. listrik, langganan, cicilan, atau DCA.</div>' +
-    '<div class="row2 mt8"""><button type="button" class="p" data-goto="item">Tambah item</button></div></div>'
+    '<div class="row2 mt8"><button type="button" class="p" data-goto="item">Tambah item</button></div></div>'
   );
 }
 
