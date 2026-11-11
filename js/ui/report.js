@@ -68,7 +68,7 @@ function repTables(tx, bil) {
       rows: tx.length
         ? tx.map(function (x) { return [REP_TGL(x.d), x.note || x.cat, x.cat, (x.t === '+' ? '+ ' : '- ') + rp(x.amt)]; })
         : [['-', 'tidak ada transaksi', '-', '-']],
-      total: tx.length ? ['Total', (net >= 0 ? '+ ' : '- ') + rp(Math.abs(net))] : null,
+      total: tx.length ? ['Total', (net >= 0 ? '+ ' : '- ') + rp(net)] : null,
     },
     {
       head: 'TAGIHAN',
@@ -144,11 +144,13 @@ function laporanHtml(p) {
     'td.n,th.n{text-align:right}',
     '.sum{display:flex;flex-wrap:wrap;gap:6px 26px;font-size:13px;margin:0 0 6px}',
     '.sum i{font-style:normal;color:#666;margin-right:6px}',
+    '.ft{margin-top:18px;padding-top:8px;border-top:1px solid #ccc;color:#666;font-size:11px}',
     '@media print{button{display:none}}',
     '</style></head><body>',
     '<h1>' + D.title + '</h1><div class="sub">' + D.subtitle + '</div>',
     '<div class="sum">' + D.summary.map(function (s) { return '<span><i>' + s[0] + '</i><b>' + s[1] + '</b></span>'; }).join('') + '</div>',
     D.tables.map(repTable).join(''),
+    '<div class="ft">Rencana Keuangan - dibuat otomatis ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' UTC</div>',
     '<button onclick="print()">Cetak / simpan PDF</button>',
     '</body></html>',
   ].join('');
