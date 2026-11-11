@@ -527,7 +527,13 @@ function modeUi() {
   });
   if (X) toolMount(mode);
   document.querySelector('.w').style.maxWidth = mode === 'rebalance' ? '1500px' : '';
-  document.querySelector('nav').style.display = O ? 'none' : '';
+  document.querySelector('nav').style.display = X ? 'none' : '';
+  var pl = document.querySelector('.nav-pill');
+  if (pl) pl.style.display = O ? 'none' : '';
+  if (O)
+    document.querySelectorAll('nav button[data-t]').forEach(function (b) {
+      b.setAttribute('aria-selected', 'false');
+    });
   var ctl = document.querySelector('.ctl');
   if (ctl) ctl.style.display = O ? 'none' : '';
   $('rem').style.display = O ? 'none' : '';
@@ -1058,7 +1064,7 @@ function bindTrip() {
   var V = $('v-trip');
   $('mdbar').onclick = function (e) {
     var b = e.target.closest('[data-md]');
-    if (b) setMode(b.dataset.md);
+    if (b) setMode(b.dataset.md === mode ? 'rencana' : b.dataset.md);
   };
   V.onclick = function (e) {
     var b = e.target.closest('button,[data-trip]');

@@ -6,6 +6,7 @@ var openRows = {};
 var catPeriod = 'y';
 var flowPeriod = 'y';
 var catDir = '-';
+var txDir = '-';
 
 /** Legenda chip di kolom "Item berkala" (dipakai juga oleh panduan yang bisa disembunyikan). */
 var RINCIAN_LEGEND =
@@ -637,13 +638,20 @@ function emptyItemsHtml() {
 function recentTxCard() {
   var P = kasLinked();
   if (!P) return '';
-  var rows = kasRows(P).slice().sort(function (a, b) {
-      return a.d < b.d ? 1 : a.d > b.d ? -1 : 0;
-    }),
+  var inn = txDir === '+',
+    rows = kasRows(P)
+      .filter(function (x) {
+        return x.t === txDir;
+      })
+      .sort(function (a, b) {
+        return a.d < b.d ? 1 : a.d > b.d ? -1 : 0;
+      }),
     cut = addDaysISO(todayISO(), -6),
-    L = rows.filter(function (x) {
-      return x.d >= cut;
-    }).slice(0, 7);
+    L = rows
+      .filter(function (x) {
+        return x.d >= cut;
+      })
+      .slice(0, 7);
   if (!L.length) L = rows.slice(0, 7);
   var body = L.map(function (x) {
     return (
@@ -661,8 +669,22 @@ function recentTxCard() {
     );
   }).join('');
   return (
-    '<div class="card"><h2>Transaksi terakhir</h2><div class="sub mb8">7 hari terakhir</div>' +
-    (body || '<div class="empty">Belum ada transaksi dalam 7 hari terakhir.</div>') +
+    '<div class="card"><div class="dflex jcsb aic fwrap g8"><h2 class="m0">Transaksi terakhir</h2>' +
+    '<div class="cat-tabs cat-dirs" role="tablist">' +
+    '<button type="button" class="cat-tab' +
+    (inn ? '' : ' on') +
+    '" data-txd="-" aria-pressed="' +
+    (inn ? 'false' : 'true') +
+    '">Keluar</button>' +
+    '<button type="button" class="cat-tab' +
+    (inn ? ' on' : '') +
+    '" data-txd="+" aria-pressed="' +
+    (inn ? 'true' : 'false') +
+    '">Masuk</button></div></div>' +
+    '<div class="sub mb8">' +
+    (inn ? 'Uang masuk' : 'Uang keluar') +
+    ' 7 hari terakhir</div>' +
+    (body || '<div class="empty">Belum ada transaksi ' + (inn ? 'masuk' : 'keluar') + ' dalam 7 hari terakhir.</div>') +
     '<button type="button" class="tbk" data-hist="1">Lihat semua transaksi</button></div>'
   );
 }
@@ -765,6 +787,12 @@ function bindRincian() {
     var cd = e.target.closest('[data-catd]');
     if (cd) {
       catDir = cd.dataset.catd;
+      renderRincian();
+      return;
+    }
+    var td = e.target.closest('[data-txd]');
+    if (td) {
+      txDir = td.dataset.txd;
       renderRincian();
       return;
     }

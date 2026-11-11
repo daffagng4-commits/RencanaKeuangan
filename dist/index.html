@@ -320,12 +320,12 @@ header {
   align-items: center;
   margin-bottom: 4px;
 }
-header .yb { margin: 0; flex: 0 0 auto; align-self: center; }
+#mdbar .yb { margin: 0; flex: 0 0 auto; align-self: center; }
 header nav { margin-bottom: 0; max-width: 100%; margin-left: auto; flex: 0 1 auto; min-width: 0; }
-header .yb .yp { border: 1px solid var(--ln); background: var(--sf); border-radius: 9px; padding: 0 12px; }
-header .yb .yp:hover { border-color: var(--ac); color: var(--ac); background: var(--acs); }
-header .yb .yp.on, header .yb .yp.on:hover { background: var(--ac); border-color: var(--ac); color: var(--ac-ink); }
-header .yb .g { border: 1px solid var(--ln); border-radius: 9px; }
+#mdbar .yb .yp { border: 1px solid var(--ln); background: var(--sf); border-radius: 9px; padding: 0 12px; }
+#mdbar .yb .yp:hover { border-color: var(--ac); color: var(--ac); background: var(--acs); }
+#mdbar .yb .yp.on, #mdbar .yb .yp.on:hover { background: var(--ac); border-color: var(--ac); color: var(--ac-ink); }
+#mdbar .yb .g { border: 1px solid var(--ln); border-radius: 9px; }
 .topbar-actions #pwa { width: 34px; min-width: 34px; padding: 0; }
 .topbar-actions .yp { min-height: 30px; padding: 0 12px; font-size: 12.5px; }
 nav {
@@ -1668,6 +1668,25 @@ nav .nav-pill {
     white-space: nowrap;
   }
   header nav .nav-pill { display: block; }
+  header nav .acct,
+  header nav .topbar-btn {
+    width: 48px;
+    height: 48px;
+    min-height: 48px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    border-color: transparent;
+    background: transparent;
+    color: var(--mut);
+  }
+  header nav .acct { font-size: 15px; font-weight: 600; }
+  header nav .acct:hover,
+  header nav .topbar-btn:hover { border-color: var(--ln); color: var(--ink); }
+  header nav .yr-pop,
+  header nav .alat { position: static; width: 48px; }
+  header nav .alat-menu { left: calc(100% + 14px); right: auto; top: auto; bottom: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1686,7 +1705,7 @@ nav .nav-pill {
 <div class="w">
 <div class="topbar">
   <div class="kt" id="mdbar">
-    <button type="button" class="yp on" data-md="rencana">Rencana Keuangan</button>
+    <div class="yb" id="yb"></div>
     <button type="button" class="yp" data-md="trip">Perjalanan</button>
   </div>
   <div class="topbar-actions">
@@ -1717,7 +1736,6 @@ nav .nav-pill {
   </div>
 </div>
 <header>
-  <div class="yb" id="yb"></div>
   <div class="sub fs115 cmut" id="ver-info" hidden title="Versi program terbaru"></div>
   <div class="sub" id="status" style="display:none"></div>
   <div class="sub" id="sbs" style="display:none"></div>
@@ -3569,7 +3587,7 @@ function navPill() {
 function tab(t) {
   curTab = t;
   if (t === 'sim') renderSim();
-  document.querySelectorAll('nav button').forEach(function (b) {
+  document.querySelectorAll('nav button[data-t]').forEach(function (b) {
     b.setAttribute('aria-selected', b.dataset.t === t);
   });
   ['rincian', 'jadwal', 'item', 'kas', 'sim'].forEach(function (x) {
@@ -3627,9 +3645,10 @@ function askConfirm(msg, onYes, yesLabel, title) {
 
 /** Pasang event listener halaman ini. */
 function bindDom() {
-  document.querySelectorAll('nav button').forEach(function (b) {
+  document.querySelectorAll('nav button[data-t]').forEach(function (b) {
     b.onclick = function () {
-      tab(b.dataset.t);
+      if (typeof navGo === 'function') navGo(b.dataset.t);
+      else tab(b.dataset.t);
     };
   });
   $('ttu').onclick = function () {
@@ -3883,6 +3902,7 @@ var openRows = {};
 var catPeriod = 'y';
 var flowPeriod = 'y';
 var catDir = '-';
+var txDir = '-';
 
 /** Legenda chip di kolom "Item berkala" (dipakai juga oleh panduan yang bisa disembunyikan). */
 var RINCIAN_LEGEND =
@@ -4514,13 +4534,20 @@ function emptyItemsHtml() {
 function recentTxCard() {
   var P = kasLinked();
   if (!P) return '';
-  var rows = kasRows(P).slice().sort(function (a, b) {
-      return a.d < b.d ? 1 : a.d > b.d ? -1 : 0;
-    }),
+  var inn = txDir === '+',
+    rows = kasRows(P)
+      .filter(function (x) {
+        return x.t === txDir;
+      })
+      .sort(function (a, b) {
+        return a.d < b.d ? 1 : a.d > b.d ? -1 : 0;
+      }),
     cut = addDaysISO(todayISO(), -6),
-    L = rows.filter(function (x) {
-      return x.d >= cut;
-    }).slice(0, 7);
+    L = rows
+      .filter(function (x) {
+        return x.d >= cut;
+      })
+      .slice(0, 7);
   if (!L.length) L = rows.slice(0, 7);
   var body = L.map(function (x) {
     return (
@@ -4538,8 +4565,22 @@ function recentTxCard() {
     );
   }).join('');
   return (
-    '<div class="card"><h2>Transaksi terakhir</h2><div class="sub mb8">7 hari terakhir</div>' +
-    (body || '<div class="empty">Belum ada transaksi dalam 7 hari terakhir.</div>') +
+    '<div class="card"><div class="dflex jcsb aic fwrap g8"><h2 class="m0">Transaksi terakhir</h2>' +
+    '<div class="cat-tabs cat-dirs" role="tablist">' +
+    '<button type="button" class="cat-tab' +
+    (inn ? '' : ' on') +
+    '" data-txd="-" aria-pressed="' +
+    (inn ? 'false' : 'true') +
+    '">Keluar</button>' +
+    '<button type="button" class="cat-tab' +
+    (inn ? ' on' : '') +
+    '" data-txd="+" aria-pressed="' +
+    (inn ? 'true' : 'false') +
+    '">Masuk</button></div></div>' +
+    '<div class="sub mb8">' +
+    (inn ? 'Uang masuk' : 'Uang keluar') +
+    ' 7 hari terakhir</div>' +
+    (body || '<div class="empty">Belum ada transaksi ' + (inn ? 'masuk' : 'keluar') + ' dalam 7 hari terakhir.</div>') +
     '<button type="button" class="tbk" data-hist="1">Lihat semua transaksi</button></div>'
   );
 }
@@ -4642,6 +4683,12 @@ function bindRincian() {
     var cd = e.target.closest('[data-catd]');
     if (cd) {
       catDir = cd.dataset.catd;
+      renderRincian();
+      return;
+    }
+    var td = e.target.closest('[data-txd]');
+    if (td) {
+      txDir = td.dataset.txd;
       renderRincian();
       return;
     }
@@ -9268,7 +9315,13 @@ function modeUi() {
   });
   if (X) toolMount(mode);
   document.querySelector('.w').style.maxWidth = mode === 'rebalance' ? '1500px' : '';
-  document.querySelector('nav').style.display = O ? 'none' : '';
+  document.querySelector('nav').style.display = X ? 'none' : '';
+  var pl = document.querySelector('.nav-pill');
+  if (pl) pl.style.display = O ? 'none' : '';
+  if (O)
+    document.querySelectorAll('nav button[data-t]').forEach(function (b) {
+      b.setAttribute('aria-selected', 'false');
+    });
   var ctl = document.querySelector('.ctl');
   if (ctl) ctl.style.display = O ? 'none' : '';
   $('rem').style.display = O ? 'none' : '';
@@ -9799,7 +9852,7 @@ function bindTrip() {
   var V = $('v-trip');
   $('mdbar').onclick = function (e) {
     var b = e.target.closest('[data-md]');
-    if (b) setMode(b.dataset.md);
+    if (b) setMode(b.dataset.md === mode ? 'rencana' : b.dataset.md);
   };
   V.onclick = function (e) {
     var b = e.target.closest('button,[data-trip]');
@@ -10822,6 +10875,29 @@ function setTripVisible(on) {
   applyTripVis(true);
 }
 
+/** Akun, tombol +, dan Alat pindah ke rail kiri pada layar lebar; kembali ke topbar di layar kecil. */
+function railMove() {
+  var nav = document.querySelector('header nav'),
+    bar = document.querySelector('.topbar-actions'),
+    acct = $('acct'),
+    yp = $('yr-pop'),
+    al = $('alat');
+  if (!nav || !bar || !acct || !yp || !al) return;
+  var big = matchMedia('(min-width:1024px)').matches;
+  if (big === (acct.parentNode === nav)) return;
+  if (big) {
+    var pill = nav.querySelector('.nav-pill');
+    nav.insertBefore(acct, pill ? pill.nextSibling : nav.firstChild);
+    nav.insertBefore(yp, acct.nextSibling);
+    nav.appendChild(al);
+  } else {
+    bar.insertBefore(acct, $('btn-privacy'));
+    bar.insertBefore(yp, acct.nextSibling);
+    bar.insertBefore(al, $('tb-more'));
+  }
+  navPill();
+}
+
 /** Pasang menu Alat, bilah bawah, dan lembar Lainnya. */
 function bindNav() {
   var ab = document.getElementById('alat-btn'),
@@ -10902,7 +10978,9 @@ function bindNav() {
     sheet(false);
   });
   applyTripVis(false);
+  railMove();
   addEventListener('resize', function () {
+    railMove();
     if (typeof navPill === 'function') navPill();
   });
 }

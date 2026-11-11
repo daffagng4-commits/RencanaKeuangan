@@ -41,7 +41,7 @@ function navPill() {
 function tab(t) {
   curTab = t;
   if (t === 'sim') renderSim();
-  document.querySelectorAll('nav button').forEach(function (b) {
+  document.querySelectorAll('nav button[data-t]').forEach(function (b) {
     b.setAttribute('aria-selected', b.dataset.t === t);
   });
   ['rincian', 'jadwal', 'item', 'kas', 'sim'].forEach(function (x) {
@@ -99,9 +99,10 @@ function askConfirm(msg, onYes, yesLabel, title) {
 
 /** Pasang event listener halaman ini. */
 function bindDom() {
-  document.querySelectorAll('nav button').forEach(function (b) {
+  document.querySelectorAll('nav button[data-t]').forEach(function (b) {
     b.onclick = function () {
-      tab(b.dataset.t);
+      if (typeof navGo === 'function') navGo(b.dataset.t);
+      else tab(b.dataset.t);
     };
   });
   $('ttu').onclick = function () {

@@ -130,6 +130,29 @@ function setTripVisible(on) {
   applyTripVis(true);
 }
 
+/** Akun, tombol +, dan Alat pindah ke rail kiri pada layar lebar; kembali ke topbar di layar kecil. */
+function railMove() {
+  var nav = document.querySelector('header nav'),
+    bar = document.querySelector('.topbar-actions'),
+    acct = $('acct'),
+    yp = $('yr-pop'),
+    al = $('alat');
+  if (!nav || !bar || !acct || !yp || !al) return;
+  var big = matchMedia('(min-width:1024px)').matches;
+  if (big === (acct.parentNode === nav)) return;
+  if (big) {
+    var pill = nav.querySelector('.nav-pill');
+    nav.insertBefore(acct, pill ? pill.nextSibling : nav.firstChild);
+    nav.insertBefore(yp, acct.nextSibling);
+    nav.appendChild(al);
+  } else {
+    bar.insertBefore(acct, $('btn-privacy'));
+    bar.insertBefore(yp, acct.nextSibling);
+    bar.insertBefore(al, $('tb-more'));
+  }
+  navPill();
+}
+
 /** Pasang menu Alat, bilah bawah, dan lembar Lainnya. */
 function bindNav() {
   var ab = document.getElementById('alat-btn'),
@@ -210,7 +233,9 @@ function bindNav() {
     sheet(false);
   });
   applyTripVis(false);
+  railMove();
   addEventListener('resize', function () {
+    railMove();
     if (typeof navPill === 'function') navPill();
   });
 }
