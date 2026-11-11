@@ -12,7 +12,9 @@ var kasAct = (function () {
   kasTf = 'all', // filter Riwayat transaksi: all | + (masuk) | - (keluar)
   kasFrom = '',
   kasTo = '',
-  kasCat = 'all',
+  kasCats = [], // kategori terpilih (kosong = semua)
+  kasFlt = { min: '', max: '', from: '', to: '' },
+  kasCatItems = [],
   kasDebt = false,
   kasDebtKind = '',
   kasDebtName = '',
@@ -208,10 +210,14 @@ function renderKas() {
   if (from < minD || from > maxD) from = minD;
   if (to < minD || to > maxD) to = maxD;
   if (from > to) from = to;
-  if (kasCat !== 'all' && kasCat !== '__none' && catList.indexOf(kasCat) < 0) kasCat = 'all';
+  if (kasCats.length) kasCats = kasCats.filter(function (c) { return catList.indexOf(c) >= 0; });
+  kasFlt = { min: minD, max: maxD, from: from, to: to };
+  kasCatItems = catList.map(function (c) {
+    return { v: c, t: c || 'Tanpa kategori', n: asc.filter(function (x) { return (x.cat || '') === c; }).length };
+  });
   var R = kasSum(asc),
     baseL = asc.filter(function (x) {
-      return x.d >= from && x.d <= to && (kasCat === 'all' || (x.cat || '') === (kasCat === '__none' ? '' : kasCat));
+      return x.d >= from && x.d <= to && (!kasCats.length || kasCats.indexOf(x.cat || '') >= 0);
     }),
     L = baseL.reverse(),
     E = kasEdit
@@ -299,10 +305,7 @@ function renderKas() {
   var LF = kasTf === 'all' ? L : L.filter(function (x) { return x.t === kasTf; }),
     nIn = L.filter(function (x) { return x.t === '+'; }).length,
     emptyMsg = kasTf === '+' ? 'Belum ada transaksi masuk di periode ini.' : kasTf === '-' ? 'Belum ada transaksi keluar di periode ini.' : 'Belum ada transaksi di periode ini.',
-    filt = kasTf !== 'all' || kasCat !== 'all' || from !== minD || to !== maxD,
-    catOpts = '<option value="all">Semua kategori</option>' + catList.map(function (c) {
-      return '<option value="' + (c ? esc(c) : '__none') + '"' + ((c ? c : '__none') === kasCat ? ' selected' : '') + '>' + (c ? esc(c) : 'Tanpa kategori') + '</option>';
-    }).join(''),
+    filt = kasTf !== 'all' || kasCats.length > 0 || from !== minD || to !== maxD,
     lastD = '',
     rowsH = LF.slice(0, 200).map(function (x) {
       var sep = x.d !== lastD ? '<div class="daysep"><span>' + fmtD(x.d) + '</span></div>' : '';
@@ -325,15 +328,20 @@ function renderKas() {
   var lst =
     '<div class="card" id="kas-hist"><div class="row2" style="margin:0 0 8px;align-items:center;justify-content:space-between"><h2 class="m0">Riwayat transaksi</h2>' +
     '<select class="wauto" id="ktf" aria-label="Filter jenis transaksi"><option value="all"' + (kasTf === 'all' ? ' selected' : '') + '>Semua</option><option value="+"' + (kasTf === '+' ? ' selected' : '') + '>+ Masuk</option><option value="-" ' + (kasTf === '-' ? ' selected' : '') + '>&minus; Keluar</option></select></div>' +
-    '<div class="kflt"><div><label for="kfrom">Dari</label><input type="date" id="kfrom" min="' + minD + '" max="' + maxD + '" value="' + from + '"></div>' +
-    '<div><label for="kto">Sampai</label><input type="date" id="kto" min="' + minD + '" max="' + maxD + '" value="' + to + '"></div>' +
-    '<div><label for="kcat">Kategori</label><select id="kcat">' + catOpts + '</select></div>' +
-    '<button type="button" class="g kreset" id="krst" title="Kembalikan rentang tanggal ke default">Reset</button></div>' +
+    '<div class="kflt">' +
+    '<button type="button" class="pk-in" id="kfrange" aria-haspopup="dialog" data-min="' + minD + '" data-max="' + maxD + '" data-from="' + from + '" data-to="' + to + '"><span>' +
+    (from === to ? fmtD(from) : fmtD(from) + ' &ndash; ' + fmtD(to)) +
+    '</span><svg class="pk-ic" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><rect x="2.1" y="3.1" width="11.8" height="10.8" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M2.1 6.4h11.8M5.5 1.7v2.5M10.5 1.7v2.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>' +
+    '<button type="button" class="pk-in" id="kfcat" aria-haspopup="dialog"><span>' +
+    (kasCats.length ? kasCats.length + ' kategori dipilih' : 'Semua kategori') +
+    '</span><i class="pk-cv"></i></button>' +
+    '<button type="button" class="g kreset" id="krst" title="Kembalikan filter">Reset</button></div>' +
     (filt ? '<div class="sub mb6">' + LF.length + ' dari ' + asc.length + ' transaksi</div>' : '') +
     (rowsH || '<div class="empty">' + emptyMsg + '</div>' + (!asc.length ? '<div class="row2 mt8"><button type="button" class="p" data-kfocus="1">Catat transaksi pertama</button></div>' : '')) +
     (LF.length > 200 ? '<div class="sub">+ ' + (LF.length - 200) + ' lainnya. Pilih rentang yang lebih sempit.</div>' : '') +
     '</div>';
   el.innerHTML = form + debtHtml(P) + lst;
+  if (window.upPickers) upPickers(el);
 }
 
 function kasErr(t) {
@@ -507,7 +515,29 @@ function bindKas() {
     else if (b.id === 'krst') {
       kasFrom = '';
       kasTo = '';
+      kasCats = [];
       renderKas();
+    } else if (b.id === 'kfrange') {
+      pkRange(b, {
+        min: kasFlt.min,
+        max: kasFlt.max,
+        from: kasFlt.from,
+        to: kasFlt.to,
+        on: function (r) {
+          kasFrom = r.from;
+          kasTo = r.to;
+          renderKas();
+        }
+      });
+    } else if (b.id === 'kfcat') {
+      pkMulti(b, {
+        items: kasCatItems,
+        sel: kasCats,
+        on: function (v) {
+          kasCats = v;
+          renderKas();
+        }
+      });
     } else if (b.id === 'kx') {
       kasEdit = null;
       kasDebt = false;
@@ -529,15 +559,6 @@ function bindKas() {
   $('v-kas').onchange = function (e) {
     if (e.target.id === 'ktf') {
       kasTf = e.target.value === '+' || e.target.value === '-' ? e.target.value : 'all';
-      renderKas();
-    } else if (e.target.id === 'kfrom') {
-      kasFrom = e.target.value;
-      renderKas();
-    } else if (e.target.id === 'kto') {
-      kasTo = e.target.value;
-      renderKas();
-    } else if (e.target.id === 'kcat') {
-      kasCat = e.target.value;
       renderKas();
     } else if (e.target.id === 'kdebt') {
       $('kdbox').hidden = !e.target.checked;

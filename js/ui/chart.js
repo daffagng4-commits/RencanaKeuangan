@@ -311,7 +311,7 @@ function donutInit(host, cfg) {
     ring = 'M' + C + ' ' + (C - R) + 'A' + R + ' ' + R + ' 0 1 1 ' + C + ' ' + (C + R) + 'A' + R + ' ' + R + ' 0 1 1 ' + C + ' ' + (C - R),
     slices;
 
-  svg.setAttribute('viewBox', '0 0 ' + SIZE + ' ' + SIZE);
+  svg.setAttribute('viewBox', '-6 -6 ' + (SIZE + 12) + ' ' + (SIZE + 12));
   svg.innerHTML =
     '<path class="dn-track" fill="none" stroke-width="' +
     TH +

@@ -39,12 +39,18 @@ const ok = (c, m) => { assert(c, m); pass++; console.log("ok -", m); };
   $("ktf").value = "all"; fire($("ktf"), "change"); await tick();
   ok(rows().length === 7 && !/dari 7 transaksi/.test($("v-kas").textContent), "kembali ke Semua: 7 transaksi, keterangan hilang");
 
-  // reset rentang tanggal
-  $("kfrom").value = "2026-11-01"; fire($("kfrom"), "change"); await tick();
-  $("kto").value = "2026-11-30"; fire($("kto"), "change"); await tick();
+  // filter rentang tanggal (preset) lalu kategori (multi pilih)
+  click($("kfrange")); await tick();
+  click(w.document.querySelector('.pk-rng [data-p="Bulan lalu"]')); await tick();
+  click(w.document.querySelector('.pk-rng [data-ok]')); await tick();
   ok(rows().length === 3, "rentang 1-30 Nov: 3 transaksi");
+  ok(/1 Nov 2026/.test($("kfrange").textContent), "label rentang ikut berubah: " + $("kfrange").textContent);
+  click($("kfcat")); await tick();
+  click(w.document.querySelector('.pk-multi [data-m="Transfer"]')); await tick();
+  click(w.document.querySelector('.pk-multi [data-ok]')); await tick();
+  ok(rows().length === 1, "kategori Transfer di Nov: 1 transaksi");
   click($("krst")); await tick();
-  ok($("kfrom").value === "2026-10-30" && $("kto").value === "2026-12-01" && rows().length === 7, "Reset mengembalikan rentang ke default dan semua transaksi tampil");
+  ok(rows().length === 7 && /Semua kategori/.test($("kfcat").textContent), "Reset mengembalikan filter dan semua transaksi tampil");
 
   // filter periode sudah dihapus
   ok(!$("kper"), "dropdown Periode sudah dihapus");
