@@ -26,6 +26,17 @@ function fmtLive(el) {
   } catch (e) {}
 }
 
+/** Geser pil penanda tab (rail sidebar) ke tombol aktif; lebar rail saja. */
+function navPill() {
+  var nav = document.querySelector('header nav'),
+    pill = nav && nav.querySelector('.nav-pill'),
+    b = nav && nav.querySelector('button[aria-selected="true"]');
+  if (!pill || !b || !nav.clientWidth) return;
+  pill.style.clipPath =
+    'inset(' + b.offsetTop + 'px ' + (nav.clientWidth - b.offsetLeft - b.offsetWidth) + 'px ' +
+    (nav.clientHeight - b.offsetTop - b.offsetHeight) + 'px ' + b.offsetLeft + 'px round 16px)';
+}
+
 /** Tampilkan tab tertentu (rincian | jadwal | item). */
 function tab(t) {
   curTab = t;
@@ -36,6 +47,13 @@ function tab(t) {
   ['rincian', 'jadwal', 'item', 'kas', 'sim'].forEach(function (x) {
     $('v-' + x).hidden = x !== t;
   });
+  var sec = $('v-' + t);
+  if (sec) {
+    sec.classList.remove('page-in');
+    void sec.offsetWidth;
+    sec.classList.add('page-in');
+  }
+  navPill();
   $('yb').style.display = '';
   if (typeof syncNav === 'function') syncNav();
 }

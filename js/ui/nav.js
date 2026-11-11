@@ -191,4 +191,7 @@ function bindNav() {
     sheet(false);
   });
   applyTripVis(false);
+  addEventListener('resize', function () {
+    if (typeof navPill === 'function') navPill();
+  });
 }

@@ -12,68 +12,72 @@
    ============================================================ */
 :root {
   color-scheme: light;
-  --bg: #f4f3ef;
-  --sf: #ffffff;
-  --ink: #16181b;
-  --mut: #5f646b;
-  --ln: #e6e4dd;
-  --ln2: #d7d4cb;
+  --bg: #eceef3;
+  --sf: #fbfbfc;
+  --sf2: #f2f3f5;
+  --ink: #14181b;
+  --mut: #5c636a;
+  --ln: #14181b14;
+  --ln2: #14181b26;
   --card: var(--sf);
   --b: var(--ln);
-  --ac: #1f5f4b;
-  --acs: #e9efe9;
+  --ac: #2a55c9;
+  --acs: #2a55c91f;
   --ac-ink: #ffffff;
-  --in: #1f6b47;
-  --ins: #e9f2ec;
-  --wr: #a3402f;
-  --wrs: #f8ebe6;
-  --bl: #33507a;
-  --bls: #eef1f6;
-  --r: 10px;
-  --r-sm: 7px;
-  --r-lg: 14px;
-  --sh: 0 12px 32px -12px rgba(20, 22, 20, 0.28), 0 2px 8px -4px rgba(20, 22, 20, 0.12);
+  --in: #1e7443;
+  --ins: #1e744321;
+  --wr: #b02f2c;
+  --wrs: #b02f2c1f;
+  --bl: #2c5ca3;
+  --bls: #2c5ca31f;
+  --r: 14px;
+  --r-sm: 10px;
+  --r-lg: 18px;
+  --sh: 0 1px 2px rgba(20, 24, 27, 0.05), 0 10px 26px -18px rgba(20, 24, 27, 0.22);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ring: 0 0 0 3px color-mix(in srgb, var(--ac) 18%, transparent);
   --tap: 40px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #0c0f0e;
-    --sf: #1a1e1b;
-    --ink: #e9ece9;
-    --mut: #9ba39d;
-    --ln: #2c332e;
-    --ln2: #3a423c;
-    --ac: #86d7b4;
-    --acs: #1a2a22;
-    --ac-ink: #0c1512;
-    --in: #6fce9f;
-    --ins: #14251c;
-    --wr: #ec8f74;
-    --wrs: #2b1a15;
-    --bl: #9db8e0;
-    --bls: #18202b;
-    --sh: 0 16px 40px -14px rgba(0, 0, 0, 0.7), 0 2px 8px -4px rgba(0, 0, 0, 0.5);
+    --bg: #0d0f11;
+    --sf: #171a1d;
+    --sf2: #131618;
+    --ink: #e8ebed;
+    --mut: #99a1a8;
+    --ln: #e8ebed14;
+    --ln2: #e8ebed29;
+    --ac: #7ea2ff;
+    --acs: #7ea2ff29;
+    --ac-ink: #0a1638;
+    --in: #64c48f;
+    --ins: #64c48f24;
+    --wr: #f08a86;
+    --wrs: #f08a8624;
+    --bl: #84aeea;
+    --bls: #84aeea24;
+    --sh: 0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 40px -22px rgba(0, 0, 0, 0.75);
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0c0f0e;
-  --sf: #1a1e1b;
-  --ink: #e9ece9;
-  --mut: #9ba39d;
-  --ln: #2c332e;
-  --ln2: #3a423c;
-  --ac: #86d7b4;
-  --acs: #1a2a22;
-  --ac-ink: #0c1512;
-  --in: #6fce9f;
-  --ins: #14251c;
-  --wr: #ec8f74;
-  --wrs: #2b1a15;
-  --bl: #9db8e0;
-  --bls: #18202b;
-  --sh: 0 16px 40px -14px rgba(0, 0, 0, 0.7), 0 2px 8px -4px rgba(0, 0, 0, 0.5);
+  --bg: #0d0f11;
+  --sf: #171a1d;
+  --sf2: #131618;
+  --ink: #e8ebed;
+  --mut: #99a1a8;
+  --ln: #e8ebed14;
+  --ln2: #e8ebed29;
+  --ac: #7ea2ff;
+  --acs: #7ea2ff29;
+  --ac-ink: #0a1638;
+  --in: #64c48f;
+  --ins: #64c48f24;
+  --wr: #f08a86;
+  --wrs: #f08a8624;
+  --bl: #84aeea;
+  --bls: #84aeea24;
+  --sh: 0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 40px -22px rgba(0, 0, 0, 0.75);
 }
 :root[data-theme="bw"] {
   --bg: #ffffff; --sf: #ffffff; --ink: #000000; --mut: #555555; --ln: #d2d2d2; --ln2: #a8a8a8;
@@ -1534,6 +1538,105 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
 #v-jadwal tr.done .st.ok { animation: stpop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: calc(var(--i, 0) * 35ms + 120ms); }
 @keyframes detin { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
 @keyframes stpop { 0% { transform: scale(0.72); } 60% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+/* ============================================================
+   20. Tema Covry — transisi ganti tema, rail sidebar, kartu riwayat
+   ============================================================ */
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-new(root) { animation: vt-theme 0.45s var(--ease) both; }
+@keyframes vt-theme {
+  from { clip-path: circle(0 at var(--vtx, 50%) var(--vty, 50%)); }
+  to { clip-path: circle(var(--vtr, 150vmax) at var(--vtx, 50%) var(--vty, 50%)); }
+}
+
+/* Denyut masuk saat pindah tab */
+.page-in { animation: page-in 0.32s var(--ease) both; }
+@keyframes page-in { from { opacity: 0; transform: translateY(10px) scale(0.996); } to { opacity: 1; transform: none; } }
+
+/* Pil penanda tab; posisi diatur navPill() memakai clip-path (cara Kinby) */
+nav { position: relative; }
+nav button { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 6px; }
+nav button svg { width: 15px; height: 15px; flex: none; }
+nav .nav-pill {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, var(--ac), color-mix(in srgb, var(--ac) 62%, var(--ink)));
+  clip-path: inset(50% 8px 50% 8px round 16px);
+  transition: clip-path 0.42s cubic-bezier(0.34, 1.12, 0.36, 1);
+}
+
+/* Kartu riwayat transaksi (Obolo): baris membulat, hover mengangkat */
+.kit {
+  padding: 10px 12px;
+  border-radius: var(--r);
+  border-bottom: 0;
+  transition: background-color 0.18s var(--ease), box-shadow 0.18s var(--ease), transform 0.18s var(--ease);
+}
+.kit:hover { background: var(--sf2); box-shadow: inset 0 0 0 1px var(--ln); transform: translateY(-1px); }
+.kit .g { transition: opacity 0.16s var(--ease), background-color 0.16s var(--ease), border-color 0.16s var(--ease); }
+@media (hover: hover) {
+  .kit .g { opacity: 0; }
+  .kit:hover .g, .kit:focus-within .g { opacity: 1; }
+}
+.daysep {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--sf);
+  margin: 10px 0 2px;
+  padding: 8px 12px 6px;
+}
+
+/* Sidebar rail: label tab diganti ikon bergambar, pil bergeser saat tab berubah */
+@media (min-width: 1024px) {
+  body { padding-left: 104px; }
+  header nav {
+    position: fixed;
+    inset: 20px auto auto 20px;
+    flex-direction: column;
+    gap: 6px;
+    width: 64px;
+    padding: 8px;
+    overflow: visible;
+    background: var(--sf);
+    border: 1px solid var(--ln);
+    border-radius: 26px;
+    box-shadow: var(--sh);
+    max-height: none;
+  }
+  header nav button {
+    width: 48px;
+    height: 48px;
+    min-height: 48px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    border-color: transparent;
+    background: transparent;
+    color: var(--mut);
+  }
+  header nav button:hover { background: transparent; border-color: transparent; color: var(--ink); }
+  header nav button[aria-selected="true"],
+  header nav button[aria-selected="true"]:hover { background: transparent; border-color: transparent; color: var(--ac-ink); }
+  header nav svg { display: block; width: 22px; height: 22px; }
+  header nav .nav-lbl {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  header nav .nav-pill { display: block; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }

@@ -15,15 +15,28 @@ function themeCur() {
   return THEME_NAME[t] ? t : 'auto';
 }
 
-/** Terapkan dan simpan tema, lalu perbarui tombol dan menu. */
+/** Terapkan dan simpan tema, lalu perbarui tombol dan menu. Bila didukung, ganti tema lewat
+ *  View Transition: lingkaran membesar dari tombol yang diketuk (cara Covry), 0,45 dtk. */
 function setTheme(n) {
-  var de = document.documentElement;
-  if (n === 'auto') de.removeAttribute('data-theme');
-  else de.setAttribute('data-theme', n);
-  try {
-    localStorage.setItem('rk-theme', n);
-  } catch (x) {}
-  themeShow();
+  var de = document.documentElement,
+    apply = function () {
+      if (n === 'auto') de.removeAttribute('data-theme');
+      else de.setAttribute('data-theme', n);
+      try {
+        localStorage.setItem('rk-theme', n);
+      } catch (x) {}
+      themeShow();
+    };
+  if (!document.startViewTransition || (typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches))
+    return apply();
+  var b = de.querySelector('#thm'),
+    r = b ? b.getBoundingClientRect() : null,
+    x = r && r.width ? r.left + r.width / 2 : innerWidth - 40,
+    y = r && r.height ? r.top + r.height / 2 : 36;
+  de.style.setProperty('--vtx', x + 'px');
+  de.style.setProperty('--vty', y + 'px');
+  de.style.setProperty('--vtr', Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) + 'px');
+  document.startViewTransition(apply);
 }
 
 /** Sinkronkan tombol tema dan pilihan tema di menu dengan tema aktif. */
