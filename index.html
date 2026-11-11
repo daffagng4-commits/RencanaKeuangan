@@ -968,9 +968,6 @@ button.alat-item { width: 100%; border: 0; background: transparent; text-align: 
   border-radius: var(--r);
   font-size: 12.5px;
   font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 9px;
   line-height: 1.45;
   border: 1px solid transparent;
 }
@@ -1557,7 +1554,10 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
   #botnav button:hover { background: transparent; }
   #botnav button.on { color: var(--ac); background: var(--acs); }
   #botsheet:not([hidden]) {
-    display: block;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-content: start;
+    gap: 2px;
     position: fixed;
     left: 10px;
     right: 10px;
@@ -1569,14 +1569,14 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
     border-radius: var(--r-lg);
     box-shadow: var(--sh);
   }
-  #botsheet .bs-h { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mut); padding: 8px 12px 4px; }
+  #botsheet .bs-h { grid-column: 1 / -1; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mut); padding: 8px 12px 4px; }
   #botsheet button, #botsheet a {
     display: flex;
     width: 100%;
     align-items: center;
     justify-content: space-between;
-    min-height: 44px;
-    padding: 10px 12px;
+    min-height: 40px;
+    padding: 8px 10px;
     border: 0;
     border-radius: var(--r-sm);
     background: transparent;
@@ -1588,6 +1588,7 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
   }
   #botsheet button:active, #botsheet a:active { background: var(--acs); }
   #botsheet button.on { background: var(--acs); color: var(--ac); }
+  #botsheet [data-go="backup"] { grid-column: 1 / -1; }
   nav[role="tablist"] { display: none !important; }
   #mdbar { display: none; }
   .modal { align-items: flex-end; padding: 0; }
@@ -1740,6 +1741,16 @@ nav .nav-pill {
 
 /* tombol chevron topbar menempel pojok kanan */
 .topbar-actions { margin-left: auto; }
+
+/* Filter arah tetap di tempat: grup kanan dipatok ke tepi kartu, jadi posisi tab tidak ikut panjang label/nominal. */
+.insight-cat > .dflex > .dflex { margin-left: auto; }
+.insight-cat .cat-dirs { margin: 0; }
+
+@media (max-width: 640px) {
+  .insight-cat > .dflex > .insight-h3 { flex: 1 0 100%; }
+  .runway-box { font-size: 12px; padding: 8px 10px; line-height: 1.5; }
+  .runway-box .rw2 { display: block; margin-top: 3px; }
+}
 </style>
 </head>
 <body>
@@ -4501,7 +4512,7 @@ function kasStatusHtml(P, bal) {
     return '<div class="runway-box runway-deficit">&#9888; Saldo sudah minus <b class="pv">' + rp(rw.deficit) + '</b>. Tambah saldo awal atau kurangi tagihan.</div>';
   }
   if (rw.status === 'warning') {
-    return '<div class="runway-box runway-warning">&#9203; Kas cukup sampai ' + fmtD(rw.date) + ' (' + rw.days + ' hari lagi). Setelah itu saldo akan minus <b class="pv">' + rp(rw.deficit) + '</b>.</div>';
+    return '<div class="runway-box runway-warning">&#9203; Kas cukup sampai <b class="pv">' + fmtD(rw.date) + '</b> (' + rw.days + ' hari lagi). <span class="rw2">Setelah itu saldo akan minus <b class="pv">' + rp(rw.deficit) + '</b>.</span></div>';
   }
   if (rw.status === 'ok') {
     return '<div class="runway-box runway-safe">&#10003; Tidak ada tagihan besar dalam 30 hari ke depan.</div>';

@@ -565,7 +565,7 @@ function kasStatusHtml(P, bal) {
     return '<div class="runway-box runway-deficit">&#9888; Saldo sudah minus <b class="pv">' + rp(rw.deficit) + '</b>. Tambah saldo awal atau kurangi tagihan.</div>';
   }
   if (rw.status === 'warning') {
-    return '<div class="runway-box runway-warning">&#9203; Kas cukup sampai ' + fmtD(rw.date) + ' (' + rw.days + ' hari lagi). Setelah itu saldo akan minus <b class="pv">' + rp(rw.deficit) + '</b>.</div>';
+    return '<div class="runway-box runway-warning">&#9203; Kas cukup sampai <b class="pv">' + fmtD(rw.date) + '</b> (' + rw.days + ' hari lagi). <span class="rw2">Setelah itu saldo akan minus <b class="pv">' + rp(rw.deficit) + '</b>.</span></div>';
   }
   if (rw.status === 'ok') {
     return '<div class="runway-box runway-safe">&#10003; Tidak ada tagihan besar dalam 30 hari ke depan.</div>';
