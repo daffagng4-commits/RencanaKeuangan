@@ -132,6 +132,8 @@ function setTripVisible(on) {
 
 /** Letakkan menu mengambang di dalam viewport: di bawah tombol bila muat, kalau tidak di atasnya; bisa digulir. */
 function placeMenu(btn, m) {
+  // keluar dari stacking context header supaya menu tidak tertutup kartu
+  if (m.parentNode !== document.body) document.body.appendChild(m);
   var pad = 8,
     r = btn.getBoundingClientRect(),
     w = m.offsetWidth,
