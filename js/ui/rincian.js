@@ -184,28 +184,33 @@ function insightCard(C) {
     CC = 238.761,
     li = (CC * ip) / 100,
     lo = CC - li;
-  var pin = Math.round(ip), pout = 100 - Math.round(ip),
-    cIn = 'Masuk: ' + rp(p.inc) + ' (' + pin + '%)',
-    cOut = 'Keluar: ' + rp(p.out) + ' (' + pout + '%)',
-    gap = 3,
-    arc = function (k, len, from, color, tip, pct) {
-      return (
-        '<circle class="pie-slice" data-k="' + k + '" data-pct="' + pct + '" cx="50" cy="50" r="38" transform="rotate(-90 50 50)" stroke="' + color +
-        '" stroke-dasharray="' + Math.max(0, len - gap).toFixed(1) + ' ' + CC + '" stroke-dashoffset="' + -(from + gap / 2).toFixed(1) +
-        '" style="--cc:' + CC.toFixed(1) + '" tabindex="0" data-tip="' + esc(tip) + '"/>'
-      );
-    },
-    def = p.inc && p.inc >= p.out ? '<b>' + pin + '%</b><small>masuk</small>' : '<b>' + pout + '%</b><small>keluar</small>';
+  var center = p.inc ? Math.round(ip) + '%<small>masuk</small>' : '100%<small>keluar</small>';
+  var tipIn = esc('Masuk: ' + rp(p.inc) + ' (' + (p.inc ? Math.round(ip) : 0) + '%)'),
+    tipOut = esc('Keluar: ' + rp(p.out) + ' (' + Math.round(p.inc ? 100 - ip : 100) + '%)'),
+    tipAll = esc('Masuk: ' + rp(p.inc) + ' · Keluar: ' + rp(p.out));
   var pie =
-    '<div class="insight-pie"><div class="pie" data-tip="' + esc('Masuk: ' + rp(p.inc) + ' · Keluar: ' + rp(p.out)) + '"><svg viewBox="0 0 100 100" role="img" aria-label="Pemasukan vs pengeluaran">' +
-    arc('in', li, 0, 'var(--in)', cIn, pin) +
-    arc('out', lo, li, 'var(--wr)', cOut, pout) +
-    '</svg><span class="pie-c">' + def + '</span></div>' +
-    '<div class="pie-lg"><button type="button" class="pie-k" data-k="in"><i style="background:var(--in)"></i><span>Masuk</span><b class="pv">' +
+    '<div class="insight-pie"><div class="pie" tabindex="0" data-tip="' +
+    tipAll +
+    '"><svg viewBox="0 0 100 100" role="img" aria-label="Pemasukan vs pengeluaran">' +
+    '<circle class="pie-slice" cx="50" cy="50" r="38" transform="rotate(-90 50 50)" stroke="var(--in)" stroke-dasharray="' +
+    li +
+    ' ' +
+    CC +
+    '" stroke-dashoffset="0" tabindex="0" data-tip="' + tipIn + '"/>' +
+    '<circle class="pie-slice" cx="50" cy="50" r="38" transform="rotate(-90 50 50)" stroke="var(--wr)" stroke-dasharray="' +
+    lo +
+    ' ' +
+    CC +
+    '" stroke-dashoffset="' +
+    -li +
+    '" stroke-width="16" tabindex="0" data-tip="' + tipOut + '"/></svg><span>' +
+    center +
+    '</span></div>' +
+    '<div class="pie-lg"><span><i style="background:var(--in)"></i>Masuk <b class="pv">' +
     rp(p.inc) +
-    '</b></button><button type="button" class="pie-k" data-k="out"><i style="background:var(--wr)"></i><span>Keluar</span><b class="pv">' +
+    '</b></span><span><i style="background:var(--wr)"></i>Keluar <b class="pv">' +
     rp(p.out) +
-    '</b></button></div></div>';
+    '</b></span></div></div>';
   var income = catDir === '+',
     src = income ? p.incByCat : p.byCat,
     sum = income ? p.inc : p.out,
@@ -246,7 +251,9 @@ function insightCard(C) {
   var cat =
     '<div class="insight-cat"><div class="dflex jcsb aic fwrap g8"><h3 class="insight-h3">' +
     (income ? 'Pemasukan' : 'Pengeluaran') +
-    ' per kategori</h3><div class="cat-tabs cat-dirs" role="tablist">' +
+    ' per kategori</h3><div class="dflex aic g8 fwrap"><span class="sub">Total <b class="pv">' +
+    rp(sum) +
+    '</b></span><div class="cat-tabs cat-dirs" role="tablist">' +
     '<button type="button" class="cat-tab' +
     (income ? '' : ' on') +
     '" data-catd="-" aria-pressed="' +
@@ -261,10 +268,7 @@ function insightCard(C) {
       ? '<div class="cat-list">' + bars + '</div>'
       : '<div class="empty mt8">Belum ada ' + (income ? 'pemasukan' : 'pengeluaran') + ' pada periode ini.</div>') +
     '<div class="sub mt12">' +
-    'Total <b class="pv">' +
-    rp(sum) +
-    '</b> · ' +
-    (income ? '' : p.out ? 'rata-rata <b class="pv">' + rp(p.avg) + '</b>/hari · ' : '') +
+    (income ? '' : p.out ? 'Rata-rata <b class="pv">' + rp(p.avg) + '</b> per hari · ' : '') +
     cnt +
     ' transaksi</div></div>';
   return (

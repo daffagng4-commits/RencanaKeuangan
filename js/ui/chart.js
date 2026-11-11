@@ -1,16 +1,3 @@
-/** Kurva Catmull-Rom jadi bezier kubik: garis mulus tanpa sudut, dibatasi area plot. */
-function smoothPath(pts, yLo, yHi) {
-  var d = 'M' + pts[0].x.toFixed(1) + ' ' + pts[0].y.toFixed(1),
-    cl = function (v) { return Math.min(yHi, Math.max(yLo, v)); };
-  for (var i = 0; i < pts.length - 1; i++) {
-    var p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
-    d += 'C' + (p1.x + (p2.x - p0.x) / 6).toFixed(1) + ' ' + cl(p1.y + (p2.y - p0.y) / 6).toFixed(1) + ',' +
-      (p2.x - (p3.x - p1.x) / 6).toFixed(1) + ' ' + cl(p2.y - (p3.y - p1.y) / 6).toFixed(1) + ',' +
-      p2.x.toFixed(1) + ' ' + p2.y.toFixed(1);
-  }
-  return d;
-}
-
 /**
  * Grafik garis saldo per tanggal: sumbu x memakai tanggal asli, crosshair + tooltip
  * saat kursor/fokus di area grafik.
@@ -43,9 +30,8 @@ function saldoLine(o) {
     Y = function (v) { return padT + ((hi - v) / (hi - lo)) * plotH; },
     ax = function (v) { return (v < 0 ? '−' : '') + shortP(Math.abs(v)); },
     zero = Y(0),
-    xy = P.map(function (p) { return { x: X(p.d), y: Y(p.v) }; }),
-    line = smoothPath(xy, padT, padT + plotH),
-    area = line + ' L' + xy[xy.length - 1].x.toFixed(1) + ' ' + (padT + plotH) + ' L' + padL + ' ' + (padT + plotH) + ' Z',
+    line = 'M' + P.map(function (p) { return X(p.d).toFixed(1) + ' ' + Y(p.v).toFixed(1); }).join(' L'),
+    area = line + ' L' + X(P[P.length - 1].d).toFixed(1) + ' ' + (padT + plotH) + ' L' + padL + ' ' + (padT + plotH) + ' Z',
     gid = 'lcg-' + (o.id || 'x');
   var groups = P.map(function (p, i) {
     var x = X(p.d),
@@ -71,7 +57,7 @@ function saldoLine(o) {
       var a = i === 0 ? 'start' : i === P.length - 1 ? 'end' : 'middle';
       return '<text x="' + X(P[i].d).toFixed(1) + '" y="' + (H - 9) + '" text-anchor="' + a + '" font-size="10" fill="var(--mut)">' + dlabel(P[i].d) + '</text>';
     }).join('');
-  var yv = [mx, mn],
+  var yv = [mx, 0, mn],
     seen = {},
     grid = yv.map(function (v) {
       var y = Y(v).toFixed(1);
@@ -80,27 +66,16 @@ function saldoLine(o) {
       return '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '" stroke="var(--ln)" stroke-width="1" opacity=".55"></line>' +
         '<text x="' + (padL - 6) + '" y="' + (+y + 3) + '" text-anchor="end" font-size="10" fill="var(--mut)">' + ax(v) + '</text>';
     }).join('');
-  var last = P[P.length - 1].v,
-    first = P[0].v,
-    chg = first ? ((last - first) / Math.abs(first)) * 100 : 0,
-    stat =
-      '<div class="lc-stat"><b class="pv">' + rp(last) + '</b><span class="chp chg' +
-      (chg < 0 ? ' neg' : '') +
-      '" data-tip="Perubahan saldo selama periode">' +
-      (chg < 0 ? '&#9660; ' : '&#9650; ') +
-      Math.abs(chg).toFixed(1).replace('.', ',') +
-      '%</span></div>';
   return (
     '<div class="card"><div class="dflex jcsb aic fwrap g8 mb6"><h2 style="margin:0">' + o.title + '</h2>' +
     (o.sub ? '<span class="sub fs12">' + o.sub + '</span>' : '') +
-    stat +
     (o.tabs ? '<div class="cat-tabs" role="tablist">' + o.tabs + '</div>' : '') +
     '</div>' +
     '<svg class="lc kch" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(o.aria || o.title) + '">' +
-    '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--ac)" stop-opacity=".22"></stop><stop offset=".65" stop-color="var(--ac)" stop-opacity=".06"></stop><stop offset="1" stop-color="var(--ac)" stop-opacity="0"></stop></linearGradient></defs>' +
+    '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--ac)" stop-opacity=".18"></stop><stop offset="1" stop-color="var(--ac)" stop-opacity="0"></stop></linearGradient></defs>' +
     grid +
     '<path d="' + area + '" fill="url(#' + gid + ')"></path>' +
-    '<path d="' + line + '" class="lc-line" pathLength="1" fill="none" stroke="var(--ac)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>' +
+    '<path d="' + line + '" fill="none" stroke="var(--ac)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></path>' +
     '<line x1="' + padL + '" y1="' + zero.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + zero.toFixed(1) + '" stroke="var(--ln)" stroke-width="1" stroke-dasharray="3 3" opacity=".8"></line>' +
     groups + labels + '</svg>' +
     (o.foot ? '<div class="sub lc-foot">' + o.foot + '</div>' : '') + '</div>'
@@ -174,41 +149,4 @@ function saldoLine(o) {
   });
   document.addEventListener('pointercancel', function () { clear(true); });
   window.addEventListener('scroll', function () { clear(false); }, true);
-})();
-
-/* Donut: sorot irisan + legenda, angka pusat ikut irisan yang disorot; klik legenda menyembunyikan irisan. */
-(function () {
-  function pieOf(el) {
-    var p = el.closest ? el.closest('.pie') : null;
-    if (p) return p;
-    var w = el.closest('.insight-pie');
-    return w ? w.querySelector('.pie') : null;
-  }
-  function show(pie, k) {
-    if (!pie) return;
-    var c0 = pie.querySelector('.pie-c');
-    if (c0 && pie._def == null) pie._def = c0.innerHTML;
-    var wrap = pie.closest('.insight-pie'),
-      sl = k ? pie.querySelector('.pie-slice[data-k="' + k + '"]') : null;
-    pie.querySelectorAll('.pie-slice').forEach(function (s) { s.classList.toggle('on', s === sl); });
-    if (wrap) wrap.querySelectorAll('.pie-k').forEach(function (b) { b.classList.toggle('on', !!k && b.dataset.k === k); });
-    if (c0) c0.innerHTML = sl ? '<b>' + sl.dataset.pct + '%</b><small>' + (k === 'in' ? 'masuk' : 'keluar') + '</small>' : pie._def;
-  }
-  function pick(e) {
-    var t = e.target.closest ? e.target.closest('.pie-slice, .pie-k') : null;
-    return t ? { pie: pieOf(t), k: t.dataset.k } : null;
-  }
-  document.addEventListener('pointerover', function (e) { var x = pick(e); if (x) show(x.pie, x.k); });
-  document.addEventListener('pointerout', function (e) { var x = pick(e); if (x) show(x.pie, null); });
-  document.addEventListener('focusin', function (e) { var x = pick(e); if (x) show(x.pie, x.k); });
-  document.addEventListener('focusout', function (e) {
-    if (e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.insight-pie')) return;
-    document.querySelectorAll('.pie').forEach(function (p) { show(p, null); });
-  });
-  document.addEventListener('click', function (e) {
-    var b = e.target.closest ? e.target.closest('.pie-k') : null;
-    if (!b) return;
-    var pie = pieOf(b), off = b.classList.toggle('off');
-    if (pie) pie.querySelectorAll('.pie-slice[data-k="' + b.dataset.k + '"]').forEach(function (s) { s.classList.toggle('off', off); });
-  });
 })();
