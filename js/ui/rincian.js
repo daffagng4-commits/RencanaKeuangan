@@ -299,13 +299,13 @@ function heroHtml(c, R, lead, txCount, C) {
       (cls || '') +
       '">' +
       value +
+      (sub ? '<i>' + sub + '</i>' : '') +
       '</b>' +
-      (sub ? '<span' + (cls ? ' class="' + cls + '"' : '') + '>' + sub + '</span>' : '') +
       '</div>'
     );
   };
   var jatahHtml =
-    '<div class="jatah"><div class="sub fw6">Jatah jajan per bulan</div><div class="big jv' +
+    '<div class="jatah"><span>Jatah jajan per bulan</span><div class="big jv' +
     (c.end < 0 ? ' neg' : '') +
     '">' +
     (jatah == null ? '—' : rp(jatah)) +
@@ -329,7 +329,7 @@ function heroHtml(c, R, lead, txCount, C) {
     stat('Bulan terberat', rp(C.byMonth[hv.m]), MON[hv.m]) +
     stat('Rata-rata per bulan', rp(C.out / n)) +
     stat('Bulan teringan', rp(C.byMonth[mn.m]), MON[mn.m]) +
-    (txCount != null ? stat('Transaksi kas', String(txCount), 'catatan kas', '', false) : '') +
+    (txCount != null ? stat('Transaksi kas', String(txCount), '', '', false) : '') +
     jatahHtml +
     '</div></div>'
   );
