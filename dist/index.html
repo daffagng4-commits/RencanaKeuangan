@@ -1762,6 +1762,7 @@ nav .nav-pill {
   
 </div>
 </div>
+</div>
 <div class="modal" id="yr-panel" role="dialog" aria-modal="true" aria-label="Tahun, bulan saldo, dan saldo awal" hidden>
   <div class="card">
     <h2>Tahun, bulan saldo, saldo awal</h2>
@@ -4571,7 +4572,9 @@ function emptyItemsHtml() {
 
 /** Kartu "Jadwal tagihan": tagihan belum lunas 14 hari ke depan, dengan tautan implisit ke tab Jadwal. */
 function billsCard() {
-  var soon = reminders(400).soon.slice(0, 6),
+  var soon = reminders(400).soon.filter(function (r) {
+      return r.year === S.year;
+    }).slice(0, 6),
     sum = soon.reduce(function (a, r) {
       return a + r.price;
     }, 0),
@@ -7600,41 +7603,9 @@ function sumPrice(rows) {
 
 /** Banner ringkas (disembunyikan bila tidak ada yang perlu perhatian). */
 function renderReminders() {
-  var r = reminders(remHz),
-    el = $('rem'),
-    nLate = r.late.length,
-    nSoon = r.soon.length;
-  if (!nLate && !nSoon && !r.older) {
-    el.hidden = true;
-    return;
-  }
-  var parts = [];
-  if (nLate)
-    parts.push(
-      '<span class="part"><span class="dot late"></span><b>' +
-        nLate +
-        '</b>&nbsp;terlambat &middot; ' +
-        rp(sumPrice(r.late)) +
-        '</span>',
-    );
-  if (nSoon)
-    parts.push(
-      '<span class="part"><span class="dot soon"></span><b>' +
-        nSoon +
-        '</b>&nbsp;dalam ' +
-        remHz +
-        ' hari &middot; ' +
-        rp(sumPrice(r.soon)) +
-        '</span>',
-    );
-  if (r.older)
-    parts.push(
-      '<span class="part"><span class="dot old"></span><b>' +
-        r.older +
-        '</b>&nbsp;tagihan lama belum ditandai</span>',
-    );
-  el.hidden = false;
-  el.innerHTML = parts.join('') + '<span class="go">Lihat &rsaquo;</span>';
+  // banner ringkasan dimatikan: status tagihan sudah ada di kartu Jadwal tagihan
+  var el = $("rem");
+  if (el) el.hidden = true;
 }
 
 /** Satu baris tagihan di jendela pengingat. */
@@ -9048,7 +9019,7 @@ function tripRing(P) {
     return '<div><span>' + l + '</span><b>' + v + '</b>' + (n ? '<span>' + n + '</span>' : '') + '</div>';
   };
   var left = P.budget - pl.t,
-    cells = (P.budget ? st('Anggaran', rp(P.budget)) + st(left >= 0 ? 'Sisa anggaran' : 'Melebihi anggaran', rp(Math.abs(left))) : '') + st('Sudah dibayar', rp(pl.paid), 'pemesanan') + st('Belum dibayar', rp(pl.b - pl.paid), 'pemesanan');
+    cells = (P.budget ? st('Anggaran', rp(P.budget)) + st(left >= 0 ? 'Sisa anggaran' : 'Melebihi anggaran', rp(Math.abs(left))) : '') + st('Sudah dibayar', rp(pl.paid)) + st('Belum dibayar', rp(pl.b - pl.paid));
   if (no) cells += st('Hari ke', no + ' dari ' + N);
   else if (N && td < P.start) cells += st('Mulai dalam', dayNo(P.start, td) + ' hari');
   if (N) cells += st('Rencana per hari', rp(pl.t / N));
@@ -9072,7 +9043,7 @@ function tripRing(P) {
         }).join('') + '</div>'
       : '') +
     (dk.length ? '<div class="card"><h2>Estimasi per hari</h2>' + dk.map(function (d) { return catRow(esc(dayLabel(P, d)), byDay[d], dmax, '', rp(byDay[d])); }).join('') + '</div>' : '') +
-    (cl.length ? '<div class="card"><h2>Rencana biaya per kategori</h2>' + cl.map(function (k, i) { return catRow(esc(k), bcat[k], pl.t, CAT_COLORS[i % CAT_COLORS.length], rp(bcat[k]) + ' <span class="sub">' + Math.round((bcat[k] / pl.t) * 100) + '%</span>'); }).join('') + '</div>' : '')
+    (cl.length ? '<div class="card"><h2>Rencana biaya per kategori</h2>' + cl.map(function (k, i) { return catRow(esc(k), bcat[k], pl.t, catColor(k), rp(bcat[k]) + ' <span class="sub">' + Math.round((bcat[k] / pl.t) * 100) + '%</span>'); }).join('') + '</div>' : '')
   );
 }
 
@@ -11095,7 +11066,7 @@ function bindNav() {
     if (g) navGo(g.dataset.goto);
     var ts = e.target.closest('[data-theme-set]');
     if (ts) setTheme(themeCur() === ts.dataset.themeSet ? 'auto' : ts.dataset.themeSet);
-    if (!e.target.closest('#alat')) alat(false);
+    if (!e.target.closest('#alat, #alat-menu')) alat(false);
     if (!sh.hidden && !e.target.closest('#botsheet') && !e.target.closest('#botnav')) sheet(false);
   });
   document.addEventListener('keydown', function (e) {

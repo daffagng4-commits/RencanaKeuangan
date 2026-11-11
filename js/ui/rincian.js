@@ -636,7 +636,9 @@ function emptyItemsHtml() {
 
 /** Kartu "Jadwal tagihan": tagihan belum lunas 14 hari ke depan, dengan tautan implisit ke tab Jadwal. */
 function billsCard() {
-  var soon = reminders(400).soon.slice(0, 6),
+  var soon = reminders(400).soon.filter(function (r) {
+      return r.year === S.year;
+    }).slice(0, 6),
     sum = soon.reduce(function (a, r) {
       return a + r.price;
     }, 0),

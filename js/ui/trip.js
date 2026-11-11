@@ -176,7 +176,7 @@ function tripRing(P) {
     return '<div><span>' + l + '</span><b>' + v + '</b>' + (n ? '<span>' + n + '</span>' : '') + '</div>';
   };
   var left = P.budget - pl.t,
-    cells = (P.budget ? st('Anggaran', rp(P.budget)) + st(left >= 0 ? 'Sisa anggaran' : 'Melebihi anggaran', rp(Math.abs(left))) : '') + st('Sudah dibayar', rp(pl.paid), 'pemesanan') + st('Belum dibayar', rp(pl.b - pl.paid), 'pemesanan');
+    cells = (P.budget ? st('Anggaran', rp(P.budget)) + st(left >= 0 ? 'Sisa anggaran' : 'Melebihi anggaran', rp(Math.abs(left))) : '') + st('Sudah dibayar', rp(pl.paid)) + st('Belum dibayar', rp(pl.b - pl.paid));
   if (no) cells += st('Hari ke', no + ' dari ' + N);
   else if (N && td < P.start) cells += st('Mulai dalam', dayNo(P.start, td) + ' hari');
   if (N) cells += st('Rencana per hari', rp(pl.t / N));
@@ -200,7 +200,7 @@ function tripRing(P) {
         }).join('') + '</div>'
       : '') +
     (dk.length ? '<div class="card"><h2>Estimasi per hari</h2>' + dk.map(function (d) { return catRow(esc(dayLabel(P, d)), byDay[d], dmax, '', rp(byDay[d])); }).join('') + '</div>' : '') +
-    (cl.length ? '<div class="card"><h2>Rencana biaya per kategori</h2>' + cl.map(function (k, i) { return catRow(esc(k), bcat[k], pl.t, CAT_COLORS[i % CAT_COLORS.length], rp(bcat[k]) + ' <span class="sub">' + Math.round((bcat[k] / pl.t) * 100) + '%</span>'); }).join('') + '</div>' : '')
+    (cl.length ? '<div class="card"><h2>Rencana biaya per kategori</h2>' + cl.map(function (k, i) { return catRow(esc(k), bcat[k], pl.t, catColor(k), rp(bcat[k]) + ' <span class="sub">' + Math.round((bcat[k] / pl.t) * 100) + '%</span>'); }).join('') + '</div>' : '')
   );
 }
 

@@ -34,41 +34,9 @@ function sumPrice(rows) {
 
 /** Banner ringkas (disembunyikan bila tidak ada yang perlu perhatian). */
 function renderReminders() {
-  var r = reminders(remHz),
-    el = $('rem'),
-    nLate = r.late.length,
-    nSoon = r.soon.length;
-  if (!nLate && !nSoon && !r.older) {
-    el.hidden = true;
-    return;
-  }
-  var parts = [];
-  if (nLate)
-    parts.push(
-      '<span class="part"><span class="dot late"></span><b>' +
-        nLate +
-        '</b>&nbsp;terlambat &middot; ' +
-        rp(sumPrice(r.late)) +
-        '</span>',
-    );
-  if (nSoon)
-    parts.push(
-      '<span class="part"><span class="dot soon"></span><b>' +
-        nSoon +
-        '</b>&nbsp;dalam ' +
-        remHz +
-        ' hari &middot; ' +
-        rp(sumPrice(r.soon)) +
-        '</span>',
-    );
-  if (r.older)
-    parts.push(
-      '<span class="part"><span class="dot old"></span><b>' +
-        r.older +
-        '</b>&nbsp;tagihan lama belum ditandai</span>',
-    );
-  el.hidden = false;
-  el.innerHTML = parts.join('') + '<span class="go">Lihat &rsaquo;</span>';
+  // banner ringkasan dimatikan: status tagihan sudah ada di kartu Jadwal tagihan
+  var el = $("rem");
+  if (el) el.hidden = true;
 }
 
 /** Satu baris tagihan di jendela pengingat. */

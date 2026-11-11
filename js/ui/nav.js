@@ -266,7 +266,7 @@ function bindNav() {
     if (g) navGo(g.dataset.goto);
     var ts = e.target.closest('[data-theme-set]');
     if (ts) setTheme(themeCur() === ts.dataset.themeSet ? 'auto' : ts.dataset.themeSet);
-    if (!e.target.closest('#alat')) alat(false);
+    if (!e.target.closest('#alat, #alat-menu')) alat(false);
     if (!sh.hidden && !e.target.closest('#botsheet') && !e.target.closest('#botnav')) sheet(false);
   });
   document.addEventListener('keydown', function (e) {
