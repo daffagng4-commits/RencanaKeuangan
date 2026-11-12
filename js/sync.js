@@ -337,11 +337,19 @@ function bindSync() {
       });
     }
   };
+  var lastDay = todayISO();
+  setInterval(function () {
+    if (todayISO() !== lastDay) {
+      lastDay = todayISO();
+      refreshToday();
+    }
+  }, 60000);
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) {
       flushPush();
       return;
     }
+    refreshToday();
     if (sbUser && !pushT && !syncBlocked) pull();
   });
   window.addEventListener('pagehide', flushPush);

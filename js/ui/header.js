@@ -12,8 +12,11 @@ function bindHeader() {
     $('sm').appendChild(op);
   });
   $('sm').value = +S.startMonth || 0;
+  smAutoMark();
   $('sm').onchange = function () {
     S.startMonth = +this.value;
+    smManual(true);
+    smAutoMark();
     openRows = {};
     save();
     renderAll();

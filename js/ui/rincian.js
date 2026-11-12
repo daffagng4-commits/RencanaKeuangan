@@ -23,6 +23,27 @@ function daysBetweenISO(a, b) {
   return Math.round((Date.parse(a + 'T00:00:00Z') - Date.parse(b + 'T00:00:00Z')) / 864e5);
 }
 
+/**
+ * Jangkar periode Minggu/Bulan: satu aturan untuk semua kartu.
+ * Tahun berjalan = hari ini; tahun depan (simulasi) = hari-bulan yang sama di tahun itu;
+ * tahun lalu = tanggal data terakhir `last` (atau 31 Des).
+ */
+function periodAnchor(y, last) {
+  var t = todayISO(),
+    ty = +t.slice(0, 4);
+  y = +y;
+  if (y === ty) return t;
+  if (y < ty) return last || y + '-12-31';
+  var m = +t.slice(5, 7),
+    dim = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  return y + '-' + pad2(m) + '-' + pad2(Math.min(+t.slice(8, 10), dim));
+}
+
+/** Label profil tahun depan (simulasi). */
+function simTag(y) {
+  return +y > +todayISO().slice(0, 4) ? ' · rencana' : '';
+}
+
 /** Teks hitung mundur / keterlambatan tagihan. */
 function fmtCountdown(iso, today, isLate) {
   if (isLate) {
@@ -205,13 +226,7 @@ function cashPeriod(C, p) {
         return e.d;
       })
       .sort(),
-    anchor = (function () {
-      var ty = +today.slice(0, 4);
-      if (y === ty) return today;
-      // Tahun mendatang: pakai bulan-hari yang sama supaya periode 7 hari/bulan tetap bermakna.
-      if (y > ty) return y + today.slice(4);
-      return dates.length ? dates[dates.length - 1] : y + '-12-31';
-    })(),
+    anchor = periodAnchor(y, dates.length ? dates[dates.length - 1] : ''),
     from,
     to;
   if (p === 'w') {
@@ -349,18 +364,18 @@ function groupExpenseItems(entries) {
 function topExpensesCard(C) {
   var entries = C.entries.filter(function (e) { return e.t === '-' && !/Penyesuaian/i.test(e.cat); }),
     months = Array.from(new Set(entries.map(function (e) { return +e.d.slice(5, 7); }))).sort(function (a, b) { return a - b; });
+  var anchor = periodAnchor(S.year, entries.reduce(function (a, e) { return e.d > a ? e.d : a; }, ''));
   if (expenseYear !== String(S.year)) { expenseLastMonth = ''; expenseYear = String(S.year); }
   if (months.indexOf(+expenseLastMonth) < 0) {
-    var current = +todayISO().slice(0, 4) === +S.year ? +todayISO().slice(5, 7) : 0;
+    var current = +anchor.slice(5, 7);
     expenseLastMonth = String(months.indexOf(current) >= 0 ? current : months[months.length - 1] || '');
   }
   var mode = ['w', 'm', 'y'].indexOf(expenseMonth) >= 0 ? expenseMonth : 'y';
   if (mode === 'm' && !expenseLastMonth) mode = 'y';
   expenseMonth = mode;
-  var today = todayISO(),
-    weekFrom = addDaysISO(today, -6),
+  var weekFrom = addDaysISO(anchor, -6),
     filtered = entries.filter(function (e) {
-      if (mode === 'w') return e.d >= weekFrom && e.d <= today;
+      if (mode === 'w') return e.d >= weekFrom && e.d <= anchor;
       if (mode === 'm') return +e.d.slice(5, 7) === +expenseLastMonth;
       return true;
     }),
@@ -379,8 +394,8 @@ function topExpensesCard(C) {
   rest.detail = others.slice(0, EXPENSE_TOP_N).map(function (r) { return r.name + ' ' + rp(r.v); }).join(' · ') +
     (others.length > EXPENSE_TOP_N ? ' · +' + (others.length - EXPENSE_TOP_N) + ' lainnya' : '');
   var topSum = total - rest.v, max = rows.length ? rows[0].v : 1,
-    period = mode === 'w' ? fmtD(weekFrom) + ' – ' + fmtD(today) :
-      (selected.length ? MON[selected[0] - 1] + (selected.length > 1 ? ' - ' + MON[selected[selected.length - 1] - 1] : '') + ' ' : '') + S.year,
+    period = (mode === 'w' ? fmtD(weekFrom) + ' – ' + fmtD(anchor) :
+      (selected.length ? MON[selected[0] - 1] + (selected.length > 1 ? ' - ' + MON[selected[selected.length - 1] - 1] : '') + ' ' : '') + S.year) + simTag(S.year),
     tabs = [['w', 'Minggu'], ['m', 'Bulan'], ['y', 'Tahun']].map(function (m) {
       var on = mode === m[0];
       return '<button type="button" class="cat-tab' + (on ? ' on' : '') + '" data-expm="' + m[0] + '" aria-label="' + m[1] + ' pengeluaran" aria-pressed="' + on + '"' + (!months.length && m[0] === 'm' ? ' disabled' : '') + '>' + m[1] + '</button>';
@@ -412,7 +427,7 @@ function insightCard(C) {
     tabs = cashPeriodTabs();
   var head =
     '<div class="insight-head"><div class="insight-title"><div class="dflex aic fwrap g8"><h2 class="m0">Pengeluaran &amp; pemasukan per kategori</h2><span class="sub fs12">Jadwal + kas' +
-    (+S.year === +todayISO().slice(0, 4) ? '' : ' · rencana') +
+    simTag(S.year) +
     '</span></div>' +
     '<div class="sub">' +
     fmtD(p.from) +
@@ -569,7 +584,7 @@ function flowChart(R) {
   var start = ev[0].d,
     end = ev[ev.length - 1].d;
   // Rentang mengikuti tab periode (Minggu / Bulan / Tahun); jangkar = hari ini atau data terakhir.
-  var anchor = +today.slice(0, 4) === y ? today : +today.slice(0, 4) < y ? end : y + today.slice(4),
+  var anchor = periodAnchor(y, end),
     from,
     to;
   if (flowPeriod === 'w') {
@@ -619,7 +634,7 @@ function flowChart(R) {
   return saldoLine({
     id: 'rincian',
     title: 'Arus saldo ' + S.year,
-    sub: 'Perubahan saldo · ' + dd(a0) + ' – ' + dd(a1),
+    sub: 'Perubahan saldo · ' + dd(a0) + ' – ' + dd(a1) + simTag(y),
     tabs: periodTabs('flowp', flowPeriod),
     aria: 'Grafik arus saldo ' + S.year,
     pts: pts,

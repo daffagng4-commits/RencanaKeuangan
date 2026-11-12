@@ -458,6 +458,8 @@ select {
   background-repeat: no-repeat;
 }
 input[type="checkbox"], input[type="radio"] { width: 16px; height: 16px; min-height: 0; accent-color: var(--ac); }
+#sm[data-auto="auto"] { border-style: dashed; }
+#sm[data-auto="manual"] { border-color: var(--ac); }
 input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; border-radius: 4px; }
 .row2 { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

@@ -3,6 +3,8 @@
  */
 function main() {
   loadState();
+  // Bulan mulai tahun berjalan mengikuti kalender, kecuali dipilih manual (hanya memori; ikut tersimpan saat save berikutnya).
+  autoStartMonth();
   bindDom();
   bindRincian();
   bindJadwal();
