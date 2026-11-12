@@ -13,6 +13,214 @@ var flowPeriod = 'y';
 var catDir = '-';
 var txDir = '-';
 
+/** Filter periode global untuk dashboard. */
+var dashPeriod = null;
+var dashMonth = '';
+
+/** Memotong keterangan dalam tanda kurung untuk tampilan chip. */
+function chipName(name) {
+  return (name || '').replace(/\s*\([^)]*\)/g, '').trim() || name;
+}
+
+/** Selisih hari antara dua ISO (a - b). */
+function daysBetweenISO(a, b) {
+  return Math.round((Date.parse(a + 'T00:00:00Z') - Date.parse(b + 'T00:00:00Z')) / 864e5);
+}
+
+/** Teks hitung mundur / keterlambatan tagihan. */
+function fmtCountdown(iso, today, isLate) {
+  if (isLate) {
+    var late = daysBetweenISO(today, iso);
+    return 'Terlambat ' + late + ' hari';
+  }
+  var d = daysBetweenISO(iso, today);
+  if (d === 0) return 'Hari ini';
+  if (d === 1) return 'Besok';
+  if (d > 30) return '';
+  return d + ' hari lagi';
+}
+
+/** Aliran kas harian per tanggal (mencakup semua tahun). Nilai identik dengan mesin kasRunway. */
+function kasFlow(P) {
+  if (!P) P = kasLinked() || (typeof kas === 'function' ? kas() : null);
+  if (!P) return null;
+  var today = todayISO(),
+    base = kasBase(P),
+    ev = [];
+  kasRows(P).forEach(function (x) {
+    ev.push({ d: x.d, delta: x.t === '+' ? x.amt : -x.amt, key: x.id, name: x.note || x.cat || 'Transaksi', t: x.t });
+  });
+  var allYears = (typeof ALL !== 'undefined' && ALL.data) ? Object.keys(ALL.data) : [];
+  if (!allYears.length && typeof S !== 'undefined' && S.year) allYears = [String(S.year)];
+  allYears.forEach(function (yk) {
+    var Y = ALL.data[yk], y = +yk;
+    if (!Y || !Y.items) return;
+    Y.items.forEach(function (it) {
+      occ(it, y).forEach(function (t) {
+        var d = isoD(t),
+          k = it.id + '|' + d;
+        if (Y.paid && (Y.paid[k] || Y.skip[k])) return;
+        ev.push({ d: d, delta: -priceAt(it, t), key: k, name: it.name, t: '-' });
+      });
+    });
+  });
+  if (!ev.length) return { today: today, base: base, pre: 0, byDate: {}, dates: [], allDates: [] };
+  var byDate = {}, seen = {};
+  ev.forEach(function (e) {
+    if (!seen[e.d]) {
+      seen[e.d] = 1;
+      byDate[e.d] = { delta: 0, items: [] };
+    }
+    byDate[e.d].delta += e.delta;
+    byDate[e.d].items.push({ key: e.key, name: e.name, delta: e.delta, t: e.t });
+  });
+  var pre = 0;
+  Object.keys(byDate).forEach(function (d) {
+    if (d <= today) pre += byDate[d].delta;
+  });
+  var dates = Object.keys(byDate).filter(function (d) { return d > today; }).sort();
+  return { today: today, base: base, pre: pre, byDate: byDate, dates: dates, allDates: Object.keys(byDate).sort() };
+}
+
+/** Proyeksi runway kas (wrapper di atas kasFlow; hasil tetap sama). */
+function kasRunway(P, bal) {
+  var F = kasFlow(P);
+  if (!F) return null;
+  var curr = F.base + F.pre;
+  if (curr <= 0) return { days: 0, date: F.today, deficit: Math.abs(curr), status: 'deficit' };
+  if (!F.dates.length) return { days: 999, date: null, deficit: 0, status: 'safe' };
+  for (var i = 0; i < F.dates.length; i++) {
+    var d = F.dates[i];
+    curr += F.byDate[d].delta;
+    if (curr < 0) {
+      var dDiff = Math.max(0, Math.round((Date.parse(d + 'T00:00:00Z') - Date.parse(F.today + 'T00:00:00Z')) / 864e5));
+      return { days: dDiff, date: d, deficit: Math.abs(curr), status: dDiff <= 90 ? 'warning' : 'ok' };
+    }
+  }
+  return { days: 999, date: null, deficit: 0, status: 'safe' };
+}
+
+/** Tanggal dan tagihan pertama yang membuat saldo proyeksi negatif. */
+function kasFirstNegative(P) {
+  var F = kasFlow(P);
+  if (!F) return null;
+  var curr = F.base + F.pre;
+  if (curr < 0) return { date: F.today, days: 0, items: [], balanceAfter: curr };
+  for (var i = 0; i < F.dates.length; i++) {
+    var d = F.dates[i];
+    curr += F.byDate[d].delta;
+    if (curr < 0) {
+      var days = Math.max(0, Math.round((Date.parse(d + 'T00:00:00Z') - Date.parse(F.today + 'T00:00:00Z')) / 864e5));
+      return { date: d, days: days, items: F.byDate[d].items.filter(function (x) { return x.delta < 0; }), balanceAfter: curr };
+    }
+  }
+  return null;
+}
+
+/** Pilihan bulan yang punya pengeluaran riil untuk filter global. */
+function dashExpenseMonths(C) {
+  return Array.from(
+    new Set(
+      C.entries
+        .filter(function (e) { return e.t === '-' && !/Penyesuaian/i.test(e.cat); })
+        .map(function (e) { return +e.d.slice(5, 7); })
+    )
+  ).sort(function (a, b) { return a - b; });
+}
+
+/** Peta filter global ke tiap kartu periode. */
+function dashMap(C) {
+  if (!dashPeriod) return null;
+  var months = dashExpenseMonths(C);
+  return {
+    flow: dashPeriod.p,
+    bs: dashPeriod.p === 'y' ? 'y' : 'm',
+    cat: dashPeriod.p,
+    exp: dashPeriod.p === 'y' ? 'all' : String(
+      months.indexOf(dashPeriod.m || +todayISO().slice(5, 7)) >= 0
+        ? (dashPeriod.m || +todayISO().slice(5, 7))
+        : (months[months.length - 1] || months[0] || +todayISO().slice(5, 7))
+    )
+  };
+}
+
+/** Kontrol filter periode global. */
+function globalPeriodHtml(C) {
+  var active = dashPeriod ? dashPeriod.p : 'y',
+    map = dashMap(C),
+    note = '';
+  if (map) {
+    var n = (flowPeriod !== map.flow ? 1 : 0) + (bsPeriod !== map.bs ? 1 : 0) + (catPeriod !== map.cat ? 1 : 0) + (expenseMonth !== map.exp ? 1 : 0);
+    note = '<span class="dash-note' + (n ? ' warn' : '') + '">' + (n ? n + ' kartu beda' : 'Semua kartu sama') + '</span>';
+  } else {
+    note = '<span class="dash-note sub">Filter global</span>';
+  }
+  var months = dashExpenseMonths(C);
+  var picker = '';
+  if (active === 'm') {
+    picker =
+      '<select data-dashmonth aria-label="Bulan">' +
+      months
+        .map(function (m) {
+          return '<option value="' + m + '"' + (dashPeriod && dashPeriod.m === m ? ' selected' : '') + '>' + MON[m - 1] + '</option>';
+        })
+        .join('') +
+      '</select>';
+  }
+  return (
+    '<div class="dash-controls"><div class="dash-label">Periode</div><div class="cat-tabs" role="tablist">' +
+    [{ k: 'w', l: '7 hari' }, { k: 'm', l: 'Bulan' }, { k: 'y', l: 'Tahun' }]
+      .map(function (o) {
+        return '<button type="button" data-dashp="' + o.k + '"' + (active === o.k ? ' class="active"' : '') + '>' + o.l + '</button>';
+      })
+      .join('') +
+    '</div>' +
+    picker +
+    note +
+    '</div>'
+  );
+}
+
+/** Terapkan filter global ke semua kartu periode. */
+function setDashPeriod(p, C) {
+  var months = dashExpenseMonths(C);
+  var m = dashPeriod && dashPeriod.m ? dashPeriod.m : +todayISO().slice(5, 7);
+  if (months.indexOf(m) < 0) m = months[months.length - 1] || months[0] || +todayISO().slice(5, 7);
+  dashPeriod = { p: p, m: p === 'm' ? m : null };
+  flowPeriod = p;
+  bsPeriod = p === 'y' ? 'y' : 'm';
+  catPeriod = p;
+  expenseMonth = dashMap(C).exp;
+  expenseLastMonth = expenseMonth;
+  renderRincian();
+}
+
+/** Tandai kartu yang beda dari filter global. */
+function dashBadges(C) {
+  var map = dashMap(C);
+  if (!map) return;
+  var root = $('v-rincian');
+  var cards = Array.from(root.querySelectorAll('.card'));
+  function mark(titleSub, key, current, expected) {
+    if (current === expected) return;
+    var card = cards.find(function (c) {
+      var h2 = c.querySelector('h2');
+      return h2 && h2.textContent.indexOf(titleSub) >= 0;
+    });
+    if (!card || card.querySelector('.dash-badge')) return;
+    var hdr = card.querySelector('.dflex.jcsb') || card.querySelector('.lc-head') || card.firstElementChild;
+    if (!hdr) return;
+    var badge = document.createElement('span');
+    badge.className = 'dash-badge';
+    badge.innerHTML = '<span>Beda</span><button type="button" data-resync="' + key + '">Samakan</button>';
+    hdr.appendChild(badge);
+  }
+  mark('Arus saldo', 'flow', flowPeriod, map.flow);
+  mark('Pemasukan vs pengeluaran', 'bs', bsPeriod, map.bs);
+  mark('Pengeluaran per kategori', 'cat', catPeriod, map.cat);
+  mark('Item pengeluaran terbesar', 'exp', expenseMonth, map.exp);
+}
+
 /** Legenda chip di kolom "Item berkala" (dipakai juga oleh panduan yang bisa disembunyikan). */
 var RINCIAN_LEGEND =
   '<div class="lgd">' +
@@ -216,9 +424,9 @@ function monthFlowCard(C) {
     rpS(Math.abs(d)) +
     '</span> selama periode ini <svg viewBox="0 0 24 24" aria-hidden="true"><path d="' +
     trend +
-    '"/></svg></b><div class="sub">Total masuk <span class="pv">' +
+    '"/></svg></b><div class="sub">Total masuk <span class="pv kin">' +
     rp(inc) +
-    '</span> · total keluar <span class="pv">' +
+    '</span> · total keluar <span class="pv neg">' +
     rp(out) +
     '</span></div></div></div>'
   );
@@ -375,7 +583,7 @@ function insightCard(C) {
 }
 
 /** Kartu saldo + statistik. */
-function heroHtml(c, R, lead, txCount, C) {
+function heroHtml(c, R, lead, txCount, C, rw) {
   C = C || yearCash();
   var n = R.length || 1,
     jatah = c.end > 0 ? c.end / n : null,
@@ -385,10 +593,6 @@ function heroHtml(c, R, lead, txCount, C) {
     if (C.byMonth[r.m] > C.byMonth[hv.m]) hv = r;
     if (C.byMonth[r.m] < C.byMonth[mn.m]) mn = r;
   });
-  var note =
-    c.end < 0
-      ? '<div class="err">Saldo habis sebelum akhir tahun. Kurangi item atau tambah saldo awal.</div>'
-      : '';
   var stat = function (label, value, sub, cls, blur) {
     return (
       '<div><span>' +
@@ -403,14 +607,19 @@ function heroHtml(c, R, lead, txCount, C) {
       '</div>'
     );
   };
-  var jatahHtml =
-    '<div class="jatah"><div class="sub fw6">Jatah jajan per bulan</div><div class="big jv' +
-    (c.end < 0 ? ' neg' : '') +
-    '">' +
-    (jatah == null ? '—' : rp(jatah)) +
-    '</div>' +
-    note +
-    '</div>';
+  var jatahHtml;
+  if (c.end > 0) {
+    jatahHtml =
+      '<div class="jatah"><div class="sub fw6">Jatah jajan per bulan</div><div class="big jv pv">' +
+      rp(jatah) +
+      '</div><div class="sub">Sisa <span class="pv">Rp ' + rpS(c.end) + '</span> sampai Des ' + S.year + '</div></div>';
+  } else {
+    var shortfall = Math.abs(c.end),
+      until = rw && rw.date ? fmtD(rw.date) : 'akhir tahun',
+      days = rw && rw.days != null ? ' (' + rw.days + ' hari lagi)' : '';
+    jatahHtml =
+      '<div class="jatah"><div class="sub fw6">Jatah jajan per bulan</div><div class="big jv neg">Tidak tersedia</div><div class="sub">Perlu kurangi <span class="pv">Rp ' + rpS(shortfall) + '</span> sebelum ' + until + days + '</div></div>';
+  }
   var plain =
     '<div class="card m0"><div class="sub">Sisa saldo akhir Des ' +
     S.year +
@@ -418,9 +627,7 @@ function heroHtml(c, R, lead, txCount, C) {
     (c.end < 0 ? ' neg' : '') +
     '">' +
     rp(c.end) +
-    '</div>' +
-    note +
-    '</div>';
+    '</div></div>';
   return (
     '<div class="hero">' +
     (lead ? lead() : plain) +
@@ -503,6 +710,9 @@ function flowChart(R) {
   }
   if (pts.length < 2) return '';
   var low = pts.reduce(function (a, b) { return b.v < a.v ? b : a; });
+  var marks = null;
+  var rw = kasRunway(P);
+  if (rw) marks = { today: today, habis: rw.date };
   return saldoLine({
     id: 'rincian',
     title: 'Arus saldo ' + S.year,
@@ -510,6 +720,7 @@ function flowChart(R) {
     tabs: periodTabs('flowp', flowPeriod),
     aria: 'Grafik arus saldo ' + S.year,
     pts: pts,
+    marks: marks,
     foot: 'Terendah <b class="pv' + (low.v < 0 ? ' neg' : '') + '">' + rp(low.v) + '</b> (' + dd(low.d) + ') · saldo terakhir <b class="pv">' + rp(pts[pts.length - 1].v) + '</b>'
   });
 }
@@ -545,8 +756,8 @@ function monthChips(r) {
         return (
           '<span class="chip' +
           (isAnom ? ' wr' : up ? ' chg' : '') +
-          '">' +
-          esc(q.n) +
+          '" title="' + esc(q.n) + '">' +
+          esc(chipName(q.n)) +
           (q.c > 1 ? ' ×' + q.c : '') +
           (up ? ' ' + q.u + ' ' + shortP(q.p) : '') +
           (isAnom ? ' (lonjakan)' : '') +
@@ -556,7 +767,7 @@ function monthChips(r) {
       .join('') +
     r.sk
       .map(function (e) {
-        return '<span class="chip sk">' + esc(e.it.name) + '</span>';
+        return '<span class="chip sk" title="' + esc(e.it.name) + '">' + esc(chipName(e.it.name)) + '</span>';
       })
       .join('')
   );
@@ -600,60 +811,6 @@ function detailRows(r) {
     })
     .join('');
   return paid + skRows(r) || '<tr class="det"><td colspan="5">Tidak ada pembayaran.</td></tr>';
-}
-
-/** Proyeksi runway kas: memakai arus masuk/keluar masa depan (jadwal belum lunas + transaksi kas) per tanggal. */
-function kasRunway(P, bal) {
-  if (!P) P = kasLinked() || (typeof kas === 'function' ? kas() : null);
-  if (!P) return null;
-  var today = todayISO(),
-    base = kasBase(P),
-    ev = [];
-  kasRows(P).forEach(function (x) {
-    ev.push({ d: x.d, delta: x.t === '+' ? x.amt : -x.amt });
-  });
-  var allYears = (typeof ALL !== 'undefined' && ALL.data) ? Object.keys(ALL.data) : [];
-  if (!allYears.length && typeof S !== 'undefined' && S.year) allYears = [String(S.year)];
-  allYears.forEach(function (yk) {
-    var Y = ALL.data[yk], y = +yk;
-    if (!Y || !Y.items) return;
-    Y.items.forEach(function (it) {
-      occ(it, y).forEach(function (t) {
-        var d = isoD(t),
-          k = it.id + '|' + d;
-        if (Y.paid && (Y.paid[k] || Y.skip[k])) return;
-        ev.push({ d: d, delta: -priceAt(it, t) });
-      });
-    });
-  });
-  if (!ev.length) return { days: 999, date: null, deficit: 0, status: 'safe' };
-  var pre = 0,
-    by = {},
-    seen = {};
-  ev.forEach(function (e) {
-    if (e.d <= today) pre += e.delta;
-    if (!seen[e.d]) {
-      seen[e.d] = 1;
-      by[e.d] = 0;
-    }
-    by[e.d] += e.delta;
-  });
-  var curr = base + pre;
-  if (curr <= 0) return { days: 0, date: today, deficit: Math.abs(curr), status: 'deficit' };
-  var dates = Object.keys(by)
-    .filter(function (d) {
-      return d > today;
-    })
-    .sort();
-  for (var i = 0; i < dates.length; i++) {
-    var d = dates[i];
-    curr += by[d];
-    if (curr < 0) {
-      var dDiff = Math.max(0, Math.round((Date.parse(d + 'T00:00:00Z') - Date.parse(today + 'T00:00:00Z')) / 864e5));
-      return { days: dDiff, date: d, deficit: Math.abs(curr), status: dDiff <= 90 ? 'warning' : 'ok' };
-    }
-  }
-  return { days: 999, date: null, deficit: 0, status: 'safe' };
 }
 
 /** Status kas dalam satu kalimat: kapan mulai minus dan apa yang harus dilakukan. */
@@ -721,7 +878,8 @@ function saldoHero(c, R) {
       );
     },
     A.n,
-    C
+    C,
+    kasRunway(P, bal)
   );
 }
 
@@ -757,22 +915,55 @@ function billsCard() {
     iA = m0 + 3 * win,
     iB = iA + 2,
     span = MON[iA % 12] + ' ' + (y0 + Math.floor(iA / 12)) + ' – ' + MON[iB % 12] + ' ' + (y0 + Math.floor(iB / 12)),
-    body = list
-      .slice(0, 6)
-      .map(function (r) {
-        return (
-          '<div class="it2 kit"><div><b class="fw6">' +
-          esc(r.it.name) +
-          '</b>' +
-          (r.it.cat ? ' <span class="sub">' + esc(r.it.cat) + '</span>' : '') +
-          '</div><div class="am"><b class="pv">' +
-          rp(r.price) +
-          '</b><span class="sub">' +
-          fd(r.t, { day: 'numeric', month: 'short' }) +
-          '</span></div></div>'
-        );
-      })
-      .join('');
+    flow = kasFlow(),
+    firstNeg = kasFirstNegative(),
+    dateBalances = {};
+  if (flow) {
+    var running = flow.base + flow.pre;
+    flow.allDates.forEach(function (d) {
+      running += flow.byDate[d].delta;
+      dateBalances[d] = running;
+    });
+  }
+  var body = list
+    .slice(0, 6)
+    .map(function (r) {
+      var iso = isoD(r.t),
+        isLate = iso < t,
+        cd = fmtCountdown(iso, t, isLate),
+        cls = '',
+        title = '';
+      if (firstNeg && iso === firstNeg.date) cls = ' minus-first';
+      else if (firstNeg && iso > firstNeg.date) cls = ' minus-after';
+      if (dateBalances[iso] != null) title = ' title="Saldo proyeksi setelah ini: ' + rp(dateBalances[iso]) + '"';
+      return (
+        '<div class="it2 kit' + cls + '"' + title + '><div><b class="fw6">' +
+        esc(r.it.name) +
+        '</b>' +
+        (r.it.cat ? ' <span class="sub">' + esc(r.it.cat) + '</span>' : '') +
+        '</div><div class="am"><b class="pv">' +
+        rp(r.price) +
+        '</b><span class="sub">' +
+        fd(r.t, { day: 'numeric', month: 'short' }) +
+        (cd ? ' · ' + cd : '') +
+        '</span></div></div>'
+      );
+    })
+    .join('');
+  var summary = '';
+  if (firstNeg) {
+    var seenNames = {},
+      names = firstNeg.items
+        .map(function (x) { return x.name; })
+        .filter(function (n) {
+          if (seenNames[n]) return false;
+          seenNames[n] = 1;
+          return true;
+        })
+        .join(' + ') || 'tagihan';
+    summary =
+      '<div class="runway-box runway-warning it2" title="Saldo proyeksi setelah ' + names + ' = ' + rp(firstNeg.balanceAfter) + '">⚠ Saldo mulai minus ' + fd(firstNeg.date, { day: 'numeric', month: 'short', year: 'numeric' }) + ' (' + firstNeg.days + ' hari lagi), setelah ' + names + '</div>';
+  }
   return (
     '<div class="card"><div class="dflex jcsb aic fwrap g8"><h2 class="m0">Jadwal tagihan</h2>' +
     '<button type="button" class="lk" data-goto="jadwal">Semua tagihan' +
@@ -783,6 +974,7 @@ function billsCard() {
       : '3 bulan ke depan &middot; ' + span) +
     '</div><div class="grow">' +
     (body || '<div class="empty">Belum ada tagihan terjadwal.</div>') +
+    summary +
     '</div></div>'
   );
 }
@@ -939,6 +1131,7 @@ function renderRincian() {
     '</td><td></td></tr></tbody></table></div></div>';
   var tx = recentTxCard();
   $('v-rincian').innerHTML =
+    (S.items.length ? globalPeriodHtml(C) : '') +
     (S.items.length ? '' : emptyItemsHtml()) +
     '<div class="splitH">' +
     saldoHero(c, R) +
@@ -955,6 +1148,7 @@ function renderRincian() {
     (tx ? '<div class="splitR">' + table + tx + '</div>' : table);
   chartMount($('v-rincian'));
   gdApply($('v-rincian'));
+  dashBadges(C);
 }
 
 /** Baris "dilewati" pada rincian sebuah bulan. */
@@ -981,13 +1175,41 @@ function skRows(r) {
 /** Pasang event listener halaman ini. */
 function bindRincian() {
   $('v-rincian').onchange = function (e) {
-    if (!e.target.matches('[data-expmonth]')) return;
-    expenseLastMonth = e.target.value;
-    expenseMonth = expenseLastMonth;
-    renderRincian();
-    $('v-rincian').querySelector('[data-expmonth]').focus();
+    if (e.target.matches('[data-expmonth]')) {
+      expenseLastMonth = e.target.value;
+      expenseMonth = expenseLastMonth;
+      renderRincian();
+      $('v-rincian').querySelector('[data-expmonth]').focus();
+      return;
+    }
+    if (e.target.matches('[data-dashmonth]')) {
+      var Cm = yearCash();
+      dashPeriod = { p: 'm', m: +e.target.value };
+      setDashPeriod('m', Cm);
+      return;
+    }
   };
   $('v-rincian').onclick = function (e) {
+    var dp = e.target.closest('[data-dashp]');
+    if (dp) {
+      setDashPeriod(dp.dataset.dashp, yearCash());
+      return;
+    }
+    var rs = e.target.closest('[data-resync]');
+    if (rs) {
+      var Cr = yearCash(),
+        m = dashMap(Cr);
+      if (m) {
+        switch (rs.dataset.resync) {
+          case 'flow': flowPeriod = m.flow; break;
+          case 'bs': bsPeriod = m.bs; break;
+          case 'cat': catPeriod = m.cat; break;
+          case 'exp': expenseMonth = m.exp; expenseLastMonth = m.exp; break;
+        }
+        renderRincian();
+      }
+      return;
+    }
     var expm = e.target.closest('[data-expm]');
     if (expm) {
       expenseMonth = expm.dataset.expm === 'all' ? 'all' : expenseLastMonth;

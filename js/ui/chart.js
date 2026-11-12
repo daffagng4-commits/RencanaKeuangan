@@ -50,11 +50,11 @@ function niceStep(r) {
   return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p;
 }
 
-/** Kartu arus saldo. o = {id, title, sub, aria, pts:[{d,v,tip}], foot, tabs} */
+/** Kartu arus saldo. o = {id, title, sub, aria, pts:[{d,v,tip}], foot, tabs, marks:{today, habis}} */
 function saldoLine(o) {
   var P = (o.pts || []).slice();
   if (P.length < 2) return '';
-  var i = LCQ.push({ pts: P, sub: o.sub || '' }) - 1,
+  var i = LCQ.push({ pts: P, sub: o.sub || '', marks: o.marks || null }) - 1,
     gid = 'lcg-' + (o.id || i);
   return (
     '<div class="card lc-card"><div class="lc-head"><div class="lc-hl"><div class="dflex aic fwrap g8"><h2 class="m0">' +
@@ -73,9 +73,12 @@ function saldoLine(o) {
     '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--ac)" stop-opacity=".32"></stop><stop offset="1" stop-color="var(--ac)" stop-opacity="0"></stop></linearGradient></defs>' +
     '<g class="lc-grid"></g><path class="lc-fill" fill="url(#' +
     gid +
-    ')"></path><path class="lc-line" fill="none"></path><g class="lc-xl"></g>' +
+    ')"></path><path class="lc-fill lc-fill-p" fill="url(#' +
+    gid +
+    ')"></path><path class="lc-line" fill="none"></path><path class="lc-line lc-line-p" fill="none"></path><g class="lc-mark"></g><g class="lc-xl"></g>' +
     '<g class="lc-cur" style="display:none"><line class="lc-cl"></line><circle class="lc-cd" r="5"></circle></g></svg>' +
     '<div class="lc-tip"><span></span><strong></strong></div></div>' +
+    (o.marks ? '<div class="lc-lg"><span class="s"><i class="sw"></i>Nyata</span><span class="p"><i class="sw"></i>Proyeksi</span></div>' : '') +
     (o.foot ? '<div class="sub lc-foot">' + o.foot + '</div>' : '') +
     '</div>'
   );
@@ -246,12 +249,15 @@ function areaInit(svg, cfg) {
     curDot = svg.querySelector('.lc-cd'),
     grid = svg.querySelector('.lc-grid'),
     xl = svg.querySelector('.lc-xl'),
+    markG = svg.querySelector('.lc-mark'),
     fill = svg.querySelector('.lc-fill'),
+    fillP = svg.querySelector('.lc-fill-p'),
     line = svg.querySelector('.lc-line'),
+    lineP = svg.querySelector('.lc-line-p'),
     pts = cfg.pts,
     n = pts.length,
     N = 160,
-    PL = 8,
+    PL = 34,
     PR = 8,
     PT = 16,
     PB = 26,
@@ -295,11 +301,60 @@ function areaInit(svg, cfg) {
       v,
       yy,
       lx;
-    y.forEach(function (val, i) {
-      d += (i ? 'L' : 'M') + xAt(i).toFixed(1) + ' ' + yAt(val).toFixed(1);
-    });
-    line.setAttribute('d', d);
-    fill.setAttribute('d', d + 'L' + xAt(N - 1).toFixed(1) + ' ' + (PT + ih) + 'L' + PL + ' ' + (PT + ih) + 'Z');
+    var firstProj = n;
+    if (cfg.marks && cfg.marks.today) {
+      for (var ti = 0; ti < n; ti++) {
+        if (pts[ti].d > cfg.marks.today) { firstProj = ti; break; }
+      }
+    }
+    var lastSolid = firstProj - 1,
+      xb = n > 1 ? (lastSolid / (n - 1)) * (N - 1) : 0,
+      solidEnd = Math.max(0, Math.ceil(xb)),
+      projStart = Math.max(0, Math.floor(xb)),
+      hasSolid = firstProj > 0,
+      hasProj = firstProj < n;
+    function pathFor(arr, offset) {
+      var p = '';
+      arr.forEach(function (val, i) {
+        p += (i ? 'L' : 'M') + xAt(offset + i).toFixed(1) + ' ' + yAt(val).toFixed(1);
+      });
+      return p;
+    }
+    if (hasSolid) {
+      var ds = pathFor(y.slice(0, solidEnd + 1), 0);
+      line.setAttribute('d', ds);
+      fill.setAttribute('d', ds + 'L' + xAt(solidEnd).toFixed(1) + ' ' + (PT + ih) + 'L' + xAt(0).toFixed(1) + ' ' + (PT + ih) + 'Z');
+    } else {
+      line.setAttribute('d', '');
+      fill.setAttribute('d', '');
+    }
+    if (hasProj) {
+      var dp = pathFor(y.slice(projStart), projStart);
+      lineP.setAttribute('d', dp);
+      fillP.setAttribute('d', dp + 'L' + xAt(N - 1).toFixed(1) + ' ' + (PT + ih) + 'L' + xAt(projStart).toFixed(1) + ' ' + (PT + ih) + 'Z');
+    } else {
+      lineP.setAttribute('d', '');
+      fillP.setAttribute('d', '');
+    }
+    var mk = '';
+    if (cfg.marks && cfg.marks.today) {
+      var tIdx = -1;
+      for (ti = 0; ti < n; ti++) if (pts[ti].d === cfg.marks.today) { tIdx = ti; break; }
+      if (tIdx >= 0) {
+        var tx = xAt((tIdx / (n - 1)) * (N - 1));
+        mk += '<line x1="' + tx.toFixed(1) + '" x2="' + tx.toFixed(1) + '" y1="' + PT + '" y2="' + (PT + ih) + '"></line><text x="' + tx.toFixed(1) + '" y="' + (PT + 10) + '" text-anchor="middle">Hari ini</text>';
+      }
+    }
+    if (cfg.marks && cfg.marks.habis) {
+      var hIdx = -1;
+      for (ti = 0; ti < n; ti++) if (pts[ti].d === cfg.marks.habis) { hIdx = ti; break; }
+      if (hIdx >= 0) {
+        var hx = xAt((hIdx / (n - 1)) * (N - 1)),
+          hy = yAt(y[Math.round((hIdx / (n - 1)) * (N - 1))]);
+        mk += '<circle cx="' + hx.toFixed(1) + '" cy="' + hy.toFixed(1) + '" r="5"></circle><text class="lc-mk-label" x="' + hx.toFixed(1) + '" y="' + Math.max(PT + 24, hy - 10) + '" text-anchor="middle">⚠ Saldo habis</text>';
+      }
+    }
+    if (markG) markG.innerHTML = mk;
     var step = niceStep((d1 - d0) / 4);
     for (v = Math.ceil(d0 / step) * step; v <= d1; v += step) {
       yy = yAt(v);
@@ -312,9 +367,7 @@ function areaInit(svg, cfg) {
         yy.toFixed(1) +
         '" y2="' +
         yy.toFixed(1) +
-        '" stroke="var(--ln)"></line><text x="' +
-        PL +
-        '" y="' +
+        '" stroke="var(--ln)"></line><text x="4" y="' +
         (yy - 5).toFixed(1) +
         '">' +
         shortP(v) +
@@ -347,7 +400,7 @@ function areaInit(svg, cfg) {
     svg.setAttribute('aria-valuemin', 0);
     svg.setAttribute('aria-valuemax', N - 1);
     svg.setAttribute('aria-valuenow', idx);
-    svg.setAttribute('aria-valuetext', dlabel(pts[nearest(idx)].d) + ': ' + rp(Math.round(val)));
+    svg.setAttribute('aria-valuetext', dlabel(pts[nearest(idx)].d) + ': ' + rp(Math.round(val)) + (cfg.marks && cfg.marks.today && pts[nearest(idx)].d > cfg.marks.today ? ' (Proyeksi)' : ''));
 
     if (hover == null) {
       cur.style.display = 'none';
@@ -363,7 +416,7 @@ function areaInit(svg, cfg) {
     curLine.setAttribute('y2', PT + ih);
     curDot.setAttribute('cx', cx);
     curDot.setAttribute('cy', cy);
-    tip.firstElementChild.textContent = dlabel(pts[nearest(hover)].d);
+    tip.firstElementChild.textContent = dlabel(pts[nearest(hover)].d) + (cfg.marks && cfg.marks.today && pts[nearest(hover)].d > cfg.marks.today ? ' · Proyeksi' : '');
     tip.lastElementChild.textContent = rp(Math.round(val));
     tip.style.opacity = 1;
     tw = tip.offsetWidth;

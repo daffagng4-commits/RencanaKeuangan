@@ -65,7 +65,7 @@ function chipHtml(it, t, today) {
 }
 
 /** Satu baris tabel: nama item, harga, 12 kolom bulan, total. */
-function jadwalRow(it, c, today) {
+function jadwalRow(it, c, today, firstNegDate) {
   var o = c.occs[it.id],
     active = o.filter(function (t) {
       return !S.skip[it.id + '|' + isoD(t)];
@@ -91,6 +91,7 @@ function jadwalRow(it, c, today) {
     return S.paid[it.id + '|' + isoD(t)];
   }).length;
   var isDone = active.length > 0 && paidCount === active.length;
+  var hasNeg = firstNegDate && o.some(function (t) { return isoD(t) === firstNegDate && !S.skip[it.id + '|' + isoD(t)]; });
   return (
     '<tr data-r="' +
     it.id +
@@ -101,6 +102,7 @@ function jadwalRow(it, c, today) {
     '<b>' +
     esc(it.name) +
     '</b>' +
+    (hasNeg ? ' <span class="chip wr">⚠ Membuat saldo minus</span>' : '') +
     (isDone ? '<span class="doneTag">Lunas semua</span>' : '') +
     '<div class="sub">' +
     every(it) +
@@ -172,6 +174,17 @@ function renderJadwal() {
   var c = calc(),
     today = todayISO(),
     y = S.year;
+  var firstNeg = typeof kasFirstNegative === 'function' ? kasFirstNegative() : null;
+  var negAlert = '';
+  if (firstNeg) {
+    var seen = {},
+      names = firstNeg.items
+        .map(function (x) { return x.name; })
+        .filter(function (n) { if (seen[n]) return false; seen[n] = 1; return true; })
+        .join(' + ') || 'tagihan';
+    negAlert =
+      '<div class="card runway-box runway-warning">⚠ Saldo mulai minus ' + fd(firstNeg.date, { day: 'numeric', month: 'short', year: 'numeric' }) + ' (' + firstNeg.days + ' hari lagi), setelah ' + names + '</div>';
+  }
   var head =
     '<div class="card"><h2>Jadwal pembayaran ' +
     y +
@@ -191,7 +204,7 @@ function renderJadwal() {
   var rows =
     S.items
       .map(function (it) {
-        return jadwalRow(it, c, today);
+        return jadwalRow(it, c, today, firstNeg && firstNeg.date);
       })
       .join('') ||
     '<tr><td colspan="15" class="empty">Belum ada item. Tambahkan di tab Kelola Item.</td></tr>';
@@ -207,7 +220,7 @@ function renderJadwal() {
     '<td>' +
     rp(c.total) +
     '</td></tr></tbody></table></div></div>';
-  $('v-jadwal').innerHTML = jadwalSummary(c) + head + rows + foot;
+  $('v-jadwal').innerHTML = jadwalSummary(c) + negAlert + head + rows + foot;
   gdApply($('v-jadwal'));
 }
 

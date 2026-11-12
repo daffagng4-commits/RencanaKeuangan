@@ -413,7 +413,8 @@ nav button[aria-selected="true"] {
   white-space: nowrap;
 }
 .chip.n { background: var(--bg); color: var(--mut); box-shadow: inset 0 0 0 1px var(--ln); }
-.chip.chg { background: var(--bls); color: var(--bl); }
+ td.c-c { white-space: normal; }
+ .chip.chg { background: var(--bls); color: var(--bl); }
 .chip.wr { background: var(--wrs); color: var(--wr); font-weight: 700; }
 .chip.sk { background: var(--wrs); color: var(--wr); text-decoration: line-through; }
 .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
@@ -954,6 +955,17 @@ button.alat-item { width: 100%; border: 0; background: transparent; text-align: 
   border-color: color-mix(in srgb, var(--wr) 26%, transparent);
   color: var(--wr);
 }
+.it2.minus-first { color: var(--wr); }
+.it2.minus-first::before { content: '⚠ '; margin-right: 4px; }
+.it2.minus-after { color: var(--mut); }
+.it2.minus-after::before { content: '− '; margin-right: 4px; color: var(--mut); }
+.dash-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; padding: 10px 14px; background: var(--card); border: 1px solid var(--ln); border-radius: var(--r); }
+.dash-label { font-size: 12px; font-weight: 600; color: var(--mut); }
+.dash-controls .cat-tabs { margin: 0; }
+.dash-note { font-size: 12px; color: var(--mut); margin-left: auto; }
+.dash-note.warn { color: var(--wr); }
+.dash-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--wr); background: var(--wrs); padding: 2px 8px; border-radius: 99px; margin-left: 8px; }
+.dash-badge button { font-size: 11px; padding: 1px 6px; min-height: 20px; border-radius: 99px; }
 .runway-box.runway-safe {
   background: var(--ins);
   border-color: color-mix(in srgb, var(--in) 26%, transparent);
@@ -1228,7 +1240,16 @@ svg.lc:focus-visible { outline: 2px solid var(--ac); outline-offset: 3px; border
 svg.lc text { font-size: 11px; fill: var(--mut); font-variant-numeric: tabular-nums; }
 svg.lc .lc-grid line { opacity: 0.6; }
 svg.lc .lc-line { stroke: var(--ac); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-svg.lc .lc-cl { stroke: var(--mut); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.8; }
+svg.lc .lc-line-p { stroke-dasharray: 5 5; }
+svg.lc .lc-fill-p { opacity: 0.38; }
+svg.lc .lc-mark line { stroke: var(--mut); stroke-width: 1; stroke-dasharray: 3 3; }
+svg.lc .lc-mark text { fill: var(--mut); font-size: 10px; }
+svg.lc .lc-mark circle { fill: var(--wr); stroke: var(--card); stroke-width: 2; }
+svg.lc .lc-mk-label { font-size: 10.5px; fill: var(--wr); font-weight: 600; }
+.lc-lg { display: flex; align-items: center; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--mut); }
+.lc-lg span { display: inline-flex; align-items: center; gap: 6px; }
+.lc-lg .sw { display: inline-block; width: 18px; height: 3px; border-radius: 2px; background: currentColor; }
+.lc-lg .p .sw { height: 0; border-top: 2px dashed currentColor; }
 svg.lc .lc-cd { fill: var(--ac); stroke: var(--card); stroke-width: 2; }
 .lc-tip { position: absolute; left: 0; top: 0; pointer-events: none; opacity: 0; transition: opacity 0.14s; background: var(--card); border: 1px solid var(--ln); border-radius: 10px; padding: 6px 10px; font-size: 12px; line-height: 1.35; max-width: 240px; box-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.4); }
 .lc-tip span { display: block; color: var(--mut); }
@@ -1861,14 +1882,14 @@ nav .nav-pill {
 }
 
 /* Stacked bar pemasukan vs pengeluaran per bulan */
-.bs-card { --bs-in: var(--ac); --bs-out: var(--in); }
+.bs-card { --bs-in: var(--in); --bs-out: var(--wr); }
 .bs-chart { position: relative; height: 250px; }
 .bs-chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
 .bs-grid { stroke: var(--ln); stroke-dasharray: 3 3; }
 .bs-tick { font-size: 11px; fill: var(--mut); text-anchor: middle; }
 .bs-seg.i { fill: var(--bs-in); }
 .bs-seg.o { fill: var(--bs-out); }
-.bs-d { font-size: 11.5px; font-weight: 650; text-anchor: middle; fill: var(--mut); font-variant-numeric: tabular-nums; }
+.bs-d { font-size: 11.5px; font-weight: 650; text-anchor: middle; fill: var(--mut); font-variant-numeric: tabular-nums; paint-order: stroke; stroke: var(--sf); stroke-width: 3px; }
 .bs-d.neg { fill: var(--wr); }
 .bs-d.pos { fill: var(--in); }
 .bs-sm .bs-d { font-size: 9.5px; }
