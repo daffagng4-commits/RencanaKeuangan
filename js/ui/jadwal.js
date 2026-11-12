@@ -175,16 +175,6 @@ function renderJadwal() {
     today = todayISO(),
     y = S.year;
   var firstNeg = typeof kasFirstNegative === 'function' ? kasFirstNegative() : null;
-  var negAlert = '';
-  if (firstNeg) {
-    var seen = {},
-      names = firstNeg.items
-        .map(function (x) { return x.name; })
-        .filter(function (n) { if (seen[n]) return false; seen[n] = 1; return true; })
-        .join(' + ') || 'tagihan';
-    negAlert =
-      '<div class="card runway-box runway-warning">⚠ Saldo mulai minus ' + fd(firstNeg.date, { day: 'numeric', month: 'short', year: 'numeric' }) + ' (' + firstNeg.days + ' hari lagi), setelah ' + names + '</div>';
-  }
   var head =
     '<div class="card"><h2>Jadwal pembayaran ' +
     y +
@@ -220,7 +210,7 @@ function renderJadwal() {
     '<td>' +
     rp(c.total) +
     '</td></tr></tbody></table></div></div>';
-  $('v-jadwal').innerHTML = jadwalSummary(c) + negAlert + head + rows + foot;
+  $('v-jadwal').innerHTML = jadwalSummary(c) + head + rows + foot;
   gdApply($('v-jadwal'));
 }
 

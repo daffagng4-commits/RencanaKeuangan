@@ -13,11 +13,7 @@ var flowPeriod = 'y';
 var catDir = '-';
 var txDir = '-';
 
-/** Filter periode global untuk dashboard. */
-var dashPeriod = null;
-var dashMonth = '';
 
-/** Memotong keterangan dalam tanda kurung untuk tampilan chip. */
 function chipName(name) {
   return (name || '').replace(/\s*\([^)]*\)/g, '').trim() || name;
 }
@@ -115,110 +111,6 @@ function kasFirstNegative(P) {
     }
   }
   return null;
-}
-
-/** Pilihan bulan yang punya pengeluaran riil untuk filter global. */
-function dashExpenseMonths(C) {
-  return Array.from(
-    new Set(
-      C.entries
-        .filter(function (e) { return e.t === '-' && !/Penyesuaian/i.test(e.cat); })
-        .map(function (e) { return +e.d.slice(5, 7); })
-    )
-  ).sort(function (a, b) { return a - b; });
-}
-
-/** Peta filter global ke tiap kartu periode. */
-function dashMap(C) {
-  if (!dashPeriod) return null;
-  var months = dashExpenseMonths(C);
-  return {
-    flow: dashPeriod.p,
-    bs: dashPeriod.p === 'y' ? 'y' : 'm',
-    cat: dashPeriod.p,
-    exp: dashPeriod.p === 'y' ? 'all' : String(
-      months.indexOf(dashPeriod.m || +todayISO().slice(5, 7)) >= 0
-        ? (dashPeriod.m || +todayISO().slice(5, 7))
-        : (months[months.length - 1] || months[0] || +todayISO().slice(5, 7))
-    )
-  };
-}
-
-/** Kontrol filter periode global. */
-function globalPeriodHtml(C) {
-  var active = dashPeriod ? dashPeriod.p : 'y',
-    map = dashMap(C),
-    note = '';
-  if (map) {
-    var n = (flowPeriod !== map.flow ? 1 : 0) + (bsPeriod !== map.bs ? 1 : 0) + (catPeriod !== map.cat ? 1 : 0) + (expenseMonth !== map.exp ? 1 : 0);
-    note = '<span class="dash-note' + (n ? ' warn' : '') + '">' + (n ? n + ' kartu beda' : 'Semua kartu sama') + '</span>';
-  } else {
-    note = '<span class="dash-note sub">Filter global</span>';
-  }
-  var months = dashExpenseMonths(C);
-  var picker = '';
-  if (active === 'm') {
-    picker =
-      '<select data-dashmonth aria-label="Bulan">' +
-      months
-        .map(function (m) {
-          return '<option value="' + m + '"' + (dashPeriod && dashPeriod.m === m ? ' selected' : '') + '>' + MON[m - 1] + '</option>';
-        })
-        .join('') +
-      '</select>';
-  }
-  return (
-    '<div class="dash-controls"><div class="dash-label">Periode</div><div class="cat-tabs" role="tablist">' +
-    [{ k: 'w', l: '7 hari' }, { k: 'm', l: 'Bulan' }, { k: 'y', l: 'Tahun' }]
-      .map(function (o) {
-        return '<button type="button" data-dashp="' + o.k + '"' + (active === o.k ? ' class="active"' : '') + '>' + o.l + '</button>';
-      })
-      .join('') +
-    '</div>' +
-    picker +
-    note +
-    '</div>'
-  );
-}
-
-/** Terapkan filter global ke semua kartu periode. */
-function setDashPeriod(p, C) {
-  var months = dashExpenseMonths(C);
-  var m = dashPeriod && dashPeriod.m ? dashPeriod.m : +todayISO().slice(5, 7);
-  if (months.indexOf(m) < 0) m = months[months.length - 1] || months[0] || +todayISO().slice(5, 7);
-  dashPeriod = { p: p, m: p === 'm' ? m : null };
-  flowPeriod = p;
-  bsPeriod = p === 'y' ? 'y' : 'm';
-  catPeriod = p;
-  expenseMonth = dashMap(C).exp;
-  expenseLastMonth = expenseMonth;
-  renderRincian();
-}
-
-/** Tandai kartu yang beda dari filter global. */
-function dashBadges(C) {
-  var map = dashMap(C);
-  if (!map) return;
-  var root = $('v-rincian');
-  var cards = Array.from(root.querySelectorAll('.card'));
-  function mark(titleSub, key, current, expected) {
-    if (current === expected) return;
-    var card = cards.find(function (c) {
-      var h2 = c.querySelector('h2');
-      return h2 && h2.textContent.indexOf(titleSub) >= 0;
-    });
-    if (!card || card.querySelector('.dash-badge')) return;
-    var hdr = card.querySelector('.dflex.jcsb') || card.querySelector('.lc-head') || card.firstElementChild;
-    if (!hdr) return;
-    var badge = document.createElement('span');
-    badge.className = 'dash-badge';
-    badge.innerHTML = '<span>Beda</span><button type="button" data-resync="' + key + '">Samakan</button>';
-    hdr.appendChild(badge);
-  }
-  mark('Arus saldo', 'flow', flowPeriod, map.flow);
-  mark('Pemasukan vs pengeluaran', 'bs', bsPeriod, map.bs);
-  mark('Pengeluaran per kategori', 'cat', catPeriod, map.cat);
-  mark('Item pengeluaran terbesar', 'exp', expenseMonth, map.exp);
 }
 
 /** Legenda chip di kolom "Item berkala" (dipakai juga oleh panduan yang bisa disembunyikan). */
@@ -354,9 +246,9 @@ function cashPeriod(C, p) {
   return { from: from, to: to, inc: inc, out: out, total: out, n: n, nin: nin, byCat: byCat, incByCat: incByCat, avg: out / days };
 }
 
-/** Tombol periode 7 hari / bulan / tahun; attr = nama data-atribut pemicunya. */
+/** Tombol periode Minggu / bulan / tahun; attr = nama data-atribut pemicunya. */
 function periodTabs(attr, cur) {
-  return [['w', '7 hari'], ['m', 'Bulan'], ['y', 'Tahun']]
+  return [['w', 'Minggu'], ['m', 'Bulan'], ['y', 'Tahun']]
     .map(function (t) {
       return (
         '<button type="button" class="cat-tab' +
@@ -462,9 +354,18 @@ function topExpensesCard(C) {
     var current = +todayISO().slice(0, 4) === +S.year ? +todayISO().slice(5, 7) : 0;
     expenseLastMonth = String(months.indexOf(current) >= 0 ? current : months[months.length - 1] || '');
   }
-  if (expenseMonth !== 'all') expenseMonth = expenseLastMonth || 'all';
-  var selected = expenseMonth === 'all' ? months : [+expenseMonth],
-    all = groupExpenseItems(entries.filter(function (e) { return selected.indexOf(+e.d.slice(5, 7)) >= 0; })).rows.map(function (r) {
+  var mode = ['all', 'w', 'm', 'y'].indexOf(expenseMonth) >= 0 ? expenseMonth : 'all';
+  if (mode === 'm') mode = expenseLastMonth ? 'm' : 'all';
+  expenseMonth = mode;
+  var today = todayISO(),
+    weekFrom = addDaysISO(today, -6),
+    filtered = entries.filter(function (e) {
+      if (mode === 'w') return e.d >= weekFrom && e.d <= today;
+      if (mode === 'm') return +e.d.slice(5, 7) === +expenseLastMonth;
+      return true;
+    }),
+    selected = Array.from(new Set(filtered.map(function (e) { return +e.d.slice(5, 7); }))).sort(function (a, b) { return a - b; }),
+    all = groupExpenseItems(filtered).rows.map(function (r) {
       r.v = selected.reduce(function (sum, m) { return sum + (r.byMonth[m] || 0); }, 0);
       return r;
     }).filter(function (r) { return r.v > 0; }).sort(function (a, b) { return b.v - a.v || a.name.localeCompare(b.name, 'id'); }),
@@ -478,14 +379,15 @@ function topExpensesCard(C) {
   rest.detail = others.slice(0, EXPENSE_TOP_N).map(function (r) { return r.name + ' ' + rp(r.v); }).join(' · ') +
     (others.length > EXPENSE_TOP_N ? ' · +' + (others.length - EXPENSE_TOP_N) + ' lainnya' : '');
   var topSum = total - rest.v, max = rows.length ? rows[0].v : 1,
-    period = (selected.length ? MON[selected[0] - 1] + (selected.length > 1 ? ' - ' + MON[selected[selected.length - 1] - 1] : '') + ' ' : '') + S.year,
-    tabs = [['all', 'Semua'], ['month', 'Per bulan']].map(function (m) {
-      var on = (expenseMonth === 'all') === (m[0] === 'all');
-      return '<button type="button" class="cat-tab' + (on ? ' on' : '') + '" data-expm="' + m[0] + '" aria-label="' + m[1] + ' pengeluaran" aria-pressed="' + on + '"' + (!months.length && m[0] === 'month' ? ' disabled' : '') + '>' + m[1] + '</button>';
+    period = mode === 'w' ? fmtD(weekFrom) + ' – ' + fmtD(today) :
+      (selected.length ? MON[selected[0] - 1] + (selected.length > 1 ? ' - ' + MON[selected[selected.length - 1] - 1] : '') + ' ' : '') + S.year,
+    tabs = [['all', 'Semua'], ['w', 'Minggu'], ['m', 'Bulan'], ['y', 'Tahun']].map(function (m) {
+      var on = mode === m[0];
+      return '<button type="button" class="cat-tab' + (on ? ' on' : '') + '" data-expm="' + m[0] + '" aria-label="' + m[1] + ' pengeluaran" aria-pressed="' + on + '"' + (!months.length && m[0] === 'm' ? ' disabled' : '') + '>' + m[1] + '</button>';
     }).join(''),
-    picker = expenseMonth === 'all' ? '' : '<select data-expmonth aria-label="Bulan pengeluaran">' + months.map(function (m) {
-      return '<option value="' + m + '"' + (+expenseMonth === m ? ' selected' : '') + '>' + MON[m - 1] + ' ' + S.year + '</option>';
-    }).join('') + '</select>',
+    picker = mode === 'm' ? '<select data-expmonth aria-label="Bulan pengeluaran">' + months.map(function (m) {
+      return '<option value="' + m + '"' + (+expenseLastMonth === m ? ' selected' : '') + '>' + MON[m - 1] + ' ' + S.year + '</option>';
+    }).join('') + '</select>' : '',
     head = '<div class="insight-head"><div class="insight-title"><h2 class="m0">Item pengeluaran terbesar</h2><div class="sub">' + period + ' · total <span class="pv expense-total">' + rp(total) + '</span></div></div><div class="expense-controls"><div class="cat-tabs expense-tabs" role="group" aria-label="Periode pengeluaran">' + tabs + '</div>' + picker + '</div></div>';
   if (!total) return '<div class="card slot-card expense-card">' + head + '<div class="empty">Belum ada pengeluaran</div></div>';
   function row(r, i) {
@@ -614,11 +516,8 @@ function heroHtml(c, R, lead, txCount, C, rw) {
       rp(jatah) +
       '</div><div class="sub">Sisa <span class="pv">Rp ' + rpS(c.end) + '</span> sampai Des ' + S.year + '</div></div>';
   } else {
-    var shortfall = Math.abs(c.end),
-      until = rw && rw.date ? fmtD(rw.date) : 'akhir tahun',
-      days = rw && rw.days != null ? ' (' + rw.days + ' hari lagi)' : '';
     jatahHtml =
-      '<div class="jatah"><div class="sub fw6">Jatah jajan per bulan</div><div class="big jv neg">Tidak tersedia</div><div class="sub">Perlu kurangi <span class="pv">Rp ' + rpS(shortfall) + '</span> sebelum ' + until + days + '</div></div>';
+      '<div class="jatah"><div class="sub fw6">Jatah jajan per bulan</div><div class="big jv neg">Tidak tersedia</div></div>';
   }
   var plain =
     '<div class="card m0"><div class="sub">Sisa saldo akhir Des ' +
@@ -646,9 +545,15 @@ function flowChart(R) {
   var P = kasLinked();
   if (!P) return '';
   var base = kasBase(P),
+    today = todayISO(),
     ev = [];
   kasRows(P).forEach(function (x) {
-    ev.push({ d: x.d, delta: x.t === '+' ? x.amt : -x.amt, label: x.note || x.cat || 'Transaksi' });
+    var d = x.d;
+    // Tagihan lunas yang jatuh tempo di masa depan dianggap keluar paling lambat hari ini
+    // supaya grafik hari ini sama dengan saldo realtime. Bila kelak ada x.paidAt,
+    // ganti baris di bawah: d = x.paidAt || (d > today ? today : d).
+    if (x.ro === 'tagihan' && d > today) d = today;
+    ev.push({ d: d, delta: x.t === '+' ? x.amt : -x.amt, label: x.note || x.cat || 'Transaksi' });
   });
   var y = +S.year;
   S.items.forEach(function (it) {
@@ -663,10 +568,8 @@ function flowChart(R) {
   ev.sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; });
   var start = ev[0].d,
     end = ev[ev.length - 1].d;
-  // Rentang mengikuti tab periode (7 hari / bulan / tahun); jangkar = hari ini atau data terakhir.
-  var y = +S.year,
-    today = todayISO(),
-    anchor = +today.slice(0, 4) === y ? today : +today.slice(0, 4) < y ? end : y + today.slice(4),
+  // Rentang mengikuti tab periode (Minggu / Bulan / Tahun); jangkar = hari ini atau data terakhir.
+  var anchor = +today.slice(0, 4) === y ? today : +today.slice(0, 4) < y ? end : y + today.slice(4),
     from,
     to;
   if (flowPeriod === 'w') {
@@ -951,28 +854,11 @@ function billsCard() {
     })
     .join('');
   var summary = '';
-  if (firstNeg) {
-    var seenNames = {},
-      names = firstNeg.items
-        .map(function (x) { return x.name; })
-        .filter(function (n) {
-          if (seenNames[n]) return false;
-          seenNames[n] = 1;
-          return true;
-        })
-        .join(' + ') || 'tagihan';
-    summary =
-      '<div class="runway-box runway-warning it2" title="Saldo proyeksi setelah ' + names + ' = ' + rp(firstNeg.balanceAfter) + '">⚠ Saldo mulai minus ' + fd(firstNeg.date, { day: 'numeric', month: 'short', year: 'numeric' }) + ' (' + firstNeg.days + ' hari lagi), setelah ' + names + '</div>';
-  }
   return (
     '<div class="card"><div class="dflex jcsb aic fwrap g8"><h2 class="m0">Jadwal tagihan</h2>' +
     '<button type="button" class="lk" data-goto="jadwal">Semua tagihan' +
     LK_ARROW +
-    '</button></div><div class="sub mb8">' +
-    (list.length
-      ? list.length + ' tagihan s.d. 3 bulan &middot; ' + rp(sum) + ' &middot; ' + span
-      : '3 bulan ke depan &middot; ' + span) +
-    '</div><div class="grow">' +
+    '</button></div><div class="sub mb8">6 tagihan ke depan</div><div class="grow">' +
     (body || '<div class="empty">Belum ada tagihan terjadwal.</div>') +
     summary +
     '</div></div>'
@@ -1131,7 +1017,6 @@ function renderRincian() {
     '</td><td></td></tr></tbody></table></div></div>';
   var tx = recentTxCard();
   $('v-rincian').innerHTML =
-    (S.items.length ? globalPeriodHtml(C) : '') +
     (S.items.length ? '' : emptyItemsHtml()) +
     '<div class="splitH">' +
     saldoHero(c, R) +
@@ -1148,7 +1033,6 @@ function renderRincian() {
     (tx ? '<div class="splitR">' + table + tx + '</div>' : table);
   chartMount($('v-rincian'));
   gdApply($('v-rincian'));
-  dashBadges(C);
 }
 
 /** Baris "dilewati" pada rincian sebuah bulan. */
@@ -1177,44 +1061,19 @@ function bindRincian() {
   $('v-rincian').onchange = function (e) {
     if (e.target.matches('[data-expmonth]')) {
       expenseLastMonth = e.target.value;
-      expenseMonth = expenseLastMonth;
+      expenseMonth = 'm';
       renderRincian();
       $('v-rincian').querySelector('[data-expmonth]').focus();
       return;
     }
-    if (e.target.matches('[data-dashmonth]')) {
-      var Cm = yearCash();
-      dashPeriod = { p: 'm', m: +e.target.value };
-      setDashPeriod('m', Cm);
-      return;
-    }
   };
   $('v-rincian').onclick = function (e) {
-    var dp = e.target.closest('[data-dashp]');
-    if (dp) {
-      setDashPeriod(dp.dataset.dashp, yearCash());
-      return;
-    }
-    var rs = e.target.closest('[data-resync]');
-    if (rs) {
-      var Cr = yearCash(),
-        m = dashMap(Cr);
-      if (m) {
-        switch (rs.dataset.resync) {
-          case 'flow': flowPeriod = m.flow; break;
-          case 'bs': bsPeriod = m.bs; break;
-          case 'cat': catPeriod = m.cat; break;
-          case 'exp': expenseMonth = m.exp; expenseLastMonth = m.exp; break;
-        }
-        renderRincian();
-      }
-      return;
-    }
     var expm = e.target.closest('[data-expm]');
     if (expm) {
-      expenseMonth = expm.dataset.expm === 'all' ? 'all' : expenseLastMonth;
+      expenseMonth = expm.dataset.expm;
+      if (expenseMonth === 'm' && !expenseLastMonth) expenseMonth = 'all';
       renderRincian();
-      var active = $('v-rincian').querySelector('[data-expm="' + (expenseMonth === 'all' ? 'all' : 'month') + '"]');
+      var active = $('v-rincian').querySelector('[data-expm="' + expenseMonth + '"]');
       if (active) active.focus();
       return;
     }

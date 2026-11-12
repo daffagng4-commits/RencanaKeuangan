@@ -51,8 +51,7 @@ const { boot } = require('./ui.js');
     });
     assert(billsCard, 'kartu jadwal tagihan ada');
     const billsText = billsCard.textContent;
-    assert(/21 tagihan s\.d\. 3 bulan/.test(billsText), 'jumlah Nov-Jan = 21: ' + billsText);
-    assert(/Nov 2026\s*–\s*Jan 2027/.test(billsText.replace(/\s+/g, ' ')), 'rentang Nov 2026 – Jan 2027');
+    assert(/6 tagihan ke depan/.test(billsText), 'subjudul: ' + billsText);
     assert(!/Feb/.test(billsText), 'Februari tidak ikut');
 
     // === 1c: transaksi terakhir hanya 6-12 Nov, fallback label benar ===

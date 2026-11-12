@@ -959,13 +959,6 @@ button.alat-item { width: 100%; border: 0; background: transparent; text-align: 
 .it2.minus-first::before { content: '⚠ '; margin-right: 4px; }
 .it2.minus-after { color: var(--mut); }
 .it2.minus-after::before { content: '− '; margin-right: 4px; color: var(--mut); }
-.dash-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; padding: 10px 14px; background: var(--card); border: 1px solid var(--ln); border-radius: var(--r); }
-.dash-label { font-size: 12px; font-weight: 600; color: var(--mut); }
-.dash-controls .cat-tabs { margin: 0; }
-.dash-note { font-size: 12px; color: var(--mut); margin-left: auto; }
-.dash-note.warn { color: var(--wr); }
-.dash-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--wr); background: var(--wrs); padding: 2px 8px; border-radius: 99px; margin-left: 8px; }
-.dash-badge button { font-size: 11px; padding: 1px 6px; min-height: 20px; border-radius: 99px; }
 .runway-box.runway-safe {
   background: var(--ins);
   border-color: color-mix(in srgb, var(--in) 26%, transparent);
@@ -1248,6 +1241,7 @@ svg.lc .lc-mark circle { fill: var(--wr); stroke: var(--card); stroke-width: 2; 
 svg.lc .lc-mk-label { font-size: 10.5px; fill: var(--wr); font-weight: 600; }
 .lc-lg { display: flex; align-items: center; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--mut); }
 .lc-lg span { display: inline-flex; align-items: center; gap: 6px; }
+.lc-lg [hidden] { display: none; }
 .lc-lg .sw { display: inline-block; width: 18px; height: 3px; border-radius: 2px; background: currentColor; }
 .lc-lg .p .sw { height: 0; border-top: 2px dashed currentColor; }
 svg.lc .lc-cd { fill: var(--ac); stroke: var(--card); stroke-width: 2; }

@@ -49,8 +49,8 @@ const { boot } = require('./ui.js');
     assert.strictEqual(fn.date, '2026-12-15', 'saldo minus 15 Des');
     assert.strictEqual(fn.days, 33, '33 hari lagi');
     assert.strictEqual(fn.balanceAfter, -1213000, 'minus Rp 1.213.000');
-    assert(/Saldo mulai minus/.test(txt), 'ada baris ringkasan minus');
-    assert(/15 Des/.test(txt), 'ringkasan menyebut 15 Des');
+    assert(!/Saldo mulai minus/.test(txt), 'ringkasan minus dihapus');
+    assert(/6 tagihan ke depan/.test(txt), 'subjudul 6 tagihan ke depan');
 
     // === C: tooltip saldo proyeksi (atribut title) ===
     const rows = [...bills.querySelectorAll('.it2.kit')];
@@ -79,31 +79,34 @@ const { boot } = require('./ui.js');
     const jatah = hero && hero.querySelector('.jatah');
     assert(jatah, 'kartu jatah ada');
     assert(/Tidak tersedia/.test(jatah.textContent), 'jatah menampilkan Tidak tersedia saat minus');
-    assert(/Perlu kurangi/.test(jatah.textContent), 'jatah menampilkan kekurangan');
+    assert(!/Perlu kurangi/.test(jatah.textContent), 'kalimat kekurangan dihapus');
 
     // === A3: chip dipersingkat dan punya title ===
     const chip = w.document.querySelector('td.c-c .chip[title]');
     assert(chip, 'chip rincian punya title nama lengkap');
 
-    // === D: filter global mapping ===
-    const C = w.yearCash();
-    w.setDashPeriod('y', C);
-    assert.strictEqual(w.flowPeriod, 'y', 'global Tahun -> flow y');
-    assert.strictEqual(w.bsPeriod, 'y', 'global Tahun -> bs y');
-    assert.strictEqual(w.catPeriod, 'y', 'global Tahun -> cat y');
-    assert.strictEqual(w.expenseMonth, 'all', 'global Tahun -> expense all');
+    // === filter global dihapus ===
+    assert(!w.document.querySelector('.dash-controls, .dash-badge'), 'tanpa filter global/badge Beda');
+    assert(!/7 hari/.test(flowCard.textContent), 'Arus saldo: label Minggu');
+    assert(/Minggu/.test(flowCard.textContent), 'Arus saldo punya Minggu');
 
-    w.setDashPeriod('m', C);
-    assert.strictEqual(w.flowPeriod, 'm', 'global Bulan -> flow m');
-    assert.strictEqual(w.bsPeriod, 'm', 'global Bulan -> bs m');
-    assert.strictEqual(w.catPeriod, 'm', 'global Bulan -> cat m');
-    assert(w.expenseMonth !== 'all', 'global Bulan -> expense bulan');
+    // === Item pengeluaran terbesar: Semua/Minggu/Bulan/Tahun ===
+    const top = cards.find((c) => /Item pengeluaran terbesar/.test(c.textContent));
+    const labels = [...top.querySelectorAll('[data-expm]')].map((b) => b.textContent);
+    assert.deepStrictEqual(labels, ['Semua', 'Minggu', 'Bulan', 'Tahun']);
 
-    // Perbedaan manual ditandai
-    w.bsPeriod = 'y';
-    w.renderAll();
-    const badge = w.document.querySelector('.dash-badge');
-    assert(badge, 'badge beda filter muncul saat kartu manual berbeda');
+    // === Butir 8: grafik hari ini = saldo realtime; legend ===
+    const pts = svg.closest('.lc-card');
+    const lg = (k) => pts.querySelector('.lc-lg .' + k);
+    assert(lg('s') && lg('p'), 'legend ada');
+    for (const per of ['w', 'm', 'y']) {
+      w.flowPeriod = per;
+      w.renderAll();
+      const c2 = [...w.document.querySelectorAll('.card')].find((c) => /Arus saldo/.test(c.textContent));
+      const l = (k) => c2.querySelector('.lc-lg .' + k).hidden;
+      if (per === 'w') assert(!l('s') && l('p'), 'Minggu: hanya Nyata');
+      if (per === 'y') assert(!l('s') && !l('p'), 'Tahun: keduanya');
+    }
 
     console.log('OK dashboard_abcd');
   } finally {

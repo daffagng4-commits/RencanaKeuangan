@@ -23,7 +23,7 @@ const { boot } = require('./ui.js');
     assert.strictEqual(card.querySelector('.expense-fill').style.background,w.catColor('Investasi'));
     assert.strictEqual(card.querySelector('.expense-fill').style.width,'100%');
     assert(card.querySelector('.rest'), 'sisa di luar lima teratas');
-    click(card.querySelector('[data-expm="month"]'));
+    click(card.querySelector('[data-expm="m"]'));
     let month = $('v-rincian').querySelector('[data-expmonth]');
     month.value='11'; month.dispatchEvent(new w.Event('change',{bubbles:true}));
     card = $('v-rincian').querySelector('.expense-card');

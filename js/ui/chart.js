@@ -313,6 +313,12 @@ function areaInit(svg, cfg) {
       projStart = Math.max(0, Math.floor(xb)),
       hasSolid = firstProj > 0,
       hasProj = firstProj < n;
+    var lgEl = svg.closest('.lc-card');
+    if (lgEl) {
+      var lgS = lgEl.querySelector('.lc-lg .s'), lgP = lgEl.querySelector('.lc-lg .p');
+      if (lgS) lgS.hidden = !hasSolid;
+      if (lgP) lgP.hidden = !hasProj;
+    }
     function pathFor(arr, offset) {
       var p = '';
       arr.forEach(function (val, i) {

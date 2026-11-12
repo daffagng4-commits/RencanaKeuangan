@@ -36,7 +36,7 @@ const {boot}=require('./ui.js');
  assert(dots.length>1 && new Set(dots).size===dots.length,'warna tiap kategori unik');
  assert($('v-rincian').querySelector('.cat-tabs'),'tab periode kategori');
  console.log('--- Kasus 2 (saldo kurang) ---'); P.tx=[]; w.S.saldo=400000; w.renderAll(); console.log(txt());
- assert(/kurang|Saldo habis/.test(txt())&&hero().querySelector('.big.neg'),'merah & saldo minus');
+ assert(/minus|Saldo habis/.test(txt())&&hero().querySelector('.big.neg'),'merah & saldo minus');
  assert(/Tidak tersedia/.test(hero().querySelector('.big').textContent),'jatah ditandai tidak tersedia saat saldo akhir minus');
  console.log('--- Kasus 3 (tahun lain) ---'); w.S.saldo=5000000; w.S.startMonth=0; w.switchYear(2027); w.renderAll(); console.log(txt().slice(0,200));
  assert(/Jatah jajan per bulan/.test(txt())&&/Saldo Realtime/.test(txt()),'tetap jatah + saldo realtime');
