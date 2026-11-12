@@ -21,7 +21,7 @@ const { boot } = require('./ui.js');
 
   w.__today = '2026-11-08';
   w.switchYear(2026);
-  w.S.startMonth = 0;
+  w.S.startMonth = 0; w.S.smManual = true;
   w.S.items = [it({ id: 'a', name: 'A', price: 900000, cat: 'Hiburan' }), it({ id: 'b', name: 'B', price: 100000, cat: 'Makan' }), it({ id: 'c', name: 'C', price: 500000, cat: 'Investasi' })];
   w.S.paid = {};
   w.S.skip = {};

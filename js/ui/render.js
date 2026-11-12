@@ -17,39 +17,59 @@ function renderAll() {
   modeUi();
 }
 
-/** Pilihan manual "Bulan mulai" per tahun: preferensi perangkat (localStorage), tidak ikut sinkron. */
-function smManual(set) {
-  var o = {};
-  try { o = JSON.parse(localStorage.getItem('rk-sm-manual') || '{}') || {}; } catch (e) {}
-  if (set) {
-    o[S.year] = 1;
-    try { localStorage.setItem('rk-sm-manual', JSON.stringify(o)); } catch (e) {}
+/** Migrasi penanda manual lama (localStorage rk-sm-manual) untuk tahun kalender saja.
+ *  Nilai tersimpan menang; penanda hanya dipindahkan bila tersimpan != bulan kalender.
+ *  Data lama yang sudah sama dengan kalender dianggap auto (kunci lokal dihapus). */
+function migSmManual() {
+  var o;
+  try { o = JSON.parse(localStorage.getItem('rk-sm-manual') || '{}') || {}; } catch (e) { o = {}; }
+  var t = todayISO(), cy = +t.slice(0, 4), cm = +t.slice(5, 7) - 1;
+  var Y = ALL.data[cy], mig = !!(o[cy] && Y && Y.smManual !== true && +Y.startMonth !== cm);
+  if (mig) Y.smManual = true;
+  if (Object.keys(o).length) { try { localStorage.removeItem('rk-sm-manual'); } catch (e) {} }
+}
+
+/** Satu pintu penyimpanan perubahan Bulan saldo. v = angka 0..11 atau 'auto'. */
+function setStartMonth(v) {
+  var t = todayISO(), cur = +S.year === +t.slice(0, 4);
+  if (v === 'auto') {
+    if (!cur) return;
+    delete S.smManual;
+  } else {
+    v = Math.min(11, Math.max(0, +v || 0));
+    if (cur && v !== smEff()) S.smManual = true;
+    S.startMonth = v;
   }
-  return !!o[S.year];
+  openRows = {};
+  save();
+  smSyncUI();
+  renderAll();
 }
 
-/** Tahun berjalan + belum dipilih manual: Bulan mulai = bulan kalender. true bila berubah. */
-function autoStartMonth() {
-  var t = todayISO(), m = +t.slice(5, 7) - 1;
-  if (+S.year !== +t.slice(0, 4) || smManual() || +S.startMonth === m) return false;
-  S.startMonth = m;
-  return true;
+/** Sinkronkan tampilan dropdown #sm dengan keadaan efektif. */
+function smSyncUI() {
+  var sm = $('sm');
+  if (!sm) return;
+  var t = todayISO(), cur = +S.year === +t.slice(0, 4);
+  var oa = $('sm-auto');
+  if (oa) { oa.textContent = 'Otomatis (' + MON[+t.slice(5, 7) - 1] + ')'; oa.disabled = !cur; }
+  sm.value = cur && S.smManual !== true ? 'auto' : String(Math.min(11, Math.max(0, +S.startMonth || 0)));
+  smAutoMark();
 }
 
-/** Penanda #sm: "auto" (mengikuti kalender) atau "manual" (pilihan sendiri). */
+/** Penanda #sm: auto = border putus-putus, manual = border aksen. */
 function smAutoMark() {
   var sm = $('sm');
   if (!sm) return;
-  var cur = +S.year === +todayISO().slice(0, 4);
-  var man = smManual();
-  sm.setAttribute('data-auto', cur && !man ? 'auto' : man ? 'manual' : '');
-  sm.title = cur && !man ? 'Mengikuti bulan kalender; pilih bulan lain untuk menetapkan manual' : man ? 'Dipilih manual' : '';
+  var t = todayISO(), cur = +S.year === +t.slice(0, 4);
+  var man = cur && S.smManual === true;
+  sm.setAttribute('data-auto', cur ? (man ? 'manual' : 'auto') : '');
+  sm.title = !cur ? 'Bulan saldo tersimpan untuk profil tahun ini' : man ? 'Dipilih manual; pilih "Otomatis" untuk mengikuti kalender lagi' : 'Mengikuti bulan kalender; pilih bulan tertentu untuk menetapkan manual';
 }
 
-/** Tanggal berganti / tab aktif lagi: Bulan mulai ikut kalender (bila belum manual), lalu render ulang. */
+/** Tanggal berganti / tab aktif lagi: hitung ulang bulan saldo efektif tanpa menulis data. */
 function refreshToday() {
-  if (autoStartMonth()) $('sm').value = S.startMonth;
-  smAutoMark();
+  smSyncUI();
   renderAll();
 }
 
@@ -57,8 +77,7 @@ function refreshToday() {
 function syncUI() {
   $('saldo').value = (+S.saldo || 0).toLocaleString('id-ID');
   $('year').value = S.year;
-  $('sm').value = S.startMonth;
-  smAutoMark();
+  smSyncUI();
   openRows = {};
   renderAll();
   resetForm();

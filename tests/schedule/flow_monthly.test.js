@@ -7,7 +7,7 @@ const { boot } = require('./ui.js');
   const { w, $, click } = t;
   w.__today = '2026-12-01';
   w.switchYear(2026);
-  w.S.adj = []; w.S.startMonth = 10; w.S.saldo = 5000000; w.S.items = []; w.S.paid = {}; w.S.skip = {};
+  w.S.adj = []; w.S.startMonth = 10; w.S.smManual = true; w.S.saldo = 5000000; w.S.items = []; w.S.paid = {}; w.S.skip = {};
   const P = w.kasLinked();
   P.tx = [
     { id: 'i1', d: '2026-11-15', t: '+', amt: 2000000, cat: 'Gaji', note: '' },

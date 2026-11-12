@@ -113,6 +113,7 @@ test('penyesuaian saldo: sekali, mulai bulan, dan berulang', () => {
 test('pengingat: terlambat, lebih lama, akan datang, dan lintas tahun', () => {
   const Y = newYear(c, 2035, {});
   Y.items.push(item({ id: 1 }));
+  Y.smManual = true; // pin Januari agar pengingat mencakup Januari-Desember
   c.window = { __today: '2035-06-10' };
   let r = c.reminders(7);
   assert.deepEqual(Array.from(r.late, (x) => x.iso), ['2035-05-01', '2035-06-01']);

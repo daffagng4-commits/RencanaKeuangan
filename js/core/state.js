@@ -101,6 +101,7 @@ function norm(a) {
     s.year = +k;
     s.saldo = +s.saldo || 0;
     s.startMonth = Math.min(11, Math.max(0, +s.startMonth || 0));
+    if (s.smManual !== true) delete s.smManual;
     s.items = (Array.isArray(s.items) ? s.items : []).map(function (x, i) {
       return normItem(x, i, s.year);
     });
@@ -315,6 +316,19 @@ function chNorm(x) {
     if (q && D.test(q.d) && +q.p > 0) out.push({ from: q.d, to: '', price: +q.p, n: null, unit: null });
   });
   return out.sort(cmpFrom);
+}
+
+/** Bulan saldo efektif untuk tahun y (objek Y opsional). Tahun kalender tanpa penanda manual = bulan kalender. */
+function smEffYear(y, Y) {
+  Y = Y || ALL.data[y] || {};
+  var t = todayISO();
+  if (+y === +t.slice(0, 4) && Y.smManual !== true) return +t.slice(5, 7) - 1;
+  return Math.min(11, Math.max(0, +Y.startMonth || 0));
+}
+
+/** Bulan saldo efektif tahun aktif. */
+function smEff() {
+  return smEffYear(S.year, S);
 }
 
 /** Simpan state ke localStorage. Menaikkan rev + menjadwalkan push hanya jika data benar-benar berubah. */

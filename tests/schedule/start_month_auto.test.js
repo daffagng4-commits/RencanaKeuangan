@@ -1,4 +1,4 @@
-// Bulan mulai: auto ikut kalender (tahun berjalan), manual menang, ganti hari/tab memicu render ulang.
+// Bulan mulai: auto ikut kalender (tahun berjalan), manual menang, ganti hari/tab memicu render ulang tanpa menulis data.
 const assert = require('assert');
 const { boot } = require('./ui.js');
 
@@ -8,40 +8,59 @@ const { boot } = require('./ui.js');
   const { w } = t;
   try {
     w.localStorage.removeItem('rk-sm-manual');
+    // Tahun berjalan, tanpa penanda manual: efektif mengikuti kalender; data tersimpan tidak dirubah.
     w.__today = '2026-11-12';
     w.switchYear(2026);
     w.S.startMonth = 0;
-    w.refreshToday();
-    assert.strictEqual(+w.S.startMonth, 10, 'tahun berjalan: auto = Nov');
-    assert.strictEqual(w.$('sm').getAttribute('data-auto'), 'auto');
+    assert.strictEqual(w.smEff(), 10, 'tahun berjalan: auto = Nov');
+    assert.strictEqual(+w.S.startMonth, 0, 'data tersimpan tetap 0, tidak dimutasi');
+    assert.strictEqual(w.$('sm').value, 'auto');
 
-    // pergantian 30 Nov -> 1 Des, lalu 31 Des -> 1 Jan (tahun aktif 2026 tidak pindah)
+    // Pergantian hari tidak menulis data.
     w.__today = '2026-12-01';
     w.refreshToday();
-    assert.strictEqual(+w.S.startMonth, 11, 'auto ikut Des');
+    assert.strictEqual(w.smEff(), 11, 'auto ikut Des');
+    assert.strictEqual(+w.S.startMonth, 0, 'refreshToday tidak menulis startMonth');
+    assert.strictEqual(w.$('sm').value, 'auto');
+
+    // Tahun lampau (relatif terhadap today): nilai tersimpan dipakai apa adanya.
     w.__today = '2027-01-01';
     w.refreshToday();
     assert.strictEqual(+w.S.year, 2026, 'tahun aktif tidak berpindah otomatis');
-    assert.strictEqual(+w.S.startMonth, 11, 'tahun lampau: bulan mulai tidak diubah');
-    assert.strictEqual(w.$('sm').getAttribute('data-auto'), '', 'tahun lampau: tanpa penanda');
+    assert.strictEqual(w.smEff(), 0, 'tahun lampau: bulan saldo tidak diubah (pakai tersimpan)');
+    assert.strictEqual(w.$('sm').value, '0');
 
-    // tahun depan (simulasi): tidak disentuh
+    // Tahun depan: nilai tersimpan dipakai apa adanya.
+    w.__today = '2026-12-05';
     w.switchYear(2028);
     w.S.startMonth = 3;
-    w.__today = '2026-12-05';
-    w.refreshToday();
-    assert.strictEqual(+w.S.startMonth, 3, 'tahun depan: tidak diubah');
+    assert.strictEqual(w.smEff(), 3, 'tahun depan: tidak diubah');
+    assert.strictEqual(w.S.smManual, undefined, 'tahun depan tidak ditandai manual');
 
-    // manual menang
+    // Manual: pilih bulan berbeda dari efektif di tahun berjalan -> penanda tersinkron + nilai tersimpan.
     w.__today = '2026-11-12';
     w.switchYear(2026);
+    w.S.startMonth = 0; // sisa auto lama
+    delete w.S.smManual;
     w.$('sm').value = '4';
     w.$('sm').onchange.call(w.$('sm'));
+    assert.strictEqual(w.S.smManual, true);
     assert.strictEqual(+w.S.startMonth, 4);
+    assert.strictEqual(w.$('sm').value, '4');
     assert.strictEqual(w.$('sm').getAttribute('data-auto'), 'manual');
+
+    // Manual tidak ditimpa saat kalender berganti.
     w.__today = '2026-12-01';
     w.refreshToday();
-    assert.strictEqual(+w.S.startMonth, 4, 'manual tidak ditimpa');
+    assert.strictEqual(w.smEff(), 4, 'manual tidak ditimpa');
+
+    // Kembali ke otomatis menghapus penanda.
+    w.$('sm').value = 'auto';
+    w.$('sm').onchange.call(w.$('sm'));
+    assert.strictEqual(w.S.smManual, undefined);
+    assert.strictEqual(w.smEff(), 11);
+    assert.strictEqual(w.$('sm').value, 'auto');
+
     console.log('OK start_month_auto');
   } finally {
     w.close();

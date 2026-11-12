@@ -8,6 +8,49 @@
 var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 var FULL_MON = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
+// Urutan = prioritas. Hindari kata umum seperti beli, top up, atau bulan.
+var ITEM_NAME_TRIGGERS = [
+  { nama: 'Saham Lokal 40%', kata: ['saham lokal', 'bbri'] },
+  { nama: 'ETF 60%', kata: ['etf'] },
+  { nama: 'BTC', kata: ['btc'] },
+  { nama: 'BPJS', kata: ['bpjs'] },
+  { nama: 'Warp', kata: ['warp'] },
+  { nama: 'Torbox', kata: ['torbox'] },
+  { nama: 'Kuota', kata: ['kuota'] },
+  { nama: 'Vidio', kata: ['vidio'] },
+  { nama: 'JKT48', kata: ['jkt48'] },
+  { nama: 'Hutang', kata: ['hutang'] }
+];
+
+function itemTriggerMatches(raw) {
+  var text = String(raw || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('id-ID');
+  return ITEM_NAME_TRIGGERS.filter(function (rule) {
+    return rule.kata.some(function (word) {
+      var key = word.trim().replace(/\s+/g, ' ').toLocaleLowerCase('id-ID');
+      if (!key) return false;
+      var at = text.indexOf(key);
+      while (at >= 0) {
+        var before = Array.from(text.slice(0, at)).pop() || '', after = Array.from(text.slice(at + key.length))[0] || '';
+        if (!/[\p{L}\p{N}_]/u.test(before) && !/[\p{L}\p{N}_]/u.test(after)) return true;
+        at = text.indexOf(key, at + 1);
+      }
+      return false;
+    });
+  });
+}
+
+/** Keterangan pembayaran saja; tanda kurung bermakna dan catatan bebas tetap utuh. */
+function normalisasiNamaItem(namaMentah) {
+  var matches = itemTriggerMatches(namaMentah);
+  if (matches.length) return matches[0].nama;
+  var name = String(namaMentah || '').trim().replace(/\s+/g, ' ');
+  name = name.replace(/\(\s*(?:lunas|cicil(?:an)?|dari total\b[^()]*)\s*\)/gi, ' ').trim();
+  var tail = /\s+(?:lunas|cicil(?:an)?|jan(?:uari)?|feb(?:ruari)?|mar(?:et)?|apr(?:il)?|mei|jun(?:i)?|jul(?:i)?|agu(?:stus)?|sep(?:tember)?|okt(?:ober)?|nov(?:ember)?|des(?:ember)?)$/i;
+  while (tail.test(name)) name = name.replace(tail, '').trim();
+  name = name.replace(/\s+/g, ' ');
+  return name || String(namaMentah || '').trim();
+}
+
 /** Escape HTML. */
 function esc(t) {
   return String(t).replace(/[&<>"]/g, function (c) {
@@ -321,7 +364,7 @@ function adjMonths(a) {
  */
 function calc() {
   var y = +S.year,
-    sm = +S.startMonth || 0,
+    sm = smEff(),
     from = Date.UTC(y, sm, 1);
   var occs = {},
     byCat = {},
@@ -424,7 +467,7 @@ function calc() {
 function incomeYear() {
   var KL = kasLinked(),
     y = +S.year,
-    sm = +S.startMonth || 0,
+    sm = smEff(),
     sum = 0;
   if (KL)
     KL.tx.forEach(function (x) {
@@ -746,7 +789,7 @@ function realTx(key) {
 /** Tagihan yang mungkin cocok dengan transaksi `tx` (tahun aktif, mulai bulan saldo), urut dari yang paling cocok. */
 function matchCandidates(tx, includePaid) {
   var y = +S.year,
-    from = Date.UTC(y, +S.startMonth || 0, 1),
+    from = Date.UTC(y, smEff(), 1),
     t0 = Date.parse(tx.d + 'T00:00:00Z'),
     out = [];
   S.items.forEach(function (it) {
@@ -858,7 +901,7 @@ function autoMatchTx(tx) {
  */
 function realisasiData() {
   var y = +S.year,
-    from = Date.UTC(y, +S.startMonth || 0, 1),
+    from = Date.UTC(y, smEff(), 1),
     today = Date.parse(todayISO() + 'T00:00:00Z'),
     months = [],
     rows = [],
@@ -901,6 +944,19 @@ function realisasiData() {
   return { months: months, rows: rows, planPaid: tot.planPaid, act: tot.act, nPaid: tot.nPaid, nReal: tot.nReal, late: late };
 }
 
+
+/* js/core/state.js */
+function smEffYear(y, Y) {
+  Y = Y || ALL.data[y] || {};
+  var t = todayISO();
+  if (+y === +t.slice(0, 4) && Y.smManual !== true) return +t.slice(5, 7) - 1;
+  return Math.min(11, Math.max(0, +Y.startMonth || 0));
+}
+
+/* js/core/state.js */
+function smEff() {
+  return smEffYear(S.year, S);
+}
 
 /* js/core/reminders.js */
 function todayISO() {
@@ -1161,4 +1217,5 @@ function state() { return { all: ALL, s: S }; }
 export { setS, state, MON, FULL_MON, esc, rp, parseRp, fd, isoD, fmtD, shortP, pad2, addDaysISO,
   at, series, occ, nextDates, every, priceAt, priceSeg, sumP, lastOcc,
   calc, incomeYear, adjMonths, parseQuickItem, kasLinked, kasBase, kasRows, kasSum, kasDerived,
-  kasGoals, goalMonths, goalMonthsIn, monthList, todayISO, isInvestCat, INVEST_RE, mNorm, realTx };
+  kasGoals, goalMonths, goalMonthsIn, monthList, todayISO, isInvestCat, INVEST_RE, mNorm, realTx,
+  smEffYear, smEff };

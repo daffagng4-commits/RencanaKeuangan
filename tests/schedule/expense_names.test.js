@@ -26,7 +26,7 @@ const { boot } = require('./ui.js');
     assert(!card.querySelector('.expense-legend'));
     assert(!card.querySelector('.expense-label small'));
     assert.strictEqual(w.cashPeriod(w.yearCash(),'y').out,11396500);
-    w.S.startMonth=0; w.__today='2026-06-15'; w.expenseLastMonth='';
+    w.S.startMonth=0; w.S.smManual=true; w.__today='2026-06-15'; w.expenseLastMonth='';
     w.kasLinked().tx=Array.from({length:12},(_,i)=>({id:'m'+i,d:'2026-'+String(i+1).padStart(2,'0')+'-01',t:'-',amt:100,cat:'Tagihan',note:'Internet'}));
     w.renderAll();
     assert.strictEqual(w.document.querySelectorAll('[data-expm]').length,3,'Minggu/Bulan/Tahun');

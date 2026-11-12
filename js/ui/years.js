@@ -9,7 +9,7 @@ function renderYears() {
       return a - b;
     });
   var sum = $('yr-sum');
-  if (sum) sum.textContent = S.year + ' · ' + MON[+S.startMonth || 0] + ' · ' + rp(+S.saldo || 0);
+  if (sum) sum.textContent = S.year + ' · ' + MON[smEff()] + ' · ' + rp(+S.saldo || 0);
   $('yb').innerHTML =
     ks
       .map(function (k) {

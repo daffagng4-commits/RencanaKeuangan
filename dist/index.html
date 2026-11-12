@@ -2633,6 +2633,7 @@ function norm(a) {
     s.year = +k;
     s.saldo = +s.saldo || 0;
     s.startMonth = Math.min(11, Math.max(0, +s.startMonth || 0));
+    if (s.smManual !== true) delete s.smManual;
     s.items = (Array.isArray(s.items) ? s.items : []).map(function (x, i) {
       return normItem(x, i, s.year);
     });
@@ -2847,6 +2848,19 @@ function chNorm(x) {
     if (q && D.test(q.d) && +q.p > 0) out.push({ from: q.d, to: '', price: +q.p, n: null, unit: null });
   });
   return out.sort(cmpFrom);
+}
+
+/** Bulan saldo efektif untuk tahun y (objek Y opsional). Tahun kalender tanpa penanda manual = bulan kalender. */
+function smEffYear(y, Y) {
+  Y = Y || ALL.data[y] || {};
+  var t = todayISO();
+  if (+y === +t.slice(0, 4) && Y.smManual !== true) return +t.slice(5, 7) - 1;
+  return Math.min(11, Math.max(0, +Y.startMonth || 0));
+}
+
+/** Bulan saldo efektif tahun aktif. */
+function smEff() {
+  return smEffYear(S.year, S);
 }
 
 /** Simpan state ke localStorage. Menaikkan rev + menjadwalkan push hanya jika data benar-benar berubah. */
@@ -3294,7 +3308,7 @@ function adjMonths(a) {
  */
 function calc() {
   var y = +S.year,
-    sm = +S.startMonth || 0,
+    sm = smEff(),
     from = Date.UTC(y, sm, 1);
   var occs = {},
     byCat = {},
@@ -3397,7 +3411,7 @@ function calc() {
 function incomeYear() {
   var KL = kasLinked(),
     y = +S.year,
-    sm = +S.startMonth || 0,
+    sm = smEff(),
     sum = 0;
   if (KL)
     KL.tx.forEach(function (x) {
@@ -3441,7 +3455,7 @@ function reminders(horizon) {
   Object.keys(ALL.data).forEach(function (yk) {
     var Y = ALL.data[yk],
       y = +yk,
-      from = Date.UTC(y, +Y.startMonth || 0, 1);
+      from = Date.UTC(y, smEffYear(y, Y), 1);
     Y.items.forEach(function (it) {
       occ(it, y).forEach(function (t) {
         if (t < from) return;
@@ -3483,7 +3497,7 @@ function markPastPaid() {
   Object.keys(ALL.data).forEach(function (yk) {
     var Y = ALL.data[yk],
       y = +yk,
-      from = Date.UTC(y, +Y.startMonth || 0, 1);
+      from = Date.UTC(y, smEffYear(y, Y), 1);
     Y.items.forEach(function (it) {
       occ(it, y).forEach(function (t) {
         var d = isoD(t),
@@ -3567,7 +3581,7 @@ function realTx(key) {
 /** Tagihan yang mungkin cocok dengan transaksi `tx` (tahun aktif, mulai bulan saldo), urut dari yang paling cocok. */
 function matchCandidates(tx, includePaid) {
   var y = +S.year,
-    from = Date.UTC(y, +S.startMonth || 0, 1),
+    from = Date.UTC(y, smEff(), 1),
     t0 = Date.parse(tx.d + 'T00:00:00Z'),
     out = [];
   S.items.forEach(function (it) {
@@ -3679,7 +3693,7 @@ function autoMatchTx(tx) {
  */
 function realisasiData() {
   var y = +S.year,
-    from = Date.UTC(y, +S.startMonth || 0, 1),
+    from = Date.UTC(y, smEff(), 1),
     today = Date.parse(todayISO() + 'T00:00:00Z'),
     months = [],
     rows = [],
@@ -4028,39 +4042,59 @@ function renderAll() {
   modeUi();
 }
 
-/** Pilihan manual "Bulan mulai" per tahun: preferensi perangkat (localStorage), tidak ikut sinkron. */
-function smManual(set) {
-  var o = {};
-  try { o = JSON.parse(localStorage.getItem('rk-sm-manual') || '{}') || {}; } catch (e) {}
-  if (set) {
-    o[S.year] = 1;
-    try { localStorage.setItem('rk-sm-manual', JSON.stringify(o)); } catch (e) {}
+/** Migrasi penanda manual lama (localStorage rk-sm-manual) untuk tahun kalender saja.
+ *  Nilai tersimpan menang; penanda hanya dipindahkan bila tersimpan != bulan kalender.
+ *  Data lama yang sudah sama dengan kalender dianggap auto (kunci lokal dihapus). */
+function migSmManual() {
+  var o;
+  try { o = JSON.parse(localStorage.getItem('rk-sm-manual') || '{}') || {}; } catch (e) { o = {}; }
+  var t = todayISO(), cy = +t.slice(0, 4), cm = +t.slice(5, 7) - 1;
+  var Y = ALL.data[cy], mig = !!(o[cy] && Y && Y.smManual !== true && +Y.startMonth !== cm);
+  if (mig) Y.smManual = true;
+  if (Object.keys(o).length) { try { localStorage.removeItem('rk-sm-manual'); } catch (e) {} }
+}
+
+/** Satu pintu penyimpanan perubahan Bulan saldo. v = angka 0..11 atau 'auto'. */
+function setStartMonth(v) {
+  var t = todayISO(), cur = +S.year === +t.slice(0, 4);
+  if (v === 'auto') {
+    if (!cur) return;
+    delete S.smManual;
+  } else {
+    v = Math.min(11, Math.max(0, +v || 0));
+    if (cur && v !== smEff()) S.smManual = true;
+    S.startMonth = v;
   }
-  return !!o[S.year];
+  openRows = {};
+  save();
+  smSyncUI();
+  renderAll();
 }
 
-/** Tahun berjalan + belum dipilih manual: Bulan mulai = bulan kalender. true bila berubah. */
-function autoStartMonth() {
-  var t = todayISO(), m = +t.slice(5, 7) - 1;
-  if (+S.year !== +t.slice(0, 4) || smManual() || +S.startMonth === m) return false;
-  S.startMonth = m;
-  return true;
+/** Sinkronkan tampilan dropdown #sm dengan keadaan efektif. */
+function smSyncUI() {
+  var sm = $('sm');
+  if (!sm) return;
+  var t = todayISO(), cur = +S.year === +t.slice(0, 4);
+  var oa = $('sm-auto');
+  if (oa) { oa.textContent = 'Otomatis (' + MON[+t.slice(5, 7) - 1] + ')'; oa.disabled = !cur; }
+  sm.value = cur && S.smManual !== true ? 'auto' : String(Math.min(11, Math.max(0, +S.startMonth || 0)));
+  smAutoMark();
 }
 
-/** Penanda #sm: "auto" (mengikuti kalender) atau "manual" (pilihan sendiri). */
+/** Penanda #sm: auto = border putus-putus, manual = border aksen. */
 function smAutoMark() {
   var sm = $('sm');
   if (!sm) return;
-  var cur = +S.year === +todayISO().slice(0, 4);
-  var man = smManual();
-  sm.setAttribute('data-auto', cur && !man ? 'auto' : man ? 'manual' : '');
-  sm.title = cur && !man ? 'Mengikuti bulan kalender; pilih bulan lain untuk menetapkan manual' : man ? 'Dipilih manual' : '';
+  var t = todayISO(), cur = +S.year === +t.slice(0, 4);
+  var man = cur && S.smManual === true;
+  sm.setAttribute('data-auto', cur ? (man ? 'manual' : 'auto') : '');
+  sm.title = !cur ? 'Bulan saldo tersimpan untuk profil tahun ini' : man ? 'Dipilih manual; pilih "Otomatis" untuk mengikuti kalender lagi' : 'Mengikuti bulan kalender; pilih bulan tertentu untuk menetapkan manual';
 }
 
-/** Tanggal berganti / tab aktif lagi: Bulan mulai ikut kalender (bila belum manual), lalu render ulang. */
+/** Tanggal berganti / tab aktif lagi: hitung ulang bulan saldo efektif tanpa menulis data. */
 function refreshToday() {
-  if (autoStartMonth()) $('sm').value = S.startMonth;
-  smAutoMark();
+  smSyncUI();
   renderAll();
 }
 
@@ -4068,8 +4102,7 @@ function refreshToday() {
 function syncUI() {
   $('saldo').value = (+S.saldo || 0).toLocaleString('id-ID');
   $('year').value = S.year;
-  $('sm').value = S.startMonth;
-  smAutoMark();
+  smSyncUI();
   openRows = {};
   renderAll();
   resetForm();
@@ -4923,7 +4956,7 @@ function signed(v) {
 /** Pemasukan/pengeluaran tahun aktif: jadwal bayar (termasuk yang belum lunas) + catatan kas. */
 function yearCash() {
   var y = +S.year,
-    sm = +S.startMonth || 0,
+    sm = smEff(),
     P = kasLinked(),
     o = { inc: 0, out: 0, byCat: {}, byMonth: [], entries: [] };
   for (var i = 0; i < 12; i++) o.byMonth[i] = 0;
@@ -4968,7 +5001,7 @@ function yearCash() {
 /** Irisan transaksi masuk/keluar untuk tab 7 hari / bulan / tahun. */
 function cashPeriod(C, p) {
   var y = +S.year,
-    sm = +S.startMonth || 0,
+    sm = smEff(),
     today = todayISO(),
     dates = C.entries
       .map(function (e) {
@@ -5498,12 +5531,22 @@ function kasStatusHtml(P, bal) {
 
 /** Saldo Realtime profil tergabung (dipakai kartu saldo dan agenda): saldo awal + masuk - keluar sampai bulan saldo. */
 function kasBal(P) {
-  var sm = +S.startMonth || 0,
+  var sm = smEff(),
     asc = kasRows(P).filter(function (x) {
       return +x.d.slice(5, 7) - 1 <= sm;
     }),
     A = kasSum(asc);
   return { sm: sm, mName: typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm], A: A, bal: kasBase(P) + A.i - A.o };
+}
+
+/** Transaksi (mentah/turunan kas) yang tanggalnya setelah hari ini namun masih di bulan saldo efektif. */
+function kasFutureRows(P) {
+  var t = todayISO();
+  if (+S.year !== +t.slice(0, 4)) return [];
+  var sm = smEff();
+  return kasRows(P).filter(function (x) {
+    return +x.d.slice(5, 7) - 1 <= sm && x.d > t;
+  });
 }
 
 /** Satu kartu saldo di Rincian Bulanan: saldo realtime, sisa akhir tahun, dan jatah jajan di kartu statistik. */
@@ -5515,7 +5558,16 @@ function saldoHero(c, R) {
     mName = KB.mName,
     A = KB.A,
     bal = KB.bal,
-    chip = '<span class="chip on" style="margin:0;font-size:11px;font-weight:700">' + esc(P.name) + '</span>';
+    chip = '<span class="chip on" style="margin:0;font-size:11px;font-weight:700">' + esc(P.name) + '</span>',
+    futRows = kasFutureRows(P),
+    futHint = '';
+  if (futRows.length) {
+    var futNet = futRows.reduce(function (sum, x) { return sum + (x.t === '+' ? x.amt : -x.amt); }, 0);
+    var tip = futRows.map(function (x) {
+      return fmtD(x.d) + ' · ' + esc(x.note || x.cat || '') + ' · ' + signed(x.t === '+' ? x.amt : -x.amt);
+    }).join('\n');
+    futHint = '<div class="sub hm-fut" title="' + esc(tip) + '">Termasuk <b class="pv">' + signed(futNet) + '</b> transaksi bertanggal setelah hari ini</div>';
+  }
   return heroHtml(
     c,
     R,
@@ -5533,6 +5585,7 @@ function saldoHero(c, R) {
         rp(bal) +
         '</div>' +
         '<div class="sub">Memuat pembayaran yang sudah ditandai lunas</div>' +
+        futHint +
         '<div class="hm-bal one"><div><span>Sisa saldo akhir Des ' +
         S.year +
         '</span><b class="pv' +
@@ -5723,8 +5776,8 @@ function renderRincian() {
       return n;
     };
   for (var k = 0; k < 4 && !(un(a) || un(a + 1) || un(a + 2)); k++) a += 3;
-  a = Math.max(+S.startMonth || 0, Math.min(a, 9));
-  var off = a - (+S.startMonth || 0),
+  a = Math.max(smEff(), Math.min(a, 9));
+  var off = a - smEff(),
     W = R.slice(off, off + 3),
     wT = W.reduce(function (x, r) {
       return x + r.sp;
@@ -6150,7 +6203,7 @@ function renderJadwal() {
     '<div class="card"><h2>Jadwal pembayaran ' +
     y +
     '</h2>' +
-    (S.startMonth ? '<div class="sub mb8">Bulan sebelum ' + MON[S.startMonth] + ' tidak dihitung.</div>' : '') +
+    (smEff() ? '<div class="sub mb8">Bulan sebelum ' + MON[smEff()] + ' tidak dihitung.</div>' : '') +
     gdBox(
       'jadwal',
       '<div class="sub mb8">Klik tanggal untuk memilih: sudah dibayar, dilewati (tidak bayar), atau belum dibayar. ' +
@@ -6887,7 +6940,7 @@ function renderYears() {
       return a - b;
     });
   var sum = $('yr-sum');
-  if (sum) sum.textContent = S.year + ' · ' + MON[+S.startMonth || 0] + ' · ' + rp(+S.saldo || 0);
+  if (sum) sum.textContent = S.year + ' · ' + MON[smEff()] + ' · ' + rp(+S.saldo || 0);
   $('yb').innerHTML =
     ks
       .map(function (k) {
@@ -7037,15 +7090,14 @@ function bindHeader() {
     op.textContent = n;
     $('sm').appendChild(op);
   });
-  $('sm').value = +S.startMonth || 0;
-  smAutoMark();
+  var oa = document.createElement('option');
+  oa.value = 'auto';
+  oa.id = 'sm-auto';
+  oa.textContent = 'Otomatis';
+  $('sm').appendChild(oa);
+  smSyncUI();
   $('sm').onchange = function () {
-    S.startMonth = +this.value;
-    smManual(true);
-    smAutoMark();
-    openRows = {};
-    save();
-    renderAll();
+    setStartMonth(this.value === 'auto' ? 'auto' : +this.value);
   };
   $('saldo').onchange = function () {
     S.saldo = parseRp(this.value);
@@ -8430,7 +8482,7 @@ function bindBackup() {
       var sn = snap('Sebelum pulihkan contoh');
       ALL = norm(null);
       S = ALL.data[ALL.year];
-      $('sm').value = 0;
+      smSyncUI();
       save();
       $('saldo').value = S.saldo.toLocaleString('id-ID');
       $('year').value = S.year;
@@ -9587,7 +9639,7 @@ function renderKas() {
     asc = kasRows(P).sort(function (a, b) {
       return a.d < b.d ? -1 : a.d > b.d ? 1 : 0;
     }),
-    sm = +S.startMonth || 0,
+    sm = smEff(),
     mName = typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm],
     A = kasSum(asc),
     bal = kasBase(P) + A.i - A.o;
@@ -12776,8 +12828,8 @@ function bindTopbarMore() {
  */
 function main() {
   loadState();
-  // Bulan mulai tahun berjalan mengikuti kalender, kecuali dipilih manual (hanya memori; ikut tersimpan saat save berikutnya).
-  autoStartMonth();
+  // Pindahkan penanda manual lokal lama ke data tersinkron (sekali); tersimpan oleh save() di akhir main().
+  migSmManual();
   bindDom();
   bindRincian();
   bindJadwal();

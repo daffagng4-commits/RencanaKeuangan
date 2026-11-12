@@ -179,7 +179,7 @@ function renderJadwal() {
     '<div class="card"><h2>Jadwal pembayaran ' +
     y +
     '</h2>' +
-    (S.startMonth ? '<div class="sub mb8">Bulan sebelum ' + MON[S.startMonth] + ' tidak dihitung.</div>' : '') +
+    (smEff() ? '<div class="sub mb8">Bulan sebelum ' + MON[smEff()] + ' tidak dihitung.</div>' : '') +
     gdBox(
       'jadwal',
       '<div class="sub mb8">Klik tanggal untuk memilih: sudah dibayar, dilewati (tidak bayar), atau belum dibayar. ' +

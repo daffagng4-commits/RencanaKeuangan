@@ -11,6 +11,7 @@ const ok = (c, m) => { assert(c, m); pass++; console.log("ok -", m); };
   const tick = () => new Promise((r) => setTimeout(r, 30));
   w.__today = "2028-06-20";
   w.switchYear(2028);
+  w.S.startMonth = 0; w.S.smManual = true; // pin Januari supaya chip Jan-Jun tampil
   w.S.items = [{ id: 21, name: "Internet", price: 300000, start: "2028-01-05", n: 1, unit: "bulan", ch: [] }];
   w.S.paid = { "21|2028-02-05": 1 };
   w.S.skip = { "21|2028-03-05": 1 };

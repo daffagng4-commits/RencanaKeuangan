@@ -3,8 +3,8 @@
  */
 function main() {
   loadState();
-  // Bulan mulai tahun berjalan mengikuti kalender, kecuali dipilih manual (hanya memori; ikut tersimpan saat save berikutnya).
-  autoStartMonth();
+  // Pindahkan penanda manual lokal lama ke data tersinkron (sekali); tersimpan oleh save() di akhir main().
+  migSmManual();
   bindDom();
   bindRincian();
   bindJadwal();

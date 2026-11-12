@@ -193,7 +193,7 @@ function renderKas() {
     asc = kasRows(P).sort(function (a, b) {
       return a.d < b.d ? -1 : a.d > b.d ? 1 : 0;
     }),
-    sm = +S.startMonth || 0,
+    sm = smEff(),
     mName = typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm],
     A = kasSum(asc),
     bal = kasBase(P) + A.i - A.o;

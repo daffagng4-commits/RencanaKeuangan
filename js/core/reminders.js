@@ -32,7 +32,7 @@ function reminders(horizon) {
   Object.keys(ALL.data).forEach(function (yk) {
     var Y = ALL.data[yk],
       y = +yk,
-      from = Date.UTC(y, +Y.startMonth || 0, 1);
+      from = Date.UTC(y, smEffYear(y, Y), 1);
     Y.items.forEach(function (it) {
       occ(it, y).forEach(function (t) {
         if (t < from) return;
@@ -74,7 +74,7 @@ function markPastPaid() {
   Object.keys(ALL.data).forEach(function (yk) {
     var Y = ALL.data[yk],
       y = +yk,
-      from = Date.UTC(y, +Y.startMonth || 0, 1);
+      from = Date.UTC(y, smEffYear(y, Y), 1);
     Y.items.forEach(function (it) {
       occ(it, y).forEach(function (t) {
         var d = isoD(t),

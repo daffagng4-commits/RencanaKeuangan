@@ -26,6 +26,7 @@ const parts = [
   read('js/core/calc.js'),
   read('js/core/items.js'),
   read('js/core/match.js'),
+  pick('js/core/state.js', ['smEffYear', 'smEff']),
   pick('js/core/reminders.js', ['todayISO']),
   pick('js/ui/items.js', ['parseQuickItem']),
   pick('js/ui/kas.js', ['kasLinked', 'kasBase', 'kasDerived', 'kasRows', 'kasSum']),
@@ -38,7 +39,8 @@ function state() { return { all: ALL, s: S }; }
 export { setS, state, MON, FULL_MON, esc, rp, parseRp, fd, isoD, fmtD, shortP, pad2, addDaysISO,
   at, series, occ, nextDates, every, priceAt, priceSeg, sumP, lastOcc,
   calc, incomeYear, adjMonths, parseQuickItem, kasLinked, kasBase, kasRows, kasSum, kasDerived,
-  kasGoals, goalMonths, goalMonthsIn, monthList, todayISO, isInvestCat, INVEST_RE, mNorm, realTx };`,
+  kasGoals, goalMonths, goalMonthsIn, monthList, todayISO, isInvestCat, INVEST_RE, mNorm, realTx,
+  smEffYear, smEff };`,
 ];
 
 fs.mkdirSync('bot', { recursive: true });

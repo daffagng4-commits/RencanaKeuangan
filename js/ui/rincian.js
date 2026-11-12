@@ -174,7 +174,7 @@ function signed(v) {
 /** Pemasukan/pengeluaran tahun aktif: jadwal bayar (termasuk yang belum lunas) + catatan kas. */
 function yearCash() {
   var y = +S.year,
-    sm = +S.startMonth || 0,
+    sm = smEff(),
     P = kasLinked(),
     o = { inc: 0, out: 0, byCat: {}, byMonth: [], entries: [] };
   for (var i = 0; i < 12; i++) o.byMonth[i] = 0;
@@ -219,7 +219,7 @@ function yearCash() {
 /** Irisan transaksi masuk/keluar untuk tab 7 hari / bulan / tahun. */
 function cashPeriod(C, p) {
   var y = +S.year,
-    sm = +S.startMonth || 0,
+    sm = smEff(),
     today = todayISO(),
     dates = C.entries
       .map(function (e) {
@@ -749,12 +749,22 @@ function kasStatusHtml(P, bal) {
 
 /** Saldo Realtime profil tergabung (dipakai kartu saldo dan agenda): saldo awal + masuk - keluar sampai bulan saldo. */
 function kasBal(P) {
-  var sm = +S.startMonth || 0,
+  var sm = smEff(),
     asc = kasRows(P).filter(function (x) {
       return +x.d.slice(5, 7) - 1 <= sm;
     }),
     A = kasSum(asc);
   return { sm: sm, mName: typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm], A: A, bal: kasBase(P) + A.i - A.o };
+}
+
+/** Transaksi (mentah/turunan kas) yang tanggalnya setelah hari ini namun masih di bulan saldo efektif. */
+function kasFutureRows(P) {
+  var t = todayISO();
+  if (+S.year !== +t.slice(0, 4)) return [];
+  var sm = smEff();
+  return kasRows(P).filter(function (x) {
+    return +x.d.slice(5, 7) - 1 <= sm && x.d > t;
+  });
 }
 
 /** Satu kartu saldo di Rincian Bulanan: saldo realtime, sisa akhir tahun, dan jatah jajan di kartu statistik. */
@@ -766,7 +776,16 @@ function saldoHero(c, R) {
     mName = KB.mName,
     A = KB.A,
     bal = KB.bal,
-    chip = '<span class="chip on" style="margin:0;font-size:11px;font-weight:700">' + esc(P.name) + '</span>';
+    chip = '<span class="chip on" style="margin:0;font-size:11px;font-weight:700">' + esc(P.name) + '</span>',
+    futRows = kasFutureRows(P),
+    futHint = '';
+  if (futRows.length) {
+    var futNet = futRows.reduce(function (sum, x) { return sum + (x.t === '+' ? x.amt : -x.amt); }, 0);
+    var tip = futRows.map(function (x) {
+      return fmtD(x.d) + ' · ' + esc(x.note || x.cat || '') + ' · ' + signed(x.t === '+' ? x.amt : -x.amt);
+    }).join('\n');
+    futHint = '<div class="sub hm-fut" title="' + esc(tip) + '">Termasuk <b class="pv">' + signed(futNet) + '</b> transaksi bertanggal setelah hari ini</div>';
+  }
   return heroHtml(
     c,
     R,
@@ -784,6 +803,7 @@ function saldoHero(c, R) {
         rp(bal) +
         '</div>' +
         '<div class="sub">Memuat pembayaran yang sudah ditandai lunas</div>' +
+        futHint +
         '<div class="hm-bal one"><div><span>Sisa saldo akhir Des ' +
         S.year +
         '</span><b class="pv' +
@@ -974,8 +994,8 @@ function renderRincian() {
       return n;
     };
   for (var k = 0; k < 4 && !(un(a) || un(a + 1) || un(a + 2)); k++) a += 3;
-  a = Math.max(+S.startMonth || 0, Math.min(a, 9));
-  var off = a - (+S.startMonth || 0),
+  a = Math.max(smEff(), Math.min(a, 9));
+  var off = a - smEff(),
     W = R.slice(off, off + 3),
     wT = W.reduce(function (x, r) {
       return x + r.sp;

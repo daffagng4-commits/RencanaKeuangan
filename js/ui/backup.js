@@ -49,7 +49,7 @@ function bindBackup() {
       var sn = snap('Sebelum pulihkan contoh');
       ALL = norm(null);
       S = ALL.data[ALL.year];
-      $('sm').value = 0;
+      smSyncUI();
       save();
       $('saldo').value = S.saldo.toLocaleString('id-ID');
       $('year').value = S.year;

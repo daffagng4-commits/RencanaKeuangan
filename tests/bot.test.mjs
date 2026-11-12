@@ -3,13 +3,13 @@ import test from 'node:test';
 import assert from 'node:assert';
 import { reply } from '../bot/router.mjs';
 import { fixture } from '../bot/dev.mjs';
-import { calc, state, rp, kasLinked, kasBase, kasRows, kasSum, isoD, occ, priceAt } from '../bot/core.mjs';
+import { calc, state, rp, kasLinked, kasBase, kasRows, kasSum, isoD, occ, priceAt, smEff } from '../bot/core.mjs';
 
 test('@saldo memakai angka calc() aplikasi', () => {
   const all = fixture();
   const r = reply('@saldo', all);
   const c = calc(), P = kasLinked();
-  const rows = kasRows(P).filter((x) => +x.d.slice(5, 7) - 1 <= (+state().s.startMonth || 0));
+  const rows = kasRows(P).filter((x) => +x.d.slice(5, 7) - 1 <= smEff());
   const sum = kasSum(rows);
   assert.ok(r.text.includes(rp(c.end)), 'sisa akhir tahun: ' + r.text);
   assert.ok(r.text.includes(rp(kasBase(P) + sum.i - sum.o)), 'saldo realtime: ' + r.text);

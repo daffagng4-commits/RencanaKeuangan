@@ -67,7 +67,7 @@ function realTx(key) {
 /** Tagihan yang mungkin cocok dengan transaksi `tx` (tahun aktif, mulai bulan saldo), urut dari yang paling cocok. */
 function matchCandidates(tx, includePaid) {
   var y = +S.year,
-    from = Date.UTC(y, +S.startMonth || 0, 1),
+    from = Date.UTC(y, smEff(), 1),
     t0 = Date.parse(tx.d + 'T00:00:00Z'),
     out = [];
   S.items.forEach(function (it) {
@@ -179,7 +179,7 @@ function autoMatchTx(tx) {
  */
 function realisasiData() {
   var y = +S.year,
-    from = Date.UTC(y, +S.startMonth || 0, 1),
+    from = Date.UTC(y, smEff(), 1),
     today = Date.parse(todayISO() + 'T00:00:00Z'),
     months = [],
     rows = [],

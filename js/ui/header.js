@@ -11,15 +11,14 @@ function bindHeader() {
     op.textContent = n;
     $('sm').appendChild(op);
   });
-  $('sm').value = +S.startMonth || 0;
-  smAutoMark();
+  var oa = document.createElement('option');
+  oa.value = 'auto';
+  oa.id = 'sm-auto';
+  oa.textContent = 'Otomatis';
+  $('sm').appendChild(oa);
+  smSyncUI();
   $('sm').onchange = function () {
-    S.startMonth = +this.value;
-    smManual(true);
-    smAutoMark();
-    openRows = {};
-    save();
-    renderAll();
+    setStartMonth(this.value === 'auto' ? 'auto' : +this.value);
   };
   $('saldo').onchange = function () {
     S.saldo = parseRp(this.value);

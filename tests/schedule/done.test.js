@@ -13,7 +13,7 @@ const ok = (c, m) => { assert(c, m); pass++; console.log("ok -", m); };
   w.switchYear(2028);
   const bulanan = (id, name) => ({ id, name, price: 100000, start: "2028-09-05", n: 1, unit: "bulan", ch: [] });
   const sekali = (id, name, d) => ({ id, name, price: 50000, start: d, n: 1, unit: "sekali", ch: [] });
-  w.S.startMonth = 8; // bulan sebelum Sep tidak dihitung
+  w.S.startMonth = 8; w.S.smManual = true; // bulan sebelum Sep tidak dihitung (pin manual supaya tetap 8)
   w.S.items = [bulanan(1, "Semua lunas"), bulanan(2, "Sebagian"), bulanan(3, "Semua dilewati"), sekali(4, "Sekali lunas", "2028-10-10"), sekali(5, "Sekali belum", "2028-12-10"), bulanan(6, "Lunas+dilewati")];
   const paidAll = (id) => [9, 10, 11, 12].forEach((m) => { w.S.paid[`${id}|2028-${String(m).padStart(2, "0")}-05`] = 1; });
   w.S.paid = {}; w.S.skip = {};

@@ -2,7 +2,7 @@
 // Angka dihitung oleh modul aplikasi (core.mjs), bukan rumus baru.
 import {
   setS, state, calc, occ, priceAt, isoD, rp, MON, FULL_MON, parseQuickItem,
-  kasLinked, kasBase, kasRows, kasSum, todayISO, mNorm, esc, parseRp,
+  kasLinked, kasBase, kasRows, kasSum, todayISO, mNorm, esc, parseRp, smEff,
 } from './core.mjs';
 
 const HELP = [
@@ -71,9 +71,9 @@ export function bind(all) {
   return s;
 }
 
-// Samakan dengan kartu Rincian: hanya transaksi s.d. bulan saldo (S.startMonth), bukan seluruh tahun.
+// Samakan dengan kartu Rincian: hanya transaksi s.d. bulan saldo efektif, bukan seluruh tahun.
 function kasBal() {
-  const S = state().s, P = kasLinked(), sm = +S.startMonth || 0;
+  const S = state().s, P = kasLinked(), sm = smEff();
   if (!P) return null;
   const rows = kasRows(P).filter((x) => +x.d.slice(5, 7) - 1 <= sm);
   return { bal: kasBase(P) + kasSum(rows).i - kasSum(rows).o, A: kasSum(rows), mName: FULL_MON[sm] };
@@ -92,7 +92,7 @@ function monthKas(mi) {
 }
 
 function saldoText() {
-  const S = state().s, c = calc(), KB = kasBal(), sm = +S.startMonth || 0, M = monthKas(sm);
+  const S = state().s, c = calc(), KB = kasBal(), sm = smEff(), M = monthKas(sm);
   const out = [];
   if (KB) out.push('💰 Saldo realtime ' + KB.mName + ': ' + rp(KB.bal));
   else out.push('💰 Saldo awal ' + S.year + ': ' + rp(S.saldo));
@@ -108,7 +108,7 @@ function debugText() {
   const rows = P ? kasRows(P) : [];
   return [
     '🔎 Sidik state',
-    'year=' + S.year + ' | startMonth=' + (+S.startMonth || 0) + ' | rev=' + ((CUR && CUR.rev) || '-'),
+    'year=' + S.year + ' | sm=' + smEff() + ' (stored=' + (+S.startMonth || 0) + ') | rev=' + ((CUR && CUR.rev) || '-'),
     'saldo awal=' + rp(S.saldo) + ' | item=' + (S.items || []).length + ' | paid=' + Object.keys(S.paid || {}).length,
     'end=' + rp(c.end) + ' | total=' + rp(c.total),
     'kas profil=' + (P ? P.name : '-') + ' | transaksi=' + rows.length + ' | profil=' + Object.keys(((CUR && CUR.kas) || {}).pr || {}).length,
@@ -116,7 +116,7 @@ function debugText() {
 }
 
 function jatahText() {
-  const S = state().s, c = calc(), n = Math.max(1, 12 - (+S.startMonth || 0));
+  const S = state().s, c = calc(), n = Math.max(1, 12 - smEff());
   return '🧁 Jatah jajan per bulan: ' + (c.end > 0 ? rp(c.end / n) : '—') + '\n' +
     '(sisa ' + rp(c.end) + ' dibagi ' + n + ' bulan)';
 }
@@ -241,7 +241,7 @@ function rekapBody(mi, y) {
   if (P) out.push('📥 Masuk ' + rp(M.masuk));
   out.push('💸 Keluar ' + rp(M.jadwal + M.keluar) + ' (jadwal ' + rp(M.jadwal) + ' + kas ' + rp(M.keluar) + ')');
   if (row) out.push('📈 Saldo akhir bulan ' + rp(row.ak));
-  else out.push('ℹ️ Bulan ini di luar rentang tahun aktif (mulai ' + FULL_MON[+S.startMonth || 0] + ').');
+  else out.push('ℹ️ Bulan ini di luar rentang tahun aktif (mulai ' + FULL_MON[smEff()] + ').');
   return out.join('\n');
 }
 

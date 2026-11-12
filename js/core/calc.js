@@ -22,7 +22,7 @@ function adjMonths(a) {
  */
 function calc() {
   var y = +S.year,
-    sm = +S.startMonth || 0,
+    sm = smEff(),
     from = Date.UTC(y, sm, 1);
   var occs = {},
     byCat = {},
@@ -125,7 +125,7 @@ function calc() {
 function incomeYear() {
   var KL = kasLinked(),
     y = +S.year,
-    sm = +S.startMonth || 0,
+    sm = smEff(),
     sum = 0;
   if (KL)
     KL.tx.forEach(function (x) {

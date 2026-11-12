@@ -18,7 +18,7 @@ const { boot } = require('./ui.js');
 
   w.__today = '2026-11-08';
   w.switchYear(2026);
-  w.S.startMonth = 0;
+  w.S.startMonth = 0; w.S.smManual = true;
   w.S.saldo = 10000000;
   w.S.items = [
     it({ id: 'l', name: 'Listrik PLN', price: 200000, start: '2026-01-05' }),
