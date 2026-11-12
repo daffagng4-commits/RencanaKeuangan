@@ -11,7 +11,7 @@ const {boot}=require('./ui.js');
   // Fixture sintetis, bukan pembacaan data pribadi.
   entries.push({note:'Item besar',amt:1961500,t:'-',cat:'Tagihan',d:'2026-11-02'},
     {note:'Item besar lunas',amt:438500,t:'-',cat:'Tagihan',d:'2026-12-02'});
-  w.switchYear(2026);w.expenseMonth='all';
+  w.switchYear(2026);w.expenseMonth='y';
   const original=JSON.stringify(entries),C={entries};
   const el=w.document.createElement('div');el.innerHTML=w.topExpensesCard(C);
   const saham=[...el.querySelectorAll('.expense-row')].find(r=>r.querySelector('.expense-name').textContent==='Saham Lokal 40%');

@@ -93,7 +93,7 @@ const { boot } = require('./ui.js');
     // === Item pengeluaran terbesar: Semua/Minggu/Bulan/Tahun ===
     const top = cards.find((c) => /Item pengeluaran terbesar/.test(c.textContent));
     const labels = [...top.querySelectorAll('[data-expm]')].map((b) => b.textContent);
-    assert.deepStrictEqual(labels, ['Semua', 'Minggu', 'Bulan', 'Tahun']);
+    assert.deepStrictEqual(labels, ['Minggu', 'Bulan', 'Tahun']);
 
     // === Butir 8: grafik hari ini = saldo realtime; legend ===
     const pts = svg.closest('.lc-card');

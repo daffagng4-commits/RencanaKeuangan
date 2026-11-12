@@ -5,7 +5,7 @@
 var openRows = {};
 var catPeriod = 'y';
 var bsPeriod = 'm';
-var expenseMonth = 'all';
+var expenseMonth = 'y';
 var expenseLastMonth = '';
 var expenseYear = '';
 const EXPENSE_TOP_N = 5;
@@ -354,8 +354,8 @@ function topExpensesCard(C) {
     var current = +todayISO().slice(0, 4) === +S.year ? +todayISO().slice(5, 7) : 0;
     expenseLastMonth = String(months.indexOf(current) >= 0 ? current : months[months.length - 1] || '');
   }
-  var mode = ['all', 'w', 'm', 'y'].indexOf(expenseMonth) >= 0 ? expenseMonth : 'all';
-  if (mode === 'm') mode = expenseLastMonth ? 'm' : 'all';
+  var mode = ['w', 'm', 'y'].indexOf(expenseMonth) >= 0 ? expenseMonth : 'y';
+  if (mode === 'm' && !expenseLastMonth) mode = 'y';
   expenseMonth = mode;
   var today = todayISO(),
     weekFrom = addDaysISO(today, -6),
@@ -381,7 +381,7 @@ function topExpensesCard(C) {
   var topSum = total - rest.v, max = rows.length ? rows[0].v : 1,
     period = mode === 'w' ? fmtD(weekFrom) + ' – ' + fmtD(today) :
       (selected.length ? MON[selected[0] - 1] + (selected.length > 1 ? ' - ' + MON[selected[selected.length - 1] - 1] : '') + ' ' : '') + S.year,
-    tabs = [['all', 'Semua'], ['w', 'Minggu'], ['m', 'Bulan'], ['y', 'Tahun']].map(function (m) {
+    tabs = [['w', 'Minggu'], ['m', 'Bulan'], ['y', 'Tahun']].map(function (m) {
       var on = mode === m[0];
       return '<button type="button" class="cat-tab' + (on ? ' on' : '') + '" data-expm="' + m[0] + '" aria-label="' + m[1] + ' pengeluaran" aria-pressed="' + on + '"' + (!months.length && m[0] === 'm' ? ' disabled' : '') + '>' + m[1] + '</button>';
     }).join(''),
@@ -1071,7 +1071,7 @@ function bindRincian() {
     var expm = e.target.closest('[data-expm]');
     if (expm) {
       expenseMonth = expm.dataset.expm;
-      if (expenseMonth === 'm' && !expenseLastMonth) expenseMonth = 'all';
+      if (expenseMonth === 'm' && !expenseLastMonth) expenseMonth = 'y';
       renderRincian();
       var active = $('v-rincian').querySelector('[data-expm="' + expenseMonth + '"]');
       if (active) active.focus();

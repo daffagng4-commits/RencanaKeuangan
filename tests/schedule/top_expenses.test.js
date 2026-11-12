@@ -34,7 +34,7 @@ const { boot } = require('./ui.js');
     w.kasLinked().tx = w.kasLinked().tx.filter(x=>x.id !== 'adj');
     assert.strictEqual(w.cashPeriod(w.yearCash(),'y').out,11396500,'total donut sama: Nov + Des');
     w.S.items = [{id:'bill',name:' etf ',price:100000,n:1,unit:'sekali',start:'2026-12-20',cat:'Investasi',ch:[]}];
-    w.expenseMonth = 'all'; w.renderAll();
+    w.expenseMonth = 'y'; w.renderAll();
     assert($('v-rincian').querySelector('.expense-row').getAttribute('aria-label').includes('Rp 5.000.000'),'jadwal dan kas nama sama digabung tanpa membedakan kapital');
     assert.strictEqual(t.errs.length,0,'tanpa galat render');
     w.S.items = []; w.kasLinked().tx = []; w.renderAll();
