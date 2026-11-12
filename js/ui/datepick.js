@@ -69,7 +69,7 @@
     return '<div class="pk-w">' + W.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div>';
   }
   function grid(y, m, from, to, min, max) {
-    var lead = new Date(Date.UTC(y, m, 1)).getUTCDay(),
+    var lead = (new Date(Date.UTC(y, m, 1)).getUTCDay() + 6) % 7,
       n = dim(y, m),
       t = tday(),
       h = '',
@@ -167,13 +167,75 @@
     sync();
   }
 
+  /* ---------- input dengan datalist: chevron + daftar pilihan ---------- */
+  function upDatalist(inp) {
+    var l = document.getElementById(inp.getAttribute('list') || '');
+    if (inp.__pkd || !l) return;
+    inp.__pkd = 1;
+    var w = document.createElement('div');
+    w.className = 'pk-field pk-dl';
+    inp.parentNode.insertBefore(w, inp);
+    w.appendChild(inp);
+    var tg = document.createElement('button');
+    tg.type = 'button';
+    tg.className = 'pk-tg';
+    tg.setAttribute('aria-label', 'Pilih dari daftar');
+    tg.innerHTML = '<i class="pk-cv"></i>';
+    w.appendChild(tg);
+    tg.onclick = function () {
+      var opts = [].map
+        .call(l.options, function (o) {
+          return o.value;
+        })
+        .filter(Boolean);
+      if (!opts.length) return;
+      var el = pop(
+        tg,
+        'pk-list',
+        opts
+          .map(function (v) {
+            return (
+              '<button type="button" data-v="' +
+              esc(v) +
+              '"' +
+              (v === inp.value ? ' class="on"' : '') +
+              '>' +
+              esc(v) +
+              '</button>'
+            );
+          })
+          .join('')
+      );
+      el.onclick = function (e) {
+        var b = e.target.closest('button');
+        if (!b) return;
+        inp.value = b.dataset.v;
+        inp.dispatchEvent(new Event('input', { bubbles: true }));
+        inp.dispatchEvent(new Event('change', { bubbles: true }));
+        close();
+      };
+    };
+  }
+
   /* ---------- upgrade semua select ---------- */
   function upSelect(sel) {
     if (sel.__pk) return;
     sel.__pk = 1;
     var f = field(sel, 'pk-sel');
-    f.w.insertAdjacentHTML('beforeend', '<i class="pk-cv"></i>');
-    f.hit.onclick = function () {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pk-in';
+    b.setAttribute('aria-haspopup', 'listbox');
+    f.w.insertBefore(b, f.hit);
+    f.hit.remove();
+    function sync() {
+      var o = sel.options[sel.selectedIndex];
+      b.innerHTML = '<span>' + esc(o ? o.textContent : '') + '</span><i class="pk-cv"></i>';
+      b.setAttribute('aria-label', 'Pilihan: ' + (o ? o.textContent : ''));
+    }
+    sel.addEventListener('change', sync);
+    sync();
+    b.onclick = function () {
       var el = pop(f.w, 'pk-list', [].map.call(sel.options, function (o) {
         return '<button type="button" data-v="' + esc(o.value) + '"' + (o.value === sel.value ? ' class="on"' : '') + '>' + esc(o.textContent) + '</button>';
       }).join(''));
@@ -222,9 +284,10 @@
           var off = (min && r[1] < min) || (max && r[0] > max);
           return '<button type="button" data-p="' + p[0] + '"' + (off ? ' disabled' : '') + (r[0] === ds && r[1] === de ? ' class="on"' : '') + '>' + p[0] + '</button>';
         }).join('') + '</div>' +
-        '<div class="pk-cals"><div class="pk-h"><button type="button" data-mv="-1" aria-label="Bulan sebelumnya">&#8249;</button><button type="button" data-mv="1" aria-label="Bulan berikutnya">&#8250;</button></div>' +
-        '<div class="pk-cg"><div><div class="pk-mlb">' + mon(y, m) + '</div>' + wdays() + '<div class="pk-g">' + grid(y, m, ds, de, min, max) + '</div></div>' +
-        (two ? '<div><div class="pk-mlb">' + mon(y2, m2) + '</div>' + wdays() + '<div class="pk-g">' + grid(y2, m2, ds, de, min, max) + '</div></div>' : '') +
+        '<div class="pk-cals"><div class="pk-cg">' +
+        '<div><div class="pk-mlb"><span>' + mon(y, m) + '</span><span class="pk-nav"><button type="button" data-mv="-1" aria-label="Bulan sebelumnya">&#8249;</button><button type="button" data-mv="1" aria-label="Bulan berikutnya">&#8250;</button></span></div>' +
+        wdays() + '<div class="pk-g">' + grid(y, m, ds, de, min, max) + '</div></div>' +
+        (two ? '<div><div class="pk-mlb"><span>' + mon(y2, m2) + '</span></div>' + wdays() + '<div class="pk-g">' + grid(y2, m2, ds, de, min, max) + '</div></div>' : '') +
         '</div></div>' +
         '<div class="pk-f"><span class="pk-sum">' + (ds === de ? lbl(ds) : lbl(ds) + ' &ndash; ' + lbl(de)) + '</span>' +
         '<button type="button" class="pk-l" data-x="1">Batal</button>' +
@@ -313,6 +376,7 @@
   function up(root) {
     [].forEach.call((root || document).querySelectorAll('input[type="date"]'), upDate);
     [].forEach.call((root || document).querySelectorAll('select'), upSelect);
+    [].forEach.call((root || document).querySelectorAll('input[list]'), upDatalist);
   }
   window.upPickers = up;
   window.pkRange = pkRange;

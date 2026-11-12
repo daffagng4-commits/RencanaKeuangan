@@ -1407,10 +1407,27 @@ svg.lc .lc-cd { fill: var(--ac); stroke: var(--card); stroke-width: 2; }
 .pk-field:hover { border-color: color-mix(in srgb, var(--ink) 26%, var(--ln2)); }
 .pk-field:focus-within { border-color: var(--ac); box-shadow: var(--ring); }
 .pk-native { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+.pk-dl > input { padding-right: 34px; }
+.pk-tg {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 34px;
+  border: 0;
+  background: none;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--mut);
+}
+.pk-tg:hover { color: var(--ink); }
+.pk-tg > .pk-cv { position: static; transform: rotate(45deg); margin: 0; }
 .pk-field > .pk-in { border: 0; border-radius: inherit; background: none; box-shadow: none; }
 .pk-field > .pk-in:hover, .pk-field > .pk-in:focus-visible { box-shadow: none; }
 .pk-ph { color: color-mix(in srgb, var(--mut) 72%, transparent); }
 .pk-field > input, .pk-field > select { width: 100%; min-height: var(--tap); margin: 0; padding: 9px 34px 9px 11px; border: 0; border-radius: inherit; background: none; box-shadow: none; font: inherit; font-size: 14px; color: var(--ink); appearance: none; -webkit-appearance: none; text-overflow: ellipsis; }
+.pk-sel > select { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; pointer-events: none; }
 .pk-field > input::-webkit-calendar-picker-indicator { opacity: 0; }
 .pk-field > input::-webkit-datetime-edit { color: inherit; }
 .pk-field > input:not([value])::-webkit-datetime-edit { color: var(--mut); }
@@ -1432,12 +1449,14 @@ svg.lc .lc-cd { fill: var(--ac); stroke: var(--card); stroke-width: 2; }
 .pk-h b { font-size: 13px; font-weight: 650; letter-spacing: -0.01em; }
 .pk-h button { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: var(--mut); font: inherit; font-size: 15px; line-height: 1; cursor: pointer; }
 .pk-h button:hover { background: var(--sf2); color: var(--ink); }
-.pk-rng .pk-h { justify-content: flex-end; }
+.pk-nav { display: flex; gap: 2px; }
+.pk-nav button { width: 26px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: var(--ink); font: inherit; font-size: 16px; line-height: 1; cursor: pointer; }
+.pk-nav button:hover { background: var(--sf2); }
 .pk-w { display: grid; grid-template-columns: repeat(7, 1fr); }
 .pk-w span { padding: 2px 0; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; color: var(--mut); text-align: center; }
 .pk-g { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
 .pk-g > span { height: 32px; }
-.pk-d { height: 32px; border: 0; border-radius: 9px; background: none; font: inherit; font-size: 12.5px; color: var(--ink); font-variant-numeric: tabular-nums; cursor: pointer; }
+.pk-d { min-width: 0; padding: 0; height: 32px; border: 0; border-radius: 9px; background: none; font: inherit; font-size: 12.5px; color: var(--ink); font-variant-numeric: tabular-nums; cursor: pointer; }
 .pk-d:hover { background: var(--sf2); }
 .pk-d.td { color: var(--ac); font-weight: 700; }
 .pk-d.in { background: color-mix(in srgb, var(--ac) 18%, transparent); border-radius: 0; }
@@ -1462,7 +1481,7 @@ svg.lc .lc-cd { fill: var(--ac); stroke: var(--card); stroke-width: 2; }
 .pk-ps button.on { background: var(--acs); color: var(--ink); font-weight: 600; }
 .pk-ps button:disabled { opacity: 0.38; cursor: default; background: none; }
 .pk-cals { grid-area: cals; }
-.pk-mlb { padding: 0 0 4px; font-size: 12.5px; font-weight: 650; letter-spacing: -0.01em; }
+.pk-mlb { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 0 4px; font-size: 12.5px; font-weight: 650; letter-spacing: -0.01em; min-height: 26px; }
 .pk-cg { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .pk-cg > div { min-width: 0; }
 .pk-rng .pk-f { grid-area: f; }
@@ -1679,7 +1698,11 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
   #botsheet button.on { background: var(--acs); color: var(--ac); }
   #botsheet [data-go="backup"] { grid-column: 1 / -1; }
   nav[role="tablist"] { display: none !important; }
-  #mdbar { display: none; }
+  #mdbar { display: flex; width: 100%; order: 9; margin-top: 2px; }
+  #mdbar .yb { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 6px; max-width: 100%; }
+  #mdbar .yb::-webkit-scrollbar { display: none; }
+  #mdbar .yb .yp { padding: 0 9px; font-size: 12px; min-height: 30px; }
+  #mdbar [data-md="trip"] { display: none; }
   .modal { align-items: flex-end; padding: 0; }
   .modal .card {
     max-width: 100%;
@@ -4952,15 +4975,29 @@ function emptyItemsHtml() {
   );
 }
 
-/** Kartu "Jadwal tagihan": tagihan belum lunas 14 hari ke depan, dengan tautan implisit ke tab Jadwal. */
+/** Kartu "Jadwal tagihan": tagihan belum lunas 3 bulan ke depan; bila ketiganya sudah lunas,
+ *  jendela bergeser 3 bulan lagi (rolling) sampai ada tagihan tersisa. Tautan implisit ke tab Jadwal. */
 function billsCard() {
-  var soon = reminders(400).soon.filter(function (r) {
-      return r.year === S.year;
-    }).slice(0, 6),
-    sum = soon.reduce(function (a, r) {
-      return a + r.price;
+  var t = todayISO(),
+    y0 = +t.slice(0, 4),
+    m0 = +t.slice(5, 7) - 1,
+    now = Date.UTC(y0, m0, +t.slice(8, 10)),
+    R = null,
+    s = 0,
+    win = 0;
+  for (; s < 4; s++) {
+    var h = Math.round((Date.UTC(y0, m0 + 3 * (s + 1) + 1, 1) - 864e5 - now) / 864e5);
+    R = reminders(h);
+    if (R.soon.length) { win = s; break; }
+  }
+  var list = R.late.concat(R.soon),
+    sum = list.reduce(function (x, r) {
+      return x + r.price;
     }, 0),
-    body = soon
+    iA = m0 + 3 * win,
+    iB = iA + 2,
+    span = MON[iA % 12] + ' ' + (y0 + Math.floor(iA / 12)) + ' – ' + MON[iB % 12] + ' ' + (y0 + Math.floor(iB / 12)),
+    body = list
       .slice(0, 6)
       .map(function (r) {
         return (
@@ -4980,8 +5017,10 @@ function billsCard() {
     '<div class="card"><div class="dflex jcsb aic fwrap g8"><h2 class="m0">Jadwal tagihan</h2>' +
     '<button type="button" class="lk" data-goto="jadwal">Semua tagihan' +
     LK_ARROW +
-    '</button></div><div class="sub mb8">6 tagihan ke depan' +
-    (soon.length ? ' &middot; ' + rp(sum) : '') +
+    '</button></div><div class="sub mb8">' +
+    (list.length
+      ? list.length + ' tagihan s.d. 3 bulan &middot; ' + rp(sum) + ' &middot; ' + span
+      : '3 bulan ke depan &middot; ' + span) +
     '</div><div class="grow">' +
     (body || '<div class="empty">Belum ada tagihan terjadwal.</div>') +
     '</div></div>'
@@ -4996,10 +5035,11 @@ var LK_ARROW =
 function recentTxCard() {
   var P = kasLinked();
   if (!P) return '';
-  var inn = txDir === '+',
+  var all = txDir === 'all',
+    inn = txDir === '+',
     rows = kasRows(P)
       .filter(function (x) {
-        return x.t === txDir;
+        return all || x.t === txDir;
       })
       .sort(function (a, b) {
         return a.d < b.d ? 1 : a.d > b.d ? -1 : 0;
@@ -5033,18 +5073,23 @@ function recentTxCard() {
     '</button></div>' +
     '<div class="dflex aic fwrap g8 mt8"><div class="cat-tabs cat-dirs" role="tablist">' +
     '<button type="button" class="cat-tab' +
-    (inn ? '' : ' on') +
+    (txDir === '-' ? ' on' : '') +
     '" data-txd="-" aria-pressed="' +
-    (inn ? 'false' : 'true') +
+    (txDir === '-' ? 'true' : 'false') +
     '">Keluar</button>' +
     '<button type="button" class="cat-tab' +
     (inn ? ' on' : '') +
     '" data-txd="+" aria-pressed="' +
     (inn ? 'true' : 'false') +
-    '">Masuk</button></div><span class="sub">' +
-    (inn ? 'Uang masuk' : 'Uang keluar') +
+    '">Masuk</button>' +
+    '<button type="button" class="cat-tab' +
+    (all ? ' on' : '') +
+    '" data-txd="all" aria-pressed="' +
+    (all ? 'true' : 'false') +
+    '">Semua</button></div><span class="sub w100">' +
+    (all ? 'Masuk &amp; keluar' : inn ? 'Uang masuk' : 'Uang keluar') +
     ' 7 hari terakhir</span></div><div class="grow mt8">' +
-    (body || '<div class="empty">Belum ada transaksi ' + (inn ? 'masuk' : 'keluar') + ' dalam 7 hari terakhir.</div>') +
+    (body || '<div class="empty">Belum ada transaksi ' + (all ? '' : inn ? 'masuk ' : 'keluar ') + 'dalam 7 hari terakhir.</div>') +
     '</div></div>'
   );
 }
@@ -5058,7 +5103,28 @@ function renderRincian() {
     R = c.rows,
     C = yearCash(),
     fc = flowChart(R);
-  var rows = R.map(function (r) {
+  // Jendela 3 bulan ke depan; bila ketiganya sudah lunas, bergeser 3 bulan lagi (rolling).
+  var t = todayISO(),
+    a = y === +t.slice(0, 4) ? +t.slice(5, 7) - 1 : 0,
+    un = function (m) {
+      var n = 0;
+      S.items.forEach(function (it) {
+        occ(it, y).forEach(function (x) {
+          var d = isoD(x);
+          if (+d.slice(5, 7) - 1 === m && !S.paid[it.id + '|' + d] && !S.skip[it.id + '|' + d]) n++;
+        });
+      });
+      return n;
+    };
+  for (var k = 0; k < 4 && !(un(a) || un(a + 1) || un(a + 2)); k++) a += 3;
+  a = Math.max(+S.startMonth || 0, Math.min(a, 9));
+  var off = a - (+S.startMonth || 0),
+    W = R.slice(off, off + 3),
+    wT = W.reduce(function (x, r) {
+      return x + r.sp;
+    }, 0),
+    wE = W.length ? W[W.length - 1].ak : 0;
+  var rows = W.map(function (r) {
     return (
       '<tr class="row" data-m="' +
       r.m +
@@ -5086,9 +5152,15 @@ function renderRincian() {
     );
   }).join('');
   var table =
-    '<div class="card"><h2>Rincian arus tagihan ' +
+    '<div class="card"><div class="dflex jcsb aic fwrap g8"><h2 class="m0">Rincian arus tagihan ' +
     y +
-    '</h2>' +
+    '</h2><button type="button" class="lk" data-goto="jadwal">Semua tagihan' +
+    LK_ARROW +
+    '</button></div><div class="sub mb8">' +
+    (W.length
+      ? W.length + ' bulan ke depan · ' + MON[W[0].m] + ' – ' + MON[W[W.length - 1].m] + ' ' + y
+      : '') +
+    '</div>' +
     gdBox(
       'rincian',
       '<div class="sub mb8">Klik baris bulan untuk melihat tanggal dan rincian tiap pembayaran.</div>' + RINCIAN_LEGEND
@@ -5096,9 +5168,9 @@ function renderRincian() {
     '<div class="tw"><table><thead><tr><th>Bulan</th><th>Saldo awal</th><th>Pengeluaran</th><th>Saldo akhir</th><th class="l">Item berkala</th></tr></thead><tbody>' +
     rows +
     '<tr class="tot"><td>Total</td><td></td><td data-l="Pengeluaran">' +
-    rp(c.total) +
+    rp(wT) +
     '</td><td data-l="Saldo akhir">' +
-    rp(c.end) +
+    rp(wE) +
     '</td><td></td></tr></tbody></table></div></div>';
   var tx = recentTxCard();
   $('v-rincian').innerHTML =
@@ -11631,7 +11703,7 @@ function bindTip() {
     return '<div class="pk-w">' + W.map(function (w) { return '<span>' + w + '</span>'; }).join('') + '</div>';
   }
   function grid(y, m, from, to, min, max) {
-    var lead = new Date(Date.UTC(y, m, 1)).getUTCDay(),
+    var lead = (new Date(Date.UTC(y, m, 1)).getUTCDay() + 6) % 7,
       n = dim(y, m),
       t = tday(),
       h = '',
@@ -11729,13 +11801,75 @@ function bindTip() {
     sync();
   }
 
+  /* ---------- input dengan datalist: chevron + daftar pilihan ---------- */
+  function upDatalist(inp) {
+    var l = document.getElementById(inp.getAttribute('list') || '');
+    if (inp.__pkd || !l) return;
+    inp.__pkd = 1;
+    var w = document.createElement('div');
+    w.className = 'pk-field pk-dl';
+    inp.parentNode.insertBefore(w, inp);
+    w.appendChild(inp);
+    var tg = document.createElement('button');
+    tg.type = 'button';
+    tg.className = 'pk-tg';
+    tg.setAttribute('aria-label', 'Pilih dari daftar');
+    tg.innerHTML = '<i class="pk-cv"></i>';
+    w.appendChild(tg);
+    tg.onclick = function () {
+      var opts = [].map
+        .call(l.options, function (o) {
+          return o.value;
+        })
+        .filter(Boolean);
+      if (!opts.length) return;
+      var el = pop(
+        tg,
+        'pk-list',
+        opts
+          .map(function (v) {
+            return (
+              '<button type="button" data-v="' +
+              esc(v) +
+              '"' +
+              (v === inp.value ? ' class="on"' : '') +
+              '>' +
+              esc(v) +
+              '</button>'
+            );
+          })
+          .join('')
+      );
+      el.onclick = function (e) {
+        var b = e.target.closest('button');
+        if (!b) return;
+        inp.value = b.dataset.v;
+        inp.dispatchEvent(new Event('input', { bubbles: true }));
+        inp.dispatchEvent(new Event('change', { bubbles: true }));
+        close();
+      };
+    };
+  }
+
   /* ---------- upgrade semua select ---------- */
   function upSelect(sel) {
     if (sel.__pk) return;
     sel.__pk = 1;
     var f = field(sel, 'pk-sel');
-    f.w.insertAdjacentHTML('beforeend', '<i class="pk-cv"></i>');
-    f.hit.onclick = function () {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pk-in';
+    b.setAttribute('aria-haspopup', 'listbox');
+    f.w.insertBefore(b, f.hit);
+    f.hit.remove();
+    function sync() {
+      var o = sel.options[sel.selectedIndex];
+      b.innerHTML = '<span>' + esc(o ? o.textContent : '') + '</span><i class="pk-cv"></i>';
+      b.setAttribute('aria-label', 'Pilihan: ' + (o ? o.textContent : ''));
+    }
+    sel.addEventListener('change', sync);
+    sync();
+    b.onclick = function () {
       var el = pop(f.w, 'pk-list', [].map.call(sel.options, function (o) {
         return '<button type="button" data-v="' + esc(o.value) + '"' + (o.value === sel.value ? ' class="on"' : '') + '>' + esc(o.textContent) + '</button>';
       }).join(''));
@@ -11784,9 +11918,10 @@ function bindTip() {
           var off = (min && r[1] < min) || (max && r[0] > max);
           return '<button type="button" data-p="' + p[0] + '"' + (off ? ' disabled' : '') + (r[0] === ds && r[1] === de ? ' class="on"' : '') + '>' + p[0] + '</button>';
         }).join('') + '</div>' +
-        '<div class="pk-cals"><div class="pk-h"><button type="button" data-mv="-1" aria-label="Bulan sebelumnya">&#8249;</button><button type="button" data-mv="1" aria-label="Bulan berikutnya">&#8250;</button></div>' +
-        '<div class="pk-cg"><div><div class="pk-mlb">' + mon(y, m) + '</div>' + wdays() + '<div class="pk-g">' + grid(y, m, ds, de, min, max) + '</div></div>' +
-        (two ? '<div><div class="pk-mlb">' + mon(y2, m2) + '</div>' + wdays() + '<div class="pk-g">' + grid(y2, m2, ds, de, min, max) + '</div></div>' : '') +
+        '<div class="pk-cals"><div class="pk-cg">' +
+        '<div><div class="pk-mlb"><span>' + mon(y, m) + '</span><span class="pk-nav"><button type="button" data-mv="-1" aria-label="Bulan sebelumnya">&#8249;</button><button type="button" data-mv="1" aria-label="Bulan berikutnya">&#8250;</button></span></div>' +
+        wdays() + '<div class="pk-g">' + grid(y, m, ds, de, min, max) + '</div></div>' +
+        (two ? '<div><div class="pk-mlb"><span>' + mon(y2, m2) + '</span></div>' + wdays() + '<div class="pk-g">' + grid(y2, m2, ds, de, min, max) + '</div></div>' : '') +
         '</div></div>' +
         '<div class="pk-f"><span class="pk-sum">' + (ds === de ? lbl(ds) : lbl(ds) + ' &ndash; ' + lbl(de)) + '</span>' +
         '<button type="button" class="pk-l" data-x="1">Batal</button>' +
@@ -11875,6 +12010,7 @@ function bindTip() {
   function up(root) {
     [].forEach.call((root || document).querySelectorAll('input[type="date"]'), upDate);
     [].forEach.call((root || document).querySelectorAll('select'), upSelect);
+    [].forEach.call((root || document).querySelectorAll('input[list]'), upDatalist);
   }
   window.upPickers = up;
   window.pkRange = pkRange;

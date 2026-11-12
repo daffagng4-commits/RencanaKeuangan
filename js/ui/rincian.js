@@ -591,15 +591,29 @@ function emptyItemsHtml() {
   );
 }
 
-/** Kartu "Jadwal tagihan": tagihan belum lunas 14 hari ke depan, dengan tautan implisit ke tab Jadwal. */
+/** Kartu "Jadwal tagihan": tagihan belum lunas 3 bulan ke depan; bila ketiganya sudah lunas,
+ *  jendela bergeser 3 bulan lagi (rolling) sampai ada tagihan tersisa. Tautan implisit ke tab Jadwal. */
 function billsCard() {
-  var soon = reminders(400).soon.filter(function (r) {
-      return r.year === S.year;
-    }).slice(0, 6),
-    sum = soon.reduce(function (a, r) {
-      return a + r.price;
+  var t = todayISO(),
+    y0 = +t.slice(0, 4),
+    m0 = +t.slice(5, 7) - 1,
+    now = Date.UTC(y0, m0, +t.slice(8, 10)),
+    R = null,
+    s = 0,
+    win = 0;
+  for (; s < 4; s++) {
+    var h = Math.round((Date.UTC(y0, m0 + 3 * (s + 1) + 1, 1) - 864e5 - now) / 864e5);
+    R = reminders(h);
+    if (R.soon.length) { win = s; break; }
+  }
+  var list = R.late.concat(R.soon),
+    sum = list.reduce(function (x, r) {
+      return x + r.price;
     }, 0),
-    body = soon
+    iA = m0 + 3 * win,
+    iB = iA + 2,
+    span = MON[iA % 12] + ' ' + (y0 + Math.floor(iA / 12)) + ' – ' + MON[iB % 12] + ' ' + (y0 + Math.floor(iB / 12)),
+    body = list
       .slice(0, 6)
       .map(function (r) {
         return (
@@ -619,8 +633,10 @@ function billsCard() {
     '<div class="card"><div class="dflex jcsb aic fwrap g8"><h2 class="m0">Jadwal tagihan</h2>' +
     '<button type="button" class="lk" data-goto="jadwal">Semua tagihan' +
     LK_ARROW +
-    '</button></div><div class="sub mb8">6 tagihan ke depan' +
-    (soon.length ? ' &middot; ' + rp(sum) : '') +
+    '</button></div><div class="sub mb8">' +
+    (list.length
+      ? list.length + ' tagihan s.d. 3 bulan &middot; ' + rp(sum) + ' &middot; ' + span
+      : '3 bulan ke depan &middot; ' + span) +
     '</div><div class="grow">' +
     (body || '<div class="empty">Belum ada tagihan terjadwal.</div>') +
     '</div></div>'
@@ -635,10 +651,11 @@ var LK_ARROW =
 function recentTxCard() {
   var P = kasLinked();
   if (!P) return '';
-  var inn = txDir === '+',
+  var all = txDir === 'all',
+    inn = txDir === '+',
     rows = kasRows(P)
       .filter(function (x) {
-        return x.t === txDir;
+        return all || x.t === txDir;
       })
       .sort(function (a, b) {
         return a.d < b.d ? 1 : a.d > b.d ? -1 : 0;
@@ -672,18 +689,23 @@ function recentTxCard() {
     '</button></div>' +
     '<div class="dflex aic fwrap g8 mt8"><div class="cat-tabs cat-dirs" role="tablist">' +
     '<button type="button" class="cat-tab' +
-    (inn ? '' : ' on') +
+    (txDir === '-' ? ' on' : '') +
     '" data-txd="-" aria-pressed="' +
-    (inn ? 'false' : 'true') +
+    (txDir === '-' ? 'true' : 'false') +
     '">Keluar</button>' +
     '<button type="button" class="cat-tab' +
     (inn ? ' on' : '') +
     '" data-txd="+" aria-pressed="' +
     (inn ? 'true' : 'false') +
-    '">Masuk</button></div><span class="sub">' +
-    (inn ? 'Uang masuk' : 'Uang keluar') +
+    '">Masuk</button>' +
+    '<button type="button" class="cat-tab' +
+    (all ? ' on' : '') +
+    '" data-txd="all" aria-pressed="' +
+    (all ? 'true' : 'false') +
+    '">Semua</button></div><span class="sub w100">' +
+    (all ? 'Masuk &amp; keluar' : inn ? 'Uang masuk' : 'Uang keluar') +
     ' 7 hari terakhir</span></div><div class="grow mt8">' +
-    (body || '<div class="empty">Belum ada transaksi ' + (inn ? 'masuk' : 'keluar') + ' dalam 7 hari terakhir.</div>') +
+    (body || '<div class="empty">Belum ada transaksi ' + (all ? '' : inn ? 'masuk ' : 'keluar ') + 'dalam 7 hari terakhir.</div>') +
     '</div></div>'
   );
 }
@@ -697,7 +719,28 @@ function renderRincian() {
     R = c.rows,
     C = yearCash(),
     fc = flowChart(R);
-  var rows = R.map(function (r) {
+  // Jendela 3 bulan ke depan; bila ketiganya sudah lunas, bergeser 3 bulan lagi (rolling).
+  var t = todayISO(),
+    a = y === +t.slice(0, 4) ? +t.slice(5, 7) - 1 : 0,
+    un = function (m) {
+      var n = 0;
+      S.items.forEach(function (it) {
+        occ(it, y).forEach(function (x) {
+          var d = isoD(x);
+          if (+d.slice(5, 7) - 1 === m && !S.paid[it.id + '|' + d] && !S.skip[it.id + '|' + d]) n++;
+        });
+      });
+      return n;
+    };
+  for (var k = 0; k < 4 && !(un(a) || un(a + 1) || un(a + 2)); k++) a += 3;
+  a = Math.max(+S.startMonth || 0, Math.min(a, 9));
+  var off = a - (+S.startMonth || 0),
+    W = R.slice(off, off + 3),
+    wT = W.reduce(function (x, r) {
+      return x + r.sp;
+    }, 0),
+    wE = W.length ? W[W.length - 1].ak : 0;
+  var rows = W.map(function (r) {
     return (
       '<tr class="row" data-m="' +
       r.m +
@@ -725,9 +768,15 @@ function renderRincian() {
     );
   }).join('');
   var table =
-    '<div class="card"><h2>Rincian arus tagihan ' +
+    '<div class="card"><div class="dflex jcsb aic fwrap g8"><h2 class="m0">Rincian arus tagihan ' +
     y +
-    '</h2>' +
+    '</h2><button type="button" class="lk" data-goto="jadwal">Semua tagihan' +
+    LK_ARROW +
+    '</button></div><div class="sub mb8">' +
+    (W.length
+      ? W.length + ' bulan ke depan · ' + MON[W[0].m] + ' – ' + MON[W[W.length - 1].m] + ' ' + y
+      : '') +
+    '</div>' +
     gdBox(
       'rincian',
       '<div class="sub mb8">Klik baris bulan untuk melihat tanggal dan rincian tiap pembayaran.</div>' + RINCIAN_LEGEND
@@ -735,9 +784,9 @@ function renderRincian() {
     '<div class="tw"><table><thead><tr><th>Bulan</th><th>Saldo awal</th><th>Pengeluaran</th><th>Saldo akhir</th><th class="l">Item berkala</th></tr></thead><tbody>' +
     rows +
     '<tr class="tot"><td>Total</td><td></td><td data-l="Pengeluaran">' +
-    rp(c.total) +
+    rp(wT) +
     '</td><td data-l="Saldo akhir">' +
-    rp(c.end) +
+    rp(wE) +
     '</td><td></td></tr></tbody></table></div></div>';
   var tx = recentTxCard();
   $('v-rincian').innerHTML =
