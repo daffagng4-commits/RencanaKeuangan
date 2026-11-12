@@ -71,6 +71,7 @@ function yearCash() {
       o.byMonth[m] += amt;
     }
   }
+  var covered = new Set(); // kunci kemunculan tagihan yang sudah diwakili baris kas
   if (P)
     kasRows(P).forEach(function (x) {
       var item = S.items.find(function (it) {
@@ -79,6 +80,7 @@ function yearCash() {
           return k.slice(0, k.lastIndexOf('|')) === String(it.id) && S.paid[k] && S.real[k] && S.real[k].tx === x.id;
         });
       });
+      if (item) covered.add(item.id + '|' + x.d);
       add(x.d, x.t, x.amt, x.cat, x.note, item);
     });
   S.items.forEach(function (it) {
@@ -86,7 +88,7 @@ function yearCash() {
       var d = isoD(t),
         k = it.id + '|' + d;
       if (S.skip[k]) return;
-      if (P && S.paid[k] && realTx(k)) return;
+      if (P && S.paid[k] && (covered.has(k) || realTx(k))) return;
       add(d, '-', priceAt(it, t), it.cat || 'Tagihan', it.name, it);
     });
   });
@@ -600,23 +602,16 @@ function detailRows(r) {
   return paid + skRows(r) || '<tr class="det"><td colspan="5">Tidak ada pembayaran.</td></tr>';
 }
 
-/** Proyeksi runway kas: memperkirakan berapa hari saldo bertahan menghadapi tagihan belum lunas ke depan. */
+/** Proyeksi runway kas: memakai arus masuk/keluar masa depan (jadwal belum lunas + transaksi kas) per tanggal. */
 function kasRunway(P, bal) {
   if (!P) P = kasLinked() || (typeof kas === 'function' ? kas() : null);
   if (!P) return null;
-  if (bal == null) {
-    var sm = +S.startMonth || 0,
-      asc = kasRows(P).filter(function (x) {
-        return +x.d.slice(5, 7) - 1 <= sm;
-      }),
-      A = kasSum(asc);
-    bal = kasBase(P) + A.i - A.o;
-  }
-  var today = todayISO();
-  if (bal <= 0) {
-    return { days: 0, date: today, deficit: Math.abs(bal), status: 'deficit' };
-  }
-  var bills = [];
+  var today = todayISO(),
+    base = kasBase(P),
+    ev = [];
+  kasRows(P).forEach(function (x) {
+    ev.push({ d: x.d, delta: x.t === '+' ? x.amt : -x.amt });
+  });
   var allYears = (typeof ALL !== 'undefined' && ALL.data) ? Object.keys(ALL.data) : [];
   if (!allYears.length && typeof S !== 'undefined' && S.year) allYears = [String(S.year)];
   allYears.forEach(function (yk) {
@@ -624,30 +619,38 @@ function kasRunway(P, bal) {
     if (!Y || !Y.items) return;
     Y.items.forEach(function (it) {
       occ(it, y).forEach(function (t) {
-        var d = isoD(t);
-        if (d < today) return;
-        var k = it.id + '|' + d;
+        var d = isoD(t),
+          k = it.id + '|' + d;
         if (Y.paid && (Y.paid[k] || Y.skip[k])) return;
-        bills.push({ d: d, t: t, price: priceAt(it, t), name: it.name });
+        ev.push({ d: d, delta: -priceAt(it, t) });
       });
     });
   });
-  bills.sort(function (a, b) {
-    return a.t - b.t;
+  if (!ev.length) return { days: 999, date: null, deficit: 0, status: 'safe' };
+  var pre = 0,
+    by = {},
+    seen = {};
+  ev.forEach(function (e) {
+    if (e.d <= today) pre += e.delta;
+    if (!seen[e.d]) {
+      seen[e.d] = 1;
+      by[e.d] = 0;
+    }
+    by[e.d] += e.delta;
   });
-
-  var curr = bal;
-  for (var i = 0; i < bills.length; i++) {
-    curr -= bills[i].price;
+  var curr = base + pre;
+  if (curr <= 0) return { days: 0, date: today, deficit: Math.abs(curr), status: 'deficit' };
+  var dates = Object.keys(by)
+    .filter(function (d) {
+      return d > today;
+    })
+    .sort();
+  for (var i = 0; i < dates.length; i++) {
+    var d = dates[i];
+    curr += by[d];
     if (curr < 0) {
-      var dDiff = Math.max(0, Math.round((bills[i].t - Date.parse(today + 'T00:00:00Z')) / 864e5));
-      return {
-        days: dDiff,
-        date: bills[i].d,
-        deficit: Math.abs(curr),
-        bill: bills[i],
-        status: dDiff <= 30 ? 'warning' : 'ok'
-      };
+      var dDiff = Math.max(0, Math.round((Date.parse(d + 'T00:00:00Z') - Date.parse(today + 'T00:00:00Z')) / 864e5));
+      return { days: dDiff, date: d, deficit: Math.abs(curr), status: dDiff <= 90 ? 'warning' : 'ok' };
     }
   }
   return { days: 999, date: null, deficit: 0, status: 'safe' };
@@ -705,6 +708,7 @@ function saldoHero(c, R) {
         '">' +
         rp(bal) +
         '</div>' +
+        '<div class="sub">Memuat pembayaran yang sudah ditandai lunas</div>' +
         '<div class="hm-bal one"><div><span>Sisa saldo akhir Des ' +
         S.year +
         '</span><b class="pv' +
@@ -741,7 +745,8 @@ function billsCard() {
     s = 0,
     win = 0;
   for (; s < 4; s++) {
-    var h = Math.round((Date.UTC(y0, m0 + 3 * (s + 1) + 1, 1) - 864e5 - now) / 864e5);
+    var end = Date.UTC(y0, m0 + 3 * (s + 1), 1) - 864e5,
+      h = Math.round((end - now) / 864e5);
     R = reminders(h);
     if (R.soon.length) { win = s; break; }
   }
@@ -792,6 +797,7 @@ function recentTxCard() {
   if (!P) return '';
   var all = txDir === 'all',
     inn = txDir === '+',
+    today = todayISO(),
     rows = kasRows(P)
       .filter(function (x) {
         return all || x.t === txDir;
@@ -799,13 +805,14 @@ function recentTxCard() {
       .sort(function (a, b) {
         return a.d < b.d ? 1 : a.d > b.d ? -1 : 0;
       }),
-    cut = addDaysISO(todayISO(), -6),
+    cut = addDaysISO(today, -6),
     L = rows
       .filter(function (x) {
-        return x.d >= cut;
+        return x.d >= cut && x.d <= today;
       })
-      .slice(0, 7);
-  if (!L.length) L = rows.slice(0, 7);
+      .slice(0, 7),
+    fallback = !L.length;
+  if (fallback) L = rows.slice(0, 7);
   var body = L.map(function (x) {
     return (
       '<div class="it2 kit"><div><b class="' +
@@ -843,8 +850,9 @@ function recentTxCard() {
     (all ? 'true' : 'false') +
     '">Semua</button></div><span class="sub w100">' +
     (all ? 'Masuk &amp; keluar' : inn ? 'Uang masuk' : 'Uang keluar') +
-    ' 7 hari terakhir</span></div><div class="grow mt8">' +
-    (body || '<div class="empty">Belum ada transaksi ' + (all ? '' : inn ? 'masuk ' : 'keluar ') + 'dalam 7 hari terakhir.</div>') +
+    (fallback ? ' 7 catatan terakhir' : ' 7 hari terakhir') +
+    '</span></div><div class="grow mt8">' +
+    (body || '<div class="empty">Belum ada transaksi ' + (all ? '' : inn ? 'masuk ' : 'keluar ') + (fallback ? 'terbaru.' : 'dalam 7 hari terakhir.</div>')) +
     '</div></div>'
   );
 }
@@ -917,6 +925,7 @@ function renderRincian() {
       ? W.length + ' bulan ke depan · ' + MON[W[0].m] + ' – ' + MON[W[W.length - 1].m] + ' ' + y
       : '') +
     '</div>' +
+    '<div class="sub mb8">Saldo awal = saldo setelah kas bulan itu.</div>' +
     gdBox(
       'rincian',
       '<div class="sub mb8">Klik baris bulan untuk melihat tanggal dan rincian tiap pembayaran.</div>' + RINCIAN_LEGEND
