@@ -1836,6 +1836,41 @@ nav .nav-pill {
   header nav .alat-menu { left: calc(100% + 14px); right: auto; top: auto; bottom: 0; }
 }
 
+/* Stacked bar pemasukan vs pengeluaran per bulan */
+.bs-card { --bs-in: var(--ac); --bs-out: var(--in); }
+.bs-chart { position: relative; height: 250px; }
+.bs-chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.bs-grid { stroke: var(--ln); stroke-dasharray: 3 3; }
+.bs-tick { font-size: 11px; fill: var(--mut); text-anchor: middle; }
+.bs-seg.i { fill: var(--bs-in); }
+.bs-seg.o { fill: var(--bs-out); }
+.bs-d { font-size: 11.5px; font-weight: 650; text-anchor: middle; fill: var(--mut); font-variant-numeric: tabular-nums; }
+.bs-d.neg { fill: var(--wr); }
+.bs-d.pos { fill: var(--in); }
+.bs-sm .bs-d { font-size: 9.5px; }
+.bs-cur { fill: var(--sf2); opacity: 0; transition: opacity 0.15s; }
+.bs-col { outline: none; cursor: default; }
+.bs-col:hover .bs-cur, .bs-col:focus .bs-cur { opacity: 1; }
+.bs-col:focus-visible .bs-cur { opacity: 1; stroke: var(--ac); stroke-width: 2; }
+.bs-in .bs-seg { transform-box: fill-box; transform-origin: bottom; animation: bs-grow 0.5s ease-out both; }
+.bs-in .bs-d { animation: bs-fade 0.5s ease-out both; }
+@keyframes bs-grow { from { transform: scaleY(0); } }
+@keyframes bs-fade { from { opacity: 0; } }
+.bs-tip { position: absolute; left: 0; top: 0; pointer-events: none; opacity: 0; transition: opacity 0.14s; background: #111417; color: #eef1f3; border: 1px solid #2a2f33; border-radius: 8px; padding: 7px 10px; font-size: 12px; min-width: 190px; box-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.6); }
+.bs-tip.on { opacity: 1; }
+.bs-tip b { display: block; margin-bottom: 4px; }
+.bs-tip i { display: flex; align-items: center; gap: 7px; font-style: normal; color: #a7afb5; line-height: 1.7; }
+.bs-tip i::before { content: ""; width: 9px; height: 9px; border-radius: 2px; background: var(--c); }
+.bs-tip i span { margin-left: auto; color: #eef1f3; font-weight: 600; font-variant-numeric: tabular-nums; }
+.bs-lg { display: flex; justify-content: center; gap: 16px; font-size: 12px; color: var(--mut); margin-top: 6px; }
+.bs-lg span { display: flex; align-items: center; gap: 6px; }
+.bs-lg span::before { content: ""; width: 9px; height: 9px; border-radius: 2px; background: var(--c); }
+.bs-foot { margin-top: 14px; font-size: 13px; }
+.bs-foot .pos { color: var(--in); }
+.bs-foot b { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.bs-foot svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bs-foot .sub { margin-top: 4px; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   .det, .det.paid .st.ok, #v-jadwal tr.done, #v-jadwal tr.done .st.ok, .pd.fx-skip { animation: none !important; }
@@ -3907,6 +3942,7 @@ function syncUI() {
 
 var LCQ = [],
   DNQ = [],
+  BSQ = [],
   LC_LIVE = [];
 
 /** Haluskan deret nilai ke N titik (ujung tetap sama dengan data asli). */
@@ -4004,6 +4040,134 @@ function chartMount(root) {
     var cfg = DNQ[+host.dataset.dni];
     if (cfg) donutInit(host, cfg);
   });
+  root.querySelectorAll('.bs[data-bsi]').forEach(function (host) {
+    var cfg = BSQ[+host.dataset.bsi];
+    if (cfg) barStackInit(host, cfg);
+  });
+}
+
+/** Rupiah ringkas satu desimal: 4,6jt, 720rb. */
+function rpS(v) {
+  return v >= 1e6 ? (v / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + 'jt' : v >= 1000 ? Math.round(v / 1000) + 'rb' : String(Math.round(v));
+}
+
+/** Stacked bar per bulan: pemasukan (bawah) + pengeluaran (atas), selisih di atas batang. o = {aria, rows:[{m, full, inc, out}]} */
+function barStackHtml(o) {
+  var i = BSQ.push(o) - 1;
+  return (
+    '<div class="bs" data-bsi="' +
+    i +
+    '"><div class="bs-chart"><svg role="group" aria-label="' +
+    esc(o.aria) +
+    '"></svg><div class="bs-tip" aria-hidden="true"></div></div>' +
+    '<div class="bs-lg"><span style="--c:var(--bs-in)">Pemasukan</span><span style="--c:var(--bs-out)">Pengeluaran</span></div></div>'
+  );
+}
+
+function barStackInit(host, cfg) {
+  var box = host.querySelector('.bs-chart'),
+    svg = box.querySelector('svg'),
+    tip = box.querySelector('.bs-tip'),
+    rows = cfg.rows,
+    n = rows.length,
+    small = n > 6,
+    first = true,
+    PT = 24,
+    PB = 24,
+    GAP = 2,
+    tops = [];
+  function el(tag, a, p) {
+    var e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (var k in a) e.setAttribute(k, a[k]);
+    p.appendChild(e);
+    return e;
+  }
+  function sd(v, full) {
+    return (v < 0 ? '-' : '+') + (full ? rp(Math.abs(v)) : (small ? '' : 'Rp ') + rpS(Math.abs(v)));
+  }
+  function line(c, label, val) {
+    return '<i style="--c:' + c + '">' + label + '<span class="pv">' + val + '</span></i>';
+  }
+  function show(i) {
+    var r = rows[i],
+      d = r.inc - r.out;
+    tip.innerHTML =
+      '<b>' +
+      r.full +
+      '</b>' +
+      line('var(--bs-in)', 'Pemasukan', rp(r.inc)) +
+      line('var(--bs-out)', 'Pengeluaran', rp(r.out)) +
+      line(d < 0 ? 'var(--wr)' : 'var(--in)', 'Selisih', sd(d, true));
+    tip.classList.add('on');
+    var W = box.clientWidth,
+      cx = (W / n) * (i + 0.5),
+      tw = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(W - tw, cx - tw / 2)) + 'px';
+    tip.style.top = Math.max(0, tops[i] - tip.offsetHeight - 22) + 'px';
+  }
+  function hide() {
+    tip.classList.remove('on');
+  }
+  function draw() {
+    var W = box.clientWidth || 480,
+      H = box.clientHeight || 250,
+      ih = H - PT - PB,
+      max = Math.max.apply(null, rows.map(function (r) { return r.inc + r.out; })) || 1,
+      top = niceStep(max / 4) * 4,
+      band = W / n,
+      bw = Math.min(band * 0.6, 64),
+      y = function (v) { return PT + ih - (v / top) * ih; };
+    svg.textContent = '';
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.setAttribute('class', (first ? 'bs-in' : '') + (small ? ' bs-sm' : ''));
+    for (var k = 0; k <= 4; k++) el('line', { class: 'bs-grid', x1: 0, x2: W, y1: y((top / 4) * k), y2: y((top / 4) * k) }, svg);
+    rows.forEach(function (r, i) {
+      var cx = band * i + band / 2,
+        x = cx - bw / 2,
+        tot = r.inc + r.out,
+        d = r.inc - r.out,
+        g = el('g', { class: 'bs-col' }, svg),
+        anim = 'animation-delay:' + i * 50 + 'ms';
+      el('rect', { class: 'bs-cur', x: cx - band / 2 + 2, y: 2, width: Math.max(0, band - 4), height: H - PB - 2, rx: 6 }, g);
+      el('text', { class: 'bs-tick', x: cx, y: H - 6 }, svg).textContent = r.m;
+      tops[i] = y(tot);
+      if (!tot) return;
+      g.setAttribute('tabindex', '0');
+      g.setAttribute('role', 'img');
+      g.setAttribute('aria-label', r.full + ': pemasukan ' + rp(r.inc) + ', pengeluaran ' + rp(r.out) + ', selisih ' + (d < 0 ? 'minus ' : 'plus ') + rp(Math.abs(d)));
+      if (r.inc) el('rect', { class: 'bs-seg i', x: x, y: y(r.inc), width: bw, height: PT + ih - y(r.inc), rx: 4, style: anim }, g);
+      if (r.out) el('rect', { class: 'bs-seg o', x: x, y: y(tot), width: bw, height: Math.max(0, y(r.inc) - y(tot) - (r.inc ? GAP : 0)), rx: 4, style: anim }, g);
+      var label = el('text', { class: 'bs-d pv' + (d < 0 ? ' neg' : d > 0 ? ' pos' : ''), x: cx, y: y(tot) - 7, style: anim }, g);
+      label.textContent = sd(d);
+      if (label.getComputedTextLength && label.getComputedTextLength() > band - 2) {
+        label.setAttribute('textLength', Math.max(1, band - 2));
+        label.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+      }
+      g.addEventListener('pointerenter', function () { show(i); });
+      g.addEventListener('pointerleave', hide);
+      g.addEventListener('focus', function () { show(i); });
+      g.addEventListener('blur', hide);
+      g.addEventListener('keydown', function (e) {
+        var cols = [].slice.call(svg.querySelectorAll('.bs-col[tabindex]')),
+          j = cols.indexOf(g),
+          to = { ArrowRight: j + 1, ArrowLeft: j - 1, Home: 0, End: cols.length - 1 }[e.key];
+        if (e.key === 'Escape') return hide();
+        if (to === undefined) return;
+        e.preventDefault();
+        cols[(to + cols.length) % cols.length].focus();
+      });
+    });
+    first = false;
+  }
+  draw();
+  var w0 = box.clientWidth;
+  if (window.ResizeObserver)
+    new ResizeObserver(function () {
+      if (box.clientWidth === w0) return;
+      w0 = box.clientWidth;
+      hide();
+      draw();
+    }).observe(box);
 }
 
 /** Area chart: kurva halus, crosshair + tooltip, nilai besar ikut kursor, keyboard. */
@@ -4388,6 +4552,7 @@ window.addEventListener('resize', function () {
 
 var openRows = {};
 var catPeriod = 'y';
+var bsPeriod = 'm';
 var flowPeriod = 'y';
 var catDir = '-';
 var txDir = '-';
@@ -4537,6 +4702,68 @@ function periodTabs(attr, cur) {
     .join('');
 }
 
+/** Kartu stacked bar pemasukan vs pengeluaran per bulan. Penyesuaian saldo tidak dihitung. */
+function monthFlowCard(C) {
+  var y = +S.year,
+    M = MON.map(function (m, i) {
+      return { m: m, full: FULL_MON[i] + ' ' + y, inc: 0, out: 0 };
+    });
+  C.entries.forEach(function (e) {
+    if (+e.d.slice(0, 4) !== y || /Penyesuaian/.test(e.cat)) return;
+    M[+e.d.slice(5, 7) - 1][e.t === '+' ? 'inc' : 'out'] += e.amt;
+  });
+  var rows =
+      bsPeriod === 'y'
+        ? M
+        : M.filter(function (r) {
+            return r.inc || r.out;
+          }),
+    inc = 0,
+    out = 0;
+  rows.forEach(function (r) {
+    inc += r.inc;
+    out += r.out;
+  });
+  var d = inc - out,
+    tabs = [['m', 'Bulan'], ['y', 'Tahun']]
+      .map(function (t) {
+        var on = bsPeriod === t[0];
+        return '<button type="button" class="cat-tab' + (on ? ' on' : '') + '" data-bsp="' + t[0] + '" aria-pressed="' + on + '">' + t[1] + '</button>';
+      })
+      .join(''),
+    head =
+      '<div class="insight-head"><div class="insight-title"><h2 class="m0">Pemasukan vs pengeluaran per bulan</h2><div class="sub">' +
+      (rows.length ? rows[0].m + (rows.length > 1 ? ' – ' + rows[rows.length - 1].m : '') + ' ' + y : y) +
+      '</div></div><div class="cat-tabs" role="tablist">' +
+      tabs +
+      '</div></div>';
+  if (!inc && !out) return '<div class="card bs-card">' + head + '<div class="empty">Belum ada pemasukan atau pengeluaran tahun ini.</div></div>';
+  var trend = d < 0 ? 'M3 7l6 6 4-4 8 8M15 17h6v-6' : 'M3 17l6-6 4 4 8-8M15 7h6v6';
+  return (
+    '<div class="card bs-card">' +
+    head +
+    barStackHtml({ aria: 'Grafik pemasukan vs pengeluaran per bulan ' + y, rows: rows }) +
+    '<div class="bs-foot"><b class="' +
+    (d < 0 ? 'neg' : 'pos') +
+    '">' +
+    (d < 0 ? 'Defisit' : 'Surplus') +
+    ' <span class="pv">Rp ' +
+    rpS(Math.abs(d)) +
+    '</span> selama periode ini <svg viewBox="0 0 24 24" aria-hidden="true"><path d="' +
+    trend +
+    '"/></svg></b><div class="sub">Total masuk <span class="pv">' +
+    rp(inc) +
+    '</span> · total keluar <span class="pv">' +
+    rp(out) +
+    '</span></div></div></div>'
+  );
+}
+
+/** Kartu kosong untuk isi berikutnya; body = HTML isi (slot). */
+function slotCard(title, body) {
+  return '<div class="card slot-card"><h2 class="m0">' + esc(title) + '</h2>' + (body || '<div class="sub mt8">Belum ada konten</div>') + '</div>';
+}
+
 /** Tombol periode yang mengendalikan pie dan bar kategori sekaligus. */
 function cashPeriodTabs() {
   return periodTabs('catp', catPeriod);
@@ -4548,7 +4775,7 @@ function insightCard(C) {
     total = p.inc + p.out,
     tabs = cashPeriodTabs();
   var head =
-    '<div class="insight-head"><div class="insight-title"><div class="dflex aic fwrap g8"><h2 class="m0">Pemasukan vs pengeluaran</h2><span class="sub fs12">Jadwal + kas' +
+    '<div class="insight-head"><div class="insight-title"><div class="dflex aic fwrap g8"><h2 class="m0">Pengeluaran per kategori</h2><span class="sub fs12">Jadwal + kas' +
     (+S.year === +todayISO().slice(0, 4) ? '' : ' · rencana') +
     '</span></div>' +
     '<div class="sub">' +
@@ -5098,6 +5325,7 @@ function recentTxCard() {
 function renderRincian() {
   LCQ = [];
   DNQ = [];
+  BSQ = [];
   var c = calc(),
     y = S.year,
     R = c.rows,
@@ -5181,7 +5409,11 @@ function renderRincian() {
     '</div>' +
     '<div class="splitH">' +
     fc +
+    monthFlowCard(C) +
+    '</div>' +
+    '<div class="splitH">' +
     insightCard(C) +
+    slotCard('Kartu baru') +
     '</div>' +
     (tx ? '<div class="splitR">' + table + tx + '</div>' : table);
   chartMount($('v-rincian'));
@@ -5215,6 +5447,12 @@ function bindRincian() {
     var cp = e.target.closest('[data-catp]');
     if (cp) {
       catPeriod = cp.dataset.catp;
+      renderRincian();
+      return;
+    }
+    var bsb = e.target.closest('[data-bsp]');
+    if (bsb) {
+      bsPeriod = bsb.dataset.bsp;
       renderRincian();
       return;
     }

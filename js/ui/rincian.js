@@ -4,6 +4,7 @@
 
 var openRows = {};
 var catPeriod = 'y';
+var bsPeriod = 'm';
 var flowPeriod = 'y';
 var catDir = '-';
 var txDir = '-';
@@ -153,6 +154,68 @@ function periodTabs(attr, cur) {
     .join('');
 }
 
+/** Kartu stacked bar pemasukan vs pengeluaran per bulan. Penyesuaian saldo tidak dihitung. */
+function monthFlowCard(C) {
+  var y = +S.year,
+    M = MON.map(function (m, i) {
+      return { m: m, full: FULL_MON[i] + ' ' + y, inc: 0, out: 0 };
+    });
+  C.entries.forEach(function (e) {
+    if (+e.d.slice(0, 4) !== y || /Penyesuaian/.test(e.cat)) return;
+    M[+e.d.slice(5, 7) - 1][e.t === '+' ? 'inc' : 'out'] += e.amt;
+  });
+  var rows =
+      bsPeriod === 'y'
+        ? M
+        : M.filter(function (r) {
+            return r.inc || r.out;
+          }),
+    inc = 0,
+    out = 0;
+  rows.forEach(function (r) {
+    inc += r.inc;
+    out += r.out;
+  });
+  var d = inc - out,
+    tabs = [['m', 'Bulan'], ['y', 'Tahun']]
+      .map(function (t) {
+        var on = bsPeriod === t[0];
+        return '<button type="button" class="cat-tab' + (on ? ' on' : '') + '" data-bsp="' + t[0] + '" aria-pressed="' + on + '">' + t[1] + '</button>';
+      })
+      .join(''),
+    head =
+      '<div class="insight-head"><div class="insight-title"><h2 class="m0">Pemasukan vs pengeluaran per bulan</h2><div class="sub">' +
+      (rows.length ? rows[0].m + (rows.length > 1 ? ' – ' + rows[rows.length - 1].m : '') + ' ' + y : y) +
+      '</div></div><div class="cat-tabs" role="tablist">' +
+      tabs +
+      '</div></div>';
+  if (!inc && !out) return '<div class="card bs-card">' + head + '<div class="empty">Belum ada pemasukan atau pengeluaran tahun ini.</div></div>';
+  var trend = d < 0 ? 'M3 7l6 6 4-4 8 8M15 17h6v-6' : 'M3 17l6-6 4 4 8-8M15 7h6v6';
+  return (
+    '<div class="card bs-card">' +
+    head +
+    barStackHtml({ aria: 'Grafik pemasukan vs pengeluaran per bulan ' + y, rows: rows }) +
+    '<div class="bs-foot"><b class="' +
+    (d < 0 ? 'neg' : 'pos') +
+    '">' +
+    (d < 0 ? 'Defisit' : 'Surplus') +
+    ' <span class="pv">Rp ' +
+    rpS(Math.abs(d)) +
+    '</span> selama periode ini <svg viewBox="0 0 24 24" aria-hidden="true"><path d="' +
+    trend +
+    '"/></svg></b><div class="sub">Total masuk <span class="pv">' +
+    rp(inc) +
+    '</span> · total keluar <span class="pv">' +
+    rp(out) +
+    '</span></div></div></div>'
+  );
+}
+
+/** Kartu kosong untuk isi berikutnya; body = HTML isi (slot). */
+function slotCard(title, body) {
+  return '<div class="card slot-card"><h2 class="m0">' + esc(title) + '</h2>' + (body || '<div class="sub mt8">Belum ada konten</div>') + '</div>';
+}
+
 /** Tombol periode yang mengendalikan pie dan bar kategori sekaligus. */
 function cashPeriodTabs() {
   return periodTabs('catp', catPeriod);
@@ -164,7 +227,7 @@ function insightCard(C) {
     total = p.inc + p.out,
     tabs = cashPeriodTabs();
   var head =
-    '<div class="insight-head"><div class="insight-title"><div class="dflex aic fwrap g8"><h2 class="m0">Pemasukan vs pengeluaran</h2><span class="sub fs12">Jadwal + kas' +
+    '<div class="insight-head"><div class="insight-title"><div class="dflex aic fwrap g8"><h2 class="m0">Pengeluaran per kategori</h2><span class="sub fs12">Jadwal + kas' +
     (+S.year === +todayISO().slice(0, 4) ? '' : ' · rencana') +
     '</span></div>' +
     '<div class="sub">' +
@@ -714,6 +777,7 @@ function recentTxCard() {
 function renderRincian() {
   LCQ = [];
   DNQ = [];
+  BSQ = [];
   var c = calc(),
     y = S.year,
     R = c.rows,
@@ -797,7 +861,11 @@ function renderRincian() {
     '</div>' +
     '<div class="splitH">' +
     fc +
+    monthFlowCard(C) +
+    '</div>' +
+    '<div class="splitH">' +
     insightCard(C) +
+    slotCard('Kartu baru') +
     '</div>' +
     (tx ? '<div class="splitR">' + table + tx + '</div>' : table);
   chartMount($('v-rincian'));
@@ -831,6 +899,12 @@ function bindRincian() {
     var cp = e.target.closest('[data-catp]');
     if (cp) {
       catPeriod = cp.dataset.catp;
+      renderRincian();
+      return;
+    }
+    var bsb = e.target.closest('[data-bsp]');
+    if (bsb) {
+      bsPeriod = bsb.dataset.bsp;
       renderRincian();
       return;
     }

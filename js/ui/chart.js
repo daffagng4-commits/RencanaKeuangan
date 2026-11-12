@@ -6,6 +6,7 @@
 
 var LCQ = [],
   DNQ = [],
+  BSQ = [],
   LC_LIVE = [];
 
 /** Haluskan deret nilai ke N titik (ujung tetap sama dengan data asli). */
@@ -103,6 +104,134 @@ function chartMount(root) {
     var cfg = DNQ[+host.dataset.dni];
     if (cfg) donutInit(host, cfg);
   });
+  root.querySelectorAll('.bs[data-bsi]').forEach(function (host) {
+    var cfg = BSQ[+host.dataset.bsi];
+    if (cfg) barStackInit(host, cfg);
+  });
+}
+
+/** Rupiah ringkas satu desimal: 4,6jt, 720rb. */
+function rpS(v) {
+  return v >= 1e6 ? (v / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + 'jt' : v >= 1000 ? Math.round(v / 1000) + 'rb' : String(Math.round(v));
+}
+
+/** Stacked bar per bulan: pemasukan (bawah) + pengeluaran (atas), selisih di atas batang. o = {aria, rows:[{m, full, inc, out}]} */
+function barStackHtml(o) {
+  var i = BSQ.push(o) - 1;
+  return (
+    '<div class="bs" data-bsi="' +
+    i +
+    '"><div class="bs-chart"><svg role="group" aria-label="' +
+    esc(o.aria) +
+    '"></svg><div class="bs-tip" aria-hidden="true"></div></div>' +
+    '<div class="bs-lg"><span style="--c:var(--bs-in)">Pemasukan</span><span style="--c:var(--bs-out)">Pengeluaran</span></div></div>'
+  );
+}
+
+function barStackInit(host, cfg) {
+  var box = host.querySelector('.bs-chart'),
+    svg = box.querySelector('svg'),
+    tip = box.querySelector('.bs-tip'),
+    rows = cfg.rows,
+    n = rows.length,
+    small = n > 6,
+    first = true,
+    PT = 24,
+    PB = 24,
+    GAP = 2,
+    tops = [];
+  function el(tag, a, p) {
+    var e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (var k in a) e.setAttribute(k, a[k]);
+    p.appendChild(e);
+    return e;
+  }
+  function sd(v, full) {
+    return (v < 0 ? '-' : '+') + (full ? rp(Math.abs(v)) : (small ? '' : 'Rp ') + rpS(Math.abs(v)));
+  }
+  function line(c, label, val) {
+    return '<i style="--c:' + c + '">' + label + '<span class="pv">' + val + '</span></i>';
+  }
+  function show(i) {
+    var r = rows[i],
+      d = r.inc - r.out;
+    tip.innerHTML =
+      '<b>' +
+      r.full +
+      '</b>' +
+      line('var(--bs-in)', 'Pemasukan', rp(r.inc)) +
+      line('var(--bs-out)', 'Pengeluaran', rp(r.out)) +
+      line(d < 0 ? 'var(--wr)' : 'var(--in)', 'Selisih', sd(d, true));
+    tip.classList.add('on');
+    var W = box.clientWidth,
+      cx = (W / n) * (i + 0.5),
+      tw = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(W - tw, cx - tw / 2)) + 'px';
+    tip.style.top = Math.max(0, tops[i] - tip.offsetHeight - 22) + 'px';
+  }
+  function hide() {
+    tip.classList.remove('on');
+  }
+  function draw() {
+    var W = box.clientWidth || 480,
+      H = box.clientHeight || 250,
+      ih = H - PT - PB,
+      max = Math.max.apply(null, rows.map(function (r) { return r.inc + r.out; })) || 1,
+      top = niceStep(max / 4) * 4,
+      band = W / n,
+      bw = Math.min(band * 0.6, 64),
+      y = function (v) { return PT + ih - (v / top) * ih; };
+    svg.textContent = '';
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.setAttribute('class', (first ? 'bs-in' : '') + (small ? ' bs-sm' : ''));
+    for (var k = 0; k <= 4; k++) el('line', { class: 'bs-grid', x1: 0, x2: W, y1: y((top / 4) * k), y2: y((top / 4) * k) }, svg);
+    rows.forEach(function (r, i) {
+      var cx = band * i + band / 2,
+        x = cx - bw / 2,
+        tot = r.inc + r.out,
+        d = r.inc - r.out,
+        g = el('g', { class: 'bs-col' }, svg),
+        anim = 'animation-delay:' + i * 50 + 'ms';
+      el('rect', { class: 'bs-cur', x: cx - band / 2 + 2, y: 2, width: Math.max(0, band - 4), height: H - PB - 2, rx: 6 }, g);
+      el('text', { class: 'bs-tick', x: cx, y: H - 6 }, svg).textContent = r.m;
+      tops[i] = y(tot);
+      if (!tot) return;
+      g.setAttribute('tabindex', '0');
+      g.setAttribute('role', 'img');
+      g.setAttribute('aria-label', r.full + ': pemasukan ' + rp(r.inc) + ', pengeluaran ' + rp(r.out) + ', selisih ' + (d < 0 ? 'minus ' : 'plus ') + rp(Math.abs(d)));
+      if (r.inc) el('rect', { class: 'bs-seg i', x: x, y: y(r.inc), width: bw, height: PT + ih - y(r.inc), rx: 4, style: anim }, g);
+      if (r.out) el('rect', { class: 'bs-seg o', x: x, y: y(tot), width: bw, height: Math.max(0, y(r.inc) - y(tot) - (r.inc ? GAP : 0)), rx: 4, style: anim }, g);
+      var label = el('text', { class: 'bs-d pv' + (d < 0 ? ' neg' : d > 0 ? ' pos' : ''), x: cx, y: y(tot) - 7, style: anim }, g);
+      label.textContent = sd(d);
+      if (label.getComputedTextLength && label.getComputedTextLength() > band - 2) {
+        label.setAttribute('textLength', Math.max(1, band - 2));
+        label.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+      }
+      g.addEventListener('pointerenter', function () { show(i); });
+      g.addEventListener('pointerleave', hide);
+      g.addEventListener('focus', function () { show(i); });
+      g.addEventListener('blur', hide);
+      g.addEventListener('keydown', function (e) {
+        var cols = [].slice.call(svg.querySelectorAll('.bs-col[tabindex]')),
+          j = cols.indexOf(g),
+          to = { ArrowRight: j + 1, ArrowLeft: j - 1, Home: 0, End: cols.length - 1 }[e.key];
+        if (e.key === 'Escape') return hide();
+        if (to === undefined) return;
+        e.preventDefault();
+        cols[(to + cols.length) % cols.length].focus();
+      });
+    });
+    first = false;
+  }
+  draw();
+  var w0 = box.clientWidth;
+  if (window.ResizeObserver)
+    new ResizeObserver(function () {
+      if (box.clientWidth === w0) return;
+      w0 = box.clientWidth;
+      hide();
+      draw();
+    }).observe(box);
 }
 
 /** Area chart: kurva halus, crosshair + tooltip, nilai besar ikut kursor, keyboard. */

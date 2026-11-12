@@ -1814,6 +1814,41 @@ nav .nav-pill {
   header nav .alat-menu { left: calc(100% + 14px); right: auto; top: auto; bottom: 0; }
 }
 
+/* Stacked bar pemasukan vs pengeluaran per bulan */
+.bs-card { --bs-in: var(--ac); --bs-out: var(--in); }
+.bs-chart { position: relative; height: 250px; }
+.bs-chart svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.bs-grid { stroke: var(--ln); stroke-dasharray: 3 3; }
+.bs-tick { font-size: 11px; fill: var(--mut); text-anchor: middle; }
+.bs-seg.i { fill: var(--bs-in); }
+.bs-seg.o { fill: var(--bs-out); }
+.bs-d { font-size: 11.5px; font-weight: 650; text-anchor: middle; fill: var(--mut); font-variant-numeric: tabular-nums; }
+.bs-d.neg { fill: var(--wr); }
+.bs-d.pos { fill: var(--in); }
+.bs-sm .bs-d { font-size: 9.5px; }
+.bs-cur { fill: var(--sf2); opacity: 0; transition: opacity 0.15s; }
+.bs-col { outline: none; cursor: default; }
+.bs-col:hover .bs-cur, .bs-col:focus .bs-cur { opacity: 1; }
+.bs-col:focus-visible .bs-cur { opacity: 1; stroke: var(--ac); stroke-width: 2; }
+.bs-in .bs-seg { transform-box: fill-box; transform-origin: bottom; animation: bs-grow 0.5s ease-out both; }
+.bs-in .bs-d { animation: bs-fade 0.5s ease-out both; }
+@keyframes bs-grow { from { transform: scaleY(0); } }
+@keyframes bs-fade { from { opacity: 0; } }
+.bs-tip { position: absolute; left: 0; top: 0; pointer-events: none; opacity: 0; transition: opacity 0.14s; background: #111417; color: #eef1f3; border: 1px solid #2a2f33; border-radius: 8px; padding: 7px 10px; font-size: 12px; min-width: 190px; box-shadow: 0 10px 26px -14px rgba(0, 0, 0, 0.6); }
+.bs-tip.on { opacity: 1; }
+.bs-tip b { display: block; margin-bottom: 4px; }
+.bs-tip i { display: flex; align-items: center; gap: 7px; font-style: normal; color: #a7afb5; line-height: 1.7; }
+.bs-tip i::before { content: ""; width: 9px; height: 9px; border-radius: 2px; background: var(--c); }
+.bs-tip i span { margin-left: auto; color: #eef1f3; font-weight: 600; font-variant-numeric: tabular-nums; }
+.bs-lg { display: flex; justify-content: center; gap: 16px; font-size: 12px; color: var(--mut); margin-top: 6px; }
+.bs-lg span { display: flex; align-items: center; gap: 6px; }
+.bs-lg span::before { content: ""; width: 9px; height: 9px; border-radius: 2px; background: var(--c); }
+.bs-foot { margin-top: 14px; font-size: 13px; }
+.bs-foot .pos { color: var(--in); }
+.bs-foot b { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.bs-foot svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bs-foot .sub { margin-top: 4px; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   .det, .det.paid .st.ok, #v-jadwal tr.done, #v-jadwal tr.done .st.ok, .pd.fx-skip { animation: none !important; }
