@@ -757,16 +757,6 @@ function kasBal(P) {
   return { sm: sm, mName: typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm], A: A, bal: kasBase(P) + A.i - A.o };
 }
 
-/** Transaksi (mentah/turunan kas) yang tanggalnya setelah hari ini namun masih di bulan saldo efektif. */
-function kasFutureRows(P) {
-  var t = todayISO();
-  if (+S.year !== +t.slice(0, 4)) return [];
-  var sm = smEff();
-  return kasRows(P).filter(function (x) {
-    return +x.d.slice(5, 7) - 1 <= sm && x.d > t;
-  });
-}
-
 /** Satu kartu saldo di Rincian Bulanan: saldo realtime, sisa akhir tahun, dan jatah jajan di kartu statistik. */
 function saldoHero(c, R) {
   var P = kasLinked(),
@@ -776,16 +766,7 @@ function saldoHero(c, R) {
     mName = KB.mName,
     A = KB.A,
     bal = KB.bal,
-    chip = '<span class="chip on" style="margin:0;font-size:11px;font-weight:700">' + esc(P.name) + '</span>',
-    futRows = kasFutureRows(P),
-    futHint = '';
-  if (futRows.length) {
-    var futNet = futRows.reduce(function (sum, x) { return sum + (x.t === '+' ? x.amt : -x.amt); }, 0);
-    var tip = futRows.map(function (x) {
-      return fmtD(x.d) + ' · ' + esc(x.note || x.cat || '') + ' · ' + signed(x.t === '+' ? x.amt : -x.amt);
-    }).join('\n');
-    futHint = '<div class="sub hm-fut" title="' + esc(tip) + '">Termasuk <b class="pv">' + signed(futNet) + '</b> transaksi bertanggal setelah hari ini</div>';
-  }
+    chip = '<span class="chip on" style="margin:0;font-size:11px;font-weight:700">' + esc(P.name) + '</span>';
   return heroHtml(
     c,
     R,
@@ -802,8 +783,6 @@ function saldoHero(c, R) {
         '">' +
         rp(bal) +
         '</div>' +
-        '<div class="sub">Memuat pembayaran yang sudah ditandai lunas</div>' +
-        futHint +
         '<div class="hm-bal one"><div><span>Sisa saldo akhir Des ' +
         S.year +
         '</span><b class="pv' +

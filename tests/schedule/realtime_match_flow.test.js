@@ -60,9 +60,6 @@ const it = (id, price, start) => ({ id, name: id, price, start, n: 1, unit: 'sek
     assert.notStrictEqual(bal2, tipBal2, `realtime (${bal2}) dan titik grafik (${tipBal2}) harus berbeda saat ada transaksi masa depan di luar periode Minggu`);
     // realtime lebih kecil karena sudah memotong transaksi masa depan (filter per bulan).
     assert(bal2 < tipBal2, `realtime (${bal2}) harus lebih kecil dari titik grafik (${tipBal2})`);
-    // Petunjuk Saldo realtime: muncul bila ada transaksi setelah hari ini di bulan saldo; saldo tidak berubah.
-    assert(/transaksi bertanggal setelah hari ini/.test(saldoCard2.textContent), 'petunjuk transaksi masa depan muncul');
-    assert.strictEqual(+(saldoCard2.querySelector('.hm-big').textContent.match(/Rp\s*([\d\.]+)/)[1].replace(/\./g, '')), bal2, 'angka saldo tetap setelah hint');
     console.log('OK realtime_match_flow');
   } finally {
     w.close();
