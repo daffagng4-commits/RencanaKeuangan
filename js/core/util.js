@@ -5,6 +5,25 @@
 var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 var FULL_MON = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
+var ITEM_NAME_ALIASES = [
+  { pattern: /^etf\s+60%$/i, name: 'ETF 60%' },
+  { pattern: /^saham\s+lokal\s+40%$/i, name: 'Saham Lokal 40%' },
+  { pattern: /^btc$/i, name: 'BTC' }
+];
+
+/** Keterangan pembayaran saja; tanda kurung bermakna dan catatan bebas tetap utuh. */
+function normalisasiNamaItem(namaMentah) {
+  var name = String(namaMentah || '').trim().replace(/\s+/g, ' ');
+  name = name.replace(/\(\s*(?:lunas|cicil(?:an)?|dari total\b[^()]*)\s*\)/gi, ' ').trim();
+  var tail = /\s+(?:lunas|cicil(?:an)?|jan(?:uari)?|feb(?:ruari)?|mar(?:et)?|apr(?:il)?|mei|jun(?:i)?|jul(?:i)?|agu(?:stus)?|sep(?:tember)?|okt(?:ober)?|nov(?:ember)?|des(?:ember)?)$/i;
+  while (tail.test(name)) name = name.replace(tail, '').trim();
+  name = name.replace(/\s+/g, ' ');
+  for (var i = 0; i < ITEM_NAME_ALIASES.length; i++) {
+    if (ITEM_NAME_ALIASES[i].pattern.test(name)) return ITEM_NAME_ALIASES[i].name;
+  }
+  return name || String(namaMentah || '').trim();
+}
+
 /** Escape HTML. */
 function esc(t) {
   return String(t).replace(/[&<>"]/g, function (c) {

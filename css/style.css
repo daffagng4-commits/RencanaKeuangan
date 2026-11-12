@@ -1298,12 +1298,19 @@ svg.lc .lc-cd { fill: var(--ac); stroke: var(--card); stroke-width: 2; }
 /* ============================================================
    11. Insight / analitik
    ============================================================ */
-.insight { margin-bottom: 16px; }
+.insight { display: flex; flex-direction: column; margin-bottom: 16px; }
 .insight-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .insight-title .sub { margin-top: 2px; }
 .insight .cat-tabs { margin: 0; }
-.insight-body { display: block; }
-.insight-dn { margin-top: 12px; }
+.insight-body, .insight-cat { display: flex; flex-direction: column; flex: 1; }
+.insight-dn { display: grid; flex: 1; align-content: center; margin: 12px 0; }
+.insight-current, .insight-reserve { grid-area: 1 / 1; align-self: center; min-width: 0; }
+.insight-reserve { visibility: hidden; pointer-events: none; }
+.insight-reserve .dn-ring { aspect-ratio: 1; }
+.insight-reserve-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ln); }
+.insight-reserve-row { display: grid; grid-template-columns: 9px 1fr 96px 32px; gap: 8px; align-items: center; min-height: 40px; border-bottom: 1px solid var(--ln); padding: 9px 2px; font-size: 12.5px; }
+.insight-reserve-list li:last-child .insight-reserve-row { border-bottom: 0; }
+.insight-summary { margin-top: auto; }
 .insight-dn .dn { display: grid; grid-template-columns: minmax(150px, 190px) minmax(0, 1fr); gap: 6px 20px; align-items: center; }
 .insight-dn .dn-ring { margin: 0 auto; }
 .insight-body .dn { min-width: 0; align-self: center; }
@@ -1512,7 +1519,7 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
   .kas-cat { border-left: 0; border-top: 1px solid var(--ln); padding-left: 0; padding-top: 16px; }
   .insight-dn .dn { grid-template-columns: 1fr; gap: 4px; }
   .insight .dn-c strong { font-size: 14px; }
-  .insight-dn .dn-lg { border-top: 0; margin-top: 10px; }
+  .insight-dn .dn-lg, .insight-dn .insight-reserve-list { border-top: 0; margin-top: 10px; }
   .it { grid-template-columns: 1fr auto; }
   .it .cell:nth-child(2), .it .cell:nth-child(3) { grid-column: 1; }
   .kflt { grid-template-columns: 1fr; }
@@ -1815,21 +1822,26 @@ nav .nav-pill {
 }
 
 /* Item pengeluaran terbesar */
+.expense-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; max-width: 100%; }
+.expense-controls .pk-field { width: auto; min-width: 0; }
+.expense-controls > select { width: auto; flex: none; min-height: 30px; padding: 4px 8px; font-size: 11.5px; }
+.expense-controls .pk-in { min-height: 30px; padding-top: 4px; padding-bottom: 4px; font-size: 11.5px; }
 .expense-tabs { max-width: 100%; flex-wrap: wrap; }
 .expense-card .insight-head { flex-wrap: wrap; }
-.expense-list { list-style: none; margin: 16px 0 0; padding: 0; }
-.expense-row { padding: 11px 8px; margin: 0 -8px; border-radius: 10px; border-top: 1px solid var(--ln); }
+.expense-list { list-style: none; margin: 4px 0 0; padding: 0; }
+.expense-row { padding: 7px 8px; margin: 0 -8px; border-radius: 10px; border-top: 1px solid var(--ln); }
 .expense-row:first-child { border-top: 0; }
 .expense-row:hover, .expense-row:focus { background: var(--sf2); }
 .expense-row:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
 .expense-top { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto 36px; align-items: center; gap: 8px; }
 .expense-rank { color: var(--mut); font-size: 12px; font-variant-numeric: tabular-nums; }
-.expense-label { min-width: 0; }
-.expense-name, .expense-label small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.expense-label { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.expense-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; vertical-align: middle; border-radius: 50%; }
+.expense-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .expense-name, .expense-amount { font-size: 14px; font-weight: 600; }
 .expense-amount { white-space: nowrap; text-align: right; }
 .expense-top > .sub { text-align: right; }
-.expense-track { height: 8px; margin: 8px 0 0 24px; border-radius: 99px; background: var(--sf2); overflow: hidden; }
+.expense-track { height: 6px; margin: 5px 0 0 24px; border-radius: 99px; background: var(--sf2); overflow: hidden; }
 .expense-fill { height: 100%; border-radius: inherit; transform-origin: left; animation: expense-grow .5s ease-out both; }
 @keyframes expense-grow { from { transform: scaleX(0); } }
 .expense-row.rest .expense-name, .expense-row.rest .expense-amount { color: var(--mut); font-weight: 500; }
