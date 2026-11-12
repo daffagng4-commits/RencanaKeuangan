@@ -19,7 +19,7 @@ var ITEM_NAME_TRIGGERS = [
   { nama: 'Kuota', kata: ['kuota'] },
   { nama: 'Vidio', kata: ['vidio'] },
   { nama: 'JKT48', kata: ['jkt48'] },
-  { nama: 'Hutang', kata: ['hutang'] }
+  { nama: 'Hutang', kata: ['hutang', 'mamah'] }
 ];
 
 function itemTriggerMatches(raw) {
