@@ -1814,6 +1814,40 @@ nav .nav-pill {
   header nav .alat-menu { left: calc(100% + 14px); right: auto; top: auto; bottom: 0; }
 }
 
+/* Item pengeluaran terbesar */
+.expense-tabs { max-width: 100%; flex-wrap: wrap; }
+.expense-card .insight-head { flex-wrap: wrap; }
+.expense-list { list-style: none; margin: 16px 0 0; padding: 0; }
+.expense-row { padding: 11px 8px; margin: 0 -8px; border-radius: 10px; border-top: 1px solid var(--ln); }
+.expense-row:first-child { border-top: 0; }
+.expense-row:hover, .expense-row:focus { background: var(--sf2); }
+.expense-row:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+.expense-top { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto 36px; align-items: center; gap: 8px; }
+.expense-rank { color: var(--mut); font-size: 12px; font-variant-numeric: tabular-nums; }
+.expense-label { min-width: 0; }
+.expense-name, .expense-label small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.expense-name, .expense-amount { font-size: 14px; font-weight: 600; }
+.expense-amount { white-space: nowrap; text-align: right; }
+.expense-top > .sub { text-align: right; }
+.expense-track { height: 8px; margin: 8px 0 0 24px; border-radius: 99px; background: var(--sf2); overflow: hidden; }
+.expense-fill { height: 100%; border-radius: inherit; transform-origin: left; animation: expense-grow .5s ease-out both; }
+@keyframes expense-grow { from { transform: scaleX(0); } }
+.expense-row.rest .expense-name, .expense-row.rest .expense-amount { color: var(--mut); font-weight: 500; }
+.expense-row.rest .expense-fill { opacity: .45; }
+.expense-detail { display: none; margin: 6px 0 0 24px; font-size: 12px; overflow-wrap: anywhere; }
+.expense-row:hover .expense-detail, .expense-row:focus .expense-detail { display: block; }
+.expense-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 14px; font-size: 12px; }
+.expense-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.expense-legend i { width: 9px; height: 9px; border-radius: 50%; }
+.expense-card .bs-foot { border-top: 1px dashed var(--ln); padding-top: 14px; }
+.expense-card .bs-foot b { display: block; }
+.expense-card .bs-foot svg { vertical-align: middle; }
+@media (prefers-reduced-motion: reduce) { .expense-fill { animation: none; } }
+@media (max-width: 420px) {
+  .expense-top { grid-template-columns: 12px minmax(0, 1fr) auto 30px; gap: 5px; }
+  .expense-name, .expense-amount { font-size: 12px; }
+}
+
 /* Stacked bar pemasukan vs pengeluaran per bulan */
 .bs-card { --bs-in: var(--ac); --bs-out: var(--in); }
 .bs-chart { position: relative; height: 250px; }

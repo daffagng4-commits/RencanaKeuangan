@@ -182,6 +182,12 @@
     tg.setAttribute('aria-label', 'Pilih dari daftar');
     tg.innerHTML = '<i class="pk-cv"></i>';
     w.appendChild(tg);
+    var custom = inp.type === 'text';
+    if (custom) {
+      inp.removeAttribute('list');
+      inp.setAttribute('autocomplete', 'off');
+    }
+    tg.setAttribute('aria-haspopup', 'dialog');
     tg.onclick = function () {
       var opts = [].map
         .call(l.options, function (o) {
@@ -206,6 +212,7 @@
           })
           .join('')
       );
+      if (custom) place(el, inp);
       el.onclick = function (e) {
         var b = e.target.closest('button');
         if (!b) return;
@@ -213,8 +220,18 @@
         inp.dispatchEvent(new Event('input', { bubbles: true }));
         inp.dispatchEvent(new Event('change', { bubbles: true }));
         close();
+        inp.focus();
       };
     };
+    if (custom) {
+      inp.addEventListener('click', function () { tg.click(); });
+      inp.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowDown') return;
+        e.preventDefault();
+        tg.click();
+        if (open) open.el.querySelector('button').focus();
+      });
+    }
   }
 
   /* ---------- upgrade semua select ---------- */
