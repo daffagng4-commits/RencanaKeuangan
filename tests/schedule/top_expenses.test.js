@@ -17,7 +17,7 @@ const { boot } = require('./ui.js');
     assert(card, 'placeholder diganti kartu item pengeluaran');
     assert(card.querySelector('.expense-total').textContent.includes('Rp 11.396.500'));
     assert.strictEqual(card.querySelectorAll('.expense-row:not(.rest)').length,5);
-    assert.strictEqual(card.querySelector('.expense-name').textContent,'ETF');
+    assert.strictEqual(card.querySelector('.expense-name').textContent,'ETF 60%');
     assert(card.querySelector('.expense-row').getAttribute('aria-label').includes('Rp 4.900.000'));
     assert(card.querySelector('.expense-detail').textContent.includes('Nov Rp 2.900.000 · Des Rp 2.000.000'));
     assert.strictEqual(card.querySelector('.expense-fill').style.background,w.catColor('Investasi'));

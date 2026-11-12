@@ -222,6 +222,28 @@ function monthFlowCard(C) {
   );
 }
 
+function groupExpenseItems(entries) {
+  var groups = new Map(), conflicts = new Map(), unmatched = new Set();
+  entries.forEach(function (e) {
+    var raw = (e.note || '').trim() || e.cat || 'Tanpa nama', matches = itemTriggerMatches(raw),
+      name = normalisasiNamaItem(raw), key = name.toLocaleLowerCase('id-ID'), r = groups.get(key);
+    if (matches.length > 1) conflicts.set(raw, matches.map(function (m) { return m.nama; }));
+    if (!matches.length) unmatched.add(raw);
+    if (!r) { r = { name: name, cats: new Map(), byMonth: {}, raw: new Set(), v: 0 }; groups.set(key, r); }
+    r.raw.add(raw);
+    r.v += e.amt;
+    r.cats.set(e.cat || '', (r.cats.get(e.cat || '') || 0) + 1);
+    var month = +e.d.slice(5, 7);
+    r.byMonth[month] = (r.byMonth[month] || 0) + e.amt;
+  });
+  var rows = Array.from(groups.values()).sort(function (a, b) { return b.v - a.v || a.name.localeCompare(b.name, 'id'); });
+  rows.forEach(function (r) {
+    r.cat = Array.from(r.cats.keys()).sort(function (a, b) { return r.cats.get(b) - r.cats.get(a); })[0];
+  });
+  return { rows: rows, unmatched: Array.from(unmatched), conflicts: Array.from(conflicts),
+    multipleCategories: rows.filter(function (r) { return r.cats.size > 1; }) };
+}
+
 function topExpensesCard(C) {
   var entries = C.entries.filter(function (e) { return e.t === '-' && !/Penyesuaian/i.test(e.cat); }),
     months = Array.from(new Set(entries.map(function (e) { return +e.d.slice(5, 7); }))).sort(function (a, b) { return a - b; });
@@ -232,37 +254,19 @@ function topExpensesCard(C) {
   }
   if (expenseMonth !== 'all') expenseMonth = expenseLastMonth || 'all';
   var selected = expenseMonth === 'all' ? months : [+expenseMonth],
-    groups = new Map(), total = 0, identities = new Map();
-  entries.forEach(function (e) {
-    if (!e.itemId) return;
-    var key = normalisasiNamaItem(e.itemName || e.note).toLocaleLowerCase('id-ID');
-    if (!identities.has(key)) identities.set(key, new Set());
-    identities.get(key).add(e.itemId);
-  });
-  entries.forEach(function (e) {
-    var m = +e.d.slice(5, 7);
-    if (selected.indexOf(m) < 0) return;
-    var raw = (e.note || '').trim() || e.cat || 'Tanpa nama',
-      name = normalisasiNamaItem(e.itemName || raw), normalized = name.toLocaleLowerCase('id-ID'),
-      ids = identities.get(normalized), id = e.itemId || (ids && ids.size === 1 ? Array.from(ids)[0] : ''),
-      key = id ? 'item:' + id : 'name:' + normalized, r = groups.get(key);
-    if (!r) { r = { name: name, cats: new Map(), byMonth: {}, raw: new Set(), v: 0 }; groups.set(key, r); }
-    r.raw.add(raw);
-    r.v += e.amt;
-    r.cats.set(e.cat || '', (r.cats.get(e.cat || '') || 0) + e.amt);
-    r.byMonth[m] = (r.byMonth[m] || 0) + e.amt;
-    total += e.amt;
-  });
-  var all = Array.from(groups.values()).sort(function (a, b) { return b.v - a.v || a.name.localeCompare(b.name, 'id'); }),
-    rows = all.slice(0, EXPENSE_TOP_N), rest = { name: 'Item lainnya', v: 0, byMonth: {}, raw: new Set(), rest: true };
-  all.slice(EXPENSE_TOP_N).forEach(function (r) {
+    all = groupExpenseItems(entries.filter(function (e) { return selected.indexOf(+e.d.slice(5, 7)) >= 0; })).rows.map(function (r) {
+      r.v = selected.reduce(function (sum, m) { return sum + (r.byMonth[m] || 0); }, 0);
+      return r;
+    }).filter(function (r) { return r.v > 0; }).sort(function (a, b) { return b.v - a.v || a.name.localeCompare(b.name, 'id'); }),
+    total = all.reduce(function (sum, r) { return sum + r.v; }, 0),
+    rows = all.slice(0, EXPENSE_TOP_N), others = all.slice(EXPENSE_TOP_N),
+    rest = { name: 'Item lainnya', v: 0, byMonth: {}, rest: true };
+  others.forEach(function (r) {
     rest.v += r.v;
-    r.raw.forEach(function (name) { rest.raw.add(name); });
     selected.forEach(function (m) { rest.byMonth[m] = (rest.byMonth[m] || 0) + (r.byMonth[m] || 0); });
   });
-  rows.forEach(function (r) {
-    r.cat = Array.from(r.cats.keys()).sort(function (a, b) { return r.cats.get(b) - r.cats.get(a); })[0];
-  });
+  rest.detail = others.slice(0, EXPENSE_TOP_N).map(function (r) { return r.name + ' ' + rp(r.v); }).join(' · ') +
+    (others.length > EXPENSE_TOP_N ? ' · +' + (others.length - EXPENSE_TOP_N) + ' lainnya' : '');
   var topSum = total - rest.v, max = rows.length ? rows[0].v : 1,
     period = (selected.length ? MON[selected[0] - 1] + (selected.length > 1 ? ' - ' + MON[selected[selected.length - 1] - 1] : '') + ' ' : '') + S.year,
     tabs = [['all', 'Semua'], ['month', 'Per bulan']].map(function (m) {
@@ -279,7 +283,7 @@ function topExpensesCard(C) {
     return '<li class="expense-row' + (r.rest ? ' rest' : '') + '" tabindex="0" aria-label="' + esc(r.name + ', ' + rp(r.v) + ', ' + pct + ' persen dari total') + '">' +
       '<div class="expense-top"><span class="expense-rank">' + (r.rest ? '' : i + 1) + '</span><div class="expense-label"><b class="expense-name" title="' + esc(cat + (r.raw ? ' · ' + Array.from(r.raw).join(' · ') : '')) + '"><i class="expense-dot" aria-hidden="true" style="background:' + (r.rest ? 'var(--mut)' : catColor(r.cat)) + '"></i>' + esc(r.name) + '</b></div><b class="pv expense-amount">' + rp(r.v) + '</b><span class="sub pv">' + pct + '%</span></div>' +
       '<div class="expense-track"><div class="expense-fill" style="width:' + Math.min(100, r.v / max * 100) + '%;background:' + (r.rest ? 'var(--mut)' : catColor(r.cat)) + '"></div></div>' +
-      '<div class="expense-detail sub pv">' + selected.map(function (m) { return MON[m - 1] + ' ' + rp(r.byMonth[m] || 0); }).join(' · ') + (r.raw ? '<br>' + esc(Array.from(r.raw).join(' · ')) : '') + '</div></li>';
+      '<div class="expense-detail sub pv">' + selected.map(function (m) { return MON[m - 1] + ' ' + rp(r.byMonth[m] || 0); }).join(' · ') + (r.rest ? '<br>' + esc(r.detail) : '<br>' + esc(Array.from(r.raw).join(' · '))) + '</div></li>';
   }
   return '<div class="card slot-card expense-card">' + head + '<ol class="expense-list">' + rows.map(row).join('') + (rest.v ? row(rest) : '') + '</ol><div class="bs-foot"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg> ' + rows.length + ' item teratas = <span class="pv">' + Math.round(topSum / total * 100) + '%</span> dari total pengeluaran</b><div class="sub">' + esc(rows[0].name) + ' paling besar: <span class="pv">Rp ' + rpS(rows[0].v) + ' (' + Math.round(rows[0].v / total * 100) + '% dari total)</span></div></div></div>';
 }

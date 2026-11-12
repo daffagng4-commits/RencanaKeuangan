@@ -5,22 +5,45 @@
 var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 var FULL_MON = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
-var ITEM_NAME_ALIASES = [
-  { pattern: /^etf\s+60%$/i, name: 'ETF 60%' },
-  { pattern: /^saham\s+lokal\s+40%$/i, name: 'Saham Lokal 40%' },
-  { pattern: /^btc$/i, name: 'BTC' }
+// Urutan = prioritas. Hindari kata umum seperti beli, top up, atau bulan.
+var ITEM_NAME_TRIGGERS = [
+  { nama: 'Saham Lokal 40%', kata: ['saham lokal', 'bbri'] },
+  { nama: 'ETF 60%', kata: ['etf'] },
+  { nama: 'BTC', kata: ['btc'] },
+  { nama: 'BPJS', kata: ['bpjs'] },
+  { nama: 'Warp', kata: ['warp'] },
+  { nama: 'Torbox', kata: ['torbox'] },
+  { nama: 'Kuota', kata: ['kuota'] },
+  { nama: 'Vidio', kata: ['vidio'] },
+  { nama: 'JKT48', kata: ['jkt48'] }
 ];
+
+function itemTriggerMatches(raw) {
+  var text = String(raw || '').trim().replace(/\s+/g, ' ').toLocaleLowerCase('id-ID');
+  return ITEM_NAME_TRIGGERS.filter(function (rule) {
+    return rule.kata.some(function (word) {
+      var key = word.trim().replace(/\s+/g, ' ').toLocaleLowerCase('id-ID');
+      if (!key) return false;
+      var at = text.indexOf(key);
+      while (at >= 0) {
+        var before = Array.from(text.slice(0, at)).pop() || '', after = Array.from(text.slice(at + key.length))[0] || '';
+        if (!/[\p{L}\p{N}_]/u.test(before) && !/[\p{L}\p{N}_]/u.test(after)) return true;
+        at = text.indexOf(key, at + 1);
+      }
+      return false;
+    });
+  });
+}
 
 /** Keterangan pembayaran saja; tanda kurung bermakna dan catatan bebas tetap utuh. */
 function normalisasiNamaItem(namaMentah) {
+  var matches = itemTriggerMatches(namaMentah);
+  if (matches.length) return matches[0].nama;
   var name = String(namaMentah || '').trim().replace(/\s+/g, ' ');
   name = name.replace(/\(\s*(?:lunas|cicil(?:an)?|dari total\b[^()]*)\s*\)/gi, ' ').trim();
   var tail = /\s+(?:lunas|cicil(?:an)?|jan(?:uari)?|feb(?:ruari)?|mar(?:et)?|apr(?:il)?|mei|jun(?:i)?|jul(?:i)?|agu(?:stus)?|sep(?:tember)?|okt(?:ober)?|nov(?:ember)?|des(?:ember)?)$/i;
   while (tail.test(name)) name = name.replace(tail, '').trim();
   name = name.replace(/\s+/g, ' ');
-  for (var i = 0; i < ITEM_NAME_ALIASES.length; i++) {
-    if (ITEM_NAME_ALIASES[i].pattern.test(name)) return ITEM_NAME_ALIASES[i].name;
-  }
   return name || String(namaMentah || '').trim();
 }
 

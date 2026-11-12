@@ -8,7 +8,7 @@ const { boot } = require('./ui.js');
       ['ETF 60% (Dari total 2.75jt) (lunas)', 'ETF 60%'],
       ['Saham Lokal 40% (Dari total 2.75jt)', 'Saham Lokal 40%'],
       ['BTC (lunas)', 'BTC'], ['btc cicil des', 'BTC'],
-      ['UNTUK DESEMBER, beli 2lot bbri 2660 x 2', 'UNTUK DESEMBER, beli 2lot bbri 2660 x 2'],
+      ['UNTUK DESEMBER, beli 2lot bbri 2660 x 2', 'Saham Lokal 40%'],
       ['Buku (edisi kedua)', 'Buku (edisi kedua)'], ['  Internet   rumah lunas ', 'Internet rumah']
     ]) assert.strictEqual(w.normalisasiNamaItem(raw), name, raw);
     w.switchYear(2026); w.S.items=[]; w.S.startMonth=10;
@@ -45,7 +45,7 @@ const { boot } = require('./ui.js');
     w.expenseMonth='all'; w.renderAll();
     assert.strictEqual(w.yearCash().entries.find(e=>e.note==='Pembayaran bebas').itemId,'one');
     const identityRows=w.document.querySelectorAll('.expense-row');
-    assert.strictEqual(identityRows.length,3,'dua identitas berbeda dan nama tanpa tautan ambigu tidak digabung');
+    assert.strictEqual(identityRows.length,2,'trigger menggabung BTC lintas identitas; nama mentah bebas tetap fallback');
     assert.strictEqual(w.cashPeriod(w.yearCash(),'y').out,600,'tautan tidak dihitung ganda');
     assert(!w.document.querySelector('.expense-card').textContent.includes('Pembayaran bebas paling besar'));
     assert.strictEqual(t.errs.length,0);
