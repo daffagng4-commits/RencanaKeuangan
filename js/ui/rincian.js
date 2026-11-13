@@ -636,9 +636,9 @@ function flowChart(R) {
   return saldoLine({
     id: 'rincian',
     bnd: bnd,
+    bare: true,
     title: 'Arus saldo ' + S.year,
     sub: 'Perubahan saldo · ' + dd(a0) + ' – ' + dd(a1) + simTag(y),
-    tabs: periodTabs('flowp', flowPeriod),
     aria: 'Grafik arus saldo ' + S.year,
     pts: pts,
     marks: marks,
@@ -768,7 +768,7 @@ function kondisiCard(c, R) {
     '<div class="cond-head"><div class="cond-title"><h2 class="m0" id="rk-cond-h">Kondisi kas</h2>' +
     '<div class="sub" id="cond-lbl">' +
     (P ? 'Saldo realtime &middot; ' + esc(P.name) : 'Belum ada data kas') +
-    '</div></div></div>';
+    '</div></div><div class="cat-tabs cond-tabs" role="tablist">' + periodTabs('flowp', flowPeriod) + '</div></div>';
   var big = '';
   if (P) {
     var KB = kasBal(P);

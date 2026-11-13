@@ -2176,13 +2176,14 @@ nav .nav-pill {
 .rk .lc-wrap > .lc-foot { margin-top: 0; }
 .rk .lc-wrap > svg.lc, .rk .lc-wrap > .lc-w { flex: 1 1 auto; min-height: 180px; }
 
-/* Daftar/baris di dalam kartu meregang mengisi sisa tinggi (jarak baris dibatasi). */
+/* Daftar/baris: tinggi baris tetap alami, sisa tinggi dibagi jadi jarak antar baris
+   (maks. 28px) — baris TIDAK diregangkan (§4, §5). */
 .rk .expense-list,
 .rk .bl-list,
-.rk .tx-list { flex: 1 1 auto; display: flex; flex-direction: column; }
+.rk .tx-list { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; gap: 0; }
 .rk .expense-list > li,
 .rk .tx-day > li { margin-bottom: 0; }
-.rk .expense-row { flex: 1 1 auto; max-height: 44px; }
+.rk .expense-row { flex: 0 0 auto; }
 .rk table { height: 100%; }
 
 /* Kartu "Kondisi kas": judul+toggle, angka besar + chip, grafik tumbuh, 4 tile. */
@@ -2200,6 +2201,11 @@ nav .nav-pill {
 .cond-chip.neg { border-color: color-mix(in srgb, var(--wr) 40%, transparent); background: color-mix(in srgb, var(--wr) 10%, transparent); color: var(--wr); }
 .cond-chip[hidden] { display: none; }
 .cond-flow { margin-top: 12px; min-height: 180px; }
+/* Keterangan kecil di bawah grafik: legend kiri, "Terendah ..." kanan, satu baris. */
+.lc-lgrow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.lc-lgrow .lc-lg { margin-top: 6px; }
+.lc-lgrow .lc-foot { margin: 6px 0 0 auto; text-align: right; }
+.lc-cap { margin: 0 0 6px; }
 .cond-flow .lc-card { flex: 1 1 auto; display: flex; flex-direction: column; box-shadow: none; background: none; border: 0; padding: 0; }
 .cond-flow .lc-head { padding: 0; }
 .cond-tiles { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1fr); gap: 10px; margin-top: auto; padding-top: 14px; }
@@ -2224,6 +2230,37 @@ nav .nav-pill {
 .rk .bs-chart > svg { width: 100%; height: 100%; }
 .rk .bs-lg { margin-top: auto; }
 
+/* Isi-sesuai-tinggi (§4): baris daftar pakai tinggi alami; sisa tinggi jadi jarak
+   antar baris dibatasi 28px, sisanya ditaruh di dasar lewat margin-top:auto footer
+   (bukan meregangkan baris, bukan padding tambahan). */
+.rk .card { padding-bottom: 14px; }
+.rk .cond-tile { padding: 10px 12px 6px; }
+.rk .cond-num { margin-top: 10px; }
+/* Jarak antar bagian kartu gabungan: celah 54px dari .grow (grafik) ditutup, karena
+   jarak visual sudah dibentuk margin/garis tile sendiri. */
+.cond > .grow.cond-flow { flex: 0 1 auto !important; margin: 8px 0 0; }
+/* Grafik tumbuh mengisi tinggi sisa kartu (min 220px) lalu tile menyusul: celah antar
+   bagian = margin 8px, sehingga tidak ada pita kosong dari space-between. */
+.rk .cond-tiles { flex: 0 0 auto; margin-top: 8px; padding-top: 12px; }
+/* Grafik: tinggi flex dengan minimum ~220px (naik bila kartu pasangannya lebih tinggi). */
+.rk .cond-flow > .lc-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.rk .cond-flow .lc-wrap { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 220px; }
+/* Legend/terendah di bawah grafik: menempel dasar area grafik, bukan melayang di celah. */
+.rk .cond-flow .lc-lgrow { flex: 0 0 auto; margin-top: 0; }
+.cond-flow > .lc-card > .lc-wrap { margin-bottom: 8px; }
+.rk .cond-flow .lc-wrap > svg.lc { height: 100%; min-height: 220px; max-height: 460px; }
+.rk .grow { display: flex; flex-direction: column; min-height: 0; }
+.rk .grow > .bl-foot, .rk .grow > .bs-foot { margin-top: auto; }
+.rk .grow > .it2.bl { flex: 0 0 auto; }
+.rk .expense-list > li, .rk .bl-list > *, .rk .tx-row { margin-bottom: min(28px, 4vh); }
+.rk .expense-list > li:last-child, .rk .bl-list > *:last-child, .rk .tx-list > .tx-row:last-child { margin-bottom: 0; }
+/* Grup hari menyebar: jarak antar grup (bukan tinggi baris) yang mengisi sisa tinggi. */
+.rk .grow > .tx-days { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; min-height: 0; }
+.rk .grow > .tx-days > .tx-day > .tx-list { display: flex; flex-direction: column; }
+/* Kartu grafik memakai tinggi alami (bukan flex:1) supaya tinggi baris grid
+   ditentukan konten alami, bukan grafik yang memanjang. Daftar yang mengisi sisa. */
+.rk .rk-flow { flex: 0 0 auto !important; }
+
 /* Tabel rincian mengisi tinggi; scroll horizontal hanya di dalam kartu. */
 .rk .tw { flex: 1 1 auto; overflow-x: auto; }
 .rk .tw table { width: 100%; }
@@ -2238,8 +2275,28 @@ nav .nav-pill {
 .rk-date { color: var(--mut); }
 
 @media (min-width: 1280px) {
-  .w { max-width: 1600px; padding-left: 28px; padding-right: 28px; }
-  .rk { gap: 18px; }
+  /* Fase C §2: konten fluid. Batas 2600px membuat 3840px tetap >=70% lebar sisa sidebar.
+     Skala memakai font-size + clamp(), bukan zoom/transform, supaya konversi koordinat
+     grafik (getBoundingClientRect + clientX) tetap benar. */
+  .w { max-width: 2600px; padding-left: clamp(28px, 1.1vw, 64px); padding-right: clamp(28px, 1.1vw, 64px); }
+  .rk { gap: clamp(16px, 0.9vw, 28px); }
+  /* Lantai keterbacaan: tidak ada teks < 12px di >= 1280px. */
+  .rk .sub, .rk .chip, .rk .lk, .rk .cat-tab, .rk .bl-badge span, .rk .bl-main .sub,
+  .rk .bl-foot, .rk .cond-tile > span, .rk .cond-tile > i, .rk .expense-detail,
+  .rk .lc-foot, .rk .lc-lg, .rk .tx-cat, .rk .tx-dh b, .rk .dn-c small, .rk .dn-c em,
+  .rk .dn-lg button, .rk svg.lc text, .rk .expense-name, .rk .expense-amount,
+  .rk table th, .rk .bs-tick, .rk .bs-d, .rk .tx-dh, .rk .bl-badge b { font-size: 12px; }
+  .rk table td { font-size: 13px; }
+  .rk .cond-big { font-size: clamp(30px, 1.75vw, 46px); }
+  .rk .cond-tile > b { font-size: clamp(16px, 0.85vw, 20px); }
+  .rk-h1 { font-size: clamp(23px, 1.3vw, 34px); }
+  /* Tile wajib satu baris; proporsi 1.1 : 1 : 1.6 : 1.
+     `.jatah { grid-column: 1/-1 }` dan `.hm-bal.one { margin-top: 18px }` dari kartu lama
+     harus dinolkan di sini, kalau tidak tile 2 melebar penuh dan tile 1 turun sendiri. */
+  .rk .cond-tiles, .rk .cond-tiles > .cond-tile {
+    grid-column: auto !important; margin-top: 0 !important;
+  }
+  .rk .cond-tiles { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1fr) !important; }
 }
 
 /* 768–1279px: dua kolom; kartu penuh selebar baris, pasangan 50/50. */
@@ -4528,15 +4585,18 @@ function saldoLine(o) {
   var P = (o.pts || []).slice();
   if (P.length < 2) return '';
   var i = LCQ.push({ pts: P, sub: o.sub || '', marks: o.marks || null, bnd: o.bnd || '' }) - 1,
-    gid = 'lcg-' + (o.id || i);
+    gid = 'lcg-' + (o.id || i),
+    head = o.bare
+      ? '<div class="sub lc-cap">' + esc(o.title) + (o.sub ? ' &middot; ' + o.sub : '') + '</div>'
+      : '<div class="lc-head"><div class="lc-hl"><div class="dflex aic fwrap g8"><h2 class="m0">' +
+        o.title +
+        '</h2>' +
+        (o.sub ? '<span class="sub fs12">' + o.sub + '</span>' : '') +
+        '</div><p class="lc-big"></p><div class="lc-delta"><b class="lc-pct"></b><span class="lc-sub2"></span></div></div>' +
+        (o.tabs ? '<div class="cat-tabs" role="tablist">' + o.tabs + '</div>' : '') +
+        '</div>';
   return (
-    '<div class="card lc-card"><div class="lc-head"><div class="lc-hl"><div class="dflex aic fwrap g8"><h2 class="m0">' +
-    o.title +
-    '</h2>' +
-    (o.sub ? '<span class="sub fs12">' + o.sub + '</span>' : '') +
-    '</div><p class="lc-big"></p><div class="lc-delta"><b class="lc-pct"></b><span class="lc-sub2"></span></div></div>' +
-    (o.tabs ? '<div class="cat-tabs" role="tablist">' + o.tabs + '</div>' : '') +
-    '</div><div class="lc-wrap"><svg class="lc" data-lci="' +
+    '<div class="card lc-card">' + head + '<div class="lc-wrap"><svg class="lc" data-lci="' +
     i +
     '" tabindex="0" role="slider" aria-label="' +
     esc(o.aria || o.title) +
@@ -4551,8 +4611,10 @@ function saldoLine(o) {
     ')"></path><path class="lc-line" fill="none"></path><path class="lc-line lc-line-p" fill="none"></path><g class="lc-mark"></g><g class="lc-xl"></g>' +
     '<g class="lc-cur" style="display:none"><line class="lc-cl"></line><circle class="lc-cd" r="5"></circle></g></svg>' +
     '<div class="lc-tip"><span></span><strong></strong></div></div>' +
+    '<div class="lc-lgrow">' +
     (o.marks ? '<div class="lc-lg"><span class="s"><i class="sw"></i>Nyata</span><span class="p"><i class="sw"></i>Proyeksi</span></div>' : '') +
     (o.foot ? '<div class="sub lc-foot">' + o.foot + '</div>' : '') +
+    '</div>' +
     '</div>'
   );
 }
@@ -4712,7 +4774,8 @@ function barStackInit(host, cfg) {
     }).observe(box);
 }
 
-/** Area chart: kurva halus, crosshair + tooltip, nilai besar ikut kursor, keyboard. */
+/** Area chart: kurva halus, crosshair + tooltip, nilai besar ikut kursor, keyboard.
+    Pada kartu gabungan (tanpa kepala) big/pctEl/subEl tidak ada: nilai tetap ke tooltip. */
 function areaInit(svg, cfg) {
   var card = svg.closest('.lc-card'),
     big = card.querySelector('.lc-big'),
@@ -4872,19 +4935,23 @@ function areaInit(svg, cfg) {
 
     var idx = hover == null ? N - 1 : hover,
       val = y[idx],
-      pct = y[0] ? ((val - y[0]) / Math.abs(y[0])) * 100 : 0,
+      // Persen chip memakai titik TERAKHIR (bukan titik hover): angka besar & chip di
+      // kartu gabungan tidak boleh berubah saat kursor bergerak (§8b).
+      pct = y[0] ? ((y[N - 1] - y[0]) / Math.abs(y[0])) * 100 : 0,
       tw;
-    big.textContent = rp(Math.round(val));
-    pctEl.textContent = (pct < 0 ? '▼ ' : '▲ ') + Math.abs(pct).toFixed(1).replace('.', ',') + '%';
-    pctEl.classList.toggle('neg', pct < 0);
-    subEl.textContent = hover == null ? '' : dlabel(pts[nearest(hover)].d);
+    if (big) big.textContent = rp(Math.round(val));
+    if (pctEl) {
+      pctEl.textContent = (pct < 0 ? '▼ ' : '▲ ') + Math.abs(pct).toFixed(1).replace('.', ',') + '%';
+      pctEl.classList.toggle('neg', pct < 0);
+    }
+    if (subEl) subEl.textContent = hover == null ? '' : dlabel(pts[nearest(hover)].d);
     // Kartu Kondisi kas memakai persen yang sama (rumus & rentang grafik Arus saldo).
     var cc = $('cond-chip'),
       cr = $('cond-range');
     if (cc && cfg.bnd && cr) {
       var bd = kasChipBnd[cfg.bnd];
       cc.hidden = false;
-      cc.textContent = pctEl.textContent;
+      cc.textContent = (pct < 0 ? '▼ ' : '▲ ') + Math.abs(pct).toFixed(1).replace('.', ',') + '%';
       cc.classList.toggle('neg', pct < 0);
       cr.textContent = bd ? ' · ' + dlabel(bd.from) + ' – ' + dlabel(bd.to) : '';
     }
@@ -5792,9 +5859,9 @@ function flowChart(R) {
   return saldoLine({
     id: 'rincian',
     bnd: bnd,
+    bare: true,
     title: 'Arus saldo ' + S.year,
     sub: 'Perubahan saldo · ' + dd(a0) + ' – ' + dd(a1) + simTag(y),
-    tabs: periodTabs('flowp', flowPeriod),
     aria: 'Grafik arus saldo ' + S.year,
     pts: pts,
     marks: marks,
@@ -5924,7 +5991,7 @@ function kondisiCard(c, R) {
     '<div class="cond-head"><div class="cond-title"><h2 class="m0" id="rk-cond-h">Kondisi kas</h2>' +
     '<div class="sub" id="cond-lbl">' +
     (P ? 'Saldo realtime &middot; ' + esc(P.name) : 'Belum ada data kas') +
-    '</div></div></div>';
+    '</div></div><div class="cat-tabs cond-tabs" role="tablist">' + periodTabs('flowp', flowPeriod) + '</div></div>';
   var big = '';
   if (P) {
     var KB = kasBal(P);

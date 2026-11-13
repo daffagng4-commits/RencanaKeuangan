@@ -65,15 +65,18 @@ function saldoLine(o) {
   var P = (o.pts || []).slice();
   if (P.length < 2) return '';
   var i = LCQ.push({ pts: P, sub: o.sub || '', marks: o.marks || null, bnd: o.bnd || '' }) - 1,
-    gid = 'lcg-' + (o.id || i);
+    gid = 'lcg-' + (o.id || i),
+    head = o.bare
+      ? '<div class="sub lc-cap">' + esc(o.title) + (o.sub ? ' &middot; ' + o.sub : '') + '</div>'
+      : '<div class="lc-head"><div class="lc-hl"><div class="dflex aic fwrap g8"><h2 class="m0">' +
+        o.title +
+        '</h2>' +
+        (o.sub ? '<span class="sub fs12">' + o.sub + '</span>' : '') +
+        '</div><p class="lc-big"></p><div class="lc-delta"><b class="lc-pct"></b><span class="lc-sub2"></span></div></div>' +
+        (o.tabs ? '<div class="cat-tabs" role="tablist">' + o.tabs + '</div>' : '') +
+        '</div>';
   return (
-    '<div class="card lc-card"><div class="lc-head"><div class="lc-hl"><div class="dflex aic fwrap g8"><h2 class="m0">' +
-    o.title +
-    '</h2>' +
-    (o.sub ? '<span class="sub fs12">' + o.sub + '</span>' : '') +
-    '</div><p class="lc-big"></p><div class="lc-delta"><b class="lc-pct"></b><span class="lc-sub2"></span></div></div>' +
-    (o.tabs ? '<div class="cat-tabs" role="tablist">' + o.tabs + '</div>' : '') +
-    '</div><div class="lc-wrap"><svg class="lc" data-lci="' +
+    '<div class="card lc-card">' + head + '<div class="lc-wrap"><svg class="lc" data-lci="' +
     i +
     '" tabindex="0" role="slider" aria-label="' +
     esc(o.aria || o.title) +
@@ -88,8 +91,10 @@ function saldoLine(o) {
     ')"></path><path class="lc-line" fill="none"></path><path class="lc-line lc-line-p" fill="none"></path><g class="lc-mark"></g><g class="lc-xl"></g>' +
     '<g class="lc-cur" style="display:none"><line class="lc-cl"></line><circle class="lc-cd" r="5"></circle></g></svg>' +
     '<div class="lc-tip"><span></span><strong></strong></div></div>' +
+    '<div class="lc-lgrow">' +
     (o.marks ? '<div class="lc-lg"><span class="s"><i class="sw"></i>Nyata</span><span class="p"><i class="sw"></i>Proyeksi</span></div>' : '') +
     (o.foot ? '<div class="sub lc-foot">' + o.foot + '</div>' : '') +
+    '</div>' +
     '</div>'
   );
 }
@@ -249,7 +254,8 @@ function barStackInit(host, cfg) {
     }).observe(box);
 }
 
-/** Area chart: kurva halus, crosshair + tooltip, nilai besar ikut kursor, keyboard. */
+/** Area chart: kurva halus, crosshair + tooltip, nilai besar ikut kursor, keyboard.
+    Pada kartu gabungan (tanpa kepala) big/pctEl/subEl tidak ada: nilai tetap ke tooltip. */
 function areaInit(svg, cfg) {
   var card = svg.closest('.lc-card'),
     big = card.querySelector('.lc-big'),
@@ -409,19 +415,23 @@ function areaInit(svg, cfg) {
 
     var idx = hover == null ? N - 1 : hover,
       val = y[idx],
-      pct = y[0] ? ((val - y[0]) / Math.abs(y[0])) * 100 : 0,
+      // Persen chip memakai titik TERAKHIR (bukan titik hover): angka besar & chip di
+      // kartu gabungan tidak boleh berubah saat kursor bergerak (§8b).
+      pct = y[0] ? ((y[N - 1] - y[0]) / Math.abs(y[0])) * 100 : 0,
       tw;
-    big.textContent = rp(Math.round(val));
-    pctEl.textContent = (pct < 0 ? '▼ ' : '▲ ') + Math.abs(pct).toFixed(1).replace('.', ',') + '%';
-    pctEl.classList.toggle('neg', pct < 0);
-    subEl.textContent = hover == null ? '' : dlabel(pts[nearest(hover)].d);
+    if (big) big.textContent = rp(Math.round(val));
+    if (pctEl) {
+      pctEl.textContent = (pct < 0 ? '▼ ' : '▲ ') + Math.abs(pct).toFixed(1).replace('.', ',') + '%';
+      pctEl.classList.toggle('neg', pct < 0);
+    }
+    if (subEl) subEl.textContent = hover == null ? '' : dlabel(pts[nearest(hover)].d);
     // Kartu Kondisi kas memakai persen yang sama (rumus & rentang grafik Arus saldo).
     var cc = $('cond-chip'),
       cr = $('cond-range');
     if (cc && cfg.bnd && cr) {
       var bd = kasChipBnd[cfg.bnd];
       cc.hidden = false;
-      cc.textContent = pctEl.textContent;
+      cc.textContent = (pct < 0 ? '▼ ' : '▲ ') + Math.abs(pct).toFixed(1).replace('.', ',') + '%';
       cc.classList.toggle('neg', pct < 0);
       cr.textContent = bd ? ' · ' + dlabel(bd.from) + ' – ' + dlabel(bd.to) : '';
     }
