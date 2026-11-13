@@ -6,15 +6,48 @@ function renderAll() {
   S.paid = S.paid || {};
   S.skip = S.skip || {};
   S.adj = S.adj || [];
+  // v-rincian akan digambar ulang; keluarkan topbar dulu agar kontrolnya tidak ikut terhapus.
+  var topbar = document.querySelector('.topbar'), slot = $('topbar-slot');
+  if (topbar && slot && topbar.parentNode !== slot) slot.appendChild(topbar);
   renderYears();
   renderReminders();
   renderAdj();
   renderRincian();
+  rkHeadSync();
   renderJadwal();
   renderList();
   renderTrip();
   renderKas();
   modeUi();
+}
+
+/** Letakkan topbar di header Rincian hanya saat tab itu aktif; tab lain tetap memakai slot asalnya. */
+function rkHeadSync() {
+  var head = $('rk-head'),
+    slot = $('topbar-slot'),
+    topbar = document.querySelector('.topbar'),
+    onRincian = mode === 'rencana' && curTab === 'rincian';
+  if (!topbar) return;
+  var target = onRincian && head ? head : slot;
+  if (target && topbar.parentNode !== target) target.appendChild(topbar);
+  if (!onRincian || !head) return;
+  var sub = $('rk-sub');
+  if (!sub) return;
+  var parts = [],
+    P = typeof kasLinked === 'function' ? kasLinked() : null;
+  if (P) {
+    var rw = kasRunway(P);
+    if (rw && rw.status === 'deficit') parts.push('Saldo kas sudah minus');
+    else if (rw && rw.date) parts.push('Kas cukup sampai ' + fmtD(rw.date) + ' (' + rw.days + ' hari lagi)');
+    else if (rw && rw.status === 'safe') parts.push('Kas aman sampai akhir tahun');
+  }
+  var bills = document.querySelectorAll('#v-rincian .bl').length;
+  if (bills) parts.push(bills + ' tagihan belum lunas');
+  sub.innerHTML = parts
+    .map(function (p) {
+      return p.replace(/(Rp[\s\d.,]+|−\s*Rp[\s\d.,]+)/g, '<span class="pv">$1</span>');
+    })
+    .join(' &middot; ');
 }
 
 /** Migrasi penanda manual lama (localStorage rk-sm-manual) untuk tahun kalender saja.

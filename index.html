@@ -1263,6 +1263,8 @@ svg.lc .lc-mark line { stroke: var(--mut); stroke-width: 1; stroke-dasharray: 3 
 svg.lc .lc-mark text { fill: var(--mut); font-size: 10px; }
 svg.lc .lc-mark circle { fill: var(--wr); stroke: var(--card); stroke-width: 2; }
 svg.lc .lc-mk-label { font-size: 10.5px; fill: var(--wr); font-weight: 600; }
+/* Ukuran font di dalam chart tetap piksel, tidak ikut skala kartu. */
+svg.bs text { font-size: 11px; }
 .lc-lg { display: flex; align-items: center; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--mut); }
 .lc-lg span { display: inline-flex; align-items: center; gap: 6px; }
 .lc-lg [hidden] { display: none; }
@@ -1794,6 +1796,42 @@ nav .nav-pill {
   padding: 8px 12px 6px;
 }
 
+/* ============================================================
+   Grid 12 kolom dashboard Rincian (>= 1280px)
+   ============================================================ */
+.rk-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 16px; }
+.rk-head h1 { margin: 0 0 2px; }
+.rk-head .topbar { margin: 0 0 0 auto; padding: 0; border: 0; }
+@media (min-width: 1280px) {
+  #v-rincian { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; align-items: stretch; }
+  #v-rincian > .rk-head { grid-column: 1 / -1; margin-bottom: 0; }
+  #v-rincian > .splitH, #v-rincian > .splitR { display: contents; }
+  #v-rincian > .card { margin: 0; }
+  #v-rincian .rk-hero { display: contents; }
+  #v-rincian .rk-hero .kondisi { grid-column: 1 / 5; grid-row: span 2; }
+  #v-rincian .rk-hero .stats { grid-column: 1 / 5; }
+  #v-rincian .lc-card { grid-column: 5 / 13; grid-row: span 2; }
+  #v-rincian .bs-card { grid-column: 5 / 9; }
+  #v-rincian .bl-card { grid-column: 9 / 13; }
+  #v-rincian .insight { grid-column: 1 / 6; }
+  #v-rincian .expense-card { grid-column: 6 / 13; }
+  #v-rincian .splitR > .card:first-child { grid-column: 1 / 9; }
+  #v-rincian .splitR > .card + .card { grid-column: 9 / 13; }
+  #v-rincian .lc-card, #v-rincian .bs-card, #v-rincian .bl-card, #v-rincian .insight,
+  #v-rincian .expense-card, #v-rincian .hm, #v-rincian .hero .stats { display: flex; flex-direction: column; }
+  #v-rincian .lc-wrap, #v-rincian .bs, #v-rincian .insight-body, #v-rincian .expense-list { flex: 1 1 auto; }
+  #v-rincian .bs-foot, #v-rincian .lc-foot, #v-rincian .insight-summary, #v-rincian .bl-foot { margin-top: auto; }
+  svg.lc { height: clamp(240px, 32vh, 360px); }
+  .bs-chart { height: clamp(220px, 30vh, 320px); }
+  #v-rincian .hm { gap: 4px; }
+  #v-rincian .hm .hm-bal { margin-top: 6px; padding-top: 12px; }
+  /* Grafik perjalanan mengikuti pola yang sama. */
+  #v-trip .lc-card, #v-trip .bs-card { display: flex; flex-direction: column; }
+  #v-trip .lc-wrap, #v-trip .bs { flex: 1 1 auto; }
+  #v-trip .bs-foot, #v-trip .lc-foot, #v-trip .insight-summary { margin-top: auto; }
+  .w { max-width: 1600px; padding-left: 28px; padding-right: 28px; }
+}
+
 /* Sidebar rail: label tab diganti ikon bergambar, pil bergeser saat tab berubah */
 @media (min-width: 1024px) {
   body { padding-left: 104px; }
@@ -2050,7 +2088,7 @@ nav .nav-pill {
 </head>
 <body>
 <div class="w">
-<div class="topbar">
+<div id="topbar-slot"><div class="topbar">
   <div class="kt" id="mdbar">
     <div class="yb" id="yb"></div>
     <button type="button" class="yp" data-md="trip">Perjalanan</button>
@@ -4040,6 +4078,7 @@ function tab(t) {
   }
   navPill();
   $('yb').style.display = '';
+  if (typeof rkHeadSync === 'function') rkHeadSync();
   if (typeof syncNav === 'function') syncNav();
 }
 
@@ -4157,15 +4196,48 @@ function renderAll() {
   S.paid = S.paid || {};
   S.skip = S.skip || {};
   S.adj = S.adj || [];
+  // v-rincian akan digambar ulang; keluarkan topbar dulu agar kontrolnya tidak ikut terhapus.
+  var topbar = document.querySelector('.topbar'), slot = $('topbar-slot');
+  if (topbar && slot && topbar.parentNode !== slot) slot.appendChild(topbar);
   renderYears();
   renderReminders();
   renderAdj();
   renderRincian();
+  rkHeadSync();
   renderJadwal();
   renderList();
   renderTrip();
   renderKas();
   modeUi();
+}
+
+/** Letakkan topbar di header Rincian hanya saat tab itu aktif; tab lain tetap memakai slot asalnya. */
+function rkHeadSync() {
+  var head = $('rk-head'),
+    slot = $('topbar-slot'),
+    topbar = document.querySelector('.topbar'),
+    onRincian = mode === 'rencana' && curTab === 'rincian';
+  if (!topbar) return;
+  var target = onRincian && head ? head : slot;
+  if (target && topbar.parentNode !== target) target.appendChild(topbar);
+  if (!onRincian || !head) return;
+  var sub = $('rk-sub');
+  if (!sub) return;
+  var parts = [],
+    P = typeof kasLinked === 'function' ? kasLinked() : null;
+  if (P) {
+    var rw = kasRunway(P);
+    if (rw && rw.status === 'deficit') parts.push('Saldo kas sudah minus');
+    else if (rw && rw.date) parts.push('Kas cukup sampai ' + fmtD(rw.date) + ' (' + rw.days + ' hari lagi)');
+    else if (rw && rw.status === 'safe') parts.push('Kas aman sampai akhir tahun');
+  }
+  var bills = document.querySelectorAll('#v-rincian .bl').length;
+  if (bills) parts.push(bills + ' tagihan belum lunas');
+  sub.innerHTML = parts
+    .map(function (p) {
+      return p.replace(/(Rp[\s\d.,]+|−\s*Rp[\s\d.,]+)/g, '<span class="pv">$1</span>');
+    })
+    .join(' &middot; ');
 }
 
 /** Migrasi penanda manual lama (localStorage rk-sm-manual) untuk tahun kalender saja.
@@ -5908,6 +5980,9 @@ function recentTxCard() {
 
 /** Render tab Rincian Bulanan. */
 function renderRincian() {
+  // render ulang langsung (filter kartu) tidak boleh menghapus kontrol topbar.
+  var topbar = document.querySelector('.topbar'), slot = $('topbar-slot');
+  if (topbar && slot && topbar.parentNode !== slot) slot.appendChild(topbar);
   LCQ = [];
   DNQ = [];
   BSQ = [];
@@ -5987,10 +6062,18 @@ function renderRincian() {
     rp(wE) +
     '</td><td></td></tr></tbody></table></div></div>';
   var tx = recentTxCard();
+  // Pembungkus .hero dipertahankan; kartu saldo mendapat posisi grid desktop.
+  var hero = saldoHero(c, R);
+  if (hero.indexOf('<div class="hero"><div class="card hm m0">') === 0) {
+    hero = hero.replace('<div class="hero"><div class="card hm m0">', '<div class="hero rk-hero"><div class="card hm kondisi">');
+  }
   $('v-rincian').innerHTML =
     (S.items.length ? '' : emptyItemsHtml()) +
+    '<div class="rk-head" id="rk-head">' +
+    '<div><h1>Ringkasan keuangan</h1><div class="sub" id="rk-sub"></div></div>' +
+    '</div>' +
     '<div class="splitH">' +
-    saldoHero(c, R) +
+    hero +
     billsCard() +
     '</div>' +
     '<div class="splitH">' +
