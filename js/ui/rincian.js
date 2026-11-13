@@ -1000,9 +1000,6 @@ function recentTxCard() {
 
 /** Render tab Rincian Bulanan. */
 function renderRincian() {
-  // render ulang langsung (filter kartu) tidak boleh menghapus kontrol topbar.
-  var topbar = document.querySelector('.topbar'), slot = $('topbar-slot');
-  if (topbar && slot && topbar.parentNode !== slot) slot.appendChild(topbar);
   LCQ = [];
   DNQ = [];
   BSQ = [];
@@ -1082,18 +1079,10 @@ function renderRincian() {
     rp(wE) +
     '</td><td></td></tr></tbody></table></div></div>';
   var tx = recentTxCard();
-  // Pembungkus .hero dipertahankan; kartu saldo mendapat posisi grid desktop.
-  var hero = saldoHero(c, R);
-  if (hero.indexOf('<div class="hero"><div class="card hm m0">') === 0) {
-    hero = hero.replace('<div class="hero"><div class="card hm m0">', '<div class="hero rk-hero"><div class="card hm kondisi">');
-  }
   $('v-rincian').innerHTML =
     (S.items.length ? '' : emptyItemsHtml()) +
-    '<div class="rk-head" id="rk-head">' +
-    '<div><h1>Ringkasan keuangan</h1><div class="sub" id="rk-sub"></div></div>' +
-    '</div>' +
     '<div class="splitH">' +
-    hero +
+    saldoHero(c, R) +
     billsCard() +
     '</div>' +
     '<div class="splitH">' +

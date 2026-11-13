@@ -55,7 +55,6 @@ function tab(t) {
   }
   navPill();
   $('yb').style.display = '';
-  if (typeof rkHeadSync === 'function') rkHeadSync();
   if (typeof syncNav === 'function') syncNav();
 }
 
