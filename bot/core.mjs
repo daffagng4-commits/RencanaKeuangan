@@ -18,8 +18,7 @@ var ITEM_NAME_TRIGGERS = [
   { nama: 'Torbox', kata: ['torbox'] },
   { nama: 'Kuota', kata: ['kuota'] },
   { nama: 'Vidio', kata: ['vidio'] },
-  { nama: 'JKT48', kata: ['jkt48'] },
-  { nama: 'Hutang', kata: ['hutang', 'mamah', 'shopee'] }
+  { nama: 'JKT48', kata: ['jkt48'] }
 ];
 
 function itemTriggerMatches(raw) {
@@ -110,6 +109,43 @@ function pad2(n) {
 /** Geser tanggal ISO 'YYYY-MM-DD' sebanyak n hari (boleh negatif). */
 function addDaysISO(iso, n) {
   return isoD(Date.parse(iso + 'T00:00:00Z') + n * 864e5);
+}
+
+/** Singkatan hari, indeks 0 = Minggu. */
+var WD3 = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+
+/** Lencana tanggal: { d: '17', wd: 'Sen' } dari ISO. */
+function dayBadge(iso) {
+  return { d: String(+iso.slice(8, 10)), wd: WD3[new Date(iso + 'T00:00:00Z').getUTCDay()] };
+}
+
+/** Inisial 1-2 huruf dari catatan (fallback kategori), aman untuk emoji/huruf non-Latin. */
+function txInitials(note, cat) {
+  var s = String(note || '').trim() || String(cat || '').trim();
+  if (!s) return '?';
+  var w = s.split(/\s+/), out = '';
+  for (var i = 0; i < w.length && out.length < 2; i++) {
+    var ch = Array.from(w[i])[0];
+    if (ch && /[\p{L}\p{N}]/u.test(ch)) out += ch;
+  }
+  if (out) return out.toUpperCase();
+  var f = Array.from(s)[0];
+  return f ? f.toUpperCase() : '?';
+}
+
+/** Judul kelompok hari: "Hari ini", "Kemarin", atau tanggal lengkap id-ID. */
+function dayGroupLabel(iso, today) {
+  today = today || todayISO();
+  if (iso === today) return 'Hari ini';
+  if (iso === addDaysISO(today, -1)) return 'Kemarin';
+  return fmtD(iso);
+}
+
+/** Jumlah bertanda dari baris transaksi (masuk positif, keluar negatif). */
+function netSigned(rows) {
+  return (rows || []).reduce(function (s, x) {
+    return s + (x.t === '+' ? +x.amt : -x.amt);
+  }, 0);
 }
 
 

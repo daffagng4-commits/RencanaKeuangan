@@ -1935,3 +1935,92 @@ nav .nav-pill {
   .runway-box { font-size: 12px; padding: 8px 10px; line-height: 1.5; }
   .runway-box .rw2 { display: block; margin-top: 3px; }
 }
+
+/* Jadwal tagihan: lencana tanggal + timeline */
+.bl { position: relative; align-items: center; }
+.bl + .bl::before {
+  content: '';
+  position: absolute;
+  left: 31px;
+  top: -10px;
+  height: 10px;
+  width: 1px;
+  background: var(--ln2);
+}
+.bl-badge {
+  flex: 0 0 40px;
+  width: 40px;
+  padding: 5px 0 4px;
+  border-radius: var(--r-sm);
+  background: var(--sf2);
+  box-shadow: inset 0 0 0 1px var(--ln);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+}
+.bl-badge b { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.bl-badge span { font-size: 9.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--mut); }
+.bl-badge.bl-now { background: var(--acs); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ac) 38%, transparent); }
+.bl-badge.bl-now b, .bl-badge.bl-now span { color: var(--ac); }
+.bl-badge.bl-late, .bl.minus-first .bl-badge { background: var(--wrs); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wr) 34%, transparent); }
+.bl.minus-first .bl-badge b, .bl.minus-first .bl-badge span { color: var(--wr); }
+.bl-badge.bl-late b, .bl-badge.bl-late span { color: var(--wr); }
+.bl-main { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 1px; }
+.bl-main b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bl-main .sub { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bl .am { flex: 0 0 auto; }
+.bl .am b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bl-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 4px;
+  padding-top: 9px;
+  border-top: 1px dashed var(--ln2);
+  font-size: 12.5px;
+  color: var(--mut);
+}
+.bl-foot b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* Transaksi terakhir: grup harian + chip inisial */
+.tx-days, .tx-list { list-style: none; margin: 0; padding: 0; }
+.tx-day + .tx-day { margin-top: 10px; }
+.tx-dh {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 0 12px 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--mut);
+}
+.tx-dh b { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12px; }
+.tx-row { gap: 10px; align-items: center; }
+.tx-av {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.tx-main { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 1px; }
+.tx-note { display: block; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tx-cat { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; }
+.tx-cat .tx-dot { flex: 0 0 7px; width: 7px; height: 7px; border-radius: 50%; }
+.tx-amt { flex: 0 0 auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 640px) {
+  .bl-badge { flex-basis: 36px; width: 36px; }
+  .bl + .bl::before { left: 29px; }
+  .tx-av { flex-basis: 30px; width: 30px; height: 30px; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kit, .kit:hover { transition: none; transform: none; }
+}

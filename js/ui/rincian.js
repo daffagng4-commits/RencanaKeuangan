@@ -849,25 +849,36 @@ function billsCard() {
         isLate = iso < t,
         cd = fmtCountdown(iso, t, isLate),
         cls = '',
-        title = '';
+        title = '',
+        bd = dayBadge(iso),
+        tone = isLate ? ' bl-late' : iso === t || iso === addDaysISO(t, 1) ? ' bl-now' : '';
       if (firstNeg && iso === firstNeg.date) cls = ' minus-first';
       else if (firstNeg && iso > firstNeg.date) cls = ' minus-after';
       if (dateBalances[iso] != null) title = ' title="Saldo proyeksi setelah ini: ' + rp(dateBalances[iso]) + '"';
       return (
-        '<div class="it2 kit' + cls + '"' + title + '><div><b class="fw6">' +
+        '<div class="it2 kit bl' + cls + '"' + title + '>' +
+        '<span class="bl-badge' + tone + '"><b>' + bd.d + '</b><span>' +
+        (isLate ? 'Lewat' : bd.wd) +
+        '</span></span>' +
+        '<div class="bl-main"><b class="fw6">' +
         esc(r.it.name) +
-        '</b>' +
-        (r.it.cat ? ' <span class="sub">' + esc(r.it.cat) + '</span>' : '') +
-        '</div><div class="am"><b class="pv">' +
-        rp(r.price) +
         '</b><span class="sub">' +
+        (r.it.cat ? esc(r.it.cat) + ' \u00b7 ' : '') +
         fd(r.t, { day: 'numeric', month: 'short' }) +
-        (cd ? ' · ' + cd : '') +
-        '</span></div></div>'
+        (cd ? ' \u00b7 ' + cd : '') +
+        '</span></div><div class="am"><b class="pv">' +
+        rp(r.price) +
+        '</b></div></div>'
       );
     })
     .join('');
-  var summary = '';
+  var shown = list.slice(0, 6),
+    total = shown.reduce(function (x, r) {
+      return x + r.price;
+    }, 0);
+  var summary = shown.length
+    ? '<div class="bl-foot"><span>Total tagihan di atas</span><b class="pv">' + rp(total) + '</b></div>'
+    : '';
   return (
     '<div class="card"><div class="dflex jcsb aic fwrap g8"><h2 class="m0">Jadwal tagihan</h2>' +
     '<button type="button" class="lk" data-goto="jadwal">Semua tagihan' +
@@ -905,21 +916,59 @@ function recentTxCard() {
       .slice(0, 7),
     fallback = !L.length;
   if (fallback) L = rows.slice(0, 7);
-  var body = L.map(function (x) {
-    return (
-      '<div class="it2 kit"><div><b class="' +
-      (x.t === '-' ? 'neg' : 'kin') +
-      '">' +
-      (x.t === '-' ? '&minus; ' : '+ ') +
-      rp(x.amt) +
-      '</b>' +
-      (x.cat ? ' <span class="sub">' + esc(x.cat) + '</span>' : '') +
-      (x.note ? '<br><span class="sub">' + esc(x.note) + '</span>' : '') +
-      '</div><span class="sub">' +
-      fmtD(x.d) +
-      '</span></div>'
-    );
-  }).join('');
+  var groups = [],
+    gmap = {};
+  L.forEach(function (x) {
+    if (!gmap[x.d]) {
+      gmap[x.d] = { d: x.d, rows: [] };
+      groups.push(gmap[x.d]);
+    }
+    gmap[x.d].rows.push(x);
+  });
+  var body = groups
+    .map(function (g) {
+      var net = netSigned(g.rows);
+      return (
+        '<li class="tx-day"><div class="tx-dh"><span>' +
+        esc(dayGroupLabel(g.d, today)) +
+        '</span><b class="pv' +
+        (net < 0 ? ' neg' : net > 0 ? ' kin' : '') +
+        '">' +
+        signed(net) +
+        '</b></div><ul class="tx-list">' +
+        g.rows
+          .map(function (x) {
+            var cat = x.cat || 'Tanpa kategori',
+              col = catColor(x.cat || ''),
+              ini = txInitials(x.note, cat);
+            return (
+              '<li class="it2 kit tx-row"><span class="tx-av" aria-hidden="true" style="color:' +
+              col +
+              ';background:color-mix(in srgb, ' +
+              col +
+              ' 14%, transparent)">' +
+              esc(ini) +
+              '</span><div class="tx-main"><b class="tx-note" title="' +
+              esc(x.note || cat) +
+              '">' +
+              esc(x.note || cat) +
+              '</b><span class="sub tx-cat"><i class="tx-dot" aria-hidden="true" style="background:' +
+              col +
+              '"></i>' +
+              esc(cat) +
+              '</span></div><b class="pv tx-amt ' +
+              (x.t === '-' ? 'neg' : 'kin') +
+              '">' +
+              (x.t === '-' ? '\u2212' : '+') +
+              rp(x.amt) +
+              '</b></li>'
+            );
+          })
+          .join('') +
+        '</ul></li>'
+      );
+    })
+    .join('');
   return (
     '<div class="card"><div class="dflex jcsb aic g8"><h2 class="m0">Transaksi terakhir</h2>' +
     '<button type="button" class="lk" data-hist="1">Semua transaksi' +
@@ -944,7 +993,7 @@ function recentTxCard() {
     (all ? 'Masuk &amp; keluar' : inn ? 'Uang masuk' : 'Uang keluar') +
     (fallback ? ' 7 catatan terakhir' : ' 7 hari terakhir') +
     '</span></div><div class="grow mt8">' +
-    (body || '<div class="empty">Belum ada transaksi ' + (all ? '' : inn ? 'masuk ' : 'keluar ') + (fallback ? 'terbaru.' : 'dalam 7 hari terakhir.</div>')) +
+    (body ? '<ul class="tx-days">' + body + '</ul>' : '<div class="empty">Belum ada transaksi ' + (all ? '' : inn ? 'masuk ' : 'keluar ') + (fallback ? 'terbaru.' : 'dalam 7 hari terakhir.') + '</div>') +
     '</div></div>'
   );
 }
