@@ -25,8 +25,10 @@ const {boot}=require('./ui.js');
  assert(!/Total pemasukan/.test(txt()),'total pemasukan dihapus');
  assert(!/Total pengeluaran/.test(txt()),'total pengeluaran dihapus');
  assert(hero().querySelectorAll('.hm').length===1,'satu kartu gabungan');
- assert(hero().querySelector('.stats .jatah'),'jatah jajan di kartu statistik kanan');
- assert(!hero().querySelector('.hm .jatah'),'jatah tidak lagi di kartu saldo');
+ // Kartu Kondisi kas kini satu kolom tinggi: statistik 2 kolom di bawah angka saldo,
+ // jatah jajan menempel di dasar kartu.
+ assert(hero().querySelector('.hm-stats .jatah'),'jatah jajan di grid statistik');
+ assert(hero().querySelector('.hm .hm-stats'),'statistik dalam grid 2 kolom');
  assert(hero().querySelector('.hm .hm-big'),'saldo realtime dibesarkan');
  assert(hero().querySelector('.hm .hm-bal.one'),'sisa saldo akhir di kartu saldo');
  assert($('v-rincian').querySelector('.insight .dn'),'donut pemasukan/pengeluaran di kartu kategori');
@@ -45,7 +47,7 @@ const {boot}=require('./ui.js');
  w.renderAll();
  click($('btn-privacy'));
  const cs=el=>w.getComputedStyle(el).filter;
- const stat=hero().querySelector('.stats b.pv');
+ const stat=hero().querySelector('.hm-stats b.pv');
  const hmBal=hero().querySelector('.hm-bal b');
  const catVal=$('v-rincian').querySelector('.insight .dn-lg .v');
  const catPie=$('v-rincian').querySelector('.insight .dn-c strong.pv');

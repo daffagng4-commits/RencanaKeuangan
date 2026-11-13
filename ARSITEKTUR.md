@@ -1,70 +1,74 @@
 # Arsitektur Rencana Keuangan
 
-Catatan ini disusun dari kode sumber, bukan dari README. Semua angka dan status di bawah diambil dari repo pada commit `354bb48` (branch `main`, working tree bersih, 10 Nov 2026).
+Disusun dari kode sumber (bukan README). Diperbarui untuk kondisi repo saat ini: `node build.js --check` lulus, `node tests/run-schedule.js` lulus.
 
 ## 1. Bentuk program
 
-Aplikasi web statis satu berkas. Tidak ada framework, tidak ada bundler, tidak ada modul ES. Semua kode berjalan sebagai skrip global di satu halaman.
+Web statis satu berkas. Tanpa framework, tanpa bundler, tanpa modul ES. Semua berkas berjalan sebagai skrip global di satu halaman; setiap berkas memakai global dari berkas sebelumnya.
 
-- Sumber kebenaran: `index.dev.html` (277 baris), `css/style.css` (1.522 baris), `js/**` (33 berkas).
-- Hasil build: `index.html` (438 KB, 10.560 baris), disalin identik ke `dist/index.html`.
-- Hosting: GitHub Pages. `dist/` dipakai untuk deploy, `index.html` di root untuk pemakaian langsung.
-- Data: `localStorage` + Supabase (opsional, untuk sinkron antar perangkat).
-- Bot Telegram terpisah sebagai Cloudflare Worker (`bot/`).
+- Sumber kebenaran: `index.dev.html` (283 baris), `css/style.css` (2.026 baris), `js/**` (35 berkas dimuat, 10.674 baris).
+- Hasil build: `index.html` (546 KB, 13.020 baris), disalin identik ke `dist/index.html`.
+- Hosting: GitHub Pages (`dist/` untuk deploy; `index.html` di root untuk pemakaian langsung).
+- Data: `localStorage` + Supabase (opsional, sinkron antar perangkat).
+- Bot Telegram: Cloudflare Worker terpisah di `bot/`.
 
-## 2. Urutan muat dan peran modul
+## 2. Urutan muat (kontrak)
 
-Urutan `<script>` di `index.dev.html` adalah kontrak: setiap berkas memakai global dari berkas sebelumnya. Menambah berkas wajib menyisipkan tag di posisi yang benar.
+Urutan `<script src>` di `index.dev.html` mengikat. Berkas baru wajib disisipkan di posisi yang benar.
 
-| Urutan | Berkas | Baris | Isi |
+| # | Berkas | Baris | Isi |
 |---|---|---|---|
 | 1 | `js/config.js` | 6 | `SB_URL`, `SB_KEY` (publishable). Satu-satunya berkas yang perlu diedit untuk Supabase. |
-| 2 | `js/core/util.js` | 67 | Format uang/tanggal, `esc`, `parseRp`, `addDaysISO`. Murni. |
-| 3 | `js/core/schedule.js` | 225 | Mesin jadwal: `at`, `series`, `occ`, `nextDates`, `every`, `priceAt`, `priceSeg`, `sumP`. Menghitung tanggal tagihan dari mulai + siklus + batas + daftar perubahan `ch`. |
-| 4 | `js/core/state.js` | 495 | `ALL`/`S`, `seed`, `norm`, `normItem`, `normKas`, `save`, `snap`, `mergeAll`, `loadState`. |
-| 5 | `js/core/items.js` | 241 | `item`, `cloneItem`, `isInvestCat`, `allCategories`, `remapStatus`, `trackSchedule`, `carryAdjustments`. |
-| 6 | `js/core/calc.js` | 135 | `calc` (pengeluaran per bulan, penyesuaian saldo, total kategori), `incomeYear`, `adjMonths`. Murni, hanya membaca `S`. |
+| 2 | `js/core/util.js` | 146 | Murni: `esc`, `rp`, `parseRp`, `fd`, `isoD`, `fmtD`, `shortP`, `pad2`, `addDaysISO`, `dayBadge`, `txInitials`, `dayGroupLabel`, `netSigned`, daftar `MON`/`FULL_MON`/`WD3`, `normalisasiNamaItem`. |
+| 3 | `js/core/schedule.js` | 225 | Mesin jadwal: `at`, `series`, `occ`, `nextDates`, `every`, `segAt`, `priceSeg`, `priceAt`, `sumP`, `origDate`, `curDate`, `lastOcc`, `chSame`. |
+| 4 | `js/core/state.js` | 509 | `ALL`/`S`, `seed`, `norm`, `normItem`, `normAdj`, `normKas`, `chNorm`, `save`, `snapList`, `snap`, `restoreSnap`, `mergeAll`, `loadState`, `dsig`, `smEff`, `smEffYear`. |
+| 5 | `js/core/items.js` | 241 | `item`, `sameItem`, `cloneItem`, `isInvestCat`, `allCategories`, `remapStatus`, `moveStatusExact`, `trackSchedule`, `carryAdjustments`. |
+| 6 | `js/core/calc.js` | 135 | `calc` (pengeluaran bulanan, penyesuaian saldo, total kategori), `incomeYear`, `adjMonths`. Murni, hanya membaca `S`. |
 | 7 | `js/core/reminders.js` | 89 | `reminders`, `isLateISO`, `markPastPaid`. Lintas semua tahun tersimpan. |
-| 8 | `js/core/match.js` | 223 | Pencocokan transaksi kas ke tagihan: `nameScore`, `matchCandidates`, `applyLink`, `autoMatchTx`, `realisasiData`. |
+| 8 | `js/core/match.js` | 223 | Pencocokan kas ke tagihan: `nameScore`, `matchCandidates`, `linkedTxIds`, `realTx`, `suggestMatches`, `applyLink`, `unlinkBill`, `autoMatchTx`, `realisasiData`. |
 | 9 | `js/core/csv.js` | 118 | `toCSV`, `parseCSV`, `csvItems`. |
-| 10-12 | `js/ui/dom.js`, `render.js`, `chart.js` | 145/28/150 | `$`, toast Urungkan, `tab()`; `renderAll()`; grafik SVG saldo. |
-| 13-25 | `js/ui/*` | lihat tabel bawah | Satu berkas per tab atau per jendela: `rincian`, `realisasi`, `jadwal`, `items`, `years`, `header`, `adjust`, `price-modal`, `io`, `backup`, `diag`, `reminders`, `skiprange`. |
-| 26 | `js/sync.js` | 391 | Login Supabase, `pull`, `push`, `applyRemote`, dialog konflik. |
-| 27-33 | `js/ui/theme.js`, `kas.js`, `trip.js`, `nav.js`, `tip.js`, `topbar.js`, `js/app.js` | | `app.js` terakhir: `main()` memanggil `loadState`, `bind*`, `renderAll`, sinkron. |
+| 10 | `js/ui/dom.js` | 164 | `$`, `fmtLive`, `navPill`, `tab()`, `toast(msg, undo)`, `askConfirm`, `bindDom`, `setSaveStatus`. |
+| 11 | `js/ui/render.js` | 84 | `renderAll()` (orkestrasi semua render), `setStartMonth`, `smSyncUI`, `smAutoMark`, `refreshToday`, `syncUI`, `migSmManual`. |
+| 12 | `js/ui/chart.js` | 669 | Grafik SVG. |
+| 13 | `js/ui/rincian.js` | 1.186 | Tab Rincian: `kasFlow`, `kasRunway`, `kasFirstNegative`, `yearCash`, `topExpensesCard`, `insightCard`, `flowChart`, `billsCard`, `recentTxCard`, `kasStatusHtml`, `renderRincian`, `bindRincian`. |
+| 14 | `js/ui/realisasi.js` | 80 | Rencana vs realisasi. |
+| 15 | `js/ui/jadwal.js` | 353 | Tabel item x bulan, chip status. |
+| 16 | `js/ui/items.js` | 550 | Tab Kelola Item + `parseQuickItem`. |
+| 17 | `js/ui/years.js` | 146 | Pindah/tambah/hapus tahun. |
+| 18 | `js/ui/header.js` | 32 | Saldo awal & tahun di header. |
+| 19 | `js/ui/adjust.js` | 8 | Penyesuaian saldo (tipis). |
+| 20 | `js/ui/price-modal.js` | 1.062 | Jendela ubah harga/jadwal, geser siklus. |
+| 21 | `js/ui/io.js` | 244 | Impor/ekspor JSON & CSV. |
+| 22 | `js/ui/backup.js` | 76 | Cadangan otomatis. |
+| 23 | `js/ui/diag.js` | 206 | Cek sistem (penyimpanan, unduhan, Supabase). |
+| 24 | `js/ui/reminders.js` | 126 | Banner & jendela pengingat. |
+| 25 | `js/ui/skiprange.js` | 101 | Ubah status banyak tagihan dalam rentang. |
+| 26 | `js/sync.js` | 399 | `sbInit`, `sbStat`, `pull`, `push`, `schedPush`, `flushPush`, `applyRemote`, `askConflict`, `mergeAll` via dialog, `auth`, `bindSync`. |
+| 27 | `js/ui/theme.js` | 93 | Lima tema (`auto`, `light`, `dark`, `bw`, `bwd`) via `data-theme`. |
+| 28 | `js/ui/kas.js` | 574 | Tab Catatan Kas: profil (Utama = `link:true`), transaksi, utang/piutang (`debtData`, `debtHtml`, `openDebtForm`, `hideDebt`), kas kilat, `renderKas`, `bindKas`. |
+| 29 | `js/ui/trip.js` | 1.695 | Terbesar. Mode Perjalanan (`setMode`, `trips`, `tp`, `tripPlan`, `tripRing`, `tripItin`, `tripBook`, `tripCek`, `renderTrip`, `bindTrip`), target tabungan (`kasGoals`, `goalMonths`, `goalCard`), Simulasi (`simCalc`, `renderSim`, `simApply`, `bindSim`), impor Excel (`xlParse`, `xlCommit`, `xlTemplate`), `modeUi`, jembatan `tools/` (`toolSendLoad`, `toolMount`, `toolPush`, `toolsPull`), PWA/notifikasi. |
+| 30 | `js/ui/report.js` | 258 | Laporan harian/mingguan/bulanan/tahunan. |
+| 31 | `js/ui/nav.js` | 283 | Menu Alat (desktop), bilah bawah + sheet Lainnya (<= 720 px), `navGo`, `applyTripVis`, `railMove`, `bindNav`. |
+| 32 | `js/ui/tip.js` | 69 | Tooltip. |
+| 33 | `js/ui/datepick.js` | 415 | Pemilih tanggal & rentang (`pkRange`, `pkMulti`, `upPickers`). |
+| 34 | `js/ui/topbar.js` | 71 | Topbar, mode privasi. |
+| 35 | `js/app.js` | 38 | `main()`: `loadState` -> semua `bind*` -> `renderAll` -> `save` -> `bindSync` -> `sbInit`. |
 
-Berkas UI terbesar:
+Tidak dimuat: `js/ui/agenda.js` (140 baris) — tidak ada tag `<script>` untuknya di `index.dev.html`; kodenya tidak berjalan.
 
-| Berkas | Baris | Cakupan |
-|---|---|---|
-| `js/ui/trip.js` | 1.690 | Mode Perjalanan: profil kas terpisah, itinerary, pemesanan, checklist, kurs manual. |
-| `js/ui/price-modal.js` | 1.062 | Jendela ubah harga/jadwal berbasis tujuan, pemilih tanggal, geser siklus. |
-| `js/ui/rincian.js` | 709 | Tab Rincian Bulanan: saldo, grafik bulan, grafik kategori, tabel arus kas. |
-| `js/ui/kas.js` | 553 | Tab Catatan Kas: profil (Utama, Liburan, dll), transaksi, dashboard. |
-| `js/ui/items.js` | 550 | Tab Kelola Item, termasuk `parseQuickItem` untuk Tambah Cepat. |
-| `js/ui/jadwal.js` | 350 | Tabel item x bulan dengan status chip (normal, lunas, dilewati, terlambat). |
-| `js/ui/io.js` | 244 | Impor/ekspor JSON dan CSV. |
-| `js/ui/diag.js` | 206 | Cek sistem: penyimpanan, unduhan, Supabase. |
-| `js/ui/nav.js` | 193 | Menu Alat (desktop) dan bilah bawah + sheet Lainnya (<= 720 px). |
-| `js/ui/reminders.js` | 158 | Banner dan jendela pengingat tagihan. |
-| `js/ui/years.js` | 147 | Pindah, tambah, hapus tahun. |
-| `js/ui/agenda.js` | 140 | Agenda 30 hari ke depan dengan saldo berjalan. |
-| `js/ui/skiprange.js` | 101 | Ubah status banyak tagihan satu item dalam rentang tanggal. |
-| `js/ui/theme.js` | 80 | Lima tema: `auto`, `light`, `dark`, `bw`, `bwd` lewat atribut `data-theme`, diingat per perangkat. |
-| `js/ui/backup.js`, `realisasi.js`, `topbar.js`, `tip.js`, `header.js`, `adjust.js`, `render.js` | 76-8 | Cadangan otomatis, Rencana vs realisasi, mode privasi, tooltip, saldo awal. |
+View di `index.dev.html`: `v-rincian`, `v-jadwal`, `v-kas`, `v-sim`, `v-trip`, `v-rebalance`, `v-ibkr`, `v-item`. Tombol nav bertanda `data-t`: `rincian|kas|jadwal|item|sim`. `tab(id)` menyalakan section lalu memanggil `syncNav()`.
 
-Tab dan view di `index.dev.html`: tombol `data-t="rincian|kas|jadwal|item|sim"`, section `v-rincian`, `v-jadwal`, `v-kas`, `v-sim`, `v-item`, `v-trip`, `v-rebalance`, `v-ibkr`. `tab(id)` di `js/ui/dom.js` menyalakan section dan `syncNav()`.
-
-Mode halaman disimpan di `localStorage['rk-mode']`: `rencana`, `trip`, `rebalance`, `ibkr`.
+Mode halaman di `localStorage['rk-mode']`: `rencana`, `trip`, `rebalance`, `ibkr`.
 
 ## 3. Model data
 
-`localStorage['rencana-keuangan-v1']` berisi satu objek `ALL`:
+`localStorage['rencana-keuangan-v1']` = satu objek `ALL`:
 
 ```
 ALL = {
-  year: 2027,                 // tahun aktif
-  rev: 1762... ,              // versi untuk sinkron
-  data: { [tahun]: S },       // S = ALL.data[ALL.year]
+  year: 2027,          // tahun aktif
+  rev: 1762...,        // versi untuk sinkron
+  data: { [tahun]: S },// S = ALL.data[ALL.year]
   kas: { pr: { [idProfil]: profil } }
 }
 ```
@@ -73,87 +77,85 @@ ALL = {
 
 | Field | Isi |
 |---|---|
-| `saldo`, `startMonth` | Saldo awal dan bulan mulai saldo (0-11). |
-| `items[]` | `{id, name, price, n, unit, start, end, cnt, pokok, cat, ch[]}`. `unit` salah satu `hari|minggu|bulan|tahun|sekali`. |
-| `ch[]` | Perubahan harga/jadwal per rentang: `{from, to, price, n, unit, cut, anchor, dates[]}`. `cut` memotong sisa tagihan, `anchor` menggeser tanggal siklus, `dates` untuk harga satu tanggal saja. |
+| `saldo`, `startMonth`, `smManual` | Saldo awal, bulan mulai saldo (0-11), penanda "dipilih manual". Tanpa penanda, tahun berjalan mengikuti bulan kalender (`smEffYear`). |
+| `items[]` | `{id, name, price, n, unit, start, end, cnt, pokok, cat, ch[]}`. `unit`: `hari|minggu|bulan|tahun|sekali`. |
+| `ch[]` | Perubahan per rentang: `{from, to, price, n, unit, cut, anchor, dates[], mv{}}`. `cut` memotong sisa tagihan, `anchor` menggeser tanggal siklus, `dates` harga untuk tanggal tertentu, `mv` geser per tagihan. |
 | `paid`, `skip` | Peta status per tagihan, kunci `itemId|YYYY-MM-DD`. |
-| `adj[]` | Penyesuaian saldo manual `{id, t, amt, note, m, rep}`. |
-| `real` | `{ "itemId|YYYY-MM-DD": {tx: idTransaksi} }`, tautan ke transaksi kas; tagihan tertaut otomatis lunas. |
+| `real` | `{ "itemId|YYYY-MM-DD": {tx: idTransaksi} }`; tagihan tertaut otomatis lunas. |
+| `adj[]` | Penyesuaian saldo manual `{id, t, amt, note, m, rep}` — dimigrasi `norm()` menjadi transaksi kas profil tergabung, lalu `adj` dikosongkan. |
 
-Profil kas (`ALL.kas.pr[id]`): `{id, name, saldo, link, start, end, budget, cur, rate, tx[], it[], bk[], goal, auto, nm[]}`. `link: true` menandai satu profil yang terhubung ke Rencana Keuangan; sisanya profil terpisah (dipakai mode Perjalanan). `tx` = `{id, d, t: '+'|'-', amt, cat, note, debt, debtName, debtKind, debtDone}`.
+Profil kas (`ALL.kas.pr[id]`): `{id, name, saldo, link, start, end, budget, cur, rate, tx[], it[], bk[], lk[], ck[], dt{}, note, goal, auto, nm[]}`.
+- `link: true` = tepat satu profil, terhubung ke Rencana (memakai `S.saldo`, transaksinya masuk `calc()`). Sisanya profil terpisah (mode Perjalanan).
+- `tx`: `{id, d, t:'+'|'-', amt, cat, note, debt, debtName, debtKind, debtDone}`; `debtKind`: `utang|piutang|bayar-utang|bayar-piutang`.
+- `it` itinerary, `bk` pemesanan, `lk` tautan, `ck` checklist, `dt` catatan per tanggal, `goal` target tabungan, `nm` daftar transaksi yang ditolak dari saran pencocokan.
 
-`norm()` di `js/core/state.js` adalah satu-satunya gerbang validasi: semua data dari localStorage, impor, cloud, atau bot dilewatkan ke sini sebelum dipakai. Data kosong diisi `seed()` (contoh 12 item, saldo 25 juta, tahun 2027).
+`norm()` di `js/core/state.js` adalah satu-satunya gerbang validasi: localStorage, impor, cloud, dan bot semuanya lewat sini. Data kosong diisi `seed()` (12 item contoh, saldo 25 juta, tahun 2027).
 
 ## 4. Sinkron Supabase
 
-- Klien dibuat dari `SB_URL`/`SB_KEY`; bila kosong, aplikasi jalan mode lokal dan menampilkan status di header.
-- Tabel `rk_state`: satu baris per pengguna, kolom `user_id`, `data` (jsonb), `rev`, `updated_at`.
-- `push()` memakai update bersyarat `eq('rev', prevRev)` supaya dua perangkat tidak saling menimpa. Versi terakhir per akun dicatat di `localStorage['rk-sync']`.
-- `pull()` membandingkan `dataSig` lokal dan cloud. Sama: hanya perbarui `rev`. Satu sisi berubah: ikuti sisi itu. Keduanya berubah: `askConflict()` menampilkan dialog pilihan.
-- `applyRemote()` menyimpan snapshot dulu (`snap`) sebelum menimpa data lokal.
-- Alat di `tools/` menyimpan state sendiri lewat `tools/bridge.js` (postMessage ke halaman induk) ke tabel `rk_tools`, bukan ke `rk_state`.
+- Klien dari `SB_URL`/`SB_KEY`; bila kosong aplikasi jalan lokal dan menampilkan status di header.
+- Tabel `rk_state`: satu baris per pengguna (`user_id`, `data` jsonb, `rev`, `updated_at`).
+- `push()` memakai update bersyarat `eq('rev', prevRev)` agar dua perangkat tidak saling menimpa; versi tersinkron per akun di `localStorage['rk-sync']`.
+- `pull()` membandingkan `dataSig` lokal vs cloud: sama -> perbarui `rev`; satu sisi berubah -> ikuti; keduanya berubah -> `askConflict()` (pilih lokal/cloud/gabung).
+- `applyRemote()` membuat snapshot (`snap`) sebelum menimpa data lokal; setiap aksi destruktif lain juga memakai `snap` + `toast(…, undo)`.
+- `tools/` menyimpan state sendiri lewat `tools/bridge.js` (postMessage ke halaman induk) ke tabel `rk_tools`, bukan `rk_state`.
 
 ## 5. Build
 
 `node build.js`:
 
 1. Baca `index.dev.html`.
-2. Ganti `<link rel="stylesheet" href="css/style.css">` dengan `<style>` isi CSS, dan inline setiap `url(fonts/*.woff2)` sebagai data URI base64.
-3. Kumpulkan semua `<script src="js/...">` sesuai urutan, gabung jadi satu `<script>` sebelum `</body>`, tiap berkas diberi komentar `/* ===== js/... ===== */`.
+2. Ganti `<link rel="stylesheet" href="css/...">` dengan `<style>`, dan inline setiap `url(fonts/*.woff2)` jadi data URI base64.
+3. Kumpulkan semua `<script src="js/...">` sesuai urutan, gabung jadi satu `<script>` sebelum `</body>` dengan penanda `/* ===== js/... ===== */`.
 4. Tulis `index.html` dan `dist/index.html`.
 5. Salin `manifest.webmanifest`, `sw.js`, `apple-touch-icon.png`, dan seluruh `tools/` ke `dist/`.
 
-`node build.js --check` membandingkan hasil build dengan `index.html` yang ada (CRLF dinormalkan) dan keluar kode 1 bila berbeda. Ini gerbang CI.
+`node build.js --check` membandingkan hasil build dengan `index.html` yang ada (CRLF dinormalkan), keluar kode 1 bila berbeda. Gerbang CI.
 
-Konsekuensi: `index.html` adalah artefak. Edit `index.dev.html`, `css/style.css`, atau `js/**`, lalu build ulang dan commit `index.html` + `dist/`.
-
-`sw.js` memakai cache `rk-cache-v6`, menyajikan `index.html` offline, dan melewati cache untuk permintaan Supabase.
+`index.html` adalah artefak. Edit `index.dev.html` / `css/style.css` / `js/**`, build ulang, commit `index.html` + `dist/`. `sw.js` memakai cache `rk-cache-v6`.
 
 ## 6. Bot Telegram (Cloudflare Worker)
 
-- Entry: `bot/worker.mjs`. Route `POST /tg` (webhook Telegram, diverifikasi header `x-telegram-bot-api-secret-token`), `GET /` dan `GET /diag` untuk diagnosa (hanya melaporkan secret ada atau kosong).
-- `build-bot.js` merakit `bot/core.mjs` (1.164 baris) dari `js/core/*` plus fungsi murni tertentu di `js/ui/items.js`, `kas.js`, `trip.js`, dengan `pick()` yang mengekstrak satu fungsi top-level. Tidak ada duplikasi rumus. Berkas hasil diberi tanda jangan disunting manual.
-- `bot/router.mjs`: perintah `@saldo`, `@jatah`, `@tagihan`, `@jadwal`, `@rekap`, `@kas`, `@cari`, `@debug`, `@masuk`, `@keluar`, `@utang`, `@piutang`, `@bayarutang`, `@bayarpiutang`, `@utangku`, `@beli`, `@lunas`, `@hapus`, `@tahun`, `@pakai`, `@laporanharian`, `@laporanmingguan`, `@laporanbulanan`, `@laporantahun`.
-- `bot/store.mjs`: baca `rk_state` lewat REST, tulis dengan `PATCH ... &rev=eq.<rev>` supaya bot dan web tidak saling menimpa.
+- Entry `bot/worker.mjs`. Route `POST /tg` (webhook, header `x-telegram-bot-api-secret-token`), `GET /` dan `GET /diag` (hanya melaporkan secret ada/kosong).
+- `build-bot.js` merakit `bot/core.mjs` dari `js/core/*` plus fungsi murni pilihan di `js/ui/items.js`, `kas.js`, `trip.js` (`pick()` mengekstrak satu fungsi top-level). Tidak ada duplikasi rumus. Hasilnya ditandai jangan disunting manual.
+- `bot/router.mjs`: `@saldo`, `@jatah`, `@tagihan`, `@jadwal`, `@rekap`, `@kas`, `@cari`, `@debug`, `@masuk`, `@keluar`, `@utang`, `@piutang`, `@bayarutang`, `@bayarpiutang`, `@utangku`, `@beli`, `@lunas`, `@hapus`, `@tahun`, `@pakai`, `@laporanharian`, `@laporanmingguan`, `@laporanbulanan`, `@laporantahun`.
+- `bot/store.mjs`: baca `rk_state` via REST, tulis `PATCH ... &rev=eq.<rev>` supaya bot dan web tidak saling menimpa.
 - `bot/report.mjs` + `bot/pdf.mjs`: laporan PDF (pdf-lib).
-- `wrangler.toml`: nama `rencana-bot`, cron `0 1 1 * *` (laporan tanggal 1).
-- Secret wajib: `TG_TOKEN`, `TG_SECRET`, `MY_TG`, `SB_URL`, `SB_KEY`.
+- `wrangler.toml`: `rencana-bot`, cron `0 1 1 * *`. Secret: `TG_TOKEN`, `TG_SECRET`, `MY_TG`, `SB_URL`, `SB_KEY`.
 
-## 7. Alat terpisah
+## 7. Alat terpisah (`tools/`)
 
-- `tools/rebalance/` (`app.js` 1.514 baris, `journal.js` 450 baris, `index.html`, `styles.css`): kalkulator rebalance porto dengan band per aset (saham BMRI/BBRI, ETF VOO/VXUS/SMH/NVDA), jurnal eksekusi, posisi, riwayat band, simulasi, rute IBKR. Data jurnal ikut state aplikasi induk lewat `rkGetState()`.
-- `tools/ibkr-flip/index.html` (235 baris): perbandingan biaya IBKR vs Flip, satu berkas mandiri.
-- `tools/bridge.js` (50 baris): jembatan iframe, tidak aktif bila dibuka langsung.
+- `tools/rebalance/` (`app.js`, `journal.js`, `index.html`, `styles.css`): kalkulator rebalance porto dengan band per aset, jurnal eksekusi, posisi, riwayat band, simulasi, rute IBKR. Data jurnal lewat `rkGetState()` dari halaman induk.
+- `tools/ibkr-flip/index.html`: perbandingan biaya IBKR vs Flip, satu berkas mandiri.
+- `tools/bridge.js`: jembatan iframe, tidak aktif bila dibuka langsung.
 
 ## 8. Test dan CI
 
 | Perintah | Cakupan | Status terverifikasi |
 |---|---|---|
-| `npm run check` | Kompilasi 44 skrip (`js/`, `tools/`, skrip inline di HTML) + kesegaran `index.html` | Lulus |
-| `npm test` | `build` + `check` + 27 tes unit (`tests/unit/core.test.js`) + 17 berkas tes jadwal (`tests/schedule/`) | Lulus semua |
-| `npm run test:e2e` | 5 berkas `tests/e2e/` di jsdom terhadap `dist/index.html` | Gagal: `matchMedia is not defined`, `tests/e2e/sync.js` error, `balance.js`/`features.js` berhenti saat modul dimuat |
-| `node tests/rebalance/run.js` | `bundle.test.js`, `journal.test.js` | Gagal: assertion `fee 0,15%: sisa RDN tidak negatif`, `journal.test.js` `Cannot set properties of null` |
+| `node build.js --check` / `npm run check` | Kompilasi semua `js/` + `tools/` + skrip inline, plus kesegaran `index.html` | Lulus (`35 file js`) |
+| `npm test` | `build` + `check` + unit (`tests/unit/`) + jadwal (`tests/schedule/`) | Unit & jadwal lulus; `tests/rebalance` merah |
+| `npm run test:e2e` | `tests/e2e/` di jsdom atas `dist/index.html` | Gagal: harness jsdom belum punya `matchMedia`/`ResizeObserver` |
+| `npm run test:browser` | `tests/browser/smoke.js` (puppeteer, 390 px) | Butuh `npm i -D puppeteer`, di luar CI |
 | `npm run test:bot` | `build-bot.js` + `tests/bot.test.mjs` | Lulus |
-| `npm run test:browser` | Puppeteer, viewport 390 px, tema terang dan gelap | Butuh `npm i -D puppeteer`, tidak termasuk CI |
 
-CI (`.github/workflows/ci.yml`): `npm ci`, `npm run check`, `npm test` pada setiap push dan pull request.
+CI (`.github/workflows/ci.yml`): `npm ci`, `npm run check`, `npm test`. Deploy bot (`deploy-bot.yml`) dipicu push yang menyentuh `bot/**`, `build-bot.js`, `js/core/**`, `wrangler.toml`, `package.json`.
 
-Deploy bot (`.github/workflows/deploy-bot.yml`): dipicu push ke `main` yang menyentuh `bot/**`, `build-bot.js`, `js/core/**`, `wrangler.toml`, `package.json`; langkahnya `build:bot`, `node --check bot/core.mjs`, `node --test tests/bot.test.mjs`, `wrangler deploy`.
-
-Tes jadwal (`tests/schedule/`) memuat `index.html` di jsdom dengan harness sendiri (`tests/schedule/ui.js`), jadi berbeda dari `tests/e2e/` yang memakai `dist/index.html` dan belum menyediakan `matchMedia`/`ResizeObserver`.
+`tests/schedule/` memuat `index.html` di jsdom dengan harness sendiri (`tests/schedule/ui.js`) — itu sebabnya lulus, sedangkan `tests/e2e/` belum.
 
 ## 9. Konvensi kerja
 
-1. Jangan edit `index.html` atau `dist/`. Keduanya hasil build.
-2. Berkas baru: tambahkan `<script src="js/...">` di `index.dev.html` pada posisi yang benar, lalu `npm run build`.
-3. Sebelum commit: `npm run check` dan `npm test` harus lulus; `index.html` dan `dist/` ikut di-commit.
-4. Logika murni (tanpa DOM, tanpa `localStorage`) masuk `js/core/`, supaya bisa dipakai bot lewat `build-bot.js`. Fungsi yang diambil bot harus top-level dan diakhiri `}` di kolom 0.
-5. Kunci status tagihan selalu `itemId|YYYY-MM-DD`. Mengubah kunci berarti memutus `paid`, `skip`, dan `real`.
-6. Semua data masuk lewat `norm()`. Jangan menambah field tanpa menambahkan normalisasinya.
+1. Jangan edit `index.html` atau `dist/`; keduanya hasil build.
+2. Berkas baru: tambah `<script src="js/...">` di `index.dev.html` pada posisi benar, lalu `npm run build`.
+3. Sebelum commit: `npm run check` dan `npm test` lulus; `index.html` dan `dist/` ikut di-commit.
+4. Logika murni (tanpa DOM, tanpa `localStorage`) masuk `js/core/`, supaya bisa dipakai bot via `build-bot.js`. Fungsi yang diambil bot harus top-level dan ditutup `}` di kolom 0.
+5. Kunci status tagihan selalu `itemId|YYYY-MM-DD`. Mengubah kunci memutus `paid`, `skip`, dan `real`.
+6. Semua data masuk lewat `norm()`. Field baru wajib punya normalisasi.
 7. Tidak ada `js/ui/sync.js`; modul sinkron ada di `js/sync.js`.
 
 ## 10. Batas yang perlu diketahui
 
-- `tests/e2e/` dan `tests/rebalance/` merah saat ini. Bukan regresi dari perubahan terakhir, tetapi harness jsdom yang belum lengkap (tidak ada `matchMedia`, `ResizeObserver`, dan sebagian elemen baru di `tools/rebalance/index.html`).
-- README belum mencerminkan struktur ini. Dokumen ini yang dipakai sebagai rujukan.
-- `js/ui/trip.js` dan `js/ui/price-modal.js` memegang porsi besar logika UI; perubahan di sana paling berisiko dan paling sedikit tercakup tes.
+- `tests/e2e/` dan `tests/rebalance/` merah karena harness (bukan regresi logika). `tests/e2e/` kurang `matchMedia`, `ResizeObserver`, dan sebagian elemen baru di `tools/rebalance/index.html`.
+- `js/ui/agenda.js` tidak dimuat `index.dev.html`; 140 baris mati.
+- `js/ui/trip.js` (1.695) dan `js/ui/price-modal.js` (1.062) memegang porsi logika UI terbesar dan paling sedikit tercakup tes.
+- README masih menjelaskan struktur lama; dokumen ini yang dipakai sebagai rujukan.

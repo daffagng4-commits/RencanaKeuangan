@@ -1772,12 +1772,33 @@ nav .nav-pill {
   padding: 8px 12px 6px;
 }
 
-/* Sidebar rail: label tab diganti ikon bergambar, pil bergeser saat tab berubah */
+/* Sidebar rail: label tab diganti ikon bergambar, pil bergeser saat tab berubah.
+   Satu mekanisme offset saja: .app = flex, nav = kolom tetap di kiri, .w = konten.
+   Tidak ada padding/offset body; header dan konten bergeser bersama otomatis. */
+.app { display: flex; flex-direction: column; min-width: 0; }
+.app > .w { min-width: 0; }
+.app > header { display: contents; }
+.app > header nav { flex: 0 0 auto; }
 @media (min-width: 1024px) {
-  body { padding-left: 104px; }
+  .app {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    align-items: start;
+    padding-left: 20px;
+  }
+  .app > header {
+    display: block;
+    grid-column: 1;
+    grid-row: 1;
+    position: sticky;
+    top: 20px;
+    margin: 0;
+  }
+  .app > .w { grid-column: 2; grid-row: 1; }
   header nav {
-    position: fixed;
-    inset: 20px auto auto 20px;
+    position: static;
+    inset: auto;
+    margin: 0;
     flex-direction: column;
     gap: 6px;
     width: 64px;
@@ -2023,4 +2044,178 @@ nav .nav-pill {
 }
 @media (prefers-reduced-motion: reduce) {
   .kit, .kit:hover { transition: none; transform: none; }
+}
+
+/* ============================================================
+   Layout Rincian: grid 12 kolom lebar penuh + judul halaman
+   (Hanya susunan; angka, teks, dan perilaku kartu tidak diubah.)
+   ============================================================ */
+.rk {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+.rk > * { min-width: 0; }
+.rk > * > .card, .rk > * > .hero { margin: 0; height: 100%; }
+.rk-kas { grid-column: 1 / span 4; grid-row: span 2; }
+.rk-flow { grid-column: 5 / span 8; }
+.rk-mf { grid-column: 5 / span 4; }
+.rk-bills { grid-column: 9 / span 4; }
+.rk-cat { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+.rk-cat > .card { margin: 0; min-width: 0; height: auto; }
+.rk-cat > .card + .card { border-left: 1px solid var(--ln); border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.rk-detail { grid-column: 1 / span 8; }
+.rk-tx { grid-column: 9 / span 4; }
+
+/* Tinggi kartu dalam satu baris rapi: isi tumbuh, ringkasan menempel di dasar. */
+.rk .card { display: flex; flex-direction: column; }
+.rk .card > .grow { flex: 1 1 auto; min-height: 0; }
+.rk .card > .bs-foot,
+.rk .card > .bl-foot,
+.rk .card > .insight-summary,
+.rk .card > .lc-foot { margin-top: auto; }
+.rk .card > .lc-wrap { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.rk .lc-wrap > .lc-foot { margin-top: 0; }
+.rk .lc-wrap > svg.lc, .rk .lc-wrap > .lc-w { flex: 1 1 auto; }
+
+/* Kartu "Kondisi kas": satu kolom tinggi, isi disusun ulang (angka di atas,
+   statistik 2 kolom di tengah, transaksi kas, peringatan + jatah di bawah). */
+.rk-kas .hero { grid-template-columns: minmax(0, 1fr); row-gap: 0; height: 100%; }
+.rk-kas .hero > .card { height: auto; }
+.rk-kas .hero > .card + .card {
+  border-left: 0;
+  border-top: 1px solid var(--ln);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+.rk-kas .hero .hm-alert:empty { display: none; }
+.rk-kas .hero .hm-alert:not(:empty) { margin-top: 12px; }
+.rk-kas .hero .hm-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 16px;
+  row-gap: 12px;
+  margin-top: 14px;
+}
+.rk-kas .hero .hm-stats > div:last-child:nth-child(odd) { grid-column: span 2; }
+.rk-kas .hero .jatah { margin-top: auto; }
+.rk-kas .hero .hm-big { font-size: 30px; }
+.rk-kas .hero .hm-bal b { font-size: 26px; }
+.rk-kas .hero .jatah .jv { font-size: 20px; }
+
+/* Donut tetap proporsional; tidak melar mengikuti panel lebar. */
+.rk .insight-dn .dn, .rk .insight-dn svg { max-width: 220px; }
+
+/* Area saldo lebih tinggi dan melebar penuh. */
+.rk-flow .lc-wrap svg.lc { min-height: 260px; }
+.rk-mf .bs-chart { height: 220px; }
+
+/* Judul halaman di atas grid (beranda Rincian). */
+#rk-head { margin: 0 0 16px; }
+#rk-head:empty { display: none; }
+.rk-h1 { margin: 0; font-size: 23px; line-height: 1.2; letter-spacing: -0.02em; }
+.rk-sum { margin: 6px 0 0; color: var(--mut); font-size: 13px; line-height: 1.5; }
+.rk-sum b { color: var(--ink); font-weight: 650; font-variant-numeric: tabular-nums; }
+.rk-sum b.neg { color: var(--wr); }
+
+@media (min-width: 1280px) {
+  .w { max-width: 1600px; padding-left: 28px; padding-right: 28px; }
+  .rk { gap: 18px; }
+}
+
+/* 768–1279px: dua kolom, urutan tetap. */
+@media (max-width: 1279px) {
+  .rk { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rk-kas, .rk-flow, .rk-cat, .rk-detail, .rk-tx { grid-column: 1 / -1; }
+  .rk-mf, .rk-bills { grid-column: auto; grid-row: auto; }
+  .rk-kas { grid-row: auto; }
+  .rk-kas .hero { grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr); }
+  .rk-kas .hero > .card + .card { border-left: 1px solid var(--ln); border-top: 0; border-radius: 0; }
+  .rk-kas .hero > .card:first-child { border-radius: var(--r) 0 0 var(--r); }
+  .rk-cat { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+}
+
+/* < 768px: satu kolom, urutan: saldo, jadwal, arus saldo, pemasukan vs
+   pengeluaran, kategori, item terbesar, rincian tagihan, transaksi terakhir. */
+@media (max-width: 767px) {
+  .rk { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .rk > * { grid-column: 1 / -1 !important; grid-row: auto !important; }
+  .rk-kas { order: 1; }
+  .rk-bills { order: 2; }
+  .rk-flow { order: 3; }
+  .rk-mf { order: 4; }
+  .rk-cat { order: 5; grid-template-columns: minmax(0, 1fr); }
+  .rk-cat > .card + .card {
+    border-left: 0;
+    border-top: 1px solid var(--ln);
+    border-radius: 0 0 var(--r) var(--r);
+  }
+  .rk-cat > .card:first-child { border-radius: var(--r) var(--r) 0 0; }
+  .rk-detail { order: 7; }
+  .rk-tx { order: 8; }
+  .rk-kas .hero { grid-template-columns: minmax(0, 1fr); }
+  .rk-kas .hero > .card:first-child { border-radius: var(--r) var(--r) 0 0; }
+  .rk-kas .hero > .card + .card { border-left: 0; border-top: 1px solid var(--ln); border-radius: 0 0 var(--r) var(--r); }
+  .rk-kas .hero .hm-big { font-size: 26px; }
+  #rk-head { margin-bottom: 12px; }
+  .rk-h1 { font-size: 20px; }
+}
+
+/* Sidebar berlabel (>= 1280px) + tombol collapse ke rail ikon.
+   Mekanisme satu-satunya: lebar kolom pertama grid .app melebar (rail 104px -> 264px). */
+@media (min-width: 1280px) {
+  .app.sb-open { grid-template-columns: 264px minmax(0, 1fr); }
+  .app.sb-open header nav {
+    width: 244px;
+    border-radius: 20px;
+    padding: 8px;
+  }
+  .app.sb-open header nav button[role="tab"] {
+    width: 100%;
+    height: 42px;
+    min-height: 42px;
+    display: flex;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 0 12px;
+    border-radius: 12px;
+  }
+  .app.sb-open header nav .nav-lbl {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    clip: auto;
+    overflow: visible;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .app.sb-open header nav .nav-pill { border-radius: 12px; }
+  .app.sb-open header nav .acct { justify-content: flex-start; padding: 0 12px; }
+  .sb-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 32px;
+    margin-top: 4px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: none;
+    color: var(--mut);
+    cursor: pointer;
+  }
+  .sb-toggle:hover { border-color: var(--ln); color: var(--ink); }
+  .sb-toggle svg { width: 16px; height: 16px; transition: transform .18s var(--ease); }
+  .app.sb-open .sb-toggle svg { transform: rotate(180deg); }
+  .sb-toggle:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+}
+@media (max-width: 1279px) { .sb-toggle { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .sb-toggle svg { transition: none; }
 }

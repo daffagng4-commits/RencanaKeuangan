@@ -67,7 +67,7 @@ const { boot } = require('./ui.js');
     ];
     w.txDir = 'all';
     w.renderAll();
-    const txCard = [...w.document.querySelectorAll('.splitR .card, .splitH .card')].find(function (c) {
+    const txCard = [...w.document.querySelectorAll('.rk .card')].find(function (c) {
       return /Transaksi terakhir/.test(c.textContent);
     });
     assert(txCard, 'kartu transaksi terakhir ada');
@@ -82,7 +82,7 @@ const { boot } = require('./ui.js');
       { id: 'y', d: '2026-10-05', t: '-', amt: 60, cat: 'A', note: 'lama' }
     ];
     w.renderAll();
-    const txCard2 = [...w.document.querySelectorAll('.splitR .card, .splitH .card')].find(function (c) {
+    const txCard2 = [...w.document.querySelectorAll('.rk .card')].find(function (c) {
       return /Transaksi terakhir/.test(c.textContent);
     });
     assert(/7 catatan terakhir/.test(txCard2.textContent), 'fallback subtitle 7 catatan terakhir');

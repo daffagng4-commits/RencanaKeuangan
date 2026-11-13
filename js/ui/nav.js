@@ -184,6 +184,40 @@ function railMove() {
   navPill();
 }
 
+/** Sidebar berlabel: pilihan lebar disimpan di localStorage (bukan data akun).
+ *  Satu mekanisme offset: kelas `.sb-open` di `.app` melebarkan kolom grid nav. */
+function sbApply() {
+  var on = false;
+  try {
+    on = localStorage.getItem('rk-sb') === '1';
+  } catch (e) {}
+  var app = document.querySelector('.app');
+  if (app) app.classList.toggle('sb-open', on);
+  var b = document.getElementById('sb-toggle'),
+    lbl = on ? 'Kecilkan sidebar' : 'Lebarkan sidebar';
+  if (b) {
+    b.setAttribute('aria-expanded', on ? 'true' : 'false');
+    b.title = lbl;
+    b.setAttribute('aria-label', lbl);
+  }
+  setTimeout(function () {
+    if (typeof navPill === 'function') navPill();
+  }, 0);
+}
+
+/** Pasang tombol collapse sidebar. */
+function bindSidebar() {
+  var b = document.getElementById('sb-toggle');
+  if (!b) return;
+  b.onclick = function () {
+    try {
+      localStorage.setItem('rk-sb', localStorage.getItem('rk-sb') === '1' ? '0' : '1');
+    } catch (e) {}
+    sbApply();
+  };
+  sbApply();
+}
+
 /** Pasang menu Alat, bilah bawah, dan lembar Lainnya. */
 function bindNav() {
   var ab = document.getElementById('alat-btn'),
@@ -275,6 +309,7 @@ function bindNav() {
     sheet(false);
   });
   applyTripVis(false);
+  bindSidebar();
   railMove();
   addEventListener('resize', function () {
     railMove();

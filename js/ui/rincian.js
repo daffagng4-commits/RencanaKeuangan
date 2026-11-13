@@ -403,8 +403,8 @@ function topExpensesCard(C) {
     picker = mode === 'm' ? '<select data-expmonth aria-label="Bulan pengeluaran">' + months.map(function (m) {
       return '<option value="' + m + '"' + (+expenseLastMonth === m ? ' selected' : '') + '>' + MON[m - 1] + ' ' + S.year + '</option>';
     }).join('') + '</select>' : '',
-    head = '<div class="insight-head"><div class="insight-title"><h2 class="m0">Item pengeluaran terbesar</h2><div class="sub">' + period + ' · total <span class="pv expense-total">' + rp(total) + '</span></div></div><div class="expense-controls"><div class="cat-tabs expense-tabs" role="group" aria-label="Periode pengeluaran">' + tabs + '</div>' + picker + '</div></div>';
-  if (!total) return '<div class="card slot-card expense-card">' + head + '<div class="empty">Belum ada pengeluaran</div></div>';
+    head = '<div class="insight-head"><div class="insight-title"><h2 class="m0" id="rk-exp-h">Item pengeluaran terbesar</h2><div class="sub">' + period + ' · total <span class="pv expense-total">' + rp(total) + '</span></div></div><div class="expense-controls"><div class="cat-tabs expense-tabs" role="group" aria-label="Periode pengeluaran">' + tabs + '</div>' + picker + '</div></div>';
+  if (!total) return '<section class="card slot-card expense-card" aria-labelledby="rk-exp-h">' + head + '<div class="empty">Belum ada pengeluaran</div></section>';
   function row(r, i) {
     var pct = Math.round(r.v / total * 100), cat = r.rest ? 'gabungan item kecil' : r.cat || 'Tanpa kategori';
     return '<li class="expense-row' + (r.rest ? ' rest' : '') + '" tabindex="0" aria-label="' + esc(r.name + ', ' + rp(r.v) + ', ' + pct + ' persen dari total') + '">' +
@@ -412,7 +412,7 @@ function topExpensesCard(C) {
       '<div class="expense-track"><div class="expense-fill" style="width:' + Math.min(100, r.v / max * 100) + '%;background:' + (r.rest ? 'var(--mut)' : catColor(r.cat)) + '"></div></div>' +
       '<div class="expense-detail sub pv">' + selected.map(function (m) { return MON[m - 1] + ' ' + rp(r.byMonth[m] || 0); }).join(' · ') + (r.rest ? '<br>' + esc(r.detail) : '<br>' + esc(Array.from(r.raw).join(' · '))) + '</div></li>';
   }
-  return '<div class="card slot-card expense-card">' + head + '<ol class="expense-list">' + rows.map(row).join('') + (rest.v ? row(rest) : '') + '</ol><div class="bs-foot"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg> ' + rows.length + ' item teratas = <span class="pv">' + Math.round(topSum / total * 100) + '%</span> dari total pengeluaran</b><div class="sub">' + esc(rows[0].name) + ' paling besar: <span class="pv">Rp ' + rpS(rows[0].v) + ' (' + Math.round(rows[0].v / total * 100) + '% dari total)</span></div></div></div>';
+  return '<section class="card slot-card expense-card" aria-labelledby="rk-exp-h">' + head + '<ol class="expense-list">' + rows.map(row).join('') + (rest.v ? row(rest) : '') + '</ol><div class="bs-foot"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg> ' + rows.length + ' item teratas = <span class="pv">' + Math.round(topSum / total * 100) + '%</span> dari total pengeluaran</b><div class="sub">' + esc(rows[0].name) + ' paling besar: <span class="pv">Rp ' + rpS(rows[0].v) + ' (' + Math.round(rows[0].v / total * 100) + '% dari total)</span></div></div></section>';
 }
 
 /** Tombol periode yang mengendalikan pie dan bar kategori sekaligus. */
@@ -426,7 +426,7 @@ function insightCard(C) {
     total = p.inc + p.out,
     tabs = cashPeriodTabs();
   var head =
-    '<div class="insight-head"><div class="insight-title"><div class="dflex aic fwrap g8"><h2 class="m0">Pengeluaran &amp; pemasukan per kategori</h2><span class="sub fs12">Jadwal + kas' +
+    '<div class="insight-head"><div class="insight-title"><div class="dflex aic fwrap g8"><h2 class="m0" id="rk-cat-h">Pengeluaran &amp; pemasukan per kategori</h2><span class="sub fs12">Jadwal + kas' +
     simTag(S.year) +
     '</span></div>' +
     '<div class="sub">' +
@@ -438,9 +438,9 @@ function insightCard(C) {
     '</div></div>';
   if (!total)
     return (
-      '<div class="card insight">' +
+      '<section class="card insight" aria-labelledby="rk-cat-h">' +
       head +
-      '<div class="empty">Belum ada pemasukan atau pengeluaran pada periode ini.</div></div>'
+      '<div class="empty">Belum ada pemasukan atau pengeluaran pada periode ini.</div></section>'
     );
   var income = catDir === '+',
     src = income ? p.incByCat : p.byCat,
@@ -496,7 +496,7 @@ function insightCard(C) {
     '</div><div class="insight-reserve" aria-hidden="true" inert>' + reserve + '</div></div>' +
     foot +
     '</div>';
-  return '<div class="card insight">' + head + '<div class="insight-body">' + cat + '</div></div>';
+  return '<section class="card insight" aria-labelledby="rk-cat-h">' + head + '<div class="insight-body">' + cat + '</div></section>';
 }
 
 /** Kartu saldo + statistik. */
@@ -545,13 +545,13 @@ function heroHtml(c, R, lead, txCount, C, rw) {
   return (
     '<div class="hero">' +
     (lead ? lead() : plain) +
-    '<div class="card stats m0">' +
+    (lead ? '<div class="hm-stats">' : '<div class="card stats m0">') +
     stat('Bulan terberat', rp(C.byMonth[hv.m]), MON[hv.m]) +
     stat('Rata-rata per bulan', rp(C.out / n)) +
     stat('Bulan teringan', rp(C.byMonth[mn.m]), MON[mn.m]) +
     (txCount != null ? stat('Transaksi kas', String(txCount), 'catatan kas', '', false) : '') +
     jatahHtml +
-    '</div></div>'
+    '</div></div></div>'
   );
 }
 
@@ -774,7 +774,8 @@ function saldoHero(c, R) {
       var st = kasStatusHtml(P, bal);
       if (st.indexOf('runway-safe') >= 0) st = '';
       return (
-        '<div class="card hm m0"><div class="dflex jcsb aic g8">' +
+        '<div class="card hm m0">' +
+        '<div class="dflex jcsb aic g8">' +
         '<div class="sub fw6">Saldo Realtime &middot; ' + mName + '</div>' +
         chip +
         '</div>' +
@@ -790,8 +791,7 @@ function saldoHero(c, R) {
         '">' +
         rp(c.end) +
         '</b></div></div>' +
-        st +
-        '</div>'
+        '<div class="hm-alert">' + st + '</div>'
       );
     },
     A.n,
@@ -1079,21 +1079,20 @@ function renderRincian() {
     rp(wE) +
     '</td><td></td></tr></tbody></table></div></div>';
   var tx = recentTxCard();
+  // Tata letak: kartu ringkasan, arus saldo, pemasukan/pengeluaran, jadwal, dua panel kategori,
+  // lalu rincian tagihan + transaksi terakhir. Grid 12 kolom diatur CSS (.rk).
   $('v-rincian').innerHTML =
     (S.items.length ? '' : emptyItemsHtml()) +
-    '<div class="splitH">' +
-    saldoHero(c, R) +
-    billsCard() +
-    '</div>' +
-    '<div class="splitH">' +
-    fc +
-    monthFlowCard(C) +
-    '</div>' +
-    '<div class="splitH">' +
-    insightCard(C) +
-    topExpensesCard(C) +
-    '</div>' +
-    (tx ? '<div class="splitR">' + table + tx + '</div>' : table);
+    '<div class="rk">' +
+    '<div class="rk-kas">' + saldoHero(c, R) + '</div>' +
+    (fc ? '<div class="rk-flow">' + fc + '</div>' : '') +
+    '<div class="rk-mf">' + monthFlowCard(C) + '</div>' +
+    '<div class="rk-bills">' + billsCard() + '</div>' +
+    '<section class="rk-cat" aria-label="Ke mana uangnya pergi">' + insightCard(C) + topExpensesCard(C) + '</section>' +
+    '<div class="rk-detail">' + table + '</div>' +
+    (tx ? '<div class="rk-tx">' + tx + '</div>' : '') +
+    '</div>';
+  renderShell(c, R);
   chartMount($('v-rincian'));
   gdApply($('v-rincian'));
 }

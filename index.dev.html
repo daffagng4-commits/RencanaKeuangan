@@ -22,6 +22,21 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<div class="app">
+<header>
+  <div class="sub fs115 cmut" id="ver-info" hidden title="Versi program terbaru"></div>
+  <div class="sub" id="status" style="display:none"></div>
+  <div class="sub" id="sbs" style="display:none"></div>
+<nav role="tablist" id="rk-nav" aria-label="Bagian rencana">
+  <i class="nav-pill" aria-hidden="true"></i>
+  <button role="tab" data-t="rincian" aria-selected="true" title="Rincian Transaksi" aria-label="Rincian Transaksi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></svg><span class="nav-lbl">Rincian Transaksi</span></button>
+  <button role="tab" data-t="kas" aria-selected="false" title="Transaksi" aria-label="Transaksi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7H5a2 2 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15V7"/><circle cx="16" cy="14" r="1.2"/></svg><span class="nav-lbl">Transaksi</span></button>
+  <button role="tab" data-t="jadwal" aria-selected="false" title="Jadwal Tagihan" aria-label="Jadwal Tagihan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 15h3M8 18h6"/></svg><span class="nav-lbl">Jadwal Tagihan</span></button>
+  <button role="tab" data-t="item" aria-selected="false" title="Kelola Item" aria-label="Kelola Item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5 12 3l9 4.5-9 4.5z"/><path d="M3 12.5 12 17l9-4.5M3 17l9 4.5 9-4.5"/></svg><span class="nav-lbl">Kelola Item</span></button>
+  <button role="tab" data-t="sim" aria-selected="false" title="Simulasi" aria-label="Simulasi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span class="nav-lbl">Simulasi</span></button>
+<button type="button" class="sb-toggle" id="sb-toggle" aria-expanded="true" aria-controls="rk-nav" title="Kecilkan sidebar" aria-label="Kecilkan sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+</nav>
+</header>
 <div class="w">
 <div class="topbar">
   <div class="kt" id="mdbar">
@@ -54,21 +69,10 @@
     <div class="row2 mt12"><button type="button" class="p" id="yr-done">Simpan</button><button type="button" class="c" id="yr-close">Tutup</button></div>
   </div>
 </div>
-<header>
-  <div class="sub fs115 cmut" id="ver-info" hidden title="Versi program terbaru"></div>
-  <div class="sub" id="status" style="display:none"></div>
-  <div class="sub" id="sbs" style="display:none"></div>
-<nav role="tablist">
-  <i class="nav-pill" aria-hidden="true"></i>
-  <button role="tab" data-t="rincian" aria-selected="true" title="Rincian Transaksi" aria-label="Rincian Transaksi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></svg><span class="nav-lbl">Rincian Transaksi</span></button>
-  <button role="tab" data-t="kas" aria-selected="false" title="Transaksi" aria-label="Transaksi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7H5a2 2 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15V7"/><circle cx="16" cy="14" r="1.2"/></svg><span class="nav-lbl">Transaksi</span></button>
-  <button role="tab" data-t="jadwal" aria-selected="false" title="Jadwal Tagihan" aria-label="Jadwal Tagihan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 15h3M8 18h6"/></svg><span class="nav-lbl">Jadwal Tagihan</span></button>
-  <button role="tab" data-t="item" aria-selected="false" title="Kelola Item" aria-label="Kelola Item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5 12 3l9 4.5-9 4.5z"/><path d="M3 12.5 12 17l9-4.5M3 17l9 4.5 9-4.5"/></svg><span class="nav-lbl">Kelola Item</span></button>
-  <button role="tab" data-t="sim" aria-selected="false" title="Simulasi" aria-label="Simulasi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span class="nav-lbl">Simulasi</span></button>
-</nav>
-</header>
+
 
 <button type="button" class="rem" id="rem" hidden></button>
+<div id="rk-head" aria-label="Ringkasan halaman"></div>
 <section id="v-rincian"></section>
 <section id="v-jadwal" hidden></section>
 <section id="v-kas" hidden></section>
@@ -106,6 +110,7 @@
   </div>
   <div class="card"><h2>Daftar item <span id="ly"></span></h2><div id="list"></div><div class="row2" id="cprow"></div></div>
 </section>
+</div>
 </div>
 
 <input type="file" id="xlf" accept=".xlsx,.xls,.csv" hidden>
@@ -242,6 +247,7 @@
 </div></div>
 
 <div class="modal" id="lg" role="dialog" aria-modal="true" hidden><div class="card"><h2>Masuk untuk sinkron</h2><p class="sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p><label for="le">Email</label><input id="le" type="email" autocomplete="email"><label class="mt10" for="lp">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="err" id="lm"></div><div class="row2"><button class="p" id="lin">Masuk</button><button class="c" id="lgc">Tutup</button></div></div></div>
+</div><!-- /.app -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
 <script src="js/config.js"></script>
@@ -257,6 +263,7 @@
 <script src="js/ui/render.js"></script>
 <script src="js/ui/chart.js"></script>
 <script src="js/ui/rincian.js"></script>
+<script src="js/ui/shell.js"></script>
 <script src="js/ui/realisasi.js"></script>
 <script src="js/ui/jadwal.js"></script>
 <script src="js/ui/items.js"></script>
