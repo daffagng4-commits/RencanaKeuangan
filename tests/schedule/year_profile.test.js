@@ -4,7 +4,8 @@ const { boot } = require('./ui.js');
 const it = (id, price, start) => ({ id, name: id, price, start, n: 1, unit: 'sekali', cat: 'A', ch: [] });
 
 function findCard(doc, re) {
-  return [...doc.querySelectorAll('.card')].find((c) => re.test(c.textContent));
+  const all = [...doc.querySelectorAll('.card')].filter((c) => re.test(c.textContent));
+  return all.find((c) => !all.some((o) => o !== c && c.contains(o))) || all[0];
 }
 
 (async () => {

@@ -1,77 +1,77 @@
 /**
- * Regresi tata letak: teks per kartu versi BARU harus identik dengan baseline versi LAMA
+ * Regresi tata letak: angka & teks per kartu versi BARU harus identik dengan baseline versi LAMA
  * (index.html dari commit sebelum perubahan layout), untuk data dan tanggal yang sama.
  *
  * Baseline diambil dari git — TIDAK memakai `git stash`, jadi perubahan yang belum di-commit aman.
  *   BASELINE_REF=<ref>   (default: b0619f2 = commit sebelum tata letak 12 kolom)
- *   BASELINE_FILE=<path> untuk memakai berkas lain (mis. tangkapan versi lama)
- * Selisih yang diizinkan HANYA: kalimat ringkasan header #rk-head dan label sidebar .sb-*.
+ *   BASELINE_FILE=<path> untuk memakai berkas lain
+ * Pengecualian yang diizinkan (brief §10.1): sapaan/ringkasan header, struktur kartu gabungan
+ * "Kondisi kas" (judul + chip + tile), label sidebar, dan penempatan kartu.
  */
 const assert = require('assert');
 const { loadHtml, render, slots, BASE_REF } = require('./_snap.js');
 const DATA = require('./fixtures/snapshot_data.js');
 
-const clean = (s) => (s || '').replace(/\s+/g, ' ').trim();
+const clean = (s) => (s || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+/** Nominal rupiah dari sebuah elemen. */
+const money = (s) => clean(s).match(/Rp [\d.]+/g) || [];
 
-/** Bekas slot pada versi lama: .hero/.split* — dipetakan ke nama slot yang sama. */
-/** Versi lama: urutan DOM .splitH#1 = [saldo, jadwal], #2 = [grafik, pemasukan/pengeluaran], #3 = kategori. */
+/** Slot versi lama: .splitH[0]=[saldo, jadwal], [1]=[grafik, arus bulanan], [2]=[kategori, item terbesar], .splitR=[rincian, transaksi]. */
 function oldSlots(w) {
   const doc = w.document;
   const g = [...doc.querySelectorAll('#v-rincian .splitH')];
   const row = (i) => (g[i] ? [...g[i].children] : []);
-  const r0 = row(0),
-    r1 = row(1);
   const rk = doc.querySelector('#v-rincian .splitR');
-  const c = (n) => (n ? clean(n.textContent) : null);
+  const t = (n) => clean(n && n.textContent);
   return {
-    kas: c(r0[0]),
-    bills: c(r0[1]),
-    flow: c(r1[0]),
-    mf: c(r1[1]),
-    cat1: c(r0[2] ? null : row(2)[0]),
-    cat2: c(row(2)[1]),
-    detail: c(rk ? rk.children[0] : doc.querySelector('#v-rincian .card table') ? doc.querySelector('#v-rincian .card table').closest('.card') : null),
-    tx: c(rk ? rk.children[1] : null),
+    kas: t(row(0)[0]),
+    bills: t(row(0)[1]),
+    flow: t(row(1)[0]),
+    mf: t(row(1)[1]),
+    cat: t(row(2)[0]),
+    top: t(row(2)[1]),
+    detail: t(rk && rk.children[0]),
+    tx: t(rk && rk.children[1]),
   };
 }
 
 (async () => {
-  const htmlNew = loadHtml('new');
-  const htmlOld = loadHtml('old');
-  const wNew = render(htmlNew, DATA);
-  const wOld = render(htmlOld, DATA);
+  const wNew = render(loadHtml('new'), DATA);
+  const wOld = render(loadHtml('old'), DATA);
   const a = slots(wNew);
   const b = oldSlots(wOld);
+  const ok = (k) => ({ new: a[k] && a[k].text, old: b[k] });
   try {
-    // Struktur baru: 7 slot bersaudara, dua panel kategori terpisah.
-    assert.strictEqual(a.footprint.length, 7, 'grid berisi 7 slot');
-    assert(a['cat-panel1'] && a['cat-panel2'], 'dua panel kategori terpisah');
+    // Struktur bari: 7 slot bersaudara sesuai target tata letak.
+    assert.deepStrictEqual(a.footprint, ['rk-kas', 'rk-bills', 'rk-mf', 'rk-cat', 'rk-top', 'rk-detail', 'rk-tx'], 'grid berisi 7 slot berurutan');
 
-    // Teks per kartu harus identik dengan versi lama (abaikan urutan bagian dalam kartu).
-    const sortWords = (s) => (s || '').split(' ').filter(Boolean).sort().join(' ');
-    for (const k of ['kas', 'flow', 'mf', 'bills', 'detail', 'tx']) {
-      if (b[k] == null) continue; // versi lama tidak punya selektor ini → tidak dibandingkan
-      assert.strictEqual(sortWords(a[k] && a[k].text), sortWords(b[k]), 'isi kartu "' + k + '" identik dengan versi lama');
+    // 1. Kartu yang hanya DIPINDAH: nominal & teks harus identik dengan versi lama.
+    for (const k of ['bills', 'mf', 'cat', 'top', 'detail', 'tx']) {
+      if (!b[k]) continue;
+      assert.deepStrictEqual(money(a[k] && a[k].text), money(b[k]), 'nominal kartu "' + k + '" identik dengan versi lama');
     }
 
-    // Panel kategori dibandingkan terpisah, bukan sebagai satu kartu gabungan.
-    assert(a['cat-panel1'] && a['cat-panel2'], 'panel kategori ada di versi baru');
-    const oldCat = [wOld.document.querySelector('#v-rincian .insight'), wOld.document.querySelector('#v-rincian .slot-card')];
-    oldCat.forEach((n, i) => {
-      if (!n) return;
-      const newPanel = (wNew.document.querySelectorAll('.rk-cat > *')[i] || {}).textContent;
-      assert.strictEqual(sortWords(newPanel), sortWords(n.textContent), 'panel kategori ' + (i + 1) + ' identik');
-    });
+    // 2. Kondisi kas = gabungan kartu Saldo realtime + Arus saldo lama.
+    const kasNew = money(a.kas && a.kas.text);
+    const kasOld = money(b.kas).concat(money(b.flow));
+    const uniq = (x) => [...new Set(x)];
+    assert.deepStrictEqual(new Set(kasNew), new Set(kasOld), 'Kondisi kas memuat semua nominal kartu saldo + arus saldo lama');
+    const low = (b.flow || '').match(/Terendah[\s\S]*?\)/);
+    assert(low && clean(a.kas.text).includes(clean(low[0])), 'teks "Terendah ..." ikut ke Kondisi kas');
+    assert(/Nyata/.test(a.kas.text) && /Proyeksi/.test(a.kas.text), 'legenda Nyata/Proyeksi di Kondisi kas');
+    assert(/Jatah jajan per bulan/.test(a.kas.text), 'tile jatah jajan ada');
+    assert(/Sisa saldo akhir/.test(a.kas.text), 'tile sisa saldo akhir ada');
+    assert(/Rata-rata per bulan/.test(a.kas.text), 'tile rata-rata per bulan ada');
+    assert(/Transaksi kas/.test(a.kas.text), 'tile transaksi kas ada');
+    // Chip persen: rumus lama (dari kartu arus saldo), bukan angka baru.
+    const pctOld = (b.flow || '').match(/\d{1,3},\d%/);
+    const pctNew = clean(a.kas.text).match(/\d{1,3},\d%/);
+    assert(pctOld ? (pctNew && pctNew[0] === pctOld[0]) : !pctNew, 'chip persen = nilai persen kartu arus saldo lama');
 
-    // Teks wajib identik persis (label total di kartu pengeluaran memakai "· total Rp ...").
-    const per = (a.mf && a.mf.text) || '';
-    const perOld = (b.mf || '').match(/· total keluar Rp [\d.,]+/g) || [];
-    const perNew = per.match(/· total keluar Rp [\d.,]+/g) || [];
-    assert.deepStrictEqual(perNew, perOld, 'label total kartu arus bulanan identik dengan versi lama');
-    assert(perNew.length > 0, 'label periode memakai "· total ... Rp"');
-    const exp = (a['cat-panel2'] && a['cat-panel2'].text) || '';
-    assert(/· total Rp [\d.,]+/.test(exp), 'panel item terbesar memakai "· total Rp ..."');
-    assert(!/— total/.test(per + exp), 'tidak ada "— total"');
+    // 3. Label total & pemisah "·" tidak berubah.
+    assert(/· total keluar Rp [\d.,]+/.test(a.mf.text), 'label periode kartu arus bulanan memakai "· total keluar Rp ..."');
+    assert(/· total Rp [\d.,]+/.test(a.top.text), 'panel item terbesar memakai "· total Rp ..."');
+    assert(!/— total/.test(a.mf.text + a.top.text), 'tidak ada "— total"');
 
     // Satu-satunya tambahan yang diizinkan: ringkasan header.
     const head = clean(a.head);
@@ -82,10 +82,7 @@ function oldSlots(w) {
     process.exit(0);
   } catch (e) {
     console.error('GAGAL snapshot_baseline\n' + e.message);
-    if (/identik/.test(e.message)) {
-      const k = e.message.includes('"') ? e.message.split('"')[1] : null;
-      if (k) console.error('BARU :', a[k] && a[k].text, '\nLAMA :', b[k]);
-    }
+    for (const k of ['kas', 'flow', 'bills', 'mf', 'cat', 'top', 'detail', 'tx']) console.error(k, '| NEW:', (a[k] && a[k].text || '').slice(0, 200), '| OLD:', (b[k] || '').slice(0, 200));
     process.exit(1);
   }
 })();

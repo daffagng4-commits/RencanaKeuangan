@@ -1,24 +1,27 @@
-// heroHtml (kartu "Kondisi kas") harus menutup wrapper .hero-nya sendiri.
-// Bila satu </div> hilang, DOM browser memasukkan kartu-kartu berikutnya ke dalam kartu saldo.
+// Kartu "Kondisi kas": satu section tertutup rapi, memuat saldo besar, grafik, dan 4 tile.
 const assert = require('assert');
 const { boot } = require('./ui.js');
 (async () => {
   const t = boot();
   await t.ready();
-  const { w, $ } = t;
+  const { $ } = t;
   try {
-    const hero = $('v-rincian').querySelector('.hero');
-    assert(hero, 'kartu saldo (.hero) ada');
-    // Satu kartu tunggal: blok saldo + .hm-stats di dalamnya (bukan dua kartu terpisah).
-    assert.strictEqual(hero.querySelectorAll(':scope > .card').length, 1, '.hero berisi tepat 1 kartu pembungkus');
-    assert(hero.querySelector('.hm-stats'), '.hero memuat .hm-stats');
-    assert(hero.querySelector('.hm-big'), '.hero memuat saldo utama .hm-big');
-    assert(!hero.querySelector('.rk-flow, .rk-mf, .rk-bills'), 'slot lain tidak ikut masuk ke dalam .hero');
-    // Keseimbangan tag: elemen .hero harus sejajar dengan slot saudaranya, bukan membungkusnya.
-    const grid = $('v-rincian').querySelector('.rk');
+    const root = $('v-rincian');
+    const kas = root.querySelector('.rk > .rk-kas');
+    assert(kas, 'slot .rk-kas ada');
+    assert.strictEqual(kas.querySelectorAll(':scope > section.card').length, 1, '.rk-kas berisi tepat 1 kartu');
+    const hero = kas.querySelector('.card.cond.hm.hero');
+    assert(hero, 'kartu tunggal .cond.hm.hero');
+    assert(hero.querySelector('.hm-stats'), 'kartu memuat .hm-stats');
+    assert(hero.querySelector('.cond-big.hm-big'), 'kartu memuat saldo utama .hm-big');
+    assert(hero.querySelector('.rk-flow svg.lc'), 'grafik arus saldo di dalam kartu Kondisi kas');
+    assert.strictEqual(root.querySelectorAll('.rk > .rk-kas').length, 1, 'satu kartu gabungan untuk Kondisi kas');
+    assert(!root.querySelector('.rk > .rk-flow'), 'grafik bukan lagi slot bersaudara');
+    // Keseimbangan tag: 7 slot, urutan sesuai target tata letak.
+    const grid = root.querySelector('.rk');
     const kids = [...grid.children].map((e) => e.className.split(' ')[0]);
-    assert.deepStrictEqual(kids, ['rk-kas', 'rk-flow', 'rk-mf', 'rk-bills', 'rk-cat', 'rk-detail', 'rk-tx']);
-    assert.strictEqual(grid.querySelector('.rk-kas').querySelector('.rk-flow'), null, '.rk-kas tidak memuat .rk-flow');
+    assert.deepStrictEqual(kids, ['rk-kas', 'rk-bills', 'rk-mf', 'rk-cat', 'rk-top', 'rk-detail', 'rk-tx']);
+    assert.strictEqual(kas.querySelector('.rk-mf, .rk-bills, .rk-top'), null, 'slot lain tidak ikut masuk ke .rk-kas');
     console.log('OK hero_html');
     process.exit(0);
   } catch (e) {

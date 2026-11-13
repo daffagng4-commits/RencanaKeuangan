@@ -70,6 +70,7 @@ function smAutoMark() {
 /** Tanggal berganti / tab aktif lagi: hitung ulang bulan saldo efektif tanpa menulis data. */
 function refreshToday() {
   smSyncUI();
+  renderShell();
   renderAll();
 }
 

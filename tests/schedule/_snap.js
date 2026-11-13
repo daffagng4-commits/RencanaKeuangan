@@ -63,11 +63,12 @@ function slots(w) {
   const grid = doc.querySelector('.rk, .splitR') ? findGrid(doc) : null;
   const o = {};
   const map = {
-    kas: '.rk-kas, .hero',
+    kas: '.rk-kas',
     flow: '.rk-flow',
     mf: '.rk-mf',
     bills: '.rk-bills',
     cat: '.rk-cat',
+    top: '.rk-top',
     detail: '.rk-detail',
     tx: '.rk-tx',
   };
@@ -76,8 +77,9 @@ function slots(w) {
     let n = doc.querySelector(map[k]);
     if (k === 'cat' && n) {
       const kids = [...n.children];
+      o[k] = textOf(n);
       o['cat-panel1'] = textOf(kids[0]);
-      o['cat-panel2'] = textOf(kids[1]);
+      o['cat-panel2'] = textOf(doc.querySelector('.rk-top'));
     } else {
       o[k] = textOf(n);
     }

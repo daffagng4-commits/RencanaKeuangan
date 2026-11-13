@@ -631,8 +631,11 @@ function flowChart(R) {
   var marks = null;
   var rw = kasRunway(P);
   if (rw) marks = { today: today, habis: rw.date };
+  var bnd = 'rincian:' + y + '-' + a0 + '-' + a1;
+  kasChipBnd[bnd] = { from: a0, to: a1 };
   return saldoLine({
     id: 'rincian',
+    bnd: bnd,
     title: 'Arus saldo ' + S.year,
     sub: 'Perubahan saldo · ' + dd(a0) + ' – ' + dd(a1) + simTag(y),
     tabs: periodTabs('flowp', flowPeriod),
@@ -745,6 +748,73 @@ function kasStatusHtml(P, bal) {
     return '<div class="runway-box runway-safe">&#10003; Tidak ada tagihan besar dalam 30 hari ke depan.</div>';
   }
   return '<div class="runway-box runway-safe">&#10003; Kas cukup untuk semua tagihan sampai akhir tahun.</div>';
+}
+
+/** Kartu "Kondisi kas": saldo realtime (angka besar) + grafik arus saldo + 4 tile. */
+function kondisiCard(c, R) {
+  var P = kasLinked(),
+    C = yearCash(),
+    n = R.length || 1,
+    jatah = c.end > 0 ? c.end / n : null,
+    hv,
+    mn;
+  R.forEach(function (r) {
+    if (!hv || C.byMonth[r.m] > C.byMonth[hv.m]) hv = r;
+    if (!mn || C.byMonth[r.m] < C.byMonth[mn.m]) mn = r;
+  });
+  hv = hv || { m: 0 };
+  mn = mn || { m: 0 };
+  var head =
+    '<div class="cond-head"><div class="cond-title"><h2 class="m0" id="rk-cond-h">Kondisi kas</h2>' +
+    '<div class="sub" id="cond-lbl">' +
+    (P ? 'Saldo realtime &middot; ' + esc(P.name) : 'Belum ada data kas') +
+    '</div></div></div>';
+  var big = '';
+  if (P) {
+    var KB = kasBal(P);
+    big =
+      '<div class="cond-num"><b class="cond-big hm-big pv' +
+      (KB.bal < 0 ? ' neg' : '') +
+      '">' +
+      rp(KB.bal) +
+      '</b><div class="cond-chip-row"><b class="cond-chip" id="cond-chip" hidden></b>' +
+      '<span class="sub" id="cond-range"></span></div></div>';
+  }
+  var fc = flowChart(R);
+  var tiles =
+    '<div class="cond-tiles hm-stats">' +
+    '<div class="cond-tile hm-bal one"><span>Sisa saldo akhir ' + MON[11] + ' ' + S.year + '</span><b class="pv' + (c.end < 0 ? ' neg' : '') + '">' + rp(c.end) + '</b></div>' +
+    '<div class="cond-tile jatah"><span>Jatah jajan per bulan</span>' +
+    (jatah != null
+      ? '<b class="big pv">' + rp(jatah) + '</b><i class="sub">sisa <span class="pv">Rp ' + rpS(c.end) + '</span> / ' + n + ' bulan</i>'
+      : '<b class="big neg">Tidak tersedia</b><i class="sub">sisa saldo akhir tidak cukup</i>') +
+    '</div>' +
+    '<div class="cond-tile"><span>Rata-rata per bulan</span><b class="pv">' + rp(C.out / n) + '</b>' +
+    '<i class="sub">terberat ' + MON[hv.m] + ' <span class="pv">' + rp(C.byMonth[hv.m]) + '</span></i>' +
+    '<i class="sub">teringan ' + MON[mn.m] + ' <span class="pv">' + rp(C.byMonth[mn.m]) + '</span></i></div>' +
+    '<div class="cond-tile"><span>Transaksi kas</span><b>' + (P ? kasBal(P).A.n : 0) + '</b><i class="sub">catatan kas</i></div>' +
+    '</div>';
+  return (
+    '<section class="card cond hm hero" aria-labelledby="rk-cond-h">' +
+    head +
+    big +
+    (fc ? '<div class="grow cond-flow rk-flow">' + fc + '</div>' : '') +
+    tiles +
+    '</section>'
+  );
+}
+
+/** Subjudul kartu Kondisi kas: label saldo realtime + bulan saldo (logika smEff yang sudah ada). */
+function kondisiMeta() {
+  var P = kasLinked(),
+    lbl = $('cond-lbl');
+  if (!P || !lbl) return;
+  var y = S.year,
+    sm = smEff(),
+    rw = kasRunway(P, kasBal(P).bal);
+  lbl.innerHTML =
+    'Saldo Realtime &middot; ' + esc(P.name) + ' &middot; ' + FULL_MON[sm] + ' ' + y + simTag(y) +
+    (rw && rw.status === 'warning' ? ' &middot; kas cukup sampai ' + fmtD(rw.date) : '');
 }
 
 /** Saldo Realtime profil tergabung (dipakai kartu saldo dan agenda): saldo awal + masuk - keluar sampai bulan saldo. */
@@ -1000,14 +1070,11 @@ function recentTxCard() {
 
 /** Render tab Rincian Bulanan. */
 function renderRincian() {
-  LCQ = [];
-  DNQ = [];
-  BSQ = [];
+  chartReset();
   var c = calc(),
     y = S.year,
     R = c.rows,
-    C = yearCash(),
-    fc = flowChart(R);
+    C = yearCash();
   // Jendela 3 bulan ke depan; bila ketiganya sudah lunas, bergeser 3 bulan lagi (rolling).
   var t = todayISO(),
     a = y === +t.slice(0, 4) ? +t.slice(5, 7) - 1 : 0,
@@ -1079,20 +1146,22 @@ function renderRincian() {
     rp(wE) +
     '</td><td></td></tr></tbody></table></div></div>';
   var tx = recentTxCard();
-  // Tata letak: kartu ringkasan, arus saldo, pemasukan/pengeluaran, jadwal, dua panel kategori,
-  // lalu rincian tagihan + transaksi terakhir. Grid 12 kolom diatur CSS (.rk).
+  // Tata letak (grid 12 kolom, diatur CSS .rk): baris 1 kondisi kas + jadwal tagihan,
+  // baris 2 pemasukan/pengeluaran + kategori + item terbesar, baris 3 rincian + transaksi.
   $('v-rincian').innerHTML =
+    '<div class="rk-head" id="rk-head"></div>' +
     (S.items.length ? '' : emptyItemsHtml()) +
     '<div class="rk">' +
-    '<div class="rk-kas">' + saldoHero(c, R) + '</div>' +
-    (fc ? '<div class="rk-flow">' + fc + '</div>' : '') +
-    '<div class="rk-mf">' + monthFlowCard(C) + '</div>' +
-    '<div class="rk-bills">' + billsCard() + '</div>' +
-    '<section class="rk-cat" aria-label="Ke mana uangnya pergi">' + insightCard(C) + topExpensesCard(C) + '</section>' +
-    '<div class="rk-detail">' + table + '</div>' +
-    (tx ? '<div class="rk-tx">' + tx + '</div>' : '') +
+    '<div class="rk-kas s8">' + kondisiCard(c, R) + '</div>' +
+    '<div class="rk-bills s4">' + billsCard() + '</div>' +
+    '<div class="rk-mf s4">' + monthFlowCard(C) + '</div>' +
+    '<div class="rk-cat s4">' + insightCard(C) + '</div>' +
+    '<div class="rk-top s4">' + topExpensesCard(C) + '</div>' +
+    '<div class="rk-detail s8">' + table + '</div>' +
+    '<div class="rk-tx s4">' + (tx || '') + '</div>' +
     '</div>';
   renderShell(c, R);
+  kondisiMeta();
   chartMount($('v-rincian'));
   gdApply($('v-rincian'));
 }

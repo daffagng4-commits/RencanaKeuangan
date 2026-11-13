@@ -24,13 +24,13 @@ const {boot}=require('./ui.js');
  assert(/Saldo Realtime/.test(txt())&&/Sisa saldo akhir Des 2026/.test(txt()),'dua saldo ada');
  assert(!/Total pemasukan/.test(txt()),'total pemasukan dihapus');
  assert(!/Total pengeluaran/.test(txt()),'total pengeluaran dihapus');
- assert(hero().querySelectorAll('.hm').length===1,'satu kartu gabungan');
+ assert(hero().classList.contains('hm'),'satu kartu gabungan');
  // Kartu Kondisi kas kini satu kolom tinggi: statistik 2 kolom di bawah angka saldo,
  // jatah jajan menempel di dasar kartu.
  assert(hero().querySelector('.hm-stats .jatah'),'jatah jajan di grid statistik');
- assert(hero().querySelector('.hm .hm-stats'),'statistik dalam grid 2 kolom');
- assert(hero().querySelector('.hm .hm-big'),'saldo realtime dibesarkan');
- assert(hero().querySelector('.hm .hm-bal.one'),'sisa saldo akhir di kartu saldo');
+ assert(hero().querySelector('.hm-stats'),'statistik dalam grid 2 kolom');
+ assert(hero().querySelector('.hm-big'),'saldo realtime dibesarkan');
+ assert(hero().querySelector('.hm-bal.one'),'sisa saldo akhir di kartu saldo');
  assert($('v-rincian').querySelector('.insight .dn'),'donut pemasukan/pengeluaran di kartu kategori');
  assert($('v-rincian').querySelectorAll('.insight .dn-slice').length>1,'donut berisi irisan per kategori');
  assert($('v-rincian').querySelector('.cat-dirs'),'toggle masuk/keluar kategori');

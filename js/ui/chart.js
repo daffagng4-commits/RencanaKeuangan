@@ -9,6 +9,16 @@ var LCQ = [],
   BSQ = [],
   LC_LIVE = [];
 
+/** Rentang tanggal tiap grafik arus saldo, dipakai chip kartu Kondisi kas. */
+var kasChipBnd = {};
+/** Reset antrean grafik; rentang chip ikut dikosongkan. */
+function chartReset() {
+  LCQ = [];
+  DNQ = [];
+  BSQ = [];
+  kasChipBnd = {};
+}
+
 /** Haluskan deret nilai ke N titik (ujung tetap sama dengan data asli). */
 function crResample(v, N, lo, hi) {
   var n = v.length,
@@ -54,7 +64,7 @@ function niceStep(r) {
 function saldoLine(o) {
   var P = (o.pts || []).slice();
   if (P.length < 2) return '';
-  var i = LCQ.push({ pts: P, sub: o.sub || '', marks: o.marks || null }) - 1,
+  var i = LCQ.push({ pts: P, sub: o.sub || '', marks: o.marks || null, bnd: o.bnd || '' }) - 1,
     gid = 'lcg-' + (o.id || i);
   return (
     '<div class="card lc-card"><div class="lc-head"><div class="lc-hl"><div class="dflex aic fwrap g8"><h2 class="m0">' +
@@ -227,11 +237,13 @@ function barStackInit(host, cfg) {
     first = false;
   }
   draw();
-  var w0 = box.clientWidth;
+  var w0 = box.clientWidth,
+    h0 = box.clientHeight;
   if (window.ResizeObserver)
     new ResizeObserver(function () {
-      if (box.clientWidth === w0) return;
+      if (box.clientWidth === w0 && box.clientHeight === h0) return;
       w0 = box.clientWidth;
+      h0 = box.clientHeight;
       hide();
       draw();
     }).observe(box);
@@ -403,6 +415,16 @@ function areaInit(svg, cfg) {
     pctEl.textContent = (pct < 0 ? '▼ ' : '▲ ') + Math.abs(pct).toFixed(1).replace('.', ',') + '%';
     pctEl.classList.toggle('neg', pct < 0);
     subEl.textContent = hover == null ? '' : dlabel(pts[nearest(hover)].d);
+    // Kartu Kondisi kas memakai persen yang sama (rumus & rentang grafik Arus saldo).
+    var cc = $('cond-chip'),
+      cr = $('cond-range');
+    if (cc && cfg.bnd && cr) {
+      var bd = kasChipBnd[cfg.bnd];
+      cc.hidden = false;
+      cc.textContent = pctEl.textContent;
+      cc.classList.toggle('neg', pct < 0);
+      cr.textContent = bd ? ' · ' + dlabel(bd.from) + ' – ' + dlabel(bd.to) : '';
+    }
     svg.setAttribute('aria-valuemin', 0);
     svg.setAttribute('aria-valuemax', N - 1);
     svg.setAttribute('aria-valuenow', idx);
