@@ -1325,7 +1325,7 @@ svg.lc .lc-cd { fill: var(--ac); stroke: var(--card); stroke-width: 2; }
 .insight-reserve { visibility: hidden; pointer-events: none; }
 .insight-reserve .dn-ring { aspect-ratio: 1; }
 .insight-reserve-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--ln); }
-.insight-reserve-row { display: grid; grid-template-columns: 9px 1fr 96px 32px; gap: 8px; align-items: center; min-height: 40px; border-bottom: 1px solid var(--ln); padding: 9px 2px; font-size: 12.5px; }
+.insight-reserve-row { display: grid; grid-template-columns: 9px minmax(0, 1fr) 96px 32px; gap: 8px; align-items: center; min-height: 40px; border-bottom: 1px solid var(--ln); padding: 9px 2px; font-size: 12.5px; }
 .insight-reserve-list li:last-child .insight-reserve-row { border-bottom: 0; }
 .insight-summary { margin-top: auto; }
 .insight-dn .dn { display: grid; grid-template-columns: minmax(150px, 190px) minmax(0, 1fr); gap: 6px 20px; align-items: center; }
