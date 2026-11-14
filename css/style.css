@@ -2162,13 +2162,30 @@ nav .nav-pill {
 .rk table { height: 100%; }
 /* Kategori: grid dua kolom (donut | cadangan) merentang tinggi, kaki ringkasan menempel dasar. */
 .rk .insight-body { flex: 1 1 auto; display: flex; flex-direction: column; }
-.rk .insight-cat { flex: 1 1 auto; display: flex; flex-direction: column; }
-.rk .insight-dn { flex: 1 1 auto; align-content: center; margin-bottom: 0; row-gap: 0; }
+.rk .insight-cat { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+.rk .insight-dn { flex: 1 1 auto; align-content: center; margin: 12px 0; row-gap: 0; min-height: 0; grid-template-rows: minmax(0, 1fr); }
+/* Rapatkan sisa rongga 17-20px: ring + legend saling mendekat, bukan dibiarkan di tepi wadah. */
+.rk .insight-dn > .insight-current, .rk .insight-dn > .insight-reserve { align-self: stretch; grid-area: unset !important; }
+.rk .insight-dn > .insight-current > .dn, .rk .insight-dn > .insight-reserve > .dn { max-height: 100%; }
 /* Cadangan side-by-side dengan donut: kolom tinggi penuh, isi tengah. */
 .rk .insight-dn > .insight-reserve { display: flex; flex-direction: column; justify-content: center; }
 .rk .insight-dn > .insight-current { display: flex; flex-direction: column; justify-content: center; }
-.rk .insight-current > .dn, .rk .insight-reserve > .dn { margin: 0; }
-.rk .insight-summary { margin-top: auto; }
+/* Cadangan: baris 96 (isi 37) -> 2 baris mengisi wadah 240, celah 108 -> 80. */
+.rk .insight-dn > .insight-reserve { flex: 1 1 auto; }
+.rk .insight-dn > .insight-reserve .insight-reserve-list { display: flex; flex-direction: column; justify-content: space-between; }
+.rk .insight-dn > .insight-reserve .insight-reserve-row { min-height: 96px; }
+/* Donut: ring dan legend saling mengisi tinggi; baris legend dibagi rata ke sisa tinggi
+   supaya tidak ada garis kosong lebar di bawahnya. */
+.rk .insight-dn .dn-ring { width: clamp(180px, 11vw, 240px); }
+.rk .insight-dn .dn-lg { display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
+.rk .insight-dn .dn-lg button { min-height: 40px; padding: 0 2px; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+/* Baris legend: i·n·v·p satu garis, rapat (gap grid 19-32px = raster kosong). */
+.rk .insight-dn .dn-lg button > .n, .rk .insight-dn .dn-lg button > .v, .rk .insight-dn .dn-lg button > .p { margin: 0; }
+.rk .insight-dn .dn-lg button > .n { flex: 1 1 auto; min-width: 0; }
+.rk .insight-dn .dn-lg button > .v, .rk .insight-dn .dn-lg button > .p { flex: 0 0 auto; text-align: right; }
+.rk .insight-dn .dn-lg li, .rk .insight-dn .insight-reserve-row { min-height: 34px; font-size: 13px; }
+.rk .insight-dn .insight-reserve-row { padding: 8px 2px; }
+.rk .insight-summary { margin-top: auto; padding-top: 4px; }
 
 /* Kartu "Kondisi kas": judul+toggle, angka besar + chip, grafik tumbuh, 4 tile. */
 .cond > .cond-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
