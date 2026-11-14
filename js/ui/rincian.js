@@ -773,7 +773,7 @@ function kondisiCard(c, R) {
   if (P) {
     var KB = kasBal(P);
     big =
-      '<div class="cond-num"><b class="cond-big hm-big pv' +
+      '<div class="cond-num"><b id="cond-big" class="cond-big hm-big pv' +
       (KB.bal < 0 ? ' neg' : '') +
       '">' +
       rp(KB.bal) +

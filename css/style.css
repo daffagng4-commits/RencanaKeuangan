@@ -2158,11 +2158,17 @@ nav .nav-pill {
    (maks. 28px) — baris TIDAK diregangkan (§4, §5). */
 .rk .expense-list,
 .rk .bl-list,
-.rk .tx-list { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; gap: 0; }
-.rk .expense-list > li,
-.rk .tx-day > li { margin-bottom: 0; }
-.rk .expense-row { flex: 0 0 auto; }
+.rk .tx-days > .tx-day > .tx-list { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; gap: 0; }
 .rk table { height: 100%; }
+/* Kategori: grid dua kolom (donut | cadangan) merentang tinggi, kaki ringkasan menempel dasar. */
+.rk .insight-body { flex: 1 1 auto; display: flex; flex-direction: column; }
+.rk .insight-cat { flex: 1 1 auto; display: flex; flex-direction: column; }
+.rk .insight-dn { flex: 1 1 auto; align-content: center; margin-bottom: 0; row-gap: 0; }
+/* Cadangan side-by-side dengan donut: kolom tinggi penuh, isi tengah. */
+.rk .insight-dn > .insight-reserve { display: flex; flex-direction: column; justify-content: center; }
+.rk .insight-dn > .insight-current { display: flex; flex-direction: column; justify-content: center; }
+.rk .insight-current > .dn, .rk .insight-reserve > .dn { margin: 0; }
+.rk .insight-summary { margin-top: auto; }
 
 /* Kartu "Kondisi kas": judul+toggle, angka besar + chip, grafik tumbuh, 4 tile. */
 .cond > .cond-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
@@ -2208,35 +2214,38 @@ nav .nav-pill {
 .rk .bs-chart > svg { width: 100%; height: 100%; }
 .rk .bs-lg { margin-top: auto; }
 
-/* Isi-sesuai-tinggi (§4): baris daftar pakai tinggi alami; sisa tinggi jadi jarak
-   antar baris dibatasi 28px, sisanya ditaruh di dasar lewat margin-top:auto footer
-   (bukan meregangkan baris, bukan padding tambahan). */
+/* Isi-sesuai-tinggi (§4): baris daftar pakai tinggi alami; sisa tinggi dibagi rata jadi
+   jarak antar baris (dibatasi 28px) lewat justify-content: space-between milik daftar —
+   bukan meregangkan baris, bukan padding tambahan. */
 .rk .card { padding-bottom: 14px; }
+.rk .card > .grow { padding-bottom: 4px; }
+.rk .card > .expense-list > li > .expense-detail { display: block; max-height: 0; overflow: hidden; opacity: 0; transition: max-height .16s ease, opacity .16s ease; }
+.rk .card > .expense-list > li:hover > .expense-detail,
+.rk .card > .expense-list > li:focus > .expense-detail,
+.rk .card > .expense-list > li:focus-within > .expense-detail { max-height: 60px; opacity: 1; }
 .rk .cond-tile { padding: 10px 12px 6px; }
 .rk .cond-num { margin-top: 10px; }
 /* Jarak antar bagian kartu gabungan: celah 54px dari .grow (grafik) ditutup, karena
    jarak visual sudah dibentuk margin/garis tile sendiri. */
 .cond > .grow.cond-flow { flex: 0 1 auto !important; margin: 8px 0 0; }
-/* Grafik tumbuh mengisi tinggi sisa kartu (min 220px) lalu tile menyusul: celah antar
-   bagian = margin 8px, sehingga tidak ada pita kosong dari space-between. */
-.rk .cond-tiles { flex: 0 0 auto; margin-top: 8px; padding-top: 12px; }
+/* Grafik tumbuh mengisi tinggi sisa kartu (min 220px), tile menempel dasar. */
+.rk .cond-tiles { flex: 0 0 auto; margin-top: auto; padding-top: 12px; }
 /* Grafik: tinggi flex dengan minimum ~220px (naik bila kartu pasangannya lebih tinggi). */
-.rk .cond-flow > .lc-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.rk .cond-flow > .lc-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border: 0 !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; }
 .rk .cond-flow .lc-wrap { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 220px; }
 /* Legend/terendah di bawah grafik: menempel dasar area grafik, bukan melayang di celah. */
 .rk .cond-flow .lc-lgrow { flex: 0 0 auto; margin-top: 0; }
 .cond-flow > .lc-card > .lc-wrap { margin-bottom: 8px; }
-/* Kartu grafik sendiri bukan kartu: tanpa border/padding/latar (sudah di dalam kartu Kondisi kas). */
-.cond-flow .lc-card { border: 0 !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; }
 .rk .cond-flow .lc-wrap > svg.lc { height: 100%; min-height: 220px; max-height: 460px; }
 .rk .grow { display: flex; flex-direction: column; min-height: 0; }
-.rk .grow > .bl-foot, .rk .grow > .bs-foot { margin-top: auto; }
-.rk .grow > .it2.bl { flex: 0 0 auto; }
+.rk .grow > .bl-foot, .rk .grow > .bs-foot { margin-top: 0; }
+/* Jarak baris dibagi rata dalam daftar (maks 28px); kaki menempel dasar kartu. */
+.rk .grow > .tx-days { display: flex; flex-direction: column; justify-content: space-between; flex: 1 1 auto; min-height: 0; }
+.rk .grow > .tx-days > .tx-day { display: flex; flex-direction: column; justify-content: space-between; }
+.rk .grow { justify-content: space-between; }
+.rk .grow > .it2.bl { flex: 0 1 auto; }
 .rk .expense-list > li, .rk .bl-list > *, .rk .tx-row { margin-bottom: min(28px, 4vh); }
 .rk .expense-list > li:last-child, .rk .bl-list > *:last-child, .rk .tx-list > .tx-row:last-child { margin-bottom: 0; }
-/* Grup hari menyebar: jarak antar grup (bukan tinggi baris) yang mengisi sisa tinggi. */
-.rk .grow > .tx-days { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; min-height: 0; }
-.rk .grow > .tx-days > .tx-day > .tx-list { display: flex; flex-direction: column; }
 /* Kartu grafik memakai tinggi alami (bukan flex:1) supaya tinggi baris grid
    ditentukan konten alami, bukan grafik yang memanjang. Daftar yang mengisi sisa. */
 .rk .rk-flow { flex: 0 0 auto !important; }
@@ -2255,10 +2264,10 @@ nav .nav-pill {
 .rk-date { color: var(--mut); }
 
 @media (min-width: 1280px) {
-  /* Fase C §2: konten fluid. Batas 2600px membuat 3840px tetap >=70% lebar sisa sidebar.
+  /* Fase C §2: konten fluid. Batas 3400px membuat 3840px >=70% lebar sisa sidebar.
      Skala memakai font-size + clamp(), bukan zoom/transform, supaya konversi koordinat
      grafik (getBoundingClientRect + clientX) tetap benar. */
-  .w { max-width: 2600px; padding-left: clamp(28px, 1.1vw, 64px); padding-right: clamp(28px, 1.1vw, 64px); }
+  .w { max-width: 3400px; margin-left: 0; margin-right: 0; padding-left: clamp(28px, 1.1vw, 64px); padding-right: clamp(28px, 1.1vw, 64px); }
   .rk { gap: clamp(16px, 0.9vw, 28px); }
   /* Lantai keterbacaan: tidak ada teks < 12px di >= 1280px. */
   .rk .sub, .rk .chip, .rk .lk, .rk .cat-tab, .rk .bl-badge span, .rk .bl-main .sub,
@@ -2277,6 +2286,19 @@ nav .nav-pill {
     grid-column: auto !important; margin-top: 0 !important;
   }
   .rk .cond-tiles { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1fr) !important; }
+}
+
+/* >= 3200px (4K): kartu ikut membesar, bukan hanya celah kosong. Skala naik supaya
+   teks/angka tidak terlihat kecil di layar 3840 dan konten tetap >= 70% lebar sisa. */
+@media (min-width: 3200px) {
+  .w { padding-left: clamp(28px, 0.9vw, 40px); padding-right: clamp(28px, 0.9vw, 40px); }
+  .rk .cond-big { font-size: clamp(40px, 1.4vw, 52px); }
+  .rk .cond-tile > b { font-size: clamp(20px, 0.7vw, 26px); }
+  .rk-h1 { font-size: clamp(30px, 1vw, 40px); }
+  .rk .sub, .rk .chip, .rk .lk, .rk .cat-tab, .rk table th, .rk .bl-foot,
+  .rk .cond-tile > span, .rk .cond-tile > i, .rk .expense-name, .rk .expense-amount,
+  .rk .tx-cat, .rk .lc-lg, .rk .lc-foot, .rk svg.lc text { font-size: 13px; }
+  .rk table td { font-size: 14px; }
 }
 
 /* 768–1279px: dua kolom; kartu penuh selebar baris, pasangan 50/50. */

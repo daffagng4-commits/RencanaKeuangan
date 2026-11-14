@@ -35,7 +35,10 @@ const it = (id, price, start) => ({ id, name: id, price, start, n: 1, unit: 'sek
       assert(saldoCard, 'Saldo Realtime tampil untuk ' + today);
       const bal = +(saldoCard.querySelector('.hm-big').textContent.match(/Rp\s*([\d\.]+)/)[1].replace(/\./g, ''));
       const chartCard = [...w.document.querySelectorAll('.card')].find(c => /Arus saldo/.test(c.textContent));
-      const tipBal = +(chartCard.querySelector('.lc-big').textContent.match(/Rp\s*([\d\.]+)/)[1].replace(/\./g, ''));
+      // Kartu gabungan: angka besar = Saldo realtime (id cond-big); titik grafik di tooltip.
+      const bigEl = saldoCard.querySelector('#cond-big') || saldoCard.querySelector('.hm-big');
+      const tipBal = +(bigEl.textContent.match(/Rp\s*([\d\.]+)/)[1].replace(/\./g, ''));
+      assert(chartCard, 'grafik Arus saldo ada untuk ' + today);
       assert.strictEqual(bal, tipBal, `saldo realtime (${bal}) != titik grafik (${tipBal}) pada ${today}`);
     }
 
@@ -56,7 +59,9 @@ const it = (id, price, start) => ({ id, name: id, price, start, n: 1, unit: 'sek
     const saldoCard2 = [...w.document.querySelectorAll('.card')].find(c => /Saldo Realtime/.test(c.textContent));
     const bal2 = +(saldoCard2.querySelector('.hm-big').textContent.match(/Rp\s*([\d\.]+)/)[1].replace(/\./g, ''));
     const chartCard2 = [...w.document.querySelectorAll('.card')].find(c => /Arus saldo/.test(c.textContent));
-    const tipBal2 = +(chartCard2.querySelector('.lc-big').textContent.match(/Rp\s*([\d\.]+)/)[1].replace(/\./g, ''));
+    // Grafik tanpa kepala: nilai titik terakhir ada di tooltip, bukan elemen .lc-big.
+    const ptLast = chartCard2 && chartCard2.querySelector('svg.lc');
+    const tipBal2 = +(ptLast.getAttribute('aria-valuetext') || '').match(/Rp\s*([\d\.]+)/)[1].replace(/\./g, '');
     assert.notStrictEqual(bal2, tipBal2, `realtime (${bal2}) dan titik grafik (${tipBal2}) harus berbeda saat ada transaksi masa depan di luar periode Minggu`);
     // realtime lebih kecil karena sudah memotong transaksi masa depan (filter per bulan).
     assert(bal2 < tipBal2, `realtime (${bal2}) harus lebih kecil dari titik grafik (${tipBal2})`);
