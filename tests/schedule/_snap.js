@@ -17,8 +17,18 @@ const BASE_FILE = process.env.BASELINE_FILE;
 
 function loadHtml(which) {
   if (which === 'new') return fs.readFileSync(process.env.INDEX_PATH || path.join(ROOT, 'index.html'), 'utf8');
-  if (BASE_FILE) return fs.readFileSync(BASE_FILE, 'utf8');
-  return execSync('git show ' + BASE_REF + ':index.html', { cwd: ROOT, maxBuffer: 1 << 26 }).toString();
+  if (BASE_FILE && fs.existsSync(BASE_FILE)) return fs.readFileSync(BASE_FILE, 'utf8');
+  const fixture = path.join(ROOT, 'tests', 'schedule', 'fixtures', 'baseline_b0619f2.html');
+  if (fs.existsSync(fixture)) return fs.readFileSync(fixture, 'utf8');
+  try {
+    return execSync('git show ' + BASE_REF + ':index.html', { cwd: ROOT, maxBuffer: 1 << 26 }).toString();
+  } catch (e) {
+    const fallbackGit = 'C:\\Users\\daffa\\Documents\\GitHub\\RencanaKeuangan';
+    if (fs.existsSync(fallbackGit)) {
+      return execSync('git -C "' + fallbackGit + '" show ' + BASE_REF + ':index.html', { maxBuffer: 1 << 26 }).toString();
+    }
+    throw e;
+  }
 }
 
 const MODE = require('./fixtures/snapshot_data.js');

@@ -29,11 +29,11 @@ const { boot } = require('./ui.js');
     assert(nav.querySelector('#sb-name'), '#sb-name (nama sidebar) terisi');
     assert(app.querySelector(':scope > .w'), '.w (kolom 2 grid) adalah anak langsung .app');
 
-    // 3. Grid Rincian: 7 slot sesuai tata letak 3 baris, tiap slot berisi kartu nyata.
+    // 3. Grid Rincian: 6 slot sesuai tata letak 3 baris (Fase E), tiap slot berisi kartu nyata.
     const grid = $('v-rincian').querySelector('.rk');
     const kids = [...grid.children].map((e) => e.className.split(' ')[0]);
-    assert.deepStrictEqual(kids, ['rk-kas', 'rk-bills', 'rk-mf', 'rk-cat', 'rk-top', 'rk-detail', 'rk-tx'], 'grid berisi 7 slot berurutan');
-    const needText = { 'rk-kas': '.hm-big', 'rk-bills': '.card', 'rk-mf': 'svg', 'rk-cat': '.card', 'rk-top': '.card', 'rk-detail': '.card', 'rk-tx': '.card' };
+    assert.deepStrictEqual(kids, ['rk-kas', 'rk-bills', 'rk-mf', 'rk-where', 'rk-detail', 'rk-tx'], 'grid berisi 6 slot berurutan');
+    const needText = { 'rk-kas': '.hm-big', 'rk-bills': '.card', 'rk-mf': 'svg', 'rk-where': '.where-panels', 'rk-detail': '.card', 'rk-tx': '.card' };
     for (const [cls, sel] of Object.entries(needText)) {
       const slot = grid.querySelector('.' + cls);
       assert(slot, '.' + cls + ' terpasang');
@@ -44,9 +44,13 @@ const { boot } = require('./ui.js');
     assert(grid.querySelector('.rk-kas .rk-flow svg.lc'), 'grafik arus saldo di dalam kartu Kondisi kas');
     assert(!grid.querySelector(':scope > .rk-flow'), 'tidak ada slot .rk-flow di tingkat grid');
 
-    // 4. Kartu kategori & item terbesar kini dua slot terpisah.
-    assert.strictEqual(grid.querySelectorAll('.rk-cat > .card').length, 1, '.rk-cat berisi 1 kartu kategori');
-    assert.strictEqual(grid.querySelectorAll('.rk-top > .card').length, 1, '.rk-top berisi 1 kartu item terbesar');
+    // 4. Kartu gabungan "Ke mana uangnya pergi" memuat dua panel sejajar (kategori & item terbesar).
+    const where = grid.querySelector('.rk-where');
+    assert(where, '.rk-where terpasang');
+    assert.strictEqual(where.querySelectorAll('.where-panel.rk-cat').length, 1, 'memuat sub-panel kategori .rk-cat');
+    assert.strictEqual(where.querySelectorAll('.where-panel.rk-top').length, 1, 'memuat sub-panel item terbesar .rk-top');
+    assert.strictEqual(grid.querySelectorAll('.rk-cat .card').length, 1, '.rk-cat berisi 1 kartu kategori');
+    assert.strictEqual(grid.querySelectorAll('.rk-top .card').length, 1, '.rk-top berisi 1 kartu item terbesar');
 
     console.log('OK render_shell_dom');
     process.exit(0);

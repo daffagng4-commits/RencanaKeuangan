@@ -65,18 +65,38 @@ function saldoLine(o) {
   var P = (o.pts || []).slice();
   if (P.length < 2) return '';
   var i = LCQ.push({ pts: P, sub: o.sub || '', marks: o.marks || null, bnd: o.bnd || '' }) - 1,
-    gid = 'lcg-' + (o.id || i),
-    head = o.bare
-      ? '<div class="sub lc-cap">' + esc(o.title) + (o.sub ? ' &middot; ' + o.sub : '') + '</div>'
-      : '<div class="lc-head"><div class="lc-hl"><div class="dflex aic fwrap g8"><h2 class="m0">' +
-        o.title +
-        '</h2>' +
-        (o.sub ? '<span class="sub fs12">' + o.sub + '</span>' : '') +
-        '</div><p class="lc-big"></p><div class="lc-delta"><b class="lc-pct"></b><span class="lc-sub2"></span></div></div>' +
-        (o.tabs ? '<div class="cat-tabs" role="tablist">' + o.tabs + '</div>' : '') +
-        '</div>';
+    gid = 'lcg-' + (o.id || i);
+  if (o.bare) {
+    return (
+      '<div class="lc-wrap"><svg class="lc" data-lci="' +
+      i +
+      '" tabindex="0" role="slider" aria-label="' +
+      esc(o.aria || o.title || 'Arus saldo') +
+      '">' +
+      '<defs><linearGradient id="' +
+      gid +
+      '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--ac)" stop-opacity=".32"></stop><stop offset="1" stop-color="var(--ac)" stop-opacity="0"></stop></linearGradient></defs>' +
+      '<g class="lc-grid"></g><path class="lc-fill" fill="url(#' +
+      gid +
+      ')"></path><path class="lc-fill lc-fill-p" fill="url(#' +
+      gid +
+      ')"></path><path class="lc-line" fill="none"></path><path class="lc-line lc-line-p" fill="none"></path><g class="lc-mark"></g><g class="lc-xl"></g>' +
+      '<g class="lc-cur" style="display:none"><line class="lc-cl"></line><circle class="lc-cd" r="5"></circle></g></svg>' +
+      '<div class="lc-tip"><span></span><strong class="pv"></strong></div></div>' +
+      '<div class="cond-flow-foot dflex jcsb aic fs12 sub mt8">' +
+      (o.marks ? '<div class="lc-lg"><span class="s"><i class="sw"></i>Nyata</span><span class="p"><i class="sw"></i>Proyeksi</span></div>' : '<div></div>') +
+      (o.foot ? '<div class="cond-flow-low">' + o.foot + '</div>' : '') +
+      '</div>'
+    );
+  }
   return (
-    '<div class="card lc-card">' + head + '<div class="lc-wrap"><svg class="lc" data-lci="' +
+    '<div class="card lc-card"><div class="lc-head"><div class="lc-hl"><div class="dflex aic fwrap g8"><h2 class="m0">' +
+    o.title +
+    '</h2>' +
+    (o.sub ? '<span class="sub fs12">' + o.sub + '</span>' : '') +
+    '</div><p class="lc-big"></p><div class="lc-delta"><b class="lc-pct"></b><span class="lc-sub2"></span></div></div>' +
+    (o.tabs ? '<div class="cat-tabs" role="tablist">' + o.tabs + '</div>' : '') +
+    '</div><div class="lc-wrap"><svg class="lc" data-lci="' +
     i +
     '" tabindex="0" role="slider" aria-label="' +
     esc(o.aria || o.title) +
@@ -90,11 +110,9 @@ function saldoLine(o) {
     gid +
     ')"></path><path class="lc-line" fill="none"></path><path class="lc-line lc-line-p" fill="none"></path><g class="lc-mark"></g><g class="lc-xl"></g>' +
     '<g class="lc-cur" style="display:none"><line class="lc-cl"></line><circle class="lc-cd" r="5"></circle></g></svg>' +
-    '<div class="lc-tip"><span></span><strong></strong></div></div>' +
-    '<div class="lc-lgrow">' +
+    '<div class="lc-tip"><span></span><strong class="pv"></strong></div></div>' +
     (o.marks ? '<div class="lc-lg"><span class="s"><i class="sw"></i>Nyata</span><span class="p"><i class="sw"></i>Proyeksi</span></div>' : '') +
     (o.foot ? '<div class="sub lc-foot">' + o.foot + '</div>' : '') +
-    '</div>' +
     '</div>'
   );
 }
@@ -154,8 +172,8 @@ function barStackInit(host, cfg) {
     n = rows.length,
     small = n > 6,
     first = true,
-    PT = 24,
-    PB = 24,
+    PT = 10,
+    PB = 14,
     GAP = 2,
     tops = [];
   function el(tag, a, p) {
@@ -190,14 +208,18 @@ function barStackInit(host, cfg) {
   function hide() {
     tip.classList.remove('on');
   }
+  var isJSDOM = typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
   function draw() {
-    var W = box.clientWidth || 480,
-      H = box.clientHeight || 250,
-      ih = H - PT - PB,
+    var W = box.clientWidth,
+      H = box.clientHeight;
+    if (!isJSDOM && (W <= 0 || H <= 0)) return;
+    W = W || 480;
+    H = H || 250;
+    var ih = H - PT - PB,
       max = Math.max.apply(null, rows.map(function (r) { return r.inc + r.out; })) || 1,
       top = niceStep(max / 4) * 4,
       band = W / n,
-      bw = Math.min(band * 0.6, 64),
+      bw = Math.min(band * 0.6, 72),
       y = function (v) { return PT + ih - (v / top) * ih; };
     svg.textContent = '';
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
@@ -211,7 +233,7 @@ function barStackInit(host, cfg) {
         g = el('g', { class: 'bs-col' }, svg),
         anim = 'animation-delay:' + i * 50 + 'ms';
       el('rect', { class: 'bs-cur', x: cx - band / 2 + 2, y: 2, width: Math.max(0, band - 4), height: H - PB - 2, rx: 6 }, g);
-      el('text', { class: 'bs-tick', x: cx, y: H - 6 }, svg).textContent = r.m;
+      el('text', { class: 'bs-tick', x: cx, y: H - 4 }, svg).textContent = r.m;
       tops[i] = y(tot);
       if (!tot) return;
       g.setAttribute('tabindex', '0');
@@ -219,7 +241,8 @@ function barStackInit(host, cfg) {
       g.setAttribute('aria-label', r.full + ': pemasukan ' + rp(r.inc) + ', pengeluaran ' + rp(r.out) + ', selisih ' + (d < 0 ? 'minus ' : 'plus ') + rp(Math.abs(d)));
       if (r.inc) el('rect', { class: 'bs-seg i', x: x, y: y(r.inc), width: bw, height: PT + ih - y(r.inc), rx: 4, style: anim }, g);
       if (r.out) el('rect', { class: 'bs-seg o', x: x, y: y(tot), width: bw, height: Math.max(0, y(r.inc) - y(tot) - (r.inc ? GAP : 0)), rx: 4, style: anim }, g);
-      var label = el('text', { class: 'bs-d pv' + (d < 0 ? ' neg' : d > 0 ? ' pos' : ''), x: cx, y: y(tot) - 7, style: anim }, g);
+      var isDense = rows.length > 6 || band < 45;
+      var label = el('text', { class: 'bs-d pv' + (d < 0 ? ' neg' : d > 0 ? ' pos' : '') + (isDense ? ' bs-d-dense' : ''), x: cx, y: Math.max(10, y(tot) - 4), style: anim }, g);
       label.textContent = sd(d);
       if (label.getComputedTextLength && label.getComputedTextLength() > band - 2) {
         label.setAttribute('textLength', Math.max(1, band - 2));
@@ -241,11 +264,14 @@ function barStackInit(host, cfg) {
     });
     first = false;
   }
-  draw();
   var w0 = box.clientWidth,
     h0 = box.clientHeight;
+  if (isJSDOM || (w0 > 0 && h0 > 0)) {
+    draw();
+  }
   if (window.ResizeObserver)
     new ResizeObserver(function () {
+      if (box.clientWidth <= 0 || box.clientHeight <= 0) return;
       if (box.clientWidth === w0 && box.clientHeight === h0) return;
       w0 = box.clientWidth;
       h0 = box.clientHeight;
@@ -254,14 +280,14 @@ function barStackInit(host, cfg) {
     }).observe(box);
 }
 
-/** Area chart: kurva halus, crosshair + tooltip, nilai besar ikut kursor, keyboard.
-    Pada kartu gabungan (tanpa kepala) big/pctEl/subEl tidak ada: nilai tetap ke tooltip. */
+/** Area chart: kurva halus, crosshair + tooltip, nilai besar ikut kursor, keyboard. */
 function areaInit(svg, cfg) {
-  var card = svg.closest('.lc-card'),
-    big = card.querySelector('.lc-big'),
-    pctEl = card.querySelector('.lc-pct'),
-    subEl = card.querySelector('.lc-sub2'),
-    tip = card.querySelector('.lc-tip'),
+  var wrap = svg.closest('.lc-wrap') || svg.parentElement,
+    card = svg.closest('.lc-card') || svg.closest('.card'),
+    big = card ? card.querySelector('.lc-big') : null,
+    pctEl = card ? card.querySelector('.lc-pct') : null,
+    subEl = card ? card.querySelector('.lc-sub2') : null,
+    tip = card ? card.querySelector('.lc-tip') : null,
     cur = svg.querySelector('.lc-cur'),
     curLine = svg.querySelector('.lc-cl'),
     curDot = svg.querySelector('.lc-cd'),
@@ -290,6 +316,7 @@ function areaInit(svg, cfg) {
     y = crResample(vs, N, lo0, hi0),
     multiYear = pts[0].d.slice(0, 4) !== pts[n - 1].d.slice(0, 4),
     hover = null,
+    hoverX = null,
     W = 0,
     H = 0;
 
@@ -301,9 +328,14 @@ function areaInit(svg, cfg) {
     return z.getUTCDate() + ' ' + MON[z.getUTCMonth()] + (multiYear ? ' ' + d.slice(2, 4) : '');
   }
 
+  var isJSDOM = typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
   function draw() {
-    W = Math.max(220, Math.round(svg.clientWidth || card.clientWidth || 600));
-    H = Math.round(svg.clientHeight || 250);
+    var meas = wrap || svg;
+    var mw = meas.clientWidth,
+      mh = meas.clientHeight;
+    if (!isJSDOM && (mw <= 0 || mh <= 0)) return;
+    W = Math.max(220, Math.round(mw || 600));
+    H = Math.round(mh || 190);
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     var iw = W - PL - PR,
       ih = H - PT - PB,
@@ -331,7 +363,7 @@ function areaInit(svg, cfg) {
       projStart = Math.max(0, Math.floor(xb)),
       hasSolid = firstProj > 0,
       hasProj = firstProj < n;
-    var lgEl = svg.closest('.lc-card');
+    var lgEl = card;
     if (lgEl) {
       var lgS = lgEl.querySelector('.lc-lg .s'), lgP = lgEl.querySelector('.lc-lg .p');
       if (lgS) lgS.hidden = !hasSolid;
@@ -415,9 +447,7 @@ function areaInit(svg, cfg) {
 
     var idx = hover == null ? N - 1 : hover,
       val = y[idx],
-      // Persen chip memakai titik TERAKHIR (bukan titik hover): angka besar & chip di
-      // kartu gabungan tidak boleh berubah saat kursor bergerak (§8b).
-      pct = y[0] ? ((y[N - 1] - y[0]) / Math.abs(y[0])) * 100 : 0,
+      pct = y[0] ? ((val - y[0]) / Math.abs(y[0])) * 100 : 0,
       tw;
     if (big) big.textContent = rp(Math.round(val));
     if (pctEl) {
@@ -425,15 +455,17 @@ function areaInit(svg, cfg) {
       pctEl.classList.toggle('neg', pct < 0);
     }
     if (subEl) subEl.textContent = hover == null ? '' : dlabel(pts[nearest(hover)].d);
-    // Kartu Kondisi kas memakai persen yang sama (rumus & rentang grafik Arus saldo).
+    // Kartu Kondisi kas memakai persen perubahan periode (statis, tidak berubah saat hover).
     var cc = $('cond-chip'),
       cr = $('cond-range');
     if (cc && cfg.bnd && cr) {
       var bd = kasChipBnd[cfg.bnd];
       cc.hidden = false;
-      cc.textContent = (pct < 0 ? '▼ ' : '▲ ') + Math.abs(pct).toFixed(1).replace('.', ',') + '%';
-      cc.classList.toggle('neg', pct < 0);
-      cr.textContent = bd ? ' · ' + dlabel(bd.from) + ' – ' + dlabel(bd.to) : '';
+      var lastVal = y[N - 1], baseVal = y[0];
+      var pPct = baseVal ? ((lastVal - baseVal) / Math.abs(baseVal)) * 100 : 0;
+      cc.textContent = (pPct < 0 ? '▼ ' : '▲ ') + Math.abs(pPct).toFixed(1).replace('.', ',') + '%';
+      cc.classList.toggle('neg', pPct < 0);
+      cr.textContent = bd ? ' sejak ' + dlabel(bd.from) : '';
     }
     svg.setAttribute('aria-valuemin', 0);
     svg.setAttribute('aria-valuemax', N - 1);
@@ -442,45 +474,70 @@ function areaInit(svg, cfg) {
 
     if (hover == null) {
       cur.style.display = 'none';
-      tip.style.opacity = 0;
+      if (tip) tip.style.opacity = 0;
       return;
     }
-    var cx = xAt(hover),
-      cy = yAt(val);
+    var cx = hoverX != null ? hoverX : xAt(hover),
+      frac = iw > 0 ? Math.max(0, Math.min(1, (cx - PL) / iw)) : 0,
+      idxF = frac * (N - 1),
+      i0 = Math.floor(idxF),
+      i1 = Math.min(N - 1, i0 + 1),
+      f = idxF - i0,
+      valSmooth = y[i0] * (1 - f) + y[i1] * f,
+      cy = yAt(valSmooth);
     cur.style.display = '';
-    curLine.setAttribute('x1', cx);
-    curLine.setAttribute('x2', cx);
+    curLine.setAttribute('x1', cx.toFixed(1));
+    curLine.setAttribute('x2', cx.toFixed(1));
     curLine.setAttribute('y1', PT);
     curLine.setAttribute('y2', PT + ih);
-    curDot.setAttribute('cx', cx);
-    curDot.setAttribute('cy', cy);
-    tip.firstElementChild.textContent = dlabel(pts[nearest(hover)].d) + (cfg.marks && cfg.marks.today && pts[nearest(hover)].d > cfg.marks.today ? ' · Proyeksi' : '');
-    tip.lastElementChild.textContent = rp(Math.round(val));
-    tip.style.opacity = 1;
-    tw = tip.offsetWidth;
-    tip.style.left = Math.max(0, Math.min(W - tw, cx - tw / 2)) + 'px';
-    tip.style.top = Math.max(0, cy - 62) + 'px';
+    curDot.setAttribute('cx', cx.toFixed(1));
+    curDot.setAttribute('cy', cy.toFixed(1));
+    if (tip) {
+      var isProj = cfg.marks && cfg.marks.today && pts[nearest(hover)].d > cfg.marks.today;
+      tip.firstElementChild.textContent = dlabel(pts[nearest(hover)].d) + (isProj ? ' · Proyeksi' : '');
+      var strongEl = tip.querySelector('strong');
+      if (strongEl) {
+        strongEl.textContent = rp(Math.round(valSmooth));
+        strongEl.className = 'pv';
+      }
+      tip.style.opacity = 1;
+      tw = tip.offsetWidth || 120;
+      tip.style.left = Math.max(0, Math.min(W - tw, cx - tw / 2)) + 'px';
+      tip.style.top = Math.max(0, cy - 62) + 'px';
+    }
   }
 
-  function idxAt(cx) {
+  function idxAt(clientX) {
     var r = svg.getBoundingClientRect();
-    return Math.max(0, Math.min(N - 1, Math.round(((cx - r.left - PL) / (r.width - PL - PR)) * (N - 1))));
+    var iw = (r.width || svg.clientWidth) - PL - PR;
+    var relX = clientX - r.left;
+    var frac = iw > 0 ? Math.max(0, Math.min(1, (relX - PL) / iw)) : 0;
+    return {
+      idx: Math.max(0, Math.min(N - 1, Math.round(frac * (N - 1)))),
+      exactX: Math.max(PL, Math.min(W - PR, relX))
+    };
   }
 
   svg.addEventListener('pointermove', function (e) {
-    hover = idxAt(e.clientX);
+    var pos = idxAt(e.clientX);
+    hover = pos.idx;
+    hoverX = pos.exactX;
     draw();
   });
   svg.addEventListener('pointerdown', function (e) {
-    hover = idxAt(e.clientX);
+    var pos = idxAt(e.clientX);
+    hover = pos.idx;
+    hoverX = pos.exactX;
     draw();
   });
   svg.addEventListener('pointerleave', function () {
     hover = null;
+    hoverX = null;
     draw();
   });
   svg.addEventListener('blur', function () {
     hover = null;
+    hoverX = null;
     draw();
   });
   svg.addEventListener('keydown', function (e) {
@@ -492,19 +549,34 @@ function areaInit(svg, cfg) {
     else if (e.key === 'End') h = N - 1;
     else if (e.key === 'Escape') {
       hover = null;
+      hoverX = null;
       draw();
       return;
     } else return;
     e.preventDefault();
     hover = Math.max(0, Math.min(N - 1, h));
+    hoverX = null;
     draw();
   });
 
+  var roTarget = wrap || svg;
   if (window.ResizeObserver)
-    new ResizeObserver(function () {
-      draw();
-    }).observe(svg);
-  draw();
+    new ResizeObserver(function (entries) {
+      for (var ri = 0; ri < entries.length; ri++) {
+        var cr = entries[ri].contentRect;
+        if (cr && cr.width > 0 && cr.height > 0) {
+          draw();
+          break;
+        }
+      }
+    }).observe(roTarget);
+  if (roTarget.clientWidth > 0 && roTarget.clientHeight > 0) {
+    draw();
+  } else if (window.requestAnimationFrame) {
+    requestAnimationFrame(function () {
+      if (roTarget.clientWidth > 0 && roTarget.clientHeight > 0) draw();
+    });
+  }
   return draw;
 }
 

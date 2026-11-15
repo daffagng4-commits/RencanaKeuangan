@@ -17,11 +17,11 @@ const { boot } = require('./ui.js');
     assert(hero.querySelector('.rk-flow svg.lc'), 'grafik arus saldo di dalam kartu Kondisi kas');
     assert.strictEqual(root.querySelectorAll('.rk > .rk-kas').length, 1, 'satu kartu gabungan untuk Kondisi kas');
     assert(!root.querySelector('.rk > .rk-flow'), 'grafik bukan lagi slot bersaudara');
-    // Keseimbangan tag: 7 slot, urutan sesuai target tata letak.
+    // Keseimbangan tag: 6 slot, urutan sesuai target tata letak (Fase E: rk-where gabungan).
     const grid = root.querySelector('.rk');
     const kids = [...grid.children].map((e) => e.className.split(' ')[0]);
-    assert.deepStrictEqual(kids, ['rk-kas', 'rk-bills', 'rk-mf', 'rk-cat', 'rk-top', 'rk-detail', 'rk-tx']);
-    assert.strictEqual(kas.querySelector('.rk-mf, .rk-bills, .rk-top'), null, 'slot lain tidak ikut masuk ke .rk-kas');
+    assert.deepStrictEqual(kids, ['rk-kas', 'rk-bills', 'rk-mf', 'rk-where', 'rk-detail', 'rk-tx']);
+    assert.strictEqual(kas.querySelector('.rk-mf, .rk-bills, .rk-top, .rk-where'), null, 'slot lain tidak ikut masuk ke .rk-kas');
     console.log('OK hero_html');
     process.exit(0);
   } catch (e) {

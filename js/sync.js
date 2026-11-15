@@ -54,7 +54,7 @@ function sbInit() {
   });
 }
 
-/** Tombol akun bulat: "D" bila masuk, "?" bila belum. */
+/** Tombol akun: "D" bila masuk, "?" bila belum. */
 function acctUI(u) {
   var b = $('acct'),
     ini = $('acct-ini');
@@ -62,6 +62,12 @@ function acctUI(u) {
   b.classList.toggle('on', !!u);
   ini.textContent = u ? 'D' : '?';
   b.title = u ? (u.email || 'Akun') + ' · opsi akun' : 'Masuk / daftar untuk sinkron';
+  var bm = $('acct-m'), inim = $('acct-m-ini');
+  if (bm) {
+    bm.classList.toggle('on', !!u);
+    bm.title = b.title;
+    if (inim) inim.textContent = u ? 'D' : '?';
+  }
 }
 
 /** Dipanggil saat sesi login berubah; memulai tarik data setelah login. */

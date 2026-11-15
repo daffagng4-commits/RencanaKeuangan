@@ -34,7 +34,7 @@ function findCard(doc, re) {
     assert(!/· rencana/.test(sub), 'Arus saldo 2026 bukan rencana');
 
     // Item pengeluaran terbesar Minggu
-    card = findCard(w.document, /Item pengeluaran terbesar/);
+    card = findCard(w.document, /Item (pengeluaran )?terbesar/);
     sub = card.querySelector('.sub')?.textContent || '';
     assert(/6 Nov 2026 – 12 Nov 2026/.test(sub), 'Top expenses Minggu 2026: ' + sub);
 
@@ -55,10 +55,10 @@ function findCard(doc, re) {
     assert(/6 Nov.*12 Nov/.test(sub), 'Arus saldo Minggu 2027 simulasi: ' + sub);
     assert(/· rencana/.test(sub), 'Arus saldo 2027 harus · rencana');
 
-    card = findCard(w.document, /Pengeluaran \& pemasukan per kategori/);
+    card = findCard(w.document, /(Pengeluaran \& pemasukan per kategori|Per kategori)/);
     assert(/· rencana/.test(card.textContent), 'Kategori 2027 harus · rencana');
 
-    card = findCard(w.document, /Item pengeluaran terbesar/);
+    card = findCard(w.document, /Item (pengeluaran )?terbesar/);
     sub = card.querySelector('.sub')?.textContent || '';
     assert(/6 Nov 2027 – 12 Nov 2027/.test(sub), 'Top expenses Minggu 2027 simulasi: ' + sub);
     assert(/· rencana/.test(sub), 'Top expenses 2027 harus · rencana');
@@ -91,7 +91,7 @@ function findCard(doc, re) {
     w.kasLinked().tx = [];
     w.expenseMonth = 'w';
     w.renderAll();
-    card = findCard(w.document, /Item pengeluaran terbesar/);
+    card = findCard(w.document, /Item (pengeluaran )?terbesar/);
     sub = card.querySelector('.sub')?.textContent || '';
     assert(/26 Des 2026 – 1 Jan 2027/.test(sub), 'Top expenses Minggu awal Jan 2027: ' + sub);
 

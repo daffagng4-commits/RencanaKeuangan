@@ -42,8 +42,8 @@ function oldSlots(w) {
   const b = oldSlots(wOld);
   const ok = (k) => ({ new: a[k] && a[k].text, old: b[k] });
   try {
-    // Struktur bari: 7 slot bersaudara sesuai target tata letak.
-    assert.deepStrictEqual(a.footprint, ['rk-kas', 'rk-bills', 'rk-mf', 'rk-cat', 'rk-top', 'rk-detail', 'rk-tx'], 'grid berisi 7 slot berurutan');
+    // Struktur baru: 6 slot bersaudara sesuai target tata letak Fase E (rk-where gabungan).
+    assert.deepStrictEqual(a.footprint, ['rk-kas', 'rk-bills', 'rk-mf', 'rk-where', 'rk-detail', 'rk-tx'], 'grid berisi 6 slot berurutan');
 
     // 1. Kartu yang hanya DIPINDAH: nominal & teks harus identik dengan versi lama.
     for (const k of ['bills', 'mf', 'cat', 'top', 'detail', 'tx']) {

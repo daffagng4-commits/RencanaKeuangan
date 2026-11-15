@@ -16,6 +16,8 @@
   try {
     var t = localStorage.getItem('rk-theme');
     if (/^(light|dark|bw|bwd)$/.test(t || '')) document.documentElement.setAttribute('data-theme', t);
+    var sb = localStorage.getItem('rk-sb');
+    if (sb === '1' || (sb === null && window.innerWidth >= 1280)) document.documentElement.classList.add('sb-open');
   } catch (e) {}
 })();
 </script>
@@ -1794,91 +1796,394 @@ nav .nav-pill {
   padding: 8px 12px 6px;
 }
 
-/* Sidebar rail: label tab diganti ikon bergambar, pil bergeser saat tab berubah.
-   Satu mekanisme offset saja: .app = flex, nav = kolom tetap di kiri, .w = konten.
-   Tidak ada padding/offset body; header dan konten bergeser bersama otomatis. */
+/* Sidebar berlabel setinggi penuh layar (>= 1024px).
+   Satu mekanisme offset saja: .app = grid, header nav = kolom 1 tetap di kiri, .w = konten. */
 .app { display: flex; flex-direction: column; min-width: 0; }
 .app > .w { min-width: 0; }
 .app > header { display: contents; }
 .app > header nav { flex: 0 0 auto; }
+#acct-m { display: none; }
+
+@media (max-width: 1023px) {
+  #acct-m {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--ac) 14%, transparent);
+    color: var(--ac);
+    font-size: 13px;
+    font-weight: 700;
+    border: 1px solid transparent;
+  }
+}
+
 @media (min-width: 1024px) {
   .app {
     display: grid;
-    grid-template-columns: 104px minmax(0, 1fr);
-    align-items: start;
-    padding-left: 20px;
+    grid-template-columns: 64px minmax(0, 1fr);
+    align-items: stretch;
+    padding-left: 0;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .app.sb-open {
+    grid-template-columns: 240px minmax(0, 1fr);
   }
   .app > header {
     display: block;
     grid-column: 1;
     grid-row: 1;
     position: sticky;
-    top: 20px;
+    top: 0;
+    height: 100vh;
+    height: 100dvh;
     margin: 0;
+    z-index: 100;
+    align-self: start;
   }
   .app > .w { grid-column: 2; grid-row: 1; }
-  header nav {
+
+  header nav#rk-nav {
     position: static;
     inset: auto;
     margin: 0;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    box-sizing: border-box;
+    display: flex;
     flex-direction: column;
-    gap: 6px;
-    width: 64px;
-    padding: 8px;
-    overflow: visible;
+    padding: 16px 8px;
+    overflow: hidden;
     background: var(--sf);
-    border: 1px solid var(--ln);
-    border-radius: 26px;
-    box-shadow: var(--sh);
+    border-right: 1px solid var(--ln);
+    border-top: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 0;
+    box-shadow: none;
     max-height: none;
   }
-  header nav button {
-    width: 48px;
-    height: 48px;
-    min-height: 48px;
-    padding: 0;
-    display: grid;
-    place-items: center;
-    border-radius: 16px;
-    border-color: transparent;
-    background: transparent;
-    color: var(--mut);
+
+  .app.sb-open header nav#rk-nav {
+    padding: 16px 12px;
   }
-  header nav button:hover { background: transparent; border-color: transparent; color: var(--ink); }
-  header nav button[aria-selected="true"],
-  header nav button[aria-selected="true"]:hover { background: transparent; border-color: transparent; color: var(--ac-ink); }
-  header nav svg { display: block; width: 22px; height: 22px; }
-  header nav .nav-lbl {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
+
+  /* Zona Atas */
+  .sb-top {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex: 0 0 auto;
+  }
+  .app.sb-open .sb-top {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0 2px;
+  }
+
+  /* Blok Profil (#acct) */
+  #acct.sb-av {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
     padding: 0;
-    border: 0;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    transition: background-color .15s ease, border-color .15s ease;
+  }
+  #acct.sb-av:hover {
+    background: var(--sf2);
+    border-color: var(--ln);
+  }
+  #acct.sb-av:focus-visible {
+    outline: 2px solid var(--ac);
+    outline-offset: 2px;
+  }
+  .app.sb-open #acct.sb-av {
+    width: auto;
+    height: auto;
+    padding: 6px 8px;
+    border-radius: 12px;
+    justify-content: flex-start;
+    gap: 10px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .sb-av > i#sb-ini {
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--ac) 14%, transparent);
+    color: var(--ac);
+    font-style: normal;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .02em;
+  }
+  .sb-meta {
+    display: none;
+    min-width: 0;
+    flex: 1;
+  }
+  .app.sb-open .sb-meta {
+    display: flex;
+    flex-direction: column;
+  }
+  .sb-meta b#sb-name {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 650;
+    line-height: 1.25;
     overflow: hidden;
-    clip: rect(0 0 0 0);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+  .sb-meta span#sb-sub {
+    display: block;
+    font-size: 11.5px;
+    color: var(--mut);
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
-  header nav .nav-pill { display: block; }
-  header nav .acct,
-  header nav .topbar-btn {
-    width: 48px;
-    height: 48px;
-    min-height: 48px;
+
+  /* Toggle Collapse (#sb-toggle) */
+  .sb-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 32px;
     padding: 0;
-    display: grid;
-    place-items: center;
-    border-radius: 16px;
-    border-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
     background: transparent;
     color: var(--mut);
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease;
   }
-  header nav .acct { font-size: 15px; font-weight: 600; }
-  header nav .acct:hover,
-  header nav .topbar-btn:hover { border-color: var(--ln); color: var(--ink); }
-  header nav .yr-pop,
-  header nav .alat { position: static; width: 48px; }
-  header nav .alat-menu { left: calc(100% + 14px); right: auto; top: auto; bottom: 0; }
+  .sb-toggle:hover {
+    background: var(--sf2);
+    border-color: var(--ln);
+    color: var(--ink);
+  }
+  .sb-toggle:focus-visible {
+    outline: 2px solid var(--ac);
+    outline-offset: 2px;
+  }
+  .sb-toggle svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+  }
+  .app.sb-open .sb-toggle {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+  }
+
+  /* Zona Tengah */
+  .sb-mid {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--ln2) transparent;
+  }
+  .sb-mid::-webkit-scrollbar { width: 4px; }
+  .sb-mid::-webkit-scrollbar-thumb { background: var(--ln2); border-radius: 4px; }
+
+  /* Tombol aksi Tambah / Tahun di atas nav */
+  .sb-mid .yr-pop {
+    position: static;
+    width: 100%;
+    margin-bottom: 2px;
+  }
+  .sb-mid #yr-btn {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+    margin: 0 auto;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--mut);
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .app.sb-open .sb-mid #yr-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 12px;
+    text-align: left;
+  }
+  .sb-mid #yr-btn:hover {
+    background: var(--sf2);
+    border-color: var(--ln);
+    color: var(--ink);
+  }
+  .sb-mid #yr-btn:focus-visible {
+    outline: 2px solid var(--ac);
+    outline-offset: 2px;
+  }
+  .sb-mid #yr-btn svg {
+    display: block;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+  }
+
+  /* Nav tabs */
+  header nav button[role="tab"] {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+    margin: 0 auto;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--mut);
+    position: relative;
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+  }
+  header nav button[role="tab"]:hover {
+    background: var(--sf2);
+    border-color: transparent;
+    color: var(--ink);
+  }
+  header nav button[role="tab"]:focus-visible {
+    outline: 2px solid var(--ac);
+    outline-offset: 2px;
+  }
+  header nav button[role="tab"][aria-selected="true"] {
+    background: var(--acs);
+    border-color: transparent;
+    color: var(--ac);
+    font-weight: 650;
+  }
+  header nav button[role="tab"][aria-selected="true"]::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+    background: var(--ac);
+  }
+  header nav svg { display: block; width: 20px; height: 20px; flex: 0 0 20px; }
+  header nav .nav-lbl { display: none; }
+
+  .app.sb-open header nav button[role="tab"] {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 12px;
+    padding: 0 12px;
+    text-align: left;
+    margin: 0;
+  }
+  .app.sb-open header nav .nav-lbl {
+    display: block;
+    font-size: 13.5px;
+    font-weight: inherit;
+    color: inherit;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  header nav .nav-pill { display: none !important; }
+
+  /* Zona Bawah */
+  .sb-bot {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--ln);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 0 0 auto;
+  }
+  .sb-bot .alat { position: relative; width: 100%; }
+  .sb-bot #alat-btn {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
+    margin: 0 auto;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--mut);
+    cursor: pointer;
+    transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .app.sb-open .sb-bot #alat-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 12px;
+    text-align: left;
+    margin: 0;
+  }
+  .sb-bot #alat-btn:hover {
+    background: var(--sf2);
+    border-color: var(--ln);
+    color: var(--ink);
+  }
+  .sb-bot #alat-btn:focus-visible {
+    outline: 2px solid var(--ac);
+    outline-offset: 2px;
+  }
+  .sb-bot #alat-btn svg {
+    display: block;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+  }
+  .sb-bot .alat-menu {
+    left: calc(100% + 14px);
+    right: auto;
+    top: auto;
+    bottom: 0;
+  }
 }
 
 /* Item pengeluaran terbesar */
@@ -1887,27 +2192,43 @@ nav .nav-pill {
 .expense-controls > select { width: auto; flex: none; min-height: 30px; padding: 4px 8px; font-size: 11.5px; }
 .expense-controls .pk-in { min-height: 30px; padding-top: 4px; padding-bottom: 4px; font-size: 11.5px; }
 .expense-tabs { max-width: 100%; flex-wrap: wrap; }
-.expense-card .insight-head { flex-wrap: wrap; }
+.expense-card .insight-head { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.expense-head-row1, .expense-head-row2 { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; }
 .expense-list { list-style: none; margin: 4px 0 0; padding: 0; }
-.expense-row { padding: 7px 8px; margin: 0 -8px; border-radius: 10px; border-top: 1px solid var(--ln); }
+.expense-row { position: relative; padding: 7px 8px; margin: 0 -8px; border-radius: 10px; border-top: 1px solid var(--ln); }
 .expense-row:first-child { border-top: 0; }
 .expense-row:hover, .expense-row:focus { background: var(--sf2); }
 .expense-row:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
-.expense-top { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto 36px; align-items: center; gap: 8px; }
-.expense-rank { color: var(--mut); font-size: 12px; font-variant-numeric: tabular-nums; }
-.expense-label { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.expense-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; vertical-align: middle; border-radius: 50%; }
-.expense-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.expense-name, .expense-amount { font-size: 14px; font-weight: 600; }
-.expense-amount { white-space: nowrap; text-align: right; }
-.expense-top > .sub { text-align: right; }
+.expense-top { display: flex; align-items: center; gap: 8px; }
+.expense-rank { flex: 0 0 16px; color: var(--mut); font-size: 12px; font-variant-numeric: tabular-nums; }
+.expense-label { display: flex; align-items: center; gap: 6px; min-width: 0; max-width: 40rem; }
+.expense-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; vertical-align: middle; border-radius: 50%; flex: 0 0 auto; }
+.expense-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; }
+.expense-leader { flex: 1 1 auto; border-bottom: 1px dotted var(--ln); margin: 0 6px; min-width: 12px; opacity: 0.6; }
+.expense-amount { flex: 0 0 auto; white-space: nowrap; text-align: right; font-size: 14px; font-weight: 600; }
+.expense-top > .sub { flex: 0 0 36px; text-align: right; }
 .expense-track { height: 6px; margin: 5px 0 0 24px; border-radius: 99px; background: var(--sf2); overflow: hidden; }
 .expense-fill { height: 100%; border-radius: inherit; transform-origin: left; animation: expense-grow .5s ease-out both; }
 @keyframes expense-grow { from { transform: scaleX(0); } }
 .expense-row.rest .expense-name, .expense-row.rest .expense-amount { color: var(--mut); font-weight: 500; }
 .expense-row.rest .expense-fill { opacity: .45; }
-.expense-detail { display: none; margin: 6px 0 0 24px; font-size: 12px; overflow-wrap: anywhere; }
-.expense-row:hover .expense-detail, .expense-row:focus .expense-detail { display: block; }
+.expense-detail {
+  display: none;
+  position: absolute;
+  left: 24px;
+  right: 12px;
+  top: calc(100% + 2px);
+  z-index: 50;
+  background: var(--sf);
+  border: 1px solid var(--ln);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  box-shadow: var(--sh);
+  pointer-events: none;
+  overflow-wrap: anywhere;
+}
+.expense-row:hover .expense-detail, .expense-row:focus-within .expense-detail { display: block; }
 .expense-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 14px; font-size: 12px; }
 .expense-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .expense-legend i { width: 9px; height: 9px; border-radius: 50%; }
@@ -1932,6 +2253,8 @@ nav .nav-pill {
 .bs-d.neg { fill: var(--wr); }
 .bs-d.pos { fill: var(--in); }
 .bs-sm .bs-d { font-size: 9.5px; }
+.bs-d-dense { opacity: 0; transition: opacity 0.15s; }
+.bs-col:hover .bs-d-dense, .bs-col:focus .bs-d-dense { opacity: 1; }
 .bs-cur { fill: var(--sf2); opacity: 0; transition: opacity 0.15s; }
 .bs-col { outline: none; cursor: default; }
 .bs-col:hover .bs-cur, .bs-col:focus .bs-cur { opacity: 1; }
@@ -2029,7 +2352,7 @@ nav .nav-pill {
 
 /* Transaksi terakhir: grup harian + chip inisial */
 .tx-days, .tx-list { list-style: none; margin: 0; padding: 0; }
-.tx-day + .tx-day { margin-top: 10px; }
+.tx-day + .tx-day { margin-top: 14px; padding-top: 6px; border-top: 1px dashed var(--ln); }
 .tx-dh {
   display: flex;
   justify-content: space-between;
@@ -2069,88 +2392,10 @@ nav .nav-pill {
 }
 
 
-/* Sidebar berlabel (>= 1280px) + tombol collapse ke rail ikon.
-   Mekanisme satu-satunya: lebar kolom pertama grid .app melebar (rail 104px -> 216px). */
-@media (min-width: 1280px) {
-  .app.sb-open { grid-template-columns: 216px minmax(0, 1fr); }
-  .app.sb-open header nav {
-    width: 196px;
-    border-radius: 20px;
-    padding: 8px;
-  }
-  .app.sb-open header nav button[role="tab"] {
-    width: 100%;
-    height: 42px;
-    min-height: 42px;
-    display: flex;
-    justify-content: flex-start;
-    gap: 10px;
-    padding: 0 12px;
-    border-radius: 12px;
-  }
-  .app.sb-open header nav button[role="tab"][aria-selected="true"]::after {
-    content: "";
-    position: absolute;
-    left: 6px;
-    top: 12px;
-    bottom: 12px;
-    width: 3px;
-    border-radius: 2px;
-    background: var(--ac);
-  }
-  .app.sb-open header nav button[role="tab"] { position: relative; }
-  .app.sb-open header nav .nav-lbl {
-    position: static;
-    width: auto;
-    height: auto;
-    margin: 0;
-    clip: auto;
-    overflow: visible;
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-  }
-  .app.sb-open header nav .nav-pill { border-radius: 12px; }
-  .app.sb-open header nav .acct { justify-content: flex-start; padding: 0 12px; }
-  .sb-av {
-    display: flex; align-items: center; gap: 10px; margin: 2px 2px 10px; padding: 8px 8px;
-    border-bottom: 1px solid var(--ln);
-  }
-  .sb-av > i {
-    flex: 0 0 32px; width: 32px; height: 32px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    background: color-mix(in srgb, var(--ac) 14%, transparent); color: var(--ac);
-    font-style: normal; font-size: 12.5px; font-weight: 700; letter-spacing: .02em;
-  }
-  .sb-av > div { min-width: 0; }
-  .sb-av b { display: block; font-size: 13px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .sb-av span { display: block; font-size: 11px; color: var(--mut); line-height: 1.25; }
-  .sb-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 32px;
-    margin-top: 4px;
-    border: 1px solid transparent;
-    border-radius: 10px;
-    background: none;
-    color: var(--mut);
-    cursor: pointer;
-  }
-  .sb-toggle:hover { border-color: var(--ln); color: var(--ink); }
-  .sb-toggle svg { width: 16px; height: 16px; transition: transform .18s var(--ease); }
-  .app.sb-open .sb-toggle svg { transform: rotate(180deg); }
-  .sb-toggle:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
-}
-@media (max-width: 1279px) { .sb-toggle { display: none; } .sb-av { display: none; } }
-@media (prefers-reduced-motion: reduce) {
-  .sb-toggle svg { transition: none; }
-}
+
 
 /* ============================================================
-   Layout Rincian versi 2: grid 12 kolom lebar penuh, kartu mengisi tinggi.
-   (Hanya susunan; angka, teks, dan perilaku kartu tidak diubah.)
+   Layout Rincian versi 3 (FASE E: Strategi Peran Kartu)
    ============================================================ */
 .rk {
   display: grid;
@@ -2159,185 +2404,583 @@ nav .nav-pill {
   align-items: stretch;
 }
 .rk > * { min-width: 0; display: flex; flex-direction: column; }
-.rk > * > .card, .rk > * > section.card { margin: 0; height: 100%; flex: 1 1 auto; }
+.rk > * > .card, .rk > * > section.card { margin: 0; height: 100%; flex: 1 1 auto; box-sizing: border-box; }
 .rk > .s8 { grid-column: span 8; }
 .rk > .s4 { grid-column: span 4; }
+
+@media (min-width: 1280px) {
+  .rk > .rk-kas,
+  .rk > .rk-bills {
+    height: auto;
+  }
+  .rk > .rk-mf,
+  .rk > .rk-where {
+    height: auto;
+  }
+  .rk > .rk-detail {
+    height: auto;
+    min-height: 0;
+    max-height: 38rem;
+    overflow-y: auto;
+    align-self: start;
+  }
+  .rk > .rk-detail > .card {
+    height: auto;
+    flex: 0 0 auto;
+  }
+  .rk > .rk-tx {
+    height: auto;
+    min-height: 270px;
+    align-self: stretch;
+  }
+}
+
+/* Kartu gabungan "Ke mana uangnya pergi" (Baris 2, 8 kolom) */
+.rk-where-card {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+}
+.where-head {
+  margin-bottom: 8px;
+}
+.where-panels {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 20px;
+  flex: 1 1 auto;
+}
+.where-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: visible;
+}
+.where-panel.where-left {
+  flex: 5 5 0;
+}
+.where-sep {
+  width: 1px;
+  background: var(--ln);
+  flex: 0 0 1px;
+  align-self: stretch;
+}
+.where-panel.where-right {
+  flex: 6 6 0;
+}
+.where-panel > .card,
+.where-panel > section.card {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  height: 100%;
+}
+
+/* Pitch selaras daftar kategori dan item terbesar (44px) */
+.where-panel .insight-head,
+.where-panel .expense-head-row1,
+.where-panel .expense-head-row2 {
+  min-height: 28px;
+  margin-bottom: 4px !important;
+}
+.where-panel .expense-head-row2 {
+  height: 28px;
+  box-sizing: border-box;
+}
+.where-panel select[data-expmonth] {
+  height: 24px;
+  font-size: 11px;
+  padding: 1px 6px;
+  margin: 0;
+  border-radius: 6px;
+}
+.where-panel .insight-body,
+.where-panel .insight-cat,
+.where-panel .insight-dn {
+  margin-top: 0 !important;
+}
+.where-panel .expense-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 2px 0 6px !important;
+  padding: 0;
+  list-style: none;
+  justify-content: flex-start;
+  min-height: 258px;
+}
+.where-panel .expense-row {
+  flex: 0 0 38px;
+  height: 38px;
+  padding: 5px 8px;
+  margin: 0;
+  border-radius: 8px;
+  border-top: 1px solid var(--ln);
+  box-sizing: border-box;
+}
+.where-panel .expense-row:first-child {
+  border-top: 0;
+}
+.where-panel .expense-track {
+  height: 4px;
+  margin: 3px 0 0 24px;
+}
+.where-panel .dn-lg {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 2px 0 6px !important;
+  padding: 0;
+  list-style: none;
+  justify-content: flex-start;
+  min-height: 258px;
+}
+.where-panel .dn-lg > li {
+  margin: 0;
+  padding: 0;
+  height: 38px;
+  box-sizing: border-box;
+}
+.where-panel .dn-lg > li > button {
+  width: 100%;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  padding: 5px 8px;
+  border-radius: 8px;
+  border: none;
+  border-top: 1px solid var(--ln);
+  background: transparent;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.where-panel .dn-lg > li:first-child > button {
+  border-top: 0;
+}
+.where-panel .dn-lg > li > button:hover,
+.where-panel .dn-lg > li > button.on {
+  background: var(--sf2);
+}
+.where-panel .dn-lg .n {
+  flex: 1 1 auto;
+  text-align: left;
+  font-size: 13.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.where-panel .dn-lg .v {
+  flex: 0 0 auto;
+  text-align: right;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  margin-right: 8px;
+}
+.where-panel .dn-lg .p {
+  flex: 0 0 36px;
+  text-align: right;
+  font-size: 12px;
+  color: var(--mut);
+}
+.where-panel .insight-summary,
+.where-panel .expense-card .bs-foot {
+  margin-top: 10px !important;
+  padding-top: 8px;
+  border-top: 1px dashed var(--ln);
+}
+.where-panel .insight .dn {
+  display: grid !important;
+  grid-template-columns: minmax(130px, 180px) minmax(0, 1fr) !important;
+  gap: 16px !important;
+  align-items: center !important;
+}
+.where-panel .dn-ring {
+  width: clamp(120px, 11vw, 175px) !important;
+  height: clamp(120px, 11vw, 175px) !important;
+  margin: auto !important;
+}
 
 /* Tidak ada ruang kosong di dalam kartu: isi tumbuh, ringkasan menempel di dasar. */
 .rk .card { display: flex; flex-direction: column; }
 .rk .card > *:last-child { margin-bottom: 0; }
-.rk .card > .grow { flex: 1 1 auto; min-height: 0; }
-.rk .card > .bs-foot,
+
+.rk .bl-wrap,
+.rk .tx-wrap {
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ln2) transparent;
+}
+.rk .bl-wrap::-webkit-scrollbar,
+.rk .tx-wrap::-webkit-scrollbar,
+.rk .expense-list::-webkit-scrollbar,
+.rk .dn-lg::-webkit-scrollbar {
+  width: 5px;
+}
+.rk .bl-wrap::-webkit-scrollbar-thumb,
+.rk .tx-wrap::-webkit-scrollbar-thumb,
+.rk .expense-list::-webkit-scrollbar-thumb,
+.rk .dn-lg::-webkit-scrollbar-thumb {
+  background: var(--ln2);
+  border-radius: 4px;
+}
+
+.rk .bl-foot,
+.rk .tx-foot,
 .rk .card > .bl-foot,
-.rk .card > .insight-summary,
-.rk .card > .lc-foot,
-.rk .card > .expense-list { margin-top: auto; }
-.rk .card > .lc-wrap { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
-.rk .lc-wrap > .lc-foot { margin-top: 0; }
-.rk .lc-wrap > svg.lc, .rk .lc-wrap > .lc-w { flex: 1 1 auto; min-height: 180px; }
+.rk .card > .tx-foot {
+  margin-top: 10px !important;
+  padding-top: 8px;
+  border-top: 1px dashed var(--ln);
+}
+.rk .bs-foot,
+.rk .card > .bs-foot {
+  margin-top: 8px !important;
+  padding-top: 8px;
+  border-top: 1px dashed var(--ln);
+}
+.rk .insight-summary,
+.rk .card > .insight-summary {
+  margin-top: 10px !important;
+  padding-top: 8px;
+  border-top: 1px dashed var(--ln);
+}
 
-/* Daftar/baris: tinggi baris tetap alami, sisa tinggi dibagi jadi jarak antar baris
-   (maks. 28px) — baris TIDAK diregangkan (§4, §5). */
-.rk .expense-list,
-.rk .bl-list,
-.rk .tx-days > .tx-day > .tx-list { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; gap: 0; }
-.rk table { height: 100%; }
-/* Kategori: grid dua kolom (donut | cadangan) merentang tinggi, kaki ringkasan menempel dasar. */
-.rk .insight-body { flex: 1 1 auto; display: flex; flex-direction: column; }
-.rk .insight-cat { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
-.rk .insight-dn { flex: 1 1 auto; align-content: center; margin: 12px 0; row-gap: 0; min-height: 0; grid-template-rows: minmax(0, 1fr); }
-/* Rapatkan sisa rongga 17-20px: ring + legend saling mendekat, bukan dibiarkan di tepi wadah. */
-.rk .insight-dn > .insight-current, .rk .insight-dn > .insight-reserve { align-self: stretch; grid-area: unset !important; }
-.rk .insight-dn > .insight-current > .dn, .rk .insight-dn > .insight-reserve > .dn { max-height: 100%; }
-/* Cadangan side-by-side dengan donut: kolom tinggi penuh, isi tengah. */
-.rk .insight-dn > .insight-reserve { display: flex; flex-direction: column; justify-content: center; }
-.rk .insight-dn > .insight-current { display: flex; flex-direction: column; justify-content: center; }
-/* Cadangan: baris 96 (isi 37) -> 2 baris mengisi wadah 240, celah 108 -> 80. */
-.rk .insight-dn > .insight-reserve { flex: 1 1 auto; }
-.rk .insight-dn > .insight-reserve .insight-reserve-list { display: flex; flex-direction: column; justify-content: space-between; }
-.rk .insight-dn > .insight-reserve .insight-reserve-row { min-height: 96px; }
-/* Donut: ring dan legend saling mengisi tinggi; baris legend dibagi rata ke sisa tinggi
-   supaya tidak ada garis kosong lebar di bawahnya. */
-.rk .insight-dn .dn-ring { width: clamp(180px, 11vw, 240px); }
-.rk .insight-dn .dn-lg { display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
-.rk .insight-dn .dn-lg button { min-height: 40px; padding: 0 2px; font-size: 13px; display: flex; align-items: center; gap: 10px; }
-/* Baris legend: i·n·v·p satu garis, rapat (gap grid 19-32px = raster kosong). */
-.rk .insight-dn .dn-lg button > .n, .rk .insight-dn .dn-lg button > .v, .rk .insight-dn .dn-lg button > .p { margin: 0; }
-.rk .insight-dn .dn-lg button > .n { flex: 1 1 auto; min-width: 0; }
-.rk .insight-dn .dn-lg button > .v, .rk .insight-dn .dn-lg button > .p { flex: 0 0 auto; text-align: right; }
-.rk .insight-dn .dn-lg li, .rk .insight-dn .insight-reserve-row { min-height: 34px; font-size: 13px; }
-.rk .insight-dn .insight-reserve-row { padding: 8px 2px; }
-.rk .insight-summary { margin-top: auto; padding-top: 4px; }
+/* Baris daftar kartu baris 1 & 3 dengan pitch konstan */
+.rk .bl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 0;
+  padding: 0;
+  list-style: none;
+  justify-content: flex-start;
+}
+.rk .it2.kit.bl {
+  flex: 0 0 38px;
+  height: 38px;
+  min-height: 38px;
+  padding: 4px 10px;
+  box-sizing: border-box;
+}
 
-/* Kartu "Kondisi kas": judul+toggle, angka besar + chip, grafik tumbuh, 4 tile. */
-.cond > .cond-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.cond-num { margin-top: 10px; }
-.cond-big { display: block; font-size: 30px; font-weight: 650; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.rk-tx .tx-days {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 6px 0;
+  padding: 0;
+  list-style: none;
+  justify-content: flex-start;
+}
+.rk-tx .tx-day {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rk-tx .tx-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.rk-tx .it2.kit.tx-row {
+  flex: 0 0 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 4px 8px;
+  box-sizing: border-box;
+  gap: 8px;
+}
+
+/* Pemasukan vs Pengeluaran: grafik tumbuh mengisi sisa tinggi */
+.rk-mf > .card {
+  display: flex;
+  flex-direction: column;
+}
+.rk-mf .bs {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 190px;
+}
+.rk-mf .bs-chart {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 180px;
+  height: auto;
+  max-height: none !important;
+}
+.rk-mf .bs-chart svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.rk-mf .bs-lg {
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+.rk-mf .bs-foot {
+  margin-top: 6px !important;
+  padding-top: 8px;
+  border-top: 1px dashed var(--ln);
+}
+
+/* Tabel rincian memakai tinggi alami (padding wajar, maks 72px), tidak diregangkan gila-gilaan */
+.rk .tw {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: auto;
+  margin-top: 4px;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ln2) transparent;
+}
+.rk .tw::-webkit-scrollbar { width: 5px; height: 5px; }
+.rk .tw::-webkit-scrollbar-thumb { background: var(--ln2); border-radius: 4px; }
+.rk .tw table { width: 100%; border-collapse: collapse; height: auto !important; }
+.rk-detail table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--sf);
+  z-index: 2;
+  box-shadow: 0 1px 0 var(--ln);
+}
+.rk-detail .c-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 5px;
+  max-height: 52px;
+  overflow: hidden;
+  align-items: center;
+}
+.rk-detail tbody tr.row td {
+  padding: 8px 12px;
+  max-height: 72px;
+  height: auto;
+  vertical-align: middle;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+.rk-detail tbody tr.row {
+  max-height: 72px;
+}
+.rk-detail .c-c {
+  white-space: normal;
+  line-height: 1.5;
+}
+.rk-detail .chip {
+  display: inline-block;
+  font-size: 11.5px;
+  padding: 2px 7px;
+  margin: 2px 3px;
+  border-radius: 6px;
+  line-height: 1.3;
+  vertical-align: middle;
+}
+
+/* Kartu "Kondisi kas": judul+toggle, satu angka besar + chip persen, grafik tumbuh, 4 tile. */
+.cond > .cond-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.cond-num { display: flex; align-items: baseline; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+.cond-big { display: inline-block; font-size: 34px; font-weight: 700; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .cond-big.neg { color: var(--wr); }
-.cond-chip-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 6px; min-height: 18px; }
+.cond-chip-row { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; min-height: 18px; }
 .cond-chip {
-  display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px;
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px;
   border: 1px solid color-mix(in srgb, var(--ac) 34%, transparent);
   border-radius: 999px; background: color-mix(in srgb, var(--ac) 10%, transparent);
   color: var(--ac); font-size: 12px; font-weight: 650; font-variant-numeric: tabular-nums;
 }
 .cond-chip.neg { border-color: color-mix(in srgb, var(--wr) 40%, transparent); background: color-mix(in srgb, var(--wr) 10%, transparent); color: var(--wr); }
 .cond-chip[hidden] { display: none; }
-.cond-flow { margin-top: 12px; min-height: 180px; }
-/* Keterangan kecil di bawah grafik: legend kiri, "Terendah ..." kanan, satu baris. */
-.lc-lgrow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.lc-lgrow .lc-lg { margin-top: 6px; }
-.lc-lgrow .lc-foot { margin: 6px 0 0 auto; text-align: right; }
-.lc-cap { margin: 0 0 6px; }
-.cond-flow .lc-card { flex: 1 1 auto; display: flex; flex-direction: column; box-shadow: none; background: none; border: 0; padding: 0; }
-.cond-flow .lc-head { padding: 0; }
-.cond-tiles { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1fr); gap: 10px; margin-top: auto; padding-top: 14px; }
-.cond-tile {
-  display: flex; flex-direction: column; gap: 3px; min-width: 0;
-  padding: 10px 12px; border: 1px solid var(--ln); border-radius: 12px; background: var(--sf);
+.cond-flow { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 190px; margin-top: 4px; }
+.cond-flow .lc-wrap { flex: 1 1 auto; position: relative; min-height: 190px; width: 100%; max-height: none; overflow: visible; }
+.cond-flow .lc-wrap svg.lc { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.cond-flow-foot,
+.cond-flow-foot.mt8,
+.cond-flow > .cond-flow-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  font-size: 12px; line-height: 14px; color: var(--mut); margin-top: 0 !important; padding: 0 4px;
+  flex: 0 0 16px; height: 16px; max-height: 16px;
 }
-.cond-tile > span { font-size: 11.5px; color: var(--mut); line-height: 1.3; }
-.cond-tile > b { font-size: 16px; font-weight: 650; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; overflow-wrap: anywhere; }
-.cond-tile > b.neg { color: var(--wr); }
-.cond-tile > i { font-style: normal; font-size: 11.5px; }
-.cond-tile .sub { display: block; }
+.cond-tiles {
+  display: grid;
+  grid-template-columns: 1.05fr 1.2fr 1.45fr 0.85fr;
+  gap: 10px;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+.cond-tiles .cond-tile,
+.cond-tiles .cond-tile.jatah {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  grid-column: auto !important;
+  margin-top: 0 !important;
+  padding: 6px 10px !important;
+  border: 1px solid var(--ln) !important;
+  border-radius: 12px !important;
+  background: var(--sf) !important;
+}
+.cond-tile > span {
+  font-size: 12px; color: var(--mut); line-height: 1.25;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cond-tile > b,
+.cond-tile .big {
+  font-size: 15px !important; font-weight: 650; font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em; line-height: 1.25;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cond-tile > b.neg,
+.cond-tile .big.neg { color: var(--wr); }
+.cond-tile > i {
+  font-style: normal; font-size: 12px; color: var(--mut); line-height: 1.25;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cond-tile .sub {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  line-height: 1.25;
+}
+
+@media (min-width: 1280px) {
+  label,
+  .card label,
+  .f label,
+  .yb label,
+  .cat-tab,
+  .cat-dirs .cat-tab,
+  .chip,
+  .chip.on,
+  .rk-detail .chip,
+  small,
+  th,
+  td,
+  .pd,
+  .pd .cp,
+  .cp,
+  .h3,
+  .stats span,
+  .dn-c em,
+  .dn-c small,
+  .debt-sum span,
+  .daysep,
+  .bl-badge span,
+  .bl-main .sub,
+  .tx-cat,
+  .tx-dh,
+  .tx-av,
+  .bs-tick,
+  .bs-d,
+  .bs-sm .bs-d,
+  svg.lc text,
+  svg.lc .lc-mark text,
+  svg.lc .lc-mk-label,
+  .cond-tile > span,
+  .cond-tile > i,
+  .sub,
+  kbd,
+  code,
+  #card-quick-add kbd,
+  #card-quick-add code,
+  .rk-detail table td,
+  .rk-detail table th {
+    font-size: 12px;
+  }
+  .cond-tile > b { font-size: 16px; }
+  .rk-detail table td, .rk-detail table th { font-size: 12.5px; }
+  .rk-h1 { font-size: clamp(28px, 2vw, 36px); }
+  .cond-big { font-size: clamp(36px, 2.5vw, 48px); }
+}
 
 /* Donut dibatasi, daftar kategori mengisi tinggi. */
-.rk .insight-card .dn-ring { width: min(100%, 160px); }
-.rk .insight-card .dn { flex: 1 1 auto; }
+.rk .insight-card .dn-ring { width: min(100%, 170px); height: 170px; margin: 4px auto; }
+/* NOTE: .rk .insight .dn grid is now defined at the bottom (Issue 9 fix). */
+.rk .insight-card .dn-lg { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; gap: clamp(2px, 1vh, 18px); margin: 6px 0; }
 
 /* Bar tumpuk mengisi sisa tinggi kartu. */
-.rk .mf-card .bs-chart, .rk .mf-card .bs, .rk .mf-card .bs { height: auto; }
 .rk .bs { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
-.rk .bs-chart { flex: 1 1 auto; min-height: 140px; height: auto; }
+.rk .bs-chart { flex: 1 1 auto; min-height: 180px; }
 .rk .bs-chart > svg { width: 100%; height: 100%; }
-.rk .bs-lg { margin-top: auto; }
-
-/* Isi-sesuai-tinggi (§4): baris daftar pakai tinggi alami; sisa tinggi dibagi rata jadi
-   jarak antar baris (dibatasi 28px) lewat justify-content: space-between milik daftar —
-   bukan meregangkan baris, bukan padding tambahan. */
-.rk .card { padding-bottom: 14px; }
-.rk .card > .grow { padding-bottom: 4px; }
-.rk .card > .expense-list > li > .expense-detail { display: block; max-height: 0; overflow: hidden; opacity: 0; transition: max-height .16s ease, opacity .16s ease; }
-.rk .card > .expense-list > li:hover > .expense-detail,
-.rk .card > .expense-list > li:focus > .expense-detail,
-.rk .card > .expense-list > li:focus-within > .expense-detail { max-height: 60px; opacity: 1; }
-.rk .cond-tile { padding: 10px 12px 6px; }
-.rk .cond-num { margin-top: 10px; }
-/* Jarak antar bagian kartu gabungan: celah 54px dari .grow (grafik) ditutup, karena
-   jarak visual sudah dibentuk margin/garis tile sendiri. */
-.cond > .grow.cond-flow { flex: 0 1 auto !important; margin: 8px 0 0; }
-/* Grafik tumbuh mengisi tinggi sisa kartu (min 220px), tile menempel dasar. */
-.rk .cond-tiles { flex: 0 0 auto; margin-top: auto; padding-top: 12px; }
-/* Grafik: tinggi flex dengan minimum ~220px (naik bila kartu pasangannya lebih tinggi). */
-.rk .cond-flow > .lc-card { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border: 0 !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; }
-.rk .cond-flow .lc-wrap { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 220px; }
-/* Legend/terendah di bawah grafik: menempel dasar area grafik, bukan melayang di celah. */
-.rk .cond-flow .lc-lgrow { flex: 0 0 auto; margin-top: 0; }
-.cond-flow > .lc-card > .lc-wrap { margin-bottom: 8px; }
-.rk .cond-flow .lc-wrap > svg.lc { height: 100%; min-height: 220px; max-height: 460px; }
-.rk .grow { display: flex; flex-direction: column; min-height: 0; }
-.rk .grow > .bl-foot, .rk .grow > .bs-foot { margin-top: 0; }
-/* Jarak baris dibagi rata dalam daftar (maks 28px); kaki menempel dasar kartu. */
-.rk .grow > .tx-days { display: flex; flex-direction: column; justify-content: space-between; flex: 1 1 auto; min-height: 0; }
-.rk .grow > .tx-days > .tx-day { display: flex; flex-direction: column; justify-content: space-between; }
-.rk .grow { justify-content: space-between; }
-.rk .grow > .it2.bl { flex: 0 1 auto; }
-.rk .expense-list > li, .rk .bl-list > *, .rk .tx-row { margin-bottom: min(28px, 4vh); }
-.rk .expense-list > li:last-child, .rk .bl-list > *:last-child, .rk .tx-list > .tx-row:last-child { margin-bottom: 0; }
-/* Kartu grafik memakai tinggi alami (bukan flex:1) supaya tinggi baris grid
-   ditentukan konten alami, bukan grafik yang memanjang. Daftar yang mengisi sisa. */
-.rk .rk-flow { flex: 0 0 auto !important; }
-
-/* Tabel rincian mengisi tinggi; scroll horizontal hanya di dalam kartu. */
-.rk .tw { flex: 1 1 auto; overflow-x: auto; }
-.rk .tw table { width: 100%; }
+.rk .bs-lg { margin-top: 6px; margin-bottom: 6px; }
 
 /* Judul halaman di atas grid (beranda Rincian). */
 #rk-head { margin: 0 0 16px; }
 #rk-head:empty { display: none; }
-.rk-h1 { margin: 0; font-size: 23px; line-height: 1.2; letter-spacing: -0.02em; }
-.rk-sum { margin: 6px 0 0; color: var(--mut); font-size: 13px; line-height: 1.5; }
+.rk-h1 { margin: 0; font-size: 24px; line-height: 1.2; letter-spacing: -0.02em; }
+.rk-sum { margin: 6px 0 0; color: var(--mut); font-size: 13.5px; line-height: 1.5; }
 .rk-sum b { color: var(--ink); font-weight: 650; font-variant-numeric: tabular-nums; }
 .rk-sum b.neg { color: var(--wr); }
 .rk-date { color: var(--mut); }
 
+/* Breakpoint & Penskalaan Tipografi/Fluid Container (Kontrak Fase E) */
 @media (min-width: 1280px) {
-  /* Fase C §2: konten fluid. Batas 3400px membuat 3840px >=70% lebar sisa sidebar.
-     Skala memakai font-size + clamp(), bukan zoom/transform, supaya konversi koordinat
-     grafik (getBoundingClientRect + clientX) tetap benar. */
-  .w { max-width: 3400px; margin-left: 0; margin-right: 0; padding-left: clamp(28px, 1.1vw, 64px); padding-right: clamp(28px, 1.1vw, 64px); }
-  .rk { gap: clamp(16px, 0.9vw, 28px); }
-  /* Lantai keterbacaan: tidak ada teks < 12px di >= 1280px. */
-  .rk .sub, .rk .chip, .rk .lk, .rk .cat-tab, .rk .bl-badge span, .rk .bl-main .sub,
-  .rk .bl-foot, .rk .cond-tile > span, .rk .cond-tile > i, .rk .expense-detail,
-  .rk .lc-foot, .rk .lc-lg, .rk .tx-cat, .rk .tx-dh b, .rk .dn-c small, .rk .dn-c em,
-  .rk .dn-lg button, .rk svg.lc text, .rk .expense-name, .rk .expense-amount,
-  .rk table th, .rk .bs-tick, .rk .bs-d, .rk .tx-dh, .rk .bl-badge b { font-size: 12px; }
-  .rk table td { font-size: 13px; }
-  .rk .cond-big { font-size: clamp(30px, 1.75vw, 46px); }
-  .rk .cond-tile > b { font-size: clamp(16px, 0.85vw, 20px); }
-  .rk-h1 { font-size: clamp(23px, 1.3vw, 34px); }
-  /* Tile wajib satu baris; proporsi 1.1 : 1 : 1.6 : 1.
-     `.jatah { grid-column: 1/-1 }` dan `.hm-bal.one { margin-top: 18px }` dari kartu lama
-     harus dinolkan di sini, kalau tidak tile 2 melebar penuh dan tile 1 turun sendiri. */
-  .rk .cond-tiles, .rk .cond-tiles > .cond-tile {
-    grid-column: auto !important; margin-top: 0 !important;
+  html {
+    font-size: clamp(14px, 0.5rem + 0.55vw, 20px);
   }
-  .rk .cond-tiles { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1fr) !important; }
-}
+  .app {
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: clip;
+  }
+  .app > .w {
+    max-width: min(100%, 2400px);
+    margin: 0 auto;
+    padding-left: clamp(20px, 2vw, 40px);
+    padding-right: clamp(20px, 2vw, 40px);
+    box-sizing: border-box;
+  }
+  .rk {
+    gap: clamp(16px, 1.2vw, 24px);
+    align-items: stretch;
+  }
+  .rk > .rk-detail {
+    min-height: 0;
+    height: auto;
+  }
+  .rk > .rk-detail > .card {
+    height: auto;
+  }
+  .rk-h1 { font-size: clamp(24px, 1.8vw, 36px); }
+  .cond-big { font-size: clamp(34px, 2.4vw, 48px); }
 
-/* >= 3200px (4K): kartu ikut membesar, bukan hanya celah kosong. Skala naik supaya
-   teks/angka tidak terlihat kecil di layar 3840 dan konten tetap >= 70% lebar sisa. */
-@media (min-width: 3200px) {
-  .w { padding-left: clamp(28px, 0.9vw, 40px); padding-right: clamp(28px, 0.9vw, 40px); }
-  .rk .cond-big { font-size: clamp(40px, 1.4vw, 52px); }
-  .rk .cond-tile > b { font-size: clamp(20px, 0.7vw, 26px); }
-  .rk-h1 { font-size: clamp(30px, 1vw, 40px); }
-  .rk .sub, .rk .chip, .rk .lk, .rk .cat-tab, .rk table th, .rk .bl-foot,
-  .rk .cond-tile > span, .rk .cond-tile > i, .rk .expense-name, .rk .expense-amount,
-  .rk .tx-cat, .rk .lc-lg, .rk .lc-foot, .rk svg.lc text { font-size: 13px; }
-  .rk table td { font-size: 14px; }
+  /* Pastikan seluruh teks terkecil >= 12px pada viewport >= 1280px */
+  .bl-badge span,
+  .bl-main .sub,
+  .tx-dh,
+  .tx-cat,
+  .tx-pill,
+  .tx-av,
+  .bs-tick,
+  .bs-d,
+  .bs-sm .bs-d,
+  .sub,
+  .fs115,
+  .cond-tile > span,
+  .cond-tile > i,
+  .rk-detail .chip,
+  .rk-detail table td,
+  .rk-detail table th,
+  .where-panel .sub,
+  .dn-c small,
+  .dn-c em,
+  .expense-rank,
+  .expense-top > .sub,
+  .expense-detail {
+    font-size: 12px !important;
+  }
 }
 
 /* 768–1279px: dua kolom; kartu penuh selebar baris, pasangan 50/50. */
@@ -2345,12 +2988,15 @@ nav .nav-pill {
   .rk { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rk > .s8 { grid-column: 1 / -1; }
   .rk > .s4 { grid-column: span 1; }
-  /* Urutan §7: Kondisi kas penuh, Jadwal tagihan penuh, mf+cat berdampingan,
-     Item terbesar penuh, Rincian penuh, Transaksi penuh. */
   .rk > .rk-bills,
-  .rk > .rk-top,
+  .rk > .rk-where,
   .rk > .rk-detail,
   .rk > .rk-tx { grid-column: 1 / -1; }
+}
+
+@media (max-width: 900px) {
+  .where-panels { flex-direction: column; gap: 16px; }
+  .where-sep { width: 100%; height: 1px; }
 }
 
 /* < 768px: satu kolom, urutan tetap; tile jadi 2x2. */
@@ -2362,6 +3008,56 @@ nav .nav-pill {
   .rk-h1 { font-size: 20px; }
   .cond-big { font-size: 26px; }
 }
+
+/* Issue 9: Pengeluaran per kategori – pertahankan grid dua kolom di dalam .rk;
+   override override flex-column yang terpasang di .rk .insight-card .dn. */
+.rk .insight .dn {
+  display: grid !important;
+  grid-template-columns: minmax(150px, 190px) minmax(0, 1fr);
+  gap: 6px 20px;
+  align-items: center;
+  flex: unset;
+  flex-direction: unset;
+}
+.rk .insight .dn-ring { width: min(100%, 170px); height: 170px; margin: 4px auto; }
+
+/* Issue 15: Chip/pill total harian di kartu Transaksi terakhir. */
+.tx-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--mut) 12%, transparent);
+}
+.tx-pill.neg { background: color-mix(in srgb, var(--wr) 12%, transparent); color: var(--wr); }
+.tx-pill.kin { background: color-mix(in srgb, var(--in) 14%, transparent); color: var(--in); }
+.tx-pills { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tx-more { padding: 6px 12px 2px; font-size: 12px; color: var(--mut); line-height: 1.4; }
+.tx-more .lk { font-size: 12px; font-weight: 600; color: var(--ac); cursor: pointer; background: none; border: none; padding: 0; text-decoration: underline; }
+
+/* Issue 16: Urgency badge untuk jadwal tagihan. */
+.bl-badge.bl-urgent {
+  background: color-mix(in srgb, var(--wr) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wr) 34%, transparent);
+}
+.bl-badge.bl-urgent b,
+.bl-badge.bl-urgent span { color: var(--wr); }
+.bl-badge.bl-soon {
+  background: color-mix(in srgb, hsl(38 90% 50%) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, hsl(38 90% 50%) 30%, transparent);
+}
+.bl-badge.bl-soon b,
+.bl-badge.bl-soon span { color: hsl(38 80% 38%); }
+@media (prefers-color-scheme: dark) {
+  .bl-badge.bl-soon b,
+  .bl-badge.bl-soon span { color: hsl(38 90% 65%); }
+}
+.dark .bl-badge.bl-soon b,
+.dark .bl-badge.bl-soon span { color: hsl(38 90% 65%); }
 </style>
 </head>
 <body>
@@ -2371,14 +3067,30 @@ nav .nav-pill {
   <div class="sub" id="status" style="display:none"></div>
   <div class="sub" id="sbs" style="display:none"></div>
 <nav role="tablist" id="rk-nav" aria-label="Bagian rencana">
-  <div class="sb-av" aria-hidden="true"><i id="sb-ini"></i><div><b id="sb-name"></b><span id="sb-sub">Rencana keuangan</span></div></div>
-  <i class="nav-pill" aria-hidden="true"></i>
-  <button role="tab" data-t="rincian" aria-selected="true" title="Rincian Transaksi" aria-label="Rincian Transaksi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></svg><span class="nav-lbl">Rincian Transaksi</span></button>
-  <button role="tab" data-t="kas" aria-selected="false" title="Transaksi" aria-label="Transaksi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7H5a2 2 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15V7"/><circle cx="16" cy="14" r="1.2"/></svg><span class="nav-lbl">Transaksi</span></button>
-  <button role="tab" data-t="jadwal" aria-selected="false" title="Jadwal Tagihan" aria-label="Jadwal Tagihan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 15h3M8 18h6"/></svg><span class="nav-lbl">Jadwal Tagihan</span></button>
-  <button role="tab" data-t="item" aria-selected="false" title="Kelola Item" aria-label="Kelola Item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5 12 3l9 4.5-9 4.5z"/><path d="M3 12.5 12 17l9-4.5M3 17l9 4.5 9-4.5"/></svg><span class="nav-lbl">Kelola Item</span></button>
-  <button role="tab" data-t="sim" aria-selected="false" title="Simulasi" aria-label="Simulasi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span class="nav-lbl">Simulasi</span></button>
-<button type="button" class="sb-toggle" id="sb-toggle" aria-expanded="true" aria-controls="rk-nav" title="Kecilkan sidebar" aria-label="Kecilkan sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+  <div class="sb-top">
+    <button type="button" class="sb-av" id="acct" title="Masuk / daftar untuk sinkron" aria-label="Akun">
+      <i id="sb-ini"></i>
+      <span id="acct-ini" hidden>?</span>
+      <div class="sb-meta">
+        <b id="sb-name"></b>
+        <span id="sb-sub">Keuangan pribadi</span>
+      </div>
+    </button>
+    <button type="button" class="sb-toggle" id="sb-toggle" aria-expanded="true" aria-controls="rk-nav" title="Ciutkan sidebar" aria-label="Ciutkan sidebar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 3v18"/></svg></button>
+  </div>
+  <div class="sb-mid">
+    <i class="nav-pill" aria-hidden="true"></i>
+    <button role="tab" data-t="rincian" aria-selected="true" title="Rincian Transaksi" aria-label="Rincian Transaksi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></svg><span class="nav-lbl">Rincian Transaksi</span></button>
+    <button role="tab" data-t="kas" aria-selected="false" title="Transaksi" aria-label="Transaksi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7H5a2 2 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15V7"/><circle cx="16" cy="14" r="1.2"/></svg><span class="nav-lbl">Transaksi</span></button>
+    <button role="tab" data-t="jadwal" aria-selected="false" title="Jadwal Tagihan" aria-label="Jadwal Tagihan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 15h3M8 18h6"/></svg><span class="nav-lbl">Jadwal Tagihan</span></button>
+    <button role="tab" data-t="item" aria-selected="false" title="Kelola Item" aria-label="Kelola Item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5 12 3l9 4.5-9 4.5z"/><path d="M3 12.5 12 17l9-4.5M3 17l9 4.5 9-4.5"/></svg><span class="nav-lbl">Kelola Item</span></button>
+    <button role="tab" data-t="sim" aria-selected="false" title="Simulasi" aria-label="Simulasi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span class="nav-lbl">Simulasi</span></button>
+  </div>
+  <div class="sb-bot">
+    <div class="alat" id="alat"><button type="button" class="topbar-btn" id="alat-btn" aria-haspopup="true" title="Alat &amp; laporan" aria-label="Alat &amp; laporan" aria-expanded="false"><svg class="arr-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="nav-lbl">Pengaturan</span></button>
+    <div class="alat-menu" id="alat-menu" role="menu" hidden><button type="button" class="alat-item i" role="menuitem" data-go="trip"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/></svg><span>Perjalanan</span></button><button type="button" class="alat-item i" role="menuitem" id="thm" title="Ketuk untuk ganti tema" aria-label="Ganti tema"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span id="thm-txt">Tema</span></button><button type="button" class="alat-item i" role="menuitem" id="pwa" title="Pasang aplikasi ini di perangkat" aria-label="Pasang aplikasi ini di perangkat" hidden><svg class="arr-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10.5 18.5h3"/></svg><span>Pasang aplikasi</span></button><div class="alat-sep"></div><button type="button" class="alat-item" role="menuitem" id="alat-more" aria-expanded="false" aria-controls="alat-rest"><span>Lebih banyak</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button><div class="alat-rest" id="alat-rest" hidden><a class="alat-item" role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><a class="alat-item" role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><div class="bs-h">Laporan</div><button type="button" class="alat-item" role="menuitem" data-rep="d"><span>Hari ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="w"><span>Minggu ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="m"><span>Bulan ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="y"><span>Tahun ini</span></button><div class="alat-sep"></div><button type="button" class="alat-item" role="menuitem" id="bk"><span>Impor / Ekspor</span></button></div></div>
+    </div>
+  </div>
 </nav>
 </header>
 <div class="w">
@@ -2388,18 +3100,14 @@ nav .nav-pill {
     <button type="button" class="yp" data-md="trip">Perjalanan</button>
   </div>
   <div class="topbar-actions">
-    <button type="button" id="acct" class="acct" title="Masuk / daftar untuk sinkron" aria-label="Akun"><span id="acct-ini">?</span></button>
     <div class="yr-pop" id="yr-pop">
-      <button type="button" class="topbar-btn yr-plus" id="yr-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="yr-panel" title="Tahun, bulan saldo, dan saldo awal" aria-label="Tahun, bulan saldo, dan saldo awal"><svg class="arr-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button type="button" class="topbar-btn yr-plus" id="yr-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="yr-panel" title="Tahun, bulan saldo, dan saldo awal" aria-label="Tahun, bulan saldo, dan saldo awal"><svg class="arr-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
     </div>
+    <button type="button" id="acct-m" class="acct topbar-btn" title="Masuk / daftar untuk sinkron" aria-label="Akun" onclick="document.getElementById('acct').click()"><span id="acct-m-ini">?</span></button>
     <button type="button" id="btn-privacy" class="topbar-btn" data-more title="Mode Privasi (Kaburkan Nominal)" aria-label="Mode Privasi" aria-pressed="false"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Privasi</span></button>
     <button type="button" id="btn-notif" class="topbar-btn" data-more title="Aktifkan pengingat notifikasi tagihan" aria-label="Notifikasi tagihan"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>Notifikasi</span></button>
-    <div class="alat" id="alat"><button type="button" class="topbar-btn" id="alat-btn" aria-haspopup="true" title="Alat &amp; laporan" aria-label="Alat &amp; laporan" aria-expanded="false"><svg class="arr-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
-    <div class="alat-menu" id="alat-menu" role="menu" hidden><button type="button" class="alat-item i" role="menuitem" data-go="trip"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/></svg><span>Perjalanan</span></button><button type="button" class="alat-item i" role="menuitem" id="thm" title="Ketuk untuk ganti tema" aria-label="Ganti tema"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span id="thm-txt">Tema</span></button><button type="button" class="alat-item i" role="menuitem" id="pwa" title="Pasang aplikasi ini di perangkat" aria-label="Pasang aplikasi ini di perangkat" hidden><svg class="arr-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10.5 18.5h3"/></svg><span>Pasang aplikasi</span></button><div class="alat-sep"></div><button type="button" class="alat-item" role="menuitem" id="alat-more" aria-expanded="false" aria-controls="alat-rest"><span>Lebih banyak</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button><div class="alat-rest" id="alat-rest" hidden><a class="alat-item" role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><a class="alat-item" role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><div class="bs-h">Laporan</div><button type="button" class="alat-item" role="menuitem" data-rep="d"><span>Hari ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="w"><span>Minggu ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="m"><span>Bulan ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="y"><span>Tahun ini</span></button><div class="alat-sep"></div><button type="button" class="alat-item" role="menuitem" id="bk"><span>Impor / Ekspor</span></button></div></div>
     <button type="button" id="tb-more" class="topbar-btn tb-more" aria-expanded="true" title="Sembunyikan tombol lain" aria-label="Sembunyikan tombol lain"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></button>
-  
-</div>
-</div>
+  </div>
 </div>
 <div class="modal" id="yr-panel" role="dialog" aria-modal="true" aria-label="Tahun, bulan saldo, dan saldo awal" hidden>
   <div class="card">
@@ -2591,6 +3299,7 @@ nav .nav-pill {
 </div></div>
 
 <div class="modal" id="lg" role="dialog" aria-modal="true" hidden><div class="card"><h2>Masuk untuk sinkron</h2><p class="sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p><label for="le">Email</label><input id="le" type="email" autocomplete="email"><label class="mt10" for="lp">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="err" id="lm"></div><div class="row2"><button class="p" id="lin">Masuk</button><button class="c" id="lgc">Tutup</button></div></div></div>
+</div><!-- /.w -->
 </div><!-- /.app -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
@@ -4361,6 +5070,9 @@ function tab(t) {
     void sec.offsetWidth;
     sec.classList.add('page-in');
   }
+  if (t === 'rincian' && typeof LC_LIVE !== 'undefined' && Array.isArray(LC_LIVE)) {
+    LC_LIVE.forEach(function (fn) { if (typeof fn === 'function') fn(); });
+  }
   navPill();
   $('yb').style.display = '';
   if (typeof syncNav === 'function') syncNav();
@@ -4626,18 +5338,38 @@ function saldoLine(o) {
   var P = (o.pts || []).slice();
   if (P.length < 2) return '';
   var i = LCQ.push({ pts: P, sub: o.sub || '', marks: o.marks || null, bnd: o.bnd || '' }) - 1,
-    gid = 'lcg-' + (o.id || i),
-    head = o.bare
-      ? '<div class="sub lc-cap">' + esc(o.title) + (o.sub ? ' &middot; ' + o.sub : '') + '</div>'
-      : '<div class="lc-head"><div class="lc-hl"><div class="dflex aic fwrap g8"><h2 class="m0">' +
-        o.title +
-        '</h2>' +
-        (o.sub ? '<span class="sub fs12">' + o.sub + '</span>' : '') +
-        '</div><p class="lc-big"></p><div class="lc-delta"><b class="lc-pct"></b><span class="lc-sub2"></span></div></div>' +
-        (o.tabs ? '<div class="cat-tabs" role="tablist">' + o.tabs + '</div>' : '') +
-        '</div>';
+    gid = 'lcg-' + (o.id || i);
+  if (o.bare) {
+    return (
+      '<div class="lc-wrap"><svg class="lc" data-lci="' +
+      i +
+      '" tabindex="0" role="slider" aria-label="' +
+      esc(o.aria || o.title || 'Arus saldo') +
+      '">' +
+      '<defs><linearGradient id="' +
+      gid +
+      '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--ac)" stop-opacity=".32"></stop><stop offset="1" stop-color="var(--ac)" stop-opacity="0"></stop></linearGradient></defs>' +
+      '<g class="lc-grid"></g><path class="lc-fill" fill="url(#' +
+      gid +
+      ')"></path><path class="lc-fill lc-fill-p" fill="url(#' +
+      gid +
+      ')"></path><path class="lc-line" fill="none"></path><path class="lc-line lc-line-p" fill="none"></path><g class="lc-mark"></g><g class="lc-xl"></g>' +
+      '<g class="lc-cur" style="display:none"><line class="lc-cl"></line><circle class="lc-cd" r="5"></circle></g></svg>' +
+      '<div class="lc-tip"><span></span><strong class="pv"></strong></div></div>' +
+      '<div class="cond-flow-foot dflex jcsb aic fs12 sub mt8">' +
+      (o.marks ? '<div class="lc-lg"><span class="s"><i class="sw"></i>Nyata</span><span class="p"><i class="sw"></i>Proyeksi</span></div>' : '<div></div>') +
+      (o.foot ? '<div class="cond-flow-low">' + o.foot + '</div>' : '') +
+      '</div>'
+    );
+  }
   return (
-    '<div class="card lc-card">' + head + '<div class="lc-wrap"><svg class="lc" data-lci="' +
+    '<div class="card lc-card"><div class="lc-head"><div class="lc-hl"><div class="dflex aic fwrap g8"><h2 class="m0">' +
+    o.title +
+    '</h2>' +
+    (o.sub ? '<span class="sub fs12">' + o.sub + '</span>' : '') +
+    '</div><p class="lc-big"></p><div class="lc-delta"><b class="lc-pct"></b><span class="lc-sub2"></span></div></div>' +
+    (o.tabs ? '<div class="cat-tabs" role="tablist">' + o.tabs + '</div>' : '') +
+    '</div><div class="lc-wrap"><svg class="lc" data-lci="' +
     i +
     '" tabindex="0" role="slider" aria-label="' +
     esc(o.aria || o.title) +
@@ -4651,11 +5383,9 @@ function saldoLine(o) {
     gid +
     ')"></path><path class="lc-line" fill="none"></path><path class="lc-line lc-line-p" fill="none"></path><g class="lc-mark"></g><g class="lc-xl"></g>' +
     '<g class="lc-cur" style="display:none"><line class="lc-cl"></line><circle class="lc-cd" r="5"></circle></g></svg>' +
-    '<div class="lc-tip"><span></span><strong></strong></div></div>' +
-    '<div class="lc-lgrow">' +
+    '<div class="lc-tip"><span></span><strong class="pv"></strong></div></div>' +
     (o.marks ? '<div class="lc-lg"><span class="s"><i class="sw"></i>Nyata</span><span class="p"><i class="sw"></i>Proyeksi</span></div>' : '') +
     (o.foot ? '<div class="sub lc-foot">' + o.foot + '</div>' : '') +
-    '</div>' +
     '</div>'
   );
 }
@@ -4715,8 +5445,8 @@ function barStackInit(host, cfg) {
     n = rows.length,
     small = n > 6,
     first = true,
-    PT = 24,
-    PB = 24,
+    PT = 10,
+    PB = 14,
     GAP = 2,
     tops = [];
   function el(tag, a, p) {
@@ -4751,14 +5481,18 @@ function barStackInit(host, cfg) {
   function hide() {
     tip.classList.remove('on');
   }
+  var isJSDOM = typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
   function draw() {
-    var W = box.clientWidth || 480,
-      H = box.clientHeight || 250,
-      ih = H - PT - PB,
+    var W = box.clientWidth,
+      H = box.clientHeight;
+    if (!isJSDOM && (W <= 0 || H <= 0)) return;
+    W = W || 480;
+    H = H || 250;
+    var ih = H - PT - PB,
       max = Math.max.apply(null, rows.map(function (r) { return r.inc + r.out; })) || 1,
       top = niceStep(max / 4) * 4,
       band = W / n,
-      bw = Math.min(band * 0.6, 64),
+      bw = Math.min(band * 0.6, 72),
       y = function (v) { return PT + ih - (v / top) * ih; };
     svg.textContent = '';
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
@@ -4772,7 +5506,7 @@ function barStackInit(host, cfg) {
         g = el('g', { class: 'bs-col' }, svg),
         anim = 'animation-delay:' + i * 50 + 'ms';
       el('rect', { class: 'bs-cur', x: cx - band / 2 + 2, y: 2, width: Math.max(0, band - 4), height: H - PB - 2, rx: 6 }, g);
-      el('text', { class: 'bs-tick', x: cx, y: H - 6 }, svg).textContent = r.m;
+      el('text', { class: 'bs-tick', x: cx, y: H - 4 }, svg).textContent = r.m;
       tops[i] = y(tot);
       if (!tot) return;
       g.setAttribute('tabindex', '0');
@@ -4780,7 +5514,8 @@ function barStackInit(host, cfg) {
       g.setAttribute('aria-label', r.full + ': pemasukan ' + rp(r.inc) + ', pengeluaran ' + rp(r.out) + ', selisih ' + (d < 0 ? 'minus ' : 'plus ') + rp(Math.abs(d)));
       if (r.inc) el('rect', { class: 'bs-seg i', x: x, y: y(r.inc), width: bw, height: PT + ih - y(r.inc), rx: 4, style: anim }, g);
       if (r.out) el('rect', { class: 'bs-seg o', x: x, y: y(tot), width: bw, height: Math.max(0, y(r.inc) - y(tot) - (r.inc ? GAP : 0)), rx: 4, style: anim }, g);
-      var label = el('text', { class: 'bs-d pv' + (d < 0 ? ' neg' : d > 0 ? ' pos' : ''), x: cx, y: y(tot) - 7, style: anim }, g);
+      var isDense = rows.length > 6 || band < 45;
+      var label = el('text', { class: 'bs-d pv' + (d < 0 ? ' neg' : d > 0 ? ' pos' : '') + (isDense ? ' bs-d-dense' : ''), x: cx, y: Math.max(10, y(tot) - 4), style: anim }, g);
       label.textContent = sd(d);
       if (label.getComputedTextLength && label.getComputedTextLength() > band - 2) {
         label.setAttribute('textLength', Math.max(1, band - 2));
@@ -4802,11 +5537,14 @@ function barStackInit(host, cfg) {
     });
     first = false;
   }
-  draw();
   var w0 = box.clientWidth,
     h0 = box.clientHeight;
+  if (isJSDOM || (w0 > 0 && h0 > 0)) {
+    draw();
+  }
   if (window.ResizeObserver)
     new ResizeObserver(function () {
+      if (box.clientWidth <= 0 || box.clientHeight <= 0) return;
       if (box.clientWidth === w0 && box.clientHeight === h0) return;
       w0 = box.clientWidth;
       h0 = box.clientHeight;
@@ -4815,14 +5553,14 @@ function barStackInit(host, cfg) {
     }).observe(box);
 }
 
-/** Area chart: kurva halus, crosshair + tooltip, nilai besar ikut kursor, keyboard.
-    Pada kartu gabungan (tanpa kepala) big/pctEl/subEl tidak ada: nilai tetap ke tooltip. */
+/** Area chart: kurva halus, crosshair + tooltip, nilai besar ikut kursor, keyboard. */
 function areaInit(svg, cfg) {
-  var card = svg.closest('.lc-card'),
-    big = card.querySelector('.lc-big'),
-    pctEl = card.querySelector('.lc-pct'),
-    subEl = card.querySelector('.lc-sub2'),
-    tip = card.querySelector('.lc-tip'),
+  var wrap = svg.closest('.lc-wrap') || svg.parentElement,
+    card = svg.closest('.lc-card') || svg.closest('.card'),
+    big = card ? card.querySelector('.lc-big') : null,
+    pctEl = card ? card.querySelector('.lc-pct') : null,
+    subEl = card ? card.querySelector('.lc-sub2') : null,
+    tip = card ? card.querySelector('.lc-tip') : null,
     cur = svg.querySelector('.lc-cur'),
     curLine = svg.querySelector('.lc-cl'),
     curDot = svg.querySelector('.lc-cd'),
@@ -4851,6 +5589,7 @@ function areaInit(svg, cfg) {
     y = crResample(vs, N, lo0, hi0),
     multiYear = pts[0].d.slice(0, 4) !== pts[n - 1].d.slice(0, 4),
     hover = null,
+    hoverX = null,
     W = 0,
     H = 0;
 
@@ -4862,9 +5601,14 @@ function areaInit(svg, cfg) {
     return z.getUTCDate() + ' ' + MON[z.getUTCMonth()] + (multiYear ? ' ' + d.slice(2, 4) : '');
   }
 
+  var isJSDOM = typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
   function draw() {
-    W = Math.max(220, Math.round(svg.clientWidth || card.clientWidth || 600));
-    H = Math.round(svg.clientHeight || 250);
+    var meas = wrap || svg;
+    var mw = meas.clientWidth,
+      mh = meas.clientHeight;
+    if (!isJSDOM && (mw <= 0 || mh <= 0)) return;
+    W = Math.max(220, Math.round(mw || 600));
+    H = Math.round(mh || 190);
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     var iw = W - PL - PR,
       ih = H - PT - PB,
@@ -4892,7 +5636,7 @@ function areaInit(svg, cfg) {
       projStart = Math.max(0, Math.floor(xb)),
       hasSolid = firstProj > 0,
       hasProj = firstProj < n;
-    var lgEl = svg.closest('.lc-card');
+    var lgEl = card;
     if (lgEl) {
       var lgS = lgEl.querySelector('.lc-lg .s'), lgP = lgEl.querySelector('.lc-lg .p');
       if (lgS) lgS.hidden = !hasSolid;
@@ -4976,9 +5720,7 @@ function areaInit(svg, cfg) {
 
     var idx = hover == null ? N - 1 : hover,
       val = y[idx],
-      // Persen chip memakai titik TERAKHIR (bukan titik hover): angka besar & chip di
-      // kartu gabungan tidak boleh berubah saat kursor bergerak (§8b).
-      pct = y[0] ? ((y[N - 1] - y[0]) / Math.abs(y[0])) * 100 : 0,
+      pct = y[0] ? ((val - y[0]) / Math.abs(y[0])) * 100 : 0,
       tw;
     if (big) big.textContent = rp(Math.round(val));
     if (pctEl) {
@@ -4986,15 +5728,17 @@ function areaInit(svg, cfg) {
       pctEl.classList.toggle('neg', pct < 0);
     }
     if (subEl) subEl.textContent = hover == null ? '' : dlabel(pts[nearest(hover)].d);
-    // Kartu Kondisi kas memakai persen yang sama (rumus & rentang grafik Arus saldo).
+    // Kartu Kondisi kas memakai persen perubahan periode (statis, tidak berubah saat hover).
     var cc = $('cond-chip'),
       cr = $('cond-range');
     if (cc && cfg.bnd && cr) {
       var bd = kasChipBnd[cfg.bnd];
       cc.hidden = false;
-      cc.textContent = (pct < 0 ? '▼ ' : '▲ ') + Math.abs(pct).toFixed(1).replace('.', ',') + '%';
-      cc.classList.toggle('neg', pct < 0);
-      cr.textContent = bd ? ' · ' + dlabel(bd.from) + ' – ' + dlabel(bd.to) : '';
+      var lastVal = y[N - 1], baseVal = y[0];
+      var pPct = baseVal ? ((lastVal - baseVal) / Math.abs(baseVal)) * 100 : 0;
+      cc.textContent = (pPct < 0 ? '▼ ' : '▲ ') + Math.abs(pPct).toFixed(1).replace('.', ',') + '%';
+      cc.classList.toggle('neg', pPct < 0);
+      cr.textContent = bd ? ' sejak ' + dlabel(bd.from) : '';
     }
     svg.setAttribute('aria-valuemin', 0);
     svg.setAttribute('aria-valuemax', N - 1);
@@ -5003,45 +5747,70 @@ function areaInit(svg, cfg) {
 
     if (hover == null) {
       cur.style.display = 'none';
-      tip.style.opacity = 0;
+      if (tip) tip.style.opacity = 0;
       return;
     }
-    var cx = xAt(hover),
-      cy = yAt(val);
+    var cx = hoverX != null ? hoverX : xAt(hover),
+      frac = iw > 0 ? Math.max(0, Math.min(1, (cx - PL) / iw)) : 0,
+      idxF = frac * (N - 1),
+      i0 = Math.floor(idxF),
+      i1 = Math.min(N - 1, i0 + 1),
+      f = idxF - i0,
+      valSmooth = y[i0] * (1 - f) + y[i1] * f,
+      cy = yAt(valSmooth);
     cur.style.display = '';
-    curLine.setAttribute('x1', cx);
-    curLine.setAttribute('x2', cx);
+    curLine.setAttribute('x1', cx.toFixed(1));
+    curLine.setAttribute('x2', cx.toFixed(1));
     curLine.setAttribute('y1', PT);
     curLine.setAttribute('y2', PT + ih);
-    curDot.setAttribute('cx', cx);
-    curDot.setAttribute('cy', cy);
-    tip.firstElementChild.textContent = dlabel(pts[nearest(hover)].d) + (cfg.marks && cfg.marks.today && pts[nearest(hover)].d > cfg.marks.today ? ' · Proyeksi' : '');
-    tip.lastElementChild.textContent = rp(Math.round(val));
-    tip.style.opacity = 1;
-    tw = tip.offsetWidth;
-    tip.style.left = Math.max(0, Math.min(W - tw, cx - tw / 2)) + 'px';
-    tip.style.top = Math.max(0, cy - 62) + 'px';
+    curDot.setAttribute('cx', cx.toFixed(1));
+    curDot.setAttribute('cy', cy.toFixed(1));
+    if (tip) {
+      var isProj = cfg.marks && cfg.marks.today && pts[nearest(hover)].d > cfg.marks.today;
+      tip.firstElementChild.textContent = dlabel(pts[nearest(hover)].d) + (isProj ? ' · Proyeksi' : '');
+      var strongEl = tip.querySelector('strong');
+      if (strongEl) {
+        strongEl.textContent = rp(Math.round(valSmooth));
+        strongEl.className = 'pv';
+      }
+      tip.style.opacity = 1;
+      tw = tip.offsetWidth || 120;
+      tip.style.left = Math.max(0, Math.min(W - tw, cx - tw / 2)) + 'px';
+      tip.style.top = Math.max(0, cy - 62) + 'px';
+    }
   }
 
-  function idxAt(cx) {
+  function idxAt(clientX) {
     var r = svg.getBoundingClientRect();
-    return Math.max(0, Math.min(N - 1, Math.round(((cx - r.left - PL) / (r.width - PL - PR)) * (N - 1))));
+    var iw = (r.width || svg.clientWidth) - PL - PR;
+    var relX = clientX - r.left;
+    var frac = iw > 0 ? Math.max(0, Math.min(1, (relX - PL) / iw)) : 0;
+    return {
+      idx: Math.max(0, Math.min(N - 1, Math.round(frac * (N - 1)))),
+      exactX: Math.max(PL, Math.min(W - PR, relX))
+    };
   }
 
   svg.addEventListener('pointermove', function (e) {
-    hover = idxAt(e.clientX);
+    var pos = idxAt(e.clientX);
+    hover = pos.idx;
+    hoverX = pos.exactX;
     draw();
   });
   svg.addEventListener('pointerdown', function (e) {
-    hover = idxAt(e.clientX);
+    var pos = idxAt(e.clientX);
+    hover = pos.idx;
+    hoverX = pos.exactX;
     draw();
   });
   svg.addEventListener('pointerleave', function () {
     hover = null;
+    hoverX = null;
     draw();
   });
   svg.addEventListener('blur', function () {
     hover = null;
+    hoverX = null;
     draw();
   });
   svg.addEventListener('keydown', function (e) {
@@ -5053,19 +5822,34 @@ function areaInit(svg, cfg) {
     else if (e.key === 'End') h = N - 1;
     else if (e.key === 'Escape') {
       hover = null;
+      hoverX = null;
       draw();
       return;
     } else return;
     e.preventDefault();
     hover = Math.max(0, Math.min(N - 1, h));
+    hoverX = null;
     draw();
   });
 
+  var roTarget = wrap || svg;
   if (window.ResizeObserver)
-    new ResizeObserver(function () {
-      draw();
-    }).observe(svg);
-  draw();
+    new ResizeObserver(function (entries) {
+      for (var ri = 0; ri < entries.length; ri++) {
+        var cr = entries[ri].contentRect;
+        if (cr && cr.width > 0 && cr.height > 0) {
+          draw();
+          break;
+        }
+      }
+    }).observe(roTarget);
+  if (roTarget.clientWidth > 0 && roTarget.clientHeight > 0) {
+    draw();
+  } else if (window.requestAnimationFrame) {
+    requestAnimationFrame(function () {
+      if (roTarget.clientWidth > 0 && roTarget.clientHeight > 0) draw();
+    });
+  }
   return draw;
 }
 
@@ -5625,7 +6409,23 @@ function groupExpenseItems(entries) {
     multipleCategories: rows.filter(function (r) { return r.cats.size > 1; }) };
 }
 
-function topExpensesCard(C) {
+var EXPENSE_PALETTE = [
+  'rgb(41, 117, 224)',
+  'rgb(43, 171, 110)',
+  'rgb(237, 126, 28)',
+  'rgb(172, 77, 203)',
+  'rgb(220, 56, 105)',
+  'rgb(31, 163, 173)',
+  'rgb(215, 172, 10)',
+  'rgb(226, 79, 50)',
+  'rgb(120, 87, 219)',
+  'rgb(74, 166, 74)'
+];
+function itemExpenseColor(i) {
+  return EXPENSE_PALETTE[i % EXPENSE_PALETTE.length];
+}
+
+function topExpensesCard(C, noAnim) {
   var entries = C.entries.filter(function (e) { return e.t === '-' && !/Penyesuaian/i.test(e.cat); }),
     months = Array.from(new Set(entries.map(function (e) { return +e.d.slice(5, 7); }))).sort(function (a, b) { return a - b; });
   var anchor = periodAnchor(S.year, entries.reduce(function (a, e) { return e.d > a ? e.d : a; }, ''));
@@ -5667,13 +6467,27 @@ function topExpensesCard(C) {
     picker = mode === 'm' ? '<select data-expmonth aria-label="Bulan pengeluaran">' + months.map(function (m) {
       return '<option value="' + m + '"' + (+expenseLastMonth === m ? ' selected' : '') + '>' + MON[m - 1] + ' ' + S.year + '</option>';
     }).join('') + '</select>' : '',
-    head = '<div class="insight-head"><div class="insight-title"><h2 class="m0" id="rk-exp-h">Item pengeluaran terbesar</h2><div class="sub">' + period + ' · total <span class="pv expense-total">' + rp(total) + '</span></div></div><div class="expense-controls"><div class="cat-tabs expense-tabs" role="group" aria-label="Periode pengeluaran">' + tabs + '</div>' + picker + '</div></div>';
+    head =
+      '<div class="insight-head dflex fcol g4">' +
+      '<div class="expense-head-row1 dflex jcsb aic g8"><h2 class="m0" id="rk-exp-h">Item terbesar</h2>' +
+      '<div class="cat-tabs expense-tabs" role="group" aria-label="Periode pengeluaran">' +
+      tabs +
+      '</div></div>' +
+      '<div class="expense-head-row2 dflex jcsb aic g8">' +
+      '<div class="sub">' +
+      period +
+      ' · total <span class="pv expense-total">' +
+      rp(total) +
+      '</span></div>' +
+      (picker ? '<div class="expense-picker-wrap">' + picker + '</div>' : '') +
+      '</div></div> ';
   if (!total) return '<section class="card slot-card expense-card" aria-labelledby="rk-exp-h">' + head + '<div class="empty">Belum ada pengeluaran</div></section>';
   function row(r, i) {
-    var pct = Math.round(r.v / total * 100), cat = r.rest ? 'gabungan item kecil' : r.cat || 'Tanpa kategori';
+    var pct = Math.round(r.v / total * 100), cat = r.rest ? 'gabungan item kecil' : r.cat || 'Tanpa kategori',
+      col = r.rest ? 'var(--mut)' : itemExpenseColor(i);
     return '<li class="expense-row' + (r.rest ? ' rest' : '') + '" tabindex="0" aria-label="' + esc(r.name + ', ' + rp(r.v) + ', ' + pct + ' persen dari total') + '">' +
-      '<div class="expense-top"><span class="expense-rank">' + (r.rest ? '' : i + 1) + '</span><div class="expense-label"><b class="expense-name" title="' + esc(cat + (r.raw ? ' · ' + Array.from(r.raw).join(' · ') : '')) + '"><i class="expense-dot" aria-hidden="true" style="background:' + (r.rest ? 'var(--mut)' : catColor(r.cat)) + '"></i>' + esc(r.name) + '</b></div><b class="pv expense-amount">' + rp(r.v) + '</b><span class="sub pv">' + pct + '%</span></div>' +
-      '<div class="expense-track"><div class="expense-fill" style="width:' + Math.min(100, r.v / max * 100) + '%;background:' + (r.rest ? 'var(--mut)' : catColor(r.cat)) + '"></div></div>' +
+      '<div class="expense-top"><span class="expense-rank">' + (r.rest ? '' : i + 1) + '</span><div class="expense-label"><b class="expense-name" title="' + esc(cat + (r.raw ? ' · ' + Array.from(r.raw).join(' · ') : '')) + '"><i class="expense-dot" aria-hidden="true" style="background:' + col + '"></i>' + esc(r.name) + '</b></div><span class="expense-leader" aria-hidden="true"></span><b class="pv expense-amount">' + rp(r.v) + '</b><span class="sub pv">' + pct + '%</span></div>' +
+      '<div class="expense-track"><div class="expense-fill" style="width:' + Math.min(100, r.v / max * 100) + '%;background:' + col + (noAnim ? ';animation:none' : '') + '"></div></div>' +
       '<div class="expense-detail sub pv">' + selected.map(function (m) { return MON[m - 1] + ' ' + rp(r.byMonth[m] || 0); }).join(' · ') + (r.rest ? '<br>' + esc(r.detail) : '<br>' + esc(Array.from(r.raw).join(' · '))) + '</div></li>';
   }
   return '<section class="card slot-card expense-card" aria-labelledby="rk-exp-h">' + head + '<ol class="expense-list">' + rows.map(row).join('') + (rest.v ? row(rest) : '') + '</ol><div class="bs-foot"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg> ' + rows.length + ' item teratas = <span class="pv">' + Math.round(topSum / total * 100) + '%</span> dari total pengeluaran</b><div class="sub">' + esc(rows[0].name) + ' paling besar: <span class="pv">Rp ' + rpS(rows[0].v) + ' (' + Math.round(rows[0].v / total * 100) + '% dari total)</span></div></div></section>';
@@ -5688,26 +6502,38 @@ function cashPeriodTabs() {
 function insightCard(C) {
   var p = cashPeriod(C, catPeriod),
     total = p.inc + p.out,
-    tabs = cashPeriodTabs();
+    tabs = cashPeriodTabs(),
+    income = catDir === '+';
   var head =
-    '<div class="insight-head"><div class="insight-title"><div class="dflex aic fwrap g8"><h2 class="m0" id="rk-cat-h">Pengeluaran &amp; pemasukan per kategori</h2><span class="sub fs12">Jadwal + kas' +
-    simTag(S.year) +
-    '</span></div>' +
+    '<div class="insight-head dflex fcol g4">' +
+    '<div class="dflex jcsb aic g8"><h2 class="m0" id="rk-cat-h">Per kategori</h2>' +
+    '<div class="cat-tabs" role="tablist">' +
+    tabs +
+    '</div></div>' +
+    '<div class="dflex jcsb aic g8">' +
     '<div class="sub">' +
     fmtD(p.from) +
     ' – ' +
     fmtD(p.to) +
-    '</div></div><div class="cat-tabs" role="tablist">' +
-    tabs +
-    '</div></div>';
+    simTag(S.year) +
+    '</div><div class="cat-tabs cat-dirs" role="tablist">' +
+    '<button type="button" class="cat-tab' +
+    (income ? '' : ' on') +
+    '" data-catd="-" aria-pressed="' +
+    (income ? 'false' : 'true') +
+    '">Keluar</button>' +
+    '<button type="button" class="cat-tab' +
+    (income ? ' on' : '') +
+    '" data-catd="+" aria-pressed="' +
+    (income ? 'true' : 'false') +
+    '">Masuk</button></div></div></div>';
   if (!total)
     return (
       '<section class="card insight" aria-labelledby="rk-cat-h">' +
       head +
       '<div class="empty">Belum ada pemasukan atau pengeluaran pada periode ini.</div></section>'
     );
-  var income = catDir === '+',
-    src = income ? p.incByCat : p.byCat,
+  var src = income ? p.incByCat : p.byCat,
     sum = income ? p.inc : p.out,
     dir = income ? 'Pemasukan' : 'Pengeluaran';
   var list = Object.keys(src)
@@ -5744,17 +6570,7 @@ function insightCard(C) {
     (p.out ? ' · rata-rata <b class="pv">' + rp(p.avg) + '/hari</b>' : '') +
     '</div>';
   var cat =
-    '<div class="insight-cat"><div class="dflex jcsb aic fwrap g8"><div class="dflex aic g8 fwrap"><div class="cat-tabs cat-dirs" role="tablist">' +
-    '<button type="button" class="cat-tab' +
-    (income ? '' : ' on') +
-    '" data-catd="-" aria-pressed="' +
-    (income ? 'false' : 'true') +
-    '">Keluar</button>' +
-    '<button type="button" class="cat-tab' +
-    (income ? ' on' : '') +
-    '" data-catd="+" aria-pressed="' +
-    (income ? 'true' : 'false') +
-    '">Masuk</button></div></div></div>' +
+    '<div class="insight-cat">' +
     '<div class="insight-dn"><div class="insight-current">' +
     (sum ? donut : '<div class="empty mt8">Belum ada ' + dir.toLowerCase() + ' pada periode ini.</div>') +
     '</div><div class="insight-reserve" aria-hidden="true" inert>' + reserve + '</div></div>' +
@@ -5899,14 +6715,14 @@ function flowChart(R) {
   kasChipBnd[bnd] = { from: a0, to: a1 };
   return saldoLine({
     id: 'rincian',
-    bnd: bnd,
     bare: true,
+    bnd: bnd,
     title: 'Arus saldo ' + S.year,
     sub: 'Perubahan saldo · ' + dd(a0) + ' – ' + dd(a1) + simTag(y),
     aria: 'Grafik arus saldo ' + S.year,
     pts: pts,
     marks: marks,
-    foot: 'Terendah <b class="pv' + (low.v < 0 ? ' neg' : '') + '">' + rp(low.v) + '</b> (' + dd(low.d) + ') · saldo terakhir <b class="pv">' + rp(pts[pts.length - 1].v) + '</b>'
+    foot: 'Terendah <b class="pv' + (low.v < 0 ? ' neg' : '') + '">' + rp(low.v) + '</b> (' + dd(low.d) + ')'
   });
 }
 
@@ -6029,20 +6845,21 @@ function kondisiCard(c, R) {
   hv = hv || { m: 0 };
   mn = mn || { m: 0 };
   var head =
-    '<div class="cond-head"><div class="cond-title"><h2 class="m0" id="rk-cond-h">Kondisi kas</h2>' +
+    '<div class="cond-head dflex jcsb aic fwrap g12"><div class="cond-title"><h2 class="m0" id="rk-cond-h">Kondisi kas</h2>' +
     '<div class="sub" id="cond-lbl">' +
-    (P ? 'Saldo realtime &middot; ' + esc(P.name) : 'Belum ada data kas') +
-    '</div></div><div class="cat-tabs cond-tabs" role="tablist">' + periodTabs('flowp', flowPeriod) + '</div></div>';
+    (P ? 'Saldo Realtime &middot; ' + esc(P.name) + ' &middot; Arus saldo' : 'Belum ada data kas') +
+    '</div></div>' +
+    '<div class="cat-tabs cond-tabs" role="tablist">' + periodTabs('flowp', flowPeriod) + '</div></div>';
   var big = '';
   if (P) {
     var KB = kasBal(P);
     big =
-      '<div class="cond-num"><b id="cond-big" class="cond-big hm-big pv' +
+      '<div class="cond-num dflex aic fwrap g12 mt8"><b class="cond-big hm-big pv' +
       (KB.bal < 0 ? ' neg' : '') +
       '">' +
       rp(KB.bal) +
-      '</b><div class="cond-chip-row"><b class="cond-chip" id="cond-chip" hidden></b>' +
-      '<span class="sub" id="cond-range"></span></div></div>';
+      '</b><span class="cond-chip-row"><b class="cond-chip" id="cond-chip" hidden></b>' +
+      '<span class="sub" id="cond-range"></span></span></div>';
   }
   var fc = flowChart(R);
   var tiles =
@@ -6054,15 +6871,14 @@ function kondisiCard(c, R) {
       : '<b class="big neg">Tidak tersedia</b><i class="sub">sisa saldo akhir tidak cukup</i>') +
     '</div>' +
     '<div class="cond-tile"><span>Rata-rata per bulan</span><b class="pv">' + rp(C.out / n) + '</b>' +
-    '<i class="sub">terberat ' + MON[hv.m] + ' <span class="pv">' + rp(C.byMonth[hv.m]) + '</span></i>' +
-    '<i class="sub">teringan ' + MON[mn.m] + ' <span class="pv">' + rp(C.byMonth[mn.m]) + '</span></i></div>' +
+    '<i class="sub">Terberat ' + MON[hv.m] + ' <span class="pv">' + rp(C.byMonth[hv.m]) + '</span> &middot; Teringan ' + MON[mn.m] + ' <span class="pv">' + rp(C.byMonth[mn.m]) + '</span></i></div>' +
     '<div class="cond-tile"><span>Transaksi kas</span><b>' + (P ? kasBal(P).A.n : 0) + '</b><i class="sub">catatan kas</i></div>' +
     '</div>';
   return (
-    '<section class="card cond hm hero" aria-labelledby="rk-cond-h">' +
+    '<section class="card cond hm hero lc-card" aria-labelledby="rk-cond-h">' +
     head +
     big +
-    (fc ? '<div class="grow cond-flow rk-flow">' + fc + '</div>' : '') +
+    (fc ? '<div class="cond-flow rk-flow">' + fc + '</div>' : '') +
     tiles +
     '</section>'
   );
@@ -6075,10 +6891,20 @@ function kondisiMeta() {
   if (!P || !lbl) return;
   var y = S.year,
     sm = smEff(),
-    rw = kasRunway(P, kasBal(P).bal);
+    rw = kasRunway(P, kasBal(P).bal),
+    bnd = null;
+  for (var k in kasChipBnd) {
+    if (k.indexOf('rincian:' + y) === 0) { bnd = kasChipBnd[k]; break; }
+  }
+  var dd = function (d) {
+    var z = new Date(d + 'T00:00:00Z');
+    return z.getUTCDate() + ' ' + MON[z.getUTCMonth()];
+  };
+  var rangeTxt = bnd ? ' &middot; Arus saldo ' + dd(bnd.from) + ' – ' + dd(bnd.to) : '';
+  var utamaBadge = P && P.name === 'Utama' ? ' <span class="chip on" style="margin:0 0 0 6px;font-size:12px;font-weight:700">Utama</span>' : (P ? ' &middot; ' + esc(P.name) : '');
   lbl.innerHTML =
-    'Saldo Realtime &middot; ' + esc(P.name) + ' &middot; ' + FULL_MON[sm] + ' ' + y + simTag(y) +
-    (rw && rw.status === 'warning' ? ' &middot; kas cukup sampai ' + fmtD(rw.date) : '');
+    'Saldo Realtime &middot; ' + (typeof FULL_MON !== 'undefined' ? FULL_MON[sm] : MON[sm]) + utamaBadge + rangeTxt + simTag(y) +
+    '';
 }
 
 /** Saldo Realtime profil tergabung (dipakai kartu saldo dan agenda): saldo awal + masuk - keluar sampai bulan saldo. */
@@ -6100,7 +6926,7 @@ function saldoHero(c, R) {
     mName = KB.mName,
     A = KB.A,
     bal = KB.bal,
-    chip = '<span class="chip on" style="margin:0;font-size:11px;font-weight:700">' + esc(P.name) + '</span>';
+    chip = '<span class="chip on" style="margin:0;font-size:12px;font-weight:700">' + esc(P.name) + '</span>';
   return heroHtml(
     c,
     R,
@@ -6176,8 +7002,9 @@ function billsCard() {
       dateBalances[d] = running;
     });
   }
+  var BILLS_ROW_COUNT = 6;
   var body = list
-    .slice(0, 6)
+    .slice(0, BILLS_ROW_COUNT)
     .map(function (r) {
       var iso = isoD(r.t),
         isLate = iso < t,
@@ -6185,13 +7012,15 @@ function billsCard() {
         cls = '',
         title = '',
         bd = dayBadge(iso),
-        tone = isLate ? ' bl-late' : iso === t || iso === addDaysISO(t, 1) ? ' bl-now' : '';
+        diffDays = Math.round((Date.UTC(+iso.slice(0,4), +iso.slice(5,7)-1, +iso.slice(8,10)) - Date.UTC(+t.slice(0,4), +t.slice(5,7)-1, +t.slice(8,10))) / 864e5),
+        tone = isLate ? ' bl-late' : (diffDays === 0 || diffDays === 1) ? ' bl-now bl-urgent' : diffDays <= 3 ? ' bl-urgent' : diffDays <= 7 ? ' bl-soon' : '',
+        blTooltip = isLate ? ' title="' + esc('Terlambat ' + Math.abs(diffDays) + ' hari') + '"' : diffDays === 0 ? ' title="Jatuh tempo hari ini"' : diffDays <= 7 ? ' title="' + esc('Jatuh tempo dalam ' + diffDays + ' hari') + '"' : '';
       if (firstNeg && iso === firstNeg.date) cls = ' minus-first';
       else if (firstNeg && iso > firstNeg.date) cls = ' minus-after';
       if (dateBalances[iso] != null) title = ' title="Saldo proyeksi setelah ini: ' + rp(dateBalances[iso]) + '"';
       return (
         '<div class="it2 kit bl' + cls + '"' + title + '>' +
-        '<span class="bl-badge' + tone + '"><b>' + bd.d + '</b><span>' +
+        '<span class="bl-badge' + tone + '"' + blTooltip + '><b>' + bd.d + '</b><span>' +
         (isLate ? 'Lewat' : bd.wd) +
         '</span></span>' +
         '<div class="bl-main"><b class="fw6">' +
@@ -6206,7 +7035,7 @@ function billsCard() {
       );
     })
     .join('');
-  var shown = list.slice(0, 6),
+  var shown = list.slice(0, BILLS_ROW_COUNT),
     total = shown.reduce(function (x, r) {
       return x + r.price;
     }, 0);
@@ -6217,8 +7046,8 @@ function billsCard() {
     '<div class="card"><div class="dflex jcsb aic fwrap g8"><h2 class="m0">Jadwal tagihan</h2>' +
     '<button type="button" class="lk" data-goto="jadwal">Semua tagihan' +
     LK_ARROW +
-    '</button></div><div class="sub mb8">6 tagihan ke depan</div><div class="grow">' +
-    (body || '<div class="empty">Belum ada tagihan terjadwal.</div>') +
+    '</button></div><div class="sub mb8">6 tagihan ke depan</div><div class="bl-wrap">' +
+    (body ? '<div class="bl-list">' + body + '</div>' : '<div class="empty">Belum ada tagihan terjadwal.</div>') +
     summary +
     '</div></div>'
   );
@@ -6228,6 +7057,8 @@ function billsCard() {
 var LK_ARROW =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 
+var txMaxRows = 8;
+
 /** Kartu "Transaksi terakhir": 7 hari terakhir dari Riwayat transaksi, dengan pintasan ke tab Transaksi. */
 function recentTxCard() {
   var P = kasLinked();
@@ -6235,41 +7066,80 @@ function recentTxCard() {
   var all = txDir === 'all',
     inn = txDir === '+',
     today = todayISO(),
-    rows = kasRows(P)
-      .filter(function (x) {
-        return all || x.t === txDir;
-      })
-      .sort(function (a, b) {
-        return a.d < b.d ? 1 : a.d > b.d ? -1 : 0;
-      }),
     cut = addDaysISO(today, -6),
-    L = rows
-      .filter(function (x) {
-        return x.d >= cut && x.d <= today;
-      })
-      .slice(0, 7),
-    fallback = !L.length;
-  if (fallback) L = rows.slice(0, 7);
-  var groups = [],
+    allRows = kasRows(P).sort(function (a, b) {
+      return a.d < b.d ? 1 : a.d > b.d ? -1 : 0;
+    }),
+    inWindowAll = allRows.filter(function (x) {
+      return x.d >= cut && x.d <= today;
+    }),
+    fallback = !inWindowAll.length,
+    pool = fallback ? allRows : inWindowAll,
+    filteredRows = pool.filter(function (x) {
+      return all || x.t === txDir;
+    }),
+    limit = Math.max(6, Math.min(10, txMaxRows || 8));
+
+  var allGroups = [],
     gmap = {};
-  L.forEach(function (x) {
+  filteredRows.forEach(function (x) {
     if (!gmap[x.d]) {
       gmap[x.d] = { d: x.d, rows: [] };
-      groups.push(gmap[x.d]);
+      allGroups.push(gmap[x.d]);
     }
     gmap[x.d].rows.push(x);
   });
-  var body = groups
+
+  var renderedGroups = [],
+    renderedRowCount = 0;
+  for (var gi = 0; gi < allGroups.length; gi++) {
+    var grp = allGroups[gi];
+    if (renderedGroups.length === 0) {
+      renderedGroups.push(grp);
+      renderedRowCount += grp.rows.length;
+    } else if (renderedRowCount + grp.rows.length <= limit) {
+      renderedGroups.push(grp);
+      renderedRowCount += grp.rows.length;
+    } else {
+      break;
+    }
+  }
+  var remCount = filteredRows.length - renderedRowCount;
+
+  var body = renderedGroups
     .map(function (g) {
-      var net = netSigned(g.rows);
+      var outSum = 0,
+        inSum = 0;
+      g.rows.forEach(function (x) {
+        if (x.t === '-') outSum += (x.amt || 0);
+        else if (x.t === '+') inSum += (x.amt || 0);
+      });
+      var net = inSum - outSum;
+
+      var pillHtml = '';
+      if (all) {
+        var netB = '<b class="tx-net pv' + (net < 0 ? ' neg' : net > 0 ? ' kin' : '') + '" style="display:none" aria-hidden="true">' + signed(net) + '</b>';
+        if (outSum > 0 && inSum > 0) {
+          pillHtml = netB + '<span class="tx-pills"><b class="tx-pill pv neg">' + signed(-outSum) + '</b><b class="tx-pill pv kin">' + signed(inSum) + '</b></span>';
+        } else if (outSum > 0) {
+          pillHtml = '<span class="tx-pills"><b class="tx-pill pv neg">' + signed(-outSum) + '</b></span>';
+        } else if (inSum > 0) {
+          pillHtml = '<span class="tx-pills"><b class="tx-pill pv kin">' + signed(inSum) + '</b></span>';
+        } else {
+          pillHtml = '<span class="tx-pills"><b class="tx-pill pv">Rp 0</b></span>';
+        }
+      } else if (inn) {
+        pillHtml = '<span class="tx-pills"><b class="tx-pill pv kin">' + signed(inSum) + '</b></span>';
+      } else {
+        pillHtml = '<span class="tx-pills"><b class="tx-pill pv neg">' + signed(-outSum) + '</b></span>';
+      }
+
       return (
         '<li class="tx-day"><div class="tx-dh"><span>' +
         esc(dayGroupLabel(g.d, today)) +
-        '</span><b class="pv' +
-        (net < 0 ? ' neg' : net > 0 ? ' kin' : '') +
-        '">' +
-        signed(net) +
-        '</b></div><ul class="tx-list">' +
+        '</span>' +
+        pillHtml +
+        '</div><ul class="tx-list">' +
         g.rows
           .map(function (x) {
             var cat = x.cat || 'Tanpa kategori',
@@ -6303,12 +7173,14 @@ function recentTxCard() {
       );
     })
     .join('');
+
+  var moreHtml = remCount > 0
+    ? '<div class="tx-more sub mt8">+' + remCount + ' transaksi lagi di ' + (fallback ? 'catatan ini' : '7 hari ini') + ' &middot; <button type="button" class="lk" data-hist="1">Lihat semua</button></div>'
+    : '';
+
   return (
-    '<div class="card"><div class="dflex jcsb aic g8"><h2 class="m0">Transaksi terakhir</h2>' +
-    '<button type="button" class="lk" data-hist="1">Semua transaksi' +
-    LK_ARROW +
-    '</button></div>' +
-    '<div class="dflex aic fwrap g8 mt8"><div class="cat-tabs cat-dirs" role="tablist">' +
+    '<div class="card tx-card"><div class="dflex jcsb aic g8"><h2 class="m0">Transaksi terakhir</h2>' +
+    '<div class="cat-tabs cat-dirs" role="tablist">' +
     '<button type="button" class="cat-tab' +
     (txDir === '-' ? ' on' : '') +
     '" data-txd="-" aria-pressed="' +
@@ -6323,12 +7195,34 @@ function recentTxCard() {
     (all ? ' on' : '') +
     '" data-txd="all" aria-pressed="' +
     (all ? 'true' : 'false') +
-    '">Semua</button></div><span class="sub w100">' +
+    '">Semua</button></div></div>' +
+    '<div class="dflex jcsb aic g8 mt6"><span class="sub">' +
     (all ? 'Masuk &amp; keluar' : inn ? 'Uang masuk' : 'Uang keluar') +
     (fallback ? ' 7 catatan terakhir' : ' 7 hari terakhir') +
-    '</span></div><div class="grow mt8">' +
-    (body ? '<ul class="tx-days">' + body + '</ul>' : '<div class="empty">Belum ada transaksi ' + (all ? '' : inn ? 'masuk ' : 'keluar ') + (fallback ? 'terbaru.' : 'dalam 7 hari terakhir.') + '</div>') +
+    '</span><button type="button" class="lk" data-hist="1">Semua transaksi' +
+    LK_ARROW +
+    '</button></div><div class="tx-wrap mt8">' +
+    (body ? '<ul class="tx-days">' + body + '</ul>' + moreHtml : '<div class="empty">Belum ada transaksi ' + (all ? '' : inn ? 'masuk ' : 'keluar ') + (fallback ? 'terbaru.' : 'dalam 7 hari terakhir.') + '</div>') +
     '</div></div>'
+  );
+}
+
+/** Kartu gabungan "Ke mana uangnya pergi" (Baris 2, 8 kolom): berisi dua sub-panel sejajar. */
+function whereMoneyCard(C) {
+  var p = cashPeriod(C, catPeriod);
+  var sub = fmtD(p.from) + ' – ' + fmtD(p.to) + (catPeriod === 'y' ? '' : ' ' + S.year) +
+    ' · total ' + rp(p.out) + simTag(S.year);
+  return (
+    '<section class="card rk-where-card" aria-labelledby="rk-where-h">' +
+    '<div class="where-head dflex jcsb aic fwrap g12">' +
+    '<div class="where-title"><h2 class="m0" id="rk-where-h">Ke mana uangnya pergi</h2>' +
+    '<div class="sub" id="where-lbl">' + sub + '</div></div></div>' +
+    '<div class="where-panels">' +
+    '<div class="where-panel where-left rk-cat">' + insightCard(C) + '</div>' +
+    '<div class="where-sep" aria-hidden="true"></div>' +
+    '<div class="where-panel where-right rk-top">' + topExpensesCard(C) + '</div>' +
+    '</div>' +
+    '</section>'
   );
 }
 
@@ -6381,9 +7275,9 @@ function renderRincian() {
       '" data-l="Saldo akhir">' +
       rp(r.ak) +
       '</td>' +
-      '<td class="l c-c">' +
+      '<td class="l c-c"><div class="c-chips">' +
       monthChips(r) +
-      '</td></tr>' +
+      '</div></td></tr>' +
       (openRows[r.m] ? detailRows(r) : '')
     );
   }).join('');
@@ -6411,7 +7305,7 @@ function renderRincian() {
     '</td><td></td></tr></tbody></table></div></div>';
   var tx = recentTxCard();
   // Tata letak (grid 12 kolom, diatur CSS .rk): baris 1 kondisi kas + jadwal tagihan,
-  // baris 2 pemasukan/pengeluaran + kategori + item terbesar, baris 3 rincian + transaksi.
+  // baris 2 pemasukan/pengeluaran + ke mana uangnya pergi (2 panel), baris 3 rincian + transaksi.
   $('v-rincian').innerHTML =
     '<div class="rk-head" id="rk-head"></div>' +
     (S.items.length ? '' : emptyItemsHtml()) +
@@ -6419,8 +7313,7 @@ function renderRincian() {
     '<div class="rk-kas s8">' + kondisiCard(c, R) + '</div>' +
     '<div class="rk-bills s4">' + billsCard() + '</div>' +
     '<div class="rk-mf s4">' + monthFlowCard(C) + '</div>' +
-    '<div class="rk-cat s4">' + insightCard(C) + '</div>' +
-    '<div class="rk-top s4">' + topExpensesCard(C) + '</div>' +
+    '<div class="rk-where s8">' + whereMoneyCard(C) + '</div>' +
     '<div class="rk-detail s8">' + table + '</div>' +
     '<div class="rk-tx s4">' + (tx || '') + '</div>' +
     '</div>';
@@ -6428,6 +7321,98 @@ function renderRincian() {
   kondisiMeta();
   chartMount($('v-rincian'));
   gdApply($('v-rincian'));
+}
+
+/** Render-ulang hanya kartu Kondisi kas tanpa menyentuh kartu lain. */
+function rerenderKas() {
+  var el = document.querySelector('.rk-kas');
+  if (!el) { renderRincian(); return; }
+  var c = calc(), R = c.rows;
+  el.innerHTML = kondisiCard(c, R);
+  kondisiMeta();
+  chartMount(el);
+}
+
+/** Render-ulang hanya kartu Pemasukan vs Pengeluaran. */
+function rerenderMf() {
+  var el = document.querySelector('.rk-mf');
+  if (!el) { renderRincian(); return; }
+  el.innerHTML = monthFlowCard(yearCash());
+  chartMount(el);
+}
+
+/** Render-ulang hanya kartu Pengeluaran per kategori. */
+function rerenderCat() {
+  var el = document.querySelector('.rk-cat');
+  if (!el) { renderRincian(); return; }
+  el.innerHTML = insightCard(yearCash());
+  var whereSub = document.getElementById('where-lbl');
+  if (whereSub) {
+    var p = cashPeriod(yearCash(), catPeriod);
+    whereSub.textContent = fmtD(p.from) + ' – ' + fmtD(p.to) + (catPeriod === 'y' ? '' : ' ' + S.year) +
+      ' · total ' + rp(p.out) + simTag(S.year);
+  }
+  chartMount(el);
+}
+
+/** Render-ulang hanya kartu Item pengeluaran terbesar (tanpa animasi bar). */
+function rerenderTop() {
+  var el = document.querySelector('.rk-top');
+  if (!el) { renderRincian(); return; }
+  el.innerHTML = topExpensesCard(yearCash(), true);
+}
+
+/** Render-ulang hanya kartu Transaksi terakhir. */
+function rerenderTx() {
+  var el = document.querySelector('.rk-tx');
+  if (!el) { renderRincian(); return; }
+  el.innerHTML = recentTxCard() || '';
+}
+
+/** Render-ulang hanya kartu Rincian arus tagihan (tabel baris + gdApply). */
+function rerenderDetail() {
+  var el = document.querySelector('.rk-detail');
+  if (!el) { renderRincian(); return; }
+  var c = calc(), y = S.year, R = c.rows;
+  var t = todayISO(),
+    a = y === +t.slice(0, 4) ? +t.slice(5, 7) - 1 : 0,
+    un = function (m) {
+      var n = 0;
+      S.items.forEach(function (it) {
+        occ(it, y).forEach(function (x) {
+          var d = isoD(x);
+          if (+d.slice(5, 7) - 1 === m && !S.paid[it.id + '|' + d] && !S.skip[it.id + '|' + d]) n++;
+        });
+      });
+      return n;
+    };
+  for (var k = 0; k < 4 && !(un(a) || un(a + 1) || un(a + 2)); k++) a += 3;
+  a = Math.max(smEff(), Math.min(a, 9));
+  var off = a - smEff(),
+    W = R.slice(off, off + 3),
+    wT = W.reduce(function (x, r) { return x + r.sp; }, 0),
+    wE = W.length ? W[W.length - 1].ak : 0;
+  var rows = W.map(function (r) {
+    return (
+      '<tr class="row" data-m="' + r.m + '"><td class="c-m"><b>' + MON[r.m] + ' ' + y + '</b></td>' +
+      '<td class="c-a" data-l="Saldo awal">' + rp(r.aw) + (r.ad ? '<div class="sub">' + signed(r.ad) + ' penyesuaian</div>' : '') + '</td>' +
+      '<td class="c-s" data-l="Pengeluaran">' + rp(r.sp) + '</td>' +
+      '<td class="c-e ' + (r.ak < 0 ? 'neg' : '') + '" data-l="Saldo akhir">' + rp(r.ak) + '</td>' +
+      '<td class="l c-c"><div class="c-chips">' + monthChips(r) + '</div></td></tr>' +
+      (openRows[r.m] ? detailRows(r) : '')
+    );
+  }).join('');
+  var table =
+    '<div class="card"><div class="dflex jcsb aic fwrap g8"><h2 class="m0">Rincian arus tagihan ' + y +
+    '</h2><button type="button" class="lk" data-goto="jadwal">Semua tagihan' + LK_ARROW + '</button></div>' +
+    '<div class="sub mb8">' + (W.length ? W.length + ' bulan ke depan · ' + MON[W[0].m] + ' – ' + MON[W[W.length - 1].m] + ' ' + y : '') + '</div>' +
+    '<div class="sub mb8">Saldo awal = saldo setelah kas bulan itu.</div>' +
+    gdBox('rincian', '<div class="sub mb8">Klik baris bulan untuk melihat tanggal dan rincian tiap pembayaran.</div>' + RINCIAN_LEGEND) +
+    '<div class="tw"><table><thead><tr><th>Bulan</th><th>Saldo awal</th><th>Pengeluaran</th><th>Saldo akhir</th><th class="l">Item berkala</th></tr></thead><tbody>' +
+    rows +
+    '<tr class="tot"><td>Total</td><td></td><td data-l="Pengeluaran">' + rp(wT) + '</td><td data-l="Saldo akhir">' + rp(wE) + '</td><td></td></tr></tbody></table></div></div>';
+  el.innerHTML = table;
+  gdApply(el);
 }
 
 /** Baris "dilewati" pada rincian sebuah bulan. */
@@ -6457,8 +7442,9 @@ function bindRincian() {
     if (e.target.matches('[data-expmonth]')) {
       expenseLastMonth = e.target.value;
       expenseMonth = 'm';
-      renderRincian();
-      $('v-rincian').querySelector('[data-expmonth]').focus();
+      rerenderTop();
+      var sel = $('v-rincian').querySelector('[data-expmonth]');
+      if (sel) sel.focus();
       return;
     }
   };
@@ -6467,7 +7453,7 @@ function bindRincian() {
     if (expm) {
       expenseMonth = expm.dataset.expm;
       if (expenseMonth === 'm' && !expenseLastMonth) expenseMonth = 'y';
-      renderRincian();
+      rerenderTop();
       var active = $('v-rincian').querySelector('[data-expm="' + expenseMonth + '"]');
       if (active) active.focus();
       return;
@@ -6475,31 +7461,31 @@ function bindRincian() {
     var cp = e.target.closest('[data-catp]');
     if (cp) {
       catPeriod = cp.dataset.catp;
-      renderRincian();
+      rerenderCat();
       return;
     }
     var bsb = e.target.closest('[data-bsp]');
     if (bsb) {
       bsPeriod = bsb.dataset.bsp;
-      renderRincian();
+      rerenderMf();
       return;
     }
     var fpb = e.target.closest('[data-flowp]');
     if (fpb) {
       flowPeriod = fpb.dataset.flowp;
-      renderRincian();
+      rerenderKas();
       return;
     }
     var cd = e.target.closest('[data-catd]');
     if (cd) {
       catDir = cd.dataset.catd;
-      renderRincian();
+      rerenderCat();
       return;
     }
     var td = e.target.closest('[data-txd]');
     if (td) {
       txDir = td.dataset.txd;
-      renderRincian();
+      rerenderTx();
       return;
     }
     var hs = e.target.closest('[data-hist]');
@@ -6512,7 +7498,7 @@ function bindRincian() {
     var r = e.target.closest('tr.row');
     if (r) {
       openRows[r.dataset.m] = !openRows[r.dataset.m];
-      renderRincian();
+      rerenderDetail();
     }
   };
 }
@@ -6587,16 +7573,18 @@ function renderShell(c, R) {
     '<p class="rk-sum"' + (s.title ? ' title="' + esc(s.title) + '"' : '') + '>' + sum + '</p>';
   var ini = $('sb-ini'),
     nm = $('sb-name'),
+    inim = $('acct-m-ini'),
     wr = USER_NAME.trim();
   if (nm) nm.textContent = wr || 'Pengguna';
-  if (ini)
-    ini.textContent = (wr || 'P')
-      .split(/\s+/)
-      .map(function (w, i, a) {
-        return i < (a.length > 1 ? 2 : 1) ? w[0] : '';
-      })
-      .join('')
-      .toUpperCase();
+  var initial = (wr || 'P')
+    .split(/\s+/)
+    .map(function (w, i, a) {
+      return i < (a.length > 1 ? 2 : 1) ? w[0] : '';
+    })
+    .join('')
+    .toUpperCase();
+  if (ini) ini.textContent = initial;
+  if (inim) inim.textContent = initial;
 }
 
 /* ===== js/ui/realisasi.js ===== */
@@ -9664,7 +10652,7 @@ function sbInit() {
   });
 }
 
-/** Tombol akun bulat: "D" bila masuk, "?" bila belum. */
+/** Tombol akun: "D" bila masuk, "?" bila belum. */
 function acctUI(u) {
   var b = $('acct'),
     ini = $('acct-ini');
@@ -9672,6 +10660,12 @@ function acctUI(u) {
   b.classList.toggle('on', !!u);
   ini.textContent = u ? 'D' : '?';
   b.title = u ? (u.email || 'Akun') + ' · opsi akun' : 'Masuk / daftar untuk sinkron';
+  var bm = $('acct-m'), inim = $('acct-m-ini');
+  if (bm) {
+    bm.classList.toggle('on', !!u);
+    bm.title = b.title;
+    if (inim) inim.textContent = u ? 'D' : '?';
+  }
 }
 
 /** Dipanggil saat sesi login berubah; memulai tarik data setelah login. */
@@ -12798,42 +13792,41 @@ function placeMenu(btn, m) {
   m.style.bottom = 'auto';
 }
 
-/** Akun, tombol +, dan Alat pindah ke rail kiri pada layar lebar; kembali ke topbar di layar kecil. */
+/** Alat pindah ke sidebar pada layar lebar; kembali ke topbar di layar kecil. */
 function railMove() {
   var nav = document.querySelector('header nav'),
     bar = document.querySelector('.topbar-actions'),
-    acct = $('acct'),
-    yp = $('yr-pop'),
+    bot = nav && nav.querySelector('.sb-bot'),
     al = $('alat');
-  if (!nav || !bar || !acct || !yp || !al) return;
+  if (!nav || !bar || !al) return;
   var tm = $('tb-more');
   if (tm && tm.parentNode !== bar) bar.appendChild(tm);
   var big = matchMedia('(min-width:1024px)').matches;
-  if (big === (acct.parentNode === nav)) return;
-  if (big) {
-    var pill = nav.querySelector('.nav-pill');
-    nav.insertBefore(acct, pill ? pill.nextSibling : nav.firstChild);
-    nav.insertBefore(yp, acct.nextSibling);
-    nav.appendChild(al);
-  } else {
-    bar.insertBefore(acct, $('btn-privacy'));
-    bar.insertBefore(yp, acct.nextSibling);
-    bar.insertBefore(al, $('tb-more'));
+  if (bot) {
+    if (big === (al.parentNode === bot)) return;
+    if (big) {
+      bot.appendChild(al);
+    } else {
+      bar.insertBefore(al, $('tb-more'));
+    }
   }
-  navPill();
+  if (typeof navPill === 'function') navPill();
 }
 
 /** Sidebar berlabel: pilihan lebar disimpan di localStorage (bukan data akun).
- *  Satu mekanisme offset: kelas `.sb-open` di `.app` melebarkan kolom grid nav. */
+ *  Satu mekanisme offset: kelas `.sb-open` di `.app` melebarkan kolom grid nav.
+ *  Default expanded (terbuka) pada >= 1280px (localStorage bersih). */
 function sbApply() {
-  var on = false;
+  var raw = null;
   try {
-    on = localStorage.getItem('rk-sb') === '1';
+    raw = localStorage.getItem('rk-sb');
   } catch (e) {}
+  var isWide = typeof window !== 'undefined' && window.innerWidth >= 1280;
+  var on = raw === '1' || (raw === null && isWide);
   var app = document.querySelector('.app');
   if (app) app.classList.toggle('sb-open', on);
   var b = document.getElementById('sb-toggle'),
-    lbl = on ? 'Kecilkan sidebar' : 'Lebarkan sidebar';
+    lbl = on ? 'Ciutkan sidebar' : 'Perluas sidebar';
   if (b) {
     b.setAttribute('aria-expanded', on ? 'true' : 'false');
     b.title = lbl;
@@ -12849,11 +13842,24 @@ function bindSidebar() {
   var b = document.getElementById('sb-toggle');
   if (!b) return;
   b.onclick = function () {
+    var raw = null;
     try {
-      localStorage.setItem('rk-sb', localStorage.getItem('rk-sb') === '1' ? '0' : '1');
+      raw = localStorage.getItem('rk-sb');
+    } catch (e) {}
+    var isWide = typeof window !== 'undefined' && window.innerWidth >= 1280;
+    var cur = raw === '1' || (raw === null && isWide);
+    try {
+      localStorage.setItem('rk-sb', cur ? '0' : '1');
     } catch (e) {}
     sbApply();
   };
+  window.addEventListener('resize', function () {
+    var raw = null;
+    try {
+      raw = localStorage.getItem('rk-sb');
+    } catch (e) {}
+    if (raw === null) sbApply();
+  });
   sbApply();
 }
 

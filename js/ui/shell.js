@@ -67,14 +67,16 @@ function renderShell(c, R) {
     '<p class="rk-sum"' + (s.title ? ' title="' + esc(s.title) + '"' : '') + '>' + sum + '</p>';
   var ini = $('sb-ini'),
     nm = $('sb-name'),
+    inim = $('acct-m-ini'),
     wr = USER_NAME.trim();
   if (nm) nm.textContent = wr || 'Pengguna';
-  if (ini)
-    ini.textContent = (wr || 'P')
-      .split(/\s+/)
-      .map(function (w, i, a) {
-        return i < (a.length > 1 ? 2 : 1) ? w[0] : '';
-      })
-      .join('')
-      .toUpperCase();
+  var initial = (wr || 'P')
+    .split(/\s+/)
+    .map(function (w, i, a) {
+      return i < (a.length > 1 ? 2 : 1) ? w[0] : '';
+    })
+    .join('')
+    .toUpperCase();
+  if (ini) ini.textContent = initial;
+  if (inim) inim.textContent = initial;
 }

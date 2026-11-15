@@ -57,13 +57,10 @@ const { boot } = require('./ui.js');
   assert(chart, 'grafik arus saldo ada');
   const line = chart.querySelector('.lc-line');
   assert(line.getAttribute('d') && line.getAttribute('d').split('L').length > 10, 'kurva halus banyak titik');
-  // Grafik tanpa kepala (bare): judul di .lc-cap, angka besar & chip tetap element-nya sendiri.
-  // jsdom closest('.card') bisa berhenti di .lc-card terdalam; ambil kartu gabungan lewat .cond.
-  const kasCard = chart.closest('.cond') || chart.closest('.card');
-  const big = kasCard.querySelector('#cond-big') || kasCard.querySelector('.hm-big');
-  assert(big && /Rp/.test(big.textContent), 'nominal besar terisi: ' + (big ? big.textContent : 'tidak ada'));
-  const chip = kasCard.querySelector('#cond-chip');
-  assert(chip && /^[▲▼] \d/.test(chip.textContent), 'chip persen perubahan: ' + (chip ? chip.textContent : 'tidak ada #cond-chip'));
+  const big = chart.closest('.lc-card').querySelector('.cond-big, .lc-big');
+  assert(big && /Rp/.test(big.textContent), 'nominal besar terisi: ' + (big && big.textContent));
+  const pct = chart.closest('.lc-card').querySelector('.cond-chip, .lc-pct');
+  assert(pct && /^[▲▼] \d/.test(pct.textContent), 'chip persen perubahan');
   const ctip = chart.closest('.lc-card').querySelector('.lc-tip');
   chart.getBoundingClientRect = () => ({ left: 0, top: 0, width: 720, height: 250, right: 720, bottom: 250 });
   const pe = (type, x) => {

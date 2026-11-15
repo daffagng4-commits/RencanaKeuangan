@@ -91,7 +91,7 @@ const { boot } = require('./ui.js');
     assert(/Minggu/.test(flowCard.textContent), 'Arus saldo punya Minggu');
 
     // === Item pengeluaran terbesar: Semua/Minggu/Bulan/Tahun ===
-    const top = cards.find((c) => /Item pengeluaran terbesar/.test(c.textContent));
+    const top = cards.find((c) => /Item (pengeluaran )?terbesar/.test(c.textContent));
     const labels = [...top.querySelectorAll('[data-expm]')].map((b) => b.textContent);
     assert.deepStrictEqual(labels, ['Minggu', 'Bulan', 'Tahun']);
 

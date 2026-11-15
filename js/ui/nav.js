@@ -159,42 +159,41 @@ function placeMenu(btn, m) {
   m.style.bottom = 'auto';
 }
 
-/** Akun, tombol +, dan Alat pindah ke rail kiri pada layar lebar; kembali ke topbar di layar kecil. */
+/** Alat pindah ke sidebar pada layar lebar; kembali ke topbar di layar kecil. */
 function railMove() {
   var nav = document.querySelector('header nav'),
     bar = document.querySelector('.topbar-actions'),
-    acct = $('acct'),
-    yp = $('yr-pop'),
+    bot = nav && nav.querySelector('.sb-bot'),
     al = $('alat');
-  if (!nav || !bar || !acct || !yp || !al) return;
+  if (!nav || !bar || !al) return;
   var tm = $('tb-more');
   if (tm && tm.parentNode !== bar) bar.appendChild(tm);
   var big = matchMedia('(min-width:1024px)').matches;
-  if (big === (acct.parentNode === nav)) return;
-  if (big) {
-    var pill = nav.querySelector('.nav-pill');
-    nav.insertBefore(acct, pill ? pill.nextSibling : nav.firstChild);
-    nav.insertBefore(yp, acct.nextSibling);
-    nav.appendChild(al);
-  } else {
-    bar.insertBefore(acct, $('btn-privacy'));
-    bar.insertBefore(yp, acct.nextSibling);
-    bar.insertBefore(al, $('tb-more'));
+  if (bot) {
+    if (big === (al.parentNode === bot)) return;
+    if (big) {
+      bot.appendChild(al);
+    } else {
+      bar.insertBefore(al, $('tb-more'));
+    }
   }
-  navPill();
+  if (typeof navPill === 'function') navPill();
 }
 
 /** Sidebar berlabel: pilihan lebar disimpan di localStorage (bukan data akun).
- *  Satu mekanisme offset: kelas `.sb-open` di `.app` melebarkan kolom grid nav. */
+ *  Satu mekanisme offset: kelas `.sb-open` di `.app` melebarkan kolom grid nav.
+ *  Default expanded (terbuka) pada >= 1280px (localStorage bersih). */
 function sbApply() {
-  var on = false;
+  var raw = null;
   try {
-    on = localStorage.getItem('rk-sb') === '1';
+    raw = localStorage.getItem('rk-sb');
   } catch (e) {}
+  var isWide = typeof window !== 'undefined' && window.innerWidth >= 1280;
+  var on = raw === '1' || (raw === null && isWide);
   var app = document.querySelector('.app');
   if (app) app.classList.toggle('sb-open', on);
   var b = document.getElementById('sb-toggle'),
-    lbl = on ? 'Kecilkan sidebar' : 'Lebarkan sidebar';
+    lbl = on ? 'Ciutkan sidebar' : 'Perluas sidebar';
   if (b) {
     b.setAttribute('aria-expanded', on ? 'true' : 'false');
     b.title = lbl;
@@ -210,11 +209,24 @@ function bindSidebar() {
   var b = document.getElementById('sb-toggle');
   if (!b) return;
   b.onclick = function () {
+    var raw = null;
     try {
-      localStorage.setItem('rk-sb', localStorage.getItem('rk-sb') === '1' ? '0' : '1');
+      raw = localStorage.getItem('rk-sb');
+    } catch (e) {}
+    var isWide = typeof window !== 'undefined' && window.innerWidth >= 1280;
+    var cur = raw === '1' || (raw === null && isWide);
+    try {
+      localStorage.setItem('rk-sb', cur ? '0' : '1');
     } catch (e) {}
     sbApply();
   };
+  window.addEventListener('resize', function () {
+    var raw = null;
+    try {
+      raw = localStorage.getItem('rk-sb');
+    } catch (e) {}
+    if (raw === null) sbApply();
+  });
   sbApply();
 }
 
