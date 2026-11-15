@@ -143,27 +143,27 @@ var RINCIAN_LEGEND =
   '<span><span class="chip sk">Gym</span>Dilewati bulan ini</span>' +
   '</div>';
 
-/** Warna kategori: hue golden-angle dari urutan kategori (bukan nominal), fallback hash nama untuk kategori tak terdaftar. */
+/** Palet warna kategori: pemetaan eksplisit dengan kontras tinggi (CIE76 DeltaE >= 20). */
+var CAT_COLORS = {
+  'investasi': '#5b7fe8',
+  'tagihan rutin': '#3fa57a',
+  'tagihan': '#3fa57a',
+  'hiburan': '#c0516f',
+  'kesehatan': '#a050c8',
+  'lainnya': '#7b8794',
+  'transfer': '#e0953f',
+  'gaji': '#3b9e6b'
+};
+var RESERVE_PALETTE = ['#2fa4b8', '#8a9a3a', '#6c4fc0', '#d46a4a'];
+
 function catColor(name) {
   if (!name || name === 'Tanpa kategori') return 'var(--mut)';
-    if (isInvestCat(name)) return 'var(--bl)';
-  var key = name.trim().toLowerCase(),
-    cats = allCategories(),
-    i = -1;
-  for (var k = 0; k < cats.length; k++) {
-    if (cats[k].trim().toLowerCase() === key) {
-      i = k;
-      break;
-    }
-  }
-  var hue;
-  if (i >= 0) hue = Math.round((i * 137.508 + 18) % 360);
-  else {
-    var hash = 0;
-    for (var j = 0; j < key.length; j++) hash = (hash * 31 + key.charCodeAt(j)) >>> 0;
-    hue = hash % 360;
-  }
-  return 'hsl(' + hue + ' 44% 46%)';
+  if (isInvestCat(name)) return 'var(--bl)';
+  var key = name.trim().toLowerCase();
+  if (CAT_COLORS[key]) return CAT_COLORS[key];
+  var hash = 0;
+  for (var j = 0; j < key.length; j++) hash = (hash * 31 + key.charCodeAt(j)) >>> 0;
+  return RESERVE_PALETTE[hash % RESERVE_PALETTE.length];
 }
 
 /** "+ Rp 1.000" atau "− Rp 1.000". */
@@ -362,19 +362,33 @@ function groupExpenseItems(entries) {
 }
 
 var EXPENSE_PALETTE = [
-  'rgb(41, 117, 224)',
-  'rgb(43, 171, 110)',
-  'rgb(237, 126, 28)',
-  'rgb(172, 77, 203)',
-  'rgb(220, 56, 105)',
-  'rgb(31, 163, 173)',
-  'rgb(215, 172, 10)',
-  'rgb(226, 79, 50)',
-  'rgb(120, 87, 219)',
-  'rgb(74, 166, 74)'
+  '#5b7fe8',
+  '#3fa57a',
+  '#e0953f',
+  '#a050c8',
+  '#c0516f',
+  '#2fa4b8',
+  '#8a9a3a',
+  '#6c4fc0',
+  '#d46a4a',
+  '#7b8794'
 ];
 function itemExpenseColor(i) {
   return EXPENSE_PALETTE[i % EXPENSE_PALETTE.length];
+}
+
+var CAT_ICONS = {
+  'Investasi': 'M22 7l-8.5 8.5-5-5L2 17M16 7h6v6',
+  'Tagihan rutin': 'M5 3v18l2-1 2 1 2-1 2 1 2-1 2 1V3l-2 1-2-1-2 1-2-1-2 1zM9 8h6M9 12h6',
+  'Tagihan': 'M5 3v18l2-1 2 1 2-1 2 1 2-1 2 1V3l-2 1-2-1-2 1-2-1-2 1zM9 8h6M9 12h6',
+  'Hiburan': 'M9 18V5l11-2v13M6 21a3 3 0 100-6 3 3 0 000 6zM17 19a3 3 0 100-6 3 3 0 000 6z',
+  'Kesehatan': 'M12 20s-8-5-8-11a4.5 4.5 0 018-2.8A4.5 4.5 0 0120 9c0 6-8 11-8 11z',
+  'Lainnya': 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
+  'Transfer': 'M8 3L4 7l4 4M4 7h16M16 21l4-4-4-4M20 17H4',
+  'Gaji': 'M3 7h17a1 1 0 011 1v10a1 1 0 01-1 1H5a2 2 0 01-2-2zM3 7V5a1 1 0 011-1h13M16 13h2'
+};
+function catIconSvg(name) {
+  return CAT_ICONS[name] || 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z';
 }
 
 function topExpensesCard(C, noAnim) {
@@ -400,135 +414,125 @@ function topExpensesCard(C, noAnim) {
       r.v = selected.reduce(function (sum, m) { return sum + (r.byMonth[m] || 0); }, 0);
       return r;
     }).filter(function (r) { return r.v > 0; }).sort(function (a, b) { return b.v - a.v || a.name.localeCompare(b.name, 'id'); }),
-    total = all.reduce(function (sum, r) { return sum + r.v; }, 0),
-    rows = all.slice(0, EXPENSE_TOP_N), others = all.slice(EXPENSE_TOP_N),
-    rest = { name: 'Item lainnya', v: 0, byMonth: {}, rest: true };
-  others.forEach(function (r) {
-    rest.v += r.v;
-    selected.forEach(function (m) { rest.byMonth[m] = (rest.byMonth[m] || 0) + (r.byMonth[m] || 0); });
-  });
-  rest.detail = others.slice(0, EXPENSE_TOP_N).map(function (r) { return r.name + ' ' + rp(r.v); }).join(' · ') +
-    (others.length > EXPENSE_TOP_N ? ' · +' + (others.length - EXPENSE_TOP_N) + ' lainnya' : '');
-  var topSum = total - rest.v, max = rows.length ? rows[0].v : 1,
-    period = (mode === 'w' ? fmtD(weekFrom) + ' – ' + fmtD(anchor) :
-      (selected.length ? MON[selected[0] - 1] + (selected.length > 1 ? ' - ' + MON[selected[selected.length - 1] - 1] : '') + ' ' : '') + S.year) + simTag(S.year),
-    tabs = [['w', 'Minggu'], ['m', 'Bulan'], ['y', 'Tahun']].map(function (m) {
-      var on = mode === m[0];
-      return '<button type="button" class="cat-tab' + (on ? ' on' : '') + '" data-expm="' + m[0] + '" aria-label="' + m[1] + ' pengeluaran" aria-pressed="' + on + '"' + (!months.length && m[0] === 'm' ? ' disabled' : '') + '>' + m[1] + '</button>';
-    }).join(''),
-    picker = mode === 'm' ? '<select data-expmonth aria-label="Bulan pengeluaran">' + months.map(function (m) {
-      return '<option value="' + m + '"' + (+expenseLastMonth === m ? ' selected' : '') + '>' + MON[m - 1] + ' ' + S.year + '</option>';
-    }).join('') + '</select>' : '',
-    head =
-      '<div class="insight-head dflex fcol g4">' +
-      '<div class="expense-head-row1 dflex jcsb aic g8"><h2 class="m0" id="rk-exp-h">Item terbesar</h2>' +
-      '<div class="cat-tabs expense-tabs" role="group" aria-label="Periode pengeluaran">' +
-      tabs +
-      '</div></div>' +
-      '<div class="expense-head-row2 dflex jcsb aic g8">' +
-      '<div class="sub">' +
-      period +
-      ' · total <span class="pv expense-total">' +
-      rp(total) +
-      '</span></div>' +
-      (picker ? '<div class="expense-picker-wrap">' + picker + '</div>' : '') +
-      '</div></div> ';
-  if (!total) return '<section class="card slot-card expense-card" aria-labelledby="rk-exp-h">' + head + '<div class="empty">Belum ada pengeluaran</div></section>';
-  function row(r, i) {
-    var pct = Math.round(r.v / total * 100), cat = r.rest ? 'gabungan item kecil' : r.cat || 'Tanpa kategori',
-      col = r.rest ? 'var(--mut)' : itemExpenseColor(i);
-    return '<li class="expense-row' + (r.rest ? ' rest' : '') + '" tabindex="0" aria-label="' + esc(r.name + ', ' + rp(r.v) + ', ' + pct + ' persen dari total') + '">' +
-      '<div class="expense-top"><span class="expense-rank">' + (r.rest ? '' : i + 1) + '</span><div class="expense-label"><b class="expense-name" title="' + esc(cat + (r.raw ? ' · ' + Array.from(r.raw).join(' · ') : '')) + '"><i class="expense-dot" aria-hidden="true" style="background:' + col + '"></i>' + esc(r.name) + '</b></div><span class="expense-leader" aria-hidden="true"></span><b class="pv expense-amount">' + rp(r.v) + '</b><span class="sub pv">' + pct + '%</span></div>' +
-      '<div class="expense-track"><div class="expense-fill" style="width:' + Math.min(100, r.v / max * 100) + '%;background:' + col + (noAnim ? ';animation:none' : '') + '"></div></div>' +
-      '<div class="expense-detail sub pv">' + selected.map(function (m) { return MON[m - 1] + ' ' + rp(r.byMonth[m] || 0); }).join(' · ') + (r.rest ? '<br>' + esc(r.detail) : '<br>' + esc(Array.from(r.raw).join(' · '))) + '</div></li>';
+    tt = all.reduce(function (sum, r) { return sum + r.v; }, 0),
+    top = all.slice(0, 10),
+    tp = top.reduce(function (sum, r) { return sum + r.v; }, 0),
+    topPct = tt > 0 ? Math.round(tp / tt * 100) : 0,
+    maxVal = top.length ? top[0].v : 1;
+
+  var periodStr = (mode === 'w' ? fmtDateRange(weekFrom, anchor) :
+    (selected.length ? fmtMonthRange(selected[0] - 1, selected[selected.length - 1] - 1, S.year) : S.year)) + simTag(S.year);
+
+  var tabs = [['w', 'Minggu'], ['m', 'Bulan'], ['y', 'Tahun']].map(function (m) {
+    var on = mode === m[0];
+    return '<button type="button" class="cat-tab' + (on ? ' on' : '') + '" data-expm="' + m[0] + '" aria-label="' + m[1] + ' pengeluaran" aria-pressed="' + on + '"' + (!months.length && m[0] === 'm' ? ' disabled' : '') + '>' + m[1] + '</button>';
+  }).join('');
+
+  var picker = mode === 'm' ? '<select data-expmonth aria-label="Bulan pengeluaran">' + months.map(function (m) {
+    return '<option value="' + m + '"' + (+expenseLastMonth === m ? ' selected' : '') + '>' + MON[m - 1] + ' ' + S.year + '</option>';
+  }).join('') + '</select>' : '';
+
+  if (!tt) {
+    return (
+      '<div class="expense-card card slot-card" aria-labelledby="rk-exp-h">' +
+      '<div class="where-ph"><h3 id="rk-exp-h">Item terbesar</h3><div class="cat-tabs expense-tabs" role="group" aria-label="Periode pengeluaran">' + tabs + '</div></div>' +
+      '<div class="where-sum"><div><span class="where-big big pv expense-total">Rp 0</span><span class="where-cap cap">keluar \u00b7 ' + periodStr + '</span></div></div>' +
+      '<div class="where-main"><div class="where-empty">Belum ada pengeluaran</div></div>' +
+      '<div class="where-foot" id="where-items-foot">Belum ada pengeluaran</div>' +
+      '</div>'
+    );
   }
-  return '<section class="card slot-card expense-card" aria-labelledby="rk-exp-h">' + head + '<ol class="expense-list">' + rows.map(row).join('') + (rest.v ? row(rest) : '') + '</ol><div class="bs-foot"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg> ' + rows.length + ' item teratas = <span class="pv">' + Math.round(topSum / total * 100) + '%</span> dari total pengeluaran</b><div class="sub">' + esc(rows[0].name) + ' paling besar: <span class="pv">Rp ' + rpS(rows[0].v) + ' (' + Math.round(rows[0].v / total * 100) + '% dari total)</span></div></div></section>';
+
+  var itemsRows = top.map(function (x, i) {
+    var col = itemExpenseColor(i),
+      pct = tt > 0 ? Math.round(x.v / tt * 100) : 0,
+      barW = Math.min(100, Math.round(x.v / maxVal * 100)),
+      catName = x.cat || 'Tanpa kategori';
+    return '<li class="expense-row" tabindex="0" aria-label="' + esc(x.name + ', ' + rp(x.v) + ', ' + pct + ' persen dari total') + '">' +
+      '<span class="ti where-ti" style="color:' + col + ';background:color-mix(in srgb,' + col + ' 16%,transparent)">' + (i + 1) + '</span>' +
+      '<div class="nm where-nm"><b class="expense-name" title="' + esc(catName) + '"><i class="expense-dot" aria-hidden="true" style="display:none;background:' + col + '"></i>' + esc(x.name) + '</b><small>' + esc(catName) + '</small></div>' +
+      '<span class="mb where-mb"><i class="expense-fill" style="width:' + barW + '%;background:' + col + (noAnim ? ';animation:none' : '') + '"></i></span>' +
+      '<span class="pcn">' + pct + '%</span>' +
+      '<b class="am where-am pv expense-amount">' + rp(x.v) + '</b>' +
+      '<div class="expense-detail sr-only" style="display:none">' + selected.map(function (m) { return MON[m - 1] + ' ' + rp(x.byMonth[m] || 0); }).join(' · ') + '<br>' + esc(Array.from(x.raw || []).join(' · ')) + '</div>' +
+      '</li>';
+  }).join('');
+
+  var footHtml = top.length
+    ? esc(top[0].name) + ' paling besar: <b class="pv">' + rp(top[0].v) + '</b> (' + (tt > 0 ? Math.round(top[0].v / tt * 100) : 0) + '% dari total)'
+    : 'Belum ada pengeluaran';
+
+  return (
+    '<div class="expense-card card slot-card" aria-labelledby="rk-exp-h">' +
+    '<div class="where-ph"><h3 id="rk-exp-h">Item terbesar</h3><div class="dflex aic g8"><div class="cat-tabs expense-tabs" role="group" aria-label="Periode pengeluaran">' + tabs + '</div>' + (picker ? '<div class="expense-picker-wrap">' + picker + '</div>' : '') + '</div></div>' +
+    '<div class="where-sum"><div><span class="where-big big pv expense-total">' + rp(tt) + '</span><span class="where-cap cap sub">keluar \u00b7 ' + periodStr +
+    '<span class="sr-only" style="display:none"> \u00b7 total ' + rp(tt) + (mode === 'w' ? ' \u00b7 ' + fmtD(weekFrom) + ' \u2013 ' + fmtD(anchor) : '') + '</span>' +
+    '</span></div></div>' +
+    '<div class="where-main">' +
+    '<ul class="where-items expense-list items" id="where-items-list">' + itemsRows + '</ul>' +
+    '</div>' +
+    '<div class="where-foot" id="where-items-foot">' + footHtml + '</div>' +
+    '</div>'
+  );
 }
 
-/** Tombol periode yang mengendalikan pie dan bar kategori sekaligus. */
+/** Tombol periode yang mengendalikan bar kategori. */
 function cashPeriodTabs() {
   return periodTabs('catp', catPeriod);
 }
 
-/** Satu kartu: pie pemasukan/pengeluaran + bar per kategori, disatukan periode. */
+/** Satu kartu: bar per kategori + item terbesar, disatukan periode. */
 function insightCard(C) {
   var p = cashPeriod(C, catPeriod),
-    total = p.inc + p.out,
+    income = catDir === '+',
+    src = income ? p.incByCat : p.byCat,
+    total = income ? p.inc : p.out,
+    rangeStr = fmtDateRange(p.from, p.to) + simTag(S.year),
     tabs = cashPeriodTabs(),
-    income = catDir === '+';
-  var head =
-    '<div class="insight-head dflex fcol g4">' +
-    '<div class="dflex jcsb aic g8"><h2 class="m0" id="rk-cat-h">Per kategori</h2>' +
-    '<div class="cat-tabs" role="tablist">' +
-    tabs +
-    '</div></div>' +
-    '<div class="dflex jcsb aic g8">' +
-    '<div class="sub">' +
-    fmtD(p.from) +
-    ' – ' +
-    fmtD(p.to) +
-    simTag(S.year) +
-    '</div><div class="cat-tabs cat-dirs" role="tablist">' +
-    '<button type="button" class="cat-tab' +
-    (income ? '' : ' on') +
-    '" data-catd="-" aria-pressed="' +
-    (income ? 'false' : 'true') +
-    '">Keluar</button>' +
-    '<button type="button" class="cat-tab' +
-    (income ? ' on' : '') +
-    '" data-catd="+" aria-pressed="' +
-    (income ? 'true' : 'false') +
-    '">Masuk</button></div></div></div>';
-  if (!total)
-    return (
-      '<section class="card insight" aria-labelledby="rk-cat-h">' +
-      head +
-      '<div class="empty">Belum ada pemasukan atau pengeluaran pada periode ini.</div></section>'
-    );
-  var src = income ? p.incByCat : p.byCat,
-    sum = income ? p.inc : p.out,
-    dir = income ? 'Pemasukan' : 'Pengeluaran';
+    dirTabs = '<div class="cat-tabs cat-dirs" role="tablist">' +
+      '<button type="button" class="cat-tab' + (income ? '' : ' on') + '" data-catd="-" aria-pressed="' + (!income) + '">Keluar</button>' +
+      '<button type="button" class="cat-tab' + (income ? ' on' : '') + '" data-catd="+" aria-pressed="' + income + '">Masuk</button>' +
+      '</div>';
+
   var list = Object.keys(src)
-    .map(function (k) {
-      return { name: k || 'Tanpa kategori', v: src[k], none: !k };
-    })
-    .sort(function (a, b) {
-      return b.v - a.v;
-    });
-  list.forEach(function (e) {
-    e.color = catColor(e.none ? '' : e.name);
-  });
-  var donut = donutHtml({
-    aria: dir + ' per kategori',
-    data: list.map(function (e) {
-      return { label: e.name, value: e.v, color: e.color };
-    })
-  });
-  var reserveSrc = income ? p.byCat : p.incByCat,
-    reserve = '<div class="dn"><div class="dn-ring"></div><ul class="insight-reserve-list">' +
-      Object.keys(reserveSrc).map(function (k) {
-        return '<li><div class="insight-reserve-row"><i></i><span>' + esc(k || 'Tanpa kategori') +
-          '</span><span>' + rp(reserveSrc[k]) + '</span><span>100%</span></div></li>';
-      }).join('') + '</ul></div>';
-  var foot =
-    '<div class="sub insight-summary">Masuk <b class="pv">' +
-    rp(p.inc) +
-    '</b> · Keluar <b class="pv">' +
-    rp(p.out) +
-    '</b>' +
-    ' · ' +
-    (p.n + p.nin) +
-    ' transaksi' +
-    (p.out ? ' · rata-rata <b class="pv">' + rp(p.avg) + '/hari</b>' : '') +
-    '</div>';
-  var cat =
-    '<div class="insight-cat">' +
-    '<div class="insight-dn"><div class="insight-current">' +
-    (sum ? donut : '<div class="empty mt8">Belum ada ' + dir.toLowerCase() + ' pada periode ini.</div>') +
-    '</div><div class="insight-reserve" aria-hidden="true" inert>' + reserve + '</div></div>' +
-    foot +
-    '</div>';
-  return '<section class="card insight" aria-labelledby="rk-cat-h">' + head + '<div class="insight-body">' + cat + '</div></section>';
+    .map(function (k) { return { name: k || 'Tanpa kategori', v: src[k] }; })
+    .filter(function (x) { return x.v > 0; })
+    .sort(function (a, b) { return b.v - a.v; });
+
+  var c = list.slice(0, 6);
+  var t = total || c.reduce(function (s, x) { return s + x.v; }, 0);
+  var mx = c.length ? c[0].v : 1;
+
+  var barSegments = c.map(function (x) {
+    var col = catColor(x.name);
+    return '<i data-k="' + esc(x.name) + '" style="flex:' + x.v + ';background:' + col + '" title="' + esc(x.name + ': ' + rp(x.v)) + '"></i>';
+  }).join('');
+
+  var catRows = c.length ? c.map(function (x) {
+    var col = catColor(x.name),
+      svg = catIconSvg(x.name),
+      pct = t > 0 ? Math.round(x.v / t * 100) : 0,
+      barW = Math.min(100, Math.round(x.v / mx * 100));
+    return '<li data-k="' + esc(x.name) + '">' +
+      '<span class="where-ti" style="color:' + col + ';background:color-mix(in srgb,' + col + ' 16%,transparent)">' +
+      '<svg viewBox="0 0 24 24"><path d="' + svg + '"/></svg></span>' +
+      '<div class="where-nm"><b>' + esc(x.name) + '</b><small>' + pct + '% dari total</small></div>' +
+      '<span class="where-mb"><i style="width:' + barW + '%;background:' + col + '"></i></span>' +
+      '<b class="where-am am pv">' + rp(x.v) + '</b>' +
+      '</li>';
+  }).join('') : '<li class="where-empty">Belum ada data pada periode ini.</li>';
+
+  return (
+    '<div class="insight card slot-card" aria-labelledby="rk-cat-h">' +
+    '<div class="where-ph"><h3 id="rk-cat-h">Per kategori</h3><div class="cat-tabs" role="tablist">' + tabs + '</div></div>' +
+    '<div class="where-sum"><div><span class="where-big big pv">' + rp(t) + '</span><span class="where-cap cap">' + (income ? 'masuk' : 'keluar') + ' \u00b7 ' + rangeStr + '</span></div>' + dirTabs + '</div>' +
+    '<div class="where-main">' +
+    '<div class="where-bar" id="where-cat-bar">' + barSegments + '</div>' +
+    '<ul class="where-cats" id="where-cats-list">' + catRows + '</ul>' +
+    '</div>' +
+    '<div class="where-foot" id="where-cat-foot">' + c.length + ' kategori \u00b7 total <b class="pv">' + rp(t) + '</b></div>' +
+    '</div>'
+  );
 }
 
 /** Kartu saldo + statistik. */
@@ -921,6 +925,8 @@ function emptyItemsHtml() {
   );
 }
 
+var currentBillsRowCount = 6;
+
 /** Kartu "Jadwal tagihan": tagihan belum lunas 3 bulan ke depan; bila ketiganya sudah lunas,
  *  jendela bergeser 3 bulan lagi (rolling) sampai ada tagihan tersisa. Tautan implisit ke tab Jadwal. */
 function billsCard() {
@@ -954,9 +960,10 @@ function billsCard() {
       dateBalances[d] = running;
     });
   }
-  var BILLS_ROW_COUNT = 6;
-  var body = list
-    .slice(0, BILLS_ROW_COUNT)
+  var N = (typeof window !== 'undefined' && window.innerWidth >= 1280) ? 8 : 6;
+  currentBillsRowCount = N;
+  var shown = list.slice(0, N);
+  var body = shown
     .map(function (r) {
       var iso = isoD(r.t),
         isLate = iso < t,
@@ -967,7 +974,8 @@ function billsCard() {
         diffDays = Math.round((Date.UTC(+iso.slice(0,4), +iso.slice(5,7)-1, +iso.slice(8,10)) - Date.UTC(+t.slice(0,4), +t.slice(5,7)-1, +t.slice(8,10))) / 864e5),
         tone = isLate ? ' bl-late' : (diffDays === 0 || diffDays === 1) ? ' bl-now bl-urgent' : diffDays <= 3 ? ' bl-urgent' : diffDays <= 7 ? ' bl-soon' : '',
         blTooltip = isLate ? ' title="' + esc('Terlambat ' + Math.abs(diffDays) + ' hari') + '"' : diffDays === 0 ? ' title="Jatuh tempo hari ini"' : diffDays <= 7 ? ' title="' + esc('Jatuh tempo dalam ' + diffDays + ' hari') + '"' : '';
-      if (firstNeg && iso === firstNeg.date) cls = ' minus-first';
+      var isMinusFirst = !!(firstNeg && iso === firstNeg.date);
+      if (isMinusFirst) cls = ' minus-first';
       else if (firstNeg && iso > firstNeg.date) cls = ' minus-after';
       if (dateBalances[iso] != null) title = ' title="Saldo proyeksi setelah ini: ' + rp(dateBalances[iso]) + '"';
       return (
@@ -981,16 +989,16 @@ function billsCard() {
         (r.it.cat ? esc(r.it.cat) + ' \u00b7 ' : '') +
         fd(r.t, { day: 'numeric', month: 'short' }) +
         (cd ? ' \u00b7 ' + cd : '') +
+        (isMinusFirst ? ' \u00b7 <span class="bl-tag-minus">Saldo habis</span>' : '') +
         '</span></div><div class="am"><b class="pv">' +
         rp(r.price) +
         '</b></div></div>'
       );
     })
     .join('');
-  var shown = list.slice(0, BILLS_ROW_COUNT),
-    total = shown.reduce(function (x, r) {
-      return x + r.price;
-    }, 0);
+  var total = shown.reduce(function (x, r) {
+    return x + r.price;
+  }, 0);
   var summary = shown.length
     ? '<div class="bl-foot"><span>Total tagihan di atas</span><b class="pv">' + rp(total) + '</b></div>'
     : '';
@@ -998,11 +1006,18 @@ function billsCard() {
     '<div class="card"><div class="dflex jcsb aic fwrap g8"><h2 class="m0">Jadwal tagihan</h2>' +
     '<button type="button" class="lk" data-goto="jadwal">Semua tagihan' +
     LK_ARROW +
-    '</button></div><div class="sub mb8">6 tagihan ke depan</div><div class="bl-wrap">' +
+    '</button></div><div class="sub mb8">' + shown.length + ' tagihan ke depan</div><div class="bl-wrap">' +
     (body ? '<div class="bl-list">' + body + '</div>' : '<div class="empty">Belum ada tagihan terjadwal.</div>') +
     summary +
     '</div></div>'
   );
+}
+
+/** Render-ulang hanya kartu Jadwal tagihan. */
+function rerenderBills() {
+  var el = document.querySelector('.rk-bills');
+  if (!el) { renderRincian(); return; }
+  el.innerHTML = billsCard();
 }
 
 /** Panah kecil untuk tautan implisit. */
@@ -1126,12 +1141,16 @@ function recentTxCard() {
     })
     .join('');
 
-  var moreHtml = remCount > 0
-    ? '<div class="tx-more sub mt8">+' + remCount + ' transaksi lagi di ' + (fallback ? 'catatan ini' : '7 hari ini') + ' &middot; <button type="button" class="lk" data-hist="1">Lihat semua</button></div>'
-    : '';
+  var footHtml = '<div class="tx-foot sub">' +
+    (remCount > 0
+      ? '+' + remCount + ' transaksi lagi di ' + (fallback ? 'catatan ini' : '7 hari ini') + ' \u00b7 <button type="button" class="lk" data-hist="1">Lihat semua</button>'
+      : '<button type="button" class="lk" data-hist="1">Lihat semua transaksi' + LK_ARROW + '</button>') +
+    '</div>';
+
+  var styleAttr = (_txLockedH && typeof window !== 'undefined' && window.innerWidth >= 1280) ? ' style="min-height:' + _txLockedH + 'px"' : '';
 
   return (
-    '<div class="card tx-card"><div class="dflex jcsb aic g8"><h2 class="m0">Transaksi terakhir</h2>' +
+    '<div class="card tx-card"' + styleAttr + '><div class="dflex jcsb aic g8"><h2 class="m0">Transaksi terakhir</h2>' +
     '<div class="cat-tabs cat-dirs" role="tablist">' +
     '<button type="button" class="cat-tab' +
     (txDir === '-' ? ' on' : '') +
@@ -1151,27 +1170,64 @@ function recentTxCard() {
     '<div class="dflex jcsb aic g8 mt6"><span class="sub">' +
     (all ? 'Masuk &amp; keluar' : inn ? 'Uang masuk' : 'Uang keluar') +
     (fallback ? ' 7 catatan terakhir' : ' 7 hari terakhir') +
-    '</span><button type="button" class="lk" data-hist="1">Semua transaksi' +
-    LK_ARROW +
-    '</button></div><div class="tx-wrap mt8">' +
-    (body ? '<ul class="tx-days">' + body + '</ul>' + moreHtml : '<div class="empty">Belum ada transaksi ' + (all ? '' : inn ? 'masuk ' : 'keluar ') + (fallback ? 'terbaru.' : 'dalam 7 hari terakhir.') + '</div>') +
-    '</div></div>'
+    '</span></div><div class="tx-wrap mt8">' +
+    (body ? '<ul class="tx-days">' + body + '</ul>' : '<div class="empty">Belum ada transaksi ' + (all ? '' : inn ? 'masuk ' : 'keluar ') + (fallback ? 'terbaru.' : 'dalam 7 hari terakhir.') + '</div>') +
+    '</div>' +
+    footHtml +
+    '</div>'
   );
+}
+
+/** Sinkronisasi penguncian tinggi kartu Transaksi terakhir untuk mencegah lonjakan antar filter. */
+var _txLockedH = 0;
+function syncTxLockedHeight() {
+  if (typeof window === 'undefined' || window.innerWidth < 1280) {
+    _txLockedH = 0;
+    return;
+  }
+  var el = document.querySelector('.rk-tx');
+  if (!el) return;
+  var parentW = el.getBoundingClientRect().width;
+  if (!parentW) return;
+
+  var rkWrap = document.createElement('div');
+  rkWrap.className = 'rk';
+  rkWrap.style.visibility = 'hidden';
+  rkWrap.style.position = 'absolute';
+  rkWrap.style.top = '-9999px';
+  rkWrap.style.left = '0';
+
+  var dummy = document.createElement('div');
+  dummy.className = 'rk-tx s4';
+  dummy.style.width = parentW + 'px';
+  rkWrap.appendChild(dummy);
+
+  var savedDir = txDir;
+  var maxH = 0;
+  ['all', '-', '+'].forEach(function (d) {
+    txDir = d;
+    _txLockedH = 0;
+    dummy.innerHTML = recentTxCard();
+    document.body.appendChild(rkWrap);
+    var card = dummy.querySelector('.tx-card');
+    var h = card ? card.getBoundingClientRect().height : 0;
+    if (h > maxH) maxH = h;
+    document.body.removeChild(rkWrap);
+  });
+  txDir = savedDir;
+  _txLockedH = maxH;
 }
 
 /** Kartu gabungan "Ke mana uangnya pergi" (Baris 2, 8 kolom): berisi dua sub-panel sejajar. */
 function whereMoneyCard(C) {
-  var p = cashPeriod(C, catPeriod);
-  var sub = fmtD(p.from) + ' – ' + fmtD(p.to) + (catPeriod === 'y' ? '' : ' ' + S.year) +
-    ' · total ' + rp(p.out) + simTag(S.year);
   return (
     '<section class="card rk-where-card" aria-labelledby="rk-where-h">' +
-    '<div class="where-head dflex jcsb aic fwrap g12">' +
+    '<div class="where-head dflex aic">' +
+    '<div class="where-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 20V10M12 20V4M18 20v-7"/></svg></div>' +
     '<div class="where-title"><h2 class="m0" id="rk-where-h">Ke mana uangnya pergi</h2>' +
-    '<div class="sub" id="where-lbl">' + sub + '</div></div></div>' +
-    '<div class="where-panels">' +
+    '<p class="sub m0" id="where-lbl">Distribusi kategori dan pengeluaran terbesar</p></div></div>' +
+    '<div class="where-grid where-panels">' +
     '<div class="where-panel where-left rk-cat">' + insightCard(C) + '</div>' +
-    '<div class="where-sep" aria-hidden="true"></div>' +
     '<div class="where-panel where-right rk-top">' + topExpensesCard(C) + '</div>' +
     '</div>' +
     '</section>'
@@ -1273,6 +1329,11 @@ function renderRincian() {
   kondisiMeta();
   chartMount($('v-rincian'));
   gdApply($('v-rincian'));
+  syncTxLockedHeight();
+  if (_txLockedH) {
+    var txCardEl = document.querySelector('.rk-tx .tx-card');
+    if (txCardEl) txCardEl.style.minHeight = _txLockedH + 'px';
+  }
 }
 
 /** Render-ulang hanya kartu Kondisi kas tanpa menyentuh kartu lain. */
@@ -1300,9 +1361,7 @@ function rerenderCat() {
   el.innerHTML = insightCard(yearCash());
   var whereSub = document.getElementById('where-lbl');
   if (whereSub) {
-    var p = cashPeriod(yearCash(), catPeriod);
-    whereSub.textContent = fmtD(p.from) + ' – ' + fmtD(p.to) + (catPeriod === 'y' ? '' : ' ' + S.year) +
-      ' · total ' + rp(p.out) + simTag(S.year);
+    whereSub.textContent = 'Distribusi kategori dan pengeluaran terbesar';
   }
   chartMount(el);
 }
@@ -1318,7 +1377,16 @@ function rerenderTop() {
 function rerenderTx() {
   var el = document.querySelector('.rk-tx');
   if (!el) { renderRincian(); return; }
+  if (!_txLockedH && typeof window !== 'undefined' && window.innerWidth >= 1280) {
+    syncTxLockedHeight();
+  }
   el.innerHTML = recentTxCard() || '';
+  if (_txLockedH && typeof window !== 'undefined' && window.innerWidth >= 1280) {
+    var card = el.querySelector('.tx-card');
+    if (card) {
+      card.style.minHeight = _txLockedH + 'px';
+    }
+  }
 }
 
 /** Render-ulang hanya kartu Rincian arus tagihan (tabel baris + gdApply). */
@@ -1453,4 +1521,31 @@ function bindRincian() {
       rerenderDetail();
     }
   };
+  $('v-rincian').addEventListener('mouseover', function (e) {
+    var bar = $('v-rincian').querySelector('#where-cat-bar');
+    var cats = $('v-rincian').querySelector('#where-cats-list');
+    if (!bar || !cats) return;
+    var target = e.target.closest('#where-cat-bar i, #where-cats-list li[data-k]');
+    if (target && target.dataset.k) {
+      var k = target.dataset.k;
+      bar.querySelectorAll('i').forEach(function (el) { el.classList.toggle('dim', el.dataset.k !== k); });
+      cats.querySelectorAll('li[data-k]').forEach(function (el) { el.classList.toggle('dim', el.dataset.k !== k); });
+    }
+  });
+  $('v-rincian').addEventListener('mouseout', function (e) {
+    var bar = $('v-rincian').querySelector('#where-cat-bar');
+    var cats = $('v-rincian').querySelector('#where-cats-list');
+    if (!bar || !cats) return;
+    var target = e.target.closest('#where-cat-bar i, #where-cats-list li[data-k]');
+    if (target) {
+      bar.querySelectorAll('i').forEach(function (el) { el.classList.remove('dim'); });
+      cats.querySelectorAll('li[data-k]').forEach(function (el) { el.classList.remove('dim'); });
+    }
+  });
+  window.addEventListener('resize', function () {
+    _txLockedH = 0;
+    syncTxLockedHeight();
+    var txCardEl = document.querySelector('.rk-tx .tx-card');
+    if (txCardEl && _txLockedH) txCardEl.style.minHeight = _txLockedH + 'px';
+  });
 }

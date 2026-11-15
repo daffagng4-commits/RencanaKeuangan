@@ -28,8 +28,8 @@ const { boot } = require('./ui.js');
   w.tab('rincian');
   w.renderAll();
   const dotColor = (name) => {
-    const row = [...$('v-rincian').querySelectorAll('.insight .dn-lg button')].filter((b) => b.querySelector('.n').textContent.trim() === name)[0];
-    return row.querySelector('i').style.background;
+    const row = [...$('v-rincian').querySelectorAll('.insight .where-cats li')].filter((b) => b.querySelector('b').textContent.trim() === name)[0];
+    return row.querySelector('span.where-ti').style.color;
   };
   const before = { h: dotColor('Hiburan'), m: dotColor('Makan') };
   w.S.items[1].price = 5000000; // urutan nilai berubah (Makan jadi terbesar)
@@ -39,18 +39,11 @@ const { boot } = require('./ui.js');
   w.S.items[1].price = 100000;
   w.renderAll();
 
-  // ---- tooltip ----
-  const brow = $('v-rincian').querySelector('.insight .dn-lg button');
-  const ctr = $('v-rincian').querySelector('.insight .dn-c');
-  ev(brow, 'pointerover');
-  assert(/Rp [\d.]+/.test(ctr.textContent) && /% dari total/.test(ctr.textContent), 'hover keterangan menyalakan irisan: ' + ctr.textContent);
-  assert(brow.classList.contains('on'), 'baris keterangan ikut tersorot');
-  ev(brow, 'pointerleave');
-  assert(/^TotalRp / .test(ctr.textContent.replace(/\s+/g,' ')) || /Total/.test(ctr.textContent), 'lepas kursor mengembalikan total: ' + ctr.textContent);
-  click(brow);
-  assert.strictEqual(brow.getAttribute('aria-pressed'), 'false', 'ketuk keterangan menyembunyikan irisan');
-  click(brow);
-  assert.strictEqual(brow.getAttribute('aria-pressed'), 'true', 'ketuk lagi menampilkan irisan');
+  // ---- bar per kategori & item ----
+  const barSeg = $('v-rincian').querySelector('#where-cat-bar i');
+  assert(barSeg, 'segmen bar kategori ada');
+  const catLi = $('v-rincian').querySelector('#where-cats-list li');
+  assert(catLi, 'baris kategori ada');
 
   // grafik: kurva halus + crosshair/tooltip interaktif
   const chart = $('v-rincian').querySelector('svg[aria-label^="Grafik arus saldo"]');
@@ -91,15 +84,15 @@ const { boot } = require('./ui.js');
   // pie pemasukan vs pengeluaran pindah ke Rincian Bulanan, di samping grafik arus saldo
   w.tab('rincian');
   w.renderAll();
-  const dn = $('v-rincian').querySelector('.insight .dn');
-  assert(dn, 'donut per kategori di Rincian Bulanan');
-  const ns = dn.querySelectorAll('.dn-slice').length,
-    nr = dn.querySelectorAll('.dn-lg button').length;
-  assert(ns > 1, 'donut punya irisan per kategori: ' + ns);
-  assert.strictEqual(nr, ns, 'satu baris keterangan per irisan');
-  const vals = [].map.call(dn.querySelectorAll('.dn-lg .v'), function (v) { return Number(v.textContent.replace(/[^\d]/g, '')); });
-  assert(vals.every(function (v, i) { return i === 0 || vals[i - 1] >= v; }), 'keterangan urut dari terbesar');
-  assert(/transaksi/.test(txt($('v-rincian').querySelector('.insight-cat'))), 'footer transaksi tetap ada');
+  const bar = $('v-rincian').querySelector('#where-cat-bar');
+  assert(bar, 'bar bertumpuk per kategori di Rincian Bulanan');
+  const ns = bar.querySelectorAll('i').length,
+    nr = $('v-rincian').querySelectorAll('#where-cats-list li').length;
+  assert(ns > 1, 'bar punya segmen per kategori: ' + ns);
+  assert.strictEqual(nr, ns, 'satu baris kategori per segmen');
+  const vals = [].map.call($('v-rincian').querySelectorAll('#where-cats-list .where-am'), function (v) { return Number(v.textContent.replace(/[^\d]/g, '')); });
+  assert(vals.every(function (v, i) { return i === 0 || vals[i - 1] >= v; }), 'kategori urut dari terbesar');
+  assert(/kategori/.test(txt($('v-rincian').querySelector('#where-cat-foot'))), 'footer kategori tetap ada');
 
   // ---- empty state ----
   w.kasLinked().tx = [];

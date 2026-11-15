@@ -407,7 +407,12 @@
       for (var i = 0; i < list.length; i++)
         for (var j = 0; j < list[i].addedNodes.length; j++)
           if (list[i].addedNodes[j].nodeType === 1) {
-            if (!tick) tick = rAF(function () { tick = 0; up(document); });
+            if (!tick) tick = rAF(function () {
+              tick = 0;
+              try {
+                if (typeof document !== 'undefined' && document && document.body) up(document);
+              } catch (e) {}
+            });
             return;
           }
     }).observe(document.body, { childList: true, subtree: true });

@@ -61,12 +61,13 @@ function acctUI(u) {
   if (!b || !ini) return;
   b.classList.toggle('on', !!u);
   ini.textContent = u ? 'D' : '?';
-  b.title = u ? (u.email || 'Akun') + ' · opsi akun' : 'Masuk / daftar untuk sinkron';
+  var ariaLabel = 'Profil ' + (typeof USER_NAME !== 'undefined' && USER_NAME ? USER_NAME.trim() : 'Pengguna');
+  b.title = u ? (u.email || 'Akun') + ' · opsi akun' : ariaLabel;
   var bm = $('acct-m'), inim = $('acct-m-ini');
   if (bm) {
     bm.classList.toggle('on', !!u);
-    bm.title = b.title;
-    if (inim) inim.textContent = u ? 'D' : '?';
+    bm.title = u ? (u.email || 'Akun') + ' · opsi akun' : ariaLabel;
+    if (inim && typeof userInitial === 'function') inim.textContent = userInitial();
   }
 }
 

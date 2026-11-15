@@ -53,8 +53,10 @@ function tab(t) {
     void sec.offsetWidth;
     sec.classList.add('page-in');
   }
-  if (t === 'rincian' && typeof LC_LIVE !== 'undefined' && Array.isArray(LC_LIVE)) {
-    LC_LIVE.forEach(function (fn) { if (typeof fn === 'function') fn(); });
+  if (t === 'rincian') {
+    if (typeof LC_LIVE !== 'undefined' && Array.isArray(LC_LIVE)) {
+      LC_LIVE.forEach(function (fn) { if (typeof fn === 'function') fn(); });
+    }
   }
   navPill();
   $('yb').style.display = '';

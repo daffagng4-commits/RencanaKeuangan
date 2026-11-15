@@ -46,10 +46,13 @@ function oldSlots(w) {
     assert.deepStrictEqual(a.footprint, ['rk-kas', 'rk-bills', 'rk-mf', 'rk-where', 'rk-detail', 'rk-tx'], 'grid berisi 6 slot berurutan');
 
     // 1. Kartu yang hanya DIPINDAH: nominal & teks harus identik dengan versi lama.
-    for (const k of ['bills', 'mf', 'cat', 'top', 'detail', 'tx']) {
+    for (const k of ['bills', 'mf', 'detail', 'tx']) {
       if (!b[k]) continue;
       assert.deepStrictEqual(money(a[k] && a[k].text), money(b[k]), 'nominal kartu "' + k + '" identik dengan versi lama');
     }
+    // Panel kategori & item terbesar (donut & 5 item diganti bar & 10 item): total tetap cocok
+    if (b['cat']) assert(clean(a['cat'].text).includes('Rp 22.440.000'), 'total pengeluaran kategori cocok');
+    if (b['top']) assert(clean(a['top'].text).includes('Rp 22.440.000'), 'total pengeluaran item terbesar cocok');
 
     // 2. Kondisi kas = gabungan kartu Saldo realtime + Arus saldo lama.
     const kasNew = money(a.kas && a.kas.text);

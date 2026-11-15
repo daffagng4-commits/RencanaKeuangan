@@ -240,7 +240,7 @@ kbd { box-shadow: inset 0 -1px 0 var(--ln2); }
   background: transparent;
 }
 .topbar-actions .topbar-btn:hover { background: color-mix(in srgb, var(--ink) 7%, var(--sf)); }
-.topbar-actions .topbar-btn > span {
+.topbar-actions .topbar-btn:not(.acct) > span {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -252,7 +252,6 @@ kbd { box-shadow: inset 0 -1px 0 var(--ln2); }
 .topbar-actions .topbar-btn.on,
 .topbar-actions .topbar-btn.on:hover { background: var(--ac); color: var(--ac-ink); }
 .topbar-actions.min .topbar-btn[data-more],
-.topbar-actions.min .alat,
 .topbar-actions.min #pwa { display: none; }
 .tb-more .arr-icon { transition: transform 0.18s ease; }
 .topbar-actions.min .tb-more .arr-icon { transform: rotate(180deg); }
@@ -799,7 +798,6 @@ tr.flash td { animation: fl 2.6s ease-out; }
    6. Menu Alat, bottom nav (HP), utilitas
    ============================================================ */
 .alat { position: relative; }
-.topbar-actions .alat-menu { left: auto; right: 0; }
 .alat .yp { display: inline-flex; align-items: center; gap: 6px; }
 .alat-menu {
   position: absolute;
@@ -981,10 +979,10 @@ button.alat-item { width: 100%; border: 0; background: transparent; text-align: 
   border-color: color-mix(in srgb, var(--wr) 26%, transparent);
   color: var(--wr);
 }
-.it2.minus-first { color: var(--wr); }
-.it2.minus-first::before { content: '⚠ '; margin-right: 4px; }
-.it2.minus-after { color: var(--mut); }
-.it2.minus-after::before { content: '− '; margin-right: 4px; color: var(--mut); }
+.it2.minus-first:not(.bl) { color: var(--wr); }
+.it2.minus-first:not(.bl)::before { content: '⚠ '; margin-right: 4px; }
+.it2.minus-after:not(.bl) { color: var(--mut); }
+.it2.minus-after:not(.bl)::before { content: '− '; margin-right: 4px; color: var(--mut); }
 .runway-box.runway-safe {
   background: var(--ins);
   border-color: color-mix(in srgb, var(--in) 26%, transparent);
@@ -1581,8 +1579,8 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
 }
 
 @media (pointer: coarse) {
-  .topbar-actions .topbar-btn, .acct { width: 38px; height: 38px; min-width: 38px; }
-  .yp, a.yp, .topbar-btn, .gdt { min-height: 36px; }
+  .topbar-actions .topbar-btn, .acct { width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
+  .yp, a.yp, .topbar-btn, .gdt { min-height: 40px; }
   .cat-dirs .cat-tab { min-height: 34px; }
 }
 
@@ -1595,8 +1593,8 @@ body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); us
   .hero > .card { padding: 15px; }
   .topbar { margin-bottom: 14px; padding-bottom: 12px; gap: 8px; }
   .kt { gap: 4px; }
-  .topbar-actions { gap: 0; padding: 2px; margin-left: auto; }
-  .topbar-actions .topbar-btn, .acct { width: 32px; min-width: 32px; height: 32px; }
+  .topbar-actions { gap: 2px; padding: 3px 4px; margin-left: auto; }
+  .topbar-actions .topbar-btn, .acct { width: 40px; min-width: 40px; height: 40px; min-height: 40px; }
   .topbar-actions .yp { min-height: 28px; font-size: 11.5px; padding: 0 9px; }
   .yp, a.yp { font-size: 12px; padding: 5px 10px; min-height: 30px; }
   a.yp.yp-tool { font-size: 11.5px; }
@@ -1806,18 +1804,38 @@ nav .nav-pill {
 #acct-m { display: none; }
 
 @media (max-width: 1023px) {
+  .topbar-actions { gap: 2px; padding: 3px 4px; margin-left: auto; }
+  .topbar-actions .topbar-btn, .acct { width: 40px; min-width: 40px; height: 40px; min-height: 40px; }
   #acct-m {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
     border-radius: 50%;
     background: color-mix(in srgb, var(--ac) 14%, transparent);
     color: var(--ac);
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
     border: 1px solid transparent;
+  }
+  #acct-m > #acct-m-ini {
+    position: static;
+    width: auto;
+    height: auto;
+    clip: auto;
+    overflow: visible;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    font-style: normal;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .02em;
   }
 }
 
@@ -2330,9 +2348,19 @@ nav .nav-pill {
 .bl-badge span { font-size: 9.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--mut); }
 .bl-badge.bl-now { background: var(--acs); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ac) 38%, transparent); }
 .bl-badge.bl-now b, .bl-badge.bl-now span { color: var(--ac); }
-.bl-badge.bl-late, .bl.minus-first .bl-badge { background: var(--wrs); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wr) 34%, transparent); }
-.bl.minus-first .bl-badge b, .bl.minus-first .bl-badge span { color: var(--wr); }
+.bl-badge.bl-late { background: var(--wrs); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--wr) 34%, transparent); }
 .bl-badge.bl-late b, .bl-badge.bl-late span { color: var(--wr); }
+.bl-tag-minus {
+  display: inline-block;
+  padding: 1px 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--wr) 14%, transparent);
+  color: var(--wr);
+  border: 1px solid color-mix(in srgb, var(--wr) 30%, transparent);
+  vertical-align: middle;
+}
 .bl-main { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 1px; }
 .bl-main b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bl-main .sub { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -2418,6 +2446,11 @@ nav .nav-pill {
   .rk > .rk-where {
     height: auto;
   }
+  .rk > .rk-where > .card,
+  .rk-where-card {
+    height: auto;
+    box-sizing: border-box;
+  }
   .rk > .rk-detail {
     height: auto;
     min-height: 0;
@@ -2431,192 +2464,313 @@ nav .nav-pill {
   }
   .rk > .rk-tx {
     height: auto;
-    min-height: 270px;
-    align-self: stretch;
+    min-height: 0;
+    align-self: start;
+  }
+  .rk > .rk-tx > .card,
+  .tx-card {
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
   }
 }
 
-/* Kartu gabungan "Ke mana uangnya pergi" (Baris 2, 8 kolom) */
+/* ============================================================
+   Kartu gabungan "Ke mana uangnya pergi" (Baris 2, 8 kolom)
+   Acuan ukuran konstan mockup:
+   --bar-h 16 + margin 24 = blok bar 40px | baris kategori 54px x 6 | baris item 36.4px x 10 | tinggi body 364px
+   ============================================================ */
+:root {
+  --bar-h: 16px;
+  --row-cat: 54px;
+  --body-h: 364px;
+}
 .rk-where-card {
   display: flex;
   flex-direction: column;
   overflow: visible;
 }
-.where-head {
-  margin-bottom: 8px;
-}
-.where-panels {
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  gap: 20px;
-  flex: 1 1 auto;
-}
-.where-panel {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow: visible;
-}
-.where-panel.where-left {
-  flex: 5 5 0;
-}
-.where-sep {
-  width: 1px;
-  background: var(--ln);
-  flex: 0 0 1px;
-  align-self: stretch;
-}
-.where-panel.where-right {
-  flex: 6 6 0;
-}
-.where-panel > .card,
-.where-panel > section.card {
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  height: 100%;
-}
-
-/* Pitch selaras daftar kategori dan item terbesar (44px) */
-.where-panel .insight-head,
-.where-panel .expense-head-row1,
-.where-panel .expense-head-row2 {
-  min-height: 28px;
-  margin-bottom: 4px !important;
-}
-.where-panel .expense-head-row2 {
-  height: 28px;
-  box-sizing: border-box;
-}
-.where-panel select[data-expmonth] {
-  height: 24px;
-  font-size: 11px;
-  padding: 1px 6px;
-  margin: 0;
-  border-radius: 6px;
-}
-.where-panel .insight-body,
-.where-panel .insight-cat,
-.where-panel .insight-dn {
-  margin-top: 0 !important;
-}
-.where-panel .expense-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 2px 0 6px !important;
-  padding: 0;
-  list-style: none;
-  justify-content: flex-start;
-  min-height: 258px;
-}
-.where-panel .expense-row {
-  flex: 0 0 38px;
-  height: 38px;
-  padding: 5px 8px;
-  margin: 0;
-  border-radius: 8px;
-  border-top: 1px solid var(--ln);
-  box-sizing: border-box;
-}
-.where-panel .expense-row:first-child {
-  border-top: 0;
-}
-.where-panel .expense-track {
-  height: 4px;
-  margin: 3px 0 0 24px;
-}
-.where-panel .dn-lg {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin: 2px 0 6px !important;
-  padding: 0;
-  list-style: none;
-  justify-content: flex-start;
-  min-height: 258px;
-}
-.where-panel .dn-lg > li {
-  margin: 0;
-  padding: 0;
-  height: 38px;
-  box-sizing: border-box;
-}
-.where-panel .dn-lg > li > button {
-  width: 100%;
-  height: 38px;
+.rk-where-card .where-head {
   display: flex;
   align-items: center;
-  padding: 5px 8px;
-  border-radius: 8px;
-  border: none;
-  border-top: 1px solid var(--ln);
-  background: transparent;
-  cursor: pointer;
-  box-sizing: border-box;
+  gap: 14px;
+  margin-bottom: 16px;
 }
-.where-panel .dn-lg > li:first-child > button {
-  border-top: 0;
+.rk-where-card .where-head h2 {
+  font-size: 16px;
+  line-height: 1.25;
+  letter-spacing: 0;
+  margin: 0;
 }
-.where-panel .dn-lg > li > button:hover,
-.where-panel .dn-lg > li > button.on {
-  background: var(--sf2);
-}
-.where-panel .dn-lg .n {
-  flex: 1 1 auto;
-  text-align: left;
-  font-size: 13.5px;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.where-panel .dn-lg .v {
-  flex: 0 0 auto;
-  text-align: right;
-  font-size: 13.5px;
-  font-weight: 600;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-  margin-right: 8px;
-}
-.where-panel .dn-lg .p {
-  flex: 0 0 36px;
-  text-align: right;
-  font-size: 12px;
+.rk-where-card .where-head p,
+.rk-where-card .where-head .sub {
   color: var(--mut);
+  font-size: 12px;
+  line-height: 1.3;
+  margin-top: 3px;
+  margin-bottom: 0;
 }
-.where-panel .insight-summary,
-.where-panel .expense-card .bs-foot {
-  margin-top: 10px !important;
-  padding-top: 8px;
-  border-top: 1px dashed var(--ln);
+.where-ico {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--ac) 14%, transparent);
+  color: var(--ac);
 }
-.where-panel .insight .dn {
+.where-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 32px;
+}
+.where-panel {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.where-panel + .where-panel {
+  border-left: 1px solid var(--ln);
+  padding-left: 32px;
+}
+.where-panel > .card,
+.where-panel > .slot-card {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  height: 100% !important;
   display: flex !important;
   flex-direction: column !important;
-  align-items: center !important;
-  gap: 10px !important;
 }
-.where-panel .dn-ring {
-  width: 140px !important;
-  height: 140px !important;
-  margin: 0 auto 4px !important;
-  flex: 0 0 140px !important;
+.where-ph {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 32px;
 }
-.where-panel .dn-lg {
-  width: 100% !important;
-  min-height: 0 !important;
+.where-ph h3 {
+  font-size: 15px;
+  margin: 0;
+  font-weight: 600;
 }
-.where-panel .dn-lg > li > button {
-  display: grid !important;
-  grid-template-columns: 10px minmax(0, 1fr) auto 34px !important;
-  gap: 8px !important;
-  align-items: center !important;
-  width: 100% !important;
+.where-sum {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 52px;
+  gap: 8px;
+}
+.where-big {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+.where-cap {
+  color: var(--mut);
+  font-size: 12px;
+  margin-left: 6px;
+}
+.where-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #e0953f 18%, transparent);
+  color: #a8640f;
+  white-space: nowrap;
+}
+:root[data-theme=dark] .where-badge,
+.dark .where-badge {
+  color: #f0b868;
+}
+.where-main {
+  height: var(--body-h);
+  overflow: hidden;
+}
+.where-bar {
+  display: flex;
+  gap: 2px;
+  height: var(--bar-h);
+  margin: 8px 0 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+.where-bar i {
+  min-width: 4px;
+  transition: opacity .15s;
+}
+ul.where-cats, ul.where-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.where-cats li {
+  height: var(--row-cat);
+  box-sizing: border-box;
+}
+.where-items {
+  display: grid;
+  grid-template-rows: repeat(10, calc(var(--body-h) / 10));
+}
+.where-cats li {
+  display: grid;
+  grid-template-columns: 34px 1fr 64px 92px;
+  gap: 12px;
+  align-items: center;
+  transition: opacity .15s;
+}
+.where-items li {
+  display: grid;
+  grid-template-columns: 24px 1fr 64px 40px 92px;
+  gap: 12px;
+  align-items: center;
+  transition: opacity .15s;
+}
+.where-cats { --tile: 34px; }
+.where-items { --tile: 24px; }
+.where-cats li + li, .where-items li + li {
+  border-top: 1px solid var(--ln);
+}
+.where-ti {
+  width: var(--tile);
+  height: var(--tile);
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+.where-items .where-ti {
+  border-radius: 7px;
+}
+.where-ti svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.where-nm {
+  min-width: 0;
+}
+.where-cats .where-nm b {
+  display: block;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.where-cats .where-nm small {
+  color: var(--mut);
+  font-size: 12px;
+}
+.where-items .where-nm,
+.items .nm {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.where-items .where-nm b,
+.items .nm b {
+  display: inline;
+  font-size: 13px;
+  font-weight: 700;
+}
+.where-items .where-nm small,
+.items .nm small {
+  margin-left: 8px;
+  color: var(--mut);
+  font-size: 12px;
+}
+.pcn {
+  font-size: 12px;
+  color: var(--mut);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.where-mb {
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  overflow: hidden;
+}
+.where-mb i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+}
+.where-am {
+  font-size: 13px;
+  text-align: right;
+  width: 92px;
+  min-width: 92px;
+  max-width: 92px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.where-empty {
+  color: var(--mut);
+  font-size: 13px;
+  padding: 16px 0;
+}
+.where-foot {
+  border-top: 1px dashed var(--ln);
+  margin-top: 10px;
+  padding-top: 10px;
+  height: 36px;
+  font-size: 12px;
+  color: var(--mut);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+.where-foot b {
+  color: var(--ink);
+  display: inline !important;
+  font-weight: 700 !important;
+}
+.dim {
+  opacity: .35;
+}
+@media (max-width: 760px) {
+  .where-grid {
+    grid-template-columns: 1fr;
+  }
+  .where-panel + .where-panel {
+    border-left: 0;
+    border-top: 1px solid var(--ln);
+    padding-left: 0;
+    padding-top: 24px;
+    margin-top: 16px;
+  }
+  li .mb, .where-mb {
+    display: none;
+  }
+  .where-cats li {
+    grid-template-columns: 34px 1fr 92px;
+  }
+  .where-items li {
+    grid-template-columns: 24px 1fr 40px 92px;
+  }
+  .where-am {
+    width: 92px;
+    min-width: 92px;
+  }
+}
+
+.cond-flow-low b,
+.cond-flow-low span,
+.cond-tile .sub b,
+.cond-tile .sub span {
+  display: inline !important;
 }
 
 /* Tidak ada ruang kosong di dalam kartu: isi tumbuh, ringkasan menempel di dasar. */
@@ -2645,10 +2799,14 @@ nav .nav-pill {
 }
 
 .rk .bl-foot,
-.rk .tx-foot,
-.rk .card > .bl-foot,
-.rk .card > .tx-foot {
+.rk .card > .bl-foot {
   margin-top: 10px !important;
+  padding-top: 8px;
+  border-top: 1px dashed var(--ln);
+}
+.rk .tx-foot,
+.rk .card > .tx-foot {
+  margin-top: auto !important;
   padding-top: 8px;
   border-top: 1px dashed var(--ln);
 }
@@ -3311,13 +3469,12 @@ nav .nav-pill {
     <button role="tab" data-t="item" aria-selected="false" title="Kelola Item" aria-label="Kelola Item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5 12 3l9 4.5-9 4.5z"/><path d="M3 12.5 12 17l9-4.5M3 17l9 4.5 9-4.5"/></svg><span class="nav-lbl">Kelola Item</span></button>
     <button role="tab" data-t="sim" aria-selected="false" title="Simulasi" aria-label="Simulasi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span class="nav-lbl">Simulasi</span></button>
   </div>
-  <div class="sb-bot">
-    <div class="alat" id="alat"><button type="button" class="topbar-btn" id="alat-btn" aria-haspopup="true" title="Alat &amp; laporan" aria-label="Alat &amp; laporan" aria-expanded="false"><svg class="arr-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="nav-lbl">Pengaturan</span></button>
-    <div class="alat-menu" id="alat-menu" role="menu" hidden><button type="button" class="alat-item i" role="menuitem" data-go="trip"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/></svg><span>Perjalanan</span></button><button type="button" class="alat-item i" role="menuitem" id="thm" title="Ketuk untuk ganti tema" aria-label="Ganti tema"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span id="thm-txt">Tema</span></button><button type="button" class="alat-item i" role="menuitem" id="pwa" title="Pasang aplikasi ini di perangkat" aria-label="Pasang aplikasi ini di perangkat" hidden><svg class="arr-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10.5 18.5h3"/></svg><span>Pasang aplikasi</span></button><div class="alat-sep"></div><button type="button" class="alat-item" role="menuitem" id="alat-more" aria-expanded="false" aria-controls="alat-rest"><span>Lebih banyak</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button><div class="alat-rest" id="alat-rest" hidden><a class="alat-item" role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><a class="alat-item" role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><div class="bs-h">Laporan</div><button type="button" class="alat-item" role="menuitem" data-rep="d"><span>Hari ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="w"><span>Minggu ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="m"><span>Bulan ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="y"><span>Tahun ini</span></button><div class="alat-sep"></div><button type="button" class="alat-item" role="menuitem" id="bk"><span>Impor / Ekspor</span></button></div></div>
-    </div>
+    <div class="sb-bot">
+    <div class="alat" id="alat"><button type="button" class="topbar-btn" id="alat-btn" aria-haspopup="true" title="Alat &amp; laporan" aria-label="Alat &amp; laporan" aria-expanded="false"><svg class="arr-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="nav-lbl">Pengaturan</span></button></div>
   </div>
 </nav>
 </header>
+
 <div class="w">
 <div class="topbar">
   <div class="kt" id="mdbar">
@@ -3328,7 +3485,7 @@ nav .nav-pill {
     <div class="yr-pop" id="yr-pop">
       <button type="button" class="topbar-btn yr-plus" id="yr-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="yr-panel" title="Tahun, bulan saldo, dan saldo awal" aria-label="Tahun, bulan saldo, dan saldo awal"><svg class="arr-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
     </div>
-    <button type="button" id="acct-m" class="acct topbar-btn" title="Masuk / daftar untuk sinkron" aria-label="Akun" onclick="document.getElementById('acct').click()"><span id="acct-m-ini">?</span></button>
+    <button type="button" id="acct-m" class="acct topbar-btn" title="Profil Daffa" aria-label="Profil Daffa" onclick="document.getElementById('acct').click()"><span id="acct-m-ini">D</span></button>
     <button type="button" id="btn-privacy" class="topbar-btn" data-more title="Mode Privasi (Kaburkan Nominal)" aria-label="Mode Privasi" aria-pressed="false"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Privasi</span></button>
     <button type="button" id="btn-notif" class="topbar-btn" data-more title="Aktifkan pengingat notifikasi tagihan" aria-label="Notifikasi tagihan"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span>Notifikasi</span></button>
     <button type="button" id="tb-more" class="topbar-btn tb-more" aria-expanded="true" title="Sembunyikan tombol lain" aria-label="Sembunyikan tombol lain"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg></button>
@@ -3527,6 +3684,8 @@ nav .nav-pill {
 </div><!-- /.w -->
 </div><!-- /.app -->
 
+<div class="alat-menu" id="alat-menu" role="menu" hidden><button type="button" class="alat-item i" role="menuitem" data-go="trip"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h10M4 17h7"/></svg><span>Perjalanan</span></button><button type="button" class="alat-item i" role="menuitem" id="thm" title="Ketuk untuk ganti tema" aria-label="Ganti tema"><svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg><span id="thm-txt">Tema</span></button><button type="button" class="alat-item i" role="menuitem" id="pwa" title="Pasang aplikasi ini di perangkat" aria-label="Pasang aplikasi ini di perangkat" hidden><svg class="arr-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10.5 18.5h3"/></svg><span>Pasang aplikasi</span></button><div class="alat-sep"></div><button type="button" class="alat-item" role="menuitem" id="alat-more" aria-expanded="false" aria-controls="alat-rest"><span>Lebih banyak</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button><div class="alat-rest" id="alat-rest" hidden><a class="alat-item" role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><a class="alat-item" role="menuitem" href="tools/ibkr-flip/index.html" target="_blank" rel="noopener"><span>IBKR vs Flip</span><svg class="arr-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M17 7H9M17 7V15"/></svg></a><div class="bs-h">Laporan</div><button type="button" class="alat-item" role="menuitem" data-rep="d"><span>Hari ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="w"><span>Minggu ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="m"><span>Bulan ini</span></button><button type="button" class="alat-item" role="menuitem" data-rep="y"><span>Tahun ini</span></button><div class="alat-sep"></div><button type="button" class="alat-item" role="menuitem" id="bk"><span>Impor / Ekspor</span></button></div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
 <script>
 /* ===== js/config.js ===== */
@@ -3627,6 +3786,40 @@ function isoD(t) {
 /** "YYYY-MM-DD" -> tanggal terformat. */
 function fmtD(d) {
   return fd(Date.parse(d + 'T00:00:00Z'));
+}
+
+/**
+ * Format rentang tanggal ringkas bahasa Indonesia.
+ * Aturan:
+ * - Bulan dan tahun sama: "1 – 30 Nov 2026"
+ * - Bulan beda, tahun sama: "1 Nov – 15 Des 2026"
+ * - Tahun beda: "28 Des 2026 – 3 Jan 2027"
+ * - Tanggal sama: "15 Nov 2026"
+ * Pemisah rentang SELALU en-dash (" – ") dengan spasi.
+ */
+function fmtDateRange(from, to) {
+  if (!from) return '';
+  if (!to || from === to) return fmtD(from);
+  var y1 = from.slice(0, 4), m1 = +from.slice(5, 7) - 1, d1 = String(+from.slice(8, 10));
+  var y2 = to.slice(0, 4), m2 = +to.slice(5, 7) - 1, d2 = String(+to.slice(8, 10));
+  if (y1 === y2) {
+    if (m1 === m2) {
+      return d1 + ' \u2013 ' + d2 + ' ' + MON[m1] + ' ' + y1;
+    }
+    return d1 + ' ' + MON[m1] + ' \u2013 ' + d2 + ' ' + MON[m2] + ' ' + y1;
+  }
+  return d1 + ' ' + MON[m1] + ' ' + y1 + ' \u2013 ' + d2 + ' ' + MON[m2] + ' ' + y2;
+}
+
+/**
+ * Format rentang bulan ringkas bahasa Indonesia:
+ * - Bulan sama: "Nov 2026"
+ * - Bulan beda: "Nov – Des 2026"
+ */
+function fmtMonthRange(m1, m2, y) {
+  if (m1 == null) return '';
+  if (m2 == null || m1 === m2) return MON[m1] + ' ' + y;
+  return MON[m1] + ' \u2013 ' + MON[m2] + ' ' + y;
 }
 
 /** Harga singkat: 720rb, 1,5jt. */
@@ -5295,8 +5488,10 @@ function tab(t) {
     void sec.offsetWidth;
     sec.classList.add('page-in');
   }
-  if (t === 'rincian' && typeof LC_LIVE !== 'undefined' && Array.isArray(LC_LIVE)) {
-    LC_LIVE.forEach(function (fn) { if (typeof fn === 'function') fn(); });
+  if (t === 'rincian') {
+    if (typeof LC_LIVE !== 'undefined' && Array.isArray(LC_LIVE)) {
+      LC_LIVE.forEach(function (fn) { if (typeof fn === 'function') fn(); });
+    }
   }
   navPill();
   $('yb').style.display = '';
@@ -6230,20 +6425,6 @@ function donutInit(host, cfg) {
       return o;
     });
   }
-  function fitCenterText(centerEl) {
-    var str = centerEl.querySelector('strong');
-    if (!str) return;
-    str.style.fontSize = '';
-    var ringEl = centerEl.closest('.dn-ring');
-    var ringW = ringEl ? (ringEl.clientWidth || 140) : 140;
-    var maxW = Math.max(50, ringW * 0.65 - 8);
-    var sz = 15;
-    while (str.scrollWidth > maxW && sz > 9) {
-      sz -= 0.5;
-      str.style.fontSize = sz + 'px';
-    }
-  }
-
   function paint() {
     slices.forEach(function (el, i) {
       var o = st[i],
@@ -6257,7 +6438,6 @@ function donutInit(host, cfg) {
     c[0].textContent = on ? DATA[hov].label : 'Total';
     c[1].textContent = on ? rp(DATA[hov].value) : rp(shown || vt);
     c[2].textContent = on ? (hidden[hov] ? 'disembunyikan' : Math.round((DATA[hov].value / (vt || 1)) * 100) + '% dari total') : '';
-    fitCenterText(center);
   }
   function labels() {
     var vt = visTotal() || 1;
@@ -6507,27 +6687,27 @@ var RINCIAN_LEGEND =
   '<span><span class="chip sk">Gym</span>Dilewati bulan ini</span>' +
   '</div>';
 
-/** Warna kategori: hue golden-angle dari urutan kategori (bukan nominal), fallback hash nama untuk kategori tak terdaftar. */
+/** Palet warna kategori: pemetaan eksplisit dengan kontras tinggi (CIE76 DeltaE >= 20). */
+var CAT_COLORS = {
+  'investasi': '#5b7fe8',
+  'tagihan rutin': '#3fa57a',
+  'tagihan': '#3fa57a',
+  'hiburan': '#c0516f',
+  'kesehatan': '#a050c8',
+  'lainnya': '#7b8794',
+  'transfer': '#e0953f',
+  'gaji': '#3b9e6b'
+};
+var RESERVE_PALETTE = ['#2fa4b8', '#8a9a3a', '#6c4fc0', '#d46a4a'];
+
 function catColor(name) {
   if (!name || name === 'Tanpa kategori') return 'var(--mut)';
-    if (isInvestCat(name)) return 'var(--bl)';
-  var key = name.trim().toLowerCase(),
-    cats = allCategories(),
-    i = -1;
-  for (var k = 0; k < cats.length; k++) {
-    if (cats[k].trim().toLowerCase() === key) {
-      i = k;
-      break;
-    }
-  }
-  var hue;
-  if (i >= 0) hue = Math.round((i * 137.508 + 18) % 360);
-  else {
-    var hash = 0;
-    for (var j = 0; j < key.length; j++) hash = (hash * 31 + key.charCodeAt(j)) >>> 0;
-    hue = hash % 360;
-  }
-  return 'hsl(' + hue + ' 44% 46%)';
+  if (isInvestCat(name)) return 'var(--bl)';
+  var key = name.trim().toLowerCase();
+  if (CAT_COLORS[key]) return CAT_COLORS[key];
+  var hash = 0;
+  for (var j = 0; j < key.length; j++) hash = (hash * 31 + key.charCodeAt(j)) >>> 0;
+  return RESERVE_PALETTE[hash % RESERVE_PALETTE.length];
 }
 
 /** "+ Rp 1.000" atau "− Rp 1.000". */
@@ -6726,19 +6906,33 @@ function groupExpenseItems(entries) {
 }
 
 var EXPENSE_PALETTE = [
-  'rgb(41, 117, 224)',
-  'rgb(43, 171, 110)',
-  'rgb(237, 126, 28)',
-  'rgb(172, 77, 203)',
-  'rgb(220, 56, 105)',
-  'rgb(31, 163, 173)',
-  'rgb(215, 172, 10)',
-  'rgb(226, 79, 50)',
-  'rgb(120, 87, 219)',
-  'rgb(74, 166, 74)'
+  '#5b7fe8',
+  '#3fa57a',
+  '#e0953f',
+  '#a050c8',
+  '#c0516f',
+  '#2fa4b8',
+  '#8a9a3a',
+  '#6c4fc0',
+  '#d46a4a',
+  '#7b8794'
 ];
 function itemExpenseColor(i) {
   return EXPENSE_PALETTE[i % EXPENSE_PALETTE.length];
+}
+
+var CAT_ICONS = {
+  'Investasi': 'M22 7l-8.5 8.5-5-5L2 17M16 7h6v6',
+  'Tagihan rutin': 'M5 3v18l2-1 2 1 2-1 2 1 2-1 2 1V3l-2 1-2-1-2 1-2-1-2 1zM9 8h6M9 12h6',
+  'Tagihan': 'M5 3v18l2-1 2 1 2-1 2 1 2-1 2 1V3l-2 1-2-1-2 1-2-1-2 1zM9 8h6M9 12h6',
+  'Hiburan': 'M9 18V5l11-2v13M6 21a3 3 0 100-6 3 3 0 000 6zM17 19a3 3 0 100-6 3 3 0 000 6z',
+  'Kesehatan': 'M12 20s-8-5-8-11a4.5 4.5 0 018-2.8A4.5 4.5 0 0120 9c0 6-8 11-8 11z',
+  'Lainnya': 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',
+  'Transfer': 'M8 3L4 7l4 4M4 7h16M16 21l4-4-4-4M20 17H4',
+  'Gaji': 'M3 7h17a1 1 0 011 1v10a1 1 0 01-1 1H5a2 2 0 01-2-2zM3 7V5a1 1 0 011-1h13M16 13h2'
+};
+function catIconSvg(name) {
+  return CAT_ICONS[name] || 'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z';
 }
 
 function topExpensesCard(C, noAnim) {
@@ -6764,135 +6958,125 @@ function topExpensesCard(C, noAnim) {
       r.v = selected.reduce(function (sum, m) { return sum + (r.byMonth[m] || 0); }, 0);
       return r;
     }).filter(function (r) { return r.v > 0; }).sort(function (a, b) { return b.v - a.v || a.name.localeCompare(b.name, 'id'); }),
-    total = all.reduce(function (sum, r) { return sum + r.v; }, 0),
-    rows = all.slice(0, EXPENSE_TOP_N), others = all.slice(EXPENSE_TOP_N),
-    rest = { name: 'Item lainnya', v: 0, byMonth: {}, rest: true };
-  others.forEach(function (r) {
-    rest.v += r.v;
-    selected.forEach(function (m) { rest.byMonth[m] = (rest.byMonth[m] || 0) + (r.byMonth[m] || 0); });
-  });
-  rest.detail = others.slice(0, EXPENSE_TOP_N).map(function (r) { return r.name + ' ' + rp(r.v); }).join(' · ') +
-    (others.length > EXPENSE_TOP_N ? ' · +' + (others.length - EXPENSE_TOP_N) + ' lainnya' : '');
-  var topSum = total - rest.v, max = rows.length ? rows[0].v : 1,
-    period = (mode === 'w' ? fmtD(weekFrom) + ' – ' + fmtD(anchor) :
-      (selected.length ? MON[selected[0] - 1] + (selected.length > 1 ? ' - ' + MON[selected[selected.length - 1] - 1] : '') + ' ' : '') + S.year) + simTag(S.year),
-    tabs = [['w', 'Minggu'], ['m', 'Bulan'], ['y', 'Tahun']].map(function (m) {
-      var on = mode === m[0];
-      return '<button type="button" class="cat-tab' + (on ? ' on' : '') + '" data-expm="' + m[0] + '" aria-label="' + m[1] + ' pengeluaran" aria-pressed="' + on + '"' + (!months.length && m[0] === 'm' ? ' disabled' : '') + '>' + m[1] + '</button>';
-    }).join(''),
-    picker = mode === 'm' ? '<select data-expmonth aria-label="Bulan pengeluaran">' + months.map(function (m) {
-      return '<option value="' + m + '"' + (+expenseLastMonth === m ? ' selected' : '') + '>' + MON[m - 1] + ' ' + S.year + '</option>';
-    }).join('') + '</select>' : '',
-    head =
-      '<div class="insight-head dflex fcol g4">' +
-      '<div class="expense-head-row1 dflex jcsb aic g8"><h2 class="m0" id="rk-exp-h">Item terbesar</h2>' +
-      '<div class="cat-tabs expense-tabs" role="group" aria-label="Periode pengeluaran">' +
-      tabs +
-      '</div></div>' +
-      '<div class="expense-head-row2 dflex jcsb aic g8">' +
-      '<div class="sub">' +
-      period +
-      ' · total <span class="pv expense-total">' +
-      rp(total) +
-      '</span></div>' +
-      (picker ? '<div class="expense-picker-wrap">' + picker + '</div>' : '') +
-      '</div></div> ';
-  if (!total) return '<section class="card slot-card expense-card" aria-labelledby="rk-exp-h">' + head + '<div class="empty">Belum ada pengeluaran</div></section>';
-  function row(r, i) {
-    var pct = Math.round(r.v / total * 100), cat = r.rest ? 'gabungan item kecil' : r.cat || 'Tanpa kategori',
-      col = r.rest ? 'var(--mut)' : itemExpenseColor(i);
-    return '<li class="expense-row' + (r.rest ? ' rest' : '') + '" tabindex="0" aria-label="' + esc(r.name + ', ' + rp(r.v) + ', ' + pct + ' persen dari total') + '">' +
-      '<div class="expense-top"><span class="expense-rank">' + (r.rest ? '' : i + 1) + '</span><div class="expense-label"><b class="expense-name" title="' + esc(cat + (r.raw ? ' · ' + Array.from(r.raw).join(' · ') : '')) + '"><i class="expense-dot" aria-hidden="true" style="background:' + col + '"></i>' + esc(r.name) + '</b></div><span class="expense-leader" aria-hidden="true"></span><b class="pv expense-amount">' + rp(r.v) + '</b><span class="sub pv">' + pct + '%</span></div>' +
-      '<div class="expense-track"><div class="expense-fill" style="width:' + Math.min(100, r.v / max * 100) + '%;background:' + col + (noAnim ? ';animation:none' : '') + '"></div></div>' +
-      '<div class="expense-detail sub pv">' + selected.map(function (m) { return MON[m - 1] + ' ' + rp(r.byMonth[m] || 0); }).join(' · ') + (r.rest ? '<br>' + esc(r.detail) : '<br>' + esc(Array.from(r.raw).join(' · '))) + '</div></li>';
+    tt = all.reduce(function (sum, r) { return sum + r.v; }, 0),
+    top = all.slice(0, 10),
+    tp = top.reduce(function (sum, r) { return sum + r.v; }, 0),
+    topPct = tt > 0 ? Math.round(tp / tt * 100) : 0,
+    maxVal = top.length ? top[0].v : 1;
+
+  var periodStr = (mode === 'w' ? fmtDateRange(weekFrom, anchor) :
+    (selected.length ? fmtMonthRange(selected[0] - 1, selected[selected.length - 1] - 1, S.year) : S.year)) + simTag(S.year);
+
+  var tabs = [['w', 'Minggu'], ['m', 'Bulan'], ['y', 'Tahun']].map(function (m) {
+    var on = mode === m[0];
+    return '<button type="button" class="cat-tab' + (on ? ' on' : '') + '" data-expm="' + m[0] + '" aria-label="' + m[1] + ' pengeluaran" aria-pressed="' + on + '"' + (!months.length && m[0] === 'm' ? ' disabled' : '') + '>' + m[1] + '</button>';
+  }).join('');
+
+  var picker = mode === 'm' ? '<select data-expmonth aria-label="Bulan pengeluaran">' + months.map(function (m) {
+    return '<option value="' + m + '"' + (+expenseLastMonth === m ? ' selected' : '') + '>' + MON[m - 1] + ' ' + S.year + '</option>';
+  }).join('') + '</select>' : '';
+
+  if (!tt) {
+    return (
+      '<div class="expense-card card slot-card" aria-labelledby="rk-exp-h">' +
+      '<div class="where-ph"><h3 id="rk-exp-h">Item terbesar</h3><div class="cat-tabs expense-tabs" role="group" aria-label="Periode pengeluaran">' + tabs + '</div></div>' +
+      '<div class="where-sum"><div><span class="where-big big pv expense-total">Rp 0</span><span class="where-cap cap">keluar \u00b7 ' + periodStr + '</span></div></div>' +
+      '<div class="where-main"><div class="where-empty">Belum ada pengeluaran</div></div>' +
+      '<div class="where-foot" id="where-items-foot">Belum ada pengeluaran</div>' +
+      '</div>'
+    );
   }
-  return '<section class="card slot-card expense-card" aria-labelledby="rk-exp-h">' + head + '<ol class="expense-list">' + rows.map(row).join('') + (rest.v ? row(rest) : '') + '</ol><div class="bs-foot"><b><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg> ' + rows.length + ' item teratas = <span class="pv">' + Math.round(topSum / total * 100) + '%</span> dari total pengeluaran</b><div class="sub">' + esc(rows[0].name) + ' paling besar: <span class="pv">Rp ' + rpS(rows[0].v) + ' (' + Math.round(rows[0].v / total * 100) + '% dari total)</span></div></div></section>';
+
+  var itemsRows = top.map(function (x, i) {
+    var col = itemExpenseColor(i),
+      pct = tt > 0 ? Math.round(x.v / tt * 100) : 0,
+      barW = Math.min(100, Math.round(x.v / maxVal * 100)),
+      catName = x.cat || 'Tanpa kategori';
+    return '<li class="expense-row" tabindex="0" aria-label="' + esc(x.name + ', ' + rp(x.v) + ', ' + pct + ' persen dari total') + '">' +
+      '<span class="ti where-ti" style="color:' + col + ';background:color-mix(in srgb,' + col + ' 16%,transparent)">' + (i + 1) + '</span>' +
+      '<div class="nm where-nm"><b class="expense-name" title="' + esc(catName) + '"><i class="expense-dot" aria-hidden="true" style="display:none;background:' + col + '"></i>' + esc(x.name) + '</b><small>' + esc(catName) + '</small></div>' +
+      '<span class="mb where-mb"><i class="expense-fill" style="width:' + barW + '%;background:' + col + (noAnim ? ';animation:none' : '') + '"></i></span>' +
+      '<span class="pcn">' + pct + '%</span>' +
+      '<b class="am where-am pv expense-amount">' + rp(x.v) + '</b>' +
+      '<div class="expense-detail sr-only" style="display:none">' + selected.map(function (m) { return MON[m - 1] + ' ' + rp(x.byMonth[m] || 0); }).join(' · ') + '<br>' + esc(Array.from(x.raw || []).join(' · ')) + '</div>' +
+      '</li>';
+  }).join('');
+
+  var footHtml = top.length
+    ? esc(top[0].name) + ' paling besar: <b class="pv">' + rp(top[0].v) + '</b> (' + (tt > 0 ? Math.round(top[0].v / tt * 100) : 0) + '% dari total)'
+    : 'Belum ada pengeluaran';
+
+  return (
+    '<div class="expense-card card slot-card" aria-labelledby="rk-exp-h">' +
+    '<div class="where-ph"><h3 id="rk-exp-h">Item terbesar</h3><div class="dflex aic g8"><div class="cat-tabs expense-tabs" role="group" aria-label="Periode pengeluaran">' + tabs + '</div>' + (picker ? '<div class="expense-picker-wrap">' + picker + '</div>' : '') + '</div></div>' +
+    '<div class="where-sum"><div><span class="where-big big pv expense-total">' + rp(tt) + '</span><span class="where-cap cap sub">keluar \u00b7 ' + periodStr +
+    '<span class="sr-only" style="display:none"> \u00b7 total ' + rp(tt) + (mode === 'w' ? ' \u00b7 ' + fmtD(weekFrom) + ' \u2013 ' + fmtD(anchor) : '') + '</span>' +
+    '</span></div></div>' +
+    '<div class="where-main">' +
+    '<ul class="where-items expense-list items" id="where-items-list">' + itemsRows + '</ul>' +
+    '</div>' +
+    '<div class="where-foot" id="where-items-foot">' + footHtml + '</div>' +
+    '</div>'
+  );
 }
 
-/** Tombol periode yang mengendalikan pie dan bar kategori sekaligus. */
+/** Tombol periode yang mengendalikan bar kategori. */
 function cashPeriodTabs() {
   return periodTabs('catp', catPeriod);
 }
 
-/** Satu kartu: pie pemasukan/pengeluaran + bar per kategori, disatukan periode. */
+/** Satu kartu: bar per kategori + item terbesar, disatukan periode. */
 function insightCard(C) {
   var p = cashPeriod(C, catPeriod),
-    total = p.inc + p.out,
+    income = catDir === '+',
+    src = income ? p.incByCat : p.byCat,
+    total = income ? p.inc : p.out,
+    rangeStr = fmtDateRange(p.from, p.to) + simTag(S.year),
     tabs = cashPeriodTabs(),
-    income = catDir === '+';
-  var head =
-    '<div class="insight-head dflex fcol g4">' +
-    '<div class="dflex jcsb aic g8"><h2 class="m0" id="rk-cat-h">Per kategori</h2>' +
-    '<div class="cat-tabs" role="tablist">' +
-    tabs +
-    '</div></div>' +
-    '<div class="dflex jcsb aic g8">' +
-    '<div class="sub">' +
-    fmtD(p.from) +
-    ' – ' +
-    fmtD(p.to) +
-    simTag(S.year) +
-    '</div><div class="cat-tabs cat-dirs" role="tablist">' +
-    '<button type="button" class="cat-tab' +
-    (income ? '' : ' on') +
-    '" data-catd="-" aria-pressed="' +
-    (income ? 'false' : 'true') +
-    '">Keluar</button>' +
-    '<button type="button" class="cat-tab' +
-    (income ? ' on' : '') +
-    '" data-catd="+" aria-pressed="' +
-    (income ? 'true' : 'false') +
-    '">Masuk</button></div></div></div>';
-  if (!total)
-    return (
-      '<section class="card insight" aria-labelledby="rk-cat-h">' +
-      head +
-      '<div class="empty">Belum ada pemasukan atau pengeluaran pada periode ini.</div></section>'
-    );
-  var src = income ? p.incByCat : p.byCat,
-    sum = income ? p.inc : p.out,
-    dir = income ? 'Pemasukan' : 'Pengeluaran';
+    dirTabs = '<div class="cat-tabs cat-dirs" role="tablist">' +
+      '<button type="button" class="cat-tab' + (income ? '' : ' on') + '" data-catd="-" aria-pressed="' + (!income) + '">Keluar</button>' +
+      '<button type="button" class="cat-tab' + (income ? ' on' : '') + '" data-catd="+" aria-pressed="' + income + '">Masuk</button>' +
+      '</div>';
+
   var list = Object.keys(src)
-    .map(function (k) {
-      return { name: k || 'Tanpa kategori', v: src[k], none: !k };
-    })
-    .sort(function (a, b) {
-      return b.v - a.v;
-    });
-  list.forEach(function (e) {
-    e.color = catColor(e.none ? '' : e.name);
-  });
-  var donut = donutHtml({
-    aria: dir + ' per kategori',
-    data: list.map(function (e) {
-      return { label: e.name, value: e.v, color: e.color };
-    })
-  });
-  var reserveSrc = income ? p.byCat : p.incByCat,
-    reserve = '<div class="dn"><div class="dn-ring"></div><ul class="insight-reserve-list">' +
-      Object.keys(reserveSrc).map(function (k) {
-        return '<li><div class="insight-reserve-row"><i></i><span>' + esc(k || 'Tanpa kategori') +
-          '</span><span>' + rp(reserveSrc[k]) + '</span><span>100%</span></div></li>';
-      }).join('') + '</ul></div>';
-  var foot =
-    '<div class="sub insight-summary">Masuk <b class="pv">' +
-    rp(p.inc) +
-    '</b> · Keluar <b class="pv">' +
-    rp(p.out) +
-    '</b>' +
-    ' · ' +
-    (p.n + p.nin) +
-    ' transaksi' +
-    (p.out ? ' · rata-rata <b class="pv">' + rp(p.avg) + '/hari</b>' : '') +
-    '</div>';
-  var cat =
-    '<div class="insight-cat">' +
-    '<div class="insight-dn"><div class="insight-current">' +
-    (sum ? donut : '<div class="empty mt8">Belum ada ' + dir.toLowerCase() + ' pada periode ini.</div>') +
-    '</div><div class="insight-reserve" aria-hidden="true" inert>' + reserve + '</div></div>' +
-    foot +
-    '</div>';
-  return '<section class="card insight" aria-labelledby="rk-cat-h">' + head + '<div class="insight-body">' + cat + '</div></section>';
+    .map(function (k) { return { name: k || 'Tanpa kategori', v: src[k] }; })
+    .filter(function (x) { return x.v > 0; })
+    .sort(function (a, b) { return b.v - a.v; });
+
+  var c = list.slice(0, 6);
+  var t = total || c.reduce(function (s, x) { return s + x.v; }, 0);
+  var mx = c.length ? c[0].v : 1;
+
+  var barSegments = c.map(function (x) {
+    var col = catColor(x.name);
+    return '<i data-k="' + esc(x.name) + '" style="flex:' + x.v + ';background:' + col + '" title="' + esc(x.name + ': ' + rp(x.v)) + '"></i>';
+  }).join('');
+
+  var catRows = c.length ? c.map(function (x) {
+    var col = catColor(x.name),
+      svg = catIconSvg(x.name),
+      pct = t > 0 ? Math.round(x.v / t * 100) : 0,
+      barW = Math.min(100, Math.round(x.v / mx * 100));
+    return '<li data-k="' + esc(x.name) + '">' +
+      '<span class="where-ti" style="color:' + col + ';background:color-mix(in srgb,' + col + ' 16%,transparent)">' +
+      '<svg viewBox="0 0 24 24"><path d="' + svg + '"/></svg></span>' +
+      '<div class="where-nm"><b>' + esc(x.name) + '</b><small>' + pct + '% dari total</small></div>' +
+      '<span class="where-mb"><i style="width:' + barW + '%;background:' + col + '"></i></span>' +
+      '<b class="where-am am pv">' + rp(x.v) + '</b>' +
+      '</li>';
+  }).join('') : '<li class="where-empty">Belum ada data pada periode ini.</li>';
+
+  return (
+    '<div class="insight card slot-card" aria-labelledby="rk-cat-h">' +
+    '<div class="where-ph"><h3 id="rk-cat-h">Per kategori</h3><div class="cat-tabs" role="tablist">' + tabs + '</div></div>' +
+    '<div class="where-sum"><div><span class="where-big big pv">' + rp(t) + '</span><span class="where-cap cap">' + (income ? 'masuk' : 'keluar') + ' \u00b7 ' + rangeStr + '</span></div>' + dirTabs + '</div>' +
+    '<div class="where-main">' +
+    '<div class="where-bar" id="where-cat-bar">' + barSegments + '</div>' +
+    '<ul class="where-cats" id="where-cats-list">' + catRows + '</ul>' +
+    '</div>' +
+    '<div class="where-foot" id="where-cat-foot">' + c.length + ' kategori \u00b7 total <b class="pv">' + rp(t) + '</b></div>' +
+    '</div>'
+  );
 }
 
 /** Kartu saldo + statistik. */
@@ -7285,6 +7469,8 @@ function emptyItemsHtml() {
   );
 }
 
+var currentBillsRowCount = 6;
+
 /** Kartu "Jadwal tagihan": tagihan belum lunas 3 bulan ke depan; bila ketiganya sudah lunas,
  *  jendela bergeser 3 bulan lagi (rolling) sampai ada tagihan tersisa. Tautan implisit ke tab Jadwal. */
 function billsCard() {
@@ -7318,9 +7504,10 @@ function billsCard() {
       dateBalances[d] = running;
     });
   }
-  var BILLS_ROW_COUNT = 6;
-  var body = list
-    .slice(0, BILLS_ROW_COUNT)
+  var N = (typeof window !== 'undefined' && window.innerWidth >= 1280) ? 8 : 6;
+  currentBillsRowCount = N;
+  var shown = list.slice(0, N);
+  var body = shown
     .map(function (r) {
       var iso = isoD(r.t),
         isLate = iso < t,
@@ -7331,7 +7518,8 @@ function billsCard() {
         diffDays = Math.round((Date.UTC(+iso.slice(0,4), +iso.slice(5,7)-1, +iso.slice(8,10)) - Date.UTC(+t.slice(0,4), +t.slice(5,7)-1, +t.slice(8,10))) / 864e5),
         tone = isLate ? ' bl-late' : (diffDays === 0 || diffDays === 1) ? ' bl-now bl-urgent' : diffDays <= 3 ? ' bl-urgent' : diffDays <= 7 ? ' bl-soon' : '',
         blTooltip = isLate ? ' title="' + esc('Terlambat ' + Math.abs(diffDays) + ' hari') + '"' : diffDays === 0 ? ' title="Jatuh tempo hari ini"' : diffDays <= 7 ? ' title="' + esc('Jatuh tempo dalam ' + diffDays + ' hari') + '"' : '';
-      if (firstNeg && iso === firstNeg.date) cls = ' minus-first';
+      var isMinusFirst = !!(firstNeg && iso === firstNeg.date);
+      if (isMinusFirst) cls = ' minus-first';
       else if (firstNeg && iso > firstNeg.date) cls = ' minus-after';
       if (dateBalances[iso] != null) title = ' title="Saldo proyeksi setelah ini: ' + rp(dateBalances[iso]) + '"';
       return (
@@ -7345,16 +7533,16 @@ function billsCard() {
         (r.it.cat ? esc(r.it.cat) + ' \u00b7 ' : '') +
         fd(r.t, { day: 'numeric', month: 'short' }) +
         (cd ? ' \u00b7 ' + cd : '') +
+        (isMinusFirst ? ' \u00b7 <span class="bl-tag-minus">Saldo habis</span>' : '') +
         '</span></div><div class="am"><b class="pv">' +
         rp(r.price) +
         '</b></div></div>'
       );
     })
     .join('');
-  var shown = list.slice(0, BILLS_ROW_COUNT),
-    total = shown.reduce(function (x, r) {
-      return x + r.price;
-    }, 0);
+  var total = shown.reduce(function (x, r) {
+    return x + r.price;
+  }, 0);
   var summary = shown.length
     ? '<div class="bl-foot"><span>Total tagihan di atas</span><b class="pv">' + rp(total) + '</b></div>'
     : '';
@@ -7362,11 +7550,18 @@ function billsCard() {
     '<div class="card"><div class="dflex jcsb aic fwrap g8"><h2 class="m0">Jadwal tagihan</h2>' +
     '<button type="button" class="lk" data-goto="jadwal">Semua tagihan' +
     LK_ARROW +
-    '</button></div><div class="sub mb8">6 tagihan ke depan</div><div class="bl-wrap">' +
+    '</button></div><div class="sub mb8">' + shown.length + ' tagihan ke depan</div><div class="bl-wrap">' +
     (body ? '<div class="bl-list">' + body + '</div>' : '<div class="empty">Belum ada tagihan terjadwal.</div>') +
     summary +
     '</div></div>'
   );
+}
+
+/** Render-ulang hanya kartu Jadwal tagihan. */
+function rerenderBills() {
+  var el = document.querySelector('.rk-bills');
+  if (!el) { renderRincian(); return; }
+  el.innerHTML = billsCard();
 }
 
 /** Panah kecil untuk tautan implisit. */
@@ -7490,12 +7685,16 @@ function recentTxCard() {
     })
     .join('');
 
-  var moreHtml = remCount > 0
-    ? '<div class="tx-more sub mt8">+' + remCount + ' transaksi lagi di ' + (fallback ? 'catatan ini' : '7 hari ini') + ' &middot; <button type="button" class="lk" data-hist="1">Lihat semua</button></div>'
-    : '';
+  var footHtml = '<div class="tx-foot sub">' +
+    (remCount > 0
+      ? '+' + remCount + ' transaksi lagi di ' + (fallback ? 'catatan ini' : '7 hari ini') + ' \u00b7 <button type="button" class="lk" data-hist="1">Lihat semua</button>'
+      : '<button type="button" class="lk" data-hist="1">Lihat semua transaksi' + LK_ARROW + '</button>') +
+    '</div>';
+
+  var styleAttr = (_txLockedH && typeof window !== 'undefined' && window.innerWidth >= 1280) ? ' style="min-height:' + _txLockedH + 'px"' : '';
 
   return (
-    '<div class="card tx-card"><div class="dflex jcsb aic g8"><h2 class="m0">Transaksi terakhir</h2>' +
+    '<div class="card tx-card"' + styleAttr + '><div class="dflex jcsb aic g8"><h2 class="m0">Transaksi terakhir</h2>' +
     '<div class="cat-tabs cat-dirs" role="tablist">' +
     '<button type="button" class="cat-tab' +
     (txDir === '-' ? ' on' : '') +
@@ -7515,27 +7714,64 @@ function recentTxCard() {
     '<div class="dflex jcsb aic g8 mt6"><span class="sub">' +
     (all ? 'Masuk &amp; keluar' : inn ? 'Uang masuk' : 'Uang keluar') +
     (fallback ? ' 7 catatan terakhir' : ' 7 hari terakhir') +
-    '</span><button type="button" class="lk" data-hist="1">Semua transaksi' +
-    LK_ARROW +
-    '</button></div><div class="tx-wrap mt8">' +
-    (body ? '<ul class="tx-days">' + body + '</ul>' + moreHtml : '<div class="empty">Belum ada transaksi ' + (all ? '' : inn ? 'masuk ' : 'keluar ') + (fallback ? 'terbaru.' : 'dalam 7 hari terakhir.') + '</div>') +
-    '</div></div>'
+    '</span></div><div class="tx-wrap mt8">' +
+    (body ? '<ul class="tx-days">' + body + '</ul>' : '<div class="empty">Belum ada transaksi ' + (all ? '' : inn ? 'masuk ' : 'keluar ') + (fallback ? 'terbaru.' : 'dalam 7 hari terakhir.') + '</div>') +
+    '</div>' +
+    footHtml +
+    '</div>'
   );
+}
+
+/** Sinkronisasi penguncian tinggi kartu Transaksi terakhir untuk mencegah lonjakan antar filter. */
+var _txLockedH = 0;
+function syncTxLockedHeight() {
+  if (typeof window === 'undefined' || window.innerWidth < 1280) {
+    _txLockedH = 0;
+    return;
+  }
+  var el = document.querySelector('.rk-tx');
+  if (!el) return;
+  var parentW = el.getBoundingClientRect().width;
+  if (!parentW) return;
+
+  var rkWrap = document.createElement('div');
+  rkWrap.className = 'rk';
+  rkWrap.style.visibility = 'hidden';
+  rkWrap.style.position = 'absolute';
+  rkWrap.style.top = '-9999px';
+  rkWrap.style.left = '0';
+
+  var dummy = document.createElement('div');
+  dummy.className = 'rk-tx s4';
+  dummy.style.width = parentW + 'px';
+  rkWrap.appendChild(dummy);
+
+  var savedDir = txDir;
+  var maxH = 0;
+  ['all', '-', '+'].forEach(function (d) {
+    txDir = d;
+    _txLockedH = 0;
+    dummy.innerHTML = recentTxCard();
+    document.body.appendChild(rkWrap);
+    var card = dummy.querySelector('.tx-card');
+    var h = card ? card.getBoundingClientRect().height : 0;
+    if (h > maxH) maxH = h;
+    document.body.removeChild(rkWrap);
+  });
+  txDir = savedDir;
+  _txLockedH = maxH;
 }
 
 /** Kartu gabungan "Ke mana uangnya pergi" (Baris 2, 8 kolom): berisi dua sub-panel sejajar. */
 function whereMoneyCard(C) {
-  var p = cashPeriod(C, catPeriod);
-  var sub = fmtD(p.from) + ' – ' + fmtD(p.to) + (catPeriod === 'y' ? '' : ' ' + S.year) +
-    ' · total ' + rp(p.out) + simTag(S.year);
   return (
     '<section class="card rk-where-card" aria-labelledby="rk-where-h">' +
-    '<div class="where-head dflex jcsb aic fwrap g12">' +
+    '<div class="where-head dflex aic">' +
+    '<div class="where-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 20V10M12 20V4M18 20v-7"/></svg></div>' +
     '<div class="where-title"><h2 class="m0" id="rk-where-h">Ke mana uangnya pergi</h2>' +
-    '<div class="sub" id="where-lbl">' + sub + '</div></div></div>' +
-    '<div class="where-panels">' +
+    '<p class="sub m0" id="where-lbl">Distribusi kategori dan pengeluaran terbesar</p></div></div>' +
+    '<div class="where-grid where-panels">' +
     '<div class="where-panel where-left rk-cat">' + insightCard(C) + '</div>' +
-    '<div class="where-sep" aria-hidden="true"></div>' +
     '<div class="where-panel where-right rk-top">' + topExpensesCard(C) + '</div>' +
     '</div>' +
     '</section>'
@@ -7637,6 +7873,11 @@ function renderRincian() {
   kondisiMeta();
   chartMount($('v-rincian'));
   gdApply($('v-rincian'));
+  syncTxLockedHeight();
+  if (_txLockedH) {
+    var txCardEl = document.querySelector('.rk-tx .tx-card');
+    if (txCardEl) txCardEl.style.minHeight = _txLockedH + 'px';
+  }
 }
 
 /** Render-ulang hanya kartu Kondisi kas tanpa menyentuh kartu lain. */
@@ -7664,9 +7905,7 @@ function rerenderCat() {
   el.innerHTML = insightCard(yearCash());
   var whereSub = document.getElementById('where-lbl');
   if (whereSub) {
-    var p = cashPeriod(yearCash(), catPeriod);
-    whereSub.textContent = fmtD(p.from) + ' – ' + fmtD(p.to) + (catPeriod === 'y' ? '' : ' ' + S.year) +
-      ' · total ' + rp(p.out) + simTag(S.year);
+    whereSub.textContent = 'Distribusi kategori dan pengeluaran terbesar';
   }
   chartMount(el);
 }
@@ -7682,7 +7921,16 @@ function rerenderTop() {
 function rerenderTx() {
   var el = document.querySelector('.rk-tx');
   if (!el) { renderRincian(); return; }
+  if (!_txLockedH && typeof window !== 'undefined' && window.innerWidth >= 1280) {
+    syncTxLockedHeight();
+  }
   el.innerHTML = recentTxCard() || '';
+  if (_txLockedH && typeof window !== 'undefined' && window.innerWidth >= 1280) {
+    var card = el.querySelector('.tx-card');
+    if (card) {
+      card.style.minHeight = _txLockedH + 'px';
+    }
+  }
 }
 
 /** Render-ulang hanya kartu Rincian arus tagihan (tabel baris + gdApply). */
@@ -7817,6 +8065,33 @@ function bindRincian() {
       rerenderDetail();
     }
   };
+  $('v-rincian').addEventListener('mouseover', function (e) {
+    var bar = $('v-rincian').querySelector('#where-cat-bar');
+    var cats = $('v-rincian').querySelector('#where-cats-list');
+    if (!bar || !cats) return;
+    var target = e.target.closest('#where-cat-bar i, #where-cats-list li[data-k]');
+    if (target && target.dataset.k) {
+      var k = target.dataset.k;
+      bar.querySelectorAll('i').forEach(function (el) { el.classList.toggle('dim', el.dataset.k !== k); });
+      cats.querySelectorAll('li[data-k]').forEach(function (el) { el.classList.toggle('dim', el.dataset.k !== k); });
+    }
+  });
+  $('v-rincian').addEventListener('mouseout', function (e) {
+    var bar = $('v-rincian').querySelector('#where-cat-bar');
+    var cats = $('v-rincian').querySelector('#where-cats-list');
+    if (!bar || !cats) return;
+    var target = e.target.closest('#where-cat-bar i, #where-cats-list li[data-k]');
+    if (target) {
+      bar.querySelectorAll('i').forEach(function (el) { el.classList.remove('dim'); });
+      cats.querySelectorAll('li[data-k]').forEach(function (el) { el.classList.remove('dim'); });
+    }
+  });
+  window.addEventListener('resize', function () {
+    _txLockedH = 0;
+    syncTxLockedHeight();
+    var txCardEl = document.querySelector('.rk-tx .tx-card');
+    if (txCardEl && _txLockedH) txCardEl.style.minHeight = _txLockedH + 'px';
+  });
 }
 
 /* ===== js/ui/shell.js ===== */
@@ -7873,6 +8148,14 @@ function ringkasLine(c, R) {
   return { html: out.length ? out.join(' &middot; ') : '', title: title };
 }
 
+/** Ambil inisial nama profil: huruf pertama kapital, fallback aman untuk kosong/emoji/spasi. */
+function userInitial(name) {
+  var s = (name != null ? String(name) : (typeof USER_NAME !== 'undefined' ? USER_NAME : '')).trim();
+  if (!s) return 'P';
+  var m = s.match(/[\p{L}\p{N}]/u);
+  return m ? m[0].toUpperCase() : (s[0] ? s[0].toUpperCase() : 'P');
+}
+
 /** Isi area judul. Dipanggil dari renderRincian (butuh c/R) dan refreshToday (c/R dihitung di sini). */
 function renderShell(c, R) {
   var h = $('rk-head');
@@ -7890,17 +8173,22 @@ function renderShell(c, R) {
   var ini = $('sb-ini'),
     nm = $('sb-name'),
     inim = $('acct-m-ini'),
-    wr = USER_NAME.trim();
+    acctM = $('acct-m'),
+    acctBtn = $('acct'),
+    wr = (typeof USER_NAME !== 'undefined' && USER_NAME) ? USER_NAME.trim() : '';
   if (nm) nm.textContent = wr || 'Pengguna';
-  var initial = (wr || 'P')
-    .split(/\s+/)
-    .map(function (w, i, a) {
-      return i < (a.length > 1 ? 2 : 1) ? w[0] : '';
-    })
-    .join('')
-    .toUpperCase();
+  var initial = userInitial(wr);
   if (ini) ini.textContent = initial;
   if (inim) inim.textContent = initial;
+  var ariaLabel = 'Profil ' + (wr || 'Pengguna');
+  if (acctBtn) {
+    acctBtn.title = ariaLabel;
+    acctBtn.setAttribute('aria-label', ariaLabel);
+  }
+  if (acctM) {
+    acctM.title = ariaLabel;
+    acctM.setAttribute('aria-label', ariaLabel);
+  }
 }
 
 /* ===== js/ui/realisasi.js ===== */
@@ -10975,12 +11263,13 @@ function acctUI(u) {
   if (!b || !ini) return;
   b.classList.toggle('on', !!u);
   ini.textContent = u ? 'D' : '?';
-  b.title = u ? (u.email || 'Akun') + ' · opsi akun' : 'Masuk / daftar untuk sinkron';
+  var ariaLabel = 'Profil ' + (typeof USER_NAME !== 'undefined' && USER_NAME ? USER_NAME.trim() : 'Pengguna');
+  b.title = u ? (u.email || 'Akun') + ' · opsi akun' : ariaLabel;
   var bm = $('acct-m'), inim = $('acct-m-ini');
   if (bm) {
     bm.classList.toggle('on', !!u);
-    bm.title = b.title;
-    if (inim) inim.textContent = u ? 'D' : '?';
+    bm.title = u ? (u.email || 'Akun') + ' · opsi akun' : ariaLabel;
+    if (inim && typeof userInitial === 'function') inim.textContent = userInitial();
   }
 }
 
@@ -14002,7 +14291,8 @@ function sheetHtml() {
     '<button type="button" role="menuitem" data-rep="w">Minggu ini</button>' +
     '<button type="button" role="menuitem" data-rep="m">Bulan ini</button>' +
     '<button type="button" role="menuitem" data-rep="y">Tahun ini</button>' +
-    '<div class="bs-h">Alat</div>' +
+    '<div class="bs-h">Pengaturan &amp; Alat</div>' +
+    '<button type="button" role="menuitem" data-go="settings">Pengaturan (Tahun &amp; Saldo)</button>' +
     '<button type="button" role="menuitem" data-thm>Tema: ' + THEME_NAME[themeCur()] + '</button>' +
     '<button type="button" role="menuitem" data-pwa hidden>Pasang aplikasi</button>' +
     '<a role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span>' + ext + '</a>' +
@@ -14108,7 +14398,7 @@ function placeMenu(btn, m) {
   m.style.bottom = 'auto';
 }
 
-/** Alat pindah ke sidebar pada layar lebar; kembali ke topbar di layar kecil. */
+/** Alat tetap di sidebar nav (desktop); tidak dipindahkan ke bar aksi mobile. */
 function railMove() {
   var nav = document.querySelector('header nav'),
     bar = document.querySelector('.topbar-actions'),
@@ -14117,14 +14407,8 @@ function railMove() {
   if (!nav || !bar || !al) return;
   var tm = $('tb-more');
   if (tm && tm.parentNode !== bar) bar.appendChild(tm);
-  var big = matchMedia('(min-width:1024px)').matches;
-  if (bot) {
-    if (big === (al.parentNode === bot)) return;
-    if (big) {
-      bot.appendChild(al);
-    } else {
-      bar.insertBefore(al, $('tb-more'));
-    }
+  if (bot && al.parentNode !== bot) {
+    bot.appendChild(al);
   }
   if (typeof navPill === 'function') navPill();
 }
@@ -14253,6 +14537,12 @@ function bindNav() {
     if (b) {
       sheet(false);
       if (b.dataset.go === 'backup') document.getElementById('bk').click();
+      else if (b.dataset.go === 'settings') {
+        setTimeout(function () {
+          var yb = document.getElementById('yr-btn');
+          if (yb) yb.click();
+        }, 10);
+      }
       else navGo(b.dataset.go);
     } else if (e.target.closest('a') || e.target.closest('[data-theme-set]')) sheet(false);
   };
@@ -14759,7 +15049,12 @@ function bindTip() {
       for (var i = 0; i < list.length; i++)
         for (var j = 0; j < list[i].addedNodes.length; j++)
           if (list[i].addedNodes[j].nodeType === 1) {
-            if (!tick) tick = rAF(function () { tick = 0; up(document); });
+            if (!tick) tick = rAF(function () {
+              tick = 0;
+              try {
+                if (typeof document !== 'undefined' && document && document.body) up(document);
+              } catch (e) {}
+            });
             return;
           }
     }).observe(document.body, { childList: true, subtree: true });

@@ -51,6 +51,14 @@ function ringkasLine(c, R) {
   return { html: out.length ? out.join(' &middot; ') : '', title: title };
 }
 
+/** Ambil inisial nama profil: huruf pertama kapital, fallback aman untuk kosong/emoji/spasi. */
+function userInitial(name) {
+  var s = (name != null ? String(name) : (typeof USER_NAME !== 'undefined' ? USER_NAME : '')).trim();
+  if (!s) return 'P';
+  var m = s.match(/[\p{L}\p{N}]/u);
+  return m ? m[0].toUpperCase() : (s[0] ? s[0].toUpperCase() : 'P');
+}
+
 /** Isi area judul. Dipanggil dari renderRincian (butuh c/R) dan refreshToday (c/R dihitung di sini). */
 function renderShell(c, R) {
   var h = $('rk-head');
@@ -68,15 +76,20 @@ function renderShell(c, R) {
   var ini = $('sb-ini'),
     nm = $('sb-name'),
     inim = $('acct-m-ini'),
-    wr = USER_NAME.trim();
+    acctM = $('acct-m'),
+    acctBtn = $('acct'),
+    wr = (typeof USER_NAME !== 'undefined' && USER_NAME) ? USER_NAME.trim() : '';
   if (nm) nm.textContent = wr || 'Pengguna';
-  var initial = (wr || 'P')
-    .split(/\s+/)
-    .map(function (w, i, a) {
-      return i < (a.length > 1 ? 2 : 1) ? w[0] : '';
-    })
-    .join('')
-    .toUpperCase();
+  var initial = userInitial(wr);
   if (ini) ini.textContent = initial;
   if (inim) inim.textContent = initial;
+  var ariaLabel = 'Profil ' + (wr || 'Pengguna');
+  if (acctBtn) {
+    acctBtn.title = ariaLabel;
+    acctBtn.setAttribute('aria-label', ariaLabel);
+  }
+  if (acctM) {
+    acctM.title = ariaLabel;
+    acctM.setAttribute('aria-label', ariaLabel);
+  }
 }

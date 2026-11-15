@@ -732,20 +732,6 @@ function donutInit(host, cfg) {
       return o;
     });
   }
-  function fitCenterText(centerEl) {
-    var str = centerEl.querySelector('strong');
-    if (!str) return;
-    str.style.fontSize = '';
-    var ringEl = centerEl.closest('.dn-ring');
-    var ringW = ringEl ? (ringEl.clientWidth || 140) : 140;
-    var maxW = Math.max(50, ringW * 0.65 - 8);
-    var sz = 15;
-    while (str.scrollWidth > maxW && sz > 9) {
-      sz -= 0.5;
-      str.style.fontSize = sz + 'px';
-    }
-  }
-
   function paint() {
     slices.forEach(function (el, i) {
       var o = st[i],
@@ -759,7 +745,6 @@ function donutInit(host, cfg) {
     c[0].textContent = on ? DATA[hov].label : 'Total';
     c[1].textContent = on ? rp(DATA[hov].value) : rp(shown || vt);
     c[2].textContent = on ? (hidden[hov] ? 'disembunyikan' : Math.round((DATA[hov].value / (vt || 1)) * 100) + '% dari total') : '';
-    fitCenterText(center);
   }
   function labels() {
     var vt = visTotal() || 1;

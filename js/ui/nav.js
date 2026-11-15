@@ -53,7 +53,8 @@ function sheetHtml() {
     '<button type="button" role="menuitem" data-rep="w">Minggu ini</button>' +
     '<button type="button" role="menuitem" data-rep="m">Bulan ini</button>' +
     '<button type="button" role="menuitem" data-rep="y">Tahun ini</button>' +
-    '<div class="bs-h">Alat</div>' +
+    '<div class="bs-h">Pengaturan &amp; Alat</div>' +
+    '<button type="button" role="menuitem" data-go="settings">Pengaturan (Tahun &amp; Saldo)</button>' +
     '<button type="button" role="menuitem" data-thm>Tema: ' + THEME_NAME[themeCur()] + '</button>' +
     '<button type="button" role="menuitem" data-pwa hidden>Pasang aplikasi</button>' +
     '<a role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span>' + ext + '</a>' +
@@ -159,7 +160,7 @@ function placeMenu(btn, m) {
   m.style.bottom = 'auto';
 }
 
-/** Alat pindah ke sidebar pada layar lebar; kembali ke topbar di layar kecil. */
+/** Alat tetap di sidebar nav (desktop); tidak dipindahkan ke bar aksi mobile. */
 function railMove() {
   var nav = document.querySelector('header nav'),
     bar = document.querySelector('.topbar-actions'),
@@ -168,14 +169,8 @@ function railMove() {
   if (!nav || !bar || !al) return;
   var tm = $('tb-more');
   if (tm && tm.parentNode !== bar) bar.appendChild(tm);
-  var big = matchMedia('(min-width:1024px)').matches;
-  if (bot) {
-    if (big === (al.parentNode === bot)) return;
-    if (big) {
-      bot.appendChild(al);
-    } else {
-      bar.insertBefore(al, $('tb-more'));
-    }
+  if (bot && al.parentNode !== bot) {
+    bot.appendChild(al);
   }
   if (typeof navPill === 'function') navPill();
 }
@@ -304,6 +299,12 @@ function bindNav() {
     if (b) {
       sheet(false);
       if (b.dataset.go === 'backup') document.getElementById('bk').click();
+      else if (b.dataset.go === 'settings') {
+        setTimeout(function () {
+          var yb = document.getElementById('yr-btn');
+          if (yb) yb.click();
+        }, 10);
+      }
       else navGo(b.dataset.go);
     } else if (e.target.closest('a') || e.target.closest('[data-theme-set]')) sheet(false);
   };
