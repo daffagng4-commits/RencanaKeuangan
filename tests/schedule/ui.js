@@ -11,6 +11,14 @@ function boot() {
     beforeParse(x) {
       x.matchMedia = (q) => ({ matches: false, media: q, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
       x.Element.prototype.scrollIntoView = function () {};
+      Object.defineProperty(x.Element.prototype, "clientWidth", { get: function() { return 600; }, configurable: true });
+      Object.defineProperty(x.Element.prototype, "clientHeight", { get: function() { return 250; }, configurable: true });
+      if (x.SVGElement && !x.SVGElement.prototype.getBBox) {
+        x.SVGElement.prototype.getBBox = function() {
+          var txt = this.textContent || "";
+          return { x: 0, y: 0, width: txt.length * 7, height: 14 };
+        };
+      }
       x.addEventListener("error", (e) => errs.push(e.message));
     } }).window;
   const $ = (id) => w.document.getElementById(id);

@@ -1547,6 +1547,7 @@ body.privacy-mode td.c-s, body.privacy-mode td.c-e,
 body.privacy-mode td[data-l="Pengeluaran"], body.privacy-mode td[data-l="Saldo akhir"], body.privacy-mode td[data-l="Saldo awal"],
 body.privacy-mode input#saldo, body.privacy-mode .hero-val, body.privacy-mode .big,
 body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); user-select: none; }
+.pv { display: inline-block; white-space: nowrap; }
 
 /* ============================================================
    14. Layar kecil
@@ -2595,15 +2596,27 @@ nav .nav-pill {
   border-top: 1px dashed var(--ln);
 }
 .where-panel .insight .dn {
-  display: grid !important;
-  grid-template-columns: minmax(130px, 180px) minmax(0, 1fr) !important;
-  gap: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
   align-items: center !important;
+  gap: 10px !important;
 }
 .where-panel .dn-ring {
-  width: clamp(120px, 11vw, 175px) !important;
-  height: clamp(120px, 11vw, 175px) !important;
-  margin: auto !important;
+  width: 140px !important;
+  height: 140px !important;
+  margin: 0 auto 4px !important;
+  flex: 0 0 140px !important;
+}
+.where-panel .dn-lg {
+  width: 100% !important;
+  min-height: 0 !important;
+}
+.where-panel .dn-lg > li > button {
+  display: grid !important;
+  grid-template-columns: 10px minmax(0, 1fr) auto 34px !important;
+  gap: 8px !important;
+  align-items: center !important;
+  width: 100% !important;
 }
 
 /* Tidak ada ruang kosong di dalam kartu: isi tumbuh, ringkasan menempel di dasar. */
@@ -2693,13 +2706,15 @@ nav .nav-pill {
   padding: 0;
 }
 .rk-tx .it2.kit.tx-row {
-  flex: 0 0 36px;
-  height: 36px;
-  min-height: 36px;
-  padding: 4px 8px;
+  flex: 0 0 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 3px 8px;
   box-sizing: border-box;
   gap: 8px;
 }
+.tx-note { line-height: 1.25; }
+.tx-cat { line-height: 1.2; }
 
 /* Pemasukan vs Pengeluaran: grafik tumbuh mengisi sisa tinggi */
 .rk-mf > .card {
@@ -2760,20 +2775,32 @@ nav .nav-pill {
   display: flex;
   flex-wrap: wrap;
   gap: 3px 5px;
-  max-height: 52px;
-  overflow: hidden;
   align-items: center;
 }
-.rk-detail tbody tr.row td {
-  padding: 8px 12px;
-  max-height: 72px;
-  height: auto;
-  vertical-align: middle;
-  font-size: 13px;
-  box-sizing: border-box;
+.where-panel .cat-tab,
+.tx-card .cat-tab {
+  padding: 2px 5px !important;
+  font-size: 11px !important;
 }
-.rk-detail tbody tr.row {
-  max-height: 72px;
+.tx-card .cat-tabs {
+  gap: 1px !important;
+  padding: 1px !important;
+}
+@media (min-width: 601px) {
+  .rk-detail tbody tr.row td {
+    padding: 8px 12px;
+    height: auto;
+    vertical-align: middle;
+    font-size: 13px;
+    box-sizing: border-box;
+  }
+  .rk-detail tbody tr.row {
+    height: auto;
+  }
+  .rk-detail .c-chips {
+    height: auto;
+    overflow: visible;
+  }
 }
 .rk-detail .c-c {
   white-space: normal;
@@ -2810,14 +2837,14 @@ nav .nav-pill {
 .cond-flow-foot.mt8,
 .cond-flow > .cond-flow-foot {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  font-size: 12px; line-height: 14px; color: var(--mut); margin-top: 0 !important; padding: 0 4px;
-  flex: 0 0 16px; height: 16px; max-height: 16px;
+  font-size: 12px; line-height: 16px; color: var(--mut); margin-top: 10px !important; margin-bottom: 0 !important; padding: 0 4px;
+  flex: 0 0 auto; height: auto; min-height: 16px; position: relative;
 }
 .cond-tiles {
   display: grid;
   grid-template-columns: 1.05fr 1.2fr 1.45fr 0.85fr;
   gap: 10px;
-  margin-top: 0 !important;
+  margin-top: 14px !important;
   padding-top: 0 !important;
 }
 .cond-tiles .cond-tile,
@@ -2827,6 +2854,7 @@ nav .nav-pill {
   justify-content: center;
   gap: 2px;
   min-width: 0;
+  overflow: hidden;
   grid-column: auto !important;
   margin-top: 0 !important;
   padding: 6px 10px !important;
@@ -2853,6 +2881,9 @@ nav .nav-pill {
 .cond-tile .sub {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   line-height: 1.25;
+}
+@media (max-width: 1400px) {
+  .cond-tile .sub .sub-lo { display: none !important; }
 }
 
 @media (min-width: 1280px) {
@@ -3009,17 +3040,211 @@ nav .nav-pill {
   .cond-big { font-size: 26px; }
 }
 
-/* Issue 9: Pengeluaran per kategori – pertahankan grid dua kolom di dalam .rk;
-   override override flex-column yang terpasang di .rk .insight-card .dn. */
-.rk .insight .dn {
-  display: grid !important;
-  grid-template-columns: minmax(150px, 190px) minmax(0, 1fr);
-  gap: 6px 20px;
-  align-items: center;
-  flex: unset;
-  flex-direction: unset;
+/* Issue 9: Pengeluaran per kategori – pertahankan grid dua kolom di dalam .rk untuk desktop/tablet;
+   override flex-column yang terpasang di .rk .insight-card .dn. */
+@media (min-width: 601px) {
+  .rk > .card.insight .dn {
+    display: grid !important;
+    grid-template-columns: minmax(150px, 190px) minmax(0, 1fr);
+    gap: 6px 20px;
+    align-items: center;
+    flex: unset;
+    flex-direction: unset;
+  }
+  .rk > .card.insight .dn-ring { width: min(100%, 170px); height: 170px; margin: 4px auto; }
 }
-.rk .insight .dn-ring { width: min(100%, 170px); height: 170px; margin: 4px auto; }
+
+/* Mobile responsive rules (< 600px) */
+@media (max-width: 600px) {
+  /* Bug 2: Rincian arus tagihan mobile (blok bertumpuk berurutan) */
+  .rk-detail tbody tr.row {
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    gap: 4px 12px !important;
+    max-height: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 12px 0 !important;
+    border-bottom: 1px solid var(--ln) !important;
+  }
+  .rk-detail tbody tr.row td {
+    display: block !important;
+    max-height: none !important;
+    height: auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+  .rk-detail tbody tr.row td.c-m {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    text-align: left !important;
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+  }
+  .rk-detail tbody tr.row td.c-e {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    text-align: right !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+  }
+  .rk-detail tbody tr.row td.c-a {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    text-align: left !important;
+    font-size: 12px !important;
+  }
+  .rk-detail tbody tr.row td.c-s {
+    grid-column: 1 / -1 !important;
+    grid-row: 3 !important;
+    text-align: left !important;
+    font-size: 12px !important;
+  }
+  .rk-detail tbody tr.row td.c-c {
+    grid-column: 1 / -1 !important;
+    grid-row: 4 !important;
+    text-align: left !important;
+    margin-top: 4px !important;
+  }
+  .rk-detail .c-chips {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 4px 6px !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .rk-detail tbody tr.tot {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+    gap: 4px 12px !important;
+    padding: 12px 0 !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+  .rk-detail tbody tr.tot td {
+    display: block !important;
+    max-height: none !important;
+    height: auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  /* Bug 3: Ke mana uangnya pergi & Item terbesar mobile */
+  .where-panels {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+  .where-sep {
+    display: none !important;
+  }
+  .where-panel {
+    width: 100% !important;
+  }
+  .where-panel .insight .dn,
+  .rk .insight .dn {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px !important;
+  }
+  .where-panel .dn-ring,
+  .rk .insight .dn-ring {
+    width: 140px !important;
+    height: 140px !important;
+    margin: 0 auto 8px !important;
+    flex: 0 0 140px !important;
+  }
+  .dn-c {
+    padding: 0 6px !important;
+  }
+  .where-panel .dn-lg,
+  .rk-cat .dn-lg {
+    width: 100% !important;
+    min-height: 0 !important;
+  }
+  .where-panel .dn-lg > li,
+  .rk-cat .dn-lg > li {
+    height: auto !important;
+    min-height: 38px !important;
+  }
+  .where-panel .dn-lg > li > button,
+  .rk-cat .dn-lg > li > button {
+    display: grid !important;
+    grid-template-columns: 10px minmax(0, 1fr) auto 34px !important;
+    gap: 8px !important;
+    align-items: center !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 6px 4px !important;
+    height: auto !important;
+    min-height: 38px !important;
+  }
+  .where-panel .dn-lg .n,
+  .rk-cat .dn-lg .n {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    text-align: left !important;
+  }
+  .where-panel .dn-lg .v,
+  .rk-cat .dn-lg .v {
+    white-space: nowrap !important;
+    margin-right: 0 !important;
+    font-variant-numeric: tabular-nums !important;
+    text-align: right !important;
+  }
+  .where-panel .dn-lg .p,
+  .rk-cat .dn-lg .p {
+    width: 34px !important;
+    flex: 0 0 34px !important;
+    text-align: right !important;
+    white-space: nowrap !important;
+  }
+
+  /* Item terbesar mobile */
+  .where-panel .expense-list {
+    min-height: 0 !important;
+    gap: 6px !important;
+  }
+  .where-panel .expense-row {
+    height: auto !important;
+    min-height: 38px !important;
+    padding: 6px 8px !important;
+  }
+  .expense-top {
+    display: grid !important;
+    grid-template-columns: 14px minmax(0, 1fr) auto 34px !important;
+    gap: 6px !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+  .expense-label {
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+  .expense-name {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    display: inline-block !important;
+  }
+  .expense-leader {
+    display: none !important;
+  }
+  .expense-amount {
+    white-space: nowrap !important;
+    text-align: right !important;
+  }
+  .expense-top > .sub {
+    width: 34px !important;
+    flex: 0 0 34px !important;
+    text-align: right !important;
+  }
+}
 
 /* Issue 15: Chip/pill total harian di kartu Transaksi terakhir. */
 .tx-pill {
@@ -5481,11 +5706,10 @@ function barStackInit(host, cfg) {
   function hide() {
     tip.classList.remove('on');
   }
-  var isJSDOM = typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
   function draw() {
     var W = box.clientWidth,
       H = box.clientHeight;
-    if (!isJSDOM && (W <= 0 || H <= 0)) return;
+    if (W <= 0 || H <= 0) return;
     W = W || 480;
     H = H || 250;
     var ih = H - PT - PB,
@@ -5539,7 +5763,7 @@ function barStackInit(host, cfg) {
   }
   var w0 = box.clientWidth,
     h0 = box.clientHeight;
-  if (isJSDOM || (w0 > 0 && h0 > 0)) {
+  if (w0 > 0 && h0 > 0) {
     draw();
   }
   if (window.ResizeObserver)
@@ -5601,12 +5825,65 @@ function areaInit(svg, cfg) {
     return z.getUTCDate() + ' ' + MON[z.getUTCMonth()] + (multiYear ? ' ' + d.slice(2, 4) : '');
   }
 
-  var isJSDOM = typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
+  function clampSvgLabels(svgEl, svgW, svgH) {
+    var MARGIN = 4;
+    var texts = svgEl.querySelectorAll('text');
+    texts.forEach(function (t) {
+      var bb;
+      try { bb = t.getBBox(); } catch (e) { return; }
+      if (!bb || bb.width === 0) return;
+      var curX = parseFloat(t.getAttribute('x')) || 0;
+      var curY = parseFloat(t.getAttribute('y')) || 0;
+
+      if (bb.x + bb.width > svgW - MARGIN) {
+        var shiftR = (bb.x + bb.width) - (svgW - MARGIN);
+        t.setAttribute('x', (curX - shiftR).toFixed(1));
+        try { bb = t.getBBox(); } catch (e) {}
+      }
+      if (bb.x < MARGIN) {
+        var shiftL = MARGIN - bb.x;
+        t.setAttribute('x', (curX + shiftL).toFixed(1));
+        try { bb = t.getBBox(); } catch (e) {}
+      }
+      if (bb.y < MARGIN) {
+        var shiftT = MARGIN - bb.y;
+        t.setAttribute('y', (curY + shiftT).toFixed(1));
+        try { bb = t.getBBox(); } catch (e) {}
+      }
+      if (bb.y + bb.height > svgH - MARGIN) {
+        var shiftB = (bb.y + bb.height) - (svgH - MARGIN);
+        t.setAttribute('y', (curY - shiftB).toFixed(1));
+        try { bb = t.getBBox(); } catch (e) {}
+      }
+    });
+
+    var markTexts = svgEl.querySelectorAll('.lc-mark text');
+    if (markTexts.length > 1) {
+      for (var i = 0; i < markTexts.length; i++) {
+        for (var j = i + 1; j < markTexts.length; j++) {
+          var a = markTexts[i], b = markTexts[j];
+          var ba = a.getBBox(), bb = b.getBBox();
+          var xO = Math.max(0, Math.min(ba.x + ba.width, bb.x + bb.width) - Math.max(ba.x, bb.x));
+          var yO = Math.max(0, Math.min(ba.y + ba.height, bb.y + bb.height) - Math.max(ba.y, bb.y));
+          if (xO > 0 && yO > 0) {
+            var by = parseFloat(b.getAttribute('y')) || 0;
+            var newY = ba.y + ba.height + bb.height + 4;
+            if (newY <= svgH - MARGIN) {
+              b.setAttribute('y', newY.toFixed(1));
+            } else {
+              b.setAttribute('y', Math.max(MARGIN + bb.height, ba.y - 4).toFixed(1));
+            }
+          }
+        }
+      }
+    }
+  }
+
   function draw() {
     var meas = wrap || svg;
     var mw = meas.clientWidth,
       mh = meas.clientHeight;
-    if (!isJSDOM && (mw <= 0 || mh <= 0)) return;
+    if (mw <= 0 || mh <= 0) return;
     W = Math.max(220, Math.round(mw || 600));
     H = Math.round(mh || 190);
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
@@ -5666,12 +5943,18 @@ function areaInit(svg, cfg) {
       fillP.setAttribute('d', '');
     }
     var mk = '';
+    var todayX = null, todayY = null;
     if (cfg.marks && cfg.marks.today) {
       var tIdx = -1;
       for (ti = 0; ti < n; ti++) if (pts[ti].d === cfg.marks.today) { tIdx = ti; break; }
       if (tIdx >= 0) {
         var tx = xAt((tIdx / (n - 1)) * (N - 1));
-        mk += '<line x1="' + tx.toFixed(1) + '" x2="' + tx.toFixed(1) + '" y1="' + PT + '" y2="' + (PT + ih) + '"></line><text x="' + tx.toFixed(1) + '" y="' + (PT + 10) + '" text-anchor="middle">Hari ini</text>';
+        var tAnchor = 'middle', tLabelX = tx;
+        if (tx + 28 > W - 4) { tAnchor = 'end'; tLabelX = Math.min(W - 4, tx - 4); }
+        else if (tx - 28 < 4) { tAnchor = 'start'; tLabelX = Math.max(4, tx + 4); }
+        todayX = tx;
+        todayY = PT + 10;
+        mk += '<line x1="' + tx.toFixed(1) + '" x2="' + tx.toFixed(1) + '" y1="' + PT + '" y2="' + (PT + ih) + '"></line><text x="' + tLabelX.toFixed(1) + '" y="' + todayY + '" text-anchor="' + tAnchor + '">Hari ini</text>';
       }
     }
     if (cfg.marks && cfg.marks.habis) {
@@ -5680,7 +5963,23 @@ function areaInit(svg, cfg) {
       if (hIdx >= 0) {
         var hx = xAt((hIdx / (n - 1)) * (N - 1)),
           hy = yAt(y[Math.round((hIdx / (n - 1)) * (N - 1))]);
-        mk += '<circle cx="' + hx.toFixed(1) + '" cy="' + hy.toFixed(1) + '" r="5"></circle><text class="lc-mk-label" x="' + hx.toFixed(1) + '" y="' + Math.max(PT + 24, hy - 10) + '" text-anchor="middle">⚠ Saldo habis</text>';
+        var hAnchor = 'middle', hLabelX = hx;
+        if (hx + 42 > W - 4) {
+          hAnchor = 'end';
+          hLabelX = Math.min(W - 4, hx - 4);
+        } else if (hx - 42 < 4) {
+          hAnchor = 'start';
+          hLabelX = Math.max(4, hx + 4);
+        }
+        var hLabelY = Math.max(PT + 16, Math.min(H - PB - 4, hy - 10));
+        if (todayX != null && Math.abs(todayX - hx) < 65) {
+          if (hy < PT + 40) {
+            hLabelY = Math.min(H - PB - 4, hy + 20);
+          } else {
+            hLabelY = Math.max(PT + 26, hy - 12);
+          }
+        }
+        mk += '<circle cx="' + hx.toFixed(1) + '" cy="' + hy.toFixed(1) + '" r="5"></circle><text class="lc-mk-label" x="' + hLabelX.toFixed(1) + '" y="' + hLabelY.toFixed(1) + '" text-anchor="' + hAnchor + '">⚠ Saldo habis</text>';
       }
     }
     if (markG) markG.innerHTML = mk;
@@ -5717,6 +6016,8 @@ function areaInit(svg, cfg) {
         '</text>';
     });
     xl.innerHTML = lx;
+
+    clampSvgLabels(svg, W, H);
 
     var idx = hover == null ? N - 1 : hover,
       val = y[idx],
@@ -5929,6 +6230,20 @@ function donutInit(host, cfg) {
       return o;
     });
   }
+  function fitCenterText(centerEl) {
+    var str = centerEl.querySelector('strong');
+    if (!str) return;
+    str.style.fontSize = '';
+    var ringEl = centerEl.closest('.dn-ring');
+    var ringW = ringEl ? (ringEl.clientWidth || 140) : 140;
+    var maxW = Math.max(50, ringW * 0.65 - 8);
+    var sz = 15;
+    while (str.scrollWidth > maxW && sz > 9) {
+      sz -= 0.5;
+      str.style.fontSize = sz + 'px';
+    }
+  }
+
   function paint() {
     slices.forEach(function (el, i) {
       var o = st[i],
@@ -5942,6 +6257,7 @@ function donutInit(host, cfg) {
     c[0].textContent = on ? DATA[hov].label : 'Total';
     c[1].textContent = on ? rp(DATA[hov].value) : rp(shown || vt);
     c[2].textContent = on ? (hidden[hov] ? 'disembunyikan' : Math.round((DATA[hov].value / (vt || 1)) * 100) + '% dari total') : '';
+    fitCenterText(center);
   }
   function labels() {
     var vt = visTotal() || 1;
@@ -6871,7 +7187,7 @@ function kondisiCard(c, R) {
       : '<b class="big neg">Tidak tersedia</b><i class="sub">sisa saldo akhir tidak cukup</i>') +
     '</div>' +
     '<div class="cond-tile"><span>Rata-rata per bulan</span><b class="pv">' + rp(C.out / n) + '</b>' +
-    '<i class="sub">Terberat ' + MON[hv.m] + ' <span class="pv">' + rp(C.byMonth[hv.m]) + '</span> &middot; Teringan ' + MON[mn.m] + ' <span class="pv">' + rp(C.byMonth[mn.m]) + '</span></i></div>' +
+    '<i class="sub"><span class="sub-hi">Terberat ' + MON[hv.m] + ' <span class="pv">' + rp(C.byMonth[hv.m]) + '</span></span> <span class="sub-lo">&middot; Teringan ' + MON[mn.m] + ' <span class="pv">' + rp(C.byMonth[mn.m]) + '</span></span></i></div>' +
     '<div class="cond-tile"><span>Transaksi kas</span><b>' + (P ? kasBal(P).A.n : 0) + '</b><i class="sub">catatan kas</i></div>' +
     '</div>';
   return (

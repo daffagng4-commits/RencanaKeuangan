@@ -208,11 +208,10 @@ function barStackInit(host, cfg) {
   function hide() {
     tip.classList.remove('on');
   }
-  var isJSDOM = typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
   function draw() {
     var W = box.clientWidth,
       H = box.clientHeight;
-    if (!isJSDOM && (W <= 0 || H <= 0)) return;
+    if (W <= 0 || H <= 0) return;
     W = W || 480;
     H = H || 250;
     var ih = H - PT - PB,
@@ -266,7 +265,7 @@ function barStackInit(host, cfg) {
   }
   var w0 = box.clientWidth,
     h0 = box.clientHeight;
-  if (isJSDOM || (w0 > 0 && h0 > 0)) {
+  if (w0 > 0 && h0 > 0) {
     draw();
   }
   if (window.ResizeObserver)
@@ -328,12 +327,65 @@ function areaInit(svg, cfg) {
     return z.getUTCDate() + ' ' + MON[z.getUTCMonth()] + (multiYear ? ' ' + d.slice(2, 4) : '');
   }
 
-  var isJSDOM = typeof navigator !== 'undefined' && /jsdom/i.test(navigator.userAgent);
+  function clampSvgLabels(svgEl, svgW, svgH) {
+    var MARGIN = 4;
+    var texts = svgEl.querySelectorAll('text');
+    texts.forEach(function (t) {
+      var bb;
+      try { bb = t.getBBox(); } catch (e) { return; }
+      if (!bb || bb.width === 0) return;
+      var curX = parseFloat(t.getAttribute('x')) || 0;
+      var curY = parseFloat(t.getAttribute('y')) || 0;
+
+      if (bb.x + bb.width > svgW - MARGIN) {
+        var shiftR = (bb.x + bb.width) - (svgW - MARGIN);
+        t.setAttribute('x', (curX - shiftR).toFixed(1));
+        try { bb = t.getBBox(); } catch (e) {}
+      }
+      if (bb.x < MARGIN) {
+        var shiftL = MARGIN - bb.x;
+        t.setAttribute('x', (curX + shiftL).toFixed(1));
+        try { bb = t.getBBox(); } catch (e) {}
+      }
+      if (bb.y < MARGIN) {
+        var shiftT = MARGIN - bb.y;
+        t.setAttribute('y', (curY + shiftT).toFixed(1));
+        try { bb = t.getBBox(); } catch (e) {}
+      }
+      if (bb.y + bb.height > svgH - MARGIN) {
+        var shiftB = (bb.y + bb.height) - (svgH - MARGIN);
+        t.setAttribute('y', (curY - shiftB).toFixed(1));
+        try { bb = t.getBBox(); } catch (e) {}
+      }
+    });
+
+    var markTexts = svgEl.querySelectorAll('.lc-mark text');
+    if (markTexts.length > 1) {
+      for (var i = 0; i < markTexts.length; i++) {
+        for (var j = i + 1; j < markTexts.length; j++) {
+          var a = markTexts[i], b = markTexts[j];
+          var ba = a.getBBox(), bb = b.getBBox();
+          var xO = Math.max(0, Math.min(ba.x + ba.width, bb.x + bb.width) - Math.max(ba.x, bb.x));
+          var yO = Math.max(0, Math.min(ba.y + ba.height, bb.y + bb.height) - Math.max(ba.y, bb.y));
+          if (xO > 0 && yO > 0) {
+            var by = parseFloat(b.getAttribute('y')) || 0;
+            var newY = ba.y + ba.height + bb.height + 4;
+            if (newY <= svgH - MARGIN) {
+              b.setAttribute('y', newY.toFixed(1));
+            } else {
+              b.setAttribute('y', Math.max(MARGIN + bb.height, ba.y - 4).toFixed(1));
+            }
+          }
+        }
+      }
+    }
+  }
+
   function draw() {
     var meas = wrap || svg;
     var mw = meas.clientWidth,
       mh = meas.clientHeight;
-    if (!isJSDOM && (mw <= 0 || mh <= 0)) return;
+    if (mw <= 0 || mh <= 0) return;
     W = Math.max(220, Math.round(mw || 600));
     H = Math.round(mh || 190);
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
@@ -393,12 +445,18 @@ function areaInit(svg, cfg) {
       fillP.setAttribute('d', '');
     }
     var mk = '';
+    var todayX = null, todayY = null;
     if (cfg.marks && cfg.marks.today) {
       var tIdx = -1;
       for (ti = 0; ti < n; ti++) if (pts[ti].d === cfg.marks.today) { tIdx = ti; break; }
       if (tIdx >= 0) {
         var tx = xAt((tIdx / (n - 1)) * (N - 1));
-        mk += '<line x1="' + tx.toFixed(1) + '" x2="' + tx.toFixed(1) + '" y1="' + PT + '" y2="' + (PT + ih) + '"></line><text x="' + tx.toFixed(1) + '" y="' + (PT + 10) + '" text-anchor="middle">Hari ini</text>';
+        var tAnchor = 'middle', tLabelX = tx;
+        if (tx + 28 > W - 4) { tAnchor = 'end'; tLabelX = Math.min(W - 4, tx - 4); }
+        else if (tx - 28 < 4) { tAnchor = 'start'; tLabelX = Math.max(4, tx + 4); }
+        todayX = tx;
+        todayY = PT + 10;
+        mk += '<line x1="' + tx.toFixed(1) + '" x2="' + tx.toFixed(1) + '" y1="' + PT + '" y2="' + (PT + ih) + '"></line><text x="' + tLabelX.toFixed(1) + '" y="' + todayY + '" text-anchor="' + tAnchor + '">Hari ini</text>';
       }
     }
     if (cfg.marks && cfg.marks.habis) {
@@ -407,7 +465,23 @@ function areaInit(svg, cfg) {
       if (hIdx >= 0) {
         var hx = xAt((hIdx / (n - 1)) * (N - 1)),
           hy = yAt(y[Math.round((hIdx / (n - 1)) * (N - 1))]);
-        mk += '<circle cx="' + hx.toFixed(1) + '" cy="' + hy.toFixed(1) + '" r="5"></circle><text class="lc-mk-label" x="' + hx.toFixed(1) + '" y="' + Math.max(PT + 24, hy - 10) + '" text-anchor="middle">⚠ Saldo habis</text>';
+        var hAnchor = 'middle', hLabelX = hx;
+        if (hx + 42 > W - 4) {
+          hAnchor = 'end';
+          hLabelX = Math.min(W - 4, hx - 4);
+        } else if (hx - 42 < 4) {
+          hAnchor = 'start';
+          hLabelX = Math.max(4, hx + 4);
+        }
+        var hLabelY = Math.max(PT + 16, Math.min(H - PB - 4, hy - 10));
+        if (todayX != null && Math.abs(todayX - hx) < 65) {
+          if (hy < PT + 40) {
+            hLabelY = Math.min(H - PB - 4, hy + 20);
+          } else {
+            hLabelY = Math.max(PT + 26, hy - 12);
+          }
+        }
+        mk += '<circle cx="' + hx.toFixed(1) + '" cy="' + hy.toFixed(1) + '" r="5"></circle><text class="lc-mk-label" x="' + hLabelX.toFixed(1) + '" y="' + hLabelY.toFixed(1) + '" text-anchor="' + hAnchor + '">⚠ Saldo habis</text>';
       }
     }
     if (markG) markG.innerHTML = mk;
@@ -444,6 +518,8 @@ function areaInit(svg, cfg) {
         '</text>';
     });
     xl.innerHTML = lx;
+
+    clampSvgLabels(svg, W, H);
 
     var idx = hover == null ? N - 1 : hover,
       val = y[idx],
@@ -656,6 +732,20 @@ function donutInit(host, cfg) {
       return o;
     });
   }
+  function fitCenterText(centerEl) {
+    var str = centerEl.querySelector('strong');
+    if (!str) return;
+    str.style.fontSize = '';
+    var ringEl = centerEl.closest('.dn-ring');
+    var ringW = ringEl ? (ringEl.clientWidth || 140) : 140;
+    var maxW = Math.max(50, ringW * 0.65 - 8);
+    var sz = 15;
+    while (str.scrollWidth > maxW && sz > 9) {
+      sz -= 0.5;
+      str.style.fontSize = sz + 'px';
+    }
+  }
+
   function paint() {
     slices.forEach(function (el, i) {
       var o = st[i],
@@ -669,6 +759,7 @@ function donutInit(host, cfg) {
     c[0].textContent = on ? DATA[hov].label : 'Total';
     c[1].textContent = on ? rp(DATA[hov].value) : rp(shown || vt);
     c[2].textContent = on ? (hidden[hov] ? 'disembunyikan' : Math.round((DATA[hov].value / (vt || 1)) * 100) + '% dari total') : '';
+    fitCenterText(center);
   }
   function labels() {
     var vt = visTotal() || 1;

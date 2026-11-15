@@ -44,6 +44,14 @@ function render(html, data) {
       x.matchMedia = (q) => ({ matches: false, media: q, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
       x.Element.prototype.scrollIntoView = function () {};
       x.Element.prototype.getBoundingClientRect = function () { return { width: 600, height: 300, top: 0, left: 0, right: 600, bottom: 300, x: 0, y: 0 }; };
+      Object.defineProperty(x.Element.prototype, "clientWidth", { get: function() { return 600; }, configurable: true });
+      Object.defineProperty(x.Element.prototype, "clientHeight", { get: function() { return 250; }, configurable: true });
+      if (x.SVGElement && !x.SVGElement.prototype.getBBox) {
+        x.SVGElement.prototype.getBBox = function() {
+          var txt = this.textContent || "";
+          return { x: 0, y: 0, width: txt.length * 7, height: 14 };
+        };
+      };
     },
   }).window;
   // Tanggal acuan + data sama untuk kedua versi.

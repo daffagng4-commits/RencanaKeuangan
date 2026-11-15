@@ -1523,6 +1523,7 @@ body.privacy-mode td.c-s, body.privacy-mode td.c-e,
 body.privacy-mode td[data-l="Pengeluaran"], body.privacy-mode td[data-l="Saldo akhir"], body.privacy-mode td[data-l="Saldo awal"],
 body.privacy-mode input#saldo, body.privacy-mode .hero-val, body.privacy-mode .big,
 body.privacy-mode .pv, body.privacy-mode [data-val="rp"] { filter: blur(5px); user-select: none; }
+.pv { display: inline-block; white-space: nowrap; }
 
 /* ============================================================
    14. Layar kecil
@@ -2571,15 +2572,27 @@ nav .nav-pill {
   border-top: 1px dashed var(--ln);
 }
 .where-panel .insight .dn {
-  display: grid !important;
-  grid-template-columns: minmax(130px, 180px) minmax(0, 1fr) !important;
-  gap: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
   align-items: center !important;
+  gap: 10px !important;
 }
 .where-panel .dn-ring {
-  width: clamp(120px, 11vw, 175px) !important;
-  height: clamp(120px, 11vw, 175px) !important;
-  margin: auto !important;
+  width: 140px !important;
+  height: 140px !important;
+  margin: 0 auto 4px !important;
+  flex: 0 0 140px !important;
+}
+.where-panel .dn-lg {
+  width: 100% !important;
+  min-height: 0 !important;
+}
+.where-panel .dn-lg > li > button {
+  display: grid !important;
+  grid-template-columns: 10px minmax(0, 1fr) auto 34px !important;
+  gap: 8px !important;
+  align-items: center !important;
+  width: 100% !important;
 }
 
 /* Tidak ada ruang kosong di dalam kartu: isi tumbuh, ringkasan menempel di dasar. */
@@ -2669,13 +2682,15 @@ nav .nav-pill {
   padding: 0;
 }
 .rk-tx .it2.kit.tx-row {
-  flex: 0 0 36px;
-  height: 36px;
-  min-height: 36px;
-  padding: 4px 8px;
+  flex: 0 0 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 3px 8px;
   box-sizing: border-box;
   gap: 8px;
 }
+.tx-note { line-height: 1.25; }
+.tx-cat { line-height: 1.2; }
 
 /* Pemasukan vs Pengeluaran: grafik tumbuh mengisi sisa tinggi */
 .rk-mf > .card {
@@ -2736,20 +2751,32 @@ nav .nav-pill {
   display: flex;
   flex-wrap: wrap;
   gap: 3px 5px;
-  max-height: 52px;
-  overflow: hidden;
   align-items: center;
 }
-.rk-detail tbody tr.row td {
-  padding: 8px 12px;
-  max-height: 72px;
-  height: auto;
-  vertical-align: middle;
-  font-size: 13px;
-  box-sizing: border-box;
+.where-panel .cat-tab,
+.tx-card .cat-tab {
+  padding: 2px 5px !important;
+  font-size: 11px !important;
 }
-.rk-detail tbody tr.row {
-  max-height: 72px;
+.tx-card .cat-tabs {
+  gap: 1px !important;
+  padding: 1px !important;
+}
+@media (min-width: 601px) {
+  .rk-detail tbody tr.row td {
+    padding: 8px 12px;
+    height: auto;
+    vertical-align: middle;
+    font-size: 13px;
+    box-sizing: border-box;
+  }
+  .rk-detail tbody tr.row {
+    height: auto;
+  }
+  .rk-detail .c-chips {
+    height: auto;
+    overflow: visible;
+  }
 }
 .rk-detail .c-c {
   white-space: normal;
@@ -2786,14 +2813,14 @@ nav .nav-pill {
 .cond-flow-foot.mt8,
 .cond-flow > .cond-flow-foot {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  font-size: 12px; line-height: 14px; color: var(--mut); margin-top: 0 !important; padding: 0 4px;
-  flex: 0 0 16px; height: 16px; max-height: 16px;
+  font-size: 12px; line-height: 16px; color: var(--mut); margin-top: 10px !important; margin-bottom: 0 !important; padding: 0 4px;
+  flex: 0 0 auto; height: auto; min-height: 16px; position: relative;
 }
 .cond-tiles {
   display: grid;
   grid-template-columns: 1.05fr 1.2fr 1.45fr 0.85fr;
   gap: 10px;
-  margin-top: 0 !important;
+  margin-top: 14px !important;
   padding-top: 0 !important;
 }
 .cond-tiles .cond-tile,
@@ -2803,6 +2830,7 @@ nav .nav-pill {
   justify-content: center;
   gap: 2px;
   min-width: 0;
+  overflow: hidden;
   grid-column: auto !important;
   margin-top: 0 !important;
   padding: 6px 10px !important;
@@ -2829,6 +2857,9 @@ nav .nav-pill {
 .cond-tile .sub {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   line-height: 1.25;
+}
+@media (max-width: 1400px) {
+  .cond-tile .sub .sub-lo { display: none !important; }
 }
 
 @media (min-width: 1280px) {
@@ -2985,17 +3016,211 @@ nav .nav-pill {
   .cond-big { font-size: 26px; }
 }
 
-/* Issue 9: Pengeluaran per kategori – pertahankan grid dua kolom di dalam .rk;
-   override override flex-column yang terpasang di .rk .insight-card .dn. */
-.rk .insight .dn {
-  display: grid !important;
-  grid-template-columns: minmax(150px, 190px) minmax(0, 1fr);
-  gap: 6px 20px;
-  align-items: center;
-  flex: unset;
-  flex-direction: unset;
+/* Issue 9: Pengeluaran per kategori – pertahankan grid dua kolom di dalam .rk untuk desktop/tablet;
+   override flex-column yang terpasang di .rk .insight-card .dn. */
+@media (min-width: 601px) {
+  .rk > .card.insight .dn {
+    display: grid !important;
+    grid-template-columns: minmax(150px, 190px) minmax(0, 1fr);
+    gap: 6px 20px;
+    align-items: center;
+    flex: unset;
+    flex-direction: unset;
+  }
+  .rk > .card.insight .dn-ring { width: min(100%, 170px); height: 170px; margin: 4px auto; }
 }
-.rk .insight .dn-ring { width: min(100%, 170px); height: 170px; margin: 4px auto; }
+
+/* Mobile responsive rules (< 600px) */
+@media (max-width: 600px) {
+  /* Bug 2: Rincian arus tagihan mobile (blok bertumpuk berurutan) */
+  .rk-detail tbody tr.row {
+    display: grid !important;
+    grid-template-columns: 1fr auto !important;
+    gap: 4px 12px !important;
+    max-height: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 12px 0 !important;
+    border-bottom: 1px solid var(--ln) !important;
+  }
+  .rk-detail tbody tr.row td {
+    display: block !important;
+    max-height: none !important;
+    height: auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+  .rk-detail tbody tr.row td.c-m {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    text-align: left !important;
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+  }
+  .rk-detail tbody tr.row td.c-e {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    text-align: right !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+  }
+  .rk-detail tbody tr.row td.c-a {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    text-align: left !important;
+    font-size: 12px !important;
+  }
+  .rk-detail tbody tr.row td.c-s {
+    grid-column: 1 / -1 !important;
+    grid-row: 3 !important;
+    text-align: left !important;
+    font-size: 12px !important;
+  }
+  .rk-detail tbody tr.row td.c-c {
+    grid-column: 1 / -1 !important;
+    grid-row: 4 !important;
+    text-align: left !important;
+    margin-top: 4px !important;
+  }
+  .rk-detail .c-chips {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 4px 6px !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .rk-detail tbody tr.tot {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+    gap: 4px 12px !important;
+    padding: 12px 0 !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+  .rk-detail tbody tr.tot td {
+    display: block !important;
+    max-height: none !important;
+    height: auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  /* Bug 3: Ke mana uangnya pergi & Item terbesar mobile */
+  .where-panels {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+  .where-sep {
+    display: none !important;
+  }
+  .where-panel {
+    width: 100% !important;
+  }
+  .where-panel .insight .dn,
+  .rk .insight .dn {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px !important;
+  }
+  .where-panel .dn-ring,
+  .rk .insight .dn-ring {
+    width: 140px !important;
+    height: 140px !important;
+    margin: 0 auto 8px !important;
+    flex: 0 0 140px !important;
+  }
+  .dn-c {
+    padding: 0 6px !important;
+  }
+  .where-panel .dn-lg,
+  .rk-cat .dn-lg {
+    width: 100% !important;
+    min-height: 0 !important;
+  }
+  .where-panel .dn-lg > li,
+  .rk-cat .dn-lg > li {
+    height: auto !important;
+    min-height: 38px !important;
+  }
+  .where-panel .dn-lg > li > button,
+  .rk-cat .dn-lg > li > button {
+    display: grid !important;
+    grid-template-columns: 10px minmax(0, 1fr) auto 34px !important;
+    gap: 8px !important;
+    align-items: center !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 6px 4px !important;
+    height: auto !important;
+    min-height: 38px !important;
+  }
+  .where-panel .dn-lg .n,
+  .rk-cat .dn-lg .n {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    text-align: left !important;
+  }
+  .where-panel .dn-lg .v,
+  .rk-cat .dn-lg .v {
+    white-space: nowrap !important;
+    margin-right: 0 !important;
+    font-variant-numeric: tabular-nums !important;
+    text-align: right !important;
+  }
+  .where-panel .dn-lg .p,
+  .rk-cat .dn-lg .p {
+    width: 34px !important;
+    flex: 0 0 34px !important;
+    text-align: right !important;
+    white-space: nowrap !important;
+  }
+
+  /* Item terbesar mobile */
+  .where-panel .expense-list {
+    min-height: 0 !important;
+    gap: 6px !important;
+  }
+  .where-panel .expense-row {
+    height: auto !important;
+    min-height: 38px !important;
+    padding: 6px 8px !important;
+  }
+  .expense-top {
+    display: grid !important;
+    grid-template-columns: 14px minmax(0, 1fr) auto 34px !important;
+    gap: 6px !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+  .expense-label {
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+  .expense-name {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    display: inline-block !important;
+  }
+  .expense-leader {
+    display: none !important;
+  }
+  .expense-amount {
+    white-space: nowrap !important;
+    text-align: right !important;
+  }
+  .expense-top > .sub {
+    width: 34px !important;
+    flex: 0 0 34px !important;
+    text-align: right !important;
+  }
+}
 
 /* Issue 15: Chip/pill total harian di kartu Transaksi terakhir. */
 .tx-pill {
