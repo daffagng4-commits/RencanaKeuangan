@@ -55,10 +55,12 @@ const it = (id, price, start) => ({ id, name: id, price, start, n: 1, unit: 'sek
     w.renderAll();
     const bal2 = +(w.document.getElementById('rincian-saldo-now').textContent.match(/Rp\s*([\d\.]+)/)[1].replace(/\./g, ''));
     const ptsM = w.brBuildCashflowPoints('m');
-    const todayM = ptsM.find(p => p.today);
-    const endM = ptsM.slice(-1)[0].val;
-    assert.strictEqual(bal2, todayM.val, `saldo realtime (${bal2}) cocok dengan titik hari ini (${todayM.val})`);
-    assert(endM < bal2, `titik masa depan grafik (${endM}) turun setelah transaksi Des terhadap realtime Nov (${bal2})`);
+    assert(ptsM.every((p) => p.d >= '2026-11-01' && p.d <= '2026-11-30'), 'filter Bulan (Nov) hanya menampilkan tanggal bulan November tanpa Desember');
+    const ptsY = w.brBuildCashflowPoints('y');
+    const todayY = ptsY.find(p => p.today);
+    const endY = ptsY.slice(-1)[0].val;
+    assert.strictEqual(bal2, todayY.val, `saldo realtime (${bal2}) cocok dengan titik hari ini (${todayY.val})`);
+    assert(endY < bal2, `titik masa depan grafik Tahunan (${endY}) turun setelah transaksi Des terhadap realtime Nov (${bal2})`);
     console.log('OK realtime_match_flow');
   } finally {
     w.close();

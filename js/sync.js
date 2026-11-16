@@ -55,21 +55,29 @@ function sbInit() {
   });
 }
 
-/** Tombol akun: "D" bila masuk, "?" bila belum. */
+/** Perbarui tombol akun, avatar, dan nama sapaan sesuai sesi login Supabase. */
 function acctUI(u) {
+  if (u !== undefined) sbUser = u || null;
+  var du = typeof rkDisplayUser === 'function'
+    ? rkDisplayUser(u)
+    : { loggedIn: !!u, name: u ? ((u.email || '').split('@')[0] || 'Pengguna') : 'XXX', initial: u ? ((u.email || 'U')[0].toUpperCase()) : '' };
+  if (typeof USER_NAME !== 'undefined') USER_NAME = du.name;
   var b = $('acct'),
-    ini = $('acct-ini');
-  if (!b || !ini) return;
-  b.classList.toggle('on', !!u);
-  ini.textContent = u ? 'D' : '?';
-  var ariaLabel = 'Profil ' + (typeof USER_NAME !== 'undefined' && USER_NAME ? USER_NAME.trim() : 'Pengguna');
-  b.title = u ? (u.email || 'Akun') + ' · opsi akun' : ariaLabel;
-  var bm = $('acct-m'), inim = $('acct-m-ini');
-  if (bm) {
-    bm.classList.toggle('on', !!u);
-    bm.title = u ? (u.email || 'Akun') + ' · opsi akun' : ariaLabel;
-    if (inim && typeof userInitial === 'function') inim.textContent = userInitial();
+    ini = $('acct-ini'),
+    sbIni = $('sb-ini'),
+    sbNm = $('sb-name'),
+    av = b && b.querySelector('.av-circle');
+  if (b) {
+    b.classList.toggle('on', du.loggedIn);
+    b.title = du.loggedIn ? (u.email || du.name) + ' · opsi akun' : 'Masuk / daftar untuk sinkron';
   }
+  if (av) av.classList.toggle('anon', !du.loggedIn);
+  if (ini) ini.textContent = du.initial;
+  if (sbIni) sbIni.textContent = du.initial;
+  if (sbNm) sbNm.textContent = 'Halo, ' + du.name;
+  if (typeof brSyncAccountUI === 'function') brSyncAccountUI();
+  if (typeof brRenderLgModal === 'function') brRenderLgModal();
+  if (typeof renderShell === 'function') renderShell();
   if (typeof syncMobileCloudUI === 'function') syncMobileCloudUI();
 }
 
@@ -77,9 +85,9 @@ function acctUI(u) {
 function setUser(s) {
   var u = (s && s.user) || null,
     was = sbUser;
+  sbUser = u;
   acctUI(u);
   if ((u && u.id) === (was && was.id)) return;
-  sbUser = u;
   syncBlocked = false;
   if (u) {
     sbStat('Menyinkronkan...');
@@ -271,6 +279,31 @@ function sbPending() {
   e.innerHTML = 'Sinkron ditunda karena data berbeda. <a href="#" id="sbr">Selesaikan sekarang</a>';
 }
 
+/** Masuk dengan akun Google (Gmail) melalui Supabase OAuth; data tetap ke rk_state sesuai user_id. */
+function authGoogle() {
+  if (!sb || !sb.auth) {
+    if (typeof toast === 'function') toast('Sinkron belum aktif. Pastikan Supabase dikonfigurasi.');
+    return Promise.resolve();
+  }
+  var redir;
+  try {
+    if (typeof location !== 'undefined' && /^https?:/i.test(location.origin || '')) {
+      redir = location.origin + location.pathname + (location.search || '');
+    }
+  } catch (e) {}
+  return sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: redir ? { redirectTo: redir } : undefined,
+  }).then(function (r) {
+    if (r && r.error) {
+      if ($('lm')) $('lm').textContent = r.error.message;
+      if ($('m-lg-err')) $('m-lg-err').textContent = r.error.message;
+      if (typeof toast === 'function') toast('Gagal login Google: ' + r.error.message);
+    }
+    return r;
+  });
+}
+
 /** Masuk (in) atau daftar (up) dengan email dan password. */
 function auth(kind) {
   var e = $('le').value.trim(),
@@ -400,6 +433,11 @@ function bindSync() {
   $('lin').onclick = function () {
     auth('in');
   };
+  if ($('lin-google')) {
+    $('lin-google').onclick = function () {
+      authGoogle();
+    };
+  }
   if ($('lup')) {
     $('lup').onclick = function () {
       auth('up');

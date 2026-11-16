@@ -218,6 +218,15 @@ body[data-shell="mobile-app"] #mobile-app-shell .av-circle {
   position: relative;
   flex-shrink: 0;
 }
+body[data-shell="mobile-app"] #mobile-app-shell .av-circle.anon {
+  background: #CBD5E1;
+  border: 1.5px solid #94A3B8;
+  color: transparent;
+}
+html[data-theme="dark"] body[data-shell="mobile-app"] #mobile-app-shell .av-circle.anon {
+  background: #475569;
+  border-color: #64748B;
+}
 
 body[data-shell="mobile-app"] #mobile-app-shell .av-dot {
   position: absolute;
@@ -323,17 +332,23 @@ body[data-shell="mobile-app"] #mobile-app-shell .wallet-hero {
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-body[data-shell="mobile-app"] #mobile-app-shell .wallet-kicker { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.78; font-weight: 700; }
-body[data-shell="mobile-app"] #mobile-app-shell .wallet-bal { font-family: var(--font-mono); font-size: 1.65rem; font-weight: 800; letter-spacing: -0.02em; margin: 3px 0 6px; }
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-top > div:first-child { min-width: 0; flex: 1; }
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-kicker { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.78; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-bal { font-family: var(--font-mono); font-size: clamp(1.22rem, 5.2vw, 1.56rem); font-weight: 800; letter-spacing: -0.02em; margin: 3px 0 6px; white-space: nowrap; }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  text-align: center;
   gap: 5px;
-  padding: 4px 9px;
+  padding: 4px 10px;
   border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.14);
-  font-size: 0.70rem;
+  font-size: 0.68rem;
   font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-seg {
@@ -852,7 +867,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .bn-center-slot {
 
 body[data-shell="mobile-app"] #mobile-app-shell .bn-plus-fab {
   position: absolute;
-  top: -22px;
+  top: -16px;
   left: 50%;
   transform: translateX(-50%);
   width: 52px;
@@ -995,42 +1010,45 @@ body[data-shell="mobile-app"] #mobile-app-shell .cf-strip {
   background: var(--bg-subtle);
   margin-bottom: 7px;
   font-size: 0.73rem;
+  min-height: 30px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .cf-strip-lbl {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 700;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .cf-strip-val {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-weight: 800;
 }
 
-/* Aesthetic 3D Glass Jar Side-by-Side Showcase */
+/* Aesthetic 3D Glass Jar Centered Showcase */
 body[data-shell="mobile-app"] #mobile-app-shell .jar-showcase-grid {
-  display: grid;
-  grid-template-columns: 146px minmax(0, 1fr);
-  gap: 10px;
+  display: flex;
+  justify-content: center;
   align-items: center;
   margin-bottom: 12px;
 }
+body[data-shell="mobile-app"] #mobile-app-shell #m-jar-stage {
+  width: 100%;
+  max-width: 196px;
+  margin: 0 auto;
+}
 @keyframes bubbleFloat { 0% { transform: translateY(0); opacity: 0.75; } 100% { transform: translateY(-28px); opacity: 0; } }
 body[data-shell="mobile-app"] #mobile-app-shell .jar-bubble { animation: bubbleFloat 3.6s ease-in infinite; }
-body[data-shell="mobile-app"] #mobile-app-shell .jar-spotlight {
-  background: linear-gradient(155deg, var(--bg-muted-row) 0%, var(--bg-subtle) 100%);
-  border: 1px solid var(--border-subtle);
-  border-radius: 14px;
-  padding: 10px 11px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .jar-mini-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 4px 6px;
-  border-radius: 8px;
-  font-size: 0.70rem;
-  background: var(--bg-surface);
-  border: 1px solid transparent;
-  text-align: left;
-  transition: all 140ms ease;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .jar-mini-row.active { border-color: var(--accent-border); background: var(--accent-soft); }
+
+/* Cashflow Zoom Popup (Desktop-grade chart inside APK) */
+body[data-shell="mobile-app"] #mobile-app-shell .cf-zoom-sheet { max-width: 96vw; width: 100%; border-radius: 20px; }
+body[data-shell="mobile-app"] #mobile-app-shell .cf-zoom-stage { position: relative; width: 100%; }
+body[data-shell="mobile-app"] #mobile-app-shell .cf-zoom-scroll { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; border: 1px solid var(--border-subtle); border-radius: 14px; background: var(--bg-surface); padding: 8px 6px; }
+body[data-shell="mobile-app"] #mobile-app-shell #m-cf-zoom-tip { max-width: min(230px, calc(100% - 16px)); font-size: 0.74rem; padding: 7px 10px; z-index: 20; }
+body[data-shell="mobile-app"] #mobile-app-shell .cf-legend-bar { display: flex; flex-wrap: wrap; gap: 10px; font-size: 0.70rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; }
+body[data-shell="mobile-app"] #mobile-app-shell .cf-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+body[data-shell="mobile-app"] #mobile-app-shell .cf-legend-dot { width: 8px; height: 8px; border-radius: 3px; display: inline-block; }
 
 /* Compact Mobile Report Table & Switch */
 body[data-shell="mobile-app"] #mobile-app-shell .rep-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }

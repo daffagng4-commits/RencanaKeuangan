@@ -8,6 +8,8 @@ var MOB_STATE = {
   tab: 'rincian',
   frame: null,
   cashRange: 'm',
+  zoomRange: 'm',
+  zoomPin: null,
   cashExpand: false,
   wherePeriod: 'y',
   whereDir: '-',
@@ -22,6 +24,7 @@ var MOB_STATE = {
   kasFilterCat: 'all',
   kasFilterDir: 'all',
   kasSearch: '',
+  jadwalSub: 'list',
   jadwalMonth: 'all',
   jadwalFilter: 'all',
   chipCtx: null,
@@ -43,6 +46,7 @@ var MOB_STATE = {
   notifSoon: true,
   notifLate: true,
   repKind: 'm',
+  repExpanded: {},
 };
 
 var MOB_BANNER_DUE = null;
@@ -262,23 +266,35 @@ function unmountMobileShell() {
 
 function syncMobileCloudUI() {
   if (typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') return;
-  var nm = typeof USER_NAME !== 'undefined' && USER_NAME ? USER_NAME.trim() : 'Pengguna';
-  var ini = typeof userInitial === 'function' ? userInitial(nm) : nm[0].toUpperCase();
-  if ($('m-acct-ini')) $('m-acct-ini').textContent = ini;
-  if ($('m-user-name')) $('m-user-name').textContent = 'Halo, ' + nm;
-  var lbl = $('m-sync-lbl');
-  if (lbl) {
-    if (typeof sb === 'undefined' || !sb) {
-      lbl.textContent = '● Mode Lokal';
-      lbl.style.color = 'var(--text-muted)';
-    } else if (typeof sbUser !== 'undefined' && sbUser) {
-      lbl.textContent = '● Sinkron Cloud';
-      lbl.style.color = 'var(--emerald)';
+  var u = typeof sbUser !== 'undefined' ? sbUser : null;
+  var du = typeof rkDisplayUser === 'function'
+    ? rkDisplayUser(u)
+    : { loggedIn: !!u, name: u ? 'Pengguna' : 'XXX', initial: u ? 'P' : '' };
+  if (typeof USER_NAME !== 'undefined') USER_NAME = du.name;
+  var av = $('m-acct-btn') && $('m-acct-btn').querySelector('.av-circle');
+  if (av) av.classList.toggle('anon', !du.loggedIn);
+  if ($('m-acct-ini')) $('m-acct-ini').textContent = du.initial;
+  if ($('m-user-name')) $('m-user-name').textContent = 'Halo, ' + du.name;
+  var lbl = $('m-sync-lbl'), setSt = $('m-set-acct-status');
+  var statusTxt = '● Mode Lokal', statusCol = 'var(--text-muted)';
+  if (typeof sb !== 'undefined' && sb) {
+    if (u) {
+      statusTxt = '● Sinkron Cloud (' + (u.email || du.name) + ')';
+      statusCol = 'var(--emerald)';
     } else {
-      lbl.textContent = '○ Belum Masuk';
-      lbl.style.color = 'var(--amber)';
+      statusTxt = '○ Belum Masuk Cloud';
+      statusCol = 'var(--amber)';
     }
   }
+  if (lbl) {
+    lbl.textContent = u ? '● Sinkron Cloud' : (typeof sb !== 'undefined' && sb ? '○ Belum Masuk' : '● Mode Lokal');
+    lbl.style.color = statusCol;
+  }
+  if (setSt) {
+    setSt.textContent = statusTxt;
+    setSt.style.color = statusCol;
+  }
+  if ($('m-set-open-acct')) $('m-set-open-acct').textContent = u ? 'Kelola' : 'Masuk';
   var priv = document.body && document.body.classList.contains('privacy-mode');
   if (document.body) document.body.classList.toggle('privacy-on', !!priv);
   var pbtn = $('m-btn-privacy');
@@ -318,8 +334,8 @@ function mobShellTemplate() {
     '<div class="phone-status-bar" aria-hidden="true"><span>09:41</span><div class="phone-island"><span class="phone-island-cam"></span></div><div class="phone-sys-icons"><span>5G</span><span>94%</span></div></div>' +
     '<header class="mob-topbar">' +
     '<button type="button" class="mt-user-btn" id="m-acct-btn" aria-label="Akun dan Sinkron Cloud">' +
-    '<div class="av-circle"><span id="m-acct-ini">D</span><span class="av-dot"></span></div>' +
-    '<div class="mt-title-col"><span class="mt-name" id="m-user-name">Halo, Daffa</span><span class="mt-sync" id="m-sync-lbl">● Mode Lokal</span></div>' +
+    '<div class="av-circle anon"><span id="m-acct-ini"></span><span class="av-dot"></span></div>' +
+    '<div class="mt-title-col"><span class="mt-name" id="m-user-name">Halo, XXX</span><span class="mt-sync" id="m-sync-lbl">● Mode Lokal</span></div>' +
     '</button>' +
     '<div class="mt-actions">' +
     '<button type="button" class="yr-chip-btn" id="m-top-yr-pill" title="Ubah Tahun &amp; Saldo Awal"><span id="m-top-yr-txt">2026</span><span style="font-size:0.65rem;opacity:0.65">▾</span></button>' +
@@ -338,7 +354,7 @@ function mobShellTemplate() {
     '</div></div>' +
     '<div class="card"><div class="card-hd" style="margin-bottom:6px"><h2 class="card-title">Proyeksi Arus Kas</h2>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="m-btn-expand-cf">⤢ Perbesar</button></div>' +
-    '<div class="cf-strip" id="m-cf-strip"><span>Hari ini</span><span class="mono pv">Rp 0</span></div>' +
+    '<div class="cf-strip" id="m-cf-strip"><span class="cf-strip-lbl">Hari ini</span><span class="mono pv cf-strip-val">Rp 0</span></div>' +
     '<div class="chart-stage" id="m-cf-wrap"><svg id="m-svg-cashflow" viewBox="0 0 340 210" style="width:100%;height:auto;display:block;touch-action:none"></svg><div class="hud-tooltip" id="m-cf-tooltip"></div></div></div>' +
     '<div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:0 2px"><span style="font-size:0.74rem;font-weight:800;color:var(--text-secondary)">Ringkasan Cepat</span><span style="font-size:0.68rem;font-weight:700;color:var(--accent-ink)">Geser &harr;</span></div>' +
     '<div class="card-slider" id="m-kpi-slider">' +
@@ -349,12 +365,12 @@ function mobShellTemplate() {
     '</div><div class="slider-dots" id="m-rincian-kpi-dots"><span class="slider-dot active"></span><span class="slider-dot"></span><span class="slider-dot"></span></div></div>' +
     '<div class="card"><div class="card-hd"><h2 class="card-title">Tagihan Terdekat</h2><button type="button" class="btn btn-secondary btn-sm" data-mnav="jadwal">Semua &rarr;</button></div>' +
     '<div class="stack" style="gap:7px" id="m-upcoming-bills"></div></div>' +
-    '<div class="card"><div class="card-hd"><div><h2 class="card-title">Ke Mana Uangnya Pergi</h2><div style="font-size:0.71rem;color:var(--text-muted)" id="m-where-sub">Rp 0</div></div>' +
+    '<div class="card"><div class="card-hd"><h2 class="card-title">Ke Mana Uangnya Pergi</h2>' +
     '<div class="seg"><button type="button" class="seg-btn active" data-mwstyle="jar">Jar 3D</button><button type="button" class="seg-btn" data-mwstyle="ring">Ring</button></div></div>' +
     '<div style="display:flex;justify-content:space-between;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">' +
     '<div class="seg"><button type="button" class="seg-btn" data-mwperiod="w">Minggu</button><button type="button" class="seg-btn" data-mwperiod="m">Bulan</button><button type="button" class="seg-btn active" data-mwperiod="y">Tahun</button></div>' +
     '<div class="seg"><button type="button" class="seg-btn active" data-mwdir="-">Keluar</button><button type="button" class="seg-btn" data-mwdir="+">Masuk</button></div></div>' +
-    '<div class="jar-showcase-grid"><div id="m-jar-stage" style="width:100%"></div><div class="jar-spotlight" id="m-jar-spotlight"></div></div>' +
+    '<div class="jar-showcase-grid"><div id="m-jar-stage"></div></div>' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:0.75rem;font-weight:800;color:var(--text-secondary)">Kategori</span>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="m-btn-reset-where" style="display:none">Reset</button></div>' +
     '<div class="bento-2" id="m-where-cats" style="margin-bottom:10px"></div>' +
@@ -395,8 +411,13 @@ function mobShellTemplate() {
     '<input class="input" id="m-kas-search" type="search" placeholder="Cari transaksi..." /></div>' +
     '<div class="stack" style="gap:7px" id="m-kas-hist-list"></div></div>' +
     '</div></section>' +
-    // TAB 3: JADWAL
+    // TAB 3: JADWAL & KELOLA ITEM TERPADU
     '<section class="tab-panel" id="m-tab-jadwal"><div class="stack">' +
+    '<div class="pill-slider" id="m-jadwal-subnav">' +
+    '<button type="button" class="p-chip active" data-mjsub="list">Jadwal Tagihan</button>' +
+    '<button type="button" class="p-chip" data-mjsub="add">+ Tambah Item</button>' +
+    '<button type="button" class="p-chip" data-mjsub="manage">Daftar Item (<span id="m-item-cnt">0</span>)</button></div>' +
+    '<div id="m-jad-pane-list" class="stack">' +
     '<div class="bento-2"><div class="m-tile"><div class="m-tile-k">Sudah Dibayar</div><div class="m-tile-v pv" id="m-jad-paid-amt" style="color:var(--emerald)">Rp 0</div><div class="m-tile-s" id="m-jad-paid-cnt">0/0 lunas</div></div>' +
     '<div class="m-tile"><div class="m-tile-k">Belum Dibayar</div><div class="m-tile-v pv" id="m-jad-unpaid-amt" style="color:var(--amber)">Rp 0</div><div class="m-tile-s" id="m-jad-unpaid-cnt">0 sisa</div></div></div>' +
     '<div class="pill-slider" id="m-jadwal-months"></div>' +
@@ -405,10 +426,8 @@ function mobShellTemplate() {
     '<button type="button" class="seg-btn" data-mjfilter="unpaid" style="flex:1">Belum <span id="m-jf-unpaid">0</span></button>' +
     '<button type="button" class="seg-btn" data-mjfilter="paid" style="flex:1">Lunas <span id="m-jf-paid">0</span></button></div>' +
     '<div class="stack" style="gap:8px" id="m-jadwal-list"></div>' +
-    '<div class="card" id="m-jadwal-tfoot" style="background:var(--bg-subtle)"></div>' +
-    '</div></section>' +
-    // TAB 4: KELOLA ITEM
-    '<section class="tab-panel" id="m-tab-item"><div class="stack">' +
+    '<div class="card" id="m-jadwal-tfoot" style="background:var(--bg-subtle)"></div></div>' +
+    '<div id="m-jad-pane-add" class="stack sec-hidden">' +
     '<div class="card" style="background:linear-gradient(135deg, var(--accent-soft), var(--emerald-soft))"><div class="card-hd"><h2 class="card-title">⚡ Tambah Cepat</h2></div>' +
     '<div class="pill-slider" style="margin-bottom:8px"><button type="button" class="p-chip m-qp-ex" data-qp="Netflix 186k tiap tgl 15">Netflix 186k tgl 15</button><button type="button" class="p-chip m-qp-ex" data-qp="Listrik 450k tiap tgl 20">Listrik 450k tgl 20</button><button type="button" class="p-chip m-qp-ex" data-qp="Gym 300k tiap 2 minggu">Gym 300k/2mg</button></div>' +
     '<div style="display:flex;gap:6px"><input class="input" id="m-qp-input" placeholder="Netflix 186k tiap tgl 15" style="flex:1" /><button type="button" class="btn btn-primary" id="m-qp-submit">＋</button></div>' +
@@ -423,7 +442,10 @@ function mobShellTemplate() {
     '<div class="bento-2"><div class="field"><label class="field-label" for="m-item-unit">Siklus</label><select class="input" id="m-item-unit"><option value="bulan">Tiap 1 bulan</option><option value="28hari">Tiap 28 hari</option><option value="minggu">Tiap minggu</option><option value="hari">Tiap hari</option><option value="tahun">Tiap 1 tahun</option><option value="sekali">Sekali saja</option></select></div>' +
     '<div class="field"><span class="field-label">Tanggal</span>' + mobDateFieldHtml('m-item-start', '', true) + '</div></div>' +
     '<div class="bento-2" id="m-item-cat-pills"></div><button type="submit" class="btn btn-primary" id="m-item-save-btn">Simpan Item</button></form></div>' +
-    '<div class="card"><div class="card-hd"><h2 class="card-title">Item Aktif (<span id="m-item-cnt">0</span>)</h2><button type="button" class="btn btn-secondary btn-sm" id="m-btn-copy-next">Salin Tahun +1</button></div><div class="stack" style="gap:7px" id="m-manage-items"></div></div>' +
+    '</div>' +
+    '<div id="m-jad-pane-manage" class="stack sec-hidden">' +
+    '<div class="card"><div class="card-hd"><h2 class="card-title">Daftar Item Aktif</h2><button type="button" class="btn btn-secondary btn-sm" id="m-btn-copy-next">Salin Tahun +1</button></div><div class="stack" style="gap:7px" id="m-manage-items"></div></div>' +
+    '</div>' +
     '</div></section>' +
     // TAB 5: SIMULASI
     '<section class="tab-panel" id="m-tab-sim"><div class="stack">' +
@@ -444,8 +466,9 @@ function mobShellTemplate() {
     '</div></section>' +
     // TAB 6: PERJALANAN
     '<section class="tab-panel" id="m-tab-trip"><div class="stack" id="m-trip-root"></div></section>' +
-    // TAB 7: PENGATURAN NOTIF & LAPORAN
+    // TAB 7: PENGATURAN
     '<section class="tab-panel" id="m-tab-settings"><div class="stack">' +
+    '<div class="card" id="m-card-settings-acct"><div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Akun &amp; Sinkron Cloud</h2><div style="font-size:0.71rem;color:var(--text-muted)" id="m-set-acct-status">● Mode Lokal</div></div><button type="button" class="btn btn-primary btn-sm" id="m-set-open-acct">Kelola</button></div></div>' +
     '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Pengaturan Notifikasi</h2><div style="font-size:0.71rem;color:var(--text-muted)">Pengingat otomatis tagihan jatuh tempo</div></div><span class="badge b-em" id="m-notif-perm-badge">Aktif</span></div>' +
     '<div class="stack" style="gap:8px">' +
     '<label class="switch-row"><span><strong>Pengingat Bar HP</strong></span><input type="checkbox" id="m-set-notif-enabled" checked /></label>' +
@@ -457,6 +480,13 @@ function mobShellTemplate() {
     '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Pengingat Tagihan</h2><div style="font-size:0.71rem;color:var(--text-muted)">Hari ini &amp; mendekati tempo</div></div><span class="badge b-am mono" id="m-rem-cnt-badge">0 item</span></div>' +
     '<div class="stack" style="gap:7px" id="m-settings-rem-list"></div>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="m-btn-mark-late" style="width:100%;margin-top:9px;display:none">✓ Tandai semua yang lewat sebagai lunas</button></div>' +
+    '<div class="card" id="m-card-settings-backup"><div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Cadangan &amp; Ekspor Data</h2><div style="font-size:0.71rem;color:var(--text-muted)">Simpan salinan data ke perangkat</div></div></div>' +
+    '<div class="bento-2" style="gap:8px">' +
+    '<button type="button" class="list-row" style="justify-content:space-between;padding:9px 10px" data-mexp="json"><span>Cadangan</span><span class="badge b-ac">.JSON</span></button>' +
+    '<button type="button" class="list-row" style="justify-content:space-between;padding:9px 10px" data-mexp="items"><span>Item Aktif</span><span class="badge b-em">.CSV</span></button>' +
+    '<button type="button" class="list-row" style="justify-content:space-between;padding:9px 10px" data-mexp="bulan"><span>Bulanan</span><span class="badge b-em">.CSV</span></button>' +
+    '<button type="button" class="list-row" style="justify-content:space-between;padding:9px 10px" data-mexp="ics"><span>Kalender</span><span class="badge b-nt">.ICS</span></button>' +
+    '</div></div>' +
     '<div class="card" id="m-card-report"><div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Laporan Keuangan (PDF)</h2><div style="font-size:0.71rem;color:var(--text-muted)" id="m-rep-sub">Ringkasan kas &amp; tagihan</div></div>' +
     '<button type="button" class="btn btn-primary btn-sm" id="m-btn-dl-report">⬇ PDF</button></div>' +
     '<div class="pill-slider" id="m-rep-period-slider" style="margin-bottom:10px">' +
@@ -468,7 +498,7 @@ function mobShellTemplate() {
     '<nav class="mob-bottom-nav" aria-label="Navigasi Aplikasi">' +
     '<button type="button" class="bn-btn active" data-mtab="rincian"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg><span>Rincian</span></button>' +
     '<button type="button" class="bn-btn" data-mtab="kas"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M20 7H5a2 2 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15V7"/></svg><span>Transaksi</span></button>' +
-    '<div class="bn-center-slot"><button type="button" class="bn-plus-fab" id="m-yr-btn-center" aria-label="Tahun, bulan saldo, dan saldo awal" title="Tahun, bulan saldo, dan saldo awal"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><span class="bn-center-lbl">Periode</span></div>' +
+    '<div class="bn-center-slot"><button type="button" class="bn-plus-fab" id="m-yr-btn-center" aria-label="Tahun, bulan saldo, dan saldo awal" title="Tahun, bulan saldo, dan saldo awal"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>' +
     '<button type="button" class="bn-btn" data-mtab="jadwal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Jadwal</span></button>' +
     '<button type="button" class="bn-btn" id="m-btn-more"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Menu</span></button>' +
     '</nav>' +
@@ -477,16 +507,26 @@ function mobShellTemplate() {
     '<div class="modal-backdrop" id="m-sheet-more"><div class="modal-sheet"><div class="ms-handle"></div>' +
     '<div class="ms-head"><strong style="font-size:0.92rem">Menu &amp; Fitur Lain</strong><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-more">Tutup</button></div>' +
     '<div class="ms-body">' +
-    '<button type="button" class="list-row" data-mgo="settings"><span><strong>Pengaturan &amp; Notifikasi</strong> &middot; Pengingat tagihan</span><span class="badge b-am" id="m-menu-cnt-rem">0 tempo</span></button>' +
-    '<div style="background:var(--bg-muted-row);border-radius:12px;padding:10px 11px"><div style="font-size:0.74rem;font-weight:800;color:var(--text-secondary);margin-bottom:7px">Laporan (PDF A4)</div>' +
-    '<div class="bento-2" style="gap:6px"><button type="button" class="btn btn-secondary btn-sm" data-mopen-rep="d">Hari ini</button><button type="button" class="btn btn-secondary btn-sm" data-mopen-rep="w">Minggu ini</button><button type="button" class="btn btn-secondary btn-sm" data-mopen-rep="m">Bulan ini</button><button type="button" class="btn btn-secondary btn-sm" data-mopen-rep="y">Tahun ini</button></div></div>' +
-    '<button type="button" class="list-row" data-mgo="item"><span><strong>Kelola Item</strong> &middot; Tagihan berulang</span><span class="badge b-ac" id="m-menu-cnt-item">0 item</span></button>' +
+    '<button type="button" class="list-row" data-mgo="settings"><span><strong>Pengaturan</strong> &middot; Notifikasi, akun, cadangan</span><span class="badge b-am" id="m-menu-cnt-rem">0 tempo</span></button>' +
     '<button type="button" class="list-row" data-mgo="sim"><span><strong>Simulasi</strong> &middot; Uji skenario saldo</span><span class="badge b-em" id="m-menu-cnt-sim">0 aktif</span></button>' +
     '<button type="button" class="list-row" data-mgo="trip"><span><strong>Perjalanan</strong> &middot; <span id="m-menu-trip-lbl">Kelola trip</span></span><span class="badge b-nt" id="m-menu-cnt-trip">0 trip</span></button>' +
-    '<button type="button" class="list-row" id="m-menu-theme"><span><strong>Tema Tampilan</strong></span><span class="badge b-nt" id="m-menu-thm-lbl">Tema</span></button>' +
-    '<button type="button" class="list-row" id="m-menu-backup"><span><strong>Cadangan &amp; Ekspor</strong> (.JSON/.CSV/.ICS)</span><span class="badge b-nt">Buka</span></button>' +
-    '<button type="button" class="list-row" id="m-menu-acct"><span><strong>Akun &amp; Sinkron Cloud</strong></span><span class="badge b-ac" id="m-menu-acct-lbl">Supabase</span></button>' +
-    '<button type="button" class="list-row" data-shell-switch="browser"><span><strong>🌐 Mode Browser</strong> &middot; Tampilan Web</span><span class="badge b-nt">Pindah</span></button>' +
+    '<button type="button" class="list-row" id="m-menu-theme"><span><strong>Tema Tampilan</strong></span><span class="badge b-nt" id="m-menu-thm-lbl">Terang</span></button>' +
+    '</div></div></div>' +
+    '<div class="modal-backdrop" id="m-sheet-cf-zoom"><div class="modal-sheet cf-zoom-sheet"><div class="ms-handle"></div>' +
+    '<div class="ms-head"><div><strong class="card-title">Kondisi Kas Realtime</strong><div style="font-size:0.72rem;color:var(--text-muted)" class="mono pv" id="m-cf-zoom-sub">Grafik lengkap · geser horizontal untuk detail</div></div>' +
+    '<button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-cf-zoom">✕ Tutup</button></div>' +
+    '<div class="ms-body" style="gap:8px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">' +
+    '<div class="seg" role="group" aria-label="Rentang Grafik Zoom">' +
+    '<button type="button" class="seg-btn" data-mzoom-range="w">Minggu</button>' +
+    '<button type="button" class="seg-btn active" data-mzoom-range="m">Bulan</button>' +
+    '<button type="button" class="seg-btn" data-mzoom-range="y">Tahun</button></div>' +
+    '<div class="cf-legend-bar" style="margin-bottom:0">' +
+    '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--accent)"></span>Saldo Nyata</span>' +
+    '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--emerald)"></span>Proyeksi</span>' +
+    '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--crimson)"></span>Defisit (&lt;0)</span></div></div>' +
+    '<div class="cf-zoom-stage" id="m-cf-zoom-stage"><div class="cf-zoom-scroll" id="m-cf-zoom-wrap"><svg id="m-svg-cf-zoom" viewBox="0 0 1060 250" style="min-width:620px;width:100%;height:auto;display:block;touch-action:none"></svg></div><div class="hud-tooltip" id="m-cf-zoom-tip"></div></div>' +
+    '<div id="m-cf-zoom-insp" style="display:none;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border-radius:10px;background:var(--bg-subtle);font-size:0.74rem"></div>' +
     '</div></div></div>' +
     '<div class="modal-backdrop" id="m-sheet-periode"><div class="modal-sheet"><div class="ms-handle"></div>' +
     '<div class="ms-head"><div><strong class="card-title">Tahun, bulan saldo, saldo awal</strong><div style="font-size:0.72rem;color:var(--text-muted)" class="mono pv" id="m-cfg-sum">-</div></div>' +
@@ -551,6 +591,10 @@ function ensureMobileShell() {
 }
 
 function switchMobileTab(tabId) {
+  if (tabId === 'item') {
+    tabId = 'jadwal';
+    MOB_STATE.jadwalSub = 'add';
+  }
   MOB_STATE.tab = tabId;
   document.querySelectorAll('#mobile-app-shell .tab-panel').forEach(function (el) {
     el.classList.toggle('active', el.id === 'm-tab-' + tabId);
@@ -559,7 +603,7 @@ function switchMobileTab(tabId) {
     b.classList.toggle('active', b.getAttribute('data-mtab') === tabId);
   });
   var mb = $('m-btn-more');
-  if (mb) mb.classList.toggle('active', ['item', 'sim', 'trip', 'settings'].indexOf(tabId) >= 0);
+  if (mb) mb.classList.toggle('active', ['sim', 'trip', 'settings'].indexOf(tabId) >= 0);
   var mm = $('m-main');
   if (mm) mm.scrollTop = 0;
   renderMobileTab(tabId);
@@ -571,7 +615,6 @@ function renderMobileTab(tabId) {
   if (tabId === 'rincian') renderMobRincian();
   else if (tabId === 'kas') renderMobKas();
   else if (tabId === 'jadwal') renderMobJadwal();
-  else if (tabId === 'item') renderMobItems();
   else if (tabId === 'sim') renderMobSim();
   else if (tabId === 'trip') renderMobTrip();
   else if (tabId === 'settings') renderMobSettings();
@@ -665,13 +708,15 @@ function renderMobCashflowSvg(P, curBal) {
     : [{ d: S.year + '-01-01', lbl: 'Awal', val: S.saldo, delta: 0, bill: 'Saldo awal', actual: true }, { d: S.year + '-12-31', lbl: '31 Des', val: calc().end, delta: 0, bill: 'Akhir tahun', actual: false }];
 
   var todayPt = pts.find(function (p) { return p.today; }) || pts[pts.length - 1];
-  if (strip && todayPt) {
+  function setMobCfStrip(lbl, val) {
+    if (!strip) return;
     strip.innerHTML =
-      '<span style="font-weight:700">' + esc(todayPt.lbl) + ' &middot; ' + esc(todayPt.bill) + '</span>' +
-      '<span class="mono pv" style="font-weight:800;color:' + (todayPt.val < 0 ? 'var(--crimson)' : 'var(--accent-ink)') + '">' + rp(todayPt.val) + '</span>';
+      '<span class="cf-strip-lbl" title="' + esc(lbl) + '">' + esc(lbl) + '</span>' +
+      '<span class="mono pv cf-strip-val" style="color:' + (val < 0 ? 'var(--crimson)' : 'var(--accent-ink)') + '">' + rp(val) + '</span>';
   }
+  if (todayPt) setMobCfStrip(todayPt.lbl + ' · ' + todayPt.bill, todayPt.val);
   var W = 340,
-    H = MOB_STATE.cashExpand ? 265 : 210,
+    H = 210,
     pL = 40,
     pR = 16,
     pT = 14,
@@ -712,7 +757,18 @@ function renderMobCashflowSvg(P, curBal) {
     futC = coords.filter(function (c) { return !c.actual; }),
     projC = (actualC.length ? [actualC[actualC.length - 1]] : []).concat(futC);
   var zeroPct = Math.max(0, Math.min(100, ((zY - pT) / Math.max(1, H - pT - pB)) * 100));
-  var xLabels = [0, Math.floor((coords.length - 1) / 2), coords.length - 1].filter(function (v, ix, a) { return a.indexOf(v) === ix; });
+  var xShow = {}, xUsed = [];
+  function markXLbl(idx) {
+    if (idx < 0 || idx >= coords.length || xShow[idx]) return;
+    var cx = coords[idx].x;
+    if (xUsed.some(function (ux) { return Math.abs(ux - cx) < 48; })) return;
+    xShow[idx] = true;
+    xUsed.push(cx);
+  }
+  coords.forEach(function (c, ix) { if (c.today) { xShow[ix] = true; xUsed.push(c.x); } });
+  markXLbl(0);
+  markXLbl(coords.length - 1);
+  markXLbl(Math.floor((coords.length - 1) / 2));
   svg.innerHTML =
     '<defs><linearGradient id="mDual" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity="0.28"/><stop offset="' + zeroPct.toFixed(1) + '%" stop-color="var(--crimson)" stop-opacity="0.22"/></linearGradient></defs>' +
     grid +
@@ -722,7 +778,7 @@ function renderMobCashflowSvg(P, curBal) {
     (projC.length >= 2 ? '<path d="' + pathFn(projC) + '" fill="none" stroke="var(--emerald)" stroke-width="2.8" stroke-dasharray="5 4" stroke-linecap="round"/>' : '') +
     '<g id="m-cf-ch" style="display:none;pointer-events:none"><line id="m-cf-cx" y1="' + pT + '" y2="' + (H - pB) + '" stroke="var(--accent)" stroke-width="1.3" stroke-dasharray="3 3"/><circle id="m-cf-cd" r="5" fill="var(--accent)" stroke="#fff" stroke-width="2"/></g>' +
     coords.map(function (c, ix) {
-      var showLbl = xLabels.indexOf(ix) >= 0 || c.today;
+      var showLbl = !!xShow[ix];
       var fillC = c.val < 0 ? 'var(--crimson)' : c.actual ? 'var(--accent)' : 'var(--emerald)';
       return '<circle class="cf-node" cx="' + c.x.toFixed(1) + '" cy="' + c.y.toFixed(1) + '" r="' + (c.val < 0 || c.today ? 4.8 : 3.5) + '" fill="' + fillC + '" stroke="var(--bg-surface)" stroke-width="1.6"/>' +
         (showLbl ? '<text x="' + c.x.toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle" fill="' + (c.today ? 'var(--accent-ink)' : 'var(--text-muted)') + '" font-size="8.8" font-weight="700" font-family="var(--font-mono)">' + esc(c.lbl) + '</text>' : '');
@@ -752,17 +808,19 @@ function renderMobCashflowSvg(P, curBal) {
       if (!isPt) glow.setAttribute('d', pathFn([tPt.p0, tPt.p1]));
     }
     var dispVal = Math.round(isPt ? nearN.val : tPt.val);
-    if (strip) {
-      strip.innerHTML =
-        '<span style="font-weight:700">' + (isPt ? esc(nearN.lbl) + ' &middot; ' + esc(nearN.bill) : esc(tPt.p0.lbl) + ' &rarr; ' + esc(tPt.p1.lbl)) + '</span>' +
-        '<span class="mono pv" style="font-weight:800;color:' + (dispVal < 0 ? 'var(--crimson)' : 'var(--accent-ink)') + '">' + rp(dispVal) + '</span>';
-    }
+    setMobCfStrip(isPt ? (nearN.lbl + ' · ' + nearN.bill) : (tPt.p0.lbl + ' → ' + tPt.p1.lbl), dispVal);
     if (tip && wrap) {
       tip.innerHTML = isPt
         ? '<strong>' + esc(nearN.lbl) + ' &middot; ' + esc(fmtD(nearN.d)) + '</strong><div class="mono pv" style="font-size:0.86rem;font-weight:800;color:' + (nearN.val < 0 ? 'var(--crimson)' : 'var(--text-primary)') + '">' + rp(nearN.val) + '</div><div style="color:var(--text-muted);font-size:0.68rem">' + esc(nearN.bill) + '</div>'
         : '<strong>' + esc(tPt.p0.lbl) + ' &rarr; ' + esc(tPt.p1.lbl) + '</strong><div class="mono pv" style="font-size:0.86rem;font-weight:800">' + rp(dispVal) + '</div><div style="color:var(--text-muted);font-size:0.68rem">Menuju ' + esc(tPt.p1.bill) + '</div>';
       mobPosTip(wrap, tip, (tPt.x / W) * sW + (sR.left - wR.left), (tPt.y / H) * (sR.height || H) + (sR.top - wR.top), 12);
     }
+  }
+  function hideMobCfHUD() {
+    if (ch) ch.style.display = 'none';
+    if (glow) glow.style.display = 'none';
+    if (tip) tip.classList.remove('visible');
+    if (todayPt) setMobCfStrip(todayPt.lbl + ' · ' + todayPt.bill, todayPt.val);
   }
   if (hit) {
     hit.addEventListener('mousemove', function (e) { inspectX(e.clientX); });
@@ -774,11 +832,44 @@ function renderMobCashflowSvg(P, curBal) {
     hit.addEventListener('touchmove', function (e) {
       if (e.touches && e.touches[0]) { if (e.cancelable) e.preventDefault(); inspectX(e.touches[0].clientX); }
     }, { passive: false });
-    hit.addEventListener('mouseleave', function () {
-      if (ch) ch.style.display = 'none';
-      if (glow) glow.style.display = 'none';
-      if (tip) tip.classList.remove('visible');
+    hit.addEventListener('touchend', hideMobCfHUD);
+    hit.addEventListener('touchcancel', hideMobCfHUD);
+    hit.addEventListener('pointerup', function (e) { if (e.pointerType !== 'mouse') hideMobCfHUD(); });
+    hit.addEventListener('mouseleave', hideMobCfHUD);
+  }
+}
+
+function renderMobZoomInspector(pt) {
+  var box = $('m-cf-zoom-insp');
+  if (!box) return;
+  if (!pt) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.style.display = 'flex';
+  box.innerHTML =
+    '<div><strong>' + esc(fmtD(pt.d)) + '</strong> &middot; <strong class="mono pv" style="color:' + (pt.val < 0 ? 'var(--crimson)' : 'var(--emerald)') + '">' + rp(pt.val) + '</strong> &middot; <span style="color:var(--text-secondary)">' + esc(pt.bill) + '</span></div>' +
+    '<div style="display:flex;gap:6px">' +
+    (pt.val < 0 ? '<button type="button" class="btn btn-primary btn-sm" id="m-cf-zoom-go-sim">Uji Simulasi</button>' : '') +
+    '<button type="button" class="btn btn-secondary btn-sm" id="m-cf-zoom-unpin">Lepas Pin</button></div>';
+}
+
+function renderMobCashflowZoom() {
+  var svg = $('m-svg-cf-zoom'),
+    stage = $('m-cf-zoom-stage') || $('m-cf-zoom-wrap'),
+    tip = $('m-cf-zoom-tip');
+  if (!svg || !stage) return;
+  var P = kasLinked(),
+    bal = P ? kasBal(P).bal : (+S.saldo || 0);
+  if ($('m-cf-zoom-sub')) $('m-cf-zoom-sub').textContent = 'Tahun ' + S.year + ' · Saldo saat ini ' + rp(bal);
+  document.querySelectorAll('#m-sheet-cf-zoom [data-mzoom-range]').forEach(function (b) {
+    b.classList.toggle('active', b.getAttribute('data-mzoom-range') === MOB_STATE.zoomRange);
+  });
+  if (typeof brRenderCashflowInto === 'function') {
+    brRenderCashflowInto(svg, stage, tip, MOB_STATE.zoomRange, {
+      prefix: 'mz-',
+      skipInspector: true,
+      getPin: function () { return MOB_STATE.zoomPin; },
+      setPin: function (idx, pt) { MOB_STATE.zoomPin = idx; renderMobZoomInspector(pt); },
     });
+    if (MOB_STATE.zoomPin === null) renderMobZoomInspector(null);
   }
 }
 
@@ -812,11 +903,9 @@ function renderMobWhere(C) {
     cats = Object.keys(src).map(function (k) { return { name: k || 'Tanpa kategori', v: src[k] }; }).filter(function (x) { return x.v > 0; }).sort(function (a, b) { return b.v - a.v; }),
     grand = total || cats.reduce(function (s, x) { return s + x.v; }, 0);
 
-  if ($('m-where-sub')) $('m-where-sub').textContent = rp(grand) + ' · ' + (income ? 'Masuk' : 'Keluar');
   if ($('m-where-tot')) $('m-where-tot').textContent = rp(grand);
 
   var stage = $('m-jar-stage'),
-    spot = $('m-jar-spotlight'),
     catsEl = $('m-where-cats'),
     itemsEl = $('m-where-items');
   if (stage) {
@@ -871,24 +960,6 @@ function renderMobWhere(C) {
         '<rect x="' + (xL + 8) + '" y="' + (yC + 14) + '" width="6" height="' + (cH - 34) + '" rx="3" fill="#FFFFFF" opacity="0.42" pointer-events="none"/>' +
         '</g>' + ticks + '</svg>';
     }
-  }
-  var focusCat = MOB_STATE.whereLock ? cats.find(function (x) { return x.name === MOB_STATE.whereLock; }) : cats[0];
-  if (spot) {
-    var fPct = focusCat && grand ? Math.round((focusCat.v / grand) * 100) : 0;
-    var miniRows = cats.slice(0, 3).map(function (c) {
-      var cp = grand ? Math.round((c.v / grand) * 100) : 0;
-      return '<button type="button" class="jar-mini-row ' + (MOB_STATE.whereLock === c.name ? 'active' : '') + '" data-mkcat="' + esc(c.name) + '">' +
-        '<span style="display:inline-flex;align-items:center;gap:5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
-        '<span style="width:7px;height:7px;border-radius:50%;background:' + mobGetCatMeta(c.name).hex + ';flex-shrink:0"></span>' + esc(c.name) + '</span>' +
-        '<span class="mono" style="font-weight:800">' + cp + '%</span></button>';
-    }).join('');
-    spot.innerHTML = focusCat
-      ? '<div style="font-size:0.65rem;color:var(--text-muted);font-weight:700;text-transform:uppercase">' + (MOB_STATE.whereLock ? 'Fokus Pilihan' : 'Terbesar #1') + '</div>' +
-        '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:4px"><strong class="mono" style="font-size:1.25rem">' + fPct + '%</strong><span class="badge b-ac">' + esc(focusCat.name.slice(0, 12)) + '</span></div>' +
-        '<div class="mono pv" style="font-size:0.78rem;font-weight:800;color:var(--accent-ink)">' + rp(focusCat.v) + '</div>' +
-        '<div class="rank-track" style="height:6px"><div class="rank-fill" style="width:' + fPct + '%;background:' + mobGetCatMeta(focusCat.name).hex + '"></div></div>' +
-        (miniRows ? '<div style="display:flex;flex-direction:column;gap:4px;margin-top:2px">' + miniRows + '</div>' : '')
-      : '<div style="font-size:0.74rem;color:var(--text-muted)">Belum ada data</div>';
   }
   if ($('m-btn-reset-where')) $('m-btn-reset-where').style.display = MOB_STATE.whereLock ? 'inline-flex' : 'none';
   if (catsEl) {
@@ -1032,6 +1103,14 @@ function renderMobKas() {
 
 function renderMobJadwal() {
   if (typeof brSanitizeItems === 'function') brSanitizeItems();
+  var sub = MOB_STATE.jadwalSub || 'list';
+  document.querySelectorAll('#m-jadwal-subnav [data-mjsub]').forEach(function (b) {
+    b.classList.toggle('active', b.getAttribute('data-mjsub') === sub);
+  });
+  if ($('m-jad-pane-list')) $('m-jad-pane-list').classList.toggle('sec-hidden', sub !== 'list');
+  if ($('m-jad-pane-add')) $('m-jad-pane-add').classList.toggle('sec-hidden', sub !== 'add');
+  if ($('m-jad-pane-manage')) $('m-jad-pane-manage').classList.toggle('sec-hidden', sub !== 'manage');
+  renderMobItems();
   var c = calc(),
     y = +S.year,
     mTotals = Array(12).fill(0),
@@ -1378,6 +1457,17 @@ function renderMobSettings() {
   renderMobReportPreview(MOB_STATE.repKind);
 }
 
+function mobRepHeadLabel(h) {
+  if (h === 'TRANSAKSI KAS') return 'Transaksi Kas';
+  if (h === 'TAGIHAN') return 'Tagihan & Cicilan';
+  if (h === 'PER BULAN') return 'Ringkasan per Bulan';
+  return h;
+}
+
+function mobRepColLabel(t) {
+  return String(t || '').toLowerCase().replace(/(^|\s)\S/g, function (c) { return c.toUpperCase(); });
+}
+
 function renderMobReportPreview(kind) {
   MOB_STATE.repKind = kind || MOB_STATE.repKind || 'm';
   var D = repData(MOB_STATE.repKind),
@@ -1393,11 +1483,19 @@ function renderMobReportPreview(kind) {
       return '<div class="m-tile"><div class="m-tile-k">' + esc(r[0]) + '</div><div class="m-tile-v pv" style="font-size:0.86rem">' + esc(r[1]) + '</div></div>';
     }).join('') + '</div>' +
     D.tables.slice(0, 2).map(function (tbl) {
-      return '<div><div style="font-size:0.71rem;font-weight:800;margin-bottom:4px">' + esc(tbl.head) + '</div>' +
-        '<table class="rep-table"><thead><tr>' + tbl.cols.map(function (c) { return '<th' + (c.align === 'r' ? ' class="r"' : '') + '>' + esc(c.t) + '</th>'; }).join('') + '</tr></thead>' +
-        '<tbody>' + tbl.rows.slice(0, 8).map(function (row) {
+      var expKey = MOB_STATE.repKind + ':' + tbl.head;
+      var expanded = !!(MOB_STATE.repExpanded && MOB_STATE.repExpanded[expKey]);
+      var visRows = tbl.rows.length > 5 && !expanded ? tbl.rows.slice(0, 5) : tbl.rows;
+      var togBtn = tbl.rows.length > 5
+        ? '<button type="button" class="btn btn-secondary btn-sm" style="width:100%;margin-top:6px" data-mrep-tog="' + esc(expKey) + '">' +
+          (expanded ? 'Ringkas (tampilkan 5)' : 'Tampilkan semua (' + tbl.rows.length + ')') + '</button>'
+        : '';
+      return '<div><div style="font-size:0.75rem;font-weight:800;color:var(--text-primary);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center"><span>' + esc(mobRepHeadLabel(tbl.head)) + '</span>' +
+        (tbl.total ? '<span class="mono pv" style="font-size:0.73rem;color:var(--accent-ink)">' + esc(tbl.total[1]) + '</span>' : '') + '</div>' +
+        '<table class="rep-table"><thead><tr>' + tbl.cols.map(function (c) { return '<th' + (c.align === 'r' ? ' class="r"' : '') + '>' + esc(mobRepColLabel(c.t)) + '</th>'; }).join('') + '</tr></thead>' +
+        '<tbody>' + visRows.map(function (row) {
           return '<tr>' + tbl.cols.map(function (c, i) { return '<td' + (c.align === 'r' ? ' class="r pv"' : '') + '>' + esc(row[i]) + '</td>'; }).join('') + '</tr>';
-        }).join('') + '</tbody></table></div>';
+        }).join('') + '</tbody></table>' + togBtn + '</div>';
     }).join('');
 }
 
@@ -1409,7 +1507,7 @@ function renderMobMetaMenus() {
   if ($('m-menu-cnt-trip')) $('m-menu-cnt-trip').textContent = trs.length + ' trip';
   if ($('m-menu-trip-lbl')) $('m-menu-trip-lbl').textContent = trs[0] ? trs[0].name : 'Buat perjalanan';
   if ($('m-menu-thm-lbl') && typeof THEME_NAME === 'object' && typeof themeCur === 'function') {
-    $('m-menu-thm-lbl').textContent = THEME_NAME[themeCur()] || 'Otomatis';
+    $('m-menu-thm-lbl').textContent = THEME_NAME[themeCur()] || 'Terang';
   }
 }
 
@@ -1448,18 +1546,29 @@ function openMobPeriodeSheet() {
   mobOpenSheet('m-sheet-periode');
 }
 
+function mobGoogleBtnHtml(id) {
+  return (
+    '<button type="button" class="btn btn-secondary" id="' + id + '" style="width:100%;justify-content:center;gap:9px;font-weight:700">' +
+    '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.5 3.9-5.5 3.9-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.5 14.6 2.5 12 2.5 6.8 2.5 2.5 6.8 2.5 12s4.3 9.5 9.5 9.5c5.5 0 9.1-3.9 9.1-9.3 0-.6-.1-1.1-.2-1.6H12z"/><path fill="#4285F4" d="M21.1 12.2c0-.6-.1-1.1-.2-1.6H12v3.9h5.5c-.3 1.4-1.1 2.5-2.2 3.2l3.4 2.6c2-1.8 2.4-4.6 2.4-8.1z"/><path fill="#FBBC05" d="M6.3 14.3a5.8 5.8 0 0 1 0-4.6L3 7.1a9.5 9.5 0 0 0 0 9.8l3.3-2.6z"/><path fill="#34A853" d="M12 21.5c2.6 0 4.8-.9 6.4-2.4l-3.4-2.6c-.9.6-2 .9-3 .9-2.3 0-4.3-1.5-5-3.6L3.6 16.4c1.6 3.1 4.8 5.1 8.4 5.1z"/></svg>' +
+    '<span>Masuk dengan Google (Gmail)</span></button>'
+  );
+}
+
 function openMobAcctSheet() {
   var body = $('m-acct-body');
   if (!body) return;
   if (typeof sb === 'undefined' || !sb) {
-    body.innerHTML = '<div class="sub">Sinkron Supabase belum dikonfigurasi pada js/config.js. Semua data tersimpan otomatis secara lokal.</div>';
+    body.innerHTML = mobGoogleBtnHtml('m-lg-google') + '<div class="sub" style="margin-top:4px">Sinkron Supabase belum aktif di js/config.js. Semua data tersimpan otomatis secara lokal.</div>';
   } else if (typeof sbUser !== 'undefined' && sbUser) {
+    var du = typeof rkDisplayUser === 'function' ? rkDisplayUser(sbUser) : { name: 'Pengguna' };
     body.innerHTML =
-      '<div class="m-tile"><div class="m-tile-k">Masuk Sebagai</div><div style="font-weight:700;font-size:0.88rem">' + esc(sbUser.email || 'Pengguna') + '</div></div>' +
+      '<div class="m-tile"><div class="m-tile-k">Masuk Sebagai</div><div style="font-weight:700;font-size:0.88rem">' + esc(du.name) + '</div><div style="font-size:0.74rem;color:var(--text-muted)">' + esc(sbUser.email || '') + '</div></div>' +
       '<button type="button" class="btn btn-primary" id="m-acct-sync-now">⟳ Sinkronkan Sekarang</button>' +
       '<button type="button" class="btn btn-crimson" id="m-acct-logout">Keluar dari Akun</button>';
   } else {
     body.innerHTML =
+      mobGoogleBtnHtml('m-lg-google') +
+      '<div style="display:flex;align-items:center;gap:8px;font-size:0.71rem;color:var(--text-muted)"><span style="flex:1;height:1px;background:var(--border-subtle)"></span><span>atau email Supabase</span><span style="flex:1;height:1px;background:var(--border-subtle)"></span></div>' +
       '<div class="field"><label class="field-label" for="m-lg-email">Email</label><input class="input" id="m-lg-email" type="email" autocomplete="email" /></div>' +
       '<div class="field"><label class="field-label" for="m-lg-pass">Password</label><input class="input" id="m-lg-pass" type="password" autocomplete="current-password" /></div>' +
       '<div style="color:var(--crimson);font-size:0.76rem" id="m-lg-err"></div>' +
@@ -1469,7 +1578,16 @@ function openMobAcctSheet() {
 }
 
 function bindMobileShellEvents(root) {
+  function dismissMobCfOverlay() {
+    if ($('m-cf-tooltip')) $('m-cf-tooltip').classList.remove('visible');
+    if ($('m-cf-ch')) $('m-cf-ch').style.display = 'none';
+    if ($('m-cf-seg-glow')) $('m-cf-seg-glow').style.display = 'none';
+  }
+  root.addEventListener('touchstart', function (e) {
+    if (!e.target.closest('#m-cf-wrap')) dismissMobCfOverlay();
+  }, { passive: true });
   root.addEventListener('click', function (e) {
+    if (!e.target.closest('#m-cf-wrap')) dismissMobCfOverlay();
     if (!e.target.closest('.picker-wrap')) {
       root.querySelectorAll('.picker-popover.open').forEach(function (p) { p.classList.remove('open'); });
     }
@@ -1559,7 +1677,8 @@ function bindMobileShellEvents(root) {
       return;
     }
 
-    if (e.target.closest('#m-acct-btn') || e.target.closest('#m-menu-acct')) { mobCloseSheet('m-sheet-more'); openMobAcctSheet(); return; }
+    if (e.target.closest('#m-acct-btn') || e.target.closest('#m-menu-acct') || e.target.closest('#m-set-open-acct')) { mobCloseSheet('m-sheet-more'); openMobAcctSheet(); return; }
+    if (e.target.closest('#m-lg-google')) { if (typeof authGoogle === 'function') authGoogle(); else showMobToast('Sinkron Google belum aktif'); return; }
     if (e.target.closest('#m-acct-sync-now')) { if (typeof pull === 'function') pull(); mobCloseSheet('m-sheet-acct'); return; }
     if (e.target.closest('#m-acct-logout')) { if (sb && sb.auth) sb.auth.signOut(); mobCloseSheet('m-sheet-acct'); return; }
     if (e.target.closest('#m-lg-in')) {
@@ -1577,6 +1696,22 @@ function bindMobileShellEvents(root) {
     if (e.target.closest('#m-menu-backup')) { mobCloseSheet('m-sheet-more'); mobOpenSheet('m-sheet-backup'); return; }
     var expBtn = e.target.closest('[data-mexp]');
     if (expBtn) { doExport(expBtn.getAttribute('data-mexp')); mobCloseSheet('m-sheet-backup'); showMobToast('Menyiapkan unduhan'); return; }
+
+    var mjs = e.target.closest('[data-mjsub]');
+    if (mjs) {
+      MOB_STATE.jadwalSub = mjs.getAttribute('data-mjsub') || 'list';
+      renderMobJadwal();
+      initMobDragSliders();
+      mobPaintAllSliders();
+      return;
+    }
+    var mrptog = e.target.closest('[data-mrep-tog]');
+    if (mrptog) {
+      var rk = mrptog.getAttribute('data-mrep-tog');
+      MOB_STATE.repExpanded[rk] = !MOB_STATE.repExpanded[rk];
+      renderMobReportPreview(MOB_STATE.repKind);
+      return;
+    }
 
     var navBtn = e.target.closest('[data-mtab], [data-mnav], [data-mgo]');
     if (navBtn) {
@@ -1604,9 +1739,27 @@ function bindMobileShellEvents(root) {
       return;
     }
     if (e.target.closest('#m-btn-expand-cf')) {
-      MOB_STATE.cashExpand = !MOB_STATE.cashExpand;
-      e.target.textContent = MOB_STATE.cashExpand ? '⤡ Perkecil' : '⤢ Perbesar';
-      renderMobCashflowSvg(kasLinked());
+      MOB_STATE.zoomRange = MOB_STATE.cashRange || 'm';
+      MOB_STATE.zoomPin = null;
+      mobOpenSheet('m-sheet-cf-zoom');
+      renderMobCashflowZoom();
+      return;
+    }
+    var mzr = e.target.closest('[data-mzoom-range]');
+    if (mzr) {
+      MOB_STATE.zoomRange = mzr.getAttribute('data-mzoom-range');
+      MOB_STATE.zoomPin = null;
+      renderMobCashflowZoom();
+      return;
+    }
+    if (e.target.closest('#m-cf-zoom-unpin')) {
+      MOB_STATE.zoomPin = null;
+      renderMobCashflowZoom();
+      return;
+    }
+    if (e.target.closest('#m-cf-zoom-go-sim')) {
+      mobCloseSheet('m-sheet-cf-zoom');
+      switchMobileTab('sim');
       return;
     }
     var mws = e.target.closest('[data-mwstyle]');
@@ -1810,7 +1963,10 @@ function bindMobileShellEvents(root) {
         if ($('m-item-unit')) $('m-item-unit').value = itEdit0.unit === 'hari' && +itEdit0.n === 28 ? '28hari' : (itEdit0.unit || 'bulan');
         mobSetDateVal('m-item-start', itEdit0.start || mobDefaultItemStart());
         MOB_STATE.itemCat = itEdit0.cat || 'Tagihan rutin';
-        renderMobItems();
+        MOB_STATE.jadwalSub = 'add';
+        renderMobJadwal();
+        initMobDragSliders();
+        mobPaintAllSliders();
       }
       return;
     }

@@ -130,8 +130,8 @@
       width: 34px;
       height: 34px;
       border-radius: var(--radius-pill);
-      background: var(--bg-subtle);
-      border: 1.5px solid var(--border-strong);
+      background: #CBD5E1;
+      border: 1.5px solid #94A3B8;
       color: var(--text-secondary);
       font-weight: 800;
       font-size: 0.85rem;
@@ -140,6 +140,11 @@
       flex-shrink: 0;
       position: relative;
       transition: all var(--transition-fast);
+    }
+
+    html[data-theme="dark"] #browser-shell .av-circle.anon {
+      background: #475569;
+      border-color: #64748B;
     }
 
     #browser-shell .sb-av.on .av-circle,
@@ -1935,7 +1940,7 @@
       border-radius: var(--radius-md);
       box-shadow: var(--shadow-lg);
       padding: 8px;
-      z-index: 95;
+      z-index: 125;
       display: none;
     }
 

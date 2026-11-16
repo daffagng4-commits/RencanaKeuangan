@@ -104,7 +104,10 @@ function bindShellMode() {
     if (target === 'toggle') toggleShellMode();
     else setShellMode(target, true);
     var am = typeof $ === 'function' ? $('alat-menu') : document.getElementById('alat-menu');
-    if (am) am.hidden = true;
+    if (am) {
+      am.classList.remove('open');
+      am.hidden = false;
+    }
     var ab = typeof $ === 'function' ? $('alat-btn') : document.getElementById('alat-btn');
     if (ab) ab.setAttribute('aria-expanded', 'false');
   });

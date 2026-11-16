@@ -62,8 +62,8 @@ const {boot}=require('./ui.js');
  assert(/Gaji/.test($('where-cat-list').textContent),'kategori pemasukan muncul di daftar');
  assert(/%/.test($('where-cat-list').querySelector('.simple-row-pct').textContent),'persen kategori terisi');
  click(where.querySelector('[data-where-dir="out"]'));
- // akun bulat
- assert($('acct') && $('sb-ini') && $('acct-m-ini'),'tombol akun bulat tersedia');
+ // akun bulat hanya di sidebar (#acct-m dihapus sesuai revisi)
+ assert($('acct') && $('sb-ini') && !$('acct-m'),'tombol akun bulat tersedia di sidebar tanpa tombol D di topbar');
  assert(!$('lgb'),'tombol Masuk lama dihapus');
  assert(!w.document.querySelector('header.topbar #bk'),'impor/ekspor tidak di topbar');
  assert(/2026 · Nov · Rp 5\.000\.000/.test($('yr-sum').textContent),'ringkasan tahun/bulan/saldo di modal');

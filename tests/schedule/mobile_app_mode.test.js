@@ -33,9 +33,21 @@ const { boot } = require('./ui.js');
   const bnav = mobShell.querySelector('.mob-bottom-nav');
   assert(bnav, 'Bottom navigation ter-render');
   assert.strictEqual(bnav.querySelectorAll('.bn-btn').length, 4, '4 tombol tab navigasi di bottom nav');
-  assert($('m-yr-btn-center'), 'tombol emas + Periode di tengah bottom nav ada');
+  assert($('m-yr-btn-center'), 'tombol emas + di tengah bottom nav ada');
+  assert(!bnav.querySelector('.bn-center-lbl'), 'keterangan teks Periode dihapus dari bottom nav');
+  assert.strictEqual($('m-user-name').textContent.trim(), 'Halo, XXX', 'sapaan Mode APK menampilkan Halo, XXX saat belum login');
+  assert.strictEqual($('m-acct-ini').textContent.trim(), '', 'lingkaran avatar Mode APK kosong saat belum login');
+  assert($('m-acct-btn').querySelector('.av-circle').classList.contains('anon'), 'lingkaran avatar Mode APK abu-abu (.anon) saat belum login');
+  w.acctUI({ email: 'davinagng@gmail.com' });
+  assert.strictEqual($('m-acct-ini').textContent.trim(), 'D', 'lingkaran avatar Mode APK menjadi D saat login Gmail');
+  assert.strictEqual($('m-user-name').textContent.trim(), 'Halo, Davinagng', 'sapaan Mode APK menjadi Halo, Davinagng');
+  w.acctUI(null);
+  click($('m-acct-btn'));
+  assert($('m-sheet-acct').classList.contains('open') && $('m-lg-google'), 'sheet akun Mode APK memiliki tombol Masuk dengan Google (Gmail)');
+  click($('m-sheet-acct').querySelector('[data-mclose="m-sheet-acct"]'));
   assert($('m-svg-cashflow'), 'grafik SVG Proyeksi Arus Kas ter-render di tab Rincian');
-  assert($('m-svg-jar') && $('m-jar-spotlight'), 'visual 3D Glass Jar (#m-svg-jar) & Spotlight (#m-jar-spotlight) ter-render');
+  assert($('m-svg-jar') && !$('m-jar-spotlight'), 'visual 3D Glass Jar (#m-svg-jar) terpusat tanpa kotak spotlight samping');
+  assert(!$('m-where-sub'), 'sub-keterangan nominal (#m-where-sub) dihapus dari card Ke Mana Uangnya Pergi');
   assert(mobShell.querySelector('#m-upcoming-bills .cat-logo svg'), 'logo kategori memakai SVG ikon penuh sesuai mockup');
   assert.strictEqual(mobShell.querySelectorAll('.pk-in, .pk-field, input[type="date"]').length, 0, 'Mode APK bebas dari input date native atau .pk-in lama');
   click($('m-kas-date-trig'));
@@ -49,6 +61,21 @@ const { boot } = require('./ui.js');
   mobTmEv.touches = [{ clientX: 160 }];
   $('m-cf-hit').dispatchEvent(mobTmEv);
   assert($('m-cf-tooltip').classList.contains('visible'), 'touchmove pada #m-cf-hit menggeser tooltip Arus Kas Mode HP');
+  $('m-cf-hit').dispatchEvent(new w.Event('touchend', { bubbles: true }));
+  assert(!$('m-cf-tooltip').classList.contains('visible'), 'touchend menyembunyikan tooltip Arus Kas Mode HP');
+  assert($('m-cf-strip').querySelector('.cf-strip-lbl'), 'strip keterangan memakai kelas ellipsis satu baris');
+  click($('m-btn-expand-cf'));
+  assert($('m-sheet-cf-zoom').classList.contains('open') && $('m-svg-cf-zoom').querySelector('.cf-node'), 'tombol Perbesar membuka popup grafik mode desktop');
+  assert($('m-cf-zoom-stage') && $('m-cf-zoom-tip').parentElement === $('m-cf-zoom-stage'), 'tooltip zoom berada di stage luar agar tidak terpotong scroll kanan');
+  click($('m-sheet-cf-zoom').querySelector('[data-mclose="m-sheet-cf-zoom"]'));
+  assert(!$('m-sheet-cf-zoom').classList.contains('open'), 'popup grafik Perbesar dapat ditutup');
+  // Uji jarak label sumbu X grafik Tahun tidak tumpang tindih dengan Hari ini
+  click(mobShell.querySelector('[data-mrange="y"]'));
+  const xLabelXs = [...$('m-svg-cashflow').querySelectorAll('text[text-anchor="middle"]')].map((el) => +el.getAttribute('x')).sort((a, b) => a - b);
+  for (let xi = 1; xi < xLabelXs.length; xi++) {
+    assert(xLabelXs[xi] - xLabelXs[xi - 1] >= 48, 'label sumbu X grafik Mode APK tidak saling bertabrakan: ' + xLabelXs.join(','));
+  }
+  click(mobShell.querySelector('[data-mrange="m"]'));
   const mobTodayPt = w.brBuildCashflowPoints('m').find((p) => p.today);
   assert.strictEqual(mobTodayPt.val, w.kasBal(w.kasLinked()).bal, 'titik Hari Ini grafik HP sama dengan saldo kas realtime');
 
@@ -165,23 +192,39 @@ const { boot } = require('./ui.js');
   assert.strictEqual(tripObj.note, 'Check-in hotel pukul 15:00', 'catatan perjalanan tersimpan di ALL.kas.pr');
   click(mobShell.querySelector('[data-mtripsub="sv"]'));
   assert($('m-trip-goal-form'), 'subtab Target Tabungan (sv) ter-render di Mode HP');
-  click(mobShell.querySelector('[data-mgo="item"]'));
+  // Kelola Item tergabung di tab Jadwal
+  click(bnav.querySelector('[data-mtab="jadwal"]'));
+  click(mobShell.querySelector('[data-mjsub="add"]'));
   $('m-qp-input').value = 'Spotify 55rb tiap tgl 7';
   fire($('m-qp-input'), 'input');
   click($('m-qp-submit'));
-  assert(w.S.items.some((x) => x.name === 'Spotify' && x.price === 55000), 'Tambah Cepat item berfungsi di Mode HP');
+  assert(w.S.items.some((x) => x.name === 'Spotify' && x.price === 55000), 'Tambah Cepat item berfungsi di dalam tab Jadwal');
 
-  // 6. Pengaturan Notifikasi, Notif Bar HP (#m-os-notif), dan Pratinjau Laporan d/w/m/y
+  // 6. Menu streamlined + Pengaturan (Akun, Cadangan, Notif Bar HP, Pratinjau Laporan >5 baris toggle)
   click($('m-btn-more'));
-  click(mobShell.querySelector('[data-mgo="settings"]'));
+  const menuMore = $('m-sheet-more');
+  assert(!menuMore.querySelector('[data-mopen-rep]'), 'menu Laporan PDF dihapus dari Menu');
+  assert(!menuMore.querySelector('[data-shell-switch="browser"]'), 'menu Mode Browser dihapus dari Menu');
+  assert(!menuMore.querySelector('#m-menu-backup') && !menuMore.querySelector('#m-menu-acct') && !menuMore.querySelector('[data-mgo="item"]'), 'Cadangan, Akun, & Kelola Item dipindah/digabung dari Menu');
+  assert.strictEqual(menuMore.querySelector('[data-mgo="settings"] strong').textContent, 'Pengaturan', 'label menu menjadi Pengaturan');
+  click(menuMore.querySelector('[data-mgo="settings"]'));
   assert($('m-tab-settings').classList.contains('active'), 'tab Settings aktif');
+  assert($('m-card-settings-acct') && $('m-card-settings-backup'), 'Akun & Cadangan tersedia di Pengaturan');
   click($('m-btn-test-notif'));
   assert($('m-os-notif').classList.contains('show'), 'notifikasi bar HP #m-os-notif muncul saat dipicu');
+  // Tambah >5 transaksi pada bulan aktif untuk menguji tombol Ringkas / Tampilkan semua di Laporan Keuangan
+  for (let i = 1; i <= 7; i++) w.kasLinked().tx.push({ id: 'rep_' + i, d: '2026-11-0' + i, t: '-', amt: 10000 * i, cat: 'Makanan', note: 'Tx' + i });
   for (const [k, label] of Object.entries({ d: 'Harian', w: 'Mingguan', m: 'Bulanan', y: 'Tahunan' })) {
     click(mobShell.querySelector('[data-mrep="' + k + '"]'));
     assert($('m-rep-sub').textContent.includes(label), 'pratinjau laporan tab ' + k + ' memuat ' + label);
     assert($('m-report-preview').querySelector('.rep-table'), 'pratinjau laporan tab ' + k + ' merender tabel laporan');
   }
+  click(mobShell.querySelector('[data-mrep="m"]'));
+  assert.strictEqual($('m-report-preview').querySelector('.rep-table tbody').querySelectorAll('tr').length, 5, 'tabel Laporan Keuangan dibatasi 5 baris awal');
+  const repTog = $('m-report-preview').querySelector('[data-mrep-tog]');
+  assert(repTog && /Tampilkan semua/.test(repTog.textContent), 'tombol Tampilkan semua muncul saat >5 baris');
+  click(repTog);
+  assert($('m-report-preview').querySelector('.rep-table tbody').querySelectorAll('tr').length > 5, 'klik Tampilkan semua memperpanjang daftar >5 baris');
 
   // 7. Pindah kembali ke Mode Browser -> #mobile-app-shell ter-unmount & semua data dari Mode Aplikasi HP tetap ada
   w.setShellMode('browser');

@@ -234,6 +234,16 @@ function repPdf(rep) {
 }
 
 var curRepKind = 'm';
+var repTableExpanded = {};
+var REP_HEAD_LABEL = {
+  'TRANSAKSI KAS': 'Transaksi Kas',
+  'TAGIHAN': 'Tagihan & Cicilan',
+  'PER BULAN': 'Ringkasan per Bulan',
+};
+
+function repPrettyHead(h) {
+  return REP_HEAD_LABEL[h] || h;
+}
 
 /** Render isi modal pratinjau laporan (#modal-report) berdasarkan jenis (d/w/m/y). */
 function renderRepModal(kind) {
@@ -257,13 +267,20 @@ function renderRepModal(kind) {
       return '<div class="rep-kpi"><div class="rep-kpi-l">' + esc(r[0]) + '</div><div class="rep-kpi-v pv">' + esc(r[1]) + '</div></div>';
     }).join('') + '</div>';
     var tbls = D.tables.map(function (tbl) {
-      var rowsHtml = tbl.rows.map(function (row) {
+      var expKey = curRepKind + ':' + tbl.head;
+      var expanded = !!repTableExpanded[expKey];
+      var visRows = tbl.rows.length > 5 && !expanded ? tbl.rows.slice(0, 5) : tbl.rows;
+      var rowsHtml = visRows.map(function (row) {
         return '<div class="upcoming-item" style="padding:8px 10px;"><div><div class="upcoming-name" style="font-size:0.82rem;">' + esc(row[1] || row[0]) + '</div>' +
           '<div class="upcoming-meta">' + esc(row[0]) + ' · ' + esc(row[2]) + '</div></div>' +
           '<strong class="mono pv" style="font-size:0.82rem;">' + esc(row[3]) + '</strong></div>';
       }).join('');
-      return '<div><div style="font-size:0.78rem;font-weight:700;color:var(--text-secondary);margin-bottom:6px;display:flex;justify-content:space-between;"><span>' + esc(tbl.head) + '</span>' +
-        (tbl.total ? '<span class="mono pv">' + esc(tbl.total[1]) + '</span>' : '') + '</div><div class="stack" style="gap:6px;">' + rowsHtml + '</div></div>';
+      var togBtn = tbl.rows.length > 5
+        ? '<button type="button" class="btn btn-secondary btn-sm" style="width:100%;margin-top:6px;" data-drep-tog="' + esc(expKey) + '">' +
+          (expanded ? 'Ringkas (tampilkan 5)' : 'Tampilkan semua (' + tbl.rows.length + ')') + '</button>'
+        : '';
+      return '<div><div style="font-size:0.78rem;font-weight:700;color:var(--text-secondary);margin-bottom:6px;display:flex;justify-content:space-between;"><span>' + esc(repPrettyHead(tbl.head)) + '</span>' +
+        (tbl.total ? '<span class="mono pv">' + esc(tbl.total[1]) + '</span>' : '') + '</div><div class="stack" style="gap:6px;">' + rowsHtml + '</div>' + togBtn + '</div>';
     }).join('');
     body.innerHTML = kpis + tbls;
   }
@@ -303,6 +320,13 @@ function downloadRepPdf(kind) {
 /** Klik tombol laporan, tab pratinjau laporan, dan tombol unduh PDF. */
 document.addEventListener('click', function (e) {
   if (!e || !e.target || !e.target.closest) return;
+  var dtog = e.target.closest('[data-drep-tog]');
+  if (dtog) {
+    var dk = dtog.getAttribute('data-drep-tog');
+    repTableExpanded[dk] = !repTableExpanded[dk];
+    renderRepModal(curRepKind);
+    return;
+  }
   var tabBtn = e.target.closest('[data-drep], [data-rep-tab]');
   if (tabBtn) {
     renderRepModal(tabBtn.getAttribute('data-drep') || tabBtn.getAttribute('data-rep-tab'));

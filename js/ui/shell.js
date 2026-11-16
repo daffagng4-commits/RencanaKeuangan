@@ -4,8 +4,21 @@
  * Dipanggil renderRincian() setelah markup kartu terpasang, dan oleh refreshToday().
  */
 
-/** Nama pemilik dashboard. Satu-satunya tempat untuk mengubahnya. */
-var USER_NAME = 'Daffa';
+/** Nama pemilik dashboard. Diisi 'XXX' saat belum login atau nama akun saat masuk. */
+var USER_NAME = 'XXX';
+
+/** Data tampilan akun aktif dari sesi Supabase (kondisi belum login -> XXX & lingkaran abu-abu kosong). */
+function rkDisplayUser(u) {
+  var user = arguments.length ? u : (typeof sbUser !== 'undefined' ? sbUser : null);
+  if (!user) return { loggedIn: false, name: 'XXX', initial: '', sub: '' };
+  var em = String(user.email || '').trim();
+  var meta = (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)) || '';
+  var raw = em ? em.split('@')[0].split('+')[0].replace(/[._-]+/g, ' ').trim() : String(meta).trim();
+  if (!raw) raw = String(meta).trim() || 'Pengguna';
+  var nice = raw.charAt(0).toUpperCase() + raw.slice(1);
+  var m = nice.match(/[\p{L}\p{N}]/u);
+  return { loggedIn: true, name: nice, initial: m ? m[0].toUpperCase() : 'U', sub: em };
+}
 /** Jam batas sapaan (jam lokal perangkat): 05 pagi, 11 siang, 15 sore, 18 malam. */
 var SAPA = [[5, 'malam'], [11, 'pagi'], [15, 'siang'], [18, 'sore'], [24, 'malam']];
 
@@ -51,12 +64,13 @@ function ringkasLine(c, R) {
   return { html: out.length ? out.join(' &middot; ') : '', title: title };
 }
 
-/** Ambil inisial nama profil: huruf pertama kapital, fallback aman untuk kosong/emoji/spasi. */
+/** Ambil inisial nama profil: kosong saat belum login, huruf pertama kapital saat sudah masuk. */
 function userInitial(name) {
-  var s = (name != null ? String(name) : (typeof USER_NAME !== 'undefined' ? USER_NAME : '')).trim();
-  if (!s) return 'P';
+  if (name == null) return rkDisplayUser().initial;
+  var s = String(name).trim();
+  if (!s || s === 'XXX') return '';
   var m = s.match(/[\p{L}\p{N}]/u);
-  return m ? m[0].toUpperCase() : (s[0] ? s[0].toUpperCase() : 'P');
+  return m ? m[0].toUpperCase() : (s[0] ? s[0].toUpperCase() : '');
 }
 
 /** Perbarui badge jumlah di navigasi sidebar Browser Mode. */
@@ -108,28 +122,24 @@ function renderShell(c, R) {
     c = calc();
     R = c.rows;
   }
+  var du = rkDisplayUser();
+  USER_NAME = du.name;
   var s = ringkasLine(c, R),
     sum = '<span class="rk-date">' + longDate() + '</span>' + (s.html ? ' &middot; ' + s.html : '');
   h.innerHTML =
-    '<h1 class="rk-h1">Selamat ' + greetWord() + ', ' + esc(USER_NAME) + '</h1>' +
+    '<h1 class="rk-h1">Selamat ' + greetWord() + ', ' + esc(du.name) + '</h1>' +
     '<p class="rk-sum"' + (s.title ? ' title="' + esc(s.title) + '"' : '') + '>' + sum + '</p>';
   var ini = $('sb-ini'),
     nm = $('sb-name'),
-    inim = $('acct-m-ini'),
-    acctM = $('acct-m'),
     acctBtn = $('acct'),
-    wr = (typeof USER_NAME !== 'undefined' && USER_NAME) ? USER_NAME.trim() : '';
-  if (nm) nm.textContent = wr || 'Pengguna';
-  var initial = userInitial(wr);
-  if (ini) ini.textContent = initial;
-  if (inim) inim.textContent = initial;
-  var ariaLabel = 'Profil ' + (wr || 'Pengguna');
+    av = acctBtn && acctBtn.querySelector('.av-circle');
+  if (nm) nm.textContent = 'Halo, ' + du.name;
+  if (ini) ini.textContent = du.initial;
+  if (av) av.classList.toggle('anon', !du.loggedIn);
+  var ariaLabel = du.loggedIn ? 'Profil ' + du.name : 'Masuk ke akun';
   if (acctBtn) {
+    acctBtn.classList.toggle('on', du.loggedIn);
     acctBtn.title = ariaLabel;
     acctBtn.setAttribute('aria-label', ariaLabel);
-  }
-  if (acctM) {
-    acctM.title = ariaLabel;
-    acctM.setAttribute('aria-label', ariaLabel);
   }
 }

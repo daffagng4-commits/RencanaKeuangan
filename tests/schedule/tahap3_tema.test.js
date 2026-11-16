@@ -9,38 +9,33 @@ const { boot } = require('./ui.js');
   await t.ready();
   const { w, $, click, errs } = t;
   const de = w.document.documentElement;
-  const cur = () => de.getAttribute('data-theme') || 'auto';
+  const cur = () => de.getAttribute('data-theme') || 'light';
 
-  // tombol: Otomatis > Terang > Gelap > Hitam-putih > Hitam-putih gelap > Otomatis
+  // tombol: Terang > Gelap > Terang (hanya 2 tema)
   const seq = [cur()];
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 2; i++) {
     click($('thm'));
     seq.push(cur());
   }
-  assert.deepStrictEqual(seq, ['auto', 'light', 'dark', 'bw', 'bwd', 'auto'], seq.join(' > '));
-  assert.strictEqual(w.localStorage.getItem('rk-theme'), 'auto');
-  click($('thm'));
+  assert.deepStrictEqual(seq, ['light', 'dark', 'light'], seq.join(' > '));
   assert.strictEqual(w.localStorage.getItem('rk-theme'), 'light');
   assert(/Terang/.test($('thm').title));
+  click($('thm'));
+  assert.strictEqual(w.localStorage.getItem('rk-theme'), 'dark');
+  assert(/Gelap/.test($('thm').title));
+  click($('thm'));
+  assert.strictEqual(cur(), 'light', 'setelah Gelap kembali ke Terang');
 
-  // tema tidak lagi di menu Alat; semua tema lewat tombol topbar
+  // tema tidak lagi di menu Alat; semua tema lewat tombol
   assert(!w.document.querySelector('#alat-menu [data-theme-set]'), 'pilihan tema tidak duplikat di menu Alat');
-  click($('thm'));
-  click($('thm'));
-  assert.strictEqual(cur(), 'bw');
-  assert(/Hitam-putih/.test($('thm').title) && !/gelap/i.test($('thm').title));
-  click($('thm'));
-  assert.strictEqual(cur(), 'bwd');
-  click($('thm'));
-  assert.strictEqual(cur(), 'auto', 'setelah tema terakhir kembali ke Otomatis');
 
-  // lembar Lainnya (HP): tema tidak lagi muncul di sini
+  // lembar Lainnya (HP Browser): tema tidak duplikat dengan [data-theme-set]
   click($('btn-mobile-more'));
   const sh = $('mobile-more-sheet');
   assert(sh.classList.contains('open'));
-  assert(!sh.querySelector('[data-theme-set]'), 'pilihan tema dihapus dari lembar Lainnya');
-  w.setTheme('auto');
-  assert.strictEqual(cur(), 'auto');
+  assert(!sh.querySelector('[data-theme-set]'), 'pilihan tema tidak memakai [data-theme-set] di lembar Lainnya');
+  w.setTheme('light');
+  assert.strictEqual(cur(), 'light');
 
   // font disematkan, tanpa Google Fonts
   const html = fs.readFileSync(path.join(__dirname, '..', '..', 'index.html'), 'utf8');
