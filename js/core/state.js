@@ -347,12 +347,9 @@ function emptyAllState(year) {
   var y = +year || (typeof todayISO === 'function' ? +todayISO().slice(0, 4) : 2026) || 2026;
   var d = {};
   d[y] = { year: y, saldo: 0, startMonth: 0, items: [], paid: {}, skip: {}, real: {}, adj: [] };
-  return {
-    year: y,
-    rev: 0,
-    data: d,
-    kas: { pr: { utama: { id: 'utama', name: 'Utama', saldo: 0, link: true, tx: [], it: [], bk: [], lk: [], ck: [], dt: {}, note: '', goal: null, auto: true, nm: [] } } },
-  };
+  var res = norm({ year: y, data: d, kas: { pr: { utama: { id: 'utama', name: 'Utama', saldo: 0, link: true, tx: [] } } } });
+  res.rev = 0;
+  return res;
 }
 
 function rkWriteCache(obj) {

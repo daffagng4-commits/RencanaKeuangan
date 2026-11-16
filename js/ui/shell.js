@@ -7,15 +7,18 @@
 /** Nama pemilik dashboard. Diisi 'XXX' saat belum login atau nama akun saat masuk. */
 var USER_NAME = 'XXX';
 
-/** Data tampilan akun aktif dari sesi Supabase (kondisi belum login -> XXX & lingkaran abu-abu kosong). */
+/** Data tampilan akun aktif dari sesi Supabase (kondisi belum login -> XXX; Google -> nama depan). */
 function rkDisplayUser(u) {
   var user = arguments.length ? u : (typeof sbUser !== 'undefined' ? sbUser : null);
   if (!user) return { loggedIn: false, name: 'XXX', initial: '', sub: '' };
   var em = String(user.email || '').trim();
-  var meta = (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)) || '';
-  var raw = em ? em.split('@')[0].split('+')[0].replace(/[._-]+/g, ' ').trim() : String(meta).trim();
-  if (!raw) raw = String(meta).trim() || 'Pengguna';
-  var nice = raw.charAt(0).toUpperCase() + raw.slice(1);
+  var meta = user.user_metadata || {};
+  var rawMeta = String(meta.given_name || meta.full_name || meta.name || '').trim();
+  var first = rawMeta
+    ? rawMeta.split(/\s+/)[0]
+    : (em ? em.split('@')[0].split('+')[0].replace(/[._-]+/g, ' ').trim().split(/\s+/)[0] : '');
+  if (!first) first = 'Pengguna';
+  var nice = first.charAt(0).toUpperCase() + first.slice(1);
   var m = nice.match(/[\p{L}\p{N}]/u);
   return { loggedIn: true, name: nice, initial: m ? m[0].toUpperCase() : 'U', sub: em };
 }

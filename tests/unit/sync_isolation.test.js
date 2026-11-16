@@ -174,3 +174,26 @@ test('error OAuth Signups not allowed menerjemahkan petunjuk Supabase di sbInit'
   await new Promise((r) => setTimeout(r, 10));
   assert.match(els.lm.textContent, /Allow new users to sign up/);
 });
+
+test('pull tidak memunculkan dialog konflik #cf meski cache lokal dan cloud punya rev berbeda', async () => {
+  const cloudRow = {
+    rev: 2000,
+    data: { year: 2026, data: { 2026: { year: 2026, saldo: 30000000, items: [] } } },
+  };
+  const { ctx } = loadSyncEnv({
+    remoteRow: cloudRow,
+    initialStorage: {
+      'rencana-keuangan-v1:u1': JSON.stringify({
+        year: 2026,
+        rev: 1000,
+        data: { 2026: { year: 2026, saldo: 15000000, items: [] } },
+      }),
+    },
+  });
+  await new Promise((r) => setTimeout(r, 10));
+  ctx.document.getElementById('cf').hidden = true;
+  ctx.setUser({ user: { id: 'u1', email: 'davinagng@gmail.com' } });
+  await new Promise((r) => setTimeout(r, 30));
+  assert.equal(ctx.document.getElementById('cf').hidden, true, 'dialog konflik #cf tidak boleh muncul otomatis');
+  assert.equal(ctx.S.saldo, 30000000, 'data cloud yang lebih baru langsung dimuat tanpa popup konflik');
+});

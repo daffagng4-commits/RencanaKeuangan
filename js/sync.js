@@ -222,9 +222,10 @@ function push() {
   });
 }
 
-/** Tanda tangan isi data (untuk membandingkan lokal vs cloud). */
+/** Tanda tangan isi data kanonik (untuk membandingkan lokal vs cloud tanpa false-positive urutan kunci). */
 function dataSig(a) {
-  return JSON.stringify(a.data) + JSON.stringify((a.kas || {}).pr || null);
+  var c = typeof norm === 'function' ? norm(JSON.parse(JSON.stringify(a || {}))) : (a || {});
+  return JSON.stringify(c.data) + JSON.stringify((c.kas || {}).pr || null);
 }
 
 /** Apakah data lokal masih kosong/contoh yang belum diubah oleh akun ini. */
@@ -288,14 +289,13 @@ function pull() {
         sbStat('Tersinkron ' + clock());
         return;
       }
-      var localChanged = !isPristine() && (ls === null || lr === 0 || lr > ls),
-        remoteChanged = ls === null || rr > ls;
-      if (!localChanged) {
+      var localChanged = !isPristine() && ls !== null && lr > ls;
+      if ($('cf')) $('cf').hidden = true;
+      if (!localChanged || rr >= lr) {
         applyRemote(row);
         return;
       }
-      if (!remoteChanged) return push();
-      askConflict(row, rn);
+      return push();
     });
 }
 
