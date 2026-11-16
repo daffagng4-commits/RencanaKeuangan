@@ -248,6 +248,7 @@ function applyRemote(row, label) {
   } catch (e) {}
   setSync(rr);
   syncUI();
+  if (typeof checkDueNotifications === 'function') checkDueNotifications(false);
   sbStat('Tersinkron ' + clock() + ' (data cloud dimuat)');
   return sn;
 }

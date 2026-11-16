@@ -1576,12 +1576,11 @@ function triggerSystemNotification(title, body, tag) {
   }
 }
 
-/** Pengingat tagihan jatuh tempo lokal (Notification API - konsisten dengan reminders lintas tahun). */
+/** Pengingat tagihan jatuh tempo lokal (Notification API + fallback bar/toast dalam aplikasi). */
 function checkDueNotifications(force) {
-  if (!('Notification' in window)) return;
-  if (Notification.permission !== 'granted') return;
   if (!ALL || !ALL.data) return;
-  var rem = reminders(3);
+  var hz = typeof remHz === 'number' && remHz > 0 ? remHz : 3;
+  var rem = reminders(hz);
   var today = rem.today;
   var todayMs = Date.parse(today + 'T00:00:00Z');
   var dueList = [];
@@ -1596,20 +1595,21 @@ function checkDueNotifications(force) {
   });
 
   if (!dueList.length) {
-    if (force) {
+    if (force && 'Notification' in window && Notification.permission === 'granted') {
       triggerSystemNotification(
         'Pengingat Tagihan Aktif',
-        'Tidak ada tagihan jatuh tempo dalam 3 hari ke depan.',
+        'Tidak ada tagihan jatuh tempo dalam ' + hz + ' hari ke depan.',
         'bill-check-ok'
       );
     }
     return;
   }
 
+  var sig = today + '|' + dueList.map(function (x) { return x.it.id + ':' + x.d; }).join(',');
   if (!force) {
     try {
-      var lastNotif = typeof localStorage !== 'undefined' && localStorage.getItem('last_bill_notif_date');
-      if (lastNotif === today) return;
+      var prevSig = (typeof localStorage !== 'undefined' && localStorage.getItem('rk_last_bill_notif_sig')) || (typeof window !== 'undefined' && window.__rkLastNotifSig);
+      if (prevSig === sig) return;
     } catch (e) {}
   }
 
@@ -1621,13 +1621,28 @@ function checkDueNotifications(force) {
   var body = titles.join('\n');
   if (dueList.length > 3) body += '\n+' + (dueList.length - 3) + ' tagihan lainnya';
 
-  triggerSystemNotification(
-    'Pengingat Tagihan Jatuh Tempo (' + dueList.length + ')',
-    body,
-    'bill-due-' + today
-  );
+  var canOsNotif = typeof Notification !== 'undefined' && 'Notification' in window && Notification.permission === 'granted';
+  if (canOsNotif) {
+    triggerSystemNotification(
+      'Pengingat Tagihan Jatuh Tempo (' + dueList.length + ')',
+      body,
+      'bill-due-' + today
+    );
+  }
+
+  if (typeof getShellMode === 'function' && getShellMode() === 'mobile-app') {
+    if (typeof triggerMobPhoneBarNotif === 'function') triggerMobPhoneBarNotif(false);
+  } else if (!canOsNotif && !force && typeof toast === 'function') {
+    var urgent = dueList.filter(function (x) { return x.diff <= 0; });
+    if (urgent.length) {
+      toast('Pengingat: ' + urgent[0].it.name + (urgent.length > 1 ? ' (+' + (urgent.length - 1) + ' lagi)' : '') + ' jatuh tempo ' + (urgent[0].diff === 0 ? 'hari ini' : 'terlewat'));
+    }
+  }
+
   try {
+    if (typeof window !== 'undefined') window.__rkLastNotifSig = sig;
     if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('rk_last_bill_notif_sig', sig);
       localStorage.setItem('last_bill_notif_date', today);
     }
   } catch (e) {}
@@ -1641,14 +1656,17 @@ function requestNotifPermission() {
   if (Notification.permission === 'granted') {
     toast('Memeriksa pengingat tagihan...');
     checkDueNotifications(true);
+    if (typeof renderMobSettings === 'function') renderMobSettings();
     return;
   }
   if (Notification.permission === 'denied') {
     toast('Izin notifikasi diblokir di browser. Buka setelan browser untuk mengizinkan.');
+    if (typeof renderMobSettings === 'function') renderMobSettings();
     return;
   }
   Notification.requestPermission().then(function (perm) {
     syncNotifBtn();
+    if (typeof renderMobSettings === 'function') renderMobSettings();
     if (perm === 'granted') {
       toast('Notifikasi aktif! Memeriksa tagihan...');
       checkDueNotifications(true);

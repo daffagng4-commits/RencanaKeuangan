@@ -79,6 +79,7 @@ function refreshToday() {
   smSyncUI();
   renderShell();
   renderAll();
+  if (typeof checkDueNotifications === 'function') checkDueNotifications(false);
 }
 
 /** Segarkan semua kontrol dan tampilan dari state (setelah ganti tahun, muat data, dsb). */

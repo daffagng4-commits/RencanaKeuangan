@@ -618,7 +618,14 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
     chDotId = px + 'ch-dot',
     segGlowId = px + 'seg-glow';
   var pts = brBuildCashflowPoints(range || 'y');
-  var W = 1060, H = 250, padL = 68, padR = 26, padT = 22, padB = 34;
+  var W = opts.svgW || 1060,
+    H = opts.svgH || 250,
+    padL = opts.padL || 68,
+    padR = 26,
+    padT = 22,
+    padB = opts.padB || 36,
+    fs = opts.fontSize || 11.5,
+    dotR = opts.dotR || 4.5;
   var vals = pts.map(function (d) { return d.val; }).concat([0]),
     rawMin = Math.min.apply(null, vals),
     rawMax = Math.max.apply(null, vals),
@@ -644,12 +651,12 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
   for (var g = 0; g <= 4; g++) {
     var gv = minV + ((maxV - minV) * g) / 4, gy = yPos(gv);
     grid += '<line x1="' + padL + '" y1="' + gy + '" x2="' + (W - padR) + '" y2="' + gy + '" stroke="var(--border-subtle)" stroke-dasharray="4 4"/>';
-    grid += '<text x="' + (padL - 10) + '" y="' + (gy + 4) + '" text-anchor="end" fill="var(--text-muted)" font-size="11.5" font-family="var(--font-mono)">' + brFmtShort(Math.round(gv)) + '</text>';
+    grid += '<text x="' + (padL - 10) + '" y="' + (gy + 4) + '" text-anchor="end" fill="var(--text-muted)" font-size="' + fs + '" font-family="var(--font-mono)">' + brFmtShort(Math.round(gv)) + '</text>';
   }
   if (minV < 0 && maxV > 0) {
     grid += '<rect x="' + padL + '" y="' + zeroY + '" width="' + (W - padL - padR) + '" height="' + Math.max(0, H - padB - zeroY) + '" fill="var(--crimson)" opacity="0.08"/>';
     grid += '<line x1="' + padL + '" y1="' + zeroY + '" x2="' + (W - padR) + '" y2="' + zeroY + '" stroke="var(--crimson)" stroke-width="1.5" stroke-dasharray="6 4"/>';
-    grid += '<text x="' + (W - padR - 6) + '" y="' + (zeroY - 6) + '" text-anchor="end" fill="var(--crimson)" font-size="11" font-weight="700">Batas Defisit (Rp 0)</text>';
+    grid += '<text x="' + (W - padR - 6) + '" y="' + (zeroY - 6) + '" text-anchor="end" fill="var(--crimson)" font-size="' + fs + '" font-weight="700">Batas Defisit (Rp 0)</text>';
   }
   var fullCurve = brCubicPath(coords),
     actualCoords = coords.filter(function (c) { return c.actual; }),
@@ -692,9 +699,9 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
       })();
       return coords.map(function (c, i) {
         var showLbl = !!lblMap[i];
-        return '<g>' + ((c.today || c.val < 0) ? '<circle class="pulse-ring" cx="' + c.x + '" cy="' + c.y + '" r="8" fill="' + (c.val < 0 ? 'var(--crimson)' : 'var(--accent)') + '"/>' : '') +
-          '<circle class="cf-node" data-nodeidx="' + c.idx + '" cx="' + c.x + '" cy="' + c.y + '" r="' + (c.val < 0 ? 5.5 : 4.5) + '" fill="' + (c.val < 0 ? 'var(--crimson)' : c.actual ? 'var(--accent)' : 'var(--emerald)') + '" stroke="var(--bg-surface)" stroke-width="2"/>' +
-          (showLbl ? '<text x="' + c.x + '" y="' + (H - 10) + '" text-anchor="middle" fill="' + (c.today ? 'var(--accent-ink)' : 'var(--text-muted)') + '" font-weight="' + (c.today ? '700' : '500') + '" font-size="11.5" font-family="var(--font-mono)">' + esc(c.lbl) + '</text>' : '') +
+        return '<g>' + ((c.today || c.val < 0) ? '<circle class="pulse-ring" cx="' + c.x + '" cy="' + c.y + '" r="' + (dotR + 3.5) + '" fill="' + (c.val < 0 ? 'var(--crimson)' : 'var(--accent)') + '"/>' : '') +
+          '<circle class="cf-node" data-nodeidx="' + c.idx + '" cx="' + c.x + '" cy="' + c.y + '" r="' + (c.val < 0 ? dotR + 1 : dotR) + '" fill="' + (c.val < 0 ? 'var(--crimson)' : c.actual ? 'var(--accent)' : 'var(--emerald)') + '" stroke="var(--bg-surface)" stroke-width="2"/>' +
+          (showLbl ? '<text x="' + c.x + '" y="' + (H - 10) + '" text-anchor="middle" fill="' + (c.today ? 'var(--accent-ink)' : 'var(--text-muted)') + '" font-weight="' + (c.today ? '700' : '500') + '" font-size="' + fs + '" font-family="var(--font-mono)">' + esc(c.lbl) + '</text>' : '') +
           '</g>';
       }).join('');
     })() +
@@ -771,31 +778,36 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
   var getPin = opts.getPin || function () { return BR_STATE.pinnedCashIdx; };
   var setPin = opts.setPin || function (idx, pt) { BR_STATE.pinnedCashIdx = idx; renderCashInspector(pt); };
   if (hit) {
-    svg.style.touchAction = 'none';
-    hit.style.touchAction = 'none';
+    if (opts.allowScroll) {
+      svg.style.touchAction = 'pan-x pan-y';
+      hit.style.touchAction = 'pan-x pan-y';
+    } else {
+      svg.style.touchAction = 'none';
+      hit.style.touchAction = 'none';
+      hit.addEventListener('pointerdown', function (e) { inspectFromX(e.clientX); });
+      hit.addEventListener('pointermove', function (e) {
+        if (e.pointerType !== 'mouse' || e.buttons) inspectFromX(e.clientX);
+      });
+      hit.addEventListener('touchstart', function (e) {
+        if (e.touches && e.touches[0]) {
+          if (e.cancelable) e.preventDefault();
+          inspectFromX(e.touches[0].clientX);
+        }
+      }, { passive: false });
+      hit.addEventListener('touchmove', function (e) {
+        if (e.touches && e.touches[0]) {
+          if (e.cancelable) e.preventDefault();
+          inspectFromX(e.touches[0].clientX);
+        }
+      }, { passive: false });
+      hit.addEventListener('touchend', function () {
+        var pi = getPin();
+        if (pi === null || !coords[pi]) hideHUD();
+        else showPointHUD(coords[pi]);
+      });
+      hit.addEventListener('touchcancel', function () { hideHUD(); });
+    }
     hit.onmousemove = function (e) { inspectFromX(e.clientX); };
-    hit.addEventListener('pointerdown', function (e) { inspectFromX(e.clientX); });
-    hit.addEventListener('pointermove', function (e) {
-      if (e.pointerType !== 'mouse' || e.buttons) inspectFromX(e.clientX);
-    });
-    hit.addEventListener('touchstart', function (e) {
-      if (e.touches && e.touches[0]) {
-        if (e.cancelable) e.preventDefault();
-        inspectFromX(e.touches[0].clientX);
-      }
-    }, { passive: false });
-    hit.addEventListener('touchmove', function (e) {
-      if (e.touches && e.touches[0]) {
-        if (e.cancelable) e.preventDefault();
-        inspectFromX(e.touches[0].clientX);
-      }
-    }, { passive: false });
-    hit.addEventListener('touchend', function () {
-      var pi = getPin();
-      if (pi === null || !coords[pi]) hideHUD();
-      else showPointHUD(coords[pi]);
-    });
-    hit.addEventListener('touchcancel', function () { hideHUD(); });
     hit.onmouseleave = function () {
       var pi = getPin();
       if (segGlow) segGlow.style.display = 'none';

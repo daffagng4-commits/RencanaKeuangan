@@ -3682,13 +3682,75 @@ body[data-shell="mobile-app"] #mobile-app-shell #m-jar-stage {
 body[data-shell="mobile-app"] #mobile-app-shell .jar-bubble { animation: bubbleFloat 3.6s ease-in infinite; }
 
 /* Cashflow Zoom Popup (Desktop-grade chart inside APK) */
-body[data-shell="mobile-app"] #mobile-app-shell .cf-zoom-sheet { max-width: 96vw; width: 100%; border-radius: 20px; }
+body[data-shell="mobile-app"] #mobile-app-shell .cf-zoom-sheet { max-width: 100%; width: 100%; max-height: 92%; border-radius: 22px 22px 0 0; }
 body[data-shell="mobile-app"] #mobile-app-shell .cf-zoom-stage { position: relative; width: 100%; }
-body[data-shell="mobile-app"] #mobile-app-shell .cf-zoom-scroll { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; border: 1px solid var(--border-subtle); border-radius: 14px; background: var(--bg-surface); padding: 8px 6px; }
+body[data-shell="mobile-app"] #mobile-app-shell .cf-zoom-scroll { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; border: 1px solid var(--border-subtle); border-radius: 14px; background: var(--bg-surface); padding: 6px 4px; }
+body[data-shell="mobile-app"] #mobile-app-shell #m-svg-cf-zoom { min-width: 780px; width: 100%; height: 295px; display: block; touch-action: pan-x pan-y; }
+body[data-shell="mobile-app"] #mobile-app-shell #m-svg-cf-zoom.is-zoom-wide { min-width: 1200px; height: 335px; }
 body[data-shell="mobile-app"] #mobile-app-shell #m-cf-zoom-tip { max-width: min(230px, calc(100% - 16px)); font-size: 0.74rem; padding: 7px 10px; z-index: 20; }
 body[data-shell="mobile-app"] #mobile-app-shell .cf-legend-bar { display: flex; flex-wrap: wrap; gap: 10px; font-size: 0.70rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; }
 body[data-shell="mobile-app"] #mobile-app-shell .cf-legend-item { display: inline-flex; align-items: center; gap: 5px; }
 body[data-shell="mobile-app"] #mobile-app-shell .cf-legend-dot { width: 8px; height: 8px; border-radius: 3px; display: inline-block; }
+
+/* Filter row for "Ke Mana Uangnya Pergi" (Minggu/Bulan/Tahun + Keluar/Masuk in 1 row) */
+body[data-shell="mobile-app"] #mobile-app-shell .where-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: nowrap;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .where-filter-row .seg {
+  padding: 2px;
+  gap: 1px;
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .where-filter-row .seg-btn {
+  padding: 5px 8px;
+  font-size: 0.70rem;
+  white-space: nowrap;
+}
+
+/* Riwayat Transaksi mobile category select with icons */
+body[data-shell="mobile-app"] #mobile-app-shell .m-kas-flt-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-kas-flt-row .mselect-trigger {
+  min-height: 36px;
+  height: 36px;
+  padding: 5px 9px;
+  font-size: 0.77rem;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-kas-flt-row .seg {
+  height: 36px;
+  align-items: center;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-kas-flt-row .seg-btn {
+  padding: 4px 6px;
+  font-size: 0.72rem;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-kas-flt-row .mselect-menu {
+  max-width: min(240px, calc(100vw - 44px));
+  max-height: 240px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mselect-opt-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mselect-opt-check {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--accent);
+  opacity: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mselect-opt.active .mselect-opt-check { opacity: 1; }
 
 /* Compact Mobile Report Table & Switch */
 body[data-shell="mobile-app"] #mobile-app-shell .rep-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
@@ -7096,6 +7158,7 @@ function refreshToday() {
   smSyncUI();
   renderShell();
   renderAll();
+  if (typeof checkDueNotifications === 'function') checkDueNotifications(false);
 }
 
 /** Segarkan semua kontrol dan tampilan dari state (setelah ganti tahun, muat data, dsb). */
@@ -13309,6 +13372,7 @@ function applyRemote(row, label) {
   } catch (e) {}
   setSync(rr);
   syncUI();
+  if (typeof checkDueNotifications === 'function') checkDueNotifications(false);
   sbStat('Tersinkron ' + clock() + ' (data cloud dimuat)');
   return sn;
 }
@@ -15894,12 +15958,11 @@ function triggerSystemNotification(title, body, tag) {
   }
 }
 
-/** Pengingat tagihan jatuh tempo lokal (Notification API - konsisten dengan reminders lintas tahun). */
+/** Pengingat tagihan jatuh tempo lokal (Notification API + fallback bar/toast dalam aplikasi). */
 function checkDueNotifications(force) {
-  if (!('Notification' in window)) return;
-  if (Notification.permission !== 'granted') return;
   if (!ALL || !ALL.data) return;
-  var rem = reminders(3);
+  var hz = typeof remHz === 'number' && remHz > 0 ? remHz : 3;
+  var rem = reminders(hz);
   var today = rem.today;
   var todayMs = Date.parse(today + 'T00:00:00Z');
   var dueList = [];
@@ -15914,20 +15977,21 @@ function checkDueNotifications(force) {
   });
 
   if (!dueList.length) {
-    if (force) {
+    if (force && 'Notification' in window && Notification.permission === 'granted') {
       triggerSystemNotification(
         'Pengingat Tagihan Aktif',
-        'Tidak ada tagihan jatuh tempo dalam 3 hari ke depan.',
+        'Tidak ada tagihan jatuh tempo dalam ' + hz + ' hari ke depan.',
         'bill-check-ok'
       );
     }
     return;
   }
 
+  var sig = today + '|' + dueList.map(function (x) { return x.it.id + ':' + x.d; }).join(',');
   if (!force) {
     try {
-      var lastNotif = typeof localStorage !== 'undefined' && localStorage.getItem('last_bill_notif_date');
-      if (lastNotif === today) return;
+      var prevSig = (typeof localStorage !== 'undefined' && localStorage.getItem('rk_last_bill_notif_sig')) || (typeof window !== 'undefined' && window.__rkLastNotifSig);
+      if (prevSig === sig) return;
     } catch (e) {}
   }
 
@@ -15939,13 +16003,28 @@ function checkDueNotifications(force) {
   var body = titles.join('\n');
   if (dueList.length > 3) body += '\n+' + (dueList.length - 3) + ' tagihan lainnya';
 
-  triggerSystemNotification(
-    'Pengingat Tagihan Jatuh Tempo (' + dueList.length + ')',
-    body,
-    'bill-due-' + today
-  );
+  var canOsNotif = typeof Notification !== 'undefined' && 'Notification' in window && Notification.permission === 'granted';
+  if (canOsNotif) {
+    triggerSystemNotification(
+      'Pengingat Tagihan Jatuh Tempo (' + dueList.length + ')',
+      body,
+      'bill-due-' + today
+    );
+  }
+
+  if (typeof getShellMode === 'function' && getShellMode() === 'mobile-app') {
+    if (typeof triggerMobPhoneBarNotif === 'function') triggerMobPhoneBarNotif(false);
+  } else if (!canOsNotif && !force && typeof toast === 'function') {
+    var urgent = dueList.filter(function (x) { return x.diff <= 0; });
+    if (urgent.length) {
+      toast('Pengingat: ' + urgent[0].it.name + (urgent.length > 1 ? ' (+' + (urgent.length - 1) + ' lagi)' : '') + ' jatuh tempo ' + (urgent[0].diff === 0 ? 'hari ini' : 'terlewat'));
+    }
+  }
+
   try {
+    if (typeof window !== 'undefined') window.__rkLastNotifSig = sig;
     if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('rk_last_bill_notif_sig', sig);
       localStorage.setItem('last_bill_notif_date', today);
     }
   } catch (e) {}
@@ -15959,14 +16038,17 @@ function requestNotifPermission() {
   if (Notification.permission === 'granted') {
     toast('Memeriksa pengingat tagihan...');
     checkDueNotifications(true);
+    if (typeof renderMobSettings === 'function') renderMobSettings();
     return;
   }
   if (Notification.permission === 'denied') {
     toast('Izin notifikasi diblokir di browser. Buka setelan browser untuk mengizinkan.');
+    if (typeof renderMobSettings === 'function') renderMobSettings();
     return;
   }
   Notification.requestPermission().then(function (perm) {
     syncNotifBtn();
+    if (typeof renderMobSettings === 'function') renderMobSettings();
     if (perm === 'granted') {
       toast('Notifikasi aktif! Memeriksa tagihan...');
       checkDueNotifications(true);
@@ -18023,7 +18105,14 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
     chDotId = px + 'ch-dot',
     segGlowId = px + 'seg-glow';
   var pts = brBuildCashflowPoints(range || 'y');
-  var W = 1060, H = 250, padL = 68, padR = 26, padT = 22, padB = 34;
+  var W = opts.svgW || 1060,
+    H = opts.svgH || 250,
+    padL = opts.padL || 68,
+    padR = 26,
+    padT = 22,
+    padB = opts.padB || 36,
+    fs = opts.fontSize || 11.5,
+    dotR = opts.dotR || 4.5;
   var vals = pts.map(function (d) { return d.val; }).concat([0]),
     rawMin = Math.min.apply(null, vals),
     rawMax = Math.max.apply(null, vals),
@@ -18049,12 +18138,12 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
   for (var g = 0; g <= 4; g++) {
     var gv = minV + ((maxV - minV) * g) / 4, gy = yPos(gv);
     grid += '<line x1="' + padL + '" y1="' + gy + '" x2="' + (W - padR) + '" y2="' + gy + '" stroke="var(--border-subtle)" stroke-dasharray="4 4"/>';
-    grid += '<text x="' + (padL - 10) + '" y="' + (gy + 4) + '" text-anchor="end" fill="var(--text-muted)" font-size="11.5" font-family="var(--font-mono)">' + brFmtShort(Math.round(gv)) + '</text>';
+    grid += '<text x="' + (padL - 10) + '" y="' + (gy + 4) + '" text-anchor="end" fill="var(--text-muted)" font-size="' + fs + '" font-family="var(--font-mono)">' + brFmtShort(Math.round(gv)) + '</text>';
   }
   if (minV < 0 && maxV > 0) {
     grid += '<rect x="' + padL + '" y="' + zeroY + '" width="' + (W - padL - padR) + '" height="' + Math.max(0, H - padB - zeroY) + '" fill="var(--crimson)" opacity="0.08"/>';
     grid += '<line x1="' + padL + '" y1="' + zeroY + '" x2="' + (W - padR) + '" y2="' + zeroY + '" stroke="var(--crimson)" stroke-width="1.5" stroke-dasharray="6 4"/>';
-    grid += '<text x="' + (W - padR - 6) + '" y="' + (zeroY - 6) + '" text-anchor="end" fill="var(--crimson)" font-size="11" font-weight="700">Batas Defisit (Rp 0)</text>';
+    grid += '<text x="' + (W - padR - 6) + '" y="' + (zeroY - 6) + '" text-anchor="end" fill="var(--crimson)" font-size="' + fs + '" font-weight="700">Batas Defisit (Rp 0)</text>';
   }
   var fullCurve = brCubicPath(coords),
     actualCoords = coords.filter(function (c) { return c.actual; }),
@@ -18097,9 +18186,9 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
       })();
       return coords.map(function (c, i) {
         var showLbl = !!lblMap[i];
-        return '<g>' + ((c.today || c.val < 0) ? '<circle class="pulse-ring" cx="' + c.x + '" cy="' + c.y + '" r="8" fill="' + (c.val < 0 ? 'var(--crimson)' : 'var(--accent)') + '"/>' : '') +
-          '<circle class="cf-node" data-nodeidx="' + c.idx + '" cx="' + c.x + '" cy="' + c.y + '" r="' + (c.val < 0 ? 5.5 : 4.5) + '" fill="' + (c.val < 0 ? 'var(--crimson)' : c.actual ? 'var(--accent)' : 'var(--emerald)') + '" stroke="var(--bg-surface)" stroke-width="2"/>' +
-          (showLbl ? '<text x="' + c.x + '" y="' + (H - 10) + '" text-anchor="middle" fill="' + (c.today ? 'var(--accent-ink)' : 'var(--text-muted)') + '" font-weight="' + (c.today ? '700' : '500') + '" font-size="11.5" font-family="var(--font-mono)">' + esc(c.lbl) + '</text>' : '') +
+        return '<g>' + ((c.today || c.val < 0) ? '<circle class="pulse-ring" cx="' + c.x + '" cy="' + c.y + '" r="' + (dotR + 3.5) + '" fill="' + (c.val < 0 ? 'var(--crimson)' : 'var(--accent)') + '"/>' : '') +
+          '<circle class="cf-node" data-nodeidx="' + c.idx + '" cx="' + c.x + '" cy="' + c.y + '" r="' + (c.val < 0 ? dotR + 1 : dotR) + '" fill="' + (c.val < 0 ? 'var(--crimson)' : c.actual ? 'var(--accent)' : 'var(--emerald)') + '" stroke="var(--bg-surface)" stroke-width="2"/>' +
+          (showLbl ? '<text x="' + c.x + '" y="' + (H - 10) + '" text-anchor="middle" fill="' + (c.today ? 'var(--accent-ink)' : 'var(--text-muted)') + '" font-weight="' + (c.today ? '700' : '500') + '" font-size="' + fs + '" font-family="var(--font-mono)">' + esc(c.lbl) + '</text>' : '') +
           '</g>';
       }).join('');
     })() +
@@ -18176,31 +18265,36 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
   var getPin = opts.getPin || function () { return BR_STATE.pinnedCashIdx; };
   var setPin = opts.setPin || function (idx, pt) { BR_STATE.pinnedCashIdx = idx; renderCashInspector(pt); };
   if (hit) {
-    svg.style.touchAction = 'none';
-    hit.style.touchAction = 'none';
+    if (opts.allowScroll) {
+      svg.style.touchAction = 'pan-x pan-y';
+      hit.style.touchAction = 'pan-x pan-y';
+    } else {
+      svg.style.touchAction = 'none';
+      hit.style.touchAction = 'none';
+      hit.addEventListener('pointerdown', function (e) { inspectFromX(e.clientX); });
+      hit.addEventListener('pointermove', function (e) {
+        if (e.pointerType !== 'mouse' || e.buttons) inspectFromX(e.clientX);
+      });
+      hit.addEventListener('touchstart', function (e) {
+        if (e.touches && e.touches[0]) {
+          if (e.cancelable) e.preventDefault();
+          inspectFromX(e.touches[0].clientX);
+        }
+      }, { passive: false });
+      hit.addEventListener('touchmove', function (e) {
+        if (e.touches && e.touches[0]) {
+          if (e.cancelable) e.preventDefault();
+          inspectFromX(e.touches[0].clientX);
+        }
+      }, { passive: false });
+      hit.addEventListener('touchend', function () {
+        var pi = getPin();
+        if (pi === null || !coords[pi]) hideHUD();
+        else showPointHUD(coords[pi]);
+      });
+      hit.addEventListener('touchcancel', function () { hideHUD(); });
+    }
     hit.onmousemove = function (e) { inspectFromX(e.clientX); };
-    hit.addEventListener('pointerdown', function (e) { inspectFromX(e.clientX); });
-    hit.addEventListener('pointermove', function (e) {
-      if (e.pointerType !== 'mouse' || e.buttons) inspectFromX(e.clientX);
-    });
-    hit.addEventListener('touchstart', function (e) {
-      if (e.touches && e.touches[0]) {
-        if (e.cancelable) e.preventDefault();
-        inspectFromX(e.touches[0].clientX);
-      }
-    }, { passive: false });
-    hit.addEventListener('touchmove', function (e) {
-      if (e.touches && e.touches[0]) {
-        if (e.cancelable) e.preventDefault();
-        inspectFromX(e.touches[0].clientX);
-      }
-    }, { passive: false });
-    hit.addEventListener('touchend', function () {
-      var pi = getPin();
-      if (pi === null || !coords[pi]) hideHUD();
-      else showPointHUD(coords[pi]);
-    });
-    hit.addEventListener('touchcancel', function () { hideHUD(); });
     hit.onmouseleave = function () {
       var pi = getPin();
       if (segGlow) segGlow.style.display = 'none';
@@ -20501,6 +20595,7 @@ var MOB_STATE = {
   frame: null,
   cashRange: 'm',
   zoomRange: 'm',
+  zoomWide: false,
   zoomPin: null,
   cashExpand: false,
   wherePeriod: 'y',
@@ -20596,6 +20691,8 @@ function mobDrawCal(id) {
 }
 
 var MOB_CAT_META = {
+  Langganan: { hex: '#4F46E5', grad: ['#6366F1', '#4338CA'], svg: '<path d="M17 2l4 4-4 4" fill="none" stroke="#FEF08A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 13v1a4 4 0 0 1-4 4H3" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' },
+  Pendidikan: { hex: '#0891B2', grad: ['#06B6D4', '#0284C7'], svg: '<path d="M2 10l10-5 10 5-10 5-10-5z" fill="#FFFFFF"/><path d="M6 12.5v4.5c0 1.8 2.7 3 6 3s6-1.2 6-3v-4.5" fill="none" stroke="#FEF08A" stroke-width="2" stroke-linecap="round"/>' },
   Investasi: { hex: '#0D9488', grad: ['#10B981', '#0284C7'], svg: '<rect x="5" y="13" width="3" height="6" rx="1" fill="#FDE047"/><rect x="10.5" y="9" width="3" height="10" rx="1" fill="#FFFFFF"/><rect x="16" y="5" width="3" height="14" rx="1" fill="#A7F3D0"/><path d="M5 10l5-4 4 3 5-5" fill="none" stroke="#FDE047" stroke-width="2" stroke-linecap="round"/>' },
   'Tagihan rutin': { hex: '#2563EB', grad: ['#3B82F6', '#4F46E5'], svg: '<path d="M13 3L5 14h6l-1 7 9-11h-6l0-7z" fill="#FDE047" stroke="#FFFFFF" stroke-width="1.3" stroke-linejoin="round"/>' },
   Tagihan: { hex: '#2563EB', grad: ['#3B82F6', '#4F46E5'], svg: '<path d="M13 3L5 14h6l-1 7 9-11h-6l0-7z" fill="#FDE047" stroke="#FFFFFF" stroke-width="1.3" stroke-linejoin="round"/>' },
@@ -20838,7 +20935,7 @@ function mobShellTemplate() {
     // TAB 1: RINCIAN
     '<section class="tab-panel active" id="m-tab-rincian"><div class="stack">' +
     '<div class="wallet-hero"><div class="wallet-top"><div><div class="wallet-kicker">Saldo Realtime &middot; <span id="m-hero-lbl">2026</span></div>' +
-    '<div class="wallet-bal pv" id="m-rincian-saldo">Rp 0</div></div><span class="wallet-pill" id="m-runway-pill">-</span></div>' +
+    '<div class="wallet-bal pv" id="m-rincian-saldo">Rp 0</div></div></div>' +
     '<div class="wallet-seg" role="group" aria-label="Rentang Grafik">' +
     '<button type="button" class="wallet-seg-btn" data-mrange="w">Minggu</button>' +
     '<button type="button" class="wallet-seg-btn active" data-mrange="m">Bulan</button>' +
@@ -20859,7 +20956,7 @@ function mobShellTemplate() {
     '<div class="stack" style="gap:7px" id="m-upcoming-bills"></div></div>' +
     '<div class="card"><div class="card-hd"><h2 class="card-title">Ke Mana Uangnya Pergi</h2>' +
     '<div class="seg"><button type="button" class="seg-btn active" data-mwstyle="jar">Jar 3D</button><button type="button" class="seg-btn" data-mwstyle="ring">Ring</button></div></div>' +
-    '<div style="display:flex;justify-content:space-between;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">' +
+    '<div class="where-filter-row">' +
     '<div class="seg"><button type="button" class="seg-btn" data-mwperiod="w">Minggu</button><button type="button" class="seg-btn" data-mwperiod="m">Bulan</button><button type="button" class="seg-btn active" data-mwperiod="y">Tahun</button></div>' +
     '<div class="seg"><button type="button" class="seg-btn active" data-mwdir="-">Keluar</button><button type="button" class="seg-btn" data-mwdir="+">Masuk</button></div></div>' +
     '<div class="jar-showcase-grid"><div id="m-jar-stage"></div></div>' +
@@ -20898,7 +20995,10 @@ function mobShellTemplate() {
     '<button type="submit" class="btn btn-primary" style="width:100%">Simpan Transaksi</button></form></div>' +
     '<div class="card" id="m-kas-card-debt"><div class="card-hd"><h2 class="card-title">Utang &amp; Piutang</h2></div><div class="stack" style="gap:8px" id="m-debt-list"></div></div>' +
     '<div class="card" id="m-kas-card-hist"><div class="card-hd"><h2 class="card-title">Riwayat Transaksi</h2><button type="button" class="btn btn-secondary btn-sm" id="m-kas-flt-reset">Reset</button></div>' +
-    '<div class="stack" style="gap:8px;margin-bottom:10px"><div class="bento-2"><select class="input" id="m-kas-flt-cat"><option value="all">Semua Kategori</option></select>' +
+    '<div class="stack" style="gap:8px;margin-bottom:10px"><div class="m-kas-flt-row">' +
+    '<div class="mselect" id="m-kas-cat-ms"><select class="input" id="m-kas-flt-cat" style="display:none"><option value="all">Semua Kategori</option></select>' +
+    '<button type="button" class="mselect-trigger" id="m-kas-cat-trig" aria-haspopup="listbox" aria-expanded="false"><span class="mselect-val" id="m-kas-cat-val">Semua Kategori</span><svg class="mselect-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg></button>' +
+    '<div class="mselect-menu" id="m-kas-cat-menu" role="listbox"></div></div>' +
     '<div class="seg" style="width:100%"><button type="button" class="seg-btn active" data-mkfdir="all" style="flex:1">Semua</button><button type="button" class="seg-btn" data-mkfdir="+" style="flex:1">+</button><button type="button" class="seg-btn" data-mkfdir="-" style="flex:1">&minus;</button></div></div>' +
     '<input class="input" id="m-kas-search" type="search" placeholder="Cari transaksi..." /></div>' +
     '<div class="stack" style="gap:7px" id="m-kas-hist-list"></div></div>' +
@@ -21005,9 +21105,9 @@ function mobShellTemplate() {
     '<button type="button" class="list-row" id="m-menu-theme"><span><strong>Tema Tampilan</strong></span><span class="badge b-nt" id="m-menu-thm-lbl">Terang</span></button>' +
     '</div></div></div>' +
     '<div class="modal-backdrop" id="m-sheet-cf-zoom"><div class="modal-sheet cf-zoom-sheet"><div class="ms-handle"></div>' +
-    '<div class="ms-head"><div><strong class="card-title">Kondisi Kas Realtime</strong><div style="font-size:0.72rem;color:var(--text-muted)" class="mono pv" id="m-cf-zoom-sub">Grafik lengkap · geser horizontal untuk detail</div></div>' +
-    '<button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-cf-zoom">✕ Tutup</button></div>' +
-    '<div class="ms-body" style="gap:8px">' +
+    '<div class="ms-head"><div><strong class="card-title">Kondisi Kas Realtime</strong><div style="font-size:0.72rem;color:var(--text-muted)" class="mono pv" id="m-cf-zoom-sub">Geser grafik ke kanan/kiri · ketuk titik untuk pin</div></div>' +
+    '<div style="display:flex;gap:5px;flex-shrink:0"><button type="button" class="btn btn-secondary btn-sm" id="m-cf-zoom-wide">🔍 Perlebar</button><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-cf-zoom">✕ Tutup</button></div></div>' +
+    '<div class="ms-body" style="gap:8px;padding:12px 12px 16px">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">' +
     '<div class="seg" role="group" aria-label="Rentang Grafik Zoom">' +
     '<button type="button" class="seg-btn" data-mzoom-range="w">Minggu</button>' +
@@ -21017,7 +21117,7 @@ function mobShellTemplate() {
     '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--accent)"></span>Saldo Nyata</span>' +
     '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--emerald)"></span>Proyeksi</span>' +
     '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--crimson)"></span>Defisit (&lt;0)</span></div></div>' +
-    '<div class="cf-zoom-stage" id="m-cf-zoom-stage"><div class="cf-zoom-scroll" id="m-cf-zoom-wrap"><svg id="m-svg-cf-zoom" viewBox="0 0 1060 250" style="min-width:620px;width:100%;height:auto;display:block;touch-action:none"></svg></div><div class="hud-tooltip" id="m-cf-zoom-tip"></div></div>' +
+    '<div class="cf-zoom-stage" id="m-cf-zoom-stage"><div class="cf-zoom-scroll" id="m-cf-zoom-wrap"><svg id="m-svg-cf-zoom" viewBox="0 0 920 340"></svg></div><div class="hud-tooltip" id="m-cf-zoom-tip"></div></div>' +
     '<div id="m-cf-zoom-insp" style="display:none;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border-radius:10px;background:var(--bg-subtle);font-size:0.74rem"></div>' +
     '</div></div></div>' +
     '<div class="modal-backdrop" id="m-sheet-periode"><div class="modal-sheet"><div class="ms-handle"></div>' +
@@ -21125,12 +21225,6 @@ function renderMobRincian() {
   if ($('m-rincian-saldo')) {
     $('m-rincian-saldo').textContent = rp(KB.bal);
     $('m-rincian-saldo').style.color = KB.bal < 0 ? '#FDA4AF' : '#FFFFFF';
-  }
-  var rpPill = $('m-runway-pill');
-  if (rpPill) {
-    if (!rw || rw.status === 'safe' || rw.status === 'ok') rpPill.textContent = '✓ Saldo Aman';
-    else if (rw.status === 'warning') rpPill.textContent = 'Defisit ' + fmtD(rw.date);
-    else rpPill.textContent = 'Saldo Minus';
   }
 
   // Ringkasan KPI Slider
@@ -21351,12 +21445,22 @@ function renderMobCashflowZoom() {
   var P = kasLinked(),
     bal = P ? kasBal(P).bal : (+S.saldo || 0);
   if ($('m-cf-zoom-sub')) $('m-cf-zoom-sub').textContent = 'Tahun ' + S.year + ' · Saldo saat ini ' + rp(bal);
+  svg.classList.toggle('is-zoom-wide', !!MOB_STATE.zoomWide);
+  if ($('m-cf-zoom-wide')) {
+    $('m-cf-zoom-wide').textContent = MOB_STATE.zoomWide ? '🔍 Normal' : '🔍 Perlebar';
+    $('m-cf-zoom-wide').classList.toggle('active', !!MOB_STATE.zoomWide);
+  }
   document.querySelectorAll('#m-sheet-cf-zoom [data-mzoom-range]').forEach(function (b) {
     b.classList.toggle('active', b.getAttribute('data-mzoom-range') === MOB_STATE.zoomRange);
   });
   if (typeof brRenderCashflowInto === 'function') {
     brRenderCashflowInto(svg, stage, tip, MOB_STATE.zoomRange, {
       prefix: 'mz-',
+      allowScroll: true,
+      svgW: 920,
+      svgH: 340,
+      fontSize: 13,
+      dotR: 5.5,
       skipInspector: true,
       getPin: function () { return MOB_STATE.zoomPin; },
       setPin: function (idx, pt) { MOB_STATE.zoomPin = idx; renderMobZoomInspector(pt); },
@@ -21538,6 +21642,32 @@ function renderMobRecentTx(P) {
     : '<div style="font-size:0.78rem;color:var(--text-muted);text-align:center;padding:8px">Belum ada transaksi kas.</div>';
 }
 
+function mobCatFilterIconHtml(cat) {
+  if (!cat || cat === 'all') {
+    return '<span class="cat-logo" style="width:18px;height:18px;border-radius:5px;background:var(--bg-subtle);color:var(--text-secondary);box-shadow:none"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>';
+  }
+  return mobCatLogo(cat, 18);
+}
+
+function mobSyncCatSelect() {
+  var sel = $('m-kas-flt-cat'),
+    valBox = $('m-kas-cat-val'),
+    menu = $('m-kas-cat-menu');
+  if (!sel || !valBox || !menu) return;
+  var curV = sel.value || 'all',
+    opts = Array.from(sel.options || []),
+    curOpt = opts.find(function (o) { return o.value === curV; }) || opts[0];
+  valBox.innerHTML = mobCatFilterIconHtml(curV) + '<span>' + esc(curOpt ? curOpt.textContent : 'Semua Kategori') + '</span>';
+  menu.innerHTML = opts.map(function (o) {
+    var active = o.value === curV;
+    return (
+      '<button type="button" class="mselect-opt' + (active ? ' active' : '') + '" role="option" aria-selected="' + active + '" data-mcatval="' + esc(o.value) + '">' +
+      '<span class="mselect-opt-main">' + mobCatFilterIconHtml(o.value) + '<span>' + esc(o.textContent) + '</span></span>' +
+      '<svg class="mselect-opt-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></button>'
+    );
+  }).join('');
+}
+
 function renderMobKas() {
   var P = kasLinked();
   if (!P) return;
@@ -21557,7 +21687,8 @@ function renderMobKas() {
   if (fltCat) {
     var prevV = fltCat.value || 'all';
     fltCat.innerHTML = '<option value="all">Semua Kategori</option>' + cats.map(function (c) { return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('');
-    fltCat.value = prevV;
+    fltCat.value = Array.from(fltCat.options).some(function (o) { return o.value === prevV; }) ? prevV : 'all';
+    mobSyncCatSelect();
   }
 
   var mDebtSel = $('m-kas-debt-kind');
@@ -21946,6 +22077,7 @@ function triggerMobPhoneBarNotif(force) {
     bn = $('m-os-notif');
   if (!bn) return;
   if (!due.length) {
+    if (!force) return;
     if ($('m-pon-title')) $('m-pon-title').textContent = 'Pengingat Tagihan Aktif';
     if ($('m-pon-body')) $('m-pon-body').textContent = 'Tidak ada tagihan jatuh tempo dalam ' + (MOB_STATE.notifHorizon || 7) + ' hari ke depan.';
     MOB_BANNER_DUE = null;
@@ -21968,6 +22100,14 @@ function renderMobSettings() {
   if ($('m-notif-dot')) $('m-notif-dot').style.display = due.length ? 'block' : 'none';
   if ($('m-rem-cnt-badge')) $('m-rem-cnt-badge').textContent = due.length + ' item';
   if ($('m-menu-cnt-rem')) $('m-menu-cnt-rem').textContent = due.length + ' tempo';
+  var permB = $('m-notif-perm-badge');
+  if (permB) {
+    var osPerm = typeof Notification !== 'undefined' && 'Notification' in window ? Notification.permission : 'unsupported';
+    if (!MOB_STATE.notifEnabled) { permB.textContent = 'Nonaktif'; permB.className = 'badge b-nt'; }
+    else if (osPerm === 'granted') { permB.textContent = 'OS & Bar Aktif'; permB.className = 'badge b-em'; }
+    else if (osPerm === 'denied') { permB.textContent = 'OS Diblokir'; permB.className = 'badge b-cr'; }
+    else { permB.textContent = 'Bar HP Aktif'; permB.className = 'badge b-am'; }
+  }
   if ($('m-set-rmh')) $('m-set-rmh').value = String(MOB_STATE.notifHorizon != null ? MOB_STATE.notifHorizon : (typeof remHz !== 'undefined' ? remHz : 7));
   var remBox = $('m-settings-rem-list');
   if (remBox) {
@@ -22117,6 +22257,33 @@ function bindMobileShellEvents(root) {
     if (!e.target.closest('.picker-wrap')) {
       root.querySelectorAll('.picker-popover.open').forEach(function (p) { p.classList.remove('open'); });
     }
+    if (!e.target.closest('.mselect')) {
+      root.querySelectorAll('.mselect.open').forEach(function (ms) {
+        ms.classList.remove('open');
+        var tr = ms.querySelector('.mselect-trigger');
+        if (tr) tr.setAttribute('aria-expanded', 'false');
+      });
+    }
+    var mcatTrig = e.target.closest('#m-kas-cat-trig');
+    if (mcatTrig) {
+      e.stopPropagation();
+      var msWrap = $('m-kas-cat-ms');
+      if (msWrap) {
+        var willOpen = !msWrap.classList.contains('open');
+        msWrap.classList.toggle('open', willOpen);
+        mcatTrig.setAttribute('aria-expanded', String(willOpen));
+      }
+      return;
+    }
+    var mcatOpt = e.target.closest('[data-mcatval]');
+    if (mcatOpt) {
+      var fltSel = $('m-kas-flt-cat'), msWrap2 = $('m-kas-cat-ms'), tr2 = $('m-kas-cat-trig');
+      if (fltSel) fltSel.value = mcatOpt.getAttribute('data-mcatval') || 'all';
+      if (msWrap2) msWrap2.classList.remove('open');
+      if (tr2) tr2.setAttribute('aria-expanded', 'false');
+      renderMobKas();
+      return;
+    }
     var mcalT = e.target.closest('[data-mcal-trig]');
     if (mcalT) {
       e.stopPropagation();
@@ -22159,6 +22326,7 @@ function bindMobileShellEvents(root) {
     }
     if (e.target.closest('#m-bar-notif-btn') || e.target.closest('#m-btn-test-notif') || e.target.closest('#m-pop-preview')) {
       triggerMobPhoneBarNotif(true);
+      if (e.target.closest('#m-btn-test-notif') && typeof requestNotifPermission === 'function') requestNotifPermission();
       return;
     }
     if (e.target.closest('#m-pon-close')) { if ($('m-os-notif')) $('m-os-notif').classList.remove('show'); return; }
@@ -22286,6 +22454,11 @@ function bindMobileShellEvents(root) {
     if (mzr) {
       MOB_STATE.zoomRange = mzr.getAttribute('data-mzoom-range');
       MOB_STATE.zoomPin = null;
+      renderMobCashflowZoom();
+      return;
+    }
+    if (e.target.closest('#m-cf-zoom-wide')) {
+      MOB_STATE.zoomWide = !MOB_STATE.zoomWide;
       renderMobCashflowZoom();
       return;
     }
@@ -22675,6 +22848,9 @@ function bindMobileShellEvents(root) {
       MOB_STATE.notifToday = !$('m-set-notif-today') || $('m-set-notif-today').checked;
       MOB_STATE.notifSoon = !$('m-set-notif-soon') || $('m-set-notif-soon').checked;
       MOB_STATE.notifLate = !$('m-set-notif-late') || $('m-set-notif-late').checked;
+      if (t.id === 'm-set-notif-enabled' && MOB_STATE.notifEnabled && typeof Notification !== 'undefined' && Notification.permission === 'default' && typeof requestNotifPermission === 'function') {
+        requestNotifPermission();
+      }
       renderMobSettings();
     } else if (t.hasAttribute && t.hasAttribute('data-mck-tog')) {
       var trc = mobActiveTrip(), c0 = trc && trc.ck.find(function (x) { return x.id === t.getAttribute('data-mck-tog'); });

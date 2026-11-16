@@ -64,8 +64,15 @@ const { boot } = require('./ui.js');
   $('m-cf-hit').dispatchEvent(new w.Event('touchend', { bubbles: true }));
   assert(!$('m-cf-tooltip').classList.contains('visible'), 'touchend menyembunyikan tooltip Arus Kas Mode HP');
   assert($('m-cf-strip').querySelector('.cf-strip-lbl'), 'strip keterangan memakai kelas ellipsis satu baris');
+  assert.strictEqual($('m-runway-pill'), null, 'keterangan pil Defisit di wallet-hero dihapus');
+  const whereRow = mobShell.querySelector('.where-filter-row');
+  assert(whereRow && whereRow.querySelector('[data-mwperiod]') && whereRow.querySelector('[data-mwdir]'), 'filter Minggu/Bulan/Tahun dan Keluar/Masuk berada pada satu baris .where-filter-row');
   click($('m-btn-expand-cf'));
   assert($('m-sheet-cf-zoom').classList.contains('open') && $('m-svg-cf-zoom').querySelector('.cf-node'), 'tombol Perbesar membuka popup grafik mode desktop');
+  assert.strictEqual($('m-svg-cf-zoom').style.touchAction, 'pan-x pan-y', 'grafik Perbesar mengizinkan slide jari horizontal (pan-x)');
+  assert.strictEqual($('m-svg-cf-zoom').getAttribute('viewBox'), '0 0 920 340', 'grafik Perbesar memakai rasio lebih tinggi agar besar dan jelas di HP');
+  click($('m-cf-zoom-wide'));
+  assert($('m-svg-cf-zoom').classList.contains('is-zoom-wide'), 'tombol Perlebar memperbesar lebar grafik');
   assert($('m-cf-zoom-stage') && $('m-cf-zoom-tip').parentElement === $('m-cf-zoom-stage'), 'tooltip zoom berada di stage luar agar tidak terpotong scroll kanan');
   click($('m-sheet-cf-zoom').querySelector('[data-mclose="m-sheet-cf-zoom"]'));
   assert(!$('m-sheet-cf-zoom').classList.contains('open'), 'popup grafik Perbesar dapat ditutup');
@@ -132,6 +139,25 @@ const { boot } = require('./ui.js');
   fire($('m-kas-form'), 'submit');
   assert($('m-debt-list').textContent.includes('200rb') || $('m-debt-list').textContent.includes('200.000'), 'sisa piutang Mode APK otomatis berkurang menjadi 200rb');
   assert($('m-kas-hist-list').textContent.includes('Sisa Rp 200.000'), 'riwayat kas Mode APK menampilkan Sisa Rp 200.000');
+  // Uji dropdown kategori Riwayat Transaksi menampilkan ikon .cat-logo & bisa memilih kategori
+  assert($('m-kas-cat-val').querySelector('.cat-logo'), 'trigger filter kategori memuat ikon .cat-logo');
+  const mOptMak = $('m-kas-cat-menu').querySelector('[data-mcatval="Transport"]');
+  assert(mOptMak && mOptMak.querySelector('.cat-logo'), 'opsi dropdown kategori Mode APK memuat ikon kategori');
+  click($('m-kas-cat-trig'));
+  assert($('m-kas-cat-ms').classList.contains('open'), 'dropdown kategori Mode APK terbuka');
+  click(mOptMak);
+  assert.strictEqual($('m-kas-flt-cat').value, 'Transport', 'memilih opsi dropdown ikon memperbarui filter kategori');
+  click($('m-kas-flt-reset'));
+  assert.strictEqual($('m-kas-flt-cat').value, 'all', 'reset filter mengembalikan Semua Kategori');
+
+  // Uji checkDueNotifications otomatis memicu bar notif HP saat ada tagihan jatuh tempo hari ini
+  w.S.items.push({ id: 902, name: 'Tagihan Hari Ini', price: 99000, n: 1, unit: 'bulan', start: w.todayISO(), end: '', cnt: 0, cat: 'Tagihan rutin', ch: [] });
+  $('m-os-notif').classList.remove('show');
+  try { w.localStorage.removeItem('rk_last_bill_notif_sig'); } catch (e) {}
+  w.__rkLastNotifSig = '';
+  w.checkDueNotifications(false);
+  assert($('m-os-notif').classList.contains('show'), 'checkDueNotifications otomatis menampilkan #m-os-notif saat ada tagihan jatuh tempo hari ini');
+  assert($('m-pon-body').textContent.includes('Tagihan Hari Ini'), 'isi notif otomatis menyebut nama tagihan yang jatuh tempo hari ini');
 
   // 5. Menu -> Perjalanan: buat perjalanan baru, tambah itinerary, booking, checklist, & catatan
   click($('m-btn-more'));
