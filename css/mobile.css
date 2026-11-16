@@ -1174,6 +1174,27 @@ body[data-shell="mobile-app"] #mobile-app-shell .m-scen-card.active {
 body[data-shell="mobile-app"] #mobile-app-shell .m-scen-card.active strong { color: var(--accent-ink); }
 body[data-shell="mobile-app"] #mobile-app-shell .m-scen-card.full-span { grid-column: 1 / -1; }
 
+body[data-shell="mobile-app"] #mobile-app-shell .m-notif-activate-btn {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.35;
+  padding: 9px 12px;
+  border: 1px solid var(--amber-border);
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 0.78rem;
+  font-weight: 800;
+  transition: all 160ms ease;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-notif-activate-btn.is-active {
+  border-color: var(--emerald-border);
+  background: var(--emerald-soft);
+  color: var(--emerald);
+  box-shadow: 0 0 0 2px rgba(13, 122, 82, 0.14);
+}
+
 /* Compact Mobile Report Table & Switch */
 body[data-shell="mobile-app"] #mobile-app-shell .rep-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
 body[data-shell="mobile-app"] #mobile-app-shell .rep-table th { text-align: left; padding: 5px 6px; color: var(--text-muted); font-size: 0.65rem; border-bottom: 1px solid var(--border-strong); text-transform: uppercase; }

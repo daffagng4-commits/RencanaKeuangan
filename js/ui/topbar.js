@@ -31,20 +31,22 @@ function bindPrivacy() {
 
 /** Tombol notifikasi menyala bila izin sudah diberikan. */
 function syncNotifBtn() {
-  var p = 'Notification' in window ? Notification.permission : 'default';
+  var hasN = typeof Notification !== 'undefined' && 'Notification' in window && !!Notification;
+  var p = hasN ? Notification.permission : 'default';
+  var isOn = p === 'granted' && !(typeof rkIsNotifReset === 'function' && rkIsNotifReset());
   var b = document.getElementById('btn-notif');
-  if (b && 'Notification' in window) {
-    b.classList.toggle('on', p === 'granted');
-    b.title = p === 'granted' ? 'Pengingat tagihan aktif (ketuk untuk periksa sekarang)'
+  if (b && hasN) {
+    b.classList.toggle('on', isOn);
+    b.title = isOn ? 'Pengingat tagihan aktif (ketuk untuk periksa sekarang)'
       : p === 'denied' ? 'Notifikasi diblokir di browser — ubah di setelan situs'
       : 'Aktifkan pengingat notifikasi tagihan';
     b.setAttribute('aria-label', b.title);
   }
   var dp = document.getElementById('desk-push-perm');
-  if (dp && 'Notification' in window) {
-    dp.textContent = p === 'granted' ? '✓ Notif OS Aktif' : p === 'denied' ? 'Notif OS Diblokir' : 'Aktifkan Notif OS';
-    dp.classList.toggle('btn-emerald', p === 'granted');
-    dp.classList.toggle('btn-secondary', p !== 'granted');
+  if (dp && hasN) {
+    dp.textContent = isOn ? '✓ Notif OS Aktif' : p === 'denied' ? 'Notif OS Diblokir' : 'Aktifkan Notif OS';
+    dp.classList.toggle('btn-emerald', isOn);
+    dp.classList.toggle('btn-secondary', !isOn);
   }
 }
 

@@ -480,6 +480,8 @@ function mobShellTemplate() {
     '<div class="card" id="m-card-settings-acct"><div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Akun &amp; Sinkron Cloud</h2><div style="font-size:0.71rem;color:var(--text-muted)" id="m-set-acct-status">● Mode Lokal</div></div><button type="button" class="btn btn-primary btn-sm" id="m-set-open-acct">Kelola</button></div></div>' +
     '<div class="card" id="m-card-settings-notif"><div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Pengaturan Notifikasi</h2><div style="font-size:0.71rem;color:var(--text-muted)">Pengingat otomatis tagihan jatuh tempo</div></div><span class="badge b-em" id="m-notif-perm-badge">Aktif</span></div>' +
     '<div class="stack" style="gap:8px">' +
+    '<button type="button" class="btn m-notif-activate-btn" id="m-btn-notif-activate">🔔 Pencet, untuk aktifkan notifikasi</button>' +
+    '<div id="m-notif-ios-hint" style="display:none;font-size:0.71rem;line-height:1.38;color:var(--text-secondary);padding:7px 9px;border-radius:9px;background:var(--bg-subtle)"></div>' +
     '<label class="switch-row"><span><strong>Pengingat Bar HP</strong></span><input type="checkbox" id="m-set-notif-enabled" checked /></label>' +
     '<div class="field"><label class="field-label" for="m-set-rmh">Tampilkan yang jatuh tempo dalam</label><select class="input" id="m-set-rmh"><option value="3">3 hari ke depan (H-3)</option><option value="7" selected>7 hari ke depan (H-7)</option><option value="14">14 hari ke depan</option><option value="30">30 hari ke depan</option></select></div>' +
     '<label class="switch-row"><span>Saat tepat jatuh tempo (Hari-H)</span><input type="checkbox" id="m-set-notif-today" checked /></label>' +
@@ -1549,12 +1551,17 @@ function syncMobNotifDot() {
   if ($('m-notif-dot')) $('m-notif-dot').style.display = vis.length ? 'block' : 'none';
 }
 
+function isMobNotifOsActive() {
+  if (typeof rkCanOsNotif === 'function') return rkCanOsNotif();
+  var isReset = typeof rkIsNotifReset === 'function' && rkIsNotifReset();
+  return !isReset && typeof Notification !== 'undefined' && 'Notification' in window && !!Notification && Notification.permission === 'granted';
+}
+
 function renderMobNotifPopover() {
   var cta = $('m-pop-os-cta'),
     pl = $('m-notif-pop-list');
   if (cta) {
-    var osPerm = typeof Notification !== 'undefined' && 'Notification' in window ? Notification.permission : 'default';
-    cta.innerHTML = osPerm !== 'granted'
+    cta.innerHTML = !isMobNotifOsActive()
       ? '<button type="button" class="btn m-notif-enable-btn" id="m-pop-enable-os">🔔 Pencet, untuk aktifkan notifikasi</button>'
       : '';
   }
@@ -1572,7 +1579,7 @@ function renderMobNotifPopover() {
 }
 
 function triggerMobPhoneBarNotif(force) {
-  if (!MOB_STATE.notifEnabled && !force) return;
+  if ((!MOB_STATE.notifEnabled || (typeof rkIsNotifReset === 'function' && rkIsNotifReset())) && !force) return;
   var due = getMobVisibleDueList(),
     bn = $('m-os-notif');
   if (!bn) return;
@@ -1593,7 +1600,7 @@ function triggerMobPhoneBarNotif(force) {
   bn.classList.add('show');
   clearTimeout(mobNotifTimer);
   mobNotifTimer = setTimeout(function () { bn.classList.remove('show'); }, 7500);
-  if (force && due.length && typeof triggerSystemNotification === 'function' && typeof Notification !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+  if (force && due.length && typeof triggerSystemNotification === 'function' && isMobNotifOsActive()) {
     var osTtl = $('m-pon-title') ? $('m-pon-title').textContent : 'Pengingat Tagihan Jatuh Tempo';
     var osBody = $('m-pon-body') ? $('m-pon-body').textContent : '';
     triggerSystemNotification(osTtl, osBody, 'bill-due-' + todayISO());
@@ -1601,15 +1608,41 @@ function triggerMobPhoneBarNotif(force) {
 }
 
 function renderMobSettings() {
-  var due = getMobDueList();
+  if (typeof rkIsNotifReset === 'function' && rkIsNotifReset()) MOB_STATE.notifEnabled = false;
+  var due = getMobDueList(),
+    osActive = isMobNotifOsActive(),
+    osPerm = typeof Notification !== 'undefined' && 'Notification' in window && Notification ? Notification.permission : 'unsupported',
+    needsA2HS = typeof rkIsIosNeedsA2HS === 'function' && rkIsIosNeedsA2HS();
   syncMobNotifDot();
+  if ($('m-set-notif-enabled')) $('m-set-notif-enabled').checked = !!MOB_STATE.notifEnabled;
   if ($('m-rem-cnt-badge')) $('m-rem-cnt-badge').textContent = due.length + ' item';
   if ($('m-menu-cnt-rem')) $('m-menu-cnt-rem').textContent = due.length + ' tempo';
+  var actBtn = $('m-btn-notif-activate');
+  if (actBtn) {
+    actBtn.classList.toggle('is-active', osActive);
+    actBtn.textContent = osActive
+      ? '✅ Notifikasi, sudah aktif. klik untuk reset notif'
+      : '🔔 Pencet, untuk aktifkan notifikasi';
+  }
+  var iosHint = $('m-notif-ios-hint');
+  if (iosHint) {
+    if (needsA2HS) {
+      iosHint.style.display = 'block';
+      iosHint.textContent = 'iOS / iPhone (16.4+): ketuk Bagikan (ikon kotak panah atas) → pilih "Tambah ke Layar Utama", buka dari ikon aplikasi, lalu pencet tombol di atas agar notifikasi OS & Lock Screen aktif.';
+    } else if (osPerm === 'denied') {
+      iosHint.style.display = 'block';
+      iosHint.textContent = (typeof rkIsIosDevice === 'function' && rkIsIosDevice())
+        ? 'Izin notifikasi iOS diblokir. Buka Pengaturan iOS → Pemberitahuan → pilih Rencana Keuangan → nyalakan Izinkan Pemberitahuan.'
+        : 'Izin notifikasi diblokir di browser. Buka Setelan Situs / Info Aplikasi lalu pilih Izinkan Notifikasi.';
+    } else {
+      iosHint.style.display = 'none';
+      iosHint.textContent = '';
+    }
+  }
   var permB = $('m-notif-perm-badge');
   if (permB) {
-    var osPerm = typeof Notification !== 'undefined' && 'Notification' in window ? Notification.permission : 'unsupported';
-    if (!MOB_STATE.notifEnabled) { permB.textContent = 'Nonaktif'; permB.className = 'badge b-nt'; }
-    else if (osPerm === 'granted') { permB.textContent = 'OS & Bar Aktif'; permB.className = 'badge b-em'; }
+    if (!MOB_STATE.notifEnabled && !osActive) { permB.textContent = 'Nonaktif'; permB.className = 'badge b-nt'; }
+    else if (osActive) { permB.textContent = 'OS & Bar Aktif'; permB.className = 'badge b-em'; }
     else if (osPerm === 'denied') { permB.textContent = 'OS Diblokir'; permB.className = 'badge b-cr'; }
     else { permB.textContent = 'Bar HP Aktif'; permB.className = 'badge b-am'; }
   }
@@ -1928,6 +1961,22 @@ function bindMobileShellEvents(root) {
     if (e.target.closest('#m-bar-theme-btn') || e.target.closest('#m-menu-theme')) {
       if ($('thm')) $('thm').click();
       renderMobMetaMenus();
+      return;
+    }
+    if (e.target.closest('#m-btn-notif-activate')) {
+      if (isMobNotifOsActive()) {
+        if (typeof rkSetNotifReset === 'function') rkSetNotifReset(true);
+        MOB_STATE.notifEnabled = false;
+        if (typeof syncNotifBtn === 'function') syncNotifBtn();
+        renderMobSettings();
+        renderMobNotifPopover();
+        showMobToast('Izin notifikasi direset.');
+      } else {
+        if (typeof rkSetNotifReset === 'function') rkSetNotifReset(false);
+        MOB_STATE.notifEnabled = true;
+        if (typeof requestNotifPermission === 'function') requestNotifPermission();
+        else { renderMobSettings(); renderMobNotifPopover(); }
+      }
       return;
     }
     if (e.target.closest('#m-bar-notif-btn') || e.target.closest('#m-btn-test-notif') || e.target.closest('#m-pop-preview')) {
@@ -2463,10 +2512,14 @@ function bindMobileShellEvents(root) {
       MOB_STATE.notifToday = !$('m-set-notif-today') || $('m-set-notif-today').checked;
       MOB_STATE.notifSoon = !$('m-set-notif-soon') || $('m-set-notif-soon').checked;
       MOB_STATE.notifLate = !$('m-set-notif-late') || $('m-set-notif-late').checked;
-      if (t.id === 'm-set-notif-enabled' && MOB_STATE.notifEnabled && typeof Notification !== 'undefined' && Notification.permission === 'default' && typeof requestNotifPermission === 'function') {
-        requestNotifPermission();
+      if (t.id === 'm-set-notif-enabled') {
+        if (typeof rkSetNotifReset === 'function') rkSetNotifReset(!MOB_STATE.notifEnabled);
+        if (MOB_STATE.notifEnabled && typeof Notification !== 'undefined' && Notification && Notification.permission === 'default' && typeof requestNotifPermission === 'function') {
+          requestNotifPermission();
+        }
       }
       renderMobSettings();
+      renderMobNotifPopover();
     } else if (t.hasAttribute && t.hasAttribute('data-mck-tog')) {
       var trc = mobActiveTrip(), c0 = trc && trc.ck.find(function (x) { return x.id === t.getAttribute('data-mck-tog'); });
       if (c0) { c0.done = t.checked; save(); syncUI(); }

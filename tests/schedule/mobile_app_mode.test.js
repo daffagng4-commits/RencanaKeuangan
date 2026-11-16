@@ -197,6 +197,25 @@ const { boot } = require('./ui.js');
   assert.strictEqual($('m-notif-dot').style.display, 'none', 'tanda merah #m-notif-dot hilang setelah semua notif dihapus');
   click($('m-pop-enable-os'));
   assert(!$('m-notif-popover').classList.contains('open') && $('m-tab-settings').classList.contains('active'), 'klik Pencet, untuk aktifkan notifikasi langsung menuju Pengaturan Notifikasi APK');
+  // Uji tombol khusus aktivasi & reset notifikasi di Pengaturan + dukungan iOS requestPermission callback/promise
+  const actBtn = $('m-btn-notif-activate');
+  assert(actBtn && actBtn.textContent.includes('Pencet, untuk aktifkan notifikasi'), 'button khusus di Pengaturan Notifikasi memuat Pencet, untuk aktifkan notifikasi');
+  const prevNotif = w.Notification;
+  function FakeNotif() {}
+  FakeNotif.permission = 'default';
+  FakeNotif.requestPermission = (cb) => { FakeNotif.permission = 'granted'; if (cb) cb('granted'); return Promise.resolve('granted'); };
+  w.Notification = FakeNotif;
+  click(actBtn);
+  await new Promise((r) => setTimeout(r, 15));
+  assert(actBtn.classList.contains('is-active') && actBtn.textContent.includes('Notifikasi, sudah aktif. klik untuk reset notif'), 'button berubah ke status aktif & ket klik untuk reset notif');
+  assert.strictEqual($('m-notif-perm-badge').textContent, 'OS & Bar Aktif', 'badge berubah menjadi OS & Bar Aktif');
+  click(actBtn);
+  assert(!actBtn.classList.contains('is-active') && actBtn.textContent.includes('Pencet, untuk aktifkan notifikasi'), 'klik saat aktif mereset izin notif kembali ke awal');
+  assert.strictEqual(w.rkIsNotifReset(), true, 'rkIsNotifReset menjadi true setelah reset notif');
+  assert.strictEqual($('m-set-notif-enabled').checked, false, 'switch Pengingat Bar HP ikut dimatikan saat reset notif');
+  w.rkSetNotifReset(false);
+  if (prevNotif === undefined) delete w.Notification;
+  else w.Notification = prevNotif;
   click(bnav.querySelector('[data-mtab="kas"]'));
 
   // 5. Menu -> Perjalanan: buat perjalanan baru, tambah itinerary, booking, checklist, & catatan

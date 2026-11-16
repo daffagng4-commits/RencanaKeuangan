@@ -3814,6 +3814,27 @@ body[data-shell="mobile-app"] #mobile-app-shell .m-scen-card.active {
 body[data-shell="mobile-app"] #mobile-app-shell .m-scen-card.active strong { color: var(--accent-ink); }
 body[data-shell="mobile-app"] #mobile-app-shell .m-scen-card.full-span { grid-column: 1 / -1; }
 
+body[data-shell="mobile-app"] #mobile-app-shell .m-notif-activate-btn {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.35;
+  padding: 9px 12px;
+  border: 1px solid var(--amber-border);
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 0.78rem;
+  font-weight: 800;
+  transition: all 160ms ease;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-notif-activate-btn.is-active {
+  border-color: var(--emerald-border);
+  background: var(--emerald-soft);
+  color: var(--emerald);
+  box-shadow: 0 0 0 2px rgba(13, 122, 82, 0.14);
+}
+
 /* Compact Mobile Report Table & Switch */
 body[data-shell="mobile-app"] #mobile-app-shell .rep-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
 body[data-shell="mobile-app"] #mobile-app-shell .rep-table th { text-align: left; padding: 5px 6px; color: var(--text-muted); font-size: 0.65rem; border-bottom: 1px solid var(--border-strong); text-transform: uppercase; }
@@ -15997,9 +16018,77 @@ function bindXl() {
   };
 }
 
-/** Kirim notifikasi sistem baik via ServiceWorkerRegistration (muncul di Laci Notifikasi & Lock Screen Android) maupun Notification API browser. */
+function rkIsIosDevice() {
+  try {
+    var ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+    return /iphone|ipad|ipod/i.test(ua) || (typeof navigator !== 'undefined' && navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  } catch (e) { return false; }
+}
+
+function rkIsStandalonePwa() {
+  try {
+    return (typeof matchMedia !== 'undefined' && matchMedia('(display-mode: standalone)').matches) || !!(typeof navigator !== 'undefined' && navigator.standalone === true);
+  } catch (e) { return false; }
+}
+
+function rkIsIosNeedsA2HS() {
+  return rkIsIosDevice() && !rkIsStandalonePwa() && (typeof Notification === 'undefined' || !('Notification' in window) || !Notification);
+}
+
+function rkIsNotifReset() {
+  try {
+    if (typeof window !== 'undefined' && window.__rkNotifReset != null) return !!window.__rkNotifReset;
+    if (typeof localStorage !== 'undefined') return localStorage.getItem('rk-notif-reset') === '1';
+  } catch (e) {}
+  return false;
+}
+
+function rkSetNotifReset(reset) {
+  var val = !!reset;
+  try {
+    if (typeof window !== 'undefined') window.__rkNotifReset = val;
+    if (typeof localStorage !== 'undefined') {
+      if (val) localStorage.setItem('rk-notif-reset', '1');
+      else localStorage.removeItem('rk-notif-reset');
+      if (val) {
+        localStorage.removeItem('rk_last_bill_notif_sig');
+        localStorage.removeItem('rk_last_bill_notif_sig_browser');
+        localStorage.removeItem('rk_last_bill_notif_sig_mobile-app');
+        localStorage.removeItem('last_bill_notif_date');
+      }
+    }
+    if (typeof window !== 'undefined' && val) {
+      window.__rkLastNotifSig = '';
+      window.__rkLastNotifSig_browser = '';
+      window.__rkLastNotifSig_mobile_app = '';
+      window['__rkLastNotifSig_mobile-app'] = '';
+    }
+  } catch (e) {}
+  if (typeof MOB_STATE !== 'undefined' && MOB_STATE) {
+    MOB_STATE.notifEnabled = !val;
+  }
+  if (val && typeof document !== 'undefined') {
+    var osBanner = $('m-os-notif');
+    if (osBanner) osBanner.classList.remove('show');
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && navigator.serviceWorker.ready) {
+      navigator.serviceWorker.ready.then(function (reg) {
+        if (reg && reg.getNotifications) {
+          return reg.getNotifications().then(function (list) {
+            list.forEach(function (n) { try { n.close(); } catch (e) {} });
+          });
+        }
+      }).catch(function () {});
+    }
+  }
+}
+
+function rkCanOsNotif() {
+  return typeof Notification !== 'undefined' && 'Notification' in window && !!Notification && Notification.permission === 'granted' && !rkIsNotifReset();
+}
+
+/** Kirim notifikasi sistem baik via ServiceWorkerRegistration (Android & iOS 16.4+ PWA) maupun Notification API browser. */
 function triggerSystemNotification(title, body, tag) {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (!rkCanOsNotif()) return;
   var opt = {
     body: body,
     tag: tag || 'bill-due-' + Date.now(),
@@ -16011,17 +16100,23 @@ function triggerSystemNotification(title, body, tag) {
     timestamp: Date.now(),
     data: { url: './?mode=app' },
   };
+  var minOpt = { body: body, tag: opt.tag, icon: './icon-192.png', data: opt.data };
+  var fallbackNew = function () {
+    try { new Notification(title, opt); } catch (e1) {
+      try { new Notification(title, minOpt); } catch (e2) {}
+    }
+  };
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then(function (reg) {
       if (reg && reg.showNotification) {
-        return reg.showNotification(title, opt);
+        return reg.showNotification(title, opt).catch(function () {
+          return reg.showNotification(title, minOpt);
+        });
       }
-      try { new Notification(title, opt); } catch (e) {}
-    }).catch(function () {
-      try { new Notification(title, opt); } catch (e) {}
-    });
+      fallbackNew();
+    }).catch(fallbackNew);
   } else {
-    try { new Notification(title, opt); } catch (e) {}
+    fallbackNew();
   }
 }
 
@@ -16044,7 +16139,7 @@ function checkDueNotifications(force) {
   });
 
   if (!dueList.length) {
-    if (force && 'Notification' in window && Notification.permission === 'granted') {
+    if (force && rkCanOsNotif()) {
       triggerSystemNotification(
         'Pengingat Tagihan Aktif',
         'Tidak ada tagihan jatuh tempo dalam ' + hz + ' hari ke depan.',
@@ -16054,6 +16149,7 @@ function checkDueNotifications(force) {
     return;
   }
 
+  if (rkIsNotifReset() && !force) return;
   var shellKind = typeof getShellMode === 'function' ? getShellMode() : 'browser';
   if (shellKind === 'mobile-app' && typeof MOB_STATE !== 'undefined' && MOB_STATE && MOB_STATE.notifEnabled === false && !force) {
     return;
@@ -16076,7 +16172,7 @@ function checkDueNotifications(force) {
   var body = titles.join('\n');
   if (dueList.length > 3) body += '\n+' + (dueList.length - 3) + ' tagihan lainnya';
 
-  var canOsNotif = typeof Notification !== 'undefined' && 'Notification' in window && Notification.permission === 'granted';
+  var canOsNotif = rkCanOsNotif();
   if (canOsNotif) {
     triggerSystemNotification(
       'Pengingat Tagihan Jatuh Tempo (' + dueList.length + ')',
@@ -16104,31 +16200,59 @@ function checkDueNotifications(force) {
 }
 
 function requestNotifPermission() {
-  if (!('Notification' in window)) {
+  rkSetNotifReset(false);
+  if (rkIsIosNeedsA2HS()) {
+    toast('Di iPhone/iPad (iOS 16.4+), ketuk Bagikan (Share) → "Tambah ke Layar Utama", lalu buka dari ikon aplikasi untuk mengaktifkan notifikasi OS.');
+    if (typeof syncNotifBtn === 'function') syncNotifBtn();
+    if (typeof renderMobSettings === 'function') renderMobSettings();
+    if (typeof renderMobNotifPopover === 'function') renderMobNotifPopover();
+    return;
+  }
+  if (typeof Notification === 'undefined' || !('Notification' in window) || !Notification) {
     toast('Browser ini belum mendukung fitur Notifikasi Web.');
+    if (typeof renderMobSettings === 'function') renderMobSettings();
+    if (typeof renderMobNotifPopover === 'function') renderMobNotifPopover();
     return;
   }
   if (Notification.permission === 'granted') {
-    toast('Memeriksa pengingat tagihan...');
+    toast('Notifikasi aktif! Memeriksa pengingat tagihan...');
+    if (typeof syncNotifBtn === 'function') syncNotifBtn();
     checkDueNotifications(true);
     if (typeof renderMobSettings === 'function') renderMobSettings();
+    if (typeof renderMobNotifPopover === 'function') renderMobNotifPopover();
     return;
   }
   if (Notification.permission === 'denied') {
-    toast('Izin notifikasi diblokir di browser. Buka setelan browser untuk mengizinkan.');
+    toast(
+      rkIsIosDevice()
+        ? 'Izin notifikasi iOS diblokir. Buka Pengaturan iOS → Pemberitahuan → pilih Rencana Keuangan lalu nyalakan Izinkan.'
+        : 'Izin notifikasi diblokir di browser. Buka setelan browser untuk mengizinkan.'
+    );
+    if (typeof syncNotifBtn === 'function') syncNotifBtn();
     if (typeof renderMobSettings === 'function') renderMobSettings();
+    if (typeof renderMobNotifPopover === 'function') renderMobNotifPopover();
     return;
   }
-  Notification.requestPermission().then(function (perm) {
-    syncNotifBtn();
+  var handled = false;
+  var onPerm = function (perm) {
+    if (handled) return;
+    handled = true;
+    if (typeof syncNotifBtn === 'function') syncNotifBtn();
     if (typeof renderMobSettings === 'function') renderMobSettings();
+    if (typeof renderMobNotifPopover === 'function') renderMobNotifPopover();
     if (perm === 'granted') {
       toast('Notifikasi aktif! Memeriksa tagihan...');
       checkDueNotifications(true);
     } else {
       toast('Izin notifikasi tidak diberikan.');
     }
-  });
+  };
+  try {
+    var req = Notification.requestPermission(onPerm);
+    if (req && typeof req.then === 'function') req.then(onPerm);
+  } catch (e) {
+    toast('Gagal meminta izin notifikasi.');
+  }
 }
 
 /** PWA: daftar service worker (hanya di https/http), tombol "Pasang aplikasi", dan auto check tagihan. */
@@ -17517,20 +17641,22 @@ function bindPrivacy() {
 
 /** Tombol notifikasi menyala bila izin sudah diberikan. */
 function syncNotifBtn() {
-  var p = 'Notification' in window ? Notification.permission : 'default';
+  var hasN = typeof Notification !== 'undefined' && 'Notification' in window && !!Notification;
+  var p = hasN ? Notification.permission : 'default';
+  var isOn = p === 'granted' && !(typeof rkIsNotifReset === 'function' && rkIsNotifReset());
   var b = document.getElementById('btn-notif');
-  if (b && 'Notification' in window) {
-    b.classList.toggle('on', p === 'granted');
-    b.title = p === 'granted' ? 'Pengingat tagihan aktif (ketuk untuk periksa sekarang)'
+  if (b && hasN) {
+    b.classList.toggle('on', isOn);
+    b.title = isOn ? 'Pengingat tagihan aktif (ketuk untuk periksa sekarang)'
       : p === 'denied' ? 'Notifikasi diblokir di browser — ubah di setelan situs'
       : 'Aktifkan pengingat notifikasi tagihan';
     b.setAttribute('aria-label', b.title);
   }
   var dp = document.getElementById('desk-push-perm');
-  if (dp && 'Notification' in window) {
-    dp.textContent = p === 'granted' ? '✓ Notif OS Aktif' : p === 'denied' ? 'Notif OS Diblokir' : 'Aktifkan Notif OS';
-    dp.classList.toggle('btn-emerald', p === 'granted');
-    dp.classList.toggle('btn-secondary', p !== 'granted');
+  if (dp && hasN) {
+    dp.textContent = isOn ? '✓ Notif OS Aktif' : p === 'denied' ? 'Notif OS Diblokir' : 'Aktifkan Notif OS';
+    dp.classList.toggle('btn-emerald', isOn);
+    dp.classList.toggle('btn-secondary', !isOn);
   }
 }
 
@@ -21161,6 +21287,8 @@ function mobShellTemplate() {
     '<div class="card" id="m-card-settings-acct"><div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Akun &amp; Sinkron Cloud</h2><div style="font-size:0.71rem;color:var(--text-muted)" id="m-set-acct-status">● Mode Lokal</div></div><button type="button" class="btn btn-primary btn-sm" id="m-set-open-acct">Kelola</button></div></div>' +
     '<div class="card" id="m-card-settings-notif"><div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Pengaturan Notifikasi</h2><div style="font-size:0.71rem;color:var(--text-muted)">Pengingat otomatis tagihan jatuh tempo</div></div><span class="badge b-em" id="m-notif-perm-badge">Aktif</span></div>' +
     '<div class="stack" style="gap:8px">' +
+    '<button type="button" class="btn m-notif-activate-btn" id="m-btn-notif-activate">🔔 Pencet, untuk aktifkan notifikasi</button>' +
+    '<div id="m-notif-ios-hint" style="display:none;font-size:0.71rem;line-height:1.38;color:var(--text-secondary);padding:7px 9px;border-radius:9px;background:var(--bg-subtle)"></div>' +
     '<label class="switch-row"><span><strong>Pengingat Bar HP</strong></span><input type="checkbox" id="m-set-notif-enabled" checked /></label>' +
     '<div class="field"><label class="field-label" for="m-set-rmh">Tampilkan yang jatuh tempo dalam</label><select class="input" id="m-set-rmh"><option value="3">3 hari ke depan (H-3)</option><option value="7" selected>7 hari ke depan (H-7)</option><option value="14">14 hari ke depan</option><option value="30">30 hari ke depan</option></select></div>' +
     '<label class="switch-row"><span>Saat tepat jatuh tempo (Hari-H)</span><input type="checkbox" id="m-set-notif-today" checked /></label>' +
@@ -22230,12 +22358,17 @@ function syncMobNotifDot() {
   if ($('m-notif-dot')) $('m-notif-dot').style.display = vis.length ? 'block' : 'none';
 }
 
+function isMobNotifOsActive() {
+  if (typeof rkCanOsNotif === 'function') return rkCanOsNotif();
+  var isReset = typeof rkIsNotifReset === 'function' && rkIsNotifReset();
+  return !isReset && typeof Notification !== 'undefined' && 'Notification' in window && !!Notification && Notification.permission === 'granted';
+}
+
 function renderMobNotifPopover() {
   var cta = $('m-pop-os-cta'),
     pl = $('m-notif-pop-list');
   if (cta) {
-    var osPerm = typeof Notification !== 'undefined' && 'Notification' in window ? Notification.permission : 'default';
-    cta.innerHTML = osPerm !== 'granted'
+    cta.innerHTML = !isMobNotifOsActive()
       ? '<button type="button" class="btn m-notif-enable-btn" id="m-pop-enable-os">🔔 Pencet, untuk aktifkan notifikasi</button>'
       : '';
   }
@@ -22253,7 +22386,7 @@ function renderMobNotifPopover() {
 }
 
 function triggerMobPhoneBarNotif(force) {
-  if (!MOB_STATE.notifEnabled && !force) return;
+  if ((!MOB_STATE.notifEnabled || (typeof rkIsNotifReset === 'function' && rkIsNotifReset())) && !force) return;
   var due = getMobVisibleDueList(),
     bn = $('m-os-notif');
   if (!bn) return;
@@ -22274,7 +22407,7 @@ function triggerMobPhoneBarNotif(force) {
   bn.classList.add('show');
   clearTimeout(mobNotifTimer);
   mobNotifTimer = setTimeout(function () { bn.classList.remove('show'); }, 7500);
-  if (force && due.length && typeof triggerSystemNotification === 'function' && typeof Notification !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+  if (force && due.length && typeof triggerSystemNotification === 'function' && isMobNotifOsActive()) {
     var osTtl = $('m-pon-title') ? $('m-pon-title').textContent : 'Pengingat Tagihan Jatuh Tempo';
     var osBody = $('m-pon-body') ? $('m-pon-body').textContent : '';
     triggerSystemNotification(osTtl, osBody, 'bill-due-' + todayISO());
@@ -22282,15 +22415,41 @@ function triggerMobPhoneBarNotif(force) {
 }
 
 function renderMobSettings() {
-  var due = getMobDueList();
+  if (typeof rkIsNotifReset === 'function' && rkIsNotifReset()) MOB_STATE.notifEnabled = false;
+  var due = getMobDueList(),
+    osActive = isMobNotifOsActive(),
+    osPerm = typeof Notification !== 'undefined' && 'Notification' in window && Notification ? Notification.permission : 'unsupported',
+    needsA2HS = typeof rkIsIosNeedsA2HS === 'function' && rkIsIosNeedsA2HS();
   syncMobNotifDot();
+  if ($('m-set-notif-enabled')) $('m-set-notif-enabled').checked = !!MOB_STATE.notifEnabled;
   if ($('m-rem-cnt-badge')) $('m-rem-cnt-badge').textContent = due.length + ' item';
   if ($('m-menu-cnt-rem')) $('m-menu-cnt-rem').textContent = due.length + ' tempo';
+  var actBtn = $('m-btn-notif-activate');
+  if (actBtn) {
+    actBtn.classList.toggle('is-active', osActive);
+    actBtn.textContent = osActive
+      ? '✅ Notifikasi, sudah aktif. klik untuk reset notif'
+      : '🔔 Pencet, untuk aktifkan notifikasi';
+  }
+  var iosHint = $('m-notif-ios-hint');
+  if (iosHint) {
+    if (needsA2HS) {
+      iosHint.style.display = 'block';
+      iosHint.textContent = 'iOS / iPhone (16.4+): ketuk Bagikan (ikon kotak panah atas) → pilih "Tambah ke Layar Utama", buka dari ikon aplikasi, lalu pencet tombol di atas agar notifikasi OS & Lock Screen aktif.';
+    } else if (osPerm === 'denied') {
+      iosHint.style.display = 'block';
+      iosHint.textContent = (typeof rkIsIosDevice === 'function' && rkIsIosDevice())
+        ? 'Izin notifikasi iOS diblokir. Buka Pengaturan iOS → Pemberitahuan → pilih Rencana Keuangan → nyalakan Izinkan Pemberitahuan.'
+        : 'Izin notifikasi diblokir di browser. Buka Setelan Situs / Info Aplikasi lalu pilih Izinkan Notifikasi.';
+    } else {
+      iosHint.style.display = 'none';
+      iosHint.textContent = '';
+    }
+  }
   var permB = $('m-notif-perm-badge');
   if (permB) {
-    var osPerm = typeof Notification !== 'undefined' && 'Notification' in window ? Notification.permission : 'unsupported';
-    if (!MOB_STATE.notifEnabled) { permB.textContent = 'Nonaktif'; permB.className = 'badge b-nt'; }
-    else if (osPerm === 'granted') { permB.textContent = 'OS & Bar Aktif'; permB.className = 'badge b-em'; }
+    if (!MOB_STATE.notifEnabled && !osActive) { permB.textContent = 'Nonaktif'; permB.className = 'badge b-nt'; }
+    else if (osActive) { permB.textContent = 'OS & Bar Aktif'; permB.className = 'badge b-em'; }
     else if (osPerm === 'denied') { permB.textContent = 'OS Diblokir'; permB.className = 'badge b-cr'; }
     else { permB.textContent = 'Bar HP Aktif'; permB.className = 'badge b-am'; }
   }
@@ -22609,6 +22768,22 @@ function bindMobileShellEvents(root) {
     if (e.target.closest('#m-bar-theme-btn') || e.target.closest('#m-menu-theme')) {
       if ($('thm')) $('thm').click();
       renderMobMetaMenus();
+      return;
+    }
+    if (e.target.closest('#m-btn-notif-activate')) {
+      if (isMobNotifOsActive()) {
+        if (typeof rkSetNotifReset === 'function') rkSetNotifReset(true);
+        MOB_STATE.notifEnabled = false;
+        if (typeof syncNotifBtn === 'function') syncNotifBtn();
+        renderMobSettings();
+        renderMobNotifPopover();
+        showMobToast('Izin notifikasi direset.');
+      } else {
+        if (typeof rkSetNotifReset === 'function') rkSetNotifReset(false);
+        MOB_STATE.notifEnabled = true;
+        if (typeof requestNotifPermission === 'function') requestNotifPermission();
+        else { renderMobSettings(); renderMobNotifPopover(); }
+      }
       return;
     }
     if (e.target.closest('#m-bar-notif-btn') || e.target.closest('#m-btn-test-notif') || e.target.closest('#m-pop-preview')) {
@@ -23144,10 +23319,14 @@ function bindMobileShellEvents(root) {
       MOB_STATE.notifToday = !$('m-set-notif-today') || $('m-set-notif-today').checked;
       MOB_STATE.notifSoon = !$('m-set-notif-soon') || $('m-set-notif-soon').checked;
       MOB_STATE.notifLate = !$('m-set-notif-late') || $('m-set-notif-late').checked;
-      if (t.id === 'm-set-notif-enabled' && MOB_STATE.notifEnabled && typeof Notification !== 'undefined' && Notification.permission === 'default' && typeof requestNotifPermission === 'function') {
-        requestNotifPermission();
+      if (t.id === 'm-set-notif-enabled') {
+        if (typeof rkSetNotifReset === 'function') rkSetNotifReset(!MOB_STATE.notifEnabled);
+        if (MOB_STATE.notifEnabled && typeof Notification !== 'undefined' && Notification && Notification.permission === 'default' && typeof requestNotifPermission === 'function') {
+          requestNotifPermission();
+        }
       }
       renderMobSettings();
+      renderMobNotifPopover();
     } else if (t.hasAttribute && t.hasAttribute('data-mck-tog')) {
       var trc = mobActiveTrip(), c0 = trc && trc.ck.find(function (x) { return x.id === t.getAttribute('data-mck-tog'); });
       if (c0) { c0.done = t.checked; save(); syncUI(); }
