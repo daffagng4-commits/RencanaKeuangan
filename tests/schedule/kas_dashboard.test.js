@@ -71,6 +71,37 @@ const { boot } = require("./ui.js");
   assert.strictEqual($("rincian-saldo-now").textContent, "Rp 4.350.000", "Rincian: Saldo tetap konsisten setelah ganti startMonth");
   $('yr-btn').click();
   assert($("yr-sum").textContent.includes("Feb"), "Ringkasan tahun/bulan memuat Feb saat startMonth = 1");
+  // Uji dropdown #sm di dalam #yr-panel memakai position:fixed agar tidak terpotong scroll modal
+  const smWrap = $("sm")._mselect;
+  assert(smWrap, "#sm memakai custom .mselect");
+  smWrap.getBoundingClientRect = () => ({ left: 200, top: 180, bottom: 220, width: 150 });
+  smWrap.querySelector(".mselect-trigger").click();
+  assert.strictEqual(smWrap.querySelector(".mselect-menu").style.position, "fixed", "dropdown di modal memakai position:fixed agar tidak kepotong kotak");
+  w.closeAllPickersAndMenus(null);
+  $("yr-done").click();
+
+  // ============================
+  // 5. Uji Utang & Piutang: tombol Lunas & Cicil auto-direct ke + Pemasukan & update sisa nominal
+  // ============================
+  w.tab("kas");
+  P.tx.push({ id: "p_daffa", d: "2028-02-01", t: "-", amt: 300000, cat: "Makanan", note: "daffa", debt: 1, debtKind: "piutang", debtName: "daffa" });
+  w.renderAll();
+  await tick();
+  const debtBox = $("debt-list");
+  assert(debtBox.querySelector("[data-debt-pay='daffa']").textContent.trim() === "Lunas", "tombol pelunasan berlabel Lunas");
+  const cicilBtn = debtBox.querySelector("[data-debt-cicil='daffa']");
+  assert(cicilBtn && cicilBtn.textContent.trim() === "Cicil", "tombol Cicil tersedia di Utang & Piutang Aktif");
+  cicilBtn.click();
+  assert.strictEqual(w.BR_STATE.kasType, "+", "klik Cicil piutang otomatis mengarahkan form ke + Pemasukan");
+  assert.strictEqual($("kas-is-debt").checked, true, "checkbox Utang/Piutang otomatis tercentang");
+  assert.strictEqual($("kas-debt-kind").value, "bayar-piutang", "jenis otomatis bayar-piutang");
+  assert.strictEqual($("kas-debt-person").value, "daffa", "nama orang otomatis daffa");
+  $("kas-amount").value = "100000";
+  fire($("kas-amount"), "input");
+  $("kas-form").dispatchEvent(new w.Event("submit", { bubbles: true, cancelable: true }));
+  await tick();
+  assert($("debt-list").textContent.includes("200.000"), "nominal sisa di Utang & Piutang Aktif otomatis menjadi Rp 200.000");
+  assert($("kas-history-list").textContent.includes("Sisa Rp 200.000"), "keterangan sisa di Riwayat Transaksi otomatis terupdate Sisa Rp 200.000");
 
   console.log("\nSemua assertion saldo realtime dan catatan kas berhasil!");
   process.exit(0);

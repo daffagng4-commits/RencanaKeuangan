@@ -311,9 +311,39 @@ function enhanceSelect(sel) {
     closeAllPickersAndMenus(willOpen ? wrap : null);
     wrap.classList.toggle('open', willOpen);
     trig.setAttribute('aria-expanded', String(willOpen));
-    if (willOpen && typeof window !== 'undefined') {
+    if (!willOpen) {
+      menu.style.position = '';
+      menu.style.top = '';
+      menu.style.left = '';
+      menu.style.width = '';
+      menu.style.maxHeight = '';
+      menu.style.zIndex = '';
+      return;
+    }
+    if (typeof window !== 'undefined') {
       var r = wrap.getBoundingClientRect();
-      menu.classList.toggle('align-right', r.left + 235 > window.innerWidth - 14);
+      if (wrap.closest('.modal-body') && r.width) {
+        var availDown = window.innerHeight - r.bottom - 14;
+        var availUp = r.top - 14;
+        var openUp = availDown < 170 && availUp > availDown;
+        var menuW = Math.max(200, Math.min(290, r.width + 40));
+        var maxH = Math.max(130, Math.min(280, openUp ? availUp : availDown));
+        var leftPx = Math.max(12, Math.min(r.left, window.innerWidth - menuW - 12));
+        menu.style.position = 'fixed';
+        menu.style.left = leftPx + 'px';
+        menu.style.width = menuW + 'px';
+        menu.style.maxHeight = maxH + 'px';
+        menu.style.zIndex = '260';
+        menu.style.top = openUp ? Math.max(12, r.top - maxH - 6) + 'px' : (r.bottom + 6) + 'px';
+      } else {
+        menu.style.position = '';
+        menu.style.top = '';
+        menu.style.left = '';
+        menu.style.width = '';
+        menu.style.maxHeight = '';
+        menu.style.zIndex = '';
+        menu.classList.toggle('align-right', r.left + 235 > window.innerWidth - 14);
+      }
     }
   };
   sel.addEventListener('change', function () { syncModernSelect(sel); });
@@ -332,6 +362,8 @@ function closeAllPickersAndMenus(exceptEl) {
       ms.classList.remove('open');
       var tr = ms.querySelector('.mselect-trigger');
       if (tr) tr.setAttribute('aria-expanded', 'false');
+      var mn = ms.querySelector('.mselect-menu');
+      if (mn) { mn.style.position = ''; mn.style.top = ''; mn.style.left = ''; mn.style.width = ''; mn.style.maxHeight = ''; mn.style.zIndex = ''; }
     }
   });
   document.querySelectorAll('#browser-shell .picker-popover.open').forEach(function (pop) {
@@ -1352,12 +1384,20 @@ function renderKas() {
     syncModernSelect(debtSel);
   }
 
-  var debts = debtData(P), debtListEl = $('debt-list');
+  var dMap = typeof debtStatusMap === 'function' ? debtStatusMap(P) : {},
+    debts = Object.keys(dMap).map(function (k) { return dMap[k]; }).filter(function (x) { return x.sisaU > 0 || x.sisaP > 0; }),
+    debtListEl = $('debt-list');
   if (debtListEl) {
     debtListEl.innerHTML = debts.length ? debts.map(function (x) {
       var rows = '';
-      if (x.sisaU > 0) rows += '<div class="upcoming-item"><div style="display:flex;align-items:center;gap:10px;">' + brCatLogo('Tagihan rutin', 30) + '<div><div class="upcoming-name">' + esc(x.name) + ' · <span class="badge badge-crimson">Saya berutang</span></div><div class="upcoming-meta">Sisa tagihan personal</div></div></div><div style="display:flex;align-items:center;gap:8px;"><strong class="mono pv">' + rp(x.sisaU) + '</strong><button type="button" class="btn btn-emerald btn-sm" data-debt-pay="' + esc(x.name) + '" data-dk="bayar-utang" data-damt="' + x.sisaU + '">Lunasi</button></div></div>';
-      if (x.sisaP > 0) rows += '<div class="upcoming-item"><div style="display:flex;align-items:center;gap:10px;">' + brCatLogo('Gaji', 30) + '<div><div class="upcoming-name">' + esc(x.name) + ' · <span class="badge badge-emerald">Orang berutang</span></div><div class="upcoming-meta">Piutang aktif</div></div></div><div style="display:flex;align-items:center;gap:8px;"><strong class="mono pv">' + rp(x.sisaP) + '</strong><button type="button" class="btn btn-emerald btn-sm" data-debt-pay="' + esc(x.name) + '" data-dk="bayar-piutang" data-damt="' + x.sisaP + '">Lunasi</button></div></div>';
+      if (x.sisaU > 0) {
+        var subU = x.bayarU > 0 ? 'Sisa dari ' + rp(x.utang) + ' (tercicil ' + rp(x.bayarU) + ')' : 'Sisa tagihan personal';
+        rows += '<div class="upcoming-item"><div style="display:flex;align-items:center;gap:10px;min-width:0;">' + brCatLogo('Tagihan rutin', 30) + '<div style="min-width:0;"><div class="upcoming-name">' + esc(x.name) + ' · <span class="badge badge-crimson">Saya berutang</span></div><div class="upcoming-meta">' + subU + '</div></div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;"><strong class="mono pv">' + rp(x.sisaU) + '</strong><button type="button" class="btn btn-secondary btn-sm" data-debt-cicil="' + esc(x.name) + '" data-dk="bayar-utang" data-damt="' + x.sisaU + '">Cicil</button><button type="button" class="btn btn-emerald btn-sm" data-debt-pay="' + esc(x.name) + '" data-dk="bayar-utang" data-damt="' + x.sisaU + '">Lunas</button></div></div>';
+      }
+      if (x.sisaP > 0) {
+        var subP = x.bayarP > 0 ? 'Sisa dari ' + rp(x.piutang) + ' (tercicil ' + rp(x.bayarP) + ')' : 'Piutang aktif';
+        rows += '<div class="upcoming-item"><div style="display:flex;align-items:center;gap:10px;min-width:0;">' + brCatLogo('Gaji', 30) + '<div style="min-width:0;"><div class="upcoming-name">' + esc(x.name) + ' · <span class="badge badge-emerald">Orang berutang</span></div><div class="upcoming-meta">' + subP + '</div></div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;"><strong class="mono pv">' + rp(x.sisaP) + '</strong><button type="button" class="btn btn-secondary btn-sm" data-debt-cicil="' + esc(x.name) + '" data-dk="bayar-piutang" data-damt="' + x.sisaP + '">Cicil</button><button type="button" class="btn btn-emerald btn-sm" data-debt-pay="' + esc(x.name) + '" data-dk="bayar-piutang" data-damt="' + x.sisaP + '">Lunas</button></div></div>';
+      }
       return rows;
     }).join('') : '<div style="padding:16px;text-align:center;color:var(--text-muted);">Tidak ada utang/piutang aktif.</div>';
   }
@@ -1397,9 +1437,22 @@ function renderKas() {
   if (histEl) {
     histEl.innerHTML = filtered.length ? filtered.map(function (t) {
       var chip = typeof lkChip === 'function' ? lkChip(t) : '';
+      var dBadge = '';
+      if (t.debt && !t.debtDone && t.debtKind) {
+        var dn = typeof debtNameOf === 'function' ? debtNameOf(t) : (t.debtName || t.note || '');
+        var ds = dMap[dn];
+        if (ds) {
+          var isU = t.debtKind === 'utang' || t.debtKind === 'bayar-utang';
+          var sisa = isU ? ds.sisaU : ds.sisaP;
+          var isPay = t.debtKind === 'bayar-utang' || t.debtKind === 'bayar-piutang';
+          dBadge = sisa > 0
+            ? ' <span class="badge ' + (isU ? 'badge-crimson' : 'badge-accent') + ' mono pv">' + (isPay ? 'Cicil · ' : '') + 'Sisa ' + rp(sisa) + '</span>'
+            : ' <span class="badge badge-emerald">Lunas ✓</span>';
+        }
+      }
       return '<div class="upcoming-item"><div style="display:flex;align-items:center;gap:10px;min-width:0;">' + brCatLogo(t.cat || 'Lainnya', 30) +
         '<div style="min-width:0;"><div class="upcoming-name">' + esc(t.note || t.cat || 'Transaksi') + '</div>' +
-        '<div class="upcoming-meta">' + brFmtDateLabel(t.d) + ' · <span class="badge badge-neutral">' + esc(t.cat || 'Lainnya') + '</span>' + chip + '</div></div></div>' +
+        '<div class="upcoming-meta">' + brFmtDateLabel(t.d) + ' · <span class="badge badge-neutral">' + esc(t.cat || 'Lainnya') + '</span>' + dBadge + chip + '</div></div></div>' +
         '<div class="upcoming-right"><span class="mono pv" style="font-weight:700;color:' + (t.t === '+' ? 'var(--emerald)' : 'var(--crimson)') + ';">' + (t.t === '+' ? '+' : '-') + rp(t.amt) + '</span>' +
         '<button type="button" class="btn btn-secondary btn-sm" data-kedit="' + esc(t.id) + '">Ubah</button>' +
         '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);" data-kdel="' + esc(t.id) + '">Hapus</button></div></div>';
@@ -2543,6 +2596,33 @@ function brBindEvents() {
       sh.querySelectorAll('.kas-range-preset').forEach(function (x) { x.classList.toggle('badge-accent', x.dataset.preset === 'all'); x.classList.toggle('badge-neutral', x.dataset.preset !== 'all'); });
       renderKas(); return;
     }
+    var dcBtn = t.closest('[data-debt-cicil]');
+    if (dcBtn) {
+      var nmC = dcBtn.dataset.debtCicil, dkindC = dcBtn.dataset.dk, damtC = +dcBtn.dataset.damt || 0;
+      var kType = dkindC === 'bayar-utang' ? '-' : '+';
+      BR_STATE.kasEditId = null;
+      BR_STATE.kasType = kType;
+      BR_STATE.kasCat = 'Lainnya';
+      BR_STATE.kasDate = todayISO();
+      sh.querySelectorAll('[data-kas-type]').forEach(function (x) {
+        var on = (x.dataset.kasType === 'in') === (kType === '+');
+        x.classList.toggle('active', on);
+        x.setAttribute('aria-pressed', String(on));
+      });
+      if ($('kas-is-debt')) $('kas-is-debt').checked = true;
+      if ($('kas-debt-opts')) $('kas-debt-opts').hidden = false;
+      renderKas();
+      if ($('kas-debt-kind')) { $('kas-debt-kind').value = dkindC; syncModernSelect('kas-debt-kind'); }
+      if ($('kas-debt-person')) $('kas-debt-person').value = nmC;
+      if ($('kas-note')) $('kas-note').value = (dkindC === 'bayar-utang' ? 'Cicil utang ' : 'Cicil piutang ') + nmC;
+      setRpVal('kas-amount', '');
+      if ($('kas-amount')) {
+        $('kas-amount').placeholder = damtC > 0 ? ('Sisa ' + rp(damtC)) : '50.000';
+        if ($('kas-amount').scrollIntoView) $('kas-amount').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        $('kas-amount').focus();
+      }
+      return;
+    }
     var dpBtn = t.closest('[data-debt-pay]');
     if (dpBtn) {
       var P0 = kasLinked(), nm = dpBtn.dataset.debtPay, dkind = dpBtn.dataset.dk, damt = +dpBtn.dataset.damt || 0;
@@ -2836,7 +2916,11 @@ function brBindEvents() {
         P.tx.push(entry);
         linkedMatch = entry.t === '-' && !entry.debt && typeof autoMatchTx === 'function' ? autoMatchTx(entry) : null;
       }
-      f.reset(); save(); renderAll();
+      f.reset();
+      if ($('kas-debt-opts')) $('kas-debt-opts').hidden = true;
+      setRpVal('kas-amount', '');
+      BR_STATE.kasDate = todayISO();
+      save(); renderAll();
       if (linkedMatch && typeof toastLinked === 'function') toastLinked(linkedMatch);
       else toast('Transaksi kas tersimpan');
     } else if (f.id === 'quick-tx-form') {

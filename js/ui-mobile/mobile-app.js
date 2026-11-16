@@ -1068,15 +1068,36 @@ function renderMobKas() {
     fltCat.value = prevV;
   }
 
+  var mDebtSel = $('m-kas-debt-kind');
+  if (mDebtSel && typeof debtKinds === 'function') {
+    var prevDK = mDebtSel.value;
+    var kOpts = debtKinds(MOB_STATE.kasType);
+    mDebtSel.innerHTML = kOpts.map(function (kv) { return '<option value="' + esc(kv[0]) + '">' + esc(kv[1]) + '</option>'; }).join('');
+    if (kOpts.some(function (kv) { return kv[0] === prevDK; })) mDebtSel.value = prevDK;
+  }
+
   var debtEl = $('m-debt-list');
+  var dMap = typeof debtStatusMap === 'function' ? debtStatusMap(P) : {};
   if (debtEl) {
-    var D = debtData(P);
+    var D = Object.keys(dMap).map(function (k) { return dMap[k]; }).filter(function (x) { return x.sisaU > 0 || x.sisaP > 0; });
     debtEl.innerHTML = D.length
       ? D.map(function (x) {
-          var amt = x.sisaU > 0 ? x.sisaU : x.sisaP, kind = x.sisaU > 0 ? 'utang' : 'piutang';
-          return '<div class="list-row"><div><div style="font-size:0.80rem;font-weight:700">' + esc(x.name) + ' <span class="badge ' + (kind === 'piutang' ? 'b-em' : 'b-cr') + '">' + kind + '</span></div></div>' +
-            '<div style="display:flex;align-items:center;gap:6px"><strong class="mono pv" style="font-size:0.79rem">' + mobFmtShort(amt) + '</strong>' +
-            '<button type="button" class="btn btn-emerald btn-sm" data-mdebt-pay="' + esc(x.name) + '" data-mkind="' + kind + '" data-mamt="' + amt + '">Bayar</button></div></div>';
+          var out = '';
+          if (x.sisaU > 0) {
+            var subU = x.bayarU > 0 ? 'Sisa dari ' + rp(x.utang) : 'Saya berutang';
+            out += '<div class="list-row"><div style="min-width:0"><div style="font-size:0.80rem;font-weight:700">' + esc(x.name) + ' <span class="badge b-cr">utang</span></div><div style="font-size:0.68rem;color:var(--text-muted)">' + subU + '</div></div>' +
+              '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0"><strong class="mono pv" style="font-size:0.79rem">' + mobFmtShort(x.sisaU) + '</strong>' +
+              '<button type="button" class="btn btn-secondary btn-sm" data-mdebt-cicil="' + esc(x.name) + '" data-mkind="utang" data-mamt="' + x.sisaU + '">Cicil</button>' +
+              '<button type="button" class="btn btn-emerald btn-sm" data-mdebt-pay="' + esc(x.name) + '" data-mkind="utang" data-mamt="' + x.sisaU + '">Lunas</button></div></div>';
+          }
+          if (x.sisaP > 0) {
+            var subP = x.bayarP > 0 ? 'Sisa dari ' + rp(x.piutang) : 'Orang berutang';
+            out += '<div class="list-row"><div style="min-width:0"><div style="font-size:0.80rem;font-weight:700">' + esc(x.name) + ' <span class="badge b-em">piutang</span></div><div style="font-size:0.68rem;color:var(--text-muted)">' + subP + '</div></div>' +
+              '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0"><strong class="mono pv" style="font-size:0.79rem">' + mobFmtShort(x.sisaP) + '</strong>' +
+              '<button type="button" class="btn btn-secondary btn-sm" data-mdebt-cicil="' + esc(x.name) + '" data-mkind="piutang" data-mamt="' + x.sisaP + '">Cicil</button>' +
+              '<button type="button" class="btn btn-emerald btn-sm" data-mdebt-pay="' + esc(x.name) + '" data-mkind="piutang" data-mamt="' + x.sisaP + '">Lunas</button></div></div>';
+          }
+          return out;
         }).join('')
       : '<div style="font-size:0.77rem;color:var(--text-muted);text-align:center;padding:6px">Tidak ada utang aktif</div>';
   }
@@ -1093,7 +1114,20 @@ function renderMobKas() {
     }).slice(0, 30);
     histEl.innerHTML = rows.length
       ? rows.map(function (x) {
-          return '<div class="list-row"><div style="display:flex;align-items:center;gap:8px;min-width:0">' + mobCatLogo(x.cat || 'Lainnya', 24) + '<div style="min-width:0"><div style="font-size:0.80rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(x.note || x.cat || 'Transaksi') + '</div><div style="font-size:0.68rem;color:var(--text-muted)">' + fmtD(x.d) + (x.cat ? ' &middot; ' + esc(x.cat) : '') + '</div></div></div>' +
+          var db = '';
+          if (x.debt && !x.debtDone && x.debtKind) {
+            var dn = typeof debtNameOf === 'function' ? debtNameOf(x) : (x.debtName || x.note || '');
+            var ds = dMap[dn];
+            if (ds) {
+              var isU = x.debtKind === 'utang' || x.debtKind === 'bayar-utang';
+              var sisa = isU ? ds.sisaU : ds.sisaP;
+              var isPay = x.debtKind === 'bayar-utang' || x.debtKind === 'bayar-piutang';
+              db = sisa > 0
+                ? ' &middot; <span style="color:' + (isU ? 'var(--crimson)' : 'var(--accent-ink)') + ';font-weight:700">' + (isPay ? 'Cicil · ' : '') + 'Sisa ' + rp(sisa) + '</span>'
+                : ' &middot; <span style="color:var(--emerald);font-weight:700">Lunas ✓</span>';
+            }
+          }
+          return '<div class="list-row"><div style="display:flex;align-items:center;gap:8px;min-width:0">' + mobCatLogo(x.cat || 'Lainnya', 24) + '<div style="min-width:0"><div style="font-size:0.80rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(x.note || x.cat || 'Transaksi') + '</div><div style="font-size:0.68rem;color:var(--text-muted)">' + fmtD(x.d) + (x.cat ? ' &middot; ' + esc(x.cat) : '') + db + '</div></div></div>' +
             '<div style="display:flex;align-items:center;gap:5px"><span class="mono pv" style="font-size:0.80rem;font-weight:800;color:' + (x.t === '+' ? 'var(--emerald)' : 'var(--crimson)') + '">' + (x.t === '+' ? '+' : '-') + rp(x.amt) + '</span>' +
             (x.ro ? '' : '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson)" data-mdeltx="' + esc(x.id) + '">✕</button>') + '</div></div>';
         }).join('')
@@ -1815,7 +1849,7 @@ function bindMobileShellEvents(root) {
       return;
     }
     var mkt = e.target.closest('[data-mktype]');
-    if (mkt) { MOB_STATE.kasType = mkt.getAttribute('data-mktype'); root.querySelectorAll('[data-mktype]').forEach(function (x) { x.classList.toggle('active', x === mkt); }); return; }
+    if (mkt) { MOB_STATE.kasType = mkt.getAttribute('data-mktype'); root.querySelectorAll('[data-mktype]').forEach(function (x) { x.classList.toggle('active', x === mkt); }); renderMobKas(); return; }
     var mq = e.target.closest('.m-qamt');
     if (mq) { setRpVal('m-kas-amt', getRpVal('m-kas-amt') + Number(mq.getAttribute('data-amt'))); if ($('m-kas-amt-readout')) $('m-kas-amt-readout').textContent = rp(getRpVal('m-kas-amt')); return; }
     var mkcp = e.target.closest('[data-mkcatpick]');
@@ -1825,6 +1859,27 @@ function bindMobileShellEvents(root) {
     if (e.target.closest('#m-kas-flt-reset')) { MOB_STATE.kasFilterDir = 'all'; if ($('m-kas-flt-cat')) $('m-kas-flt-cat').value = 'all'; if ($('m-kas-search')) $('m-kas-search').value = ''; renderMobKas(); return; }
     var mdtx = e.target.closest('[data-mdeltx]');
     if (mdtx) { kasDelTx(mdtx.getAttribute('data-mdeltx')); showMobToast('Transaksi dihapus'); return; }
+    var mdc = e.target.closest('[data-mdebt-cicil]');
+    if (mdc) {
+      var kindC = mdc.getAttribute('data-mkind'), nmC = mdc.getAttribute('data-mdebt-cicil'), amtC = +mdc.getAttribute('data-mamt') || 0;
+      MOB_STATE.kasType = kindC === 'utang' ? '-' : '+';
+      root.querySelectorAll('[data-mktype]').forEach(function (x) { x.classList.toggle('active', x.getAttribute('data-mktype') === MOB_STATE.kasType); });
+      if ($('m-kas-card-form')) $('m-kas-card-form').classList.remove('sec-hidden');
+      if ($('m-kas-debt')) $('m-kas-debt').checked = true;
+      if ($('m-kas-debt-box')) $('m-kas-debt-box').style.display = 'grid';
+      renderMobKas();
+      if ($('m-kas-debt-kind')) $('m-kas-debt-kind').value = kindC === 'utang' ? 'bayar-utang' : 'bayar-piutang';
+      if ($('m-kas-debt-name')) $('m-kas-debt-name').value = nmC;
+      if ($('m-kas-note')) $('m-kas-note').value = (kindC === 'utang' ? 'Cicil utang ' : 'Cicil piutang ') + nmC;
+      if ($('m-kas-amt')) {
+        $('m-kas-amt').value = '';
+        $('m-kas-amt').placeholder = amtC > 0 ? ('Sisa ' + rp(amtC)) : '50.000';
+        if ($('m-kas-amt-readout')) $('m-kas-amt-readout').textContent = 'Rp 0';
+        if ($('m-kas-card-form') && $('m-kas-card-form').scrollIntoView) $('m-kas-card-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        $('m-kas-amt').focus();
+      }
+      return;
+    }
     var mdp = e.target.closest('[data-mdebt-pay]');
     if (mdp) {
       var P0 = kasLinked(), kind = mdp.getAttribute('data-mkind'), nm = mdp.getAttribute('data-mdebt-pay'), amt = +mdp.getAttribute('data-mamt');

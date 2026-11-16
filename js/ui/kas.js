@@ -54,10 +54,10 @@ function debtNameOf(x) {
   return (x.debtName || x.note || x.cat || 'Tanpa nama').trim().slice(0, 40) || 'Tanpa nama';
 }
 
-/** Ringkasan utang/piutang dari transaksi kas yang dicentang. */
-function debtData(P) {
+/** Ringkasan lengkap utang/piutang (termasuk yang sudah lunas) untuk lencana sisa di riwayat & daftar aktif. */
+function debtStatusMap(P) {
   var g = {};
-  (P.tx || []).forEach(function (x) {
+  ((P && P.tx) || []).forEach(function (x) {
     if (!x.debt || x.debtDone) return;
     var n = debtNameOf(x),
       y = x.d.slice(0, 4),
@@ -71,13 +71,19 @@ function debtData(P) {
     } else if (x.debtKind === 'bayar-utang') o.bayarU += x.amt;
     else if (x.debtKind === 'bayar-piutang') o.bayarP += x.amt;
   });
+  Object.keys(g).forEach(function (k) {
+    var x = g[k];
+    x.sisaU = Math.max(0, x.utang - x.bayarU);
+    x.sisaP = Math.max(0, x.piutang - x.bayarP);
+  });
+  return g;
+}
+
+/** Ringkasan utang/piutang aktif (sisa > 0) dari transaksi kas yang dicentang. */
+function debtData(P) {
+  var g = debtStatusMap(P);
   return Object.keys(g)
-    .map(function (k) {
-      var x = g[k];
-      x.sisaU = Math.max(0, x.utang - x.bayarU);
-      x.sisaP = Math.max(0, x.piutang - x.bayarP);
-      return x;
-    })
+    .map(function (k) { return g[k]; })
     .filter(function (x) { return x.sisaU > 0 || x.sisaP > 0; });
 }
 
