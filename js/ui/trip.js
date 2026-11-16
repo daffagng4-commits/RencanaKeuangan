@@ -144,15 +144,18 @@ function tripBadge(P) {
 function tripList() {
   var L = trips();
   return (
-    '<div class="kp"><button class="p" data-tnew="1">+ Perjalanan baru</button><button data-xl="1">Impor Excel</button><button class="g" data-xlt="1">Template Excel</button></div>' +
+    '<div class="card"><div class="card-header"><div><h2 style="margin:0 0 2px">Semua Perjalanan</h2><div class="sub">Lembar perencanaan perjalanan terpisah &middot; anggaran, itinerary, pemesanan, checklist, dan target tabungan</div></div>' +
+    '<div class="kp m0"><button class="p" data-tnew="1">+ Perjalanan baru</button><button data-xl="1">Impor Excel</button><button class="g" data-xlt="1">Template Excel</button></div></div>' +
+    '<div class="trip-cards-grid">' +
     (L.map(function (P) {
       var pl = tripPlan(P);
       return (
-        '<div class="card cp" data-trip="' + P.id + '"><h2>' + esc(P.name) + '</h2>' + (tripActive(P) ? tripBadge(P) : '') + '<div class="sub">' +
+        '<div class="metric-tile cp" data-trip="' + P.id + '"><h2 style="margin:0 0 4px">' + esc(P.name) + '</h2>' + (tripActive(P) ? tripBadge(P) : '') + '<div class="sub">' +
         (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) + ' · ' + (dayNo(P.end, P.start) + 1) + ' hari' : 'Tanggal belum diisi') + '</div>' +
         (P.budget ? bar(pl.t, P.budget) + '<div class="sub">Rencana biaya ' + rp(pl.t) + ' dari anggaran ' + rp(P.budget) + '</div>' : '<div class="sub">Rencana biaya ' + rp(pl.t) + ' · anggaran belum ditentukan</div>') + '</div>'
       );
-    }).join('') || '<div class="card"><div class="empty">Belum ada perjalanan. Buat satu untuk mencatat itinerary, pemesanan, checklist, dan rencana biaya.</div></div>')
+    }).join('') || '<div class="empty">Belum ada perjalanan. Buat satu untuk mencatat itinerary, pemesanan, checklist, dan rencana biaya.</div>') +
+    '</div></div>'
   );
 }
 
@@ -227,7 +230,7 @@ function fxPrev(a, u) {
 /** Kotak biaya: jumlah + pilihan mata uang (Rp / asing). */
 function amtField(P, id, uid, v, fx) {
   return (
-    '<div class="dflex g6"><input id="' + id + '" inputmode="numeric" placeholder="0" style="flex:1;min-width:0;font-size:16px;font-weight:600" value="' + (v ? v.toLocaleString('id-ID') : '') + '">' +
+    '<div class="dflex g6"><input id="' + id + '" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" style="flex:1;min-width:0;font-size:16px;font-weight:600" value="' + (v ? v.toLocaleString('id-ID') : '') + '">' +
     '<select id="' + uid + '" style="width:84px;min-width:0;flex:none;font-weight:600;padding-left:8px;padding-right:4px" aria-label="Mata uang"><option value="idr">Rp</option>' + (P.cur ? '<option value="fx"' + (fx ? ' selected' : '') + '>' + esc(P.cur) + '</option>' : '') + '</select></div>' +
     '<div class="sub mt4" id="' + id + 'h">' + (P.cur ? '' : 'Mata uang asing: atur lewat Ubah.') + '</div>'
   );
@@ -348,10 +351,14 @@ function renderTrip() {
   }
   if (tripTab === 'now' && !tripActive(P)) tripTab = 'ring';
   var tabs = (tripActive(P) ? [['now', 'Hari ini']] : []).concat([['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['cek', 'Checklist'], ['cat', 'Catatan'], ['sv', 'Tabungan']]);
+  var allTrips = trips(),
+    switcher = allTrips.length > 1
+      ? '<div class="yb trip-sw">' + allTrips.map(function (t) { return '<button type="button" class="yp' + (t.id === P.id ? ' on' : '') + '" data-trip="' + esc(t.id) + '">' + esc(t.name) + '</button>'; }).join('') + '</div>'
+      : '';
   el.innerHTML =
-    '<div class="kp"><button class="tbk" data-tback="1">&larr; Semua perjalanan</button><button class="g" data-tshare="1">Bagikan</button><button class="g" data-ted="1">Ubah</button><button class="g d" data-tdel="1">Hapus</button></div><h2 style="margin:0 0 2px">' + esc(P.name) + '</h2><div class="sub mb12">' +
-    (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) : 'Tanggal belum diisi') + (P.cur && P.rate ? ' · 1 ' + P.cur + ' = ' + rp(P.rate) : '') + '</div><div class="kt fwrap mb14">' +
-    tabs.map(function (t) { return '<button type="button" class="yp' + (tripTab === t[0] ? ' on' : '') + '" data-tt="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
+    '<div class="card trip-head-card"><div class="card-header"><div><div class="kp mb8"><button class="tbk" data-tback="1">&larr; Semua perjalanan</button>' + switcher + '</div><h2 style="margin:0 0 2px">' + esc(P.name) + '</h2><div class="sub">' +
+    (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) : 'Tanggal belum diisi') + (P.cur && P.rate ? ' · 1 ' + P.cur + ' = ' + rp(P.rate) : '') + '</div></div><div class="kp m0"><button class="g" data-tshare="1">Bagikan</button><button class="g" data-ted="1">Ubah</button><button class="g d" data-tdel="1">Hapus</button></div></div><div class="kt fwrap trip-subtabs">' +
+    tabs.map(function (t) { return '<button type="button" class="yp' + (tripTab === t[0] ? ' on' : '') + '" data-tt="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div></div>' +
     (tripTab === 'now' ? tripNow(P) : tripTab === 'itin' ? tripItin(P) : tripTab === 'book' ? tripBook(P) : tripTab === 'cek' ? tripCek(P) : tripTab === 'cat' ? tripCat(P) : tripTab === 'sv' ? goalCard(P, tripPlan(P)) : tripRing(P));
   if (P.cur) {
     fxPrev('ite', 'itu');
@@ -694,8 +701,8 @@ function goalCard(P, pl) {
   if (!opts.length) return '<div class="card"><h2>Target tabungan</h2><div class="sub">Perjalanan ini sudah dimulai, jadi tidak ada bulan tersisa untuk menabung.</div></div>';
   var t0 = g ? g.t : Math.ceil(pl.t / 1000) * 1000, last = opts[opts.length - 1], before = opts.length > 1 ? opts[opts.length - 2] : last;
   return (
-    '<div class="card"><h2>Target tabungan</h2><div class="sub mb8">Hitung berapa yang perlu disisihkan tiap bulan sebelum berangkat.</div><div class="kf"><div><label for="gt">Target (Rp)</label><input id="gt" inputmode="numeric" value="' + (t0 ? t0.toLocaleString('id-ID') : '') +
-    '"></div><div><label for="gs">Sudah terkumpul (Rp)</label><input id="gs" inputmode="numeric" placeholder="0" value="' + (g && g.s0 ? g.s0.toLocaleString('id-ID') : '') + '"></div><div><label for="gf">Mulai menabung</label>' + goalSel('gf', opts, g ? g.from : opts[0]) +
+    '<div class="card"><h2>Target tabungan</h2><div class="sub mb8">Hitung berapa yang perlu disisihkan tiap bulan sebelum berangkat.</div><div class="kf"><div><label for="gt">Target (Rp)</label><input id="gt" type="text" inputmode="numeric" data-num-fmt="rp" value="' + (t0 ? t0.toLocaleString('id-ID') : '') +
+    '"></div><div><label for="gs">Sudah terkumpul (Rp)</label><input id="gs" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (g && g.s0 ? g.s0.toLocaleString('id-ID') : '') + '"></div><div><label for="gf">Mulai menabung</label>' + goalSel('gf', opts, g ? g.from : opts[0]) +
     '</div><div><label for="gz">Terakhir menabung</label>' + goalSel('gz', opts, g ? g.to : before) + '</div><div class="gcall"><label for="gl">Sambungkan ke Rencana Keuangan?</label><select id="gl"><option value="1"' + (lk ? ' selected' : '') + '>Ya, hitung sebagai pengeluaran bulanan di Rincian</option><option value="0"' + (lk ? '' : ' selected') + '>Tidak, hanya pencatat target</option></select></div></div><div class="sub" id="gprev" style="margin:8px 0"></div><div class="err" id="gerr"></div><div class="row2"><button class="p" data-gset="1">Simpan target</button>' + (g ? '<button data-gcancel="1">Batal</button>' : '') + '</div></div>'
   );
 }
@@ -865,7 +872,7 @@ function renderSim() {
       '<div class="card"><h2>Simulasi &quot;bagaimana jika&quot; &middot; ' + S.year + '</h2><div class="sub mb10">Coba perubahan tanpa mengubah data. Hasilnya langsung terlihat di grafik.</div><div class="kf"><div class="gcall"><label for="smk">Skenario</label><select id="smk">' +
       [['out', 'Tambah pengeluaran / cicilan'], ['in', 'Tambah pemasukan'], ['stop', 'Hentikan item'], ['price', 'Ubah harga item'], ['cycle', 'Ganti seberapa sering bayar'], ['shift', 'Geser tanggal bayar']].map(function (o) { return '<option value="' + o[0] + '"' + (simK === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>' +
       (two ? '<div class="gcall"><label for="smn">Nama</label><input id="smn" maxlength="30" placeholder="mis. Cicilan motor"></div>' : '<div class="gcall"><label for="smi">Item</label><select id="smi">' + items + '</select></div>') +
-      (nb ? simExtra(firstId) : '<div><label for="sma">' + (simK === 'stop' ? 'Jumlah (tidak dipakai)' : simK === 'price' ? 'Harga baru (Rp)' : 'Jumlah (Rp)') + '</label><input id="sma" inputmode="numeric" placeholder="0"' + (simK === 'stop' ? ' disabled' : '') + '></div><div><label for="smm">Mulai bulan</label><select id="smm">' + (two ? mo : simMonthOpts(firstId)) + '</select></div>') +
+      (nb ? simExtra(firstId) : '<div><label for="sma">' + (simK === 'stop' ? 'Jumlah (tidak dipakai)' : simK === 'price' ? 'Harga baru (Rp)' : 'Jumlah (Rp)') + '</label><input id="sma" type="text" inputmode="numeric" data-num-fmt="rp" data-slider-sync="sma-slider" placeholder="0"' + (simK === 'stop' ? ' disabled' : '') + '><div class="sim-slider-box"><input type="range" class="modern-slider mt6" id="sma-slider" min="0" max="25000000" step="50000" value="0" data-num-target="sma" aria-label="Geser nominal simulasi"' + (simK === 'stop' ? ' disabled' : '') + '><div class="slider-ticks"><span>Rp 0</span><span>Rp 12,5 jt</span><span>Rp 25 jt</span></div></div></div><div><label for="smm">Mulai bulan</label><select id="smm">' + (two ? mo : simMonthOpts(firstId)) + '</select></div>') +
       (two ? '<div><label for="smr">Berapa kali</label><select id="smr"><option value="bulan">Tiap bulan sampai Des</option><option value="sekali">Sekali saja</option><option value="n">Sekian kali</option></select></div><div id="smcw" hidden><label for="smc">Jumlah bulan</label><input id="smc" type="number" min="1" max="12" value="3"></div>' : '') +
       '</div><div class="err" id="smerr"></div><div class="row2"><button class="p" data-smadd="1">Tambah ke simulasi</button></div></div>';
   var out = form;
@@ -1654,7 +1661,7 @@ function requestNotifPermission() {
 /** PWA: daftar service worker (hanya di https/http), tombol "Pasang aplikasi", dan auto check tagihan. */
 function bindPwa() {
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
-    navigator.serviceWorker.register('sw.js').then(function (reg) {
+    (window.__rkSwReg || navigator.serviceWorker.register('./sw.js', { scope: './' })).then(function (reg) {
       if (reg && reg.update) reg.update();
     }).catch(function () {});
   }
@@ -1669,7 +1676,7 @@ function bindPwa() {
     btn.hidden = true;
   });
   // Tetap tampil walau browser tak memberi prompt (iOS Safari / Firefox), agar ada petunjuk pasang.
-  if (!matchMedia('(display-mode: standalone)').matches && !navigator.standalone) btn.hidden = false;
+  if ((typeof matchMedia === 'undefined' || !matchMedia('(display-mode: standalone)').matches) && !navigator.standalone) btn.hidden = false;
   btn.onclick = function () {
     if (ev) {
       ev.prompt();
@@ -1684,7 +1691,7 @@ function bindPwa() {
     );
   };
   var notifBtn = $('btn-notif');
-  if (notifBtn) {
+  if (notifBtn && !$('notif-popover')) {
     notifBtn.onclick = requestNotifPermission;
   }
   setInterval(function () {

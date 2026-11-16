@@ -22,6 +22,7 @@ function sbStat(t, bad) {
   }
   var ts = $('tsync');
   if (ts) ts.textContent = '\u2601 ' + t;
+  if (typeof syncMobileCloudUI === 'function') syncMobileCloudUI();
 }
 
 /** Jam sekarang (HH.MM). */
@@ -69,6 +70,7 @@ function acctUI(u) {
     bm.title = u ? (u.email || 'Akun') + ' · opsi akun' : ariaLabel;
     if (inim && typeof userInitial === 'function') inim.textContent = userInitial();
   }
+  if (typeof syncMobileCloudUI === 'function') syncMobileCloudUI();
 }
 
 /** Dipanggil saat sesi login berubah; memulai tarik data setelah login. */

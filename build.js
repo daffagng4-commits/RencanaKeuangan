@@ -3,7 +3,7 @@
 //   node build.js            tulis index.html + dist/
 //   node build.js --check    gagal (kode 1) bila index.html yang ada tidak sama dengan hasil build
 //
-// SUMBER KEBENARAN: index.dev.html (markup + daftar <script>), css/style.css, dan js/**.
+// SUMBER KEBENARAN: index.dev.html (markup + daftar <script>), css/tokens.css, css/desktop.css, css/mobile.css, dan js/**.
 // index.html adalah HASIL build; jangan diedit langsung.
 const fs = require('fs'), path = require('path');
 const root = __dirname;
@@ -54,7 +54,7 @@ function main() {
   fs.writeFileSync(idx, html);
   fs.writeFileSync(path.join(root, 'dist/index.html'), html);
   // Salin file pendukung (manifest, service worker, ikon, tools) ke dist/
-  ['manifest.webmanifest', 'sw.js', 'apple-touch-icon.png'].forEach((f) => {
+  ['manifest.webmanifest', 'sw.js', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'].forEach((f) => {
     const p = path.join(root, f);
     if (fs.existsSync(p)) fs.copyFileSync(p, path.join(root, 'dist', f));
   });

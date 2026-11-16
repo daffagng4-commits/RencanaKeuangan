@@ -142,7 +142,7 @@
 
   var inVal = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
   function upDate(inp) {
-    if (inp.__pk) return;
+    if (inp.__pk || (inp.closest && (inp.closest('#browser-shell') || inp.closest('#mobile-app-shell')))) return;
     inp.__pk = 1;
     var f = field(inp, 'pk-date');
     inp.classList.add('pk-native');
@@ -170,7 +170,7 @@
   /* ---------- input dengan datalist: chevron + daftar pilihan ---------- */
   function upDatalist(inp) {
     var l = document.getElementById(inp.getAttribute('list') || '');
-    if (inp.__pkd || !l) return;
+    if (inp.__pkd || !l || (inp.closest && (inp.closest('#browser-shell') || inp.closest('#mobile-app-shell')))) return;
     inp.__pkd = 1;
     var w = document.createElement('div');
     w.className = 'pk-field pk-dl';
@@ -236,7 +236,7 @@
 
   /* ---------- upgrade semua select ---------- */
   function upSelect(sel) {
-    if (sel.__pk) return;
+    if (sel.__pk || sel._mselect || (sel.closest && (sel.closest('#browser-shell') || sel.closest('#mobile-app-shell')))) return;
     sel.__pk = 1;
     var f = field(sel, 'pk-sel');
     var b = document.createElement('button');

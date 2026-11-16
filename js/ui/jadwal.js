@@ -21,6 +21,37 @@ function gdBox(key, html) {
 /** Tagihan yang baru saja dilewati (untuk efek getar merah sesaat). */
 var FX = { k: '' };
 
+/** Filter aktif untuk tabel jadwal: 'all' | 'open' | 'done'. */
+var JADWAL_FILTER = 'all';
+
+/** ID item yang sedang dipin tampil saat filter aktif (mencegah baris melompat saat ditandai lunas). */
+var JADWAL_PINNED_IDS = null;
+var LAST_JADWAL_YEAR = null;
+
+/** Cek status item terhadap tagihan aktif. */
+function getItemFilterStatus(it, c) {
+  var o = c.occs[it.id] || [],
+    active = o.filter(function (t) {
+      return !S.skip[it.id + '|' + isoD(t)];
+    });
+  var paidCount = active.filter(function (t) {
+    return S.paid[it.id + '|' + isoD(t)];
+  }).length;
+  var isDone = active.length > 0 && paidCount === active.length;
+  var hasUnpaid = active.some(function (t) {
+    return !S.paid[it.id + '|' + isoD(t)];
+  });
+  return {
+    hasNoOccs: active.length === 0,
+    hasUnpaid: hasUnpaid,
+    isDone: isDone,
+    paidCount: paidCount,
+    activeCount: active.length,
+    active: active,
+    occs: o
+  };
+}
+
 /** Chip satu tanggal tagihan (tombol yang membuka menu status). */
 function chipHtml(it, t, today) {
   var d = isoD(t),
@@ -45,7 +76,7 @@ function chipHtml(it, t, today) {
         : ' (belum dibayar)';
   if (anom) state += ' [Lonjakan +' + diffPct + '%]';
   return (
-    '<button class="' +
+    '<button type="button" class="' +
     cls +
     '" data-pk="' +
     key +
@@ -59,18 +90,20 @@ function chipHtml(it, t, today) {
     '">' +
     (skipped ? '' : paid ? '✓ ' : '') +
     new Date(t).getUTCDate() +
-    (changed ? '<span class="cp' + (anom ? ' an' : '') + '"' + (anom ? ' title="Lonjakan +' + diffPct + '% dari harga awal"' : '') + '>' + shortP(price) + (anom ? ' &uarr;' : '') + '</span>' : '') +
+    (changed ? '<span class="cp pv' + (anom ? ' an' : '') + '"' + (anom ? ' title="Lonjakan +' + diffPct + '% dari harga awal"' : '') + '>' + shortP(price) + (anom ? ' &uarr;' : '') + '</span>' : '') +
     '</button>'
   );
 }
 
 /** Satu baris tabel: nama item, harga, 12 kolom bulan, total. */
 function jadwalRow(it, c, today, firstNegDate) {
-  var o = c.occs[it.id],
-    active = o.filter(function (t) {
-      return !S.skip[it.id + '|' + isoD(t)];
-    }),
-    byMonth = [[], [], [], [], [], [], [], [], [], [], [], []];
+  var st = getItemFilterStatus(it, c),
+    o = st.occs,
+    active = st.active,
+    paidCount = st.paidCount,
+    isDone = st.isDone;
+
+  var byMonth = [[], [], [], [], [], [], [], [], [], [], [], []];
   o.forEach(function (t) {
     byMonth[new Date(t).getUTCMonth()].push(t);
   });
@@ -87,36 +120,53 @@ function jadwalRow(it, c, today, firstNegDate) {
         : '<td class="z">0</td>';
     })
     .join('');
-  var paidCount = active.filter(function (t) {
-    return S.paid[it.id + '|' + isoD(t)];
-  }).length;
-  var isDone = active.length > 0 && paidCount === active.length;
+
   var hasNeg = firstNegDate && o.some(function (t) { return isoD(t) === firstNegDate && !S.skip[it.id + '|' + isoD(t)]; });
+
+  var maxPrice = 0;
+  o.forEach(function (t) {
+    var p = priceAt(it, t);
+    if (p > maxPrice) maxPrice = p;
+  });
+  var diffPct = it.price ? Math.round(((maxPrice - it.price) / it.price) * 100) : 0;
+  var hasSpike = diffPct >= 20;
+
+  var badges = [];
+  if (hasNeg) {
+    badges.push('<span class="chip wr">⚠ Membuat saldo minus</span>');
+  }
+  if (hasSpike) {
+    badges.push('<span class="chip wr">▲ +' + diffPct + '% anomali</span>');
+  }
+  if (isDone) {
+    badges.push('<span class="doneTag">Lunas semua</span>');
+  }
+  var badgesHtml = badges.length ? '<div class="tags">' + badges.join(' ') + '</div>' : '';
+
   return (
     '<tr data-r="' +
     it.id +
     '"' +
     (isDone ? ' class="done" style="--i:' + S.items.indexOf(it) + '"' : '') +
     '><td>' +
-    (isDone ? '<span class="st ok" role="img" aria-label="Lunas semua">✓</span>' : '') +
+    (isDone ? '<span class="st ok" role="img" aria-label="Lunas semua">✓</span> ' : '') +
     '<b>' +
     esc(it.name) +
     '</b>' +
-    (hasNeg ? ' <span class="chip wr">⚠ Membuat saldo minus</span>' : '') +
-    (isDone ? '<span class="doneTag">Lunas semua</span>' : '') +
     '<div class="sub">' +
     every(it) +
     (it.cat ? ' · ' + esc(it.cat) : '') +
     '</div>' +
+    badgesHtml +
     chSub(it) +
-    '<button class="g" data-pm="' +
+    '<button type="button" class="g" data-pm="' +
     it.id +
     '">&#9998; <span class="lbd">Ubah harga / jadwal</span><span class="lbm">Ubah</span></button></td>' +
     '<td>' +
     pcell(it, o) +
     '</td>' +
     cells +
-    '<td><b>' +
+    '<td><b class="pv">' +
     rp(sumP(it, active)) +
     '</b><div class="sub">' +
     paidCount +
@@ -128,7 +178,7 @@ function jadwalRow(it, c, today, firstNegDate) {
   );
 }
 
-/** Kartu ringkasan: sudah dibayar / belum dibayar / dilewati. */
+/** Kartu ringkasan: sudah dibayar / belum dibayar / dilewati (TETAP GLOBAL). */
 function jadwalSummary(c) {
   var total = 0,
     paid = 0,
@@ -152,34 +202,161 @@ function jadwalSummary(c) {
     });
   });
   return (
-    '<div class="card stats"><div><span>Sudah dibayar</span><b>' +
+    '<div class="card stats"><div><span>Sudah dibayar</span><b class="pv">' +
     rp(paid) +
     '</b><span>' +
     nPaid +
     ' dari ' +
     nAll +
     ' tagihan</span></div>' +
-    '<div><span>Belum dibayar</span><b>' +
+    '<div><span>Belum dibayar</span><b class="pv">' +
     rp(total - paid) +
     '</b><span>' +
     (nAll - nPaid) +
     ' tagihan</span></div>' +
-    (nSkip ? '<div><span>Dilewati</span><b>' + nSkip + ' tagihan</b><span>tidak dihitung</span></div>' : '') +
+    (nSkip ? '<div><span>Dilewati</span><b class="pv">' + nSkip + ' tagihan</b><span>tidak dihitung</span></div>' : '') +
     '</div>'
   );
+}
+
+/** Hitung daftar baris & total tabel jadwal sesuai filter aktif (mempertahankan item ter-pin). */
+function jadwalComputed(c, today, firstNeg) {
+  var y = S.year;
+  if (LAST_JADWAL_YEAR !== y) {
+    LAST_JADWAL_YEAR = y;
+    JADWAL_PINNED_IDS = null;
+  }
+
+  var countAll = S.items.length,
+    countOpen = 0,
+    countDone = 0,
+    matchingIds = [];
+
+  S.items.forEach(function (it) {
+    var st = getItemFilterStatus(it, c);
+    if (st.hasUnpaid) countOpen++;
+    if (st.isDone) countDone++;
+
+    if (JADWAL_FILTER === 'all') {
+      matchingIds.push(it.id);
+    } else if (JADWAL_FILTER === 'open') {
+      if (st.hasUnpaid) matchingIds.push(it.id);
+    } else if (JADWAL_FILTER === 'done') {
+      if (st.isDone) matchingIds.push(it.id);
+    }
+  });
+
+  var itemsToDisplay;
+  if (JADWAL_FILTER === 'all') {
+    JADWAL_PINNED_IDS = null;
+    itemsToDisplay = S.items;
+  } else {
+    if (JADWAL_PINNED_IDS === null) {
+      JADWAL_PINNED_IDS = matchingIds;
+    }
+    itemsToDisplay = S.items.filter(function (it) {
+      return JADWAL_PINNED_IDS.indexOf(it.id) >= 0;
+    });
+  }
+
+  var rows =
+    itemsToDisplay
+      .map(function (it) {
+        return jadwalRow(it, c, today, firstNeg && firstNeg.date);
+      })
+      .join('') ||
+    '<tr><td colspan="15" class="empty">Tidak ada item pada filter ini.</td></tr>';
+
+  // Total per bulan mengikuti baris yang tampil
+  var displayedMonthTotals = MON.map(function (_, m) {
+    var sumM = 0;
+    itemsToDisplay.forEach(function (it) {
+      (c.occs[it.id] || []).forEach(function (t) {
+        if (new Date(t).getUTCMonth() === m && !S.skip[it.id + '|' + isoD(t)]) {
+          sumM += priceAt(it, t);
+        }
+      });
+    });
+    return '<td><span class="pv">' + (sumM ? (sumM / 1000).toLocaleString('id-ID') + 'rb' : '0') + '</span></td>';
+  }).join('');
+
+  var displayedTotal = 0;
+  itemsToDisplay.forEach(function (it) {
+    var active = (c.occs[it.id] || []).filter(function (t) { return !S.skip[it.id + '|' + isoD(t)]; });
+    displayedTotal += sumP(it, active);
+  });
+
+  var filterLabel = JADWAL_FILTER === 'open' ? 'Belum lunas' : JADWAL_FILTER === 'done' ? 'Lunas' : '';
+  var filterNote = filterLabel ? '<div class="sub">(filter: ' + filterLabel + ')</div>' : '';
+
+  var foot =
+    '<tr class="tot"><td>Total per bulan' +
+    filterNote +
+    '</td><td></td>' +
+    displayedMonthTotals +
+    '<td><b class="pv">' +
+    rp(displayedTotal) +
+    '</b></td></tr>';
+
+  return {
+    countAll: countAll,
+    countOpen: countOpen,
+    countDone: countDone,
+    rows: rows,
+    foot: foot
+  };
+}
+
+/** Perbarui filter & isi tabel di dalam #jadwal-card tanpa memutasi elemen di luar kartu. */
+function updateJadwalFilterView() {
+  var card = $('jadwal-card');
+  if (!card) {
+    renderJadwal();
+    return;
+  }
+  var c = calc(),
+    today = todayISO(),
+    firstNeg = typeof kasFirstNegative === 'function' ? kasFirstNegative() : null,
+    d = jadwalComputed(c, today, firstNeg),
+    labels = {
+      all: 'Semua ' + d.countAll,
+      open: 'Belum lunas ' + d.countOpen,
+      done: 'Lunas ' + d.countDone
+    };
+  card.querySelectorAll('.jadwal-flt button[data-f]').forEach(function (b) {
+    var k = b.dataset.f;
+    if (labels[k] != null) b.textContent = labels[k];
+    var on = k === JADWAL_FILTER;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  var tb = card.querySelector('tbody');
+  if (tb) tb.innerHTML = d.rows + d.foot;
 }
 
 /** Render tab Jadwal Bayar. */
 function renderJadwal() {
   var c = calc(),
     today = todayISO(),
-    y = S.year;
-  var firstNeg = typeof kasFirstNegative === 'function' ? kasFirstNegative() : null;
+    y = S.year,
+    firstNeg = typeof kasFirstNegative === 'function' ? kasFirstNegative() : null,
+    d = jadwalComputed(c, today, firstNeg);
+
+  var filterSeg =
+    '<div class="cat-tabs jadwal-flt" role="group" aria-label="Filter status tagihan">' +
+    '<button type="button" class="cat-tab' + (JADWAL_FILTER === 'all' ? ' on' : '') + '" data-f="all" aria-pressed="' + (JADWAL_FILTER === 'all') + '">Semua ' + d.countAll + '</button>' +
+    '<button type="button" class="cat-tab' + (JADWAL_FILTER === 'open' ? ' on' : '') + '" data-f="open" aria-pressed="' + (JADWAL_FILTER === 'open') + '">Belum lunas ' + d.countOpen + '</button>' +
+    '<button type="button" class="cat-tab' + (JADWAL_FILTER === 'done' ? ' on' : '') + '" data-f="done" aria-pressed="' + (JADWAL_FILTER === 'done') + '">Lunas ' + d.countDone + '</button>' +
+    '</div>';
+
   var head =
-    '<div class="card"><h2>Jadwal pembayaran ' +
-    y +
-    '</h2>' +
+    '<div class="card" id="jadwal-card">' +
+    '<div class="jadwal-hdr">' +
+    '<div><h2>Jadwal pembayaran ' + y + '</h2>' +
     (smEff() ? '<div class="sub mb8">Bulan sebelum ' + MON[smEff()] + ' tidak dihitung.</div>' : '') +
+    '</div>' +
+    filterSeg +
+    '</div>' +
     gdBox(
       'jadwal',
       '<div class="sub mb8">Klik tanggal untuk memilih: sudah dibayar, dilewati (tidak bayar), atau belum dibayar. ' +
@@ -191,26 +368,8 @@ function renderJadwal() {
       return '<th>' + m + '</th>';
     }).join('') +
     '<th>Total</th></tr></thead><tbody>';
-  var rows =
-    S.items
-      .map(function (it) {
-        return jadwalRow(it, c, today, firstNeg && firstNeg.date);
-      })
-      .join('') ||
-    '<tr><td colspan="15" class="empty">Belum ada item. Tambahkan di tab Kelola Item.</td></tr>';
-  var monthTotals = MON.map(function (_, m) {
-    var r = c.rows.filter(function (x) {
-      return x.m === m;
-    })[0];
-    return '<td>' + (r ? (r.sp / 1000).toLocaleString('id-ID') + 'rb' : '0') + '</td>';
-  }).join('');
-  var foot =
-    '<tr class="tot"><td>Total per bulan</td><td></td>' +
-    monthTotals +
-    '<td>' +
-    rp(c.total) +
-    '</td></tr></tbody></table></div></div>';
-  $('v-jadwal').innerHTML = jadwalSummary(c) + head + rows + foot;
+
+  $('v-jadwal').innerHTML = jadwalSummary(c) + head + d.rows + d.foot + '</tbody></table></div></div>';
   gdApply($('v-jadwal'));
 }
 
@@ -250,12 +409,11 @@ function pcell(it, o) {
     var f = o.filter(function (t) {
       return priceAt(it, t) !== p0;
     })[0];
-    var pct = it.price ? Math.round(((pl - it.price) / it.price) * 100) : 0;
-    s.push('&rarr; ' + rp(pl) + (pct >= 20 ? ' <span class="chip wr">▲ +' + pct + '% anomali</span>' : '') + ' mulai ' + fd(f, { day: 'numeric', month: 'short' }));
+    s.push('&rarr; ' + rp(pl) + ' mulai ' + fd(f, { day: 'numeric', month: 'short' }));
   }
   if (p0 !== it.price) s.push('harga awal ' + rp(it.price));
   if (n) s.push(n + ' perubahan');
-  return rp(p0) + (s.length ? '<div class="sub">' + s.join('<br>') + '</div>' : '');
+  return '<span class="pv">' + rp(p0) + '</span>' + (s.length ? '<div class="sub">' + s.join('<br>') + '</div>' : '');
 }
 
 /** Tutup menu status chip. */
@@ -342,6 +500,16 @@ function bindJadwal() {
   addEventListener('scroll', cmClose, true);
   addEventListener('resize', cmClose);
   $('v-jadwal').onclick = function (e) {
+    var fltBtn = e.target.closest('button[data-f]');
+    if (fltBtn) {
+      var f = fltBtn.dataset.f;
+      if (f) {
+        JADWAL_FILTER = f;
+        JADWAL_PINNED_IDS = null;
+        updateJadwalFilterView();
+      }
+      return;
+    }
     var m = e.target.closest('button[data-pm]');
     if (m) {
       openPm(m.dataset.pm);
@@ -350,4 +518,21 @@ function bindJadwal() {
     var b = e.target.closest('button[data-pk]');
     if (b) openCm(b);
   };
+  $('v-jadwal').addEventListener('keydown', function (e) {
+    var fltBtn = e.target.closest && e.target.closest('.jadwal-flt button[data-f]');
+    if (!fltBtn) return;
+    var btns = Array.prototype.slice.call(fltBtn.parentNode.querySelectorAll('button[data-f]'));
+    var idx = btns.indexOf(fltBtn);
+    if (idx < 0) return;
+    var next = -1;
+    if (e.key === 'ArrowRight') next = (idx + 1) % btns.length;
+    else if (e.key === 'ArrowLeft') next = (idx - 1 + btns.length) % btns.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = btns.length - 1;
+    if (next >= 0) {
+      e.preventDefault();
+      btns[next].focus();
+      btns[next].click();
+    }
+  });
 }

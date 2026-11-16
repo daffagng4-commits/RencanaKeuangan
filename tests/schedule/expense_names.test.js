@@ -18,37 +18,37 @@ const { boot } = require('./ui.js');
       {id:'c', d:'2026-11-01',t:'-',amt:1961500,cat:'Investasi',note:'BTC (lunas)'},
       {id:'d', d:'2026-12-01',t:'-',amt:2935000,cat:'Investasi',note:'btc cicil des'}
     ];
-    w.expenseMonth='y'; w.renderAll();
-    const card = w.document.querySelector('.expense-card');
-    assert.strictEqual(card.querySelectorAll('.expense-row').length,2);
-    assert(card.querySelector('.expense-row').getAttribute('aria-label').includes('Rp 6.500.000'));
-    assert(card.querySelector('.expense-detail').textContent.includes('(lunas)'));
-    assert(!card.querySelector('.expense-legend'));
-    assert(!card.querySelector('.expense-label small'));
-    assert.strictEqual(w.cashPeriod(w.yearCash(),'y').out,11396500);
-    w.S.startMonth=0; w.S.smManual=true; w.__today='2026-06-15'; w.expenseLastMonth='';
-    w.kasLinked().tx=Array.from({length:12},(_,i)=>({id:'m'+i,d:'2026-'+String(i+1).padStart(2,'0')+'-01',t:'-',amt:100,cat:'Tagihan',note:'Internet'}));
     w.renderAll();
-    assert.strictEqual(w.document.querySelectorAll('[data-expm]').length,3,'Minggu/Bulan/Tahun');
-    w.document.querySelector('[data-expm="m"]').click();
-    const select=w.document.querySelector('[data-expmonth]');
-    assert(select,'pemilih bulan'); assert.strictEqual(select.options.length,12);
-    assert.strictEqual(select.value,'6','bulan berjalan dipilih');
-    select.value='12'; select.dispatchEvent(new w.Event('change',{bubbles:true}));
-    assert(w.document.querySelector('.expense-total').textContent.includes('Rp 100'));
-    assert.strictEqual(w.document.activeElement.getAttribute('aria-label'),'Bulan pengeluaran');
-    w.S.items=[{id:'one',name:'BTC',price:100,n:1,unit:'sekali',start:'2026-12-20',cat:'Investasi',ch:[]},
-      {id:'two',name:'BTC',price:200,n:1,unit:'sekali',start:'2026-12-20',cat:'Investasi',ch:[]}];
-    w.S.real={'one|2026-12-20':{tx:'linked'}}; w.S.paid={'one|2026-12-20':true};
-    w.kasLinked().tx=[{id:'linked',d:'2026-12-20',t:'-',amt:100,cat:'Investasi',note:'Pembayaran bebas'},
-      {id:'free',d:'2026-12-01',t:'-',amt:300,cat:'Investasi',note:'btc cicil des'}];
-    w.expenseMonth='y'; w.renderAll();
-    assert.strictEqual(w.yearCash().entries.find(e=>e.note==='Pembayaran bebas').itemId,'one');
-    const identityRows=w.document.querySelectorAll('.expense-row');
-    assert.strictEqual(identityRows.length,2,'trigger menggabung BTC lintas identitas; nama mentah bebas tetap fallback');
-    assert.strictEqual(w.cashPeriod(w.yearCash(),'y').out,600,'tautan tidak dihitung ganda');
-    assert(!w.document.querySelector('.expense-card').textContent.includes('Pembayaran bebas paling besar'));
-    assert.strictEqual(t.errs.length,0);
+    const list = w.document.getElementById('top5-items-list');
+    assert.strictEqual(list.querySelectorAll('.simple-row').length, 2);
+    assert(list.querySelector('.simple-row-amt').textContent.includes('Rp 6.500.000'));
+    assert.strictEqual(w.cashPeriod(w.yearCash(), 'y').out, 11396500);
+    w.S.startMonth = 0; w.S.smManual = true; w.__today = '2026-06-15';
+    w.kasLinked().tx = Array.from({ length: 12 }, (_, i) => ({ id: 'm' + i, d: '2026-' + String(i + 1).padStart(2, '0') + '-01', t: '-', amt: 100, cat: 'Tagihan', note: 'Internet' }));
+    w.renderAll();
+    assert.strictEqual(w.document.querySelectorAll('#card-where-money [data-where-period]').length, 3, 'Minggu/Bulan/Tahun');
+    w.document.querySelector('#card-where-money [data-where-period="m"]').click();
+    const select = w.document.getElementById('where-month-select');
+    assert(select, 'pemilih bulan'); assert.strictEqual(select.options.length, 12);
+    assert.strictEqual(select.value, '5', 'bulan berjalan (Juni = idx 5) dipilih');
+    select.value = '11'; select.dispatchEvent(new w.Event('change', { bubbles: true }));
+    assert(w.document.getElementById('where-sub-lbl').textContent.includes('Rp 100'));
+    w.S.items = [
+      { id: 'one', name: 'BTC', price: 100, n: 1, unit: 'sekali', start: '2026-12-20', cat: 'Investasi', ch: [] },
+      { id: 'two', name: 'BTC', price: 200, n: 1, unit: 'sekali', start: '2026-12-20', cat: 'Investasi', ch: [] }
+    ];
+    w.S.real = { 'one|2026-12-20': { tx: 'linked' } }; w.S.paid = { 'one|2026-12-20': true };
+    w.kasLinked().tx = [
+      { id: 'linked', d: '2026-12-20', t: '-', amt: 100, cat: 'Investasi', note: 'Pembayaran bebas' },
+      { id: 'free', d: '2026-12-01', t: '-', amt: 300, cat: 'Investasi', note: 'btc cicil des' }
+    ];
+    w.document.querySelector('#card-where-money [data-where-period="y"]').click();
+    w.renderAll();
+    assert.strictEqual(w.yearCash().entries.find(e => e.note === 'Pembayaran bebas').itemId, 'one');
+    const identityRows = w.document.querySelectorAll('#top5-items-list .simple-row');
+    assert.strictEqual(identityRows.length, 2, 'trigger menggabung BTC lintas identitas; nama mentah bebas tetap fallback');
+    assert.strictEqual(w.cashPeriod(w.yearCash(), 'y').out, 600, 'tautan tidak dihitung ganda');
+    assert.strictEqual(t.errs.length, 0);
     console.log('OK expense_names + 12 months + linked identities');
   } finally { w.close(); }
 })().catch(e=>{console.error(e);process.exitCode=1;});

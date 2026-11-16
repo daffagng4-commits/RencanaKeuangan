@@ -45,12 +45,16 @@ function themeShow() {
     cur = themeCur(),
     label = 'Tema: ' + THEME_NAME[cur],
     txtEl = $('thm-txt'),
-    ic = btn.querySelector('svg');
-  if (txtEl) txtEl.textContent = label;
-  else btn.textContent = label;
+    mobEl = $('mob-thm-lbl'),
+    ic = btn && btn.querySelector('svg');
+  if (txtEl) txtEl.textContent = THEME_NAME[cur];
+  else if (btn) btn.textContent = label;
+  if (mobEl) mobEl.textContent = THEME_NAME[cur];
   if (ic) ic.innerHTML = THEME_ICON[cur];
-  btn.title = label + ' (ketuk untuk ganti)';
-  btn.setAttribute('aria-label', btn.title);
+  if (btn) {
+    btn.title = label + ' (ketuk untuk ganti)';
+    btn.setAttribute('aria-label', btn.title);
+  }
   Array.prototype.forEach.call(document.querySelectorAll('[data-theme-set]'), function (b) {
     var on = b.dataset.themeSet === cur;
     b.classList.toggle('on', on);

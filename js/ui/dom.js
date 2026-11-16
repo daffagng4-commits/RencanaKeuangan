@@ -1,30 +1,11 @@
 /**
- * Helper DOM: $, pemformat angka saat mengetik, tab, toast Urungkan.
+ * Helper DOM: $, tab, toast Urungkan.
+ * Helper pemformat angka (fmtLive) berada di js/ui/num-input.js.
  */
 
 var $ = function (i) {
   return document.getElementById(i);
 };
-
-/** Beri titik ribuan saat mengetik angka (kursor dijaga). */
-function fmtLive(el) {
-  var v = el.value;
-  if (!v || /[^\d.,\s]/.test(v)) return;
-  var p = el.selectionStart,
-    n = v.slice(0, p).replace(/\D/g, '').length,
-    d = v.replace(/\D/g, '').replace(/^0+(?=\d)/, ''),
-    f = d.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  el.value = f;
-  var i = 0,
-    c = 0;
-  while (i < f.length && c < n) {
-    if (/\d/.test(f[i])) c++;
-    i++;
-  }
-  try {
-    el.setSelectionRange(i, i);
-  } catch (e) {}
-}
 
 /** Geser pil penanda tab (rail sidebar) ke tombol aktif; lebar rail saja. */
 function navPill() {
@@ -37,29 +18,49 @@ function navPill() {
     (nav.clientHeight - b.offsetTop - b.offsetHeight) + 'px ' + b.offsetLeft + 'px round 16px)';
 }
 
-/** Tampilkan tab tertentu (rincian | jadwal | item). */
+/** Tampilkan tab tertentu (rincian | kas | jadwal | item | sim | rebalance | ibkr). */
 function tab(t) {
+  var prev = typeof curTab !== 'undefined' ? curTab : '';
   curTab = t;
-  if (t === 'sim') renderSim();
-  document.querySelectorAll('nav button[data-t]').forEach(function (b) {
-    b.setAttribute('aria-selected', b.dataset.t === t);
-  });
-  ['rincian', 'jadwal', 'item', 'kas', 'sim'].forEach(function (x) {
-    $('v-' + x).hidden = x !== t;
-  });
-  var sec = $('v-' + t);
-  if (sec) {
-    sec.classList.remove('page-in');
-    void sec.offsetWidth;
-    sec.classList.add('page-in');
+  if (typeof JADWAL_PINNED_IDS !== 'undefined' && prev !== t) {
+    JADWAL_PINNED_IDS = null;
   }
-  if (t === 'rincian') {
-    if (typeof LC_LIVE !== 'undefined' && Array.isArray(LC_LIVE)) {
-      LC_LIVE.forEach(function (fn) { if (typeof fn === 'function') fn(); });
+  document.querySelectorAll('#browser-shell .nav-btn[data-tab], #browser-shell nav button[data-t]').forEach(function (b) {
+    var bt = b.dataset.tab || b.dataset.t;
+    var on = bt === t && (typeof mode === 'undefined' || mode === 'rencana');
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  document.querySelectorAll('#browser-shell .mob-nav-btn[data-tab]').forEach(function (b) {
+    b.classList.toggle('active', b.dataset.tab === t && (typeof mode === 'undefined' || mode === 'rencana'));
+  });
+  var mbMore = $('btn-mobile-more');
+  if (mbMore) mbMore.classList.toggle('active', t === 'sim' || (typeof mode !== 'undefined' && mode === 'trip'));
+  ['rincian', 'kas', 'jadwal', 'item', 'sim', 'trip'].forEach(function (x) {
+    var sec = $('tab-' + x) || $('v-' + x);
+    if (sec) {
+      var isAct = x === t && (typeof mode === 'undefined' || mode === 'rencana');
+      sec.classList.toggle('active', isAct);
+      sec.hidden = !isAct;
     }
-  }
+  });
+  ['rebalance', 'ibkr'].forEach(function (x) {
+    var sec = $('v-' + x);
+    if (sec) {
+      var isAct = x === t;
+      sec.classList.toggle('active', isAct);
+      sec.hidden = !isAct;
+      if (isAct) {
+        var ifr = sec.querySelector('iframe[data-src]');
+        if (ifr && !ifr.getAttribute('src')) ifr.setAttribute('src', ifr.getAttribute('data-src'));
+      }
+    }
+  });
+  if (t === 'sim' && typeof renderSim === 'function') renderSim();
+  if (t === 'rincian' && typeof renderRincianCharts === 'function') renderRincianCharts();
+  if (typeof renderShell === 'function') renderShell();
   navPill();
-  $('yb').style.display = '';
+  if ($('yb')) $('yb').style.display = '';
   if (typeof syncNav === 'function') syncNav();
 }
 
@@ -104,10 +105,11 @@ function askConfirm(msg, onYes, yesLabel, title) {
 
 /** Pasang event listener halaman ini. */
 function bindDom() {
-  document.querySelectorAll('nav button[data-t]').forEach(function (b) {
+  document.querySelectorAll('#browser-shell .nav-btn[data-tab], #browser-shell .mob-nav-btn[data-tab], nav button[data-t]').forEach(function (b) {
     b.onclick = function () {
-      if (typeof navGo === 'function') navGo(b.dataset.t);
-      else tab(b.dataset.t);
+      var target = b.dataset.tab || b.dataset.t;
+      if (typeof navGo === 'function') navGo(target);
+      else tab(target);
     };
   });
   $('ttu').onclick = function () {
@@ -123,34 +125,39 @@ function bindDom() {
   document.addEventListener('mousedown', function (e) {
     _mDown = e.target;
   });
+  function closeBackdropEl(el) {
+    if (!el) return;
+    if (typeof brCloseModal === 'function' && el.id) {
+      brCloseModal(el.id);
+      return;
+    }
+    el.classList.remove('open');
+    if (el.id === 'lg' || el.id === 'cf' || el.classList.contains('modal')) el.hidden = true;
+  }
   document.addEventListener('click', function (e) {
     if (
       _mDown === e.target &&
       e.target &&
       e.target.classList &&
-      e.target.classList.contains('modal')
+      (e.target.classList.contains('modal') || e.target.classList.contains('modal-backdrop'))
     ) {
-      var c = e.target.querySelector(
-        'button.c, #pcl, #cl, #rmc, #kpc, #shx, #lgc, #skc, #xlc, [data-cf="later"]'
-      );
+      var c = e.target.querySelector('#lgc, #yr-close, #qtx-close, #kpf-close, #rep-m-cl, [data-cf="later"], [data-close-modal]');
       if (c) c.click();
-      else e.target.hidden = true;
+      else closeBackdropEl(e.target);
     }
     _mDown = null;
   });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
-      var om = document.querySelector('.modal:not([hidden])');
+      var om = document.querySelector('#browser-shell .modal-backdrop.open, .modal:not([hidden]), #lg:not([hidden]), #cf:not([hidden])');
       if (om) {
-        var c = om.querySelector(
-          'button.c, #pcl, #cl, #rmc, #kpc, #shx, #lgc, #skc, #xlc, #qkc, [data-cf="later"]'
-        );
+        var c = om.querySelector('#lgc, #yr-close, #qtx-close, #kpf-close, #rep-m-cl, [data-cf="later"], [data-close-modal]');
         if (c) c.click();
-        else om.hidden = true;
+        else closeBackdropEl(om);
       }
     }
   });
-  bindQuickKas();
+  if (typeof bindQuickKas === 'function') bindQuickKas();
 }
 
 /** Tulis status simpan di header. */

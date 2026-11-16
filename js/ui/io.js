@@ -7,8 +7,11 @@ var DL = null;
 /** Tulis pesan di jendela impor/ekspor. */
 function setX(t, ok) {
   var e = $('xm');
-  e.textContent = t;
-  e.style.color = ok ? 'var(--in)' : 'var(--wr)';
+  if (e) {
+    e.textContent = t;
+    e.style.color = ok ? 'var(--emerald, var(--in))' : 'var(--crimson, var(--wr))';
+  }
+  if (t && typeof toast === 'function') toast(t);
 }
 
 /** Unduh file; bila tidak bisa, isinya ditaruh di kolom teks agar bisa disalin. */
@@ -23,9 +26,9 @@ function exportFile(name, data, mime) {
       a.remove();
       setX('File diunduh: ' + name, 1);
     } catch (e) {
-      $('ta').value = data;
-      $('dt').open = true;
-      setX('Unduh file gagal. Isinya ada di kolom teks di bawah, silakan salin.', 0);
+      if ($('ta')) $('ta').value = data;
+      if ($('dt')) $('dt').open = true;
+      setX('Unduh file gagal.', 0);
     }
     return;
   }
@@ -142,7 +145,7 @@ function doExport(kind) {
 
 /** Impor teks JSON (cadangan) atau CSV (item). Mode gabung/timpa dari pilihan di jendela. */
 function doImport(text) {
-  var mode = $('im').value,
+  var mode = $('im') ? $('im').value : 'merge',
     t = String(text || '')
       .replace(/^\uFEFF/, '')
       .trim();

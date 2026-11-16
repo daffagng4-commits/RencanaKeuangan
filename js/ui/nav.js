@@ -55,6 +55,7 @@ function sheetHtml() {
     '<button type="button" role="menuitem" data-rep="y">Tahun ini</button>' +
     '<div class="bs-h">Pengaturan &amp; Alat</div>' +
     '<button type="button" role="menuitem" data-go="settings">Pengaturan (Tahun &amp; Saldo)</button>' +
+    '<button type="button" role="menuitem" data-shell-switch="mobile-app">Mode Aplikasi HP</button>' +
     '<button type="button" role="menuitem" data-thm>Tema: ' + THEME_NAME[themeCur()] + '</button>' +
     '<button type="button" role="menuitem" data-pwa hidden>Pasang aplikasi</button>' +
     '<a role="menuitem" href="tools/rebalance/index.html" target="_blank" rel="noopener"><span>Rebalance porto</span>' + ext + '</a>' +
@@ -98,6 +99,8 @@ function syncNav() {
     if (on) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   });
+  var nbt = $('nav-btn-trip');
+  if (nbt) nbt.classList.toggle('on', mode === 'trip');
 }
 
 /** Tanda centang pada pilihan "Tampilkan Perjalanan" di menu. */
@@ -115,6 +118,8 @@ function applyTripVis(rerender) {
   Array.prototype.forEach.call(document.querySelectorAll('[data-md="trip"]'), function (b) {
     b.hidden = !on;
   });
+  var nbt = $('nav-btn-trip');
+  if (nbt) nbt.hidden = !on;
   if (!on && mode === 'trip') {
     mode = 'rencana';
     remember('rk-mode', 'rencana');
@@ -322,6 +327,12 @@ function bindNav() {
     sheet(false);
   });
   applyTripVis(false);
+  var sbTripBtn = $('nav-btn-trip');
+  if (sbTripBtn) {
+    sbTripBtn.onclick = function () {
+      setMode(mode === 'trip' ? 'rencana' : 'trip');
+    };
+  }
   bindSidebar();
   railMove();
   addEventListener('resize', function () {

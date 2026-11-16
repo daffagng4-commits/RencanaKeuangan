@@ -21,51 +21,47 @@ const ok = (c, m) => { assert(c, m); pass++; console.log("ok -", m); };
     tx("a7", "2026-10-30", "-", 1600000, "Lainnya", "Hutang Mamah"),
   ];
   w.tab("kas"); w.renderAll(); await tick();
-  const rows = () => [...w.document.querySelectorAll("#v-kas .it2")];
-  const amounts = () => rows().map((r) => r.querySelector("b").className);
+  const rows = () => [...w.document.querySelectorAll("#kas-history-list .upcoming-item")];
+  const dirBtn = (d) => w.document.querySelector(`#tab-kas [data-kdir="${d}"]`);
+  const amounts = () => rows().map((r) => r.querySelector('.upcoming-right span').textContent.trim().startsWith('+') ? 'kin' : 'neg');
 
-  ok($("ktf") && [...$("ktf").options].map((o) => o.value).join() === "all,+,-", "dropdown ada dengan 3 pilihan: all, +, -");
-  ok([...$("ktf").options].map((o) => o.textContent.trim()).join("|") === "Semua|+ Masuk|− Keluar", "label: Semua | + Masuk | − Keluar");
-  ok($("ktf").value === "all" && rows().length === 7, "bawaan: Semua (7 transaksi)");
+  ok(dirBtn("all") && dirBtn("in") && dirBtn("out"), "3 tombol arah filter ada: Semua, Masuk, Keluar");
+  ok(dirBtn("all").classList.contains("active") && rows().length === 7, "bawaan: Semua (7 transaksi)");
 
-  $("ktf").value = "+"; fire($("ktf"), "change"); await tick();
+  click(dirBtn("in")); await tick();
   ok(rows().length === 3 && amounts().every((c) => c === "kin"), "+ Masuk: hanya 3 transaksi masuk");
-  ok($("ktf").value === "+", "pilihan dropdown bertahan setelah daftar digambar ulang");
-  ok(/3 dari 7 transaksi/.test($("v-kas").textContent), "keterangan jumlah: '3 dari 7 transaksi'");
+  ok(dirBtn("in").classList.contains("active"), "tombol Masuk tetap aktif");
+  ok(/3 dari 7 transaksi/.test($("kas-hist-summary").textContent), "keterangan jumlah: '3 dari 7 transaksi'");
 
-  $("ktf").value = "-"; fire($("ktf"), "change"); await tick();
+  click(dirBtn("out")); await tick();
   ok(rows().length === 4 && amounts().every((c) => c === "neg"), "− Keluar: hanya 4 transaksi keluar");
 
-  $("ktf").value = "all"; fire($("ktf"), "change"); await tick();
-  ok(rows().length === 7 && !/dari 7 transaksi/.test($("v-kas").textContent), "kembali ke Semua: 7 transaksi, keterangan hilang");
+  click(dirBtn("all")); await tick();
+  ok(rows().length === 7 && /7 dari 7 transaksi/.test($("kas-hist-summary").textContent), "kembali ke Semua: 7 dari 7 transaksi");
 
-  // filter rentang tanggal (preset) lalu kategori (multi pilih)
-  click($("kfrange")); await tick();
-  click(w.document.querySelector('.pk-rng [data-p="Bulan lalu"]')); await tick();
-  click(w.document.querySelector('.pk-rng [data-ok]')); await tick();
+  // filter rentang tanggal (1-30 Nov) lalu kategori Transfer
+  click($("kas-range-trigger")); await tick();
+  click(w.document.querySelector('#kas-range-popover [data-krng-mv="-1"]')); await tick();
+  click(w.document.querySelector('#kas-range-popover [data-krng-d="2026-11-01"]')); await tick();
+  click(w.document.querySelector('#kas-range-popover [data-krng-d="2026-11-30"]')); await tick();
+  click(w.document.querySelector('#kas-range-popover [data-krng-done="1"]')); await tick();
   ok(rows().length === 3, "rentang 1-30 Nov: 3 transaksi");
-  ok(/1 Nov 2026/.test($("kfrange").textContent), "label rentang ikut berubah: " + $("kfrange").textContent);
-  click($("kfcat")); await tick();
-  click(w.document.querySelector('.pk-multi [data-m="Transfer"]')); await tick();
-  click(w.document.querySelector('.pk-multi [data-ok]')); await tick();
-  ok(rows().length === 1, "kategori Transfer di Nov: 1 transaksi");
-  click($("krst")); await tick();
-  ok(rows().length === 7 && /Semua kategori/.test($("kfcat").textContent), "Reset mengembalikan filter dan semua transaksi tampil");
+  ok(/1 Nov.*30 Nov/.test($("kas-range-display").textContent), "label rentang ikut berubah: " + $("kas-range-display").textContent);
 
-  // filter periode sudah dihapus
-  ok(!$("kper"), "dropdown Periode sudah dihapus");
-  ok(rows().length === 7, "semua transaksi tampil tanpa filter periode");
+  $("kas-filter-cat").value = "Transfer"; fire($("kas-filter-cat"), "change"); await tick();
+  ok(rows().length === 1, "kategori Transfer di Nov: 1 transaksi");
+  click($("kas-filter-reset")); await tick();
+  ok(rows().length === 7 && $("kas-filter-cat").value === "all", "Reset mengembalikan filter dan semua transaksi tampil");
 
   // kosong
   P.tx = P.tx.filter((x) => x.t === "+"); w.renderAll(); await tick();
-  $("ktf").value = "-"; fire($("ktf"), "change"); await tick();
-  ok(/Belum ada transaksi keluar di periode ini/.test($("v-kas").textContent), "tidak ada transaksi keluar: pesan kosong yang sesuai");
+  click(dirBtn("out")); await tick();
+  ok(/Tidak ada transaksi/.test($("kas-history-list").textContent), "tidak ada transaksi keluar: pesan kosong yang sesuai");
 
-  // saldo & ringkasan tidak ikut terfilter
-  const head = () => $("v-kas").textContent.split("Riwayat transaksi")[0];
-  const before = head();
-  $("ktf").value = "all"; fire($("ktf"), "change"); await tick();
-  ok(head() === before && before.length > 20, "ringkasan saldo dan grafik di atas daftar tidak terpengaruh filter");
+  // saldo & ringkasan atas tidak ikut terfilter
+  const before = $("kas-saldo-val").textContent;
+  click(dirBtn("all")); await tick();
+  ok($("kas-saldo-val").textContent === before && before.length > 2, "saldo kas di atas daftar tidak terpengaruh filter");
 
   ok(t.errs.length === 0, "tidak ada galat JavaScript: " + t.errs.slice(0, 2).join("|"));
   console.log(`\n${pass} pengecekan lulus`);

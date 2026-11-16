@@ -35,9 +35,9 @@ const { boot } = require('./ui.js');
   assert.strictEqual(cur(), 'auto', 'setelah tema terakhir kembali ke Otomatis');
 
   // lembar Lainnya (HP): tema tidak lagi muncul di sini
-  click($('botnav').querySelector('[data-k="more"]'));
-  const sh = $('botsheet');
-  assert(!sh.hidden);
+  click($('btn-mobile-more'));
+  const sh = $('mobile-more-sheet');
+  assert(sh.classList.contains('open'));
   assert(!sh.querySelector('[data-theme-set]'), 'pilihan tema dihapus dari lembar Lainnya');
   w.setTheme('auto');
   assert.strictEqual(cur(), 'auto');

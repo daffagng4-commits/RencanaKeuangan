@@ -29,14 +29,13 @@ const { boot } = require("./ui.js");
   w.renderAll();
   await tick();
 
-  let heroRincian = $("v-rincian").querySelector(".hero").textContent;
-  console.log("Rincian Hero (Belum Lunas):\n", heroRincian);
+  let saldoRincian = $("rincian-saldo-now").textContent;
+  console.log("Rincian Saldo (Belum Lunas):", saldoRincian);
 
-  assert(heroRincian.includes("4.550.000"), "Rincian: Saldo harus Rp 4.550.000 saat tagihan belum lunas");
-  assert(heroRincian.includes("Realtime"), "Rincian: Harus ada keterangan Realtime");
-  assert(heroRincian.includes("Januari"), "Rincian: Harus ada keterangan bulan Januari");
-  assert(!/masuk Rp 50\.000/.test(heroRincian), "Rincian: baris masuk/keluar dihapus");
-  assert(!/keluar Rp 500\.000/.test(heroRincian), "Rincian: baris keluar dihapus");
+  assert(saldoRincian.includes("4.550.000"), "Rincian: Saldo harus Rp 4.550.000 saat tagihan belum lunas");
+  const rincianText = $("tab-rincian").textContent;
+  assert(rincianText.includes("Realtime"), "Rincian: Harus ada keterangan Realtime");
+  assert($("metric-daily-lbl").textContent.includes("Des"), "Rincian: Jatah jajan tahun 2028 aktif");
 
   // ============================
   // 2. Sekarang tandai tagihan 1 Jan 2028 sebagai LUNAS
@@ -45,12 +44,11 @@ const { boot } = require("./ui.js");
   w.renderAll();
   await tick();
 
-  heroRincian = $("v-rincian").querySelector(".hero").textContent;
-  console.log("\nRincian Hero (Sudah Lunas):\n", heroRincian);
+  saldoRincian = $("rincian-saldo-now").textContent;
+  console.log("\nRincian Saldo (Sudah Lunas):", saldoRincian);
 
   // Saldo harus 5.000.000 - 500.000 + 50.000 - 200.000 = 4.350.000
-  assert(heroRincian.includes("4.350.000"), "Rincian: Saldo harus Rp 4.350.000 saat tagihan lunas");
-  assert(!/keluar Rp 700\.000/.test(heroRincian), "Rincian: baris keluar dihapus");
+  assert(saldoRincian.includes("4.350.000"), "Rincian: Saldo harus Rp 4.350.000 saat tagihan lunas");
 
   // ============================
   // 3. Uji pada Tab Catatan Kas (verifikasi baris transaksi)
@@ -59,7 +57,7 @@ const { boot } = require("./ui.js");
   w.renderAll();
   await tick();
 
-  const kasText = $("v-kas").textContent;
+  const kasText = $("tab-kas").textContent;
   assert(kasText.includes("Belanja"), "Kas: Harus ada riwayat Belanja (-500rb)");
   assert(kasText.includes("Bonus"), "Kas: Harus ada riwayat Bonus (+50rb)");
   assert(kasText.includes("Tagihan Listrik"), "Kas: Harus ada riwayat Tagihan Listrik lunas");
@@ -70,8 +68,9 @@ const { boot } = require("./ui.js");
   w.S.startMonth = 1; // Februari
   w.renderAll();
   await tick();
-  heroRincian = $("v-rincian").querySelector(".hero").textContent;
-  assert(heroRincian.includes("Februari"), "Rincian: Keterangan bulan harus Februari saat startMonth = 1");
+  assert.strictEqual($("rincian-saldo-now").textContent, "Rp 4.350.000", "Rincian: Saldo tetap konsisten setelah ganti startMonth");
+  $('yr-btn').click();
+  assert($("yr-sum").textContent.includes("Feb"), "Ringkasan tahun/bulan memuat Feb saat startMonth = 1");
 
   console.log("\nSemua assertion saldo realtime dan catatan kas berhasil!");
   process.exit(0);

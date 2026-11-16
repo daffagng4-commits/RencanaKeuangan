@@ -6,22 +6,16 @@ const { boot } = require('./ui.js');
   await t.ready();
   const { $ } = t;
   try {
-    const root = $('v-rincian');
-    const kas = root.querySelector('.rk > .rk-kas');
-    assert(kas, 'slot .rk-kas ada');
-    assert.strictEqual(kas.querySelectorAll(':scope > section.card').length, 1, '.rk-kas berisi tepat 1 kartu');
-    const hero = kas.querySelector('.card.cond.hm.hero');
-    assert(hero, 'kartu tunggal .cond.hm.hero');
-    assert(hero.querySelector('.hm-stats'), 'kartu memuat .hm-stats');
-    assert(hero.querySelector('.cond-big.hm-big'), 'kartu memuat saldo utama .hm-big');
-    assert(hero.querySelector('.rk-flow svg.lc'), 'grafik arus saldo di dalam kartu Kondisi kas');
-    assert.strictEqual(root.querySelectorAll('.rk > .rk-kas').length, 1, 'satu kartu gabungan untuk Kondisi kas');
-    assert(!root.querySelector('.rk > .rk-flow'), 'grafik bukan lagi slot bersaudara');
-    // Keseimbangan tag: 6 slot, urutan sesuai target tata letak (Fase E: rk-where gabungan).
-    const grid = root.querySelector('.rk');
-    const kids = [...grid.children].map((e) => e.className.split(' ')[0]);
-    assert.deepStrictEqual(kids, ['rk-kas', 'rk-bills', 'rk-mf', 'rk-where', 'rk-detail', 'rk-tx']);
-    assert.strictEqual(kas.querySelector('.rk-mf, .rk-bills, .rk-top, .rk-where'), null, 'slot lain tidak ikut masuk ke .rk-kas');
+    const root = $('tab-rincian');
+    assert(root, '#tab-rincian ada');
+    const hero = root.querySelector('.stack > .card');
+    assert(hero, 'kartu pertama (hero) ada');
+    assert(hero.querySelector('.hero-balance-row'), 'hero memuat .hero-balance-row');
+    assert(hero.querySelector('#rincian-saldo-now.hero-amount'), 'kartu memuat saldo utama #rincian-saldo-now');
+    assert(hero.querySelector('#svg-cashflow'), 'grafik arus saldo #svg-cashflow di dalam kartu kondisi kas');
+    assert(hero.querySelector('.grid-4') && hero.querySelectorAll('.grid-4 .metric-tile').length === 4, 'kartu memuat 4 metric-tile');
+    assert(hero.querySelector('#metric-end-bal') && hero.querySelector('#metric-daily-val') && hero.querySelector('#metric-avg-bill') && hero.querySelector('#metric-total-year'), '4 metrik utama terpasang');
+    assert.strictEqual(hero.querySelector('#upcoming-bills-list, #svg-bar-compare, #card-where-money, #monthly-flow-tbody, #recent-tx-groups'), null, 'kartu lain tidak masuk ke dalam kartu hero');
     console.log('OK hero_html');
     process.exit(0);
   } catch (e) {

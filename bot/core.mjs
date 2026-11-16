@@ -92,6 +92,40 @@ function fmtD(d) {
   return fd(Date.parse(d + 'T00:00:00Z'));
 }
 
+/**
+ * Format rentang tanggal ringkas bahasa Indonesia.
+ * Aturan:
+ * - Bulan dan tahun sama: "1 – 30 Nov 2026"
+ * - Bulan beda, tahun sama: "1 Nov – 15 Des 2026"
+ * - Tahun beda: "28 Des 2026 – 3 Jan 2027"
+ * - Tanggal sama: "15 Nov 2026"
+ * Pemisah rentang SELALU en-dash (" – ") dengan spasi.
+ */
+function fmtDateRange(from, to) {
+  if (!from) return '';
+  if (!to || from === to) return fmtD(from);
+  var y1 = from.slice(0, 4), m1 = +from.slice(5, 7) - 1, d1 = String(+from.slice(8, 10));
+  var y2 = to.slice(0, 4), m2 = +to.slice(5, 7) - 1, d2 = String(+to.slice(8, 10));
+  if (y1 === y2) {
+    if (m1 === m2) {
+      return d1 + ' \u2013 ' + d2 + ' ' + MON[m1] + ' ' + y1;
+    }
+    return d1 + ' ' + MON[m1] + ' \u2013 ' + d2 + ' ' + MON[m2] + ' ' + y1;
+  }
+  return d1 + ' ' + MON[m1] + ' ' + y1 + ' \u2013 ' + d2 + ' ' + MON[m2] + ' ' + y2;
+}
+
+/**
+ * Format rentang bulan ringkas bahasa Indonesia:
+ * - Bulan sama: "Nov 2026"
+ * - Bulan beda: "Nov – Des 2026"
+ */
+function fmtMonthRange(m1, m2, y) {
+  if (m1 == null) return '';
+  if (m2 == null || m1 === m2) return MON[m1] + ' ' + y;
+  return MON[m1] + ' \u2013 ' + MON[m2] + ' ' + y;
+}
+
 /** Harga singkat: 720rb, 1,5jt. */
 function shortP(p) {
   return p >= 1e6

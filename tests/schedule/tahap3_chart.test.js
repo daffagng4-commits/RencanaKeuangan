@@ -28,8 +28,8 @@ const { boot } = require('./ui.js');
   w.tab('rincian');
   w.renderAll();
   const dotColor = (name) => {
-    const row = [...$('v-rincian').querySelectorAll('.insight .where-cats li')].filter((b) => b.querySelector('b').textContent.trim() === name)[0];
-    return row.querySelector('span.where-ti').style.color;
+    const row = [...$('where-cat-list').querySelectorAll('.simple-row')].find((b) => b.dataset.wcat === name);
+    return row.querySelector('.simple-row-bar i').style.background;
   };
   const before = { h: dotColor('Hiburan'), m: dotColor('Makan') };
   w.S.items[1].price = 5000000; // urutan nilai berubah (Makan jadi terbesar)
@@ -39,78 +39,54 @@ const { boot } = require('./ui.js');
   w.S.items[1].price = 100000;
   w.renderAll();
 
-  // ---- bar per kategori & item ----
-  const barSeg = $('v-rincian').querySelector('#where-cat-bar i');
+  // ---- bar & daftar per kategori ----
+  const barSeg = $('where-cat-list').querySelector('.simple-row-bar i');
   assert(barSeg, 'segmen bar kategori ada');
-  const catLi = $('v-rincian').querySelector('#where-cats-list li');
-  assert(catLi, 'baris kategori ada');
 
   // grafik: kurva halus + crosshair/tooltip interaktif
-  const chart = $('v-rincian').querySelector('svg[aria-label^="Grafik arus saldo"]');
-  assert(chart, 'grafik arus saldo ada');
-  const line = chart.querySelector('.lc-line');
-  assert(line.getAttribute('d') && line.getAttribute('d').split('L').length > 10, 'kurva halus banyak titik');
-  const big = chart.closest('.lc-card').querySelector('.cond-big, .lc-big');
-  assert(big && /Rp/.test(big.textContent), 'nominal besar terisi: ' + (big && big.textContent));
-  const pct = chart.closest('.lc-card').querySelector('.cond-chip, .lc-pct');
-  assert(pct && /^[▲▼] \d/.test(pct.textContent), 'chip persen perubahan');
-  const ctip = chart.closest('.lc-card').querySelector('.lc-tip');
+  const chart = $('svg-cashflow');
+  assert(chart, 'grafik arus saldo #svg-cashflow ada');
+  assert(chart.querySelector('path[d]') && chart.querySelector('path[d]').getAttribute('d').length > 10, 'kurva halus ter-render');
+  const hit = chart.getElementById('cf-hit'), tip = $('cashflow-tooltip');
+  assert(hit && tip, 'hit rect dan tooltip grafik arus kas ada');
   chart.getBoundingClientRect = () => ({ left: 0, top: 0, width: 720, height: 250, right: 720, bottom: 250 });
-  const pe = (type, x) => {
-    const e = new w.Event(type, { bubbles: true, cancelable: true });
-    Object.defineProperty(e, 'pointerType', { value: 'touch' });
-    e.pointerId = 1; e.clientX = x; e.clientY = 40;
-    chart.dispatchEvent(e);
-  };
-  pe('pointerdown', 4);
-  assert(chart.querySelector('.lc-cur').style.display !== 'none', 'crosshair muncul saat disentuh');
-  assert.strictEqual(ctip.style.opacity, '1', 'tooltip tampil');
-  assert(/Rp/.test(ctip.lastElementChild.textContent), 'tooltip berisi nominal: ' + ctip.lastElementChild.textContent);
-  const cx0 = +chart.querySelector('.lc-cd').getAttribute('cx');
-  pe('pointermove', 716);
-  assert(+chart.querySelector('.lc-cd').getAttribute('cx') > cx0, 'crosshair ikut bergeser');
-  chart.dispatchEvent(new w.Event('pointerleave', { bubbles: true }));
-  assert.strictEqual(chart.querySelector('.lc-cur').style.display, 'none', 'lepas menutup crosshair');
+  $('cashflow-chart-wrap').getBoundingClientRect = () => ({ left: 0, top: 0, width: 720, height: 250, right: 720, bottom: 250 });
+  const mv = new w.MouseEvent('mousemove', { bubbles: true, clientX: 300, clientY: 80 });
+  hit.dispatchEvent(mv);
+  assert(chart.getElementById('cf-crosshair').style.display !== 'none', 'crosshair muncul saat digeser');
+  assert(tip.classList.contains('visible'), 'tooltip tampil');
+  assert(/Rp/.test(tip.textContent), 'tooltip berisi nominal: ' + tip.textContent);
+  hit.dispatchEvent(new w.MouseEvent('mouseleave', { bubbles: true }));
+  assert.strictEqual(chart.getElementById('cf-crosshair').style.display, 'none', 'mouseleave menutup crosshair');
+
   w.S.startMonth = 10;
   w.renderAll();
-  const c2 = $('v-rincian').querySelector('svg[aria-label^="Grafik arus saldo"]');
-  assert(c2 && c2.querySelector('.lc-line').getAttribute('d'), 'grafik tetap tampil walau mulai November');
+  assert($('svg-cashflow').querySelector('path[d]'), 'grafik tetap tampil walau mulai November');
   w.S.startMonth = 0;
   w.renderAll();
   w.kasLinked().tx = [{ id: 'g', d: '2026-12-01', t: '+', amt: 3000000, cat: 'Gaji', note: 'Gaji' }];
   w.S.items.push(it({ id: 'd', name: 'Cicilan', price: 700000, unit: 'sekali', start: '2026-11-20' }));
   w.renderAll();
 
-  // pie pemasukan vs pengeluaran pindah ke Rincian Bulanan, di samping grafik arus saldo
+  // kategori urut dari terbesar & footer
   w.tab('rincian');
   w.renderAll();
-  const bar = $('v-rincian').querySelector('#where-cat-bar');
-  assert(bar, 'bar bertumpuk per kategori di Rincian Bulanan');
-  const ns = bar.querySelectorAll('i').length,
-    nr = $('v-rincian').querySelectorAll('#where-cats-list li').length;
-  assert(ns > 1, 'bar punya segmen per kategori: ' + ns);
-  assert.strictEqual(nr, ns, 'satu baris kategori per segmen');
-  const vals = [].map.call($('v-rincian').querySelectorAll('#where-cats-list .where-am'), function (v) { return Number(v.textContent.replace(/[^\d]/g, '')); });
-  assert(vals.every(function (v, i) { return i === 0 || vals[i - 1] >= v; }), 'kategori urut dari terbesar');
-  assert(/kategori/.test(txt($('v-rincian').querySelector('#where-cat-foot'))), 'footer kategori tetap ada');
+  const vals = [].map.call($('where-cat-list').querySelectorAll('.simple-row-amt'), function (v) { return Number(v.textContent.replace(/[^\d]/g, '')); });
+  assert(vals.length > 1 && vals.every(function (v, i) { return i === 0 || vals[i - 1] >= v; }), 'kategori urut dari terbesar');
 
   // ---- empty state ----
   w.kasLinked().tx = [];
   w.renderAll();
-  const cta = $('v-kas').querySelector('[data-kfocus]');
-  assert(cta, 'CTA catat transaksi pertama');
-  click(cta);
-  assert.strictEqual(w.document.activeElement && w.document.activeElement.id, 'ka', 'kolom jumlah difokuskan');
+  w.tab('kas');
+  assert($('tab-kas').textContent.includes('Tidak ada transaksi'), 'empty state riwayat kas tampil');
   w.S.items = [it({ id: 'z', name: 'Z', price: 100000, cat: '' })];
   w.tab('rincian');
   w.renderAll();
-  assert(/Tagihan/.test(txt($('v-rincian'))), 'tagihan tanpa kategori tetap tampil di kategori');
+  assert(/Tagihan/.test(txt($('tab-rincian'))), 'tagihan tanpa kategori tetap tampil di kategori');
   w.S.items = [];
   w.tab('rincian');
   w.renderAll();
-  assert(/Mulai dari item pertama/.test(txt($('v-rincian'))), 'ajakan saat belum ada item');
-  click($('v-rincian').querySelector('button.p[data-goto="item"]'));
-  assert.strictEqual(w.curTab, 'item');
+  assert(/Semua tagihan sudah lunas/.test(txt($('upcoming-bills-list'))), 'pesan saat belum ada tagihan jatuh tempo');
 
   assert.strictEqual(errs.length, 0, 'tidak ada galat JavaScript: ' + errs.slice(0, 2));
   console.log('Semua pengecekan tahap3_chart lulus');

@@ -18,39 +18,45 @@ const { boot } = require('./ui.js');
     assert(sum.querySelector('.rk-date'), 'ringkasan diawali tanggal');
     assert(/&middot;|·/.test(sum.innerHTML), 'ringkasan memakai pemisah &middot;');
 
-    // 2. Pembungkus layout + sidebar + header.
-    const app = doc.querySelector('.app');
-    assert(app, '.app (pembungkus grid) ada');
-    const header = app.querySelector(':scope > header');
-    assert(header, '<header> adalah anak langsung .app (kolom 1 grid)');
-    const nav = header.querySelector('nav[role="tablist"]');
-    assert(nav, 'nav[role=tablist] ada di dalam header');
-    assert(nav.querySelector('#sb-toggle'), '#sb-toggle ada di nav');
-    assert(nav.querySelector('#sb-name'), '#sb-name (nama sidebar) terisi');
-    assert(app.querySelector(':scope > .w'), '.w (kolom 2 grid) adalah anak langsung .app');
+    // 2. Pembungkus layout + sidebar + main-shell.
+    const app = doc.querySelector('#browser-shell.app-shell.app');
+    assert(app, '#browser-shell.app-shell.app (pembungkus grid) ada');
+    const aside = app.querySelector(':scope > aside.sidebar');
+    assert(aside, '<aside class="sidebar"> adalah anak langsung .app');
+    const nav = aside.querySelector('#rk-nav[role="tablist"]');
+    assert(nav, '#rk-nav[role=tablist] ada di dalam aside.sidebar');
+    assert(aside.querySelector('#sb-toggle'), '#sb-toggle ada di sidebar');
+    assert(aside.querySelector('#sb-name'), '#sb-name (nama sidebar) terisi');
+    const mainShell = app.querySelector(':scope > .main-shell');
+    assert(mainShell, '.main-shell (kolom utama) adalah anak langsung .app');
+    assert(mainShell.querySelector('header.topbar'), 'header.topbar ada di dalam .main-shell');
 
-    // 3. Grid Rincian: 6 slot sesuai tata letak 3 baris (Fase E), tiap slot berisi kartu nyata.
-    const grid = $('v-rincian').querySelector('.rk');
-    const kids = [...grid.children].map((e) => e.className.split(' ')[0]);
-    assert.deepStrictEqual(kids, ['rk-kas', 'rk-bills', 'rk-mf', 'rk-where', 'rk-detail', 'rk-tx'], 'grid berisi 6 slot berurutan');
-    const needText = { 'rk-kas': '.hm-big', 'rk-bills': '.card', 'rk-mf': 'svg', 'rk-where': '.where-panels', 'rk-detail': '.card', 'rk-tx': '.card' };
-    for (const [cls, sel] of Object.entries(needText)) {
-      const slot = grid.querySelector('.' + cls);
-      assert(slot, '.' + cls + ' terpasang');
-      assert(slot.querySelector(sel), '.' + cls + ' berisi ' + sel);
-      assert(slot.textContent.replace(/\s+/g, '').length > 20, '.' + cls + ' berisi teks (bukan kosong)');
+    // 3. Isi Tab Rincian Fiscal Atelier: hero saldo+grafik arus kas, tagihan mendatang, bar compare, 100% Jar, rincian bulanan, transaksi terakhir.
+    const root = $('tab-rincian');
+    assert(root && !root.hidden, '#tab-rincian ada dan aktif');
+    const needSel = {
+      '#rincian-saldo-now': '.hero-amount',
+      '#svg-cashflow': 'path',
+      '#upcoming-bills-list': '.upcoming-item, div',
+      '#svg-bar-compare': 'rect, line',
+      '#jar-main-stage': '#svg-jar-main',
+      '#where-cat-list': '.simple-row, div',
+      '#top5-items-list': '.simple-row, div',
+      '#monthly-flow-tbody': 'tr[data-flow-m]',
+      '#recent-tx-groups': 'div',
+    };
+    for (const [id, inner] of Object.entries(needSel)) {
+      const el = root.querySelector(id);
+      assert(el, id + ' terpasang');
+      assert(el.querySelector(inner) || el.textContent.trim().length > 0, id + ' terisi konten nyata');
     }
-    // Kondisi kas: grafik arus saldo bersarang di dalam kartu, bukan slot bersaudara.
-    assert(grid.querySelector('.rk-kas .rk-flow svg.lc'), 'grafik arus saldo di dalam kartu Kondisi kas');
-    assert(!grid.querySelector(':scope > .rk-flow'), 'tidak ada slot .rk-flow di tingkat grid');
 
-    // 4. Kartu gabungan "Ke mana uangnya pergi" memuat dua panel sejajar (kategori & item terbesar).
-    const where = grid.querySelector('.rk-where');
-    assert(where, '.rk-where terpasang');
-    assert.strictEqual(where.querySelectorAll('.where-panel.rk-cat').length, 1, 'memuat sub-panel kategori .rk-cat');
-    assert.strictEqual(where.querySelectorAll('.where-panel.rk-top').length, 1, 'memuat sub-panel item terbesar .rk-top');
-    assert.strictEqual(grid.querySelectorAll('.rk-cat .card').length, 1, '.rk-cat berisi 1 kartu kategori');
-    assert.strictEqual(grid.querySelectorAll('.rk-top .card').length, 1, '.rk-top berisi 1 kartu item terbesar');
+    // 4. Kartu gabungan "Ke mana uangnya pergi" memuat 100% Jar kiri + panel kategori & item terbesar di kanan.
+    const where = $('card-where-money');
+    assert(where, '#card-where-money terpasang');
+    assert(where.querySelector('#jar-main-stage #svg-jar-main'), 'memuat 100% Full Jar SVG');
+    assert(where.querySelector('#where-cat-list'), 'memuat panel kategori #where-cat-list');
+    assert(where.querySelector('#top5-items-list'), 'memuat panel item terbesar #top5-items-list');
 
     console.log('OK render_shell_dom');
     process.exit(0);

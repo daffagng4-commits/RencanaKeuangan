@@ -278,7 +278,7 @@ function renderKas() {
     (kasT === '+' ? ' on' : '') +
     '" data-kt="+">+ Masuk</button><button type="button" class="yp' +
     (kasT === '-' ? ' on' : '') +
-    '" data-kt="-">&minus; Keluar</button></div><div class="kf"><div><label for="ka">Jumlah</label><div class="dflex g6"><input id="ka" inputmode="numeric" placeholder="50k atau 50.000" value="' +
+    '" data-kt="-">&minus; Keluar</button></div><div class="kf"><div><label for="ka">Jumlah</label><div class="dflex g6"><input id="ka" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="50k atau 50.000" value="' +
     (E ? E.amt.toLocaleString('id-ID') : '') +
     '">' +
     (mode === 'trip' && P.cur && P.rate ? '<select class="wauto" id="kcu"><option value="idr">Rp</option><option value="fx">' + P.cur + '</option></select>' : '') +
@@ -340,7 +340,12 @@ function renderKas() {
     (rowsH || '<div class="empty">' + emptyMsg + '</div>' + (!asc.length ? '<div class="row2 mt8"><button type="button" class="p" data-kfocus="1">Catat transaksi pertama</button></div>' : '')) +
     (LF.length > 200 ? '<div class="sub">+ ' + (LF.length - 200) + ' lainnya. Pilih rentang yang lebih sempit.</div>' : '') +
     '</div>';
-  el.innerHTML = form + debtHtml(P) + lst;
+  var debtBox =
+    debtHtml(P) ||
+    (mode !== 'trip'
+      ? '<div class="card"><div><h2 style="margin:0 0 2px">Utang &amp; Piutang Aktif</h2><div class="sub mb10">Tagihan personal &amp; talangan teman</div></div><div class="empty">Belum ada catatan utang atau piutang aktif. Centang <b>Transaksi utang/piutang</b> pada form di kiri untuk mulai mencatat.</div></div>'
+      : '');
+  el.innerHTML = hero + '<div class="kas-grid-asym">' + form + debtBox + '</div>' + lst;
   if (window.upPickers) upPickers(el);
 }
 

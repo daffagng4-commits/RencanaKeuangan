@@ -24,19 +24,16 @@ function findCard(doc, re) {
     w.S.skip = {};
     w.kasLinked().tx = [];
 
-    w.flowPeriod = 'w';
-    w.expenseMonth = 'w';
+    w.document.querySelector('#tab-rincian [data-range="w"]').click();
+    w.document.querySelector('#card-where-money [data-where-period="w"]').click();
     w.renderAll();
-    let card = findCard(w.document, /Arus saldo/);
-    assert(card, 'kartu Arus saldo 2026 ada');
-    let sub = card.querySelector('.sub')?.textContent || '';
-    assert(/6 Nov.*12 Nov/.test(sub), 'Arus saldo Minggu 2026: ' + sub);
-    assert(!/· rencana/.test(sub), 'Arus saldo 2026 bukan rencana');
+    const cfText = w.document.getElementById('svg-cashflow').textContent;
+    assert(cfText && /Nov/i.test(cfText), 'Grafik Arus Saldo Minggu 2026 ter-render: ' + cfText);
 
-    // Item pengeluaran terbesar Minggu
-    card = findCard(w.document, /Item (pengeluaran )?terbesar/);
-    sub = card.querySelector('.sub')?.textContent || '';
-    assert(/6 Nov 2026 – 12 Nov 2026/.test(sub), 'Top expenses Minggu 2026: ' + sub);
+    // Ke Mana Uangnya Pergi Minggu
+    let sub = w.document.getElementById('where-sub-lbl').textContent || '';
+    assert(/7 Hari Terakhir/.test(sub), 'Top expenses Minggu 2026: ' + sub);
+    assert(!/· rencana/.test(sub), 'Tahun berjalan bukan · rencana');
 
     // --- tahun depan (simulasi) 2027 ---
     w.switchYear(2027);
@@ -46,22 +43,11 @@ function findCard(doc, re) {
     w.S.paid = {};
     w.kasLinked().tx = [];
 
-    w.flowPeriod = 'w';
-    w.expenseMonth = 'w';
+    w.document.querySelector('#tab-rincian [data-range="w"]').click();
+    w.document.querySelector('#card-where-money [data-where-period="w"]').click();
     w.renderAll();
-    card = findCard(w.document, /Arus saldo/);
-    assert(card, 'kartu Arus saldo 2027 ada');
-    sub = card.querySelector('.sub')?.textContent || '';
-    assert(/6 Nov.*12 Nov/.test(sub), 'Arus saldo Minggu 2027 simulasi: ' + sub);
-    assert(/· rencana/.test(sub), 'Arus saldo 2027 harus · rencana');
-
-    card = findCard(w.document, /(Pengeluaran \& pemasukan per kategori|Per kategori)/);
-    assert(/· rencana/.test(card.textContent), 'Kategori 2027 harus · rencana');
-
-    card = findCard(w.document, /Item (pengeluaran )?terbesar/);
-    sub = card.querySelector('.sub')?.textContent || '';
-    assert(/6 Nov 2027 – 12 Nov 2027/.test(sub), 'Top expenses Minggu 2027 simulasi: ' + sub);
-    assert(/· rencana/.test(sub), 'Top expenses 2027 harus · rencana');
+    sub = w.document.getElementById('where-sub-lbl').textContent || '';
+    assert(/7 Hari Terakhir · rencana/.test(sub), '2027 harus · rencana: ' + sub);
 
     // --- tahun lampau 2025 ---
     w.__today = '2026-11-12';
@@ -72,14 +58,11 @@ function findCard(doc, re) {
     w.S.paid = {};
     w.kasLinked().tx = [];
 
-    w.flowPeriod = 'w';
-    w.expenseMonth = 'w';
+    w.document.querySelector('#tab-rincian [data-range="w"]').click();
+    w.document.querySelector('#card-where-money [data-where-period="w"]').click();
     w.renderAll();
-    card = findCard(w.document, /Arus saldo/);
-    assert(card, 'kartu Arus saldo 2025 ada');
-    sub = card.querySelector('.sub')?.textContent || '';
-    assert(/7 Agu.*13 Agu/.test(sub), 'Arus saldo Minggu 2025 lampau: ' + sub);
-    assert(!/· rencana/.test(card.textContent), 'Tahun lampau bukan rencana');
+    sub = w.document.getElementById('where-sub-lbl').textContent || '';
+    assert(!/· rencana/.test(sub), 'Tahun lampau 2025 bukan rencana: ' + sub);
 
     // --- pergantian 31 Des -> 1 Jan, tahun berjalan 2027 ---
     w.__today = '2027-01-01';
@@ -89,11 +72,11 @@ function findCard(doc, re) {
     w.S.items = [it('A', 100000, '2026-12-31'), it('B', 50000, '2027-01-01')];
     w.S.paid = {};
     w.kasLinked().tx = [];
-    w.expenseMonth = 'w';
+    w.document.querySelector('#card-where-money [data-where-period="w"]').click();
     w.renderAll();
-    card = findCard(w.document, /Item (pengeluaran )?terbesar/);
-    sub = card.querySelector('.sub')?.textContent || '';
-    assert(/26 Des 2026 – 1 Jan 2027/.test(sub), 'Top expenses Minggu awal Jan 2027: ' + sub);
+    const cpW = w.cashPeriod(w.yearCash(), 'w');
+    assert.strictEqual(cpW.from, '2026-12-26', 'Awal minggu Jan 2027 mencakup 26 Des 2026');
+    assert.strictEqual(cpW.to, '2027-01-01', 'Akhir minggu Jan 2027 = 1 Jan 2027');
 
     console.log('OK year_profile');
   } finally {

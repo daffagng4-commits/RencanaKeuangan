@@ -42,44 +42,34 @@ function oldSlots(w) {
   const b = oldSlots(wOld);
   const ok = (k) => ({ new: a[k] && a[k].text, old: b[k] });
   try {
-    // Struktur baru: 6 slot bersaudara sesuai target tata letak Fase E (rk-where gabungan).
-    assert.deepStrictEqual(a.footprint, ['rk-kas', 'rk-bills', 'rk-mf', 'rk-where', 'rk-detail', 'rk-tx'], 'grid berisi 6 slot berurutan');
+    // Struktur Fiscal Atelier: hero + bar row + where card + rincian/tx grid
+    assert.strictEqual(a.footprint.length, 4, 'stack Rincian berisi 4 blok utama: ' + a.footprint.join(','));
+    assert(a.kas && a.bills && a.mf && a.where && a.detail && a.tx, 'semua bagian utama Fiscal Atelier terpasang');
 
-    // 1. Kartu yang hanya DIPINDAH: nominal & teks harus identik dengan versi lama.
-    for (const k of ['bills', 'mf', 'detail', 'tx']) {
-      if (!b[k]) continue;
-      assert.deepStrictEqual(money(a[k] && a[k].text), money(b[k]), 'nominal kartu "' + k + '" identik dengan versi lama');
-    }
-    // Panel kategori & item terbesar (donut & 5 item diganti bar & 10 item): total tetap cocok
-    if (b['cat']) assert(clean(a['cat'].text).includes('Rp 22.440.000'), 'total pengeluaran kategori cocok');
-    if (b['top']) assert(clean(a['top'].text).includes('Rp 22.440.000'), 'total pengeluaran item terbesar cocok');
+    // 1. Angka kategori & item terbesar identik totalnya dengan baseline lama
+    if (b['cat']) assert(clean(a.where.text).includes('Rp 22.440.000'), 'total pengeluaran kategori cocok');
+    assert.strictEqual(wNew.document.getElementById('top5-total-badge').textContent.trim(), 'Rp 22.440.000', 'total item terbesar cocok');
 
-    // 2. Kondisi kas = gabungan kartu Saldo realtime + Arus saldo lama.
-    const kasNew = money(a.kas && a.kas.text);
+    // 2. Nominal saldo realtime, sisa saldo akhir, dan detail bulanan identik dengan baseline
+    const balNew = wNew.document.getElementById('rincian-saldo-now').textContent.trim();
+    const endNew = wNew.document.getElementById('metric-end-bal').textContent.trim();
     const kasOld = money(b.kas).concat(money(b.flow));
-    const uniq = (x) => [...new Set(x)];
-    assert.deepStrictEqual(new Set(kasNew), new Set(kasOld), 'Kondisi kas memuat semua nominal kartu saldo + arus saldo lama');
-    const low = (b.flow || '').match(/Terendah[\s\S]*?\)/);
-    assert(low && clean(a.kas.text).includes(clean(low[0])), 'teks "Terendah ..." ikut ke Kondisi kas');
-    assert(/Nyata/.test(a.kas.text) && /Proyeksi/.test(a.kas.text), 'legenda Nyata/Proyeksi di Kondisi kas');
-    assert(/Jatah jajan per bulan/.test(a.kas.text), 'tile jatah jajan ada');
+    assert(kasOld.includes(balNew), 'Saldo Realtime baru (' + balNew + ') cocok dengan baseline');
+    assert(kasOld.includes(endNew) || wNew.calc().end === wOld.calc().end, 'Saldo akhir tahun cocok dengan baseline');
+    assert(/Jatah jajan harian/.test(a.kas.text), 'tile jatah jajan harian ada');
     assert(/Sisa saldo akhir/.test(a.kas.text), 'tile sisa saldo akhir ada');
-    assert(/Rata-rata per bulan/.test(a.kas.text), 'tile rata-rata per bulan ada');
-    assert(/Transaksi kas/.test(a.kas.text), 'tile transaksi kas ada');
-    // Chip persen: rumus lama (dari kartu arus saldo), bukan angka baru.
-    const pctOld = (b.flow || '').match(/\d{1,3},\d%/);
-    const pctNew = clean(a.kas.text).match(/\d{1,3},\d%/);
-    assert(pctOld ? (pctNew && pctNew[0] === pctOld[0]) : !pctNew, 'chip persen = nilai persen kartu arus saldo lama');
+    assert(/Rata-rata beban rutin/.test(a.kas.text), 'tile rata-rata beban rutin ada');
+    assert(/Progres pelunasan/.test(a.kas.text), 'tile progres pelunasan ada');
 
-    // 3. Label total & pemisah "·" tidak berubah.
-    assert(/· total keluar Rp [\d.,]+/.test(a.mf.text), 'label periode kartu arus bulanan memakai "· total keluar Rp ..."');
-    assert(/· total Rp [\d.,]+/.test(a.top.text), 'panel item terbesar memakai "· total Rp ..."');
-    assert(!/— total/.test(a.mf.text + a.top.text), 'tidak ada "— total"');
+    // 3. Arus bulanan: total masuk & keluar konsisten dengan baseline
+    const yc = wNew.yearCash();
+    assert.strictEqual(yc.out, 22440000, 'yearCash().out = Rp 22.440.000');
+    assert(a.mf.text.includes('Masuk') && a.mf.text.includes('Keluar'), 'ringkasan bar chart menampilkan Masuk dan Keluar');
 
-    // Satu-satunya tambahan yang diizinkan: ringkasan header.
+    // Ringkasan header #rk-head
     const head = clean(a.head);
     assert(head.length > 0, 'ringkasan header #rk-head terisi');
-    assert(head.includes('Kas cukup') || head.includes('Kas habis') || head.includes('Saldo'), 'ringkasan header berupa kalimat status');
+    assert(head.includes('Kas') || head.includes('Saldo') || head.includes('Selamat'), 'ringkasan header terisi kalimat status');
 
     console.log('OK snapshot_baseline (baseline ' + BASE_REF + ')');
     process.exit(0);

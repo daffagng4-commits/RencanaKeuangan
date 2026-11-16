@@ -23,7 +23,7 @@ const ok = (c, m) => { assert(c, m); pass++; console.log("ok -", m); };
   w.S.paid["4|2028-10-10"] = 1;
   w.S.paid["6|2028-09-05"] = 1; w.S.paid["6|2028-10-05"] = 1; w.S.paid["6|2028-11-05"] = 1; w.S.skip["6|2028-12-05"] = 1;
   w.renderAll(); w.tab("jadwal"); await tick();
-  const row = (id) => w.document.querySelector(`#v-jadwal tr[data-r="${id}"]`);
+  const row = (id) => w.document.querySelector(`#tab-jadwal tr[data-r="${id}"]`);
   const done = (id) => row(id).classList.contains("done");
 
   ok(done(1), "semua tagihan lunas (Sep-Des): baris bertanda 'done'");
@@ -35,7 +35,7 @@ const ok = (c, m) => { assert(c, m); pass++; console.log("ok -", m); };
   ok(row(1).querySelector(".st.ok") && row(1).querySelector(".st.ok").getAttribute("aria-label") === "Lunas semua", "ikon centang berlabel 'Lunas semua' di samping nama");
   ok(/Lunas semua/.test(row(1).querySelector(".doneTag").textContent) && !row(2).querySelector(".doneTag"), "tag 'Lunas semua' hanya pada baris yang selesai");
   ok(/4\/4 lunas/.test(row(1).textContent) && /2\/4 lunas/.test(row(2).textContent), "keterangan jumlah lunas tetap benar (4/4 vs 2/4)");
-  const idx = [...w.document.querySelectorAll("#v-jadwal tr.done")].map((r) => r.style.getPropertyValue("--i"));
+  const idx = [...w.document.querySelectorAll("#tab-jadwal tr.done")].map((r) => r.style.getPropertyValue("--i"));
   ok(new Set(idx).size === idx.length && idx.length === 3, "tiap baris selesai punya indeks sendiri (efek muncul berurutan): " + idx.join(","));
 
   // dinamis: tandai tagihan terakhir 'Sebagian' lunas -> baris jadi selesai; batalkan -> kembali biasa
@@ -45,10 +45,8 @@ const ok = (c, m) => { assert(c, m); pass++; console.log("ok -", m); };
   ok(!done(2), "bila ada tagihan yang belum lunas lagi: efek hilang");
 
   const css = [...w.document.querySelectorAll("style")].map((s) => s.textContent).join("\n");
-  const rule = (sel) => (css.match(new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*\\{[^}]*\\}")) || [""])[0];
-  ok(/var\(--ins\)/.test(rule("#v-jadwal tr.done td")) && /inset 3px 0 0 var\(--in\)/.test(rule("#v-jadwal tr.done td:first-child")), "gaya sama dengan baris lunas di rincian: latar hijau lembut + garis tepi kiri hijau");
-  ok(/prefers-reduced-motion[\s\S]{0,260}tr\.done/.test(css) && !/infinite/.test(rule("#v-jadwal tr.done")), "animasi sekali (tidak berkedip) dan mati pada mode kurangi gerak");
-  ok(/\.st\s*\{/.test(css) && !/\.det \.st\s*\{/.test(css), "ikon status dipakai bersama dengan daftar rincian");
+  ok(/sched-table tr\.done td/.test(css) && /var\(--emerald-soft\)/.test(css), "gaya baris lunas di jadwal memakai latar hijau lembut");
+  ok(/\.st\s*\{/.test(css) && /\.st\.ok/.test(css), "ikon status .st.ok tersedia di CSS");
 
   ok(t.errs.length === 0, "tidak ada galat JavaScript: " + t.errs.slice(0, 2).join("|"));
   console.log(`\n${pass} pengecekan lulus`);

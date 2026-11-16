@@ -59,8 +59,48 @@ function userInitial(name) {
   return m ? m[0].toUpperCase() : (s[0] ? s[0].toUpperCase() : 'P');
 }
 
+/** Perbarui badge jumlah di navigasi sidebar Browser Mode. */
+function syncSidebarBadges(c) {
+  if (typeof S === 'undefined' || !S) return;
+  if (!c && typeof calc === 'function') c = calc();
+  var bk = $('nav-badge-kas'),
+    bj = $('nav-badge-jadwal'),
+    bi = $('nav-badge-item'),
+    bs = $('nav-badge-sim'),
+    bt = $('nav-badge-trip'),
+    btnTrip = $('nav-btn-trip');
+  if (bk) {
+    var PK = typeof kasLinked === 'function' ? kasLinked() : null,
+      debts = PK && typeof debtData === 'function' ? debtData(PK) : [];
+    bk.textContent = debts.length ? debts.length + ' utang' : (PK ? kasRows(PK).length + ' tx' : '');
+    bk.className = 'nav-badge ' + (debts.length ? 'warn' : 'ok');
+    bk.hidden = !bk.textContent;
+  }
+  if (bj && c && c.occs) {
+    var openCnt = 0;
+    S.items.forEach(function (it) {
+      var list = c.occs[it.id] || [];
+      if (list.some(function (t) {
+        var k = it.id + '|' + isoD(t);
+        return !S.skip[k] && !S.paid[k];
+      })) openCnt++;
+    });
+    bj.textContent = openCnt ? openCnt + ' belum' : 'Lunas';
+    bj.className = 'nav-badge ' + (openCnt ? 'warn' : 'ok');
+  }
+  if (bi) bi.textContent = String(S.items.length);
+  if (bs) bs.textContent = (typeof SIM !== 'undefined' && SIM ? SIM.length : 0) + ' aktif';
+  var trList = typeof trips === 'function' ? trips() : [];
+  if (bt) bt.textContent = trList.length + ' trip';
+  if (btnTrip) {
+    btnTrip.hidden = false;
+    btnTrip.classList.toggle('on', typeof mode !== 'undefined' && mode === 'trip');
+  }
+}
+
 /** Isi area judul. Dipanggil dari renderRincian (butuh c/R) dan refreshToday (c/R dihitung di sini). */
 function renderShell(c, R) {
+  syncSidebarBadges(c);
   var h = $('rk-head');
   if (!h) return;
   if (typeof mode !== 'undefined' && (mode !== 'rencana' || curTab !== 'rincian')) return;

@@ -40,3 +40,37 @@ test('repEnc: karakter di luar WinAnsi jadi ?, kurung & em dash aman', () => {
   const c = load();
   assert.equal(c.repEnc('a\u2014b \u{1F600}'), 'a\x97b ?');
 });
+
+test('renderRepModal & openRepModal mengisi KPI dan tabel untuk d/w/m/y', () => {
+  const c = loadCore({
+    document: {
+      _els: {
+        'rep-m': { hidden: true },
+        'rep-m-title': { textContent: '' },
+        'rep-m-sub': { textContent: '' },
+        'rep-m-body': { innerHTML: '' },
+      },
+      addEventListener() {},
+      getElementById(id) { return this._els[id] || null; },
+      querySelectorAll() { return []; },
+    },
+  });
+  vm.runInContext(
+    'function kasRows(p){return p.tx;}' + fs.readFileSync(path.join(__dirname, '..', '..', 'js', 'ui', 'report.js'), 'utf8'),
+    c,
+  );
+  const y = +c.todayISO().slice(0, 4);
+  newYear(c, y, { items: [item({ name: 'Wifi', price: 300000, start: c.todayISO() })] });
+  c.ALL.kas = { pr: { a: { link: true, tx: [{ d: c.todayISO(), t: '+', amt: 500000, cat: 'Bonus', note: 'Bonus' }] } } };
+
+  const D = c.openRepModal('d');
+  assert.equal(D.title, 'Laporan Harian');
+  assert.equal(c.document._els['rep-m'].hidden, false);
+  assert.equal(c.document._els['rep-m-title'].textContent, 'Laporan Harian');
+  assert.match(c.document._els['rep-m-body'].innerHTML, /Rp 500\.000/);
+
+  ['w', 'm', 'y'].forEach((k) => {
+    const res = c.renderRepModal(k);
+    assert.ok(res && res.summary.length >= 4 && res.tables.length >= 1);
+  });
+});

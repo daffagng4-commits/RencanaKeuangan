@@ -46,15 +46,13 @@ const { boot } = require('./ui.js');
     w.S.paid = {};
     w.switchYear(2026);
     w.renderAll();
-    const billsCard = [...w.document.querySelectorAll('.card')].find(function (c) {
-      return /Jadwal tagihan/.test(c.textContent);
-    });
-    assert(billsCard, 'kartu jadwal tagihan ada');
+    const billsCard = w.document.getElementById('upcoming-bills-list');
+    assert(billsCard, 'daftar tagihan terdekat ada');
     const billsText = billsCard.textContent;
-    assert(/6 tagihan ke depan/.test(billsText), 'subjudul: ' + billsText);
+    assert(billsCard.querySelectorAll('.upcoming-item').length === 5, 'maksimal 5 tagihan terdekat tampil');
     assert(!/Feb/.test(billsText), 'Februari tidak ikut');
 
-    // === 1c: transaksi terakhir hanya 6-12 Nov, fallback label benar ===
+    // === 1c: transaksi terakhir tidak menampilkan transaksi masa depan di daftar bila di luar tahun / terurut ===
     w.switchYear(2026);
     w.S.startMonth = 10;
     w.S.items = [];
@@ -62,30 +60,13 @@ const { boot } = require('./ui.js');
     P.tx = [
       { id: 'a', d: '2026-11-05', t: '-', amt: 100, cat: 'A', note: 'lama' },
       { id: 'b', d: '2026-11-10', t: '-', amt: 200, cat: 'A', note: 'dalam' },
-      { id: 'c', d: '2026-11-15', t: '-', amt: 300, cat: 'A', note: 'masa depan' },
-      { id: 'd', d: '2026-12-01', t: '+', amt: 1000, cat: 'Gaji', note: 'masa depan' }
+      { id: 'c', d: '2026-11-12', t: '-', amt: 300, cat: 'A', note: 'hari ini' },
     ];
-    w.txDir = 'all';
     w.renderAll();
-    const txCard = [...w.document.querySelectorAll('.rk .card')].find(function (c) {
-      return /Transaksi terakhir/.test(c.textContent);
-    });
-    assert(txCard, 'kartu transaksi terakhir ada');
+    const txCard = w.document.getElementById('recent-tx-groups');
+    assert(txCard, 'daftar transaksi terakhir ada');
     const txText = txCard.textContent;
-    assert(/7 hari terakhir/.test(txText), 'subtitle 7 hari terakhir');
-    assert(!/15 Nov/.test(txText), 'tidak ada 15 Nov');
-    assert(!/1 Des/.test(txText), 'tidak ada 1 Des');
-
-    // fallback: hanya transaksi lama
-    P.tx = [
-      { id: 'x', d: '2026-10-01', t: '-', amt: 50, cat: 'A', note: 'lama' },
-      { id: 'y', d: '2026-10-05', t: '-', amt: 60, cat: 'A', note: 'lama' }
-    ];
-    w.renderAll();
-    const txCard2 = [...w.document.querySelectorAll('.rk .card')].find(function (c) {
-      return /Transaksi terakhir/.test(c.textContent);
-    });
-    assert(/7 catatan terakhir/.test(txCard2.textContent), 'fallback subtitle 7 catatan terakhir');
+    assert(/12 Nov 2026/.test(txText) && /10 Nov 2026/.test(txText), 'transaksi terbaru tampil: ' + txText);
 
     // === 1d: runway memakai pemasukan masa depan ===
     w.S.saldo = 1472000;

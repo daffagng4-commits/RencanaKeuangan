@@ -7,25 +7,28 @@ const { boot } = require('./ui.js');
     await t.ready();
     const doc = t.w.document;
 
-    // Invarian 1: .w harus membungkus seluruh konten utama (.topbar, #rk-head, #v-rincian, dsb)
-    // Jangan sampai .w ditutup prematur setelah .topbar sehingga views terlempar ke .app
-    const wEl = doc.querySelector('.app > .w');
-    assert(wEl, '.w harus ada sebagai anak langsung .app');
+    // Invarian 1: .app-shell.app membungkus aside.sidebar & .main-shell, dan main.workspace membungkus #rk-head & #tab-rincian
+    const appEl = doc.querySelector('#browser-shell.app-shell.app');
+    assert(appEl, '#browser-shell.app-shell.app harus ada');
+    const mainShell = appEl.querySelector(':scope > .main-shell');
+    assert(mainShell, '.main-shell harus ada sebagai anak langsung .app');
+    const ws = mainShell.querySelector('main.workspace');
+    assert(ws, 'main.workspace harus ada di dalam .main-shell');
 
     const rkHead = doc.querySelector('#rk-head');
     assert(rkHead, '#rk-head harus ada');
     assert.strictEqual(
       rkHead.parentElement,
-      wEl,
-      'Akar Masalah Regresi: #rk-head HARUS anak langsung .w, BUKAN .app (mencegah grid row offset raksasa)'
+      ws,
+      '#rk-head HARUS anak langsung main.workspace'
     );
 
-    const vRincian = doc.querySelector('#v-rincian');
-    assert(vRincian, '#v-rincian harus ada');
+    const vRincian = doc.querySelector('#tab-rincian');
+    assert(vRincian, '#tab-rincian harus ada');
     assert.strictEqual(
       vRincian.parentElement,
-      wEl,
-      'Akar Masalah Regresi: #v-rincian HARUS anak langsung .w, BUKAN .app'
+      ws,
+      '#tab-rincian HARUS anak langsung main.workspace'
     );
 
     // Invarian 2: #yr-pop (Tahun, bulan saldo, dan saldo awal) berada di .topbar-actions
@@ -36,7 +39,7 @@ const { boot } = require('./ui.js');
     assert.strictEqual(
       yrPop.parentElement,
       topbarActions,
-      '#yr-pop HARUS berada di dalam .topbar-actions, bukan di sidebar .sb-mid'
+      '#yr-pop HARUS berada di dalam .topbar-actions, bukan di sidebar'
     );
 
     // Invarian 3: Panel #yr-panel bisa dibuka dan ditutup dengan tombol #yr-btn

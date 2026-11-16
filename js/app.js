@@ -6,6 +6,8 @@ function main() {
   // Pindahkan penanda manual lokal lama ke data tersinkron (sekali); tersimpan oleh save() di akhir main().
   migSmManual();
   bindDom();
+  bindNumInputs();
+  bindShellMode();
   bindRincian();
   bindJadwal();
   bindItems();

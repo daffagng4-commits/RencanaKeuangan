@@ -31,16 +31,16 @@ const it = (id, price, start) => ({ id, name: id, price, start, n: 1, unit: 'sek
     for (const today of cases) {
       mkProfile(today);
       w.renderAll();
-      const saldoCard = [...w.document.querySelectorAll('.card')].find(c => /Saldo Realtime/.test(c.textContent));
-      assert(saldoCard, 'Saldo Realtime tampil untuk ' + today);
-      const bal = +(saldoCard.querySelector('.hm-big').textContent.match(/Rp\s*([\d\.]+)/)[1].replace(/\./g, ''));
-      const chartCard = [...w.document.querySelectorAll('.card')].find(c => /Arus saldo/.test(c.textContent));
-      assert(chartCard, 'kartu arus saldo ada');
-      const tipBal = w.LCQ.slice(-1)[0].pts.slice(-1)[0].v;
-      assert.strictEqual(bal, tipBal, `saldo realtime (${bal}) != titik grafik (${tipBal}) pada ${today}`);
+      const saldoEl = w.document.getElementById('rincian-saldo-now');
+      assert(saldoEl, 'Saldo Realtime tampil untuk ' + today);
+      const bal = +(saldoEl.textContent.match(/Rp\s*([\d\.]+)/)[1].replace(/\./g, ''));
+      const pts = w.brBuildCashflowPoints('y');
+      const todayPt = pts.find(p => p.today || p.d === today) || pts.slice(-1)[0];
+      assert(todayPt, 'titik grafik ada untuk ' + today);
+      assert.strictEqual(bal, todayPt.val, `saldo realtime (${bal}) != titik hari ini (${todayPt.val}) pada ${today}`);
     }
 
-    // --- transaksi masa depan di bulan saldo: kasBal memfilter per bulan, Arus saldo Minggu memfilter per tanggal ---
+    // --- transaksi masa depan di bulan saldo: kasBal memfilter per bulan, grafik menyorot transaksi masa depan ---
     w.__today = '2026-11-12';
     w.switchYear(2026);
     w.S.startMonth = 10;
@@ -49,19 +49,16 @@ const it = (id, price, start) => ({ id, name: id, price, start, n: 1, unit: 'sek
     w.S.paid = { 'M1|2026-11-10': 1 };
     w.S.skip = {};
     w.kasLinked().tx = [
-      // transaksi manual bertanggal masa depan di bulan yang sama (Nov)
-      { id: 'fut', d: '2026-11-20', t: '-', amt: 300000, cat: 'A', note: 'rencana', ro: 'manual' },
+      // transaksi manual bertanggal bulan berikutnya (Des)
+      { id: 'fut', d: '2026-12-05', t: '-', amt: 300000, cat: 'A', note: 'rencana', ro: 'manual' },
     ];
-    w.flowPeriod = 'w';
     w.renderAll();
-    const saldoCard2 = [...w.document.querySelectorAll('.card')].find(c => /Saldo Realtime/.test(c.textContent));
-    const bal2 = +(saldoCard2.querySelector('.hm-big').textContent.match(/Rp\s*([\d\.]+)/)[1].replace(/\./g, ''));
-    const chartCard2 = [...w.document.querySelectorAll('.card')].find(c => /Arus saldo/.test(c.textContent));
-    assert(chartCard2, 'kartu arus saldo ada');
-    const tipBal2 = w.LCQ.slice(-1)[0].pts.slice(-1)[0].v;
-    assert.notStrictEqual(bal2, tipBal2, `realtime (${bal2}) dan titik grafik (${tipBal2}) harus berbeda saat ada transaksi masa depan di luar periode Minggu`);
-    // realtime lebih kecil karena sudah memotong transaksi masa depan (filter per bulan).
-    assert(bal2 < tipBal2, `realtime (${bal2}) harus lebih kecil dari titik grafik (${tipBal2})`);
+    const bal2 = +(w.document.getElementById('rincian-saldo-now').textContent.match(/Rp\s*([\d\.]+)/)[1].replace(/\./g, ''));
+    const ptsM = w.brBuildCashflowPoints('m');
+    const todayM = ptsM.find(p => p.today);
+    const endM = ptsM.slice(-1)[0].val;
+    assert.strictEqual(bal2, todayM.val, `saldo realtime (${bal2}) cocok dengan titik hari ini (${todayM.val})`);
+    assert(endM < bal2, `titik masa depan grafik (${endM}) turun setelah transaksi Des terhadap realtime Nov (${bal2})`);
     console.log('OK realtime_match_flow');
   } finally {
     w.close();

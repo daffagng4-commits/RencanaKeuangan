@@ -10,25 +10,29 @@ function renderYears() {
     });
   var sum = $('yr-sum');
   if (sum) sum.textContent = S.year + ' · ' + MON[smEff()] + ' · ' + rp(+S.saldo || 0);
+  var isRenc = typeof mode === 'undefined' || mode === 'rencana';
   $('yb').innerHTML =
     ks
       .map(function (k) {
+        var on = isRenc && k === S.year;
         return (
-          '<button class="yp' +
-          (k === S.year ? ' on' : '') +
+          '<button type="button" class="yp' +
+          (on ? ' on' : '') +
           '" data-y="' +
           k +
           '" aria-pressed="' +
-          (k === S.year) +
+          on +
           '">' +
           k +
           '</button>'
         );
       })
       .join('') +
-    '<button class="g d" data-dy="1" title="Hapus semua data tahun ' +
-    S.year +
-    '">Hapus</button>';
+    (ks.length > 1
+      ? '<button type="button" class="yp-del" data-dy="1" title="Hapus semua data tahun ' +
+        S.year +
+        '">Hapus</button>'
+      : '');
 }
 
 /** Pindah ke tahun v (dibuat kosong bila belum ada). */
@@ -39,6 +43,9 @@ function switchYear(v) {
   S = n;
   ALL.year = v;
   save();
+  if (typeof JADWAL_PINNED_IDS !== 'undefined') {
+    JADWAL_PINNED_IDS = null;
+  }
   syncUI();
 }
 
@@ -111,8 +118,12 @@ function bindYears() {
   function setOpen(v) {
     if (!panel || !btn) return;
     panel.hidden = !v;
+    panel.classList.toggle('open', v);
     btn.setAttribute('aria-expanded', v ? 'true' : 'false');
-    if (v) setTimeout(function () { $('year').focus(); }, 0);
+    if (v) {
+      if (typeof syncModernSelect === 'function' && $('sm')) syncModernSelect('sm');
+      setTimeout(function () { if ($('year')) $('year').focus(); }, 0);
+    }
   }
   if (btn && panel) {
     btn.onclick = function (e) {

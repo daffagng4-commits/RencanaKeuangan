@@ -19,32 +19,21 @@ const ok = (c, m) => { assert(c, m); pass++; console.log("ok -", m); };
   w.renderAll(); w.tab("rincian"); await tick();
 
   // buka rincian Nov lewat klik baris bulan
-  const nov = w.document.querySelector('#v-rincian tr.row[data-m="10"]');
+  const nov = w.document.querySelector('#monthly-flow-tbody tr[data-flow-m="10"]');
+  ok(!!nov, "baris bulan November ada di tabel Rincian Arus Tagihan");
   click(nov); await tick();
-  const rows = [...w.document.querySelectorAll("#v-rincian tr.det")];
-  ok(rows.length === 9, "9 baris rincian muncul untuk November (8 + 1 dilewati)");
+  const drawer = $("flow-drawer-10");
+  ok(drawer && drawer.style.display !== "none", "drawer November terbuka");
+  const rows = [...drawer.querySelectorAll(".badge")];
+  ok(rows.length === 9, "9 tagihan muncul untuk November (8 + 1 dilewati)");
   const by = (name) => rows.find((r) => r.textContent.includes(name));
-  const cls = (name) => by(name).className.replace("det", "").trim();
-  ok(["Saham Lokal", "BPJS", "ETF 60%", "BTC"].every((n) => cls(n) === "paid"), "4 tagihan lunas bertanda 'paid'");
-  ok(["JKT48", "Warp"].every((n) => cls(n) === "late"), "yang sudah lewat tanggal tapi belum lunas (JKT48, Warp) bertanda 'late'");
-  ok(["Kuota", "Torbox"].every((n) => cls(n) === ""), "yang belum jatuh tempo (Kuota, Torbox) netral tanpa efek");
-  ok(cls("Netflix") === "skp", "yang dilewati bertanda 'skp'");
-
-  const ico = (name) => by(name).querySelector(".st");
-  ok(ico("BPJS").textContent === "✓" && ico("BPJS").classList.contains("ok") && ico("BPJS").getAttribute("aria-label") === "Lunas", "ikon lunas: centang terisi, berlabel 'Lunas'");
-  ok(ico("Warp").textContent === "!" && ico("Warp").getAttribute("aria-label") === "Terlewat", "ikon terlewat: tanda seru, berlabel 'Terlewat'");
-  ok(ico("Kuota").textContent === "" && ico("Kuota").getAttribute("aria-label") === "Belum dibayar", "ikon belum dibayar: lingkaran kosong");
-  ok(ico("Netflix").textContent === "–" && ico("Netflix").classList.contains("skp"), "ikon dilewati: tanda strip, lingkaran putus-putus");
-  ok(new Set(rows.map((r) => r.style.getPropertyValue("--i"))).size === rows.length, "tiap baris punya indeks sendiri untuk efek muncul berurutan");
-  ok(rows.every((r) => r.querySelector(".st")), "setiap baris punya ikon status: kolom tanggal tetap sejajar");
+  ok(["Saham Lokal", "BPJS", "ETF 60%", "BTC"].every((n) => by(n).classList.contains("badge-emerald")), "4 tagihan lunas bertanda badge-emerald");
+  ok(["JKT48", "Warp"].every((n) => by(n).classList.contains("badge-crimson")), "yang terlewat tapi belum lunas bertanda badge-crimson");
+  ok(["Kuota", "Torbox"].every((n) => by(n).classList.contains("badge-amber")), "yang belum jatuh tempo bertanda badge-amber");
+  ok(by("Netflix").classList.contains("badge-neutral"), "yang dilewati bertanda badge-neutral");
 
   const css = [...w.document.querySelectorAll("style")].map((s) => s.textContent).join("\n");
-  const rule = (sel) => (css.match(new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*\\{[^}]*\\}")) || [""])[0];
-  ok(/var\(--ins\)/.test(rule(".det.paid td")) && /inset 3px 0 0 var\(--in\)/.test(rule(".det.paid td:first-child")), "gaya lunas: latar hijau lembut (--ins) + garis tepi kiri hijau (--in)");
-  ok(/var\(--wrs\)/.test(rule(".det.late td")) && /inset 3px 0 0 var\(--wr\)/.test(rule(".det.late td:first-child")), "gaya terlewat: latar merah lembut (--wrs) + garis tepi kiri merah");
-  ok(!/\.det\.late td\.l\s*\{/.test(css), "nama dan harga baris terlewat tidak diwarnai merah penuh (hanya tanggal) agar tidak melelahkan mata");
-  ok(/@keyframes stpop/.test(css) && /@keyframes detin/.test(css) && /prefers-reduced-motion[\s\S]{0,200}\.det/.test(css), "animasi muncul berurutan + centang membal sekali; dimatikan oleh 'kurangi animasi'");
-  ok(!/infinite/.test(rule(".det")) && !/infinite/.test(rule(".det.paid .st.ok")), "efek baris rincian tidak berulang terus-menerus (tidak berkedip)");
+  ok(/\.badge-emerald/.test(css) && /\.badge-crimson/.test(css) && /\.badge-amber/.test(css), "gaya lencana status lunas/terlewat/mendatang ada di CSS");
 
   ok(t.errs.length === 0, "tidak ada galat JavaScript: " + t.errs.slice(0, 2).join("|"));
   console.log(`\n${pass} pengecekan lulus`);

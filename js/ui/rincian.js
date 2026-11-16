@@ -481,6 +481,134 @@ function cashPeriodTabs() {
   return periodTabs('catp', catPeriod);
 }
 
+/** Bangun 3D Glass Jar SVG interaktif + panel Spotlight untuk panel Per kategori. */
+function jarChartHtml(c, t, income) {
+  if (!c || !c.length || !(t > 0)) return '';
+  var W = 180,
+    H = 220,
+    xL = 24,
+    xR = 140,
+    chamberW = xR - xL,
+    yChamberTop = 34,
+    chamberH = 174,
+    yTop = 44,
+    yBot = 204,
+    chH = yBot - yTop,
+    centerX = (xL + xR) / 2;
+
+  function wavePathSegs(yBase, amp, rev) {
+    if (!amp) return rev ? ' L ' + xL + ' ' + yBase.toFixed(1) : ' L ' + xR + ' ' + yBase.toFixed(1);
+    var step = chamberW / 4,
+      d = '',
+      k;
+    if (!rev) {
+      for (k = 0; k < 4; k++) {
+        var x0 = xL + k * step,
+          x1 = x0 + step,
+          cx = (x0 + x1) / 2,
+          cy = yBase + (k % 2 === 0 ? -amp : amp);
+        d += ' Q ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ', ' + x1.toFixed(1) + ' ' + yBase.toFixed(1);
+      }
+    } else {
+      for (k = 3; k >= 0; k--) {
+        var rx0 = xL + k * step,
+          rx1 = rx0 + step,
+          rcx = (rx0 + rx1) / 2,
+          rcy = yBase + (k % 2 === 0 ? -amp : amp);
+        d += ' Q ' + rcx.toFixed(1) + ' ' + rcy.toFixed(1) + ', ' + rx0.toFixed(1) + ' ' + yBase.toFixed(1);
+      }
+    }
+    return d;
+  }
+
+  function buildScrollWave(baseY, amp, depth) {
+    var d = 'M ' + (xL - 80) + ' ' + baseY.toFixed(1);
+    for (var wx = xL - 80; wx <= xR + 160; wx += 40) {
+      d += ' q 20 ' + (-amp).toFixed(1) + ' 40 0 t 40 0';
+    }
+    return d + ' L ' + (xR + 160) + ' ' + (baseY + depth).toFixed(1) + ' L ' + (xL - 80) + ' ' + (baseY + depth).toFixed(1) + ' Z';
+  }
+
+  // Susun dari bawah ke atas (item terkecil di dasar, terbesar c[0] di permukaan atas).
+  var stack = c.slice().reverse(),
+    curY = yBot,
+    rawBands = stack.map(function (x, i) {
+      var pct = t > 0 ? (x.v / t) * 100 : 0,
+        h = i === stack.length - 1 ? Math.max(6, curY - yTop) : Math.max(8, (pct / 100) * chH),
+        y = curY - h;
+      curY = y;
+      return { name: x.name, v: x.v, pct: Math.round(pct), col: catColor(x.name), y: y, h: h };
+    });
+
+  var bandPaths = '',
+    crestPaths = '';
+  rawBands.forEach(function (b, i) {
+    var prev = i > 0 ? rawBands[i - 1] : null,
+      topAmp = i === rawBands.length - 1 ? 6.5 : Math.min(5, Math.max(2.5, b.h * 0.25)),
+      botY = prev ? prev.y : yBot,
+      botAmp = prev ? Math.min(5, Math.max(2.5, prev.h * 0.25)) : 0,
+      topStart = 'M ' + xL + ' ' + b.y.toFixed(1) + wavePathSegs(b.y, topAmp, false),
+      d = topStart + ' L ' + xR + ' ' + botY.toFixed(1) + wavePathSegs(botY, botAmp, true) + ' Z';
+    bandPaths +=
+      '<path class="jar-band" tabindex="0" data-k="' + esc(b.name) + '" data-pct="' + b.pct +
+      '" data-amt="' + esc(rp(b.v)) + '" data-col="' + esc(b.col) + '" d="' + d + '" fill="' + b.col +
+      '" stroke="rgba(255,255,255,0.45)" stroke-width="0.9"/>';
+    crestPaths += '<path d="' + topStart + '" fill="none" stroke="rgba(255,255,255,0.68)" stroke-width="1.2" style="pointer-events:none;"/>';
+  });
+
+  var topCol = rawBands[rawBands.length - 1].col,
+    waveBack = buildScrollWave(yTop - 2, 6, 30),
+    waveFront = buildScrollWave(yTop + 2, 6.5, 22),
+    ticks = [100, 50, 0]
+      .map(function (tk) {
+        var ty = yBot - (tk / 100) * chH;
+        return '<line x1="' + (xR + 3) + '" y1="' + ty.toFixed(1) + '" x2="' + (xR + 9) + '" y2="' + ty.toFixed(1) +
+          '" stroke="var(--mut)" stroke-width="1.1" opacity="0.7"/><text x="' + (xR + 12) + '" y="' + (ty + 3.5).toFixed(1) +
+          '" fill="var(--mut)" font-size="9.5" font-weight="600">' + tk + '%</text>';
+      })
+      .join('');
+
+  var svg =
+    '<div class="jar-svg-wrap"><svg id="svg-jar-main" viewBox="0 0 ' + W + ' ' + H + '" aria-label="Jar chart distribusi kategori">' +
+    '<defs><clipPath id="clip-rk-jar"><rect x="' + xL + '" y="' + yChamberTop + '" width="' + chamberW + '" height="' + chamberH + '" rx="20"/></clipPath></defs>' +
+    '<rect x="' + (centerX - 38) + '" y="4" width="76" height="14" rx="5" fill="var(--ln2)"/>' +
+    '<rect x="' + (centerX - 30) + '" y="17" width="60" height="11" rx="3" fill="var(--sf2)" stroke="var(--ln2)" stroke-width="1.3"/>' +
+    '<path d="M ' + (centerX - 30) + ' ' + (yChamberTop - 8) + ' Q ' + xL + ' ' + (yChamberTop - 4) + ' ' + xL + ' ' + (yChamberTop + 8) +
+    ' L ' + xR + ' ' + (yChamberTop + 8) + ' Q ' + xR + ' ' + (yChamberTop - 4) + ' ' + (centerX + 30) + ' ' + (yChamberTop - 8) +
+    ' Z" fill="var(--sf2)" stroke="var(--ln2)" stroke-width="1.3"/>' +
+    '<rect x="' + xL + '" y="' + yChamberTop + '" width="' + chamberW + '" height="' + chamberH + '" rx="20" fill="var(--sf)" stroke="var(--ln2)" stroke-width="2"/>' +
+    '<g clip-path="url(#clip-rk-jar)">' +
+    '<path class="jar-wave-anim-slow" d="' + waveBack + '" fill="' + topCol + '" opacity="0.32" style="pointer-events:none;"/>' +
+    bandPaths +
+    crestPaths +
+    '<path class="jar-wave-anim" d="' + waveFront + '" fill="#FFFFFF" opacity="0.24" style="pointer-events:none;"/>' +
+    '<circle class="jar-bubble" cx="' + (centerX - 18) + '" cy="' + (yBot - 22) + '" r="2.8" fill="#FFFFFF" style="pointer-events:none;animation-delay:0s"/>' +
+    '<circle class="jar-bubble" cx="' + (centerX + 14) + '" cy="' + (yBot - 44) + '" r="2.2" fill="#FFFFFF" style="pointer-events:none;animation-delay:1.1s"/>' +
+    '<circle class="jar-bubble" cx="' + (centerX - 4) + '" cy="' + (yBot - 32) + '" r="2" fill="#FFFFFF" style="pointer-events:none;animation-delay:2.2s"/>' +
+    '</g>' +
+    '<rect x="' + (xL + 8) + '" y="' + (yChamberTop + 12) + '" width="8" height="' + (chamberH - 24) + '" rx="4" fill="#FFFFFF" opacity="0.24" style="pointer-events:none;"/>' +
+    ticks +
+    '</svg></div>';
+
+  var lead = c[0],
+    leadCol = catColor(lead.name),
+    leadPct = t > 0 ? Math.round((lead.v / t) * 100) : 0,
+    leadAmt = rp(lead.v),
+    badgeTxt = income ? 'Pemasukan #1' : 'Porsi Terbesar #1',
+    spot =
+      '<div class="jar-spotlight" id="jar-spotlight" data-def-badge="' + esc(badgeTxt) + '" data-def-pct="' + leadPct +
+      '%" data-def-name="' + esc(lead.name) + '" data-def-amt="' + esc(leadAmt) + '" data-def-col="' + esc(leadCol) + '" data-def-w="' + leadPct + '">' +
+      '<span class="jar-spot-badge" id="jar-spot-badge">' + esc(badgeTxt) + '</span>' +
+      '<div class="jar-spot-pct" id="jar-spot-pct">' + leadPct + '%</div>' +
+      '<div class="jar-spot-name" id="jar-spot-name">' + esc(lead.name) + '</div>' +
+      '<div class="jar-spot-amt pv" id="jar-spot-amt">' + leadAmt + '</div>' +
+      '<div class="jar-spot-bar"><i id="jar-spot-fill" style="width:' + leadPct + '%;background:' + leadCol + '"></i></div>' +
+      '<div class="sub fs115 mt4">Sorot tabung atau daftar di bawah untuk inspeksi kategori</div>' +
+      '</div>';
+
+  return '<div class="where-jar-showcase" id="where-jar-showcase">' + svg + spot + '</div>';
+}
+
 /** Satu kartu: bar per kategori + item terbesar, disatukan periode. */
 function insightCard(C) {
   var p = cashPeriod(C, catPeriod),
@@ -522,11 +650,14 @@ function insightCard(C) {
       '</li>';
   }).join('') : '<li class="where-empty">Belum ada data pada periode ini.</li>';
 
+  var jarHtml = jarChartHtml(c, t, income);
+
   return (
     '<div class="insight card slot-card" aria-labelledby="rk-cat-h">' +
     '<div class="where-ph"><h3 id="rk-cat-h">Per kategori</h3><div class="cat-tabs" role="tablist">' + tabs + '</div></div>' +
     '<div class="where-sum"><div><span class="where-big big pv">' + rp(t) + '</span><span class="where-cap cap">' + (income ? 'masuk' : 'keluar') + ' \u00b7 ' + rangeStr + '</span></div>' + dirTabs + '</div>' +
     '<div class="where-main">' +
+    jarHtml +
     '<div class="where-bar" id="where-cat-bar">' + barSegments + '</div>' +
     '<ul class="where-cats" id="where-cats-list">' + catRows + '</ul>' +
     '</div>' +
@@ -1521,26 +1652,82 @@ function bindRincian() {
       rerenderDetail();
     }
   };
-  $('v-rincian').addEventListener('mouseover', function (e) {
-    var bar = $('v-rincian').querySelector('#where-cat-bar');
-    var cats = $('v-rincian').querySelector('#where-cats-list');
-    if (!bar || !cats) return;
-    var target = e.target.closest('#where-cat-bar i, #where-cats-list li[data-k]');
-    if (target && target.dataset.k) {
-      var k = target.dataset.k;
-      bar.querySelectorAll('i').forEach(function (el) { el.classList.toggle('dim', el.dataset.k !== k); });
-      cats.querySelectorAll('li[data-k]').forEach(function (el) { el.classList.toggle('dim', el.dataset.k !== k); });
+  function applyWhereFocus(k) {
+    var vr = $('v-rincian'),
+      jar = vr.querySelector('#svg-jar-main'),
+      bar = vr.querySelector('#where-cat-bar'),
+      cats = vr.querySelector('#where-cats-list'),
+      spot = vr.querySelector('#jar-spotlight');
+    if (jar) {
+      jar.querySelectorAll('.jar-band').forEach(function (el) {
+        el.classList.toggle('dim', !!k && el.dataset.k !== k);
+        el.classList.toggle('lit', !!k && el.dataset.k === k);
+      });
     }
+    if (bar) {
+      bar.querySelectorAll('i').forEach(function (el) {
+        el.classList.toggle('dim', !!k && el.dataset.k !== k);
+      });
+    }
+    if (cats) {
+      cats.querySelectorAll('li[data-k]').forEach(function (el) {
+        el.classList.toggle('dim', !!k && el.dataset.k !== k);
+        el.classList.toggle('lit', !!k && el.dataset.k === k);
+      });
+    }
+    if (!spot) return;
+    var badge = $('jar-spot-badge'),
+      pctEl = $('jar-spot-pct'),
+      nameEl = $('jar-spot-name'),
+      amtEl = $('jar-spot-amt'),
+      fillEl = $('jar-spot-fill');
+    if (!k) {
+      if (badge) badge.textContent = spot.dataset.defBadge || '';
+      if (pctEl) pctEl.textContent = spot.dataset.defPct || '0%';
+      if (nameEl) nameEl.textContent = spot.dataset.defName || '';
+      if (amtEl) amtEl.textContent = spot.dataset.defAmt || '';
+      if (fillEl) {
+        fillEl.style.width = (spot.dataset.defW || '0') + '%';
+        fillEl.style.background = spot.dataset.defCol || 'var(--ac)';
+      }
+      return;
+    }
+    var findByK = function (parent, sel, key) {
+      if (!parent) return null;
+      var list = parent.querySelectorAll(sel);
+      for (var i = 0; i < list.length; i++) if (list[i].dataset.k === key) return list[i];
+      return null;
+    };
+    var band = findByK(jar, '.jar-band', k);
+    var row = !band && findByK(cats, 'li[data-k]', k);
+    var pctTxt = band ? band.dataset.pct + '%' : (row ? (row.querySelector('small').textContent.match(/\d+%/) || [''])[0] : '');
+    var pctNum = parseInt(pctTxt, 10) || 0;
+    var amtTxt = band ? band.dataset.amt : (row ? row.querySelector('.where-am').textContent : '');
+    var col = band ? band.dataset.col : catColor(k);
+    if (badge) badge.textContent = 'Fokus Kategori';
+    if (pctEl && pctTxt) pctEl.textContent = pctTxt;
+    if (nameEl) nameEl.textContent = k;
+    if (amtEl && amtTxt) amtEl.textContent = amtTxt;
+    if (fillEl) {
+      fillEl.style.width = pctNum + '%';
+      fillEl.style.background = col;
+    }
+  }
+  $('v-rincian').addEventListener('mouseover', function (e) {
+    var target = e.target.closest('#svg-jar-main .jar-band[data-k], #where-cat-bar i[data-k], #where-cats-list li[data-k]');
+    if (target && target.dataset.k) applyWhereFocus(target.dataset.k);
   });
   $('v-rincian').addEventListener('mouseout', function (e) {
-    var bar = $('v-rincian').querySelector('#where-cat-bar');
-    var cats = $('v-rincian').querySelector('#where-cats-list');
-    if (!bar || !cats) return;
-    var target = e.target.closest('#where-cat-bar i, #where-cats-list li[data-k]');
-    if (target) {
-      bar.querySelectorAll('i').forEach(function (el) { el.classList.remove('dim'); });
-      cats.querySelectorAll('li[data-k]').forEach(function (el) { el.classList.remove('dim'); });
-    }
+    var target = e.target.closest('#svg-jar-main .jar-band[data-k], #where-cat-bar i[data-k], #where-cats-list li[data-k]');
+    if (target) applyWhereFocus(null);
+  });
+  $('v-rincian').addEventListener('focusin', function (e) {
+    var target = e.target.closest('#svg-jar-main .jar-band[data-k]');
+    if (target && target.dataset.k) applyWhereFocus(target.dataset.k);
+  });
+  $('v-rincian').addEventListener('focusout', function (e) {
+    var target = e.target.closest('#svg-jar-main .jar-band[data-k]');
+    if (target) applyWhereFocus(null);
   });
   window.addEventListener('resize', function () {
     _txLockedH = 0;

@@ -233,17 +233,60 @@ function repPdf(rep) {
   return Uint8Array.from(out, function (ch) { return ch.charCodeAt(0); });
 }
 
-/** Klik tombol laporan (menu Alat / lembar Lainnya): rakit PDF lalu unduh. */
-document.addEventListener('click', function (e) {
-  var b = e.target.closest('[data-rep]');
-  if (!b) return;
-  e.stopPropagation();
-  var sh = document.getElementById('botsheet'),
-    am = document.getElementById('alat-menu');
-  if (sh) sh.hidden = true;
-  if (am) am.hidden = true;
+var curRepKind = 'm';
+
+/** Render isi modal pratinjau laporan (#modal-report) berdasarkan jenis (d/w/m/y). */
+function renderRepModal(kind) {
+  if (kind) curRepKind = kind;
+  var D = repData(curRepKind);
+  if (typeof document === 'undefined' || !document.getElementById) return D;
+  var t = document.getElementById('rep-m-title'),
+    sub = document.getElementById('rep-m-sub'),
+    body = document.getElementById('desk-report-body') || document.getElementById('rep-m-body');
+  if (t) t.textContent = D.title;
+  if (sub) sub.textContent = D.subtitle;
+  document.querySelectorAll('#modal-report [data-drep], #rep-m-tabs [data-rep-tab]').forEach(function (b) {
+    var k = b.getAttribute('data-drep') || b.getAttribute('data-rep-tab');
+    var on = k === curRepKind;
+    b.classList.toggle('active', on);
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  if (body) {
+    var kpis = '<div class="rep-kpis">' + D.summary.map(function (r) {
+      return '<div class="rep-kpi"><div class="rep-kpi-l">' + esc(r[0]) + '</div><div class="rep-kpi-v pv">' + esc(r[1]) + '</div></div>';
+    }).join('') + '</div>';
+    var tbls = D.tables.map(function (tbl) {
+      var rowsHtml = tbl.rows.map(function (row) {
+        return '<div class="upcoming-item" style="padding:8px 10px;"><div><div class="upcoming-name" style="font-size:0.82rem;">' + esc(row[1] || row[0]) + '</div>' +
+          '<div class="upcoming-meta">' + esc(row[0]) + ' · ' + esc(row[2]) + '</div></div>' +
+          '<strong class="mono pv" style="font-size:0.82rem;">' + esc(row[3]) + '</strong></div>';
+      }).join('');
+      return '<div><div style="font-size:0.78rem;font-weight:700;color:var(--text-secondary);margin-bottom:6px;display:flex;justify-content:space-between;"><span>' + esc(tbl.head) + '</span>' +
+        (tbl.total ? '<span class="mono pv">' + esc(tbl.total[1]) + '</span>' : '') + '</div><div class="stack" style="gap:6px;">' + rowsHtml + '</div></div>';
+    }).join('');
+    body.innerHTML = kpis + tbls;
+  }
+  return D;
+}
+
+/** Buka modal pratinjau laporan (#modal-report) pada jenis periode tertentu. */
+function openRepModal(kind) {
+  var D = renderRepModal(kind || 'm');
+  if (typeof document !== 'undefined' && document.getElementById) {
+    var m = document.getElementById('modal-report') || document.getElementById('rep-m');
+    if (m) {
+      m.hidden = false;
+      if (m.classList) m.classList.add('open');
+    }
+  }
+  return D;
+}
+
+/** Unduh PDF laporan dari repData(kind). */
+function downloadRepPdf(kind) {
   try {
-    var D = repData(b.dataset.rep),
+    var D = repData(kind || curRepKind),
       a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([repPdf(D)], { type: 'application/pdf' }));
     a.download = D.filename;
@@ -251,8 +294,37 @@ document.addEventListener('click', function (e) {
     a.click();
     a.remove();
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
-    setX('Laporan diunduh: ' + D.filename, 1);
+    if (typeof setX === 'function') setX('Laporan diunduh: ' + D.filename, 1);
   } catch (err) {
-    setX('Unduh laporan gagal: ' + (err && err.message || err), 0);
+    if (typeof setX === 'function') setX('Unduh laporan gagal: ' + (err && err.message || err), 0);
   }
+}
+
+/** Klik tombol laporan, tab pratinjau laporan, dan tombol unduh PDF. */
+document.addEventListener('click', function (e) {
+  if (!e || !e.target || !e.target.closest) return;
+  var tabBtn = e.target.closest('[data-drep], [data-rep-tab]');
+  if (tabBtn) {
+    renderRepModal(tabBtn.getAttribute('data-drep') || tabBtn.getAttribute('data-rep-tab'));
+    return;
+  }
+  if (e.target.closest('#rep-m-cl')) {
+    var rm = document.getElementById('modal-report') || document.getElementById('rep-m');
+    if (rm) {
+      if (rm.classList) rm.classList.remove('open');
+      rm.hidden = true;
+    }
+    return;
+  }
+  if (e.target.closest('#rep-m-dl')) {
+    downloadRepPdf(curRepKind);
+    return;
+  }
+  var b = e.target.closest('[data-rep], [data-mob-rep]');
+  if (!b) return;
+  e.stopPropagation();
+  var am = document.getElementById('alat-menu'), ms = document.getElementById('mobile-more-sheet');
+  if (am) am.classList.remove('open');
+  if (ms) ms.classList.remove('open');
+  openRepModal(b.dataset.rep || b.dataset.mobRep || 'm');
 });

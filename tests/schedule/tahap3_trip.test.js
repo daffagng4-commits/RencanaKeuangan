@@ -1,4 +1,4 @@
-// Perjalanan disembunyikan bila belum ada datanya; menu memakai item navigasi langsung (bukan toggle).
+// Mode Perjalanan tampil di sidebar (sesuai mockup), menu Alat, dan lembar Lainnya HP.
 const assert = require('assert');
 const { boot } = require('./ui.js');
 
@@ -6,53 +6,30 @@ const { boot } = require('./ui.js');
   const t = boot();
   await t.ready();
   const { w, $, click, errs } = t;
-  const bar = $('botnav'), keys = () => [...bar.querySelectorAll('button')].map((b) => b.dataset.k);
-  const tripBtn = () => w.document.querySelector('[data-md="trip"]');
-  const alatToggle = () => w.document.querySelector('#alat-menu [data-trip-toggle]');
+  const bar = w.document.querySelector('.mobile-bottom-nav'), keys = () => [...bar.querySelectorAll('button[data-tab]')].map((b) => b.dataset.tab);
+  const tripBtn = () => w.document.getElementById('nav-btn-trip');
 
-  // tanpa data perjalanan dan tanpa pilihan -> tersembunyi
-  Object.keys(w.ALL.kas.pr).forEach((id) => { if (!w.ALL.kas.pr[id].link) delete w.ALL.kas.pr[id]; });
-  w.localStorage.removeItem('rk-trip-vis');
-  w.applyTripVis(true);
-  assert.strictEqual(w.tripOn(), false, 'bawaan: tersembunyi tanpa data perjalanan');
-  assert(tripBtn().hidden, 'tombol mode Perjalanan tersembunyi');
-  assert.deepStrictEqual(keys(), ['rincian', 'kas', 'jadwal', 'item', 'more'], 'bilah bawah memakai Item');
-  assert(!w.document.querySelector('#botsheet [data-go="item"]'), 'Kelola Item tidak diulang di lembar');
-  assert(w.getComputedStyle(tripBtn()).display === 'none');
+  // Tombol Perjalanan di sidebar selalu siap sesuai mockup
+  assert(tripBtn() && !tripBtn().hidden, 'tombol Perjalanan #nav-btn-trip tampil di sidebar');
+  assert.deepStrictEqual(keys(), ['rincian', 'kas', 'jadwal', 'item'], 'bilah bawah memakai 4 tab inti');
 
-  // menu: toggle hilang, item Perjalanan langsung navigasi
-  w.document.querySelector('#alat-menu').hidden = false;
+  // Klik di menu Alat langsung ke Perjalanan
+  click($('alat-btn'));
   const tripItem = w.document.querySelector('#alat-menu [data-go="trip"]');
-  assert(tripItem, 'menu Alat punya item Perjalanan');
-  assert.strictEqual(tripItem.textContent.trim(), 'Perjalanan');
-  assert(!w.document.querySelector('#alat-menu [data-trip-toggle]'), 'toggle Perjalanan dihapus');
-  assert.strictEqual(w.tripOn(), false, 'menu tidak mengubah visibilitas');
+  assert(tripItem && /Perjalanan/.test(tripItem.textContent), 'menu Alat punya item Perjalanan');
+  click(tripItem);
+  assert.strictEqual(w.mode, 'trip', 'klik di menu Alat mengaktifkan Mode Perjalanan');
+  assert(!$('tab-trip').hidden, '#tab-trip tampil');
 
-  // lembar Lainnya (HP): item Perjalanan langsung ke mode perjalanan
-  click(bar.querySelector('[data-k="more"]'));
-  const sheetTrip = w.document.querySelector('#botsheet [data-go="trip"]');
-  assert(sheetTrip, 'lembar punya item Perjalanan');
-  assert.strictEqual(sheetTrip.textContent.trim(), 'Perjalanan');
+  // Lembar Lainnya (HP) juga berpindah langsung ke Perjalanan
+  w.setMode('rencana');
+  click($('btn-mobile-more'));
+  const sheetTrip = w.document.querySelector('#mobile-more-sheet [data-mob-go="trip"]');
+  assert(sheetTrip && /Perjalanan/.test(sheetTrip.textContent));
   click(sheetTrip);
-  assert.strictEqual(w.mode, 'trip', 'langsung ke halaman Perjalanan');
-  assert(!$('v-trip').hidden);
-  assert(w.localStorage.getItem('rk-trip-vis') !== '1', 'tanpa set visibilitas eksplisit');
-
-  // data perjalanan ada + belum ada pilihan eksplisit -> tampil otomatis
-  w.localStorage.removeItem('rk-trip-vis');
-  w.ALL.kas.pr.tripx = { id: 'tripx', name: 'Bali', link: false, tx: [], saldo: 0, nm: [], auto: true };
-  w.applyTripVis(false);
-  assert.strictEqual(w.tripOn(), true, 'ada data perjalanan -> tampil');
-  // pilihan eksplisit menang atas data
-  w.setTripVisible(false);
-  assert.strictEqual(w.tripOn(), false);
-  delete w.ALL.kas.pr.tripx;
-  w.localStorage.removeItem('rk-trip-vis');
+  assert.strictEqual(w.mode, 'trip', 'lembar Lainnya mengaktifkan Mode Perjalanan');
 
   assert.strictEqual(errs.length, 0, 'tidak ada galat JavaScript: ' + errs.slice(0, 2));
   console.log('Semua pengecekan tahap3_trip lulus');
   process.exit(0);
-})().catch((e) => {
-  console.error('GAGAL:', e.stack || e.message);
-  process.exit(1);
-});
+})();

@@ -78,6 +78,22 @@ function textOf(el) {
 
 function slots(w) {
   const doc = w.document;
+  const tab = doc.getElementById('tab-rincian');
+  if (tab) {
+    return {
+      kas: textOf(tab.querySelector('.stack > .card')),
+      bills: textOf(doc.getElementById('upcoming-bills-list')),
+      mf: textOf(doc.getElementById('bar-month-detail')),
+      cat: textOf(doc.getElementById('where-cat-list')),
+      top: textOf(doc.getElementById('top5-items-list')),
+      where: textOf(doc.getElementById('card-where-money')),
+      detail: textOf(doc.getElementById('monthly-flow-tbody')),
+      tx: textOf(doc.getElementById('recent-tx-groups')),
+      head: (doc.getElementById('rk-head') || {}).textContent || '',
+      sidebar: [...doc.querySelectorAll('.nav-btn .nav-label, .nav-section-title')].map((e) => e.textContent.trim()).filter(Boolean),
+      footprint: [...tab.querySelectorAll(':scope > .stack > *')].map((e) => e.id || e.className.split(' ')[0]),
+    };
+  }
   const grid = doc.querySelector('.rk, .splitR') ? findGrid(doc) : null;
   const o = {};
   const map = {

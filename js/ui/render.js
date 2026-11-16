@@ -6,15 +6,21 @@ function renderAll() {
   S.paid = S.paid || {};
   S.skip = S.skip || {};
   S.adj = S.adj || [];
+  if (typeof renderBrowserApp === 'function') renderBrowserApp();
   renderYears();
   renderReminders();
   renderAdj();
   renderRincian();
   renderJadwal();
   renderList();
+  if (typeof curTab !== 'undefined' && curTab === 'sim' && typeof renderSim === 'function') renderSim();
   renderTrip();
   renderKas();
+  if (typeof renderShell === 'function') renderShell();
   modeUi();
+  if (typeof renderMobileApp === 'function' && typeof getShellMode === 'function' && getShellMode() === 'mobile-app') {
+    renderMobileApp();
+  }
 }
 
 /** Migrasi penanda manual lama (localStorage rk-sm-manual) untuk tahun kalender saja.
@@ -55,6 +61,7 @@ function smSyncUI() {
   if (oa) { oa.textContent = 'Otomatis (' + MON[+t.slice(5, 7) - 1] + ')'; oa.disabled = !cur; }
   sm.value = cur && S.smManual !== true ? 'auto' : String(Math.min(11, Math.max(0, +S.startMonth || 0)));
   smAutoMark();
+  if (typeof syncModernSelect === 'function') syncModernSelect(sm);
 }
 
 /** Penanda #sm: auto = border putus-putus, manual = border aksen. */
