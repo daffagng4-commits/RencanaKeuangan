@@ -3752,6 +3752,68 @@ body[data-shell="mobile-app"] #mobile-app-shell .mselect-opt-check {
 }
 body[data-shell="mobile-app"] #mobile-app-shell .mselect-opt.active .mselect-opt-check { opacity: 1; }
 
+/* Notification Swipe-to-Dismiss & Activation Banner */
+body[data-shell="mobile-app"] #mobile-app-shell #m-notif-pop-list { overflow-x: hidden; }
+body[data-shell="mobile-app"] #mobile-app-shell .m-notif-swipe-row {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--amber-soft);
+  font-size: 0.74rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  touch-action: pan-y;
+  user-select: none;
+  cursor: grab;
+  transition: transform 180ms ease, opacity 180ms ease;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-notif-swipe-row.is-swiping { transition: none; cursor: grabbing; }
+body[data-shell="mobile-app"] #mobile-app-shell .m-notif-enable-btn {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 7px;
+  background: var(--amber-soft);
+  border: 1px solid var(--amber-border);
+  color: var(--amber);
+  font-weight: 700;
+  margin-bottom: 8px;
+  white-space: normal;
+  text-align: left;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  padding: 7px 10px;
+}
+
+/* Mobile Scenario Sheet 5-Option Grid */
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-scenario .modal-sheet { max-height: 90%; }
+body[data-shell="mobile-app"] #mobile-app-shell .m-scen-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-scen-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 11px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-muted-row);
+  text-align: left;
+  transition: all 140ms ease;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-scen-card strong { font-size: 0.76rem; font-weight: 800; color: var(--text-primary); }
+body[data-shell="mobile-app"] #mobile-app-shell .m-scen-card span { font-size: 0.67rem; color: var(--text-muted); line-height: 1.25; }
+body[data-shell="mobile-app"] #mobile-app-shell .m-scen-card.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-scen-card.active strong { color: var(--accent-ink); }
+body[data-shell="mobile-app"] #mobile-app-shell .m-scen-card.full-span { grid-column: 1 / -1; }
+
 /* Compact Mobile Report Table & Switch */
 body[data-shell="mobile-app"] #mobile-app-shell .rep-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
 body[data-shell="mobile-app"] #mobile-app-shell .rep-table th { text-align: left; padding: 5px 6px; color: var(--text-muted); font-size: 0.65rem; border-bottom: 1px solid var(--border-strong); text-transform: uppercase; }
@@ -15992,10 +16054,16 @@ function checkDueNotifications(force) {
     return;
   }
 
+  var shellKind = typeof getShellMode === 'function' ? getShellMode() : 'browser';
+  if (shellKind === 'mobile-app' && typeof MOB_STATE !== 'undefined' && MOB_STATE && MOB_STATE.notifEnabled === false && !force) {
+    return;
+  }
+
+  var sigKey = 'rk_last_bill_notif_sig_' + shellKind;
   var sig = today + '|' + dueList.map(function (x) { return x.it.id + ':' + x.d; }).join(',');
   if (!force) {
     try {
-      var prevSig = (typeof localStorage !== 'undefined' && localStorage.getItem('rk_last_bill_notif_sig')) || (typeof window !== 'undefined' && window.__rkLastNotifSig);
+      var prevSig = (typeof localStorage !== 'undefined' && (localStorage.getItem(sigKey) || localStorage.getItem('rk_last_bill_notif_sig'))) || (typeof window !== 'undefined' && window['__rkLastNotifSig_' + shellKind]);
       if (prevSig === sig) return;
     } catch (e) {}
   }
@@ -16027,9 +16095,9 @@ function checkDueNotifications(force) {
   }
 
   try {
-    if (typeof window !== 'undefined') window.__rkLastNotifSig = sig;
+    if (typeof window !== 'undefined') window['__rkLastNotifSig_' + shellKind] = sig;
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('rk_last_bill_notif_sig', sig);
+      localStorage.setItem(sigKey, sig);
       localStorage.setItem('last_bill_notif_date', today);
     }
   } catch (e) {}
@@ -17449,14 +17517,21 @@ function bindPrivacy() {
 
 /** Tombol notifikasi menyala bila izin sudah diberikan. */
 function syncNotifBtn() {
+  var p = 'Notification' in window ? Notification.permission : 'default';
   var b = document.getElementById('btn-notif');
-  if (!b || !('Notification' in window)) return;
-  var p = Notification.permission;
-  b.classList.toggle('on', p === 'granted');
-  b.title = p === 'granted' ? 'Pengingat tagihan aktif (ketuk untuk periksa sekarang)'
-    : p === 'denied' ? 'Notifikasi diblokir di browser — ubah di setelan situs'
-    : 'Aktifkan pengingat notifikasi tagihan';
-  b.setAttribute('aria-label', b.title);
+  if (b && 'Notification' in window) {
+    b.classList.toggle('on', p === 'granted');
+    b.title = p === 'granted' ? 'Pengingat tagihan aktif (ketuk untuk periksa sekarang)'
+      : p === 'denied' ? 'Notifikasi diblokir di browser — ubah di setelan situs'
+      : 'Aktifkan pengingat notifikasi tagihan';
+    b.setAttribute('aria-label', b.title);
+  }
+  var dp = document.getElementById('desk-push-perm');
+  if (dp && 'Notification' in window) {
+    dp.textContent = p === 'granted' ? '✓ Notif OS Aktif' : p === 'denied' ? 'Notif OS Diblokir' : 'Aktifkan Notif OS';
+    dp.classList.toggle('btn-emerald', p === 'granted');
+    dp.classList.toggle('btn-secondary', p !== 'granted');
+  }
 }
 
 /** Beri nama pada setiap dialog (dari judul h2-nya) supaya terbaca oleh pembaca layar. */
@@ -20638,6 +20713,8 @@ var MOB_STATE = {
   chipCtx: null,
   scenItemId: null,
   scenMode: 'change_price',
+  scenMonth: null,
+  dismissedNotifs: null,
   itemSub: 'all',
   itemCat: 'Tagihan rutin',
   itemEditId: null,
@@ -21082,7 +21159,7 @@ function mobShellTemplate() {
     // TAB 7: PENGATURAN
     '<section class="tab-panel" id="m-tab-settings"><div class="stack">' +
     '<div class="card" id="m-card-settings-acct"><div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Akun &amp; Sinkron Cloud</h2><div style="font-size:0.71rem;color:var(--text-muted)" id="m-set-acct-status">● Mode Lokal</div></div><button type="button" class="btn btn-primary btn-sm" id="m-set-open-acct">Kelola</button></div></div>' +
-    '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Pengaturan Notifikasi</h2><div style="font-size:0.71rem;color:var(--text-muted)">Pengingat otomatis tagihan jatuh tempo</div></div><span class="badge b-em" id="m-notif-perm-badge">Aktif</span></div>' +
+    '<div class="card" id="m-card-settings-notif"><div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Pengaturan Notifikasi</h2><div style="font-size:0.71rem;color:var(--text-muted)">Pengingat otomatis tagihan jatuh tempo</div></div><span class="badge b-em" id="m-notif-perm-badge">Aktif</span></div>' +
     '<div class="stack" style="gap:8px">' +
     '<label class="switch-row"><span><strong>Pengingat Bar HP</strong></span><input type="checkbox" id="m-set-notif-enabled" checked /></label>' +
     '<div class="field"><label class="field-label" for="m-set-rmh">Tampilkan yang jatuh tempo dalam</label><select class="input" id="m-set-rmh"><option value="3">3 hari ke depan (H-3)</option><option value="7" selected>7 hari ke depan (H-7)</option><option value="14">14 hari ke depan</option><option value="30">30 hari ke depan</option></select></div>' +
@@ -21165,9 +21242,14 @@ function mobShellTemplate() {
     '<button type="button" class="list-row" data-cp-act="skip" style="color:var(--text-muted)">⊘ Lewati tagihan ini</button>' +
     '<button type="button" class="list-row" data-cp-act="edit" style="color:var(--accent-ink);font-weight:700">✎ Ubah harga / geser jadwal...</button></div></div></div>' +
     '<div class="modal-backdrop" id="m-sheet-scenario"><div class="modal-sheet"><div class="ms-handle"></div>' +
-    '<div class="ms-head"><strong class="card-title" id="m-ms-title">Ubah Jadwal</strong><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-scenario">✕</button></div>' +
-    '<div class="ms-body"><div class="pill-slider" id="m-scen-tabs"><button type="button" class="p-chip active" data-mscen="change_price">Harga berubah</button><button type="button" class="p-chip" data-mscen="shift">Geser tanggal</button><button type="button" class="p-chip" data-mscen="stop">Berhenti bayar</button></div>' +
-    '<div id="m-scen-fields" class="stack" style="gap:10px"></div></div>' +
+    '<div class="ms-head"><div><strong class="card-title" id="m-ms-title">Ubah Harga / Jadwal</strong><div style="font-size:0.70rem;color:var(--text-muted)">Pilih penyesuaian tanpa merusak catatan lama</div></div><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-scenario">✕</button></div>' +
+    '<div class="ms-body" style="gap:11px"><div class="m-scen-grid" id="m-scen-tabs">' +
+    '<button type="button" class="m-scen-card active" data-mscen="change_price"><strong>Harga berubah</strong><span>Mulai bulan tertentu</span></button>' +
+    '<button type="button" class="m-scen-card" data-mscen="temp_price"><strong>Harga sementara</strong><span>Promo rentang bulan</span></button>' +
+    '<button type="button" class="m-scen-card" data-mscen="cycle"><strong>Ganti siklus</strong><span>Bulanan / 28 hari / tahun</span></button>' +
+    '<button type="button" class="m-scen-card" data-mscen="shift"><strong>Geser tanggal</strong><span>Undur / majukan tanggal</span></button>' +
+    '<button type="button" class="m-scen-card full-span" data-mscen="stop"><strong>Berhenti bayar</strong><span>Setop mulai bulan tertentu</span></button></div>' +
+    '<div id="m-scen-fields" class="stack" style="gap:10px"></div><div id="m-ms-err" style="color:var(--crimson);font-size:0.74rem;font-weight:600"></div></div>' +
     '<div class="ms-foot"><button type="button" class="btn btn-secondary" data-mclose="m-sheet-scenario">Batal</button><button type="button" class="btn btn-primary" id="m-btn-save-scen">Simpan</button></div></div></div>' +
     '<div class="modal-backdrop" id="m-sheet-trip"><div class="modal-sheet"><div class="ms-handle"></div>' +
     '<div class="ms-head"><strong class="card-title" id="m-kpt-title">Perjalanan Baru</strong><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-trip">✕</button></div>' +
@@ -21190,7 +21272,7 @@ function mobShellTemplate() {
     '<div class="ms-head"><strong class="card-title">Akun &amp; Sinkron Cloud</strong><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-acct">✕</button></div>' +
     '<div class="ms-body" id="m-acct-body"></div></div></div>' +
     '<div class="notif-popover" id="m-notif-popover"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:800;font-size:0.82rem">Pengingat Jatuh Tempo</span>' +
-    '<button type="button" class="btn btn-secondary btn-sm" id="m-pop-to-set">Atur Notif &rarr;</button></div><div class="stack" style="gap:7px" id="m-notif-pop-list"></div>' +
+    '<button type="button" class="btn btn-secondary btn-sm" id="m-pop-to-set">Atur Notif &rarr;</button></div><div id="m-pop-os-cta"></div><div class="stack" style="gap:7px" id="m-notif-pop-list"></div>' +
     '<button type="button" class="btn btn-primary btn-sm" style="width:100%;margin-top:8px" id="m-pop-preview">🔔 Preview Notif di Bar HP</button></div>' +
     '<div class="toast-box" id="m-toast-box" role="status" aria-live="polite"></div>' +
     '</div></div></div>'
@@ -22116,9 +22198,63 @@ function getMobDueList() {
   return out;
 }
 
+function mobGetDismissedNotifs() {
+  var td = todayISO();
+  if (!MOB_STATE.dismissedNotifs || MOB_STATE.dismissedNotifs.date !== td) {
+    var saved = null;
+    try {
+      if (typeof localStorage !== 'undefined') saved = JSON.parse(localStorage.getItem('rk-mob-dismissed-notifs') || 'null');
+    } catch (e) {}
+    MOB_STATE.dismissedNotifs = saved && saved.date === td && Array.isArray(saved.keys) ? saved : { date: td, keys: [] };
+  }
+  return MOB_STATE.dismissedNotifs.keys;
+}
+
+function mobDismissNotifKey(key) {
+  if (!key) return;
+  var keys = mobGetDismissedNotifs();
+  if (keys.indexOf(key) < 0) keys.push(key);
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.setItem('rk-mob-dismissed-notifs', JSON.stringify(MOB_STATE.dismissedNotifs));
+  } catch (e) {}
+  syncMobNotifDot();
+}
+
+function getMobVisibleDueList() {
+  var dis = mobGetDismissedNotifs();
+  return getMobDueList().filter(function (x) { return dis.indexOf(x.key) < 0; });
+}
+
+function syncMobNotifDot() {
+  var vis = getMobVisibleDueList();
+  if ($('m-notif-dot')) $('m-notif-dot').style.display = vis.length ? 'block' : 'none';
+}
+
+function renderMobNotifPopover() {
+  var cta = $('m-pop-os-cta'),
+    pl = $('m-notif-pop-list');
+  if (cta) {
+    var osPerm = typeof Notification !== 'undefined' && 'Notification' in window ? Notification.permission : 'default';
+    cta.innerHTML = osPerm !== 'granted'
+      ? '<button type="button" class="btn m-notif-enable-btn" id="m-pop-enable-os">🔔 Pencet, untuk aktifkan notifikasi</button>'
+      : '';
+  }
+  if (pl) {
+    var due = getMobVisibleDueList().slice(0, 6);
+    pl.innerHTML = due.length
+      ? '<div style="font-size:0.66rem;color:var(--text-muted);text-align:right;margin-bottom:2px">Geser kanan untuk hapus &rarr;</div>' +
+        due.map(function (x) {
+          var iso = isoD(x.t);
+          return '<div class="m-notif-swipe-row" data-mnotif-key="' + esc(x.key) + '"><div><strong>' + esc(x.it.name) + '</strong> &middot; ' + fmtD(iso) + '</div><button type="button" class="btn btn-emerald btn-sm" data-mquickpaid="' + esc(x.it.id) + '|' + iso + '">Lunas</button></div>';
+        }).join('')
+      : '<div style="font-size:0.75rem;color:var(--text-muted)">Tidak ada tagihan jatuh tempo.</div>';
+  }
+  syncMobNotifDot();
+}
+
 function triggerMobPhoneBarNotif(force) {
   if (!MOB_STATE.notifEnabled && !force) return;
-  var due = getMobDueList(),
+  var due = getMobVisibleDueList(),
     bn = $('m-os-notif');
   if (!bn) return;
   if (!due.length) {
@@ -22147,7 +22283,7 @@ function triggerMobPhoneBarNotif(force) {
 
 function renderMobSettings() {
   var due = getMobDueList();
-  if ($('m-notif-dot')) $('m-notif-dot').style.display = due.length ? 'block' : 'none';
+  syncMobNotifDot();
   if ($('m-rem-cnt-badge')) $('m-rem-cnt-badge').textContent = due.length + ' item';
   if ($('m-menu-cnt-rem')) $('m-menu-cnt-rem').textContent = due.length + ' tempo';
   var permB = $('m-notif-perm-badge');
@@ -22239,6 +22375,63 @@ function renderMobileApp() {
   mobPaintAllSliders();
 }
 
+function mobMonthOptsHtml(selMonth) {
+  var html = '';
+  for (var m = 0; m < 12; m++) {
+    html += '<option value="' + m + '"' + (m === selMonth ? ' selected' : '') + '>' + FULL_MON[m] + ' ' + S.year + '</option>';
+  }
+  return html;
+}
+
+function renderMobScenFields(scen, it) {
+  if (!it) it = item(MOB_STATE.scenItemId);
+  var box = $('m-scen-fields');
+  if (!box || !it) return;
+  if ($('m-ms-err')) $('m-ms-err').textContent = '';
+  MOB_STATE.scenMode = scen || 'change_price';
+  document.querySelectorAll('#m-scen-tabs [data-mscen]').forEach(function (x) {
+    x.classList.toggle('active', x.getAttribute('data-mscen') === MOB_STATE.scenMode);
+  });
+  var mDef = MOB_STATE.scenMonth != null ? MOB_STATE.scenMonth : Math.max(smEff(), Math.min(11, +todayISO().slice(5, 7) - 1));
+  if (MOB_STATE.scenMode === 'change_price') {
+    box.innerHTML =
+      '<div class="bento-2"><div class="field"><label class="field-label" for="m-sc-price">Harga Baru (Rp)</label><input class="input mono" id="m-sc-price" type="text" inputmode="numeric" data-num-fmt="rp" /></div>' +
+      '<div class="field"><label class="field-label" for="m-sc-month">Mulai Bulan</label><select class="input" id="m-sc-month">' + mobMonthOptsHtml(mDef) + '</select></div></div>';
+    setRpVal('m-sc-price', priceAt(it, Date.UTC(+S.year, mDef, 15)));
+  } else if (MOB_STATE.scenMode === 'temp_price') {
+    box.innerHTML =
+      '<div class="field"><label class="field-label" for="m-sc-price">Harga Promo (Rp)</label><input class="input mono" id="m-sc-price" type="text" inputmode="numeric" data-num-fmt="rp" /></div>' +
+      '<div class="bento-2"><div class="field"><label class="field-label" for="m-sc-month">Dari Bulan</label><select class="input" id="m-sc-month">' + mobMonthOptsHtml(mDef) + '</select></div>' +
+      '<div class="field"><label class="field-label" for="m-sc-month-end">Sampai Bulan</label><select class="input" id="m-sc-month-end">' + mobMonthOptsHtml(mDef) + '</select></div></div>';
+    setRpVal('m-sc-price', priceAt(it, Date.UTC(+S.year, mDef, 15)));
+  } else if (MOB_STATE.scenMode === 'cycle') {
+    var curCyc = typeof brCoreToCycle === 'function' ? brCoreToCycle(it) : 'tiap bulan';
+    box.innerHTML =
+      '<div class="field"><label class="field-label" for="m-sc-cycle">Siklus Baru</label><select class="input" id="m-sc-cycle">' +
+      '<option value="tiap bulan"' + (curCyc === 'tiap bulan' ? ' selected' : '') + '>Tiap 1 bulan</option>' +
+      '<option value="tiap 28 hari"' + (curCyc === 'tiap 28 hari' ? ' selected' : '') + '>Tiap 28 hari</option>' +
+      '<option value="sekali saja"' + (curCyc === 'sekali saja' ? ' selected' : '') + '>Sekali saja</option>' +
+      '<option value="tiap tahun"' + (curCyc === 'tiap tahun' ? ' selected' : '') + '>Tiap 1 tahun</option></select></div>';
+  } else if (MOB_STATE.scenMode === 'shift') {
+    var occM = occ(it, +S.year).filter(function (t) { return new Date(t).getUTCMonth() === mDef; })[0];
+    var defD = occM ? new Date(occM).getUTCDate() : Math.min(28, +String(it.start || '').slice(8, 10) || 15);
+    box.innerHTML =
+      '<div class="bento-2"><div class="field"><label class="field-label" for="m-sc-shift-day">Geser ke Tanggal (1–31)</label><input class="input mono" id="m-sc-shift-day" type="number" min="1" max="31" value="' + defD + '" /></div>' +
+      '<div class="field"><label class="field-label" for="m-sc-month">Bulan</label><select class="input" id="m-sc-month">' + mobMonthOptsHtml(mDef) + '</select></div></div>';
+  } else {
+    box.innerHTML = '<div class="field"><label class="field-label" for="m-sc-month">Berhenti bayar mulai</label><select class="input" id="m-sc-month">' + mobMonthOptsHtml(mDef) + '</select></div>';
+  }
+}
+
+function openMobScenarioSheet(it, iso) {
+  if (!it) return;
+  MOB_STATE.scenItemId = it.id;
+  MOB_STATE.scenMonth = iso && iso.length >= 7 ? (+iso.slice(5, 7) - 1) : Math.max(smEff(), Math.min(11, +todayISO().slice(5, 7) - 1));
+  if ($('m-ms-title')) $('m-ms-title').textContent = 'Ubah Harga / Jadwal — ' + it.name;
+  renderMobScenFields('change_price', it);
+  mobOpenSheet('m-sheet-scenario');
+}
+
 function openMobPeriodeSheet() {
   var ks = Object.keys(ALL.data).map(Number).sort(function (a, b) { return a - b; });
   if ($('m-yr-pills')) {
@@ -22299,11 +22492,55 @@ function bindMobileShellEvents(root) {
     if ($('m-cf-ch')) $('m-cf-ch').style.display = 'none';
     if ($('m-cf-seg-glow')) $('m-cf-seg-glow').style.display = 'none';
   }
+  var nList = $('m-notif-pop-list');
+  if (nList && !nList.dataset.swipeBound) {
+    nList.dataset.swipeBound = '1';
+    var swRow = null, swX0 = 0, swDx = 0;
+    var swStart = function (x, target) {
+      if (!target || target.closest('[data-mquickpaid]')) { swRow = null; return; }
+      swRow = target.closest('.m-notif-swipe-row');
+      if (!swRow) return;
+      swX0 = x; swDx = 0;
+      swRow.classList.add('is-swiping');
+    };
+    var swMove = function (x) {
+      if (!swRow) return;
+      swDx = Math.max(0, x - swX0);
+      swRow.style.transform = 'translateX(' + swDx + 'px)';
+      swRow.style.opacity = String(Math.max(0.25, 1 - swDx / 120));
+    };
+    var swEnd = function () {
+      if (!swRow) return;
+      var row = swRow; swRow = null;
+      row.classList.remove('is-swiping');
+      if (swDx >= 65) {
+        var nk = row.getAttribute('data-mnotif-key');
+        row.style.transform = 'translateX(110%)';
+        row.style.opacity = '0';
+        mobDismissNotifKey(nk);
+        renderMobNotifPopover();
+      } else {
+        row.style.transform = '';
+        row.style.opacity = '';
+      }
+      swDx = 0;
+    };
+    nList.addEventListener('touchstart', function (e) { if (e.touches && e.touches[0]) swStart(e.touches[0].clientX, e.target); }, { passive: true });
+    nList.addEventListener('touchmove', function (e) { if (e.touches && e.touches[0]) swMove(e.touches[0].clientX); }, { passive: true });
+    nList.addEventListener('touchend', swEnd);
+    nList.addEventListener('touchcancel', swEnd);
+    nList.addEventListener('mousedown', function (e) { if (e.button === 0) swStart(e.clientX, e.target); });
+    nList.addEventListener('mousemove', function (e) { if (swRow) swMove(e.clientX); });
+    nList.addEventListener('mouseup', swEnd);
+  }
   root.addEventListener('touchstart', function (e) {
     if (!e.target.closest('#m-cf-wrap')) dismissMobCfOverlay();
   }, { passive: true });
   root.addEventListener('click', function (e) {
     if (!e.target.closest('#m-cf-wrap')) dismissMobCfOverlay();
+    if (!e.target.closest('#m-notif-popover') && !e.target.closest('#m-btn-notif')) {
+      if ($('m-notif-popover')) $('m-notif-popover').classList.remove('open');
+    }
     if (!e.target.closest('.picker-wrap')) {
       root.querySelectorAll('.picker-popover.open').forEach(function (p) { p.classList.remove('open'); });
     }
@@ -22380,10 +22617,14 @@ function bindMobileShellEvents(root) {
       return;
     }
     if (e.target.closest('#m-pon-close')) { if ($('m-os-notif')) $('m-os-notif').classList.remove('show'); return; }
-    if (e.target.closest('#m-pon-set') || e.target.closest('#m-pop-to-set')) {
+    if (e.target.closest('#m-pon-set') || e.target.closest('#m-pop-to-set') || e.target.closest('#m-pop-enable-os')) {
+      var toNotifCard = !!e.target.closest('#m-pop-enable-os');
       if ($('m-os-notif')) $('m-os-notif').classList.remove('show');
       if ($('m-notif-popover')) $('m-notif-popover').classList.remove('open');
       switchMobileTab('settings');
+      if (toNotifCard && $('m-card-settings-notif') && $('m-card-settings-notif').scrollIntoView) {
+        $('m-card-settings-notif').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
       return;
     }
     if (e.target.closest('#m-pon-paid')) {
@@ -22407,16 +22648,8 @@ function bindMobileShellEvents(root) {
       return;
     }
     if (e.target.closest('#m-btn-notif')) {
-      var pop = $('m-notif-popover'), pl = $('m-notif-pop-list');
-      if (pl) {
-        var due = getMobDueList().slice(0, 4);
-        pl.innerHTML = due.length
-          ? due.map(function (x) {
-              var iso = isoD(x.t);
-              return '<div style="padding:8px 10px;border-radius:10px;background:var(--amber-soft);font-size:0.74rem;display:flex;justify-content:space-between;align-items:center;gap:6px"><div><strong>' + esc(x.it.name) + '</strong> &middot; ' + fmtD(iso) + '</div><button type="button" class="btn btn-emerald btn-sm" data-mquickpaid="' + esc(x.it.id) + '|' + iso + '">Lunas</button></div>';
-            }).join('')
-          : '<div style="font-size:0.75rem;color:var(--text-muted)">Tidak ada tagihan jatuh tempo.</div>';
-      }
+      renderMobNotifPopover();
+      var pop = $('m-notif-popover');
       if (pop) pop.classList.toggle('open');
       return;
     }
@@ -22643,15 +22876,7 @@ function bindMobileShellEvents(root) {
       var act = cpAct.getAttribute('data-cp-act'), cx = MOB_STATE.chipCtx, ky2 = cx.id + '|' + cx.iso;
       mobCloseSheet('m-sheet-chip');
       if (act === 'edit') {
-        MOB_STATE.scenItemId = cx.id;
-        MOB_STATE.scenMode = 'change_price';
-        var it2 = item(cx.id);
-        if ($('m-ms-title') && it2) $('m-ms-title').textContent = 'Ubah — ' + it2.name;
-        if ($('m-scen-fields') && it2) {
-          $('m-scen-fields').innerHTML = '<div class="field"><label class="field-label" for="m-sc-price">Harga Baru Mulai ' + fmtD(cx.iso) + ' (Rp)</label><input class="input mono" id="m-sc-price" type="text" inputmode="numeric" data-num-fmt="rp" /></div>';
-          setRpVal('m-sc-price', priceAt(it2, Date.parse(cx.iso + 'T00:00:00Z')));
-        }
-        mobOpenSheet('m-sheet-scenario');
+        openMobScenarioSheet(item(cx.id), cx.iso);
         return;
       }
       if (act === 'paid') { S.paid[ky2] = 1; delete S.skip[ky2]; }
@@ -22666,52 +22891,61 @@ function bindMobileShellEvents(root) {
     if (med) {
       var iid = med.getAttribute('data-medit-it'), itE = item(iid);
       if (!itE) return;
-      MOB_STATE.scenItemId = itE.id;
-      MOB_STATE.scenMode = 'change_price';
-      MOB_STATE.chipCtx = { id: itE.id, iso: S.year + '-01-01' };
-      if ($('m-ms-title')) $('m-ms-title').textContent = 'Ubah — ' + itE.name;
-      if ($('m-scen-fields')) {
-        $('m-scen-fields').innerHTML = '<div class="field"><label class="field-label" for="m-sc-price">Harga Baru (Rp)</label><input class="input mono" id="m-sc-price" type="text" inputmode="numeric" data-num-fmt="rp" /></div>';
-        setRpVal('m-sc-price', itE.price);
-      }
-      mobOpenSheet('m-sheet-scenario');
+      MOB_STATE.chipCtx = { id: itE.id, iso: itE.start || (S.year + '-' + pad2(smEff() + 1) + '-01') };
+      openMobScenarioSheet(itE, MOB_STATE.chipCtx.iso);
       return;
     }
     var mscTab = e.target.closest('[data-mscen]');
     if (mscTab) {
-      MOB_STATE.scenMode = mscTab.getAttribute('data-mscen');
-      root.querySelectorAll('[data-mscen]').forEach(function (x) { x.classList.toggle('active', x === mscTab); });
-      var itS = item(MOB_STATE.scenItemId);
-      if ($('m-scen-fields') && itS) {
-        if (MOB_STATE.scenMode === 'change_price') {
-          $('m-scen-fields').innerHTML = '<div class="field"><label class="field-label" for="m-sc-price">Harga Baru (Rp)</label><input class="input mono" id="m-sc-price" type="text" inputmode="numeric" data-num-fmt="rp" /></div>';
-          setRpVal('m-sc-price', itS.price);
-        } else if (MOB_STATE.scenMode === 'shift') {
-          var iso0 = (MOB_STATE.chipCtx && MOB_STATE.chipCtx.iso) || todayISO();
-          $('m-scen-fields').innerHTML = '<div class="field"><span class="field-label">Tanggal Baru Tagihan (' + fmtD(iso0) + ')</span>' + mobDateFieldHtml('m-sc-date', iso0, false) + '</div>';
-        } else {
-          $('m-scen-fields').innerHTML = '<div style="font-size:0.80rem;color:var(--text-secondary)">Hentikan tagihan mulai bulan aktif.</div>';
-        }
-      }
+      renderMobScenFields(mscTab.getAttribute('data-mscen'), item(MOB_STATE.scenItemId));
       return;
     }
     if (e.target.closest('#m-btn-save-scen')) {
       var itU = item(MOB_STATE.scenItemId);
       if (itU) {
+        var scen = MOB_STATE.scenMode || 'change_price',
+          mEl = $('m-sc-month'),
+          m = mEl ? +mEl.value : smEff(),
+          y = +S.year,
+          setMErr = function (msg) { if ($('m-ms-err')) $('m-ms-err').textContent = msg; };
+        setMErr('');
         itU.ch = itU.ch || [];
-        var fr = (MOB_STATE.chipCtx && MOB_STATE.chipCtx.iso) || (S.year + '-01-01');
-        if (MOB_STATE.scenMode === 'change_price') {
+        if (scen === 'change_price' || scen === 'temp_price') {
           var np = getRpVal('m-sc-price');
-          if (np > 0) itU.ch.push({ from: fr, to: '', price: np, n: null, unit: null, cut: false });
-        } else if (MOB_STATE.scenMode === 'shift' && $('m-sc-date')) {
-          var nd = $('m-sc-date').value;
-          if (ISO_RE.test(nd) && nd !== fr) itU.ch.push({ from: fr, anchor: nd, to: '', price: null, n: itU.n, unit: itU.unit, mv: 1 });
-        } else if (MOB_STATE.scenMode === 'stop') {
-          itU.end = fr;
+          if (!(np > 0)) { setMErr('Isi nominal harga baru yang valid.'); return; }
+          var fromIso = y + '-' + pad2(m + 1) + '-01', toIso = '';
+          if (scen === 'temp_price') {
+            var mEnd = $('m-sc-month-end') ? +$('m-sc-month-end').value : m;
+            if (mEnd < m) { setMErr('Bulan akhir promo tidak boleh sebelum bulan mulai.'); return; }
+            toIso = isoD(Date.UTC(y, mEnd + 1, 0));
+          }
+          itU.ch = itU.ch.filter(function (c) { return !(c.from === fromIso && c.to === toIso && !c.mv); });
+          itU.ch.push({ from: fromIso, to: toIso, price: np, n: null, unit: null, cut: false });
+        } else if (scen === 'cycle') {
+          var cVal = $('m-sc-cycle') ? $('m-sc-cycle').value : 'tiap bulan';
+          var cyc = typeof brCycleToCore === 'function' ? brCycleToCore(cVal) : { n: 1, unit: 'bulan' };
+          itU.n = cyc.n;
+          itU.unit = cyc.unit;
+        } else if (scen === 'shift') {
+          var targetDay = Math.min(31, Math.max(1, parseInt($('m-sc-shift-day') && $('m-sc-shift-day').value, 10) || 15));
+          var listOcc = occ(itU, y), occInM = listOcc.filter(function (t) { return new Date(t).getUTCMonth() === m; })[0];
+          if (!occInM) { setMErr('Tidak ada tagihan di bulan ' + FULL_MON[m] + '.'); return; }
+          var origIso = isoD(occInM);
+          var dim = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+          var newIso = y + '-' + pad2(m + 1) + '-' + pad2(Math.min(dim, targetDay));
+          if (newIso !== origIso) {
+            if (typeof moveStatusExact === 'function') moveStatusExact(itU.id, [[origIso, newIso]], [S.paid, S.skip], [S.real || {}]);
+            var mvObj = {};
+            mvObj[origIso] = newIso;
+            itU.ch.push({ from: origIso, to: newIso, mv: mvObj });
+          }
+        } else if (scen === 'stop') {
+          itU.end = isoD(Date.UTC(y, m, 0));
+          itU.cnt = 0;
         }
         save();
         syncUI();
-        showMobToast('Jadwal item diperbarui');
+        showMobToast('Jadwal ' + itU.name + ' diperbarui');
       }
       mobCloseSheet('m-sheet-scenario');
       return;

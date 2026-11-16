@@ -115,6 +115,18 @@ const { boot } = require('./ui.js');
   assert($('m-sheet-chip').classList.contains('open'), 'klik pil tagihan membuka sheet aksi tagihan');
   click(mobShell.querySelector('[data-cp-act="paid"]'));
   assert.strictEqual(w.S.paid['901|2026-11-15'], 1, 'S.paid["901|2026-11-15"] tercatat lunas (1)');
+  // Uji 5 opsi Ubah Harga / Jadwal Mode APK (tanpa Atur manual) & form Geser tanggal bebas popup kalender
+  click(mobShell.querySelector('[data-mchip="901|2026-12-15"]'));
+  click(mobShell.querySelector('[data-cp-act="edit"]'));
+  assert($('m-sheet-scenario').classList.contains('open'), 'sheet Ubah Harga / Jadwal terbuka');
+  const scenTabs = [...$('m-scen-tabs').querySelectorAll('[data-mscen]')].map((b) => b.getAttribute('data-mscen'));
+  assert.deepStrictEqual(scenTabs, ['change_price', 'temp_price', 'cycle', 'shift', 'stop'], 'sheet Ubah Harga / Jadwal memuat 5 fitur tanpa Atur manual');
+  click($('m-scen-tabs').querySelector('[data-mscen="shift"]'));
+  assert($('m-sc-shift-day') && $('m-sc-month') && !$('m-sheet-scenario').querySelector('.picker-popover'), 'Geser tanggal Mode APK memakai input tanggal 1-31 + bulan tanpa popup kalender terpotong');
+  $('m-sc-shift-day').value = '20';
+  click($('m-btn-save-scen'));
+  assert(!$('m-sheet-scenario').classList.contains('open'), 'sheet skenario tertutup setelah simpan');
+  assert(w.occ(w.item(901), 2026).some((t) => w.isoD(t) === '2026-12-20'), 'tanggal tagihan Desember berhasil digeser ke 20 Des 2026');
 
   // 4. Tab Kas (Transaksi) -> auto-format 250000 -> 250.000 -> simpan ke kasLinked().tx & kasBal
   const balBefore = w.kasBal(w.kasLinked()).bal;
@@ -155,14 +167,37 @@ const { boot } = require('./ui.js');
   click($('m-kas-flt-reset'));
   assert.strictEqual($('m-kas-flt-cat').value, 'all', 'reset filter mengembalikan Semua Kategori');
 
-  // Uji checkDueNotifications otomatis memicu bar notif HP saat ada tagihan jatuh tempo hari ini
-  w.S.items.push({ id: 902, name: 'Tagihan Hari Ini', price: 99000, n: 1, unit: 'bulan', start: w.todayISO(), end: '', cnt: 0, cat: 'Tagihan rutin', ch: [] });
+  // Uji checkDueNotifications, tanda merah #m-notif-dot, CTA aktifkan notif, dan swipe kanan hapus notif
+  w.S.paid['902|2026-11-01'] = 1;
+  w.renderMobSettings();
+  assert.strictEqual($('m-notif-dot').style.display, 'none', 'default tidak ada tanda merah #m-notif-dot saat belum ada tagihan jatuh tempo');
+  w.S.items.push({ id: 903, name: 'Tagihan Hari Ini', price: 99000, n: 1, unit: 'bulan', start: w.todayISO(), end: '', cnt: 0, cat: 'Tagihan rutin', ch: [] });
+  w.renderMobSettings();
+  assert.strictEqual($('m-notif-dot').style.display, 'block', 'tanda merah #m-notif-dot muncul saat ada tagihan jatuh tempo');
   $('m-os-notif').classList.remove('show');
-  try { w.localStorage.removeItem('rk_last_bill_notif_sig'); } catch (e) {}
-  w.__rkLastNotifSig = '';
+  try { w.localStorage.removeItem('rk_last_bill_notif_sig'); w.localStorage.removeItem('rk_last_bill_notif_sig_mobile-app'); } catch (e) {}
+  w['__rkLastNotifSig_mobile-app'] = '';
   w.checkDueNotifications(false);
   assert($('m-os-notif').classList.contains('show'), 'checkDueNotifications otomatis menampilkan #m-os-notif saat ada tagihan jatuh tempo hari ini');
   assert($('m-pon-body').textContent.includes('Tagihan Hari Ini'), 'isi notif otomatis menyebut nama tagihan yang jatuh tempo hari ini');
+  $('m-os-notif').classList.remove('show');
+  w.checkDueNotifications(false);
+  assert(!$('m-os-notif').classList.contains('show'), 'notifikasi otomatis hanya muncul 1 kali untuk daftar tagihan & hari yang sama');
+  // Buka popover lonceng atas -> tombol CTA aktifkan notif -> swipe kanan hapus isi notif
+  click($('m-btn-notif'));
+  assert($('m-notif-popover').classList.contains('open'), 'popover notifikasi terbuka dari tombol lonceng atas');
+  const enBtn = $('m-pop-enable-os');
+  assert(enBtn && enBtn.textContent.includes('Pencet, untuk aktifkan notifikasi'), 'popover memuat keterangan Pencet, untuk aktifkan notifikasi saat izin OS belum aktif');
+  const swItem = $('m-notif-pop-list').querySelector('.m-notif-swipe-row');
+  assert(swItem, 'item notif bisa di-swipe di popover');
+  const tsEv = new w.Event('touchstart', { bubbles: true }); tsEv.touches = [{ clientX: 20 }]; swItem.dispatchEvent(tsEv);
+  const tmEv = new w.Event('touchmove', { bubbles: true }); tmEv.touches = [{ clientX: 110 }]; swItem.dispatchEvent(tmEv);
+  swItem.dispatchEvent(new w.Event('touchend', { bubbles: true }));
+  assert(!$('m-notif-pop-list').querySelector('.m-notif-swipe-row'), 'slide ke kanan menghapus isi notif dari popover');
+  assert.strictEqual($('m-notif-dot').style.display, 'none', 'tanda merah #m-notif-dot hilang setelah semua notif dihapus');
+  click($('m-pop-enable-os'));
+  assert(!$('m-notif-popover').classList.contains('open') && $('m-tab-settings').classList.contains('active'), 'klik Pencet, untuk aktifkan notifikasi langsung menuju Pengaturan Notifikasi APK');
+  click(bnav.querySelector('[data-mtab="kas"]'));
 
   // 5. Menu -> Perjalanan: buat perjalanan baru, tambah itinerary, booking, checklist, & catatan
   click($('m-btn-more'));

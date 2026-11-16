@@ -1610,10 +1610,16 @@ function checkDueNotifications(force) {
     return;
   }
 
+  var shellKind = typeof getShellMode === 'function' ? getShellMode() : 'browser';
+  if (shellKind === 'mobile-app' && typeof MOB_STATE !== 'undefined' && MOB_STATE && MOB_STATE.notifEnabled === false && !force) {
+    return;
+  }
+
+  var sigKey = 'rk_last_bill_notif_sig_' + shellKind;
   var sig = today + '|' + dueList.map(function (x) { return x.it.id + ':' + x.d; }).join(',');
   if (!force) {
     try {
-      var prevSig = (typeof localStorage !== 'undefined' && localStorage.getItem('rk_last_bill_notif_sig')) || (typeof window !== 'undefined' && window.__rkLastNotifSig);
+      var prevSig = (typeof localStorage !== 'undefined' && (localStorage.getItem(sigKey) || localStorage.getItem('rk_last_bill_notif_sig'))) || (typeof window !== 'undefined' && window['__rkLastNotifSig_' + shellKind]);
       if (prevSig === sig) return;
     } catch (e) {}
   }
@@ -1645,9 +1651,9 @@ function checkDueNotifications(force) {
   }
 
   try {
-    if (typeof window !== 'undefined') window.__rkLastNotifSig = sig;
+    if (typeof window !== 'undefined') window['__rkLastNotifSig_' + shellKind] = sig;
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('rk_last_bill_notif_sig', sig);
+      localStorage.setItem(sigKey, sig);
       localStorage.setItem('last_bill_notif_date', today);
     }
   } catch (e) {}
