@@ -147,3 +147,30 @@ test('authGoogle memakai redirectTo kanonik tanpa query ?mode=app dan menyimpan 
   assert.equal(oauth.options.redirectTo, 'https://user.github.io/RencanaKeuangan/');
   assert.equal(store['rk-shell-mode'], 'mobile-app');
 });
+
+test('error OAuth Signups not allowed menerjemahkan petunjuk Supabase di sbInit', async () => {
+  const els = {};
+  const mkEl = () => ({ style: {}, classList: { toggle() {} }, querySelector: () => null, textContent: '' });
+  const ctx = loadCore({
+    URL,
+    URLSearchParams,
+    SB_URL: 'https://example.supabase.co',
+    SB_KEY: 'sb_publishable_test',
+    location: {
+      origin: 'https://user.github.io',
+      pathname: '/RencanaKeuangan/',
+      search: '?error=access_denied&error_description=Signups+not+allowed+for+this+instance',
+      hash: '',
+    },
+    history: { replaceState() {} },
+    document: { getElementById(id) { return (els[id] = els[id] || mkEl()); } },
+    $(id) { return (els[id] = els[id] || mkEl()); },
+    supabase: { createClient: () => ({ auth: { getSession: async () => ({ data: { session: null } }), onAuthStateChange() {} } }) },
+    window: { supabase: {} },
+    toast() {},
+  });
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', '..', 'js', 'sync.js'), 'utf8'), ctx);
+  ctx.sbInit();
+  await new Promise((r) => setTimeout(r, 10));
+  assert.match(els.lm.textContent, /Allow new users to sign up/);
+});

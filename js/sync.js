@@ -60,7 +60,10 @@ function sbInit() {
       var hp = new URLSearchParams((location.hash || '').replace(/^#/, ''));
       var oauthErr = qp.get('error_description') || hp.get('error_description') || qp.get('error') || hp.get('error');
       if (oauthErr) {
-        var msg = 'Login Google gagal: ' + decodeURIComponent(oauthErr.replace(/\+/g, ' '));
+        var rawErr = decodeURIComponent(oauthErr.replace(/\+/g, ' '));
+        var msg = /Signups not allowed/i.test(rawErr)
+          ? 'Pendaftaran akun baru dimatikan di Supabase. Aktifkan "Allow new users to sign up" di Authentication → Sign In / Providers.'
+          : ('Login Google gagal: ' + rawErr);
         sbStat(msg, 1);
         if ($('lm')) $('lm').textContent = msg;
         if ($('m-lg-err')) $('m-lg-err').textContent = msg;

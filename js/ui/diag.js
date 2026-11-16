@@ -29,6 +29,8 @@ function sbErrHint(e) {
   if (/JWT|expired/i.test(m)) return 'Sesi login kedaluwarsa. Keluar lalu masuk lagi.';
   if (c === '42501' || /row-level security|permission denied/i.test(m))
     return 'Ditolak aturan keamanan (RLS). Jalankan ulang schema.sql dan pastikan policy ada.';
+  if (/Signups not allowed/i.test(m))
+    return 'Pendaftaran akun baru masih dimatikan di Supabase. Aktifkan "Allow new users to sign up" di Supabase > Authentication > Sign In / Providers.';
   if (/Failed to fetch|NetworkError|Load failed/i.test(m))
     return 'Tidak bisa menghubungi Supabase. Cek koneksi dan pastikan SB_URL hanya https://xxxx.supabase.co.';
   return m || 'Penyebab tidak diketahui.';
