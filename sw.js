@@ -1,7 +1,7 @@
 /**
  * Service Worker untuk Rencana Keuangan: offline cache & notifikasi lokal tagihan.
  */
-const CACHE_NAME = 'rk-cache-v10';
+const CACHE_NAME = 'rk-cache-v11';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -26,13 +26,18 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Listener untuk memicu Web Notification langsung dari Service Worker
+// Listener untuk memicu Web Notification langsung dari Service Worker (bertahan di Laci Notifikasi & Lock Screen)
 self.addEventListener('message', (e) => {
   if (e.data && e.data.type === 'DUE_NOTIFICATION') {
     self.registration.showNotification(e.data.title, {
       body: e.data.body,
       tag: e.data.tag || 'rk-bill-notif',
-      renotify: true
+      icon: './icon-192.png',
+      badge: './icon-192.png',
+      renotify: true,
+      requireInteraction: true,
+      vibrate: [180, 80, 180],
+      data: { url: './?mode=app' }
     });
   }
 });
@@ -77,12 +82,13 @@ self.addEventListener('fetch', (e) => {
 
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
+  const targetUrl = (e.notification.data && e.notification.data.url) || './?mode=app';
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
       for (const client of clients) {
         if (client.url && 'focus' in client) return client.focus();
       }
-      if (self.clients.openWindow) return self.clients.openWindow('./index.html');
+      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
     })
   );
 });

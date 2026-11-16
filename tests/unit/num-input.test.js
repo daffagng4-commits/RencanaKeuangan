@@ -180,4 +180,7 @@ test('PWA standalone config: manifest.webmanifest, sw.js, index.dev.html, dan di
   const devHtml = fs.readFileSync(path.join(root, 'index.dev.html'), 'utf8');
   assert(devHtml.includes("register('./sw.js', { scope: './' })"), 'index.dev.html mendaftarkan ./sw.js dengan scope ./');
   assert(devHtml.includes('href="./manifest.webmanifest"'), 'index.dev.html memuat manifest relatif');
+  assert(sw.includes('requireInteraction: true') && sw.includes("icon: './icon-192.png'"), 'sw.js menyetel notifikasi persisten dengan ikon');
+  const tripSrc = fs.readFileSync(path.join(root, 'js', 'ui', 'trip.js'), 'utf8');
+  assert(tripSrc.includes('requireInteraction: true') && tripSrc.includes("badge: './icon-192.png'"), 'triggerSystemNotification menyetel requireInteraction & badge agar bertahan di Laci Notifikasi/Lock Screen');
 });

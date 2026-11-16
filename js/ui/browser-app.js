@@ -766,15 +766,30 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
     var xy = toWrapXY(s.x, s.y);
     brPositionTooltip(wrap, tip, xy.px, xy.py, 16);
   }
-  function inspectFromX(clientX) {
-    var r = svg.getBoundingClientRect(),
-      w = r.width || 600,
-      svgX = Math.max(coords[0].x, Math.min(coords[coords.length - 1].x, ((clientX - r.left) / w) * W)),
-      near = coords.reduce(function (b, c) { return Math.abs(c.x - svgX) < Math.abs(b.x - svgX) ? c : b; }, coords[0]);
-    if (Math.abs(near.x - svgX) <= 14 || !samples.length) { showPointHUD(near); return; }
+  function inspectAtSvgX(svgX) {
+    svgX = Math.max(coords[0].x, Math.min(coords[coords.length - 1].x, svgX));
+    var near = coords.reduce(function (b, c) { return Math.abs(c.x - svgX) < Math.abs(b.x - svgX) ? c : b; }, coords[0]);
+    if (Math.abs(near.x - svgX) <= 14 || !samples.length) {
+      showPointHUD(near);
+      if (typeof opts.onScrub === 'function') opts.onScrub(near.x / W, near);
+      return near;
+    }
     var ns = samples.reduce(function (b, c) { return Math.abs(c.x - svgX) < Math.abs(b.x - svgX) ? c : b; }, samples[0]);
     showLineHUD(ns);
+    if (typeof opts.onScrub === 'function') opts.onScrub(ns.x / W, ns);
+    return ns;
   }
+  function inspectFromX(clientX) {
+    var r = svg.getBoundingClientRect(),
+      w = r.width || 600;
+    inspectAtSvgX(((clientX - r.left) / w) * W);
+  }
+  svg._rkInspectPct = function (pct) {
+    var p = Math.max(0, Math.min(1, Number(pct) || 0)),
+      x0 = coords[0].x,
+      x1 = coords[coords.length - 1].x;
+    return inspectAtSvgX(x0 + p * (x1 - x0));
+  };
   var getPin = opts.getPin || function () { return BR_STATE.pinnedCashIdx; };
   var setPin = opts.setPin || function (idx, pt) { BR_STATE.pinnedCashIdx = idx; renderCashInspector(pt); };
   if (hit) {

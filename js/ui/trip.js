@@ -1553,21 +1553,26 @@ function bindXl() {
   };
 }
 
-/** Kirim notifikasi sistem baik via ServiceWorkerRegistration maupun Notification API browser. */
+/** Kirim notifikasi sistem baik via ServiceWorkerRegistration (muncul di Laci Notifikasi & Lock Screen Android) maupun Notification API browser. */
 function triggerSystemNotification(title, body, tag) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   var opt = {
     body: body,
     tag: tag || 'bill-due-' + Date.now(),
+    icon: './icon-192.png',
+    badge: './icon-192.png',
     renotify: true,
+    requireInteraction: true,
+    vibrate: [180, 80, 180],
+    timestamp: Date.now(),
+    data: { url: './?mode=app' },
   };
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then(function (reg) {
       if (reg && reg.showNotification) {
-        reg.showNotification(title, opt);
-      } else {
-        try { new Notification(title, opt); } catch (e) {}
+        return reg.showNotification(title, opt);
       }
+      try { new Notification(title, opt); } catch (e) {}
     }).catch(function () {
       try { new Notification(title, opt); } catch (e) {}
     });

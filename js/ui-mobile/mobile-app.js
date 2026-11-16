@@ -10,6 +10,7 @@ var MOB_STATE = {
   cashRange: 'm',
   zoomRange: 'm',
   zoomWide: false,
+  zoomTouch: 'scrub',
   zoomPin: null,
   cashExpand: false,
   wherePeriod: 'y',
@@ -522,16 +523,21 @@ function mobShellTemplate() {
     '<div class="ms-head"><div><strong class="card-title">Kondisi Kas Realtime</strong><div style="font-size:0.72rem;color:var(--text-muted)" class="mono pv" id="m-cf-zoom-sub">Geser grafik ke kanan/kiri · ketuk titik untuk pin</div></div>' +
     '<div style="display:flex;gap:5px;flex-shrink:0"><button type="button" class="btn btn-secondary btn-sm" id="m-cf-zoom-wide">🔍 Perlebar</button><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-cf-zoom">✕ Tutup</button></div></div>' +
     '<div class="ms-body" style="gap:8px;padding:12px 12px 16px">' +
-    '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap">' +
     '<div class="seg" role="group" aria-label="Rentang Grafik Zoom">' +
     '<button type="button" class="seg-btn" data-mzoom-range="w">Minggu</button>' +
     '<button type="button" class="seg-btn active" data-mzoom-range="m">Bulan</button>' +
     '<button type="button" class="seg-btn" data-mzoom-range="y">Tahun</button></div>' +
+    '<div class="seg" id="m-cf-zoom-touch-seg" style="display:none" role="group" aria-label="Mode Sentuh">' +
+    '<button type="button" class="seg-btn active" data-mzmode="scrub">👆 Garis</button>' +
+    '<button type="button" class="seg-btn" data-mzmode="pan">✋ Geser</button></div>' +
     '<div class="cf-legend-bar" style="margin-bottom:0">' +
     '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--accent)"></span>Saldo Nyata</span>' +
     '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--emerald)"></span>Proyeksi</span>' +
     '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--crimson)"></span>Defisit (&lt;0)</span></div></div>' +
-    '<div class="cf-zoom-stage" id="m-cf-zoom-stage"><div class="cf-zoom-scroll" id="m-cf-zoom-wrap"><svg id="m-svg-cf-zoom" viewBox="0 0 920 340"></svg></div><div class="hud-tooltip" id="m-cf-zoom-tip"></div></div>' +
+    '<div class="cf-zoom-stage" id="m-cf-zoom-stage"><div class="cf-zoom-scroll" id="m-cf-zoom-wrap"><svg id="m-svg-cf-zoom" viewBox="0 0 600 320"></svg></div><div class="hud-tooltip" id="m-cf-zoom-tip"></div></div>' +
+    '<div class="slider-wrap" style="margin-top:2px"><div class="slider-hd"><span style="font-size:0.71rem;color:var(--text-muted);font-weight:700">Geser garis grafik</span><span style="font-size:0.69rem;color:var(--accent-ink);font-weight:700" id="m-cf-zoom-scrub-lbl">Sentuh grafik atau geser &harr;</span></div>' +
+    '<input type="range" class="modern-slider" id="m-cf-zoom-scrub" min="0" max="100" step="1" value="50" /></div>' +
     '<div id="m-cf-zoom-insp" style="display:none;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border-radius:10px;background:var(--bg-subtle);font-size:0.74rem"></div>' +
     '</div></div></div>' +
     '<div class="modal-backdrop" id="m-sheet-periode"><div class="modal-sheet"><div class="ms-handle"></div>' +
@@ -857,27 +863,46 @@ function renderMobCashflowZoom() {
     tip = $('m-cf-zoom-tip');
   if (!svg || !stage) return;
   var P = kasLinked(),
-    bal = P ? kasBal(P).bal : (+S.saldo || 0);
+    bal = P ? kasBal(P).bal : (+S.saldo || 0),
+    wide = !!MOB_STATE.zoomWide,
+    allowPan = wide && MOB_STATE.zoomTouch === 'pan';
   if ($('m-cf-zoom-sub')) $('m-cf-zoom-sub').textContent = 'Tahun ' + S.year + ' · Saldo saat ini ' + rp(bal);
-  svg.classList.toggle('is-zoom-wide', !!MOB_STATE.zoomWide);
+  svg.classList.toggle('is-zoom-wide', wide);
   if ($('m-cf-zoom-wide')) {
-    $('m-cf-zoom-wide').textContent = MOB_STATE.zoomWide ? '🔍 Normal' : '🔍 Perlebar';
-    $('m-cf-zoom-wide').classList.toggle('active', !!MOB_STATE.zoomWide);
+    $('m-cf-zoom-wide').textContent = wide ? '🔍 Normal' : '🔍 Perlebar';
+    $('m-cf-zoom-wide').classList.toggle('active', wide);
   }
+  if ($('m-cf-zoom-touch-seg')) $('m-cf-zoom-touch-seg').style.display = wide ? 'inline-flex' : 'none';
+  document.querySelectorAll('#m-cf-zoom-touch-seg [data-mzmode]').forEach(function (b) {
+    b.classList.toggle('active', b.getAttribute('data-mzmode') === MOB_STATE.zoomTouch);
+  });
   document.querySelectorAll('#m-sheet-cf-zoom [data-mzoom-range]').forEach(function (b) {
     b.classList.toggle('active', b.getAttribute('data-mzoom-range') === MOB_STATE.zoomRange);
   });
+  if ($('m-cf-zoom-scrub')) mobPaintSlider($('m-cf-zoom-scrub'));
   if (typeof brRenderCashflowInto === 'function') {
     brRenderCashflowInto(svg, stage, tip, MOB_STATE.zoomRange, {
       prefix: 'mz-',
-      allowScroll: true,
-      svgW: 920,
-      svgH: 340,
-      fontSize: 13,
+      allowScroll: allowPan,
+      svgW: wide ? 920 : 600,
+      svgH: wide ? 340 : 320,
+      padL: wide ? 68 : 56,
+      fontSize: wide ? 13 : 13.5,
       dotR: 5.5,
       skipInspector: true,
       getPin: function () { return MOB_STATE.zoomPin; },
       setPin: function (idx, pt) { MOB_STATE.zoomPin = idx; renderMobZoomInspector(pt); },
+      onScrub: function (ratio, pt) {
+        var sc = $('m-cf-zoom-scrub');
+        if (sc) {
+          sc.value = String(Math.round(Math.max(0, Math.min(1, ratio)) * 100));
+          mobPaintSlider(sc);
+        }
+        if ($('m-cf-zoom-scrub-lbl') && pt) {
+          var lbl = pt.d ? fmtD(pt.d) : (pt.p0 ? pt.p0.lbl + ' → ' + pt.p1.lbl : '');
+          $('m-cf-zoom-scrub-lbl').textContent = lbl + ' · ' + rp(Math.round(pt.val || 0));
+        }
+      },
     });
     if (MOB_STATE.zoomPin === null) renderMobZoomInspector(null);
   }
@@ -1507,6 +1532,11 @@ function triggerMobPhoneBarNotif(force) {
   bn.classList.add('show');
   clearTimeout(mobNotifTimer);
   mobNotifTimer = setTimeout(function () { bn.classList.remove('show'); }, 7500);
+  if (force && due.length && typeof triggerSystemNotification === 'function' && typeof Notification !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+    var osTtl = $('m-pon-title') ? $('m-pon-title').textContent : 'Pengingat Tagihan Jatuh Tempo';
+    var osBody = $('m-pon-body') ? $('m-pon-body').textContent : '';
+    triggerSystemNotification(osTtl, osBody, 'bill-due-' + todayISO());
+  }
 }
 
 function renderMobSettings() {
@@ -1876,6 +1906,12 @@ function bindMobileShellEvents(root) {
       renderMobCashflowZoom();
       return;
     }
+    var mzm = e.target.closest('[data-mzmode]');
+    if (mzm) {
+      MOB_STATE.zoomTouch = mzm.getAttribute('data-mzmode') === 'pan' ? 'pan' : 'scrub';
+      renderMobCashflowZoom();
+      return;
+    }
     if (e.target.closest('#m-cf-zoom-unpin')) {
       MOB_STATE.zoomPin = null;
       renderMobCashflowZoom();
@@ -2216,7 +2252,13 @@ function bindMobileShellEvents(root) {
     var t = e.target;
     if (!t) return;
     if (t.classList && t.classList.contains('modern-slider')) mobPaintSlider(t);
-    if (t.id === 'm-cfg-saldo' || t.id === 'm-cfg-saldo-slider') {
+    if (t.id === 'm-cf-zoom-scrub') {
+      var zSvg = $('m-svg-cf-zoom'), zWrap = $('m-cf-zoom-wrap'), pct = (+t.value || 0) / 100;
+      if (zSvg && typeof zSvg._rkInspectPct === 'function') zSvg._rkInspectPct(pct);
+      if (zWrap && zWrap.scrollWidth > zWrap.clientWidth) {
+        zWrap.scrollLeft = Math.round(pct * (zWrap.scrollWidth - zWrap.clientWidth));
+      }
+    } else if (t.id === 'm-cfg-saldo' || t.id === 'm-cfg-saldo-slider') {
       if ($('m-cfg-saldo-ro')) $('m-cfg-saldo-ro').textContent = rp(getRpVal('m-cfg-saldo'));
       if ($('m-cfg-saldo-slider')) mobPaintSlider($('m-cfg-saldo-slider'));
     } else if (t.id === 'm-kas-amt' || t.id === 'm-kas-slider') {
