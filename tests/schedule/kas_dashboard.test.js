@@ -76,7 +76,11 @@ const { boot } = require("./ui.js");
   assert(smWrap, "#sm memakai custom .mselect");
   smWrap.getBoundingClientRect = () => ({ left: 200, top: 180, bottom: 220, width: 150 });
   smWrap.querySelector(".mselect-trigger").click();
-  assert.strictEqual(smWrap.querySelector(".mselect-menu").style.position, "fixed", "dropdown di modal memakai position:fixed agar tidak kepotong kotak");
+  const smMenu = smWrap.querySelector(".mselect-menu");
+  assert.strictEqual(smMenu.style.position, "fixed", "dropdown di modal memakai position:fixed agar tidak kepotong kotak");
+  assert.strictEqual(smMenu.style.minWidth, "0", "dropdown fixed mereset min-width:100% agar tidak melebar penuh viewport");
+  assert.strictEqual(smMenu.style.right, "auto", "dropdown fixed mengunci right:auto agar ukuran mengikuti lebar menu");
+  assert(parseInt(smMenu.style.width, 10) <= 260, "lebar dropdown fixed terjaga <= 260px");
   w.closeAllPickersAndMenus(null);
   $("yr-done").click();
 

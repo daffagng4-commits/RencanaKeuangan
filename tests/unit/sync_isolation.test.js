@@ -10,6 +10,8 @@ function loadSyncEnv(opts = {}) {
   const store = Object.assign({}, opts.initialStorage || {});
   const els = {};
   const ls = {
+    get length() { return Object.keys(store).length; },
+    key(i) { return Object.keys(store)[i] ?? null; },
     getItem(k) { return Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null; },
     setItem(k, v) { store[k] = String(v); },
     removeItem(k) { delete store[k]; },
@@ -196,4 +198,19 @@ test('pull tidak memunculkan dialog konflik #cf meski cache lokal dan cloud puny
   await new Promise((r) => setTimeout(r, 30));
   assert.equal(ctx.document.getElementById('cf').hidden, true, 'dialog konflik #cf tidak boleh muncul otomatis');
   assert.equal(ctx.S.saldo, 30000000, 'data cloud yang lebih baru langsung dimuat tanpa popup konflik');
+});
+
+test('rkSignOut membersihkan sbUser dan token localStorage meski sb.auth.signOut gagal', async () => {
+  const { ctx, store } = loadSyncEnv({
+    initialStorage: {
+      'sb-proj-auth-token': '{"access_token":"stale"}',
+    },
+  });
+  await new Promise((r) => setTimeout(r, 10));
+  ctx.setUser({ user: { id: 'u1', email: 'davinagng@gmail.com' } });
+  await new Promise((r) => setTimeout(r, 20));
+  ctx.sb.auth.signOut = async () => { throw new Error('403 session_not_found'); };
+  await ctx.rkSignOut();
+  assert.equal(ctx.sbUser, null, 'sbUser direset menjadi null meski server signOut melempar error');
+  assert.equal(store['sb-proj-auth-token'], undefined, 'token sb-*-auth-token dihapus dari localStorage');
 });

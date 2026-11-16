@@ -305,6 +305,18 @@ function enhanceSelect(sel) {
   sel._mselect = wrap;
   var trig = wrap.querySelector('.mselect-trigger'),
     menu = wrap.querySelector('.mselect-menu');
+  function resetMselectMenuStyle(mn) {
+    if (!mn) return;
+    mn.style.position = '';
+    mn.style.top = '';
+    mn.style.left = '';
+    mn.style.right = '';
+    mn.style.width = '';
+    mn.style.minWidth = '';
+    mn.style.maxWidth = '';
+    mn.style.maxHeight = '';
+    mn.style.zIndex = '';
+  }
   trig.onclick = function (e) {
     e.stopPropagation();
     var willOpen = !wrap.classList.contains('open');
@@ -312,12 +324,7 @@ function enhanceSelect(sel) {
     wrap.classList.toggle('open', willOpen);
     trig.setAttribute('aria-expanded', String(willOpen));
     if (!willOpen) {
-      menu.style.position = '';
-      menu.style.top = '';
-      menu.style.left = '';
-      menu.style.width = '';
-      menu.style.maxHeight = '';
-      menu.style.zIndex = '';
+      resetMselectMenuStyle(menu);
       return;
     }
     if (typeof window !== 'undefined') {
@@ -326,22 +333,21 @@ function enhanceSelect(sel) {
         var availDown = window.innerHeight - r.bottom - 14;
         var availUp = r.top - 14;
         var openUp = availDown < 170 && availUp > availDown;
-        var menuW = Math.max(200, Math.min(290, r.width + 40));
+        var maxFit = Math.max(140, (window.innerWidth || 360) - 24);
+        var menuW = Math.min(maxFit, 260, Math.max(176, Math.round(r.width)));
         var maxH = Math.max(130, Math.min(280, openUp ? availUp : availDown));
-        var leftPx = Math.max(12, Math.min(r.left, window.innerWidth - menuW - 12));
+        var leftPx = Math.max(12, Math.min(r.left, (window.innerWidth || 360) - menuW - 12));
         menu.style.position = 'fixed';
+        menu.style.right = 'auto';
         menu.style.left = leftPx + 'px';
+        menu.style.minWidth = '0';
+        menu.style.maxWidth = menuW + 'px';
         menu.style.width = menuW + 'px';
         menu.style.maxHeight = maxH + 'px';
         menu.style.zIndex = '260';
         menu.style.top = openUp ? Math.max(12, r.top - maxH - 6) + 'px' : (r.bottom + 6) + 'px';
       } else {
-        menu.style.position = '';
-        menu.style.top = '';
-        menu.style.left = '';
-        menu.style.width = '';
-        menu.style.maxHeight = '';
-        menu.style.zIndex = '';
+        resetMselectMenuStyle(menu);
         menu.classList.toggle('align-right', r.left + 235 > window.innerWidth - 14);
       }
     }
@@ -363,7 +369,10 @@ function closeAllPickersAndMenus(exceptEl) {
       var tr = ms.querySelector('.mselect-trigger');
       if (tr) tr.setAttribute('aria-expanded', 'false');
       var mn = ms.querySelector('.mselect-menu');
-      if (mn) { mn.style.position = ''; mn.style.top = ''; mn.style.left = ''; mn.style.width = ''; mn.style.maxHeight = ''; mn.style.zIndex = ''; }
+      if (mn) {
+        mn.style.position = ''; mn.style.top = ''; mn.style.left = ''; mn.style.right = '';
+        mn.style.width = ''; mn.style.minWidth = ''; mn.style.maxWidth = ''; mn.style.maxHeight = ''; mn.style.zIndex = '';
+      }
     }
   });
   document.querySelectorAll('#browser-shell .picker-popover.open').forEach(function (pop) {
@@ -2852,7 +2861,8 @@ function brBindEvents() {
     var mobThm = t.closest('[data-mob-thm]');
     if (mobThm && $('thm')) { $('thm').click(); return; }
     if (t.closest('#br-btn-signout') && typeof sb !== 'undefined' && sb && sbUser) {
-      sb.auth.signOut().then(function () { brCloseModal('lg'); toast('Keluar dari akun. Data lokal tetap ada.'); });
+      var doOut = typeof rkSignOut === 'function' ? rkSignOut() : sb.auth.signOut({ scope: 'local' });
+      Promise.resolve(doOut).then(function () { brCloseModal('lg'); toast('Keluar dari akun.'); });
       return;
     }
   });

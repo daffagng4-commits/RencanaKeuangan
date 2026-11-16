@@ -1714,7 +1714,18 @@ function bindMobileShellEvents(root) {
     if (e.target.closest('#m-acct-btn') || e.target.closest('#m-menu-acct') || e.target.closest('#m-set-open-acct')) { mobCloseSheet('m-sheet-more'); openMobAcctSheet(); return; }
     if (e.target.closest('#m-lg-google')) { if (typeof authGoogle === 'function') authGoogle(); else showMobToast('Sinkron Google belum aktif'); return; }
     if (e.target.closest('#m-acct-sync-now')) { if (typeof pull === 'function') pull(); mobCloseSheet('m-sheet-acct'); return; }
-    if (e.target.closest('#m-acct-logout')) { if (sb && sb.auth) sb.auth.signOut(); mobCloseSheet('m-sheet-acct'); return; }
+    if (e.target.closest('#m-acct-logout')) {
+      var outBtn = e.target.closest('#m-acct-logout');
+      if (outBtn) { outBtn.disabled = true; outBtn.textContent = 'Keluar...'; }
+      var doOut = typeof rkSignOut === 'function'
+        ? rkSignOut()
+        : (typeof sb !== 'undefined' && sb && sb.auth ? Promise.resolve(sb.auth.signOut({ scope: 'local' })).catch(function () {}) : Promise.resolve());
+      Promise.resolve(doOut).then(function () {
+        mobCloseSheet('m-sheet-acct');
+        showMobToast('Keluar dari akun.');
+      });
+      return;
+    }
     if (e.target.closest('#m-lg-in')) {
       var em = ($('m-lg-email') && $('m-lg-email').value || '').trim(), pw = $('m-lg-pass') && $('m-lg-pass').value || '';
       if (!em || pw.length < 6) { if ($('m-lg-err')) $('m-lg-err').textContent = 'Isi email dan password (min 6 karakter).'; return; }

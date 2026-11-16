@@ -247,6 +247,30 @@ const { boot } = require('./ui.js');
   assert(w.kasLinked().tx.some((x) => x.note === 'Belanja Harian' && x.amt === 250000), 'Browser Mode melihat transaksi dari Mode Aplikasi HP');
   assert(w.ALL.kas.pr[tripKey] && w.ALL.kas.pr[tripKey].ck[0].text === 'Paspor & JR Pass', 'Browser Mode melihat data trip & checklist');
 
+  // 8. Kembali ke Mode APK & uji logout (#m-acct-logout) tetap berhasil walau sb.auth.signOut error
+  w.setShellMode('mobile-app');
+  const qRes = (d) => ({
+    select() { return this; },
+    eq() { return this; },
+    maybeSingle: async () => ({ data: d, error: null }),
+    then: (cb) => Promise.resolve({ data: d ? [d] : [], error: null }).then(cb),
+  });
+  w.sb = {
+    auth: { signOut: async () => { throw new Error('network/session error'); } },
+    from: () => ({ select() { return qRes(null); }, upsert: () => qRes({ rev: 1 }), update: () => qRes({ rev: 1 }) }),
+  };
+  w.setUser({ user: { id: 'hp_u1', email: 'davinagng@gmail.com', user_metadata: { full_name: 'Davina Pratama' } } });
+  assert.strictEqual($('m-user-name').textContent, 'Halo, Davina', 'header Mode APK menampilkan nama akun sebelum logout');
+  click($('m-acct-btn'));
+  assert($('m-sheet-acct').classList.contains('open'), 'sheet Akun terbuka dari avatar Mode APK');
+  const outBtn = $('m-acct-logout');
+  assert(outBtn, 'tombol #m-acct-logout tersedia di sheet Akun');
+  click(outBtn);
+  await new Promise((r) => setTimeout(r, 30));
+  assert.strictEqual(w.sbUser, null, 'sbUser terhapus menjadi null setelah klik #m-acct-logout');
+  assert.strictEqual($('m-user-name').textContent, 'Halo, XXX', 'nama header kembali menjadi Halo, XXX setelah logout Mode APK');
+  assert(!$('m-sheet-acct').classList.contains('open'), 'sheet Akun tertutup setelah logout');
+
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('OK mobile_app_mode');
   process.exit(0);

@@ -349,6 +349,51 @@ function sbPending() {
   e.innerHTML = 'Sinkron ditunda karena data berbeda. <a href="#" id="sbr">Selesaikan sekarang</a>';
 }
 
+/** Keluar dari akun Supabase secara aman (tetap membersihkan sesi lokal & UI meski jaringan/token gagal). */
+function rkSignOut() {
+  var clearSbStorage = function () {
+    var sweep = function (st) {
+      if (!st) return;
+      try {
+        if (typeof sb !== 'undefined' && sb && sb.auth && sb.auth.storageKey) st.removeItem(sb.auth.storageKey);
+        if (typeof SB_URL === 'string' && SB_URL.trim()) {
+          try {
+            var ref = new URL(SB_URL.trim()).hostname.split('.')[0];
+            if (ref) st.removeItem('sb-' + ref + '-auth-token');
+          } catch (e) {}
+        }
+        var keys = [];
+        if (typeof st.length === 'number' && typeof st.key === 'function') {
+          for (var i = 0; i < st.length; i++) keys.push(st.key(i));
+        }
+        keys = keys.concat(Object.keys(st));
+        keys.forEach(function (k) {
+          if (k && /^sb-.*-auth-token/i.test(k)) st.removeItem(k);
+        });
+      } catch (e) {}
+    };
+    if (typeof localStorage !== 'undefined') sweep(localStorage);
+    if (typeof sessionStorage !== 'undefined') sweep(sessionStorage);
+    if (typeof sbUser !== 'undefined' && sbUser) setUser(null);
+    else if (typeof acctUI === 'function') acctUI(null);
+  };
+  if (typeof sb === 'undefined' || !sb || !sb.auth || typeof sb.auth.signOut !== 'function') {
+    clearSbStorage();
+    return Promise.resolve({ error: null });
+  }
+  var p;
+  try {
+    p = Promise.resolve(sb.auth.signOut({ scope: 'local' })).catch(function () { return null; });
+  } catch (e) {
+    p = Promise.resolve(null);
+  }
+  var timer = new Promise(function (resolve) { setTimeout(resolve, 1200); });
+  return Promise.race([p, timer]).then(function () {
+    clearSbStorage();
+    return { error: null };
+  });
+}
+
 /** Masuk dengan akun Google (Gmail) melalui Supabase OAuth; data tersimpan ke rk_state sesuai user_id. */
 function authGoogle() {
   if (!sb || !sb.auth) {
@@ -496,12 +541,8 @@ function bindSync() {
       askConfirm(
         'Keluar dari <b>' + esc(em) + '</b>? Data lokal tetap tersimpan di perangkat ini.',
         function () {
-          sb.auth.signOut().then(function (r) {
-            if (r && r.error) {
-              toast('Gagal keluar: ' + r.error.message);
-              return;
-            }
-            toast('Keluar dari akun. Data lokal tetap ada.');
+          rkSignOut().then(function () {
+            toast('Keluar dari akun.');
           });
         },
         'Keluar',
