@@ -1,7 +1,7 @@
 /**
  * Service Worker untuk Rencana Keuangan: offline cache & notifikasi lokal tagihan.
  */
-const CACHE_NAME = 'rk-cache-v7';
+const CACHE_NAME = 'rk-cache-v8';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -40,8 +40,8 @@ self.addEventListener('message', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
-  // Supabase API bypass cache
-  if (url.hostname.includes('supabase.co')) return;
+  // Supabase API & Google OAuth callback bypass cache agar sesi login tidak terganggu
+  if (url.hostname.includes('supabase.co') || url.hostname.includes('accounts.google.com') || url.searchParams.has('code') || url.searchParams.has('error')) return;
 
   // Network-First untuk dokumen HTML agar pembaruan program selalu langsung muncul saat online
   const isHtml = e.request.mode === 'navigate' || (e.request.headers.get('accept') && e.request.headers.get('accept').includes('text/html'));

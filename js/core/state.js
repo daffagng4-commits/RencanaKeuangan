@@ -331,7 +331,36 @@ function smEff() {
   return smEffYear(S.year, S);
 }
 
-/** Simpan state ke localStorage. Menaikkan rev + menjadwalkan push hanya jika data benar-benar berubah. */
+/** Simpan state ke localStorage (terisolasi per user saat cloud aktif; tidak menulis lokal jika belum login). */
+function rkCloudActive() {
+  return typeof SB_URL === 'string' && !!SB_URL && typeof SB_KEY === 'string' && !!SB_KEY && typeof window !== 'undefined' && !!window.supabase;
+}
+
+function rkStorageKey() {
+  if (rkCloudActive()) {
+    return (typeof sbUser !== 'undefined' && sbUser && sbUser.id) ? (KEY + ':' + sbUser.id) : null;
+  }
+  return KEY;
+}
+
+function emptyAllState(year) {
+  var y = +year || (typeof todayISO === 'function' ? +todayISO().slice(0, 4) : 2026) || 2026;
+  var d = {};
+  d[y] = { year: y, saldo: 0, startMonth: 0, items: [], paid: {}, skip: {}, real: {}, adj: [] };
+  return {
+    year: y,
+    rev: 0,
+    data: d,
+    kas: { pr: { utama: { id: 'utama', name: 'Utama', saldo: 0, link: true, tx: [], it: [], bk: [], lk: [], ck: [], dt: {}, note: '', goal: null, auto: true, nm: [] } } },
+  };
+}
+
+function rkWriteCache(obj) {
+  var k = rkStorageKey();
+  if (!k || typeof localStorage === 'undefined') return;
+  localStorage.setItem(k, JSON.stringify(obj || ALL));
+}
+
 function save() {
   try {
     ALL.data[S.year] = S;
@@ -342,12 +371,12 @@ function save() {
       ALL.rev = Date.now();
       schedPush();
     }
-    localStorage.setItem(KEY, JSON.stringify(ALL));
+    rkWriteCache(ALL);
     setSaveStatus(true);
   } catch (e) {
     try {
       localStorage.removeItem('rk-undo');
-      localStorage.setItem(KEY, JSON.stringify(ALL));
+      rkWriteCache(ALL);
       setSaveStatus(true);
       return;
     } catch (e2) {}
@@ -487,23 +516,30 @@ function mergeAll(inc) {
   return { items: cnt, years: yrs };
 }
 
-/** Muat state dari localStorage (atau data contoh bila kosong/rusak). */
-function loadState() {
+/** Muat state: kosong saat mode cloud belum login (jangan tampilkan localStorage), atau terisolasi per akun. */
+function loadState(userId) {
+  var k = userId ? (KEY + ':' + userId) : rkStorageKey();
+  if (!k) {
+    ALL = emptyAllState();
+    S = ALL.data[ALL.year];
+    lastData = dsig();
+    return;
+  }
   var raw = null;
   var r = null;
   try {
-    r = typeof localStorage !== 'undefined' ? localStorage.getItem(KEY) : null;
+    r = typeof localStorage !== 'undefined' ? localStorage.getItem(k) : null;
     raw = r ? JSON.parse(r) : null;
   } catch (e) {
     if (r) {
       try {
-        localStorage.setItem(KEY + '_corrupt_backup_' + Date.now(), r);
+        localStorage.setItem(k + '_corrupt_backup_' + Date.now(), r);
       } catch (err) {}
       console.error('Data localStorage rusak, dicadangkan ke backup sebelum dipulihkan:', e);
     }
     raw = null;
   }
-  ALL = norm(raw);
+  ALL = raw ? norm(raw) : (rkCloudActive() ? emptyAllState() : norm(null));
   S = ALL.data[ALL.year];
   lastData = dsig();
 }

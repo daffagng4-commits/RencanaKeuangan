@@ -45,10 +45,33 @@ function sbInit() {
     sbStat('SB_URL tidak valid. Harus berbentuk https://xxxx.supabase.co', 1);
     return;
   }
-  sb = supabase.createClient(u0, SB_KEY.trim());
-  sbStat('Belum masuk. Data tersimpan lokal.');
+  sb = supabase.createClient(u0, SB_KEY.trim(), {
+    auth: {
+      detectSessionInUrl: true,
+      persistSession: true,
+      autoRefreshToken: true,
+    },
+  });
+  sbStat('Belum masuk. Masuk akun untuk sinkron cloud.');
+  // Tampilkan error OAuth bila Google/Supabase mengembalikan parameter error di URL
+  try {
+    if (typeof location !== 'undefined') {
+      var qp = new URLSearchParams(location.search || '');
+      var hp = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+      var oauthErr = qp.get('error_description') || hp.get('error_description') || qp.get('error') || hp.get('error');
+      if (oauthErr) {
+        var msg = 'Login Google gagal: ' + decodeURIComponent(oauthErr.replace(/\+/g, ' '));
+        sbStat(msg, 1);
+        if ($('lm')) $('lm').textContent = msg;
+        if ($('m-lg-err')) $('m-lg-err').textContent = msg;
+        if (typeof toast === 'function') toast(msg);
+        if (typeof history !== 'undefined' && history.replaceState) history.replaceState(null, '', location.pathname);
+      }
+    }
+  } catch (e) {}
   sb.auth.getSession().then(function (r) {
-    setUser(r.data.session);
+    var s0 = r && r.data ? r.data.session : null;
+    if (s0 || !sbUser) setUser(s0);
   });
   sb.auth.onAuthStateChange(function (_e, s) {
     setUser(s);
@@ -81,19 +104,51 @@ function acctUI(u) {
   if (typeof syncMobileCloudUI === 'function') syncMobileCloudUI();
 }
 
-/** Dipanggil saat sesi login berubah; memulai tarik data setelah login. */
+/** Reset state ke kosong total & hapus cache lokal lama saat logout/ganti akun agar data tidak bocor. */
+function rkResetToEmptyState(prevUid) {
+  clearTimeout(pushT);
+  pushT = null;
+  if (typeof ALL !== 'undefined' && typeof emptyAllState === 'function') {
+    ALL = emptyAllState();
+    S = ALL.data[ALL.year];
+    lastData = typeof dsig === 'function' ? dsig() : '';
+  }
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(KEY);
+      if (prevUid) localStorage.removeItem(KEY + ':' + prevUid);
+      localStorage.removeItem('rk-sync');
+      localStorage.removeItem('rk-snap');
+      localStorage.removeItem('rk-tool-rebalance');
+      localStorage.removeItem('rk-tool-ibkr');
+    }
+  } catch (e) {}
+}
+
+/** Dipanggil saat sesi login berubah; pastikan akun baru kosong total & mode logout tidak menampilkan localStorage. */
 function setUser(s) {
   var u = (s && s.user) || null,
-    was = sbUser;
+    was = sbUser,
+    sameUser = (u && u.id) === (was && was.id);
   sbUser = u;
+  if (u && typeof location !== 'undefined' && (/[?&](code|access_token)=/.test(location.search || '') || /access_token=|refresh_token=/.test(location.hash || ''))) {
+    try { if (typeof history !== 'undefined' && history.replaceState) history.replaceState(null, '', location.pathname); } catch (e) {}
+  }
+  if (!sameUser) {
+    syncBlocked = false;
+    rkResetToEmptyState(was && was.id);
+    if (u && typeof loadState === 'function') {
+      loadState(u.id);
+    }
+    if (typeof syncUI === 'function') syncUI();
+  }
   acctUI(u);
-  if ((u && u.id) === (was && was.id)) return;
-  syncBlocked = false;
+  if (sameUser) return;
   if (u) {
     sbStat('Menyinkronkan...');
     pull();
     toolsPull();
-  } else sbStat('Belum masuk. Data tersimpan lokal.');
+  } else sbStat('Belum masuk. Masuk akun untuk melihat & menyimpan data.');
 }
 
 /** Jadwalkan kirim ke cloud 300 ms setelah perubahan terakhir. */
@@ -139,7 +194,8 @@ function push() {
   if (!ALL.rev) {
     ALL.rev = Date.now();
     try {
-      localStorage.setItem(KEY, JSON.stringify(ALL));
+      if (typeof rkWriteCache === 'function') rkWriteCache(ALL);
+      else localStorage.setItem(KEY, JSON.stringify(ALL));
     } catch (e) {}
   }
   var prevRev = getSync();
@@ -168,9 +224,10 @@ function dataSig(a) {
   return JSON.stringify(a.data) + JSON.stringify((a.kas || {}).pr || null);
 }
 
-/** Apakah data lokal masih data contoh yang belum diubah. */
+/** Apakah data lokal masih kosong/contoh yang belum diubah oleh akun ini. */
 function isPristine() {
-  return dataSig(ALL) === dataSig(norm(null));
+  var sig = dataSig(ALL);
+  return sig === dataSig(norm(null)) || (typeof emptyAllState === 'function' && sig === dataSig(emptyAllState(ALL && ALL.year)));
 }
 
 /** Pakai data cloud di perangkat ini (data lokal dicadangkan dulu). */
@@ -182,7 +239,8 @@ function applyRemote(row, label) {
   S = ALL.data[ALL.year];
   lastData = dsig();
   try {
-    localStorage.setItem(KEY, JSON.stringify(ALL));
+    if (typeof rkWriteCache === 'function') rkWriteCache(ALL);
+    else localStorage.setItem(KEY, JSON.stringify(ALL));
   } catch (e) {}
   setSync(rr);
   syncUI();
@@ -190,7 +248,7 @@ function applyRemote(row, label) {
   return sn;
 }
 
-/** Bandingkan cloud vs lokal: sama -> selesai; hanya satu sisi berubah -> ikuti; keduanya berubah -> dialog konflik. */
+/** Bandingkan cloud vs lokal: akun baru tanpa data cloud selalu mulai kosong total (bukan data lokal/admin). */
 function pull() {
   if (!sb || !sbUser) return Promise.resolve();
   return sb
@@ -204,7 +262,15 @@ function pull() {
         return;
       }
       var row = r.data;
-      if (!row) return push();
+      if (!row) {
+        ALL = typeof emptyAllState === 'function' ? emptyAllState() : norm(null);
+        S = ALL.data[ALL.year];
+        lastData = dsig();
+        ALL.rev = Date.now();
+        try { if (typeof rkWriteCache === 'function') rkWriteCache(ALL); } catch (e) {}
+        syncUI();
+        return push();
+      }
       var rr = +row.rev || 0,
         lr = +ALL.rev || 0,
         ls = getSync(),
@@ -212,7 +278,8 @@ function pull() {
       if (dataSig(rn) === dataSig(ALL)) {
         ALL.rev = Math.max(lr, rr);
         try {
-          localStorage.setItem(KEY, JSON.stringify(ALL));
+          if (typeof rkWriteCache === 'function') rkWriteCache(ALL);
+          else localStorage.setItem(KEY, JSON.stringify(ALL));
         } catch (e) {}
         setSync(ALL.rev);
         sbStat('Tersinkron ' + clock());
@@ -279,26 +346,41 @@ function sbPending() {
   e.innerHTML = 'Sinkron ditunda karena data berbeda. <a href="#" id="sbr">Selesaikan sekarang</a>';
 }
 
-/** Masuk dengan akun Google (Gmail) melalui Supabase OAuth; data tetap ke rk_state sesuai user_id. */
+/** Masuk dengan akun Google (Gmail) melalui Supabase OAuth; data tersimpan ke rk_state sesuai user_id. */
 function authGoogle() {
   if (!sb || !sb.auth) {
     if (typeof toast === 'function') toast('Sinkron belum aktif. Pastikan Supabase dikonfigurasi.');
     return Promise.resolve();
   }
+  try {
+    if (typeof getShellMode === 'function' && typeof localStorage !== 'undefined') {
+      localStorage.setItem('rk-shell-mode', getShellMode());
+    }
+  } catch (e) {}
   var redir;
   try {
     if (typeof location !== 'undefined' && /^https?:/i.test(location.origin || '')) {
-      redir = location.origin + location.pathname + (location.search || '');
+      redir = location.origin + location.pathname;
     }
   } catch (e) {}
+  if (!redir) {
+    var errFile = 'Login Google memerlukan URL https:// atau http://localhost (tidak bisa dari file://).';
+    if ($('lm')) $('lm').textContent = errFile;
+    if ($('m-lg-err')) $('m-lg-err').textContent = errFile;
+    if (typeof toast === 'function') toast(errFile);
+    return Promise.resolve();
+  }
   return sb.auth.signInWithOAuth({
     provider: 'google',
-    options: redir ? { redirectTo: redir } : undefined,
+    options: { redirectTo: redir },
   }).then(function (r) {
     if (r && r.error) {
-      if ($('lm')) $('lm').textContent = r.error.message;
-      if ($('m-lg-err')) $('m-lg-err').textContent = r.error.message;
-      if (typeof toast === 'function') toast('Gagal login Google: ' + r.error.message);
+      var msg = r.error.message || 'Gagal masuk dengan Google';
+      if ($('lm')) $('lm').textContent = msg;
+      if ($('m-lg-err')) $('m-lg-err').textContent = msg;
+      if (typeof toast === 'function') toast('Gagal login Google: ' + msg);
+    } else if (r && r.data && r.data.url && typeof location !== 'undefined') {
+      location.assign(r.data.url);
     }
     return r;
   });
