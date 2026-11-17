@@ -327,14 +327,18 @@ body[data-shell="mobile-app"] #mobile-app-shell .wallet-hero {
   background: linear-gradient(142deg, #0F172A 0%, #17347A 60%, #0F52BA 100%);
   color: #FFFFFF;
   border-radius: var(--radius-lg);
-  padding: 15px 15px 13px;
+  padding: 20px 16px 18px;
+  min-height: 186px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   box-shadow: 0 10px 26px rgba(15, 23, 42, 0.16);
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-top > div:first-child { min-width: 0; flex: 1; }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-kicker { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.78; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-body[data-shell="mobile-app"] #mobile-app-shell .wallet-bal { font-family: var(--font-mono); font-size: clamp(1.22rem, 5.2vw, 1.56rem); font-weight: 800; letter-spacing: -0.02em; margin: 3px 0 6px; white-space: nowrap; }
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-bal { font-family: var(--font-mono); font-size: clamp(1.26rem, 5.4vw, 1.62rem); font-weight: 800; letter-spacing: -0.02em; margin: 6px 0 14px; white-space: nowrap; }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-pill {
   display: inline-flex;
   align-items: center;
@@ -351,27 +355,66 @@ body[data-shell="mobile-app"] #mobile-app-shell .wallet-pill {
   flex-shrink: 0;
 }
 
-body[data-shell="mobile-app"] #mobile-app-shell .wallet-seg {
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 3px;
-  margin-top: 12px;
-  padding: 3px;
-  border-radius: 11px;
-  background: rgba(255, 255, 255, 0.14);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: auto;
 }
-
-body[data-shell="mobile-app"] #mobile-app-shell .wallet-seg-btn {
-  padding: 5px 6px;
-  border-radius: 8px;
-  font-size: 0.73rem;
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-box {
+  background: rgba(255, 255, 255, 0.11);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 13px;
+  padding: 10px 10px 9px;
+  min-width: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-hd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-ico {
+  width: 19px;
+  height: 19px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-ico.in {
+  background: rgba(16, 185, 129, 0.24);
+  color: #34D399;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-ico.out {
+  background: rgba(244, 63, 94, 0.26);
+  color: #FB7185;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-lbl {
+  font-size: 0.68rem;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.82);
-  text-align: center;
-  transition: all 140ms ease;
+  color: rgba(255, 255, 255, 0.88);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
-body[data-shell="mobile-app"] #mobile-app-shell .wallet-seg-btn.active { background: #FFFFFF; color: #0F172A; }
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-val {
+  font-size: clamp(0.76rem, 3.25vw, 0.90rem);
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: -0.02em;
+  margin: 6px 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-sub {
+  font-size: 0.60rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.68);
+  letter-spacing: 0.01em;
+}
 
 /* Bento 2x2 & Compact 3-col Grids */
 body[data-shell="mobile-app"] #mobile-app-shell .bento-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -427,6 +470,18 @@ body[data-shell="mobile-app"] #mobile-app-shell .seg-btn {
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .seg-btn.active { background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-sm); }
+
+body[data-shell="mobile-app"] #mobile-app-shell .cf-range-seg {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  margin-bottom: 9px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .cf-range-seg .seg-btn {
+  padding: 6px 8px;
+  font-size: 0.73rem;
+  text-align: center;
+}
 
 /* Modern Horizontal Snap Pill & Card Sliders (Touch + Mouse Drag) */
 body[data-shell="mobile-app"] #mobile-app-shell .pill-slider {

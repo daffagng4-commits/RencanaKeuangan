@@ -360,14 +360,17 @@ function mobShellTemplate() {
     '<section class="tab-panel active" id="m-tab-rincian"><div class="stack">' +
     '<div class="wallet-hero"><div class="wallet-top"><div><div class="wallet-kicker">Saldo Realtime &middot; <span id="m-hero-lbl">2026</span></div>' +
     '<div class="wallet-bal pv" id="m-rincian-saldo">Rp 0</div></div></div>' +
-    '<div class="wallet-seg" role="group" aria-label="Rentang Grafik">' +
-    '<button type="button" class="wallet-seg-btn" data-mrange="w">Minggu</button>' +
-    '<button type="button" class="wallet-seg-btn active" data-mrange="m">Bulan</button>' +
-    '<button type="button" class="wallet-seg-btn" data-mrange="y">Tahun</button>' +
+    '<div class="wallet-io-grid">' +
+    '<div class="wallet-io-box"><div class="wallet-io-hd"><span class="wallet-io-ico in" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg></span><span class="wallet-io-lbl">Pemasukan</span></div><div class="wallet-io-val mono pv" id="m-hero-inc">Rp 0</div><div class="wallet-io-sub">Total setahun</div></div>' +
+    '<div class="wallet-io-box"><div class="wallet-io-hd"><span class="wallet-io-ico out" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg></span><span class="wallet-io-lbl">Pengeluaran</span></div><div class="wallet-io-val mono pv" id="m-hero-out">Rp 0</div><div class="wallet-io-sub">Total setahun</div></div>' +
     '</div></div>' +
-    '<div class="card"><div class="card-hd" style="margin-bottom:6px"><h2 class="card-title">Proyeksi Arus Kas</h2>' +
+    '<div class="card"><div class="card-hd" style="margin-bottom:8px"><h2 class="card-title">Proyeksi Arus Kas</h2>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="m-btn-expand-cf">⤢ Perbesar</button></div>' +
-    '<div class="cf-strip" id="m-cf-strip"><span class="cf-strip-lbl">Hari ini</span><span class="mono pv cf-strip-val">Rp 0</span></div>' +
+    '<div class="seg cf-range-seg" role="group" aria-label="Rentang Grafik">' +
+    '<button type="button" class="seg-btn" data-mrange="w">Minggu</button>' +
+    '<button type="button" class="seg-btn active" data-mrange="m">Bulan</button>' +
+    '<button type="button" class="seg-btn" data-mrange="y">Tahun</button>' +
+    '</div>' +
     '<div class="chart-stage" id="m-cf-wrap"><svg id="m-svg-cashflow" viewBox="0 0 340 210" style="width:100%;height:auto;display:block;touch-action:none"></svg><div class="hud-tooltip" id="m-cf-tooltip"></div></div></div>' +
     '<div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:0 2px"><span style="font-size:0.74rem;font-weight:800;color:var(--text-secondary)">Ringkasan Cepat</span><span style="font-size:0.68rem;font-weight:700;color:var(--accent-ink)">Geser &harr;</span></div>' +
     '<div class="card-slider" id="m-kpi-slider">' +
@@ -662,6 +665,8 @@ function renderMobRincian() {
     $('m-rincian-saldo').textContent = rp(KB.bal);
     $('m-rincian-saldo').style.color = KB.bal < 0 ? '#FDA4AF' : '#FFFFFF';
   }
+  if ($('m-hero-inc')) $('m-hero-inc').textContent = rp(C.inc || 0);
+  if ($('m-hero-out')) $('m-hero-out').textContent = rp(C.out || 0);
 
   // Ringkasan KPI Slider
   var endEl = $('m-metric-end'),
@@ -721,22 +726,13 @@ function mobPosTip(wrap, tip, targetX, targetY, off) {
 function renderMobCashflowSvg(P, curBal) {
   var svg = $('m-svg-cashflow'),
     wrap = $('m-cf-wrap'),
-    tip = $('m-cf-tooltip'),
-    strip = $('m-cf-strip');
+    tip = $('m-cf-tooltip');
   if (!svg) return;
   if (typeof brSanitizeItems === 'function') brSanitizeItems();
   var pts = typeof brBuildCashflowPoints === 'function'
     ? brBuildCashflowPoints(MOB_STATE.cashRange)
     : [{ d: S.year + '-01-01', lbl: 'Awal', val: S.saldo, delta: 0, bill: 'Saldo awal', actual: true }, { d: S.year + '-12-31', lbl: '31 Des', val: calc().end, delta: 0, bill: 'Akhir tahun', actual: false }];
 
-  var todayPt = pts.find(function (p) { return p.today; }) || pts[pts.length - 1];
-  function setMobCfStrip(lbl, val) {
-    if (!strip) return;
-    strip.innerHTML =
-      '<span class="cf-strip-lbl" title="' + esc(lbl) + '">' + esc(lbl) + '</span>' +
-      '<span class="mono pv cf-strip-val" style="color:' + (val < 0 ? 'var(--crimson)' : 'var(--accent-ink)') + '">' + rp(val) + '</span>';
-  }
-  if (todayPt) setMobCfStrip(todayPt.lbl + ' · ' + todayPt.bill, todayPt.val);
   var W = 340,
     H = 210,
     pL = 40,
@@ -830,7 +826,6 @@ function renderMobCashflowSvg(P, curBal) {
       if (!isPt) glow.setAttribute('d', pathFn([tPt.p0, tPt.p1]));
     }
     var dispVal = Math.round(isPt ? nearN.val : tPt.val);
-    setMobCfStrip(isPt ? (nearN.lbl + ' · ' + nearN.bill) : (tPt.p0.lbl + ' → ' + tPt.p1.lbl), dispVal);
     if (tip && wrap) {
       tip.innerHTML = isPt
         ? '<strong>' + esc(nearN.lbl) + ' &middot; ' + esc(fmtD(nearN.d)) + '</strong><div class="mono pv" style="font-size:0.86rem;font-weight:800;color:' + (nearN.val < 0 ? 'var(--crimson)' : 'var(--text-primary)') + '">' + rp(nearN.val) + '</div><div style="color:var(--text-muted);font-size:0.68rem">' + esc(nearN.bill) + '</div>'
@@ -842,7 +837,6 @@ function renderMobCashflowSvg(P, curBal) {
     if (ch) ch.style.display = 'none';
     if (glow) glow.style.display = 'none';
     if (tip) tip.classList.remove('visible');
-    if (todayPt) setMobCfStrip(todayPt.lbl + ' · ' + todayPt.bill, todayPt.val);
   }
   if (hit) {
     hit.addEventListener('mousemove', function (e) { inspectX(e.clientX); });

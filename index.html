@@ -2967,14 +2967,18 @@ body[data-shell="mobile-app"] #mobile-app-shell .wallet-hero {
   background: linear-gradient(142deg, #0F172A 0%, #17347A 60%, #0F52BA 100%);
   color: #FFFFFF;
   border-radius: var(--radius-lg);
-  padding: 15px 15px 13px;
+  padding: 20px 16px 18px;
+  min-height: 186px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   box-shadow: 0 10px 26px rgba(15, 23, 42, 0.16);
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-top > div:first-child { min-width: 0; flex: 1; }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-kicker { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.78; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-body[data-shell="mobile-app"] #mobile-app-shell .wallet-bal { font-family: var(--font-mono); font-size: clamp(1.22rem, 5.2vw, 1.56rem); font-weight: 800; letter-spacing: -0.02em; margin: 3px 0 6px; white-space: nowrap; }
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-bal { font-family: var(--font-mono); font-size: clamp(1.26rem, 5.4vw, 1.62rem); font-weight: 800; letter-spacing: -0.02em; margin: 6px 0 14px; white-space: nowrap; }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-pill {
   display: inline-flex;
   align-items: center;
@@ -2991,27 +2995,66 @@ body[data-shell="mobile-app"] #mobile-app-shell .wallet-pill {
   flex-shrink: 0;
 }
 
-body[data-shell="mobile-app"] #mobile-app-shell .wallet-seg {
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 3px;
-  margin-top: 12px;
-  padding: 3px;
-  border-radius: 11px;
-  background: rgba(255, 255, 255, 0.14);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: auto;
 }
-
-body[data-shell="mobile-app"] #mobile-app-shell .wallet-seg-btn {
-  padding: 5px 6px;
-  border-radius: 8px;
-  font-size: 0.73rem;
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-box {
+  background: rgba(255, 255, 255, 0.11);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 13px;
+  padding: 10px 10px 9px;
+  min-width: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-hd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-ico {
+  width: 19px;
+  height: 19px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-ico.in {
+  background: rgba(16, 185, 129, 0.24);
+  color: #34D399;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-ico.out {
+  background: rgba(244, 63, 94, 0.26);
+  color: #FB7185;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-lbl {
+  font-size: 0.68rem;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.82);
-  text-align: center;
-  transition: all 140ms ease;
+  color: rgba(255, 255, 255, 0.88);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
-body[data-shell="mobile-app"] #mobile-app-shell .wallet-seg-btn.active { background: #FFFFFF; color: #0F172A; }
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-val {
+  font-size: clamp(0.76rem, 3.25vw, 0.90rem);
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: -0.02em;
+  margin: 6px 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-sub {
+  font-size: 0.60rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.68);
+  letter-spacing: 0.01em;
+}
 
 /* Bento 2x2 & Compact 3-col Grids */
 body[data-shell="mobile-app"] #mobile-app-shell .bento-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -3067,6 +3110,18 @@ body[data-shell="mobile-app"] #mobile-app-shell .seg-btn {
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .seg-btn.active { background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-sm); }
+
+body[data-shell="mobile-app"] #mobile-app-shell .cf-range-seg {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  margin-bottom: 9px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .cf-range-seg .seg-btn {
+  padding: 6px 8px;
+  font-size: 0.73rem;
+  text-align: center;
+}
 
 /* Modern Horizontal Snap Pill & Card Sliders (Touch + Mouse Drag) */
 body[data-shell="mobile-app"] #mobile-app-shell .pill-slider {
@@ -21237,14 +21292,17 @@ function mobShellTemplate() {
     '<section class="tab-panel active" id="m-tab-rincian"><div class="stack">' +
     '<div class="wallet-hero"><div class="wallet-top"><div><div class="wallet-kicker">Saldo Realtime &middot; <span id="m-hero-lbl">2026</span></div>' +
     '<div class="wallet-bal pv" id="m-rincian-saldo">Rp 0</div></div></div>' +
-    '<div class="wallet-seg" role="group" aria-label="Rentang Grafik">' +
-    '<button type="button" class="wallet-seg-btn" data-mrange="w">Minggu</button>' +
-    '<button type="button" class="wallet-seg-btn active" data-mrange="m">Bulan</button>' +
-    '<button type="button" class="wallet-seg-btn" data-mrange="y">Tahun</button>' +
+    '<div class="wallet-io-grid">' +
+    '<div class="wallet-io-box"><div class="wallet-io-hd"><span class="wallet-io-ico in" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg></span><span class="wallet-io-lbl">Pemasukan</span></div><div class="wallet-io-val mono pv" id="m-hero-inc">Rp 0</div><div class="wallet-io-sub">Total setahun</div></div>' +
+    '<div class="wallet-io-box"><div class="wallet-io-hd"><span class="wallet-io-ico out" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg></span><span class="wallet-io-lbl">Pengeluaran</span></div><div class="wallet-io-val mono pv" id="m-hero-out">Rp 0</div><div class="wallet-io-sub">Total setahun</div></div>' +
     '</div></div>' +
-    '<div class="card"><div class="card-hd" style="margin-bottom:6px"><h2 class="card-title">Proyeksi Arus Kas</h2>' +
+    '<div class="card"><div class="card-hd" style="margin-bottom:8px"><h2 class="card-title">Proyeksi Arus Kas</h2>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="m-btn-expand-cf">⤢ Perbesar</button></div>' +
-    '<div class="cf-strip" id="m-cf-strip"><span class="cf-strip-lbl">Hari ini</span><span class="mono pv cf-strip-val">Rp 0</span></div>' +
+    '<div class="seg cf-range-seg" role="group" aria-label="Rentang Grafik">' +
+    '<button type="button" class="seg-btn" data-mrange="w">Minggu</button>' +
+    '<button type="button" class="seg-btn active" data-mrange="m">Bulan</button>' +
+    '<button type="button" class="seg-btn" data-mrange="y">Tahun</button>' +
+    '</div>' +
     '<div class="chart-stage" id="m-cf-wrap"><svg id="m-svg-cashflow" viewBox="0 0 340 210" style="width:100%;height:auto;display:block;touch-action:none"></svg><div class="hud-tooltip" id="m-cf-tooltip"></div></div></div>' +
     '<div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;padding:0 2px"><span style="font-size:0.74rem;font-weight:800;color:var(--text-secondary)">Ringkasan Cepat</span><span style="font-size:0.68rem;font-weight:700;color:var(--accent-ink)">Geser &harr;</span></div>' +
     '<div class="card-slider" id="m-kpi-slider">' +
@@ -21539,6 +21597,8 @@ function renderMobRincian() {
     $('m-rincian-saldo').textContent = rp(KB.bal);
     $('m-rincian-saldo').style.color = KB.bal < 0 ? '#FDA4AF' : '#FFFFFF';
   }
+  if ($('m-hero-inc')) $('m-hero-inc').textContent = rp(C.inc || 0);
+  if ($('m-hero-out')) $('m-hero-out').textContent = rp(C.out || 0);
 
   // Ringkasan KPI Slider
   var endEl = $('m-metric-end'),
@@ -21598,22 +21658,13 @@ function mobPosTip(wrap, tip, targetX, targetY, off) {
 function renderMobCashflowSvg(P, curBal) {
   var svg = $('m-svg-cashflow'),
     wrap = $('m-cf-wrap'),
-    tip = $('m-cf-tooltip'),
-    strip = $('m-cf-strip');
+    tip = $('m-cf-tooltip');
   if (!svg) return;
   if (typeof brSanitizeItems === 'function') brSanitizeItems();
   var pts = typeof brBuildCashflowPoints === 'function'
     ? brBuildCashflowPoints(MOB_STATE.cashRange)
     : [{ d: S.year + '-01-01', lbl: 'Awal', val: S.saldo, delta: 0, bill: 'Saldo awal', actual: true }, { d: S.year + '-12-31', lbl: '31 Des', val: calc().end, delta: 0, bill: 'Akhir tahun', actual: false }];
 
-  var todayPt = pts.find(function (p) { return p.today; }) || pts[pts.length - 1];
-  function setMobCfStrip(lbl, val) {
-    if (!strip) return;
-    strip.innerHTML =
-      '<span class="cf-strip-lbl" title="' + esc(lbl) + '">' + esc(lbl) + '</span>' +
-      '<span class="mono pv cf-strip-val" style="color:' + (val < 0 ? 'var(--crimson)' : 'var(--accent-ink)') + '">' + rp(val) + '</span>';
-  }
-  if (todayPt) setMobCfStrip(todayPt.lbl + ' · ' + todayPt.bill, todayPt.val);
   var W = 340,
     H = 210,
     pL = 40,
@@ -21707,7 +21758,6 @@ function renderMobCashflowSvg(P, curBal) {
       if (!isPt) glow.setAttribute('d', pathFn([tPt.p0, tPt.p1]));
     }
     var dispVal = Math.round(isPt ? nearN.val : tPt.val);
-    setMobCfStrip(isPt ? (nearN.lbl + ' · ' + nearN.bill) : (tPt.p0.lbl + ' → ' + tPt.p1.lbl), dispVal);
     if (tip && wrap) {
       tip.innerHTML = isPt
         ? '<strong>' + esc(nearN.lbl) + ' &middot; ' + esc(fmtD(nearN.d)) + '</strong><div class="mono pv" style="font-size:0.86rem;font-weight:800;color:' + (nearN.val < 0 ? 'var(--crimson)' : 'var(--text-primary)') + '">' + rp(nearN.val) + '</div><div style="color:var(--text-muted);font-size:0.68rem">' + esc(nearN.bill) + '</div>'
@@ -21719,7 +21769,6 @@ function renderMobCashflowSvg(P, curBal) {
     if (ch) ch.style.display = 'none';
     if (glow) glow.style.display = 'none';
     if (tip) tip.classList.remove('visible');
-    if (todayPt) setMobCfStrip(todayPt.lbl + ' · ' + todayPt.bill, todayPt.val);
   }
   if (hit) {
     hit.addEventListener('mousemove', function (e) { inspectX(e.clientX); });
