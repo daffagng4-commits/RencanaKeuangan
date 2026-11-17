@@ -408,7 +408,7 @@ function authGoogle() {
   } catch (e) {}
   var redir;
   try {
-    if (typeof location !== 'undefined' && /^https?:/i.test(location.origin || '')) {
+    if (typeof location !== 'undefined' && /^(https?|capacitor|ionic):/i.test(location.origin || '')) {
       redir = location.origin + location.pathname;
     }
   } catch (e) {}

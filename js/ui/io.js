@@ -14,19 +14,63 @@ function setX(t, ok) {
   if (t && typeof toast === 'function') toast(t);
 }
 
+/** Unduh Blob/teks dengan aman di Browser, PWA Standalone, maupun Android WebView/APK tanpa window.open(). */
+function rkDownloadBlob(name, data, mime) {
+  var type = mime || 'text/plain;charset=utf-8';
+  var blob = data instanceof Blob ? data : new Blob([data], { type: type });
+  var isNative = typeof isNativeShellEnv === 'function' && isNativeShellEnv();
+
+  function triggerHref(url, revokeLater) {
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    if (revokeLater) {
+      setTimeout(function () {
+        try {
+          URL.revokeObjectURL(url);
+        } catch (e) {}
+      }, 4000);
+    }
+  }
+
+  if (isNative && typeof FileReader !== 'undefined') {
+    if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare && typeof File !== 'undefined') {
+      try {
+        var f = new File([blob], name, { type: type });
+        if (navigator.canShare({ files: [f] })) {
+          navigator.share({ files: [f], title: name }).catch(function () {});
+          return { ok: true, method: 'share' };
+        }
+      } catch (e) {}
+    }
+    try {
+      var fr = new FileReader();
+      fr.onload = function () {
+        if (typeof fr.result === 'string') triggerHref(fr.result, false);
+      };
+      fr.readAsDataURL(blob);
+      return { ok: true, method: 'data-url' };
+    } catch (e) {}
+  }
+
+  var url = URL.createObjectURL(blob);
+  triggerHref(url, true);
+  return { ok: true, method: 'blob' };
+}
+
 /** Unduh file; bila tidak bisa, isinya ditaruh di kolom teks agar bisa disalin. */
 function exportFile(name, data, mime) {
   if (!DL) {
     try {
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([data], { type: mime || 'text/plain;charset=utf-8' }));
-      a.download = name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+      rkDownloadBlob(name, data, mime);
       setX('File diunduh: ' + name, 1);
     } catch (e) {
-      if ($('ta')) $('ta').value = data;
+      if ($('ta') && typeof data === 'string') $('ta').value = data;
       if ($('dt')) $('dt').open = true;
       setX('Unduh file gagal.', 0);
     }

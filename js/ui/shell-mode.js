@@ -5,7 +5,28 @@
 
 var SHELL_KEY = 'rk-shell-mode';
 
-/** Deteksi mode tampilan awal: URL (?mode=app|browser) -> localStorage -> PWA standalone -> default 'browser'. */
+/** Deteksi apakah aplikasi berjalan di dalam wrapper APK / Capacitor / Cordova / Android WebView. */
+function isNativeShellEnv() {
+  try {
+    if (typeof window !== 'undefined') {
+      if (window.Capacitor && (typeof window.Capacitor.isNativePlatform !== 'function' || window.Capacitor.isNativePlatform())) {
+        return true;
+      }
+      if (window.cordova || window.PhoneGap || window.ReactNativeWebView || window.Android) {
+        return true;
+      }
+    }
+    if (typeof location !== 'undefined' && (location.protocol === 'capacitor:' || location.protocol === 'ionic:')) {
+      return true;
+    }
+    if (typeof navigator !== 'undefined' && /;\s*wv\)/i.test(navigator.userAgent || '')) {
+      return true;
+    }
+  } catch (e) {}
+  return false;
+}
+
+/** Deteksi mode tampilan awal: URL (?mode=app|browser) -> localStorage -> PWA standalone / APK WebView -> default 'browser'. */
 function detectShellMode(searchStr) {
   var q =
     searchStr != null
@@ -37,7 +58,8 @@ function detectShellMode(searchStr) {
       (typeof window !== 'undefined' &&
         window.matchMedia &&
         window.matchMedia('(display-mode: standalone)').matches) ||
-      (typeof navigator !== 'undefined' && navigator.standalone === true)
+      (typeof navigator !== 'undefined' && navigator.standalone === true) ||
+      isNativeShellEnv()
     ) {
       return 'mobile-app';
     }

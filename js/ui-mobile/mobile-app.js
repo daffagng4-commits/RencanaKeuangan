@@ -307,6 +307,13 @@ function syncMobileCloudUI() {
   if (pbtn) {
     pbtn.classList.toggle('on', !!priv);
     pbtn.setAttribute('aria-pressed', priv ? 'true' : 'false');
+    pbtn.title = priv ? 'Mode Privasi: AKTIF (ketuk untuk tampilkan)' : 'Kaburkan Nominal';
+    var pic = pbtn.querySelector('svg');
+    if (pic) {
+      pic.innerHTML = priv
+        ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+        : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    }
   }
 }
 
@@ -1364,21 +1371,26 @@ function renderMobSim() {
     var W = 340, H = 185, pL = 38, pR = 12, pT = 14, pB = 22, n = A.rows.length;
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     svg.style.touchAction = 'none';
-    var vals = A.rows.map(function (r) { return r.ak; }).concat(B.rows.map(function (r) { return r.ak; }), [0]);
+    var vals = A.rows.map(function (r) { return +r.ak || 0; }).concat(B.rows.map(function (r) { return +r.ak || 0; }), [0]);
     var minV = Math.min.apply(null, vals) - 200000, maxV = Math.max.apply(null, vals) + 200000;
+    if (!isFinite(minV) || !isFinite(maxV)) { minV = -200000; maxV = 200000; }
     if (maxV === minV) maxV = minV + 100000;
     var xAt = function (i) { return pL + (i * (W - pL - pR)) / Math.max(1, n - 1); };
-    var yAt = function (v) { return pT + ((maxV - v) / (maxV - minV)) * (H - pT - pB); };
+    var yAt = function (v) {
+      var val = isFinite(+v) ? +v : 0;
+      return pT + ((maxV - val) / (maxV - minV)) * (H - pT - pB);
+    };
     var ptsA = A.rows.map(function (r, i) { return { x: xAt(i), y: yAt(r.ak) }; }),
       ptsB = B.rows.map(function (r, i) { return { x: xAt(i), y: yAt(r.ak) }; }),
       pathFn = typeof brCubicPath === 'function' ? brCubicPath : function (cs) { return cs.map(function (c, ix) { return (ix ? ' L ' : 'M ') + c.x.toFixed(1) + ' ' + c.y.toFixed(1); }).join(''); };
-    var pA = pathFn(ptsA), pB = pathFn(ptsB);
+    var pathA = pathFn(ptsA), pathB = pathFn(ptsB);
     var revA = ptsA.slice().reverse().map(function (c) { return ' L ' + c.x.toFixed(1) + ' ' + c.y.toFixed(1); }).join('');
+    var zeroY = yAt(0);
     svg.innerHTML =
-      '<line x1="' + pL + '" y1="' + yAt(0).toFixed(1) + '" x2="' + (W - pR) + '" y2="' + yAt(0).toFixed(1) + '" stroke="var(--crimson)" stroke-dasharray="3 3"/>' +
-      (B.end >= A.end ? '<path d="' + pB + revA + ' Z" fill="var(--emerald)" opacity="0.16"/>' : '') +
-      '<path d="' + pA + '" fill="none" stroke="var(--crimson)" stroke-width="2" stroke-dasharray="4 3"/>' +
-      '<path d="' + pB + '" fill="none" stroke="var(--emerald)" stroke-width="2.8" stroke-linecap="round"/>' +
+      '<line x1="' + pL + '" y1="' + zeroY.toFixed(1) + '" x2="' + (W - pR) + '" y2="' + zeroY.toFixed(1) + '" stroke="var(--crimson)" stroke-dasharray="3 3"/>' +
+      (B.end >= A.end ? '<path d="' + pathB + revA + ' Z" fill="var(--emerald)" opacity="0.16"/>' : '') +
+      '<path d="' + pathA + '" fill="none" stroke="var(--crimson)" stroke-width="2" stroke-dasharray="4 3"/>' +
+      '<path d="' + pathB + '" fill="none" stroke="var(--emerald)" stroke-width="2.8" stroke-linecap="round"/>' +
       A.rows.map(function (r, i) { return '<text x="' + xAt(i).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle" fill="var(--text-muted)" font-size="8.5" font-family="var(--font-mono)">' + MON[r.m][0] + '</text>'; }).join('');
   }
   mobPaintAllSliders();
@@ -2011,7 +2023,14 @@ function bindMobileShellEvents(root) {
     }
 
     if (e.target.closest('#m-btn-privacy')) {
-      if ($('btn-privacy')) $('btn-privacy').click();
+      if ($('btn-privacy')) {
+        $('btn-privacy').click();
+      } else if (document.body) {
+        var nextPriv = !document.body.classList.contains('privacy-mode');
+        document.body.classList.toggle('privacy-mode', nextPriv);
+        document.body.classList.toggle('privacy-on', nextPriv);
+        try { localStorage.setItem('rk-privacy', nextPriv ? '1' : '0'); } catch (err) {}
+      }
       syncMobileCloudUI();
       return;
     }

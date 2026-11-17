@@ -303,14 +303,18 @@ function openRepModal(kind) {
 /** Unduh PDF laporan dari repData(kind). */
 function downloadRepPdf(kind) {
   try {
-    var D = repData(kind || curRepKind),
-      a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([repPdf(D)], { type: 'application/pdf' }));
-    a.download = D.filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+    var D = repData(kind || curRepKind);
+    if (typeof rkDownloadBlob === 'function') {
+      rkDownloadBlob(D.filename, repPdf(D), 'application/pdf');
+    } else {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([repPdf(D)], { type: 'application/pdf' }));
+      a.download = D.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+    }
     if (typeof setX === 'function') setX('Laporan diunduh: ' + D.filename, 1);
   } catch (err) {
     if (typeof setX === 'function') setX('Unduh laporan gagal: ' + (err && err.message || err), 0);
