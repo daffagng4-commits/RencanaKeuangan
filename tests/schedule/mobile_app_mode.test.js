@@ -716,6 +716,71 @@ const { boot } = require('./ui.js');
   w.setShellMode('mobile-app');
   assert.strictEqual(metaTheme.getAttribute('content'), '#0E3F86', 'kembali ke Mode APK memulihkan theme-color #0E3F86');
 
+  // 16. Swipe-to-dismiss pada notifikasi dalam aplikasi (#m-os-notif)
+  const fireTouch = (el, type, clientX, clientY) => {
+    const ev = new w.Event(type, { bubbles: true, cancelable: true });
+    const pt = { clientX, clientY };
+    ev.touches = type === 'touchend' || type === 'touchcancel' ? [] : [pt];
+    ev.changedTouches = [pt];
+    el.dispatchEvent(ev);
+  };
+  const paidBeforeSwipe = JSON.stringify(w.ALL.data[2026].paid);
+  w.triggerMobPhoneBarNotif(true);
+  let osNotif = $('m-os-notif');
+  assert(osNotif && osNotif.classList.contains('show'), 'triggerMobPhoneBarNotif(true) menampilkan #m-os-notif');
+  // 16a. Swipe pendek (<35%) di atas #m-pon-paid -> snapback dan TIDAK memicu Tandai Lunas
+  const ponPaidBtn = $('m-pon-paid');
+  assert(ponPaidBtn, 'tombol #m-pon-paid tersedia');
+  fireTouch(ponPaidBtn, 'touchstart', 50, 40);
+  fireTouch(ponPaidBtn, 'touchmove', 90, 42);
+  await new Promise((r) => setTimeout(r, 100));
+  fireTouch(ponPaidBtn, 'touchend', 90, 42);
+  click(ponPaidBtn);
+  assert.strictEqual(osNotif.style.getPropertyValue('--pon-dx'), '0px', 'swipe pendek memicu snapback ke --pon-dx: 0px');
+  assert.strictEqual(JSON.stringify(w.ALL.data[2026].paid), paidBeforeSwipe, 'melepas swipe di atas #m-pon-paid tidak menandai lunas');
+  // 16b. Swipe kanan melewati 35% lebar kartu -> animasi keluar & hapus #m-os-notif dari DOM
+  fireTouch(osNotif, 'touchstart', 30, 40);
+  fireTouch(osNotif, 'touchmove', 260, 44);
+  assert(osNotif.classList.contains('is-swiping'), 'saat drag horizontal #m-os-notif mendapat kelas .is-swiping');
+  fireTouch(osNotif, 'touchend', 260, 44);
+  await new Promise((r) => setTimeout(r, 250));
+  assert.strictEqual(doc.getElementById('m-os-notif'), null, 'swipe kanan melewati ambang menghapus #m-os-notif dari DOM');
+  assert.strictEqual(JSON.stringify(w.ALL.data[2026].paid), paidBeforeSwipe, 'swipe tutup tidak mengubah status lunas');
+  // 16c. Notifikasi berikutnya tetap bisa muncul dengan membuat ulang #m-os-notif & tap #m-pon-paid tetap menandai lunas
+  w.triggerMobPhoneBarNotif(true);
+  osNotif = $('m-os-notif');
+  assert(osNotif && osNotif.classList.contains('show'), 'notifikasi berikutnya membuat ulang dan menampilkan #m-os-notif');
+  await new Promise((r) => setTimeout(r, 150));
+  click($('m-pon-paid'));
+  const paidAfterTap = Object.keys(w.ALL.data[2026].paid).length;
+  assert(paidAfterTap >= Object.keys(JSON.parse(paidBeforeSwipe)).length + 1, 'tap langsung pada #m-pon-paid tetap menandai tagihan lunas');
+  // 16d. Reduced motion: swipe kiri langsung menghapus #m-os-notif tanpa menunggu 200ms
+  const origMatchMedia = w.matchMedia;
+  w.matchMedia = (q) => ({ matches: String(q).includes('prefers-reduced-motion'), media: q, addListener() {}, removeListener() {} });
+  w.triggerMobPhoneBarNotif(true);
+  osNotif = $('m-os-notif');
+  assert(osNotif && osNotif.classList.contains('show'), '#m-os-notif tampil kembali sebelum uji reduced-motion');
+  fireTouch(osNotif, 'touchstart', 260, 40);
+  fireTouch(osNotif, 'touchmove', 30, 42);
+  fireTouch(osNotif, 'touchend', 30, 42);
+  assert.strictEqual(doc.getElementById('m-os-notif'), null, 'dengan prefers-reduced-motion swipe melewati ambang langsung menghapus #m-os-notif dari DOM');
+  w.matchMedia = origMatchMedia;
+
+  // 17. Greeting "HALO, MIX" (.hdr-greet) hanya tampil di tab Rincian, tersembunyi rapi di tab lain
+  assert(/\.mob-shell:not\(\[data-mtab-active="rincian"\]\)\s+\.hdr-greet\s*\{[^}]*position:\s*absolute[^}]*opacity:\s*0[^}]*visibility:\s*hidden/s.test(cssMobSrc), 'CSS menyembunyikan .hdr-greet dengan position:absolute, opacity:0, visibility:hidden di luar tab Rincian');
+  assert(/--dur-hdr-greet:\s*220ms/.test(require('fs').readFileSync(require('path').join(process.cwd(), 'css', 'tokens.css'), 'utf8')), 'token --dur-hdr-greet: 220ms tersedia di tokens.css');
+  click(remountShell.querySelector('.mob-bottom-nav [data-mtab="kas"]'));
+  assert.strictEqual(remountShell.querySelector('.mob-shell').getAttribute('data-mtab-active'), 'kas', 'tab Transaksi menyetel data-mtab-active="kas"');
+  click(remountShell.querySelector('.mob-bottom-nav [data-mtab="jadwal"]'));
+  assert.strictEqual(remountShell.querySelector('.mob-shell').getAttribute('data-mtab-active'), 'jadwal', 'tab Jadwal menyetel data-mtab-active="jadwal"');
+  // Simulasi reload di tab non-Rincian: render ulang shell saat MOB_STATE.tab === "jadwal" tidak boleh berkedip Rincian
+  remountShell.innerHTML = '';
+  w.ensureMobileShell();
+  assert.strictEqual(remountShell.querySelector('.mob-shell').getAttribute('data-mtab-active'), 'jadwal', 'remount saat tab aktif=jadwal langsung merender data-mtab-active="jadwal" tanpa kedip Rincian');
+  click(remountShell.querySelector('.mob-bottom-nav [data-mtab="rincian"]'));
+  assert.strictEqual(remountShell.querySelector('.mob-shell').getAttribute('data-mtab-active'), 'rincian', 'kembali ke tab Rincian memulihkan data-mtab-active="rincian"');
+  assert($('m-user-name').textContent.includes('Halo,'), '#m-user-name tetap dinamis menampilkan sapaan akun');
+
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('OK mobile_app_mode');
   process.exit(0);

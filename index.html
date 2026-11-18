@@ -229,6 +229,7 @@
   --dur-chevron: 280ms;
   --dur-scroll-reveal: 400ms;
   --dur-topbar-shadow: 160ms;
+  --dur-hdr-greet: 220ms;
   --dur-btt-fade: 200ms;
   --dur-palette-spin: 300ms;
   --dur-swatch-pop: 240ms;
@@ -4683,6 +4684,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .notif-dot {
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .hdr-greet {
+  position: relative;
   margin: 12px 0 3px;
   font-size: 0.74rem;
   letter-spacing: 0.055em;
@@ -4690,6 +4692,22 @@ body[data-shell="mobile-app"] #mobile-app-shell .hdr-greet {
   color: rgba(255, 255, 255, 0.90);
   font-weight: 400;
   line-height: 1.2;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--dur-hdr-greet) var(--ease-out),
+    transform var(--dur-hdr-greet) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mob-shell:not([data-mtab-active="rincian"]) .hdr-greet {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 6px;
+  margin: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-8px);
 }
 body[data-shell="mobile-app"] #mobile-app-shell .hdr-greet b {
   font-weight: 800;
@@ -5881,6 +5899,8 @@ body[data-shell="mobile-app"][data-phone-frame="full"] .toast-box { top: calc(va
 
 /* Native Mobile Push Notification Banner (Bar Atas HP) */
 body[data-shell="mobile-app"] #mobile-app-shell .phone-os-notif {
+  --pon-base-x: 0px;
+  --pon-dx: 0px;
   position: fixed;
   top: 34px;
   left: 8px;
@@ -5894,17 +5914,43 @@ body[data-shell="mobile-app"] #mobile-app-shell .phone-os-notif {
   padding: 10px 12px;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.36);
   z-index: 220;
-  transform: translateY(-140%);
+  touch-action: pan-y;
+  user-select: none;
+  transform: translate(var(--pon-base-x), -140%) translateX(var(--pon-dx));
   opacity: 0;
   pointer-events: none;
   transition: transform 280ms var(--ease-out), opacity 220ms ease;
 }
-body[data-shell="mobile-app"] #mobile-app-shell .phone-os-notif.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
-body[data-shell="mobile-app"][data-phone-frame="full"] .phone-os-notif { top: 8px; left: 50%; right: auto; transform: translate(-50%, -140%); width: min(392px, calc(100vw - 16px)); }
-body[data-shell="mobile-app"][data-phone-frame="full"] .phone-os-notif.show { transform: translate(-50%, 0); }
+body[data-shell="mobile-app"] #mobile-app-shell .phone-os-notif.show {
+  transform: translate(var(--pon-base-x), 0) translateX(var(--pon-dx));
+  opacity: 1;
+  pointer-events: auto;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .phone-os-notif.is-swiping {
+  transition: none !important;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .phone-os-notif.is-snapping {
+  transition: transform 280ms var(--ease-spring), opacity 280ms var(--ease-out) !important;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .phone-os-notif.is-dismissing {
+  transition: transform 200ms var(--ease-in), opacity 200ms var(--ease-in) !important;
+  pointer-events: none;
+}
+body[data-shell="mobile-app"][data-phone-frame="full"] .phone-os-notif {
+  --pon-base-x: -50%;
+  top: calc(8px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  right: auto;
+  width: min(392px, calc(100vw - 16px));
+}
 @media (max-width: 520px) {
-  body[data-shell="mobile-app"] #mobile-app-shell .phone-os-notif { top: 8px; left: 8px; right: 8px; transform: translateY(-140%); width: auto; }
-  body[data-shell="mobile-app"] #mobile-app-shell .phone-os-notif.show { transform: translateY(0); }
+  body[data-shell="mobile-app"] #mobile-app-shell .phone-os-notif {
+    --pon-base-x: 0px;
+    top: calc(8px + env(safe-area-inset-top, 0px));
+    left: 8px;
+    right: 8px;
+    width: auto;
+  }
 }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-app { display: flex; align-items: center; gap: 7px; font-size: 0.72rem; font-weight: 800; color: #E2E8F0; }
@@ -24955,6 +25001,21 @@ function syncMobileCloudUI() {
 
 var RK_WORDMARK_PATH = 'M1.93 22L1.93 3.52L9.8 3.52Q11.34 3.52 12.6 3.76Q13.86 4 14.83 4.46Q15.79 4.92 16.46 5.58Q17.14 6.24 17.47 7.09Q17.81 7.94 17.81 8.98Q17.81 9.96 17.5 10.74Q17.19 11.53 16.56 12.12Q15.93 12.7 14.98 13.07Q14.03 13.43 12.77 13.6L12.77 14.02Q14.36 14.19 15.25 14.73Q16.13 15.28 16.6 16.18Q17.08 17.07 17.44 18.33L18.51 22L13.5 22L12.68 18.61Q12.43 17.49 12 16.88Q11.56 16.26 10.89 16.02Q10.22 15.78 9.21 15.78L6.44 15.78L6.44 22ZM6.44 12.45L9.49 12.45Q11.2 12.45 12.15 11.78Q13.1 11.11 13.1 9.68Q13.1 8.28 12.24 7.61Q11.37 6.94 9.6 6.94L6.44 6.94ZM27.19 22.39Q25.34 22.39 23.88 21.9Q22.43 21.41 21.41 20.46Q20.38 19.51 19.85 18.11Q19.32 16.71 19.32 14.89Q19.32 13.12 19.84 11.64Q20.36 10.16 21.32 9.08Q22.29 8 23.7 7.41Q25.12 6.82 26.88 6.82Q28.67 6.82 30.03 7.4Q31.39 7.97 32.27 9.09Q33.15 10.21 33.57 11.82Q33.99 13.43 33.85 15.5L22.29 15.59L22.29 13.24L31.28 13.15L29.68 14.24Q29.88 12.84 29.51 11.96Q29.15 11.08 28.45 10.67Q27.75 10.27 26.94 10.27Q25.96 10.27 25.21 10.8Q24.47 11.33 24.05 12.34Q23.63 13.35 23.63 14.8Q23.63 17.1 24.63 18.14Q25.62 19.17 27.16 19.17Q27.92 19.17 28.42 18.96Q28.92 18.75 29.25 18.43Q29.57 18.11 29.75 17.72Q29.93 17.32 30.04 16.96L33.96 17.8Q33.74 18.84 33.25 19.68Q32.76 20.52 31.93 21.13Q31.11 21.75 29.95 22.07Q28.78 22.39 27.19 22.39ZM35.76 22L35.76 13.1L35.76 7.22L39.4 7.22L39.45 11.56L40.01 11.56Q40.38 9.99 41.05 8.92Q41.72 7.86 42.76 7.34Q43.79 6.82 45.19 6.82Q47.8 6.82 49.15 8.64Q50.51 10.46 50.51 14.44L50.51 22L45.98 22L45.98 14.94Q45.98 12.65 45.32 11.6Q44.66 10.55 43.37 10.55Q42.31 10.55 41.62 11.19Q40.94 11.84 40.6 12.9Q40.26 13.96 40.26 15.28L40.26 22ZM53.12 22L53.12 3.52L57.62 3.52L57.62 11.61Q59 11 60.17 10.07Q61.35 9.15 62.26 8.06Q63.17 6.96 63.77 5.8Q64.37 4.64 64.65 3.52L69.86 3.52Q69.52 4.81 68.77 6.14Q68.01 7.47 66.95 8.69Q65.88 9.9 64.67 10.86Q63.45 11.81 62.19 12.37L62.19 12.79Q63.48 12.79 64.47 13.07Q65.46 13.35 66.23 13.94Q67 14.52 67.58 15.41Q68.15 16.29 68.57 17.52L70.17 22L65.04 22L64.01 18.33Q63.67 17.1 63.11 16.39Q62.55 15.67 61.63 15.35Q60.7 15.03 59.25 15.03L57.62 15.03L57.62 22ZM78.62 22.39Q76.78 22.39 75.32 21.9Q73.86 21.41 72.84 20.46Q71.82 19.51 71.29 18.11Q70.76 16.71 70.76 14.89Q70.76 13.12 71.27 11.64Q71.79 10.16 72.76 9.08Q73.72 8 75.14 7.41Q76.55 6.82 78.32 6.82Q80.11 6.82 81.47 7.4Q82.82 7.97 83.71 9.09Q84.59 10.21 85.01 11.82Q85.43 13.43 85.29 15.5L73.72 15.59L73.72 13.24L82.71 13.15L81.12 14.24Q81.31 12.84 80.95 11.96Q80.58 11.08 79.88 10.67Q79.18 10.27 78.37 10.27Q77.39 10.27 76.65 10.8Q75.91 11.33 75.49 12.34Q75.07 13.35 75.07 14.8Q75.07 17.1 76.06 18.14Q77.06 19.17 78.6 19.17Q79.35 19.17 79.86 18.96Q80.36 18.75 80.68 18.43Q81 18.11 81.19 17.72Q81.37 17.32 81.48 16.96L85.4 17.8Q85.18 18.84 84.69 19.68Q84.2 20.52 83.37 21.13Q82.54 21.75 81.38 22.07Q80.22 22.39 78.62 22.39ZM92.26 22.39Q89.63 22.39 88.3 20.61Q86.97 18.84 86.97 15.2L86.97 7.22L91.5 7.22L91.5 14.61Q91.5 16.68 92.12 17.7Q92.74 18.72 94 18.72Q94.75 18.72 95.3 18.35Q95.84 17.97 96.22 17.28Q96.6 16.6 96.78 15.7Q96.96 14.8 96.96 13.74L96.96 7.22L101.47 7.22L101.47 16.01L101.47 22L97.89 22L97.8 17.44L97.24 17.44Q96.82 19.17 96.19 20.28Q95.56 21.38 94.61 21.89Q93.66 22.39 92.26 22.39Z';
 
+function mobOsNotifHtml() {
+  return (
+    '<div class="phone-os-notif" id="m-os-notif" role="alert" aria-live="polite">' +
+    '<div class="pon-top"><span class="pon-app"><span class="pon-ico rk-brand-tile" aria-hidden="true"><svg viewBox="0 0 64 64"><use href="#rk-brand-symbol"/></svg></span>Rencana Keuangan</span>' +
+    '<div style="display:flex;align-items:center;gap:6px"><span class="pon-time">Baru saja</span>' +
+    '<button type="button" id="m-pon-close" style="color:#94A3B8;font-size:0.78rem;padding:0 3px" aria-label="Tutup notifikasi">✕</button></div></div>' +
+    '<div class="pon-title" id="m-pon-title">Pengingat Tagihan Jatuh Tempo</div>' +
+    '<div class="pon-body" id="m-pon-body"></div>' +
+    '<div class="pon-actions">' +
+    '<button type="button" class="pon-btn primary" id="m-pon-paid">✓ Tandai Lunas</button>' +
+    '<button type="button" class="pon-btn" id="m-pon-set">Atur Notif</button>' +
+    '</div></div>'
+  );
+}
+
 function mobShellTemplate() {
   return (
     '<div class="phone-preview-bar" id="m-phone-preview-bar" role="toolbar" aria-label="Ukuran Pratinjau HP">' +
@@ -24971,17 +25032,8 @@ function mobShellTemplate() {
     '<div class="phone-hw-btn vol-up" aria-hidden="true"></div>' +
     '<div class="phone-hw-btn vol-dn" aria-hidden="true"></div>' +
     '<div class="phone-hw-btn pwr" aria-hidden="true"></div>' +
-    '<div class="mob-shell" data-mtab-active="rincian">' +
-    '<div class="phone-os-notif" id="m-os-notif" role="alert" aria-live="polite">' +
-    '<div class="pon-top"><span class="pon-app"><span class="pon-ico rk-brand-tile" aria-hidden="true"><svg viewBox="0 0 64 64"><use href="#rk-brand-symbol"/></svg></span>Rencana Keuangan</span>' +
-    '<div style="display:flex;align-items:center;gap:6px"><span class="pon-time">Baru saja</span>' +
-    '<button type="button" id="m-pon-close" style="color:#94A3B8;font-size:0.78rem;padding:0 3px" aria-label="Tutup notifikasi">✕</button></div></div>' +
-    '<div class="pon-title" id="m-pon-title">Pengingat Tagihan Jatuh Tempo</div>' +
-    '<div class="pon-body" id="m-pon-body"></div>' +
-    '<div class="pon-actions">' +
-    '<button type="button" class="pon-btn primary" id="m-pon-paid">✓ Tandai Lunas</button>' +
-    '<button type="button" class="pon-btn" id="m-pon-set">Atur Notif</button>' +
-    '</div></div>' +
+    '<div class="mob-shell" data-mtab-active="' + esc(MOB_STATE.tab || 'rincian') + '">' +
+    mobOsNotifHtml() +
     '<div class="apk-header-block">' +
     '<svg class="hdr-motif" viewBox="0 0 390 150" preserveAspectRatio="xMidYMin slice" aria-hidden="true">' +
     '<circle cx="348" cy="24" r="146" fill="none" stroke="#FFFFFF" stroke-opacity="0.075" stroke-width="1.5"/>' +
@@ -26354,10 +26406,57 @@ function renderMobNotifPopover() {
   syncMobNotifDot();
 }
 
+function ensureMobOsNotifEl() {
+  var bn = $('m-os-notif');
+  if (bn) return bn;
+  var shell = document.querySelector('#mobile-app-shell .mob-shell');
+  if (!shell || typeof document === 'undefined') return null;
+  var wrap = document.createElement('div');
+  wrap.innerHTML = mobOsNotifHtml();
+  bn = wrap.firstElementChild;
+  if (!bn) return null;
+  shell.insertBefore(bn, shell.firstChild);
+  if (bn.offsetWidth > 0) void bn.offsetWidth;
+  return bn;
+}
+
+function dismissMobOsNotif(swipeDir) {
+  clearTimeout(mobNotifTimer);
+  mobNotifTimer = null;
+  var bn = $('m-os-notif');
+  if (!bn) return;
+  clearTimeout(bn._ponDismissT);
+  if (!swipeDir) {
+    bn.classList.remove('show', 'is-swiping', 'is-snapping', 'is-dismissing');
+    bn.style.removeProperty('--pon-dx');
+    bn.style.opacity = '';
+    return;
+  }
+  var reduced = typeof rkIsReducedMotion === 'function' && rkIsReducedMotion();
+  if (reduced) {
+    if (bn.parentNode) bn.parentNode.removeChild(bn);
+    return;
+  }
+  var w = bn.offsetWidth || 320;
+  bn.classList.remove('is-swiping', 'is-snapping');
+  bn.classList.add('is-dismissing');
+  bn.style.setProperty('--pon-dx', ((swipeDir > 0 ? 1 : -1) * (w + 48)) + 'px');
+  bn.style.opacity = '0';
+  var removed = false;
+  var finishRemove = function () {
+    if (removed) return;
+    removed = true;
+    clearTimeout(bn._ponDismissT);
+    if (bn.parentNode) bn.parentNode.removeChild(bn);
+  };
+  bn.addEventListener('transitionend', finishRemove, { once: true });
+  bn._ponDismissT = setTimeout(finishRemove, 220);
+}
+
 function triggerMobPhoneBarNotif(force) {
   if ((!MOB_STATE.notifEnabled || (typeof rkIsNotifReset === 'function' && rkIsNotifReset())) && !force) return;
   var due = getMobVisibleDueList(),
-    bn = $('m-os-notif');
+    bn = ensureMobOsNotifEl();
   if (!bn) return;
   if (!due.length) {
     if (!force) return;
@@ -26373,9 +26472,16 @@ function triggerMobPhoneBarNotif(force) {
     if ($('m-pon-body')) $('m-pon-body').textContent = lines.join('\n');
     MOB_BANNER_DUE = due[0];
   }
+  clearTimeout(bn._ponDismissT);
+  bn.classList.remove('is-swiping', 'is-snapping', 'is-dismissing');
+  bn.style.removeProperty('--pon-dx');
+  bn.style.opacity = '';
   bn.classList.add('show');
   clearTimeout(mobNotifTimer);
-  mobNotifTimer = setTimeout(function () { bn.classList.remove('show'); }, 7500);
+  mobNotifTimer = setTimeout(function () {
+    if ($('m-os-notif')) $('m-os-notif').classList.remove('show');
+    mobNotifTimer = null;
+  }, 7500);
   if (force && due.length && typeof triggerSystemNotification === 'function' && isMobNotifOsActive()) {
     var osTtl = $('m-pon-title') ? $('m-pon-title').textContent : 'Pengingat Tagihan Jatuh Tempo';
     var osBody = $('m-pon-body') ? $('m-pon-body').textContent : '';
@@ -26676,6 +26782,116 @@ function bindMobileShellEvents(root) {
     window._rkMobWinScrollBound = true;
     window.addEventListener('scroll', rkSyncMobScrollUi, { passive: true });
   }
+
+  /* Swipe-to-dismiss untuk #m-os-notif (delegated pada root agar aman saat DOM dibuat ulang) */
+  (function bindMobOsNotifSwipe() {
+    var swipe = null;
+    var suppressClick = false;
+    function getCard(target) {
+      return target && target.closest ? target.closest('#m-os-notif') : null;
+    }
+    function startSwipe(card, x, y, target) {
+      if (!card || !card.classList.contains('show')) return;
+      swipe = {
+        card: card,
+        startX: x,
+        startY: y,
+        lastX: x,
+        lastT: Date.now(),
+        vx: 0,
+        dx: 0,
+        locked: null,
+        width: card.offsetWidth || (typeof window !== 'undefined' && window.innerWidth ? Math.min(window.innerWidth - 20, 440) : 340),
+        startedOnBtn: !!(target && target.closest && target.closest('button'))
+      };
+      card.classList.remove('is-snapping', 'is-dismissing');
+    }
+    function moveSwipe(x, y, ev) {
+      if (!swipe) return;
+      var dx = x - swipe.startX;
+      var dy = y - swipe.startY;
+      if (!swipe.locked) {
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        if (Math.abs(dy) > Math.abs(dx)) {
+          swipe = null;
+          return;
+        }
+        swipe.locked = 'x';
+        swipe.card.classList.add('is-swiping');
+      }
+      if (swipe.locked !== 'x') return;
+      if (ev && ev.cancelable) ev.preventDefault();
+      var now = Date.now();
+      var dt = Math.max(1, now - swipe.lastT);
+      swipe.vx = (x - swipe.lastX) / dt;
+      swipe.lastX = x;
+      swipe.lastT = now;
+      swipe.dx = dx;
+      var ratio = Math.min(1, Math.abs(dx) / Math.max(1, swipe.width));
+      swipe.card.style.setProperty('--pon-dx', dx.toFixed(1) + 'px');
+      swipe.card.style.opacity = String(Math.max(0.15, 1 - ratio * 0.85));
+    }
+    function endSwipe(cancelled) {
+      if (!swipe) return;
+      var cur = swipe;
+      swipe = null;
+      var card = cur.card;
+      card.classList.remove('is-swiping');
+      if (cur.locked !== 'x') return;
+      if (cur.startedOnBtn) {
+        suppressClick = true;
+        setTimeout(function() { suppressClick = false; }, 120);
+      }
+      var absDx = Math.abs(cur.dx);
+      var stale = (Date.now() - cur.lastT) > 80;
+      var absVx = stale ? 0 : Math.abs(cur.vx);
+      if (!cancelled && (absDx > cur.width * 0.35 || (absDx > 16 && absVx > 0.5))) {
+        dismissMobOsNotif(cur.dx >= 0 ? 1 : -1);
+      } else {
+        card.classList.add('is-snapping');
+        card.style.setProperty('--pon-dx', '0px');
+        card.style.opacity = '';
+        setTimeout(function() {
+          if (card && card.isConnected) card.classList.remove('is-snapping');
+        }, 290);
+      }
+    }
+    root.addEventListener('click', function(e) {
+      if (!suppressClick) return;
+      if (!e.target.closest('#m-os-notif')) return;
+      suppressClick = false;
+      e.preventDefault();
+      e.stopPropagation();
+    }, true);
+    root.addEventListener('touchstart', function(e) {
+      if (!e.touches || e.touches.length !== 1) return;
+      var card = getCard(e.target);
+      if (!card) return;
+      startSwipe(card, e.touches[0].clientX, e.touches[0].clientY, e.target);
+    }, { passive: true });
+    root.addEventListener('touchmove', function(e) {
+      if (!swipe || !e.touches || !e.touches.length) return;
+      moveSwipe(e.touches[0].clientX, e.touches[0].clientY, e);
+    }, { passive: false });
+    root.addEventListener('touchend', function() { endSwipe(false); });
+    root.addEventListener('touchcancel', function() { endSwipe(true); });
+    root.addEventListener('mousedown', function(e) {
+      if (e.button !== 0) return;
+      var card = getCard(e.target);
+      if (!card) return;
+      startSwipe(card, e.clientX, e.clientY, e.target);
+    });
+    if (typeof window !== 'undefined') {
+      window.addEventListener('mousemove', function(e) {
+        if (!swipe) return;
+        moveSwipe(e.clientX, e.clientY, e);
+      });
+      window.addEventListener('mouseup', function() {
+        if (!swipe) return;
+        endSwipe(false);
+      });
+    }
+  })();
   if (typeof document !== 'undefined' && !document._rkMobDocNotifBound) {
     document._rkMobDocNotifBound = true;
     document.addEventListener('click', function (e) {
@@ -26922,10 +27138,10 @@ function bindMobileShellEvents(root) {
       if (e.target.closest('#m-btn-test-notif') && typeof requestNotifPermission === 'function') requestNotifPermission();
       return;
     }
-    if (e.target.closest('#m-pon-close')) { if ($('m-os-notif')) $('m-os-notif').classList.remove('show'); return; }
+    if (e.target.closest('#m-pon-close')) { dismissMobOsNotif(0); return; }
     if (e.target.closest('#m-pon-set') || e.target.closest('#m-pop-to-set') || e.target.closest('#m-pop-enable-os')) {
       var toNotifCard = !!e.target.closest('#m-pop-enable-os');
-      if ($('m-os-notif')) $('m-os-notif').classList.remove('show');
+      dismissMobOsNotif(0);
       if ($('m-notif-popover')) {
         $('m-notif-popover').classList.remove('open');
         if (typeof rkSyncNotifOpenUI === 'function') rkSyncNotifOpenUI();
@@ -26947,7 +27163,7 @@ function bindMobileShellEvents(root) {
           showMobToast(MOB_BANNER_DUE.it.name + ' lunas');
         }
       }
-      if ($('m-os-notif')) $('m-os-notif').classList.remove('show');
+      dismissMobOsNotif(0);
       return;
     }
 
