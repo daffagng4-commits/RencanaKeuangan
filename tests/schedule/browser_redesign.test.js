@@ -37,7 +37,15 @@ const { boot } = require('./ui.js');
 
   const jar = $('tab-rincian').querySelector('#svg-jar-main');
   assert(jar && $('tab-rincian').querySelector('#where-cat-list'), 'Jar & kategori ter-render');
-  assert.strictEqual(jar.querySelectorAll('.jar-band').length, 2, 'Jar memuat 2 pita cair');
+  const jarBands = [...jar.querySelectorAll('.jar-band')];
+  assert.strictEqual(jarBands.length, 2, 'Jar memuat 2 pita cair');
+  assert.strictEqual(jarBands[0].tagName.toLowerCase(), 'path', 'lapisan teratas berupa satu path tertutup bergelombang');
+  assert(jarBands[0].classList.contains('jar-wave-anim'), 'lapisan teratas sekaligus membawa animasi gelombang');
+  assert(jarBands.slice(1).every((b) => b.tagName.toLowerCase() === 'rect'), 'lapisan di bawahnya berupa rect datar tanpa gelombang');
+  assert(+jarBands[0].getAttribute('data-amt') >= +jarBands[1].getAttribute('data-amt'), 'lapisan terbesar berada di paling atas');
+  assert(jar.querySelectorAll('.jar-wave-anim').length === 1 && jar.querySelectorAll('.jar-wave-back').length === 1, 'ada 1 gelombang utama dan 1 gelombang belakang');
+  assert.strictEqual(jar.querySelector('.jar-wave-back').getAttribute('fill'), jarBands[0].getAttribute('fill'), 'gelombang belakang memakai warna lapisan teratas');
+  assert.strictEqual(jar.querySelector('.jar-wave-back').getAttribute('opacity'), '0.5', 'gelombang belakang memakai opacity 0.5');
   const invBand = jar.querySelector('.jar-band[data-cat="Investasi"]');
   invBand.dispatchEvent(new w.MouseEvent('mouseenter', { bubbles: true }));
   assert.strictEqual($('jar-hud-pct').textContent.trim(), '25.0%', 'hover band menyalakan porsi');
@@ -227,6 +235,205 @@ const { boot } = require('./ui.js');
   tmEv.touches = [{ clientX: 380 }];
   $('cf-hit').dispatchEvent(tmEv);
   assert($('cashflow-tooltip').classList.contains('visible'), 'touchmove menggeser crosshair & tooltip grafik kas');
+
+  // Fase 2: Sidebar persistensi localStorage, kategori check icon + just-selected, checkbox .rk-check
+  click($('sb-toggle'));
+  assert(w.document.body.classList.contains('sidebar-collapsed'), 'klik #sb-toggle menciutkan sidebar');
+  assert.strictEqual(w.localStorage.getItem('rk-sb-collapsed'), '1', 'status ciut sidebar disimpan di localStorage');
+  assert.strictEqual($('sb-toggle').getAttribute('aria-expanded'), 'false', 'aria-expanded sidebar diperbarui');
+  click($('sb-toggle'));
+  assert(!w.document.body.classList.contains('sidebar-collapsed'), 'klik #sb-toggle kedua membuka kembali sidebar');
+  assert.strictEqual(w.localStorage.getItem('rk-sb-collapsed'), '0', 'status buka sidebar disimpan di localStorage');
+
+  w.tab('kas');
+  const kCatBtn = $('kas-cat-pills').querySelector('.cat-pill-opt:not(.selected)');
+  assert(kCatBtn && kCatBtn.querySelector('.cat-check-ico'), 'pil kategori memiliki ikon centang .cat-check-ico');
+  const kCatVal = kCatBtn.getAttribute('data-kcat-opt');
+  click(kCatBtn);
+  const kCatSelected = $('kas-cat-pills').querySelector('.cat-pill-opt.selected[data-kcat-opt="' + kCatVal + '"]');
+  assert(kCatSelected && kCatSelected.classList.contains('just-selected'), 'klik kategori memberi kelas .just-selected untuk pop spring');
+
+  const chkWrap = shell.querySelector('.rk-check input[type="checkbox"]');
+  assert(chkWrap && chkWrap.closest('.rk-check').querySelector('.rk-check-svg path'), 'checkbox dibungkus .rk-check dengan SVG centang');
+
+  // Regresi Masalah A & B di Desktop Browser Mode
+  w.kasLinked().tx.push({ id: 'desk_del_tx1', d: '2026-11-16', t: '-', amt: 45000, cat: 'Makanan', note: 'Uji Hapus Desktop' });
+  w.renderAll();
+  w.tab('kas');
+  $('tt').hidden = true;
+  click(shell.querySelector('[data-kdel="desk_del_tx1"]'));
+  assert(w.document.querySelector('.modal.cfm.open') && $('tt').hidden === true, 'desktop hapus transaksi membuka konfirmasi tanpa toast prematur');
+  assert(w.kasLinked().tx.some((x) => x.id === 'desk_del_tx1'), 'desktop transaksi belum terhapus sebelum konfirmasi');
+  click(w.document.querySelector('.modal.cfm [data-cf-n]'));
+  assert(w.kasLinked().tx.some((x) => x.id === 'desk_del_tx1') && $('tt').hidden === true, 'desktop batal hapus transaksi membiarkan data utuh tanpa toast');
+  click(shell.querySelector('[data-kdel="desk_del_tx1"]'));
+  click(w.document.querySelector('.modal.cfm [data-cf-y]'));
+  assert(!w.kasLinked().tx.some((x) => x.id === 'desk_del_tx1') && $('tt').hidden === false, 'desktop konfirmasi hapus transaksi menghapus data & menampilkan toast sekali');
+
+  // Desktop item delete confirm check
+  w.tab('item');
+  $('tt').hidden = true;
+  click(shell.querySelector('[data-it-del="p20"]'));
+  assert(w.document.querySelector('.modal.cfm.open') && w.S.items.some((x) => x.id === 'p20') && $('tt').hidden === true, 'desktop hapus item membuka konfirmasi tanpa menghapus & tanpa toast');
+  click(w.document.querySelector('.modal.cfm [data-cf-n]'));
+  assert(w.S.items.some((x) => x.id === 'p20') && $('tt').hidden === true, 'desktop batal hapus item mempertahankan data & tanpa toast');
+  click(shell.querySelector('[data-it-del="p20"]'));
+  click(w.document.querySelector('.modal.cfm [data-cf-y]'));
+  assert(!w.S.items.some((x) => x.id === 'p20') && $('tt').hidden === false, 'desktop konfirmasi hapus item menghapus item & memunculkan toast');
+
+  // Desktop Masalah B: pill meluncur antar lebar berbeda & tetap memicu animasi meski .seg dirender ulang (trip-subtabs)
+  w.tab('rincian');
+  const dSeg = shell.querySelector('#tab-rincian .seg');
+  [...dSeg.querySelectorAll('.seg-btn')].forEach((b, idx) => {
+    const widths = [70, 58, 60];
+    const lefts = [3, 75, 135];
+    Object.defineProperty(b, 'offsetLeft', { configurable: true, value: lefts[idx] });
+    Object.defineProperty(b, 'offsetTop', { configurable: true, value: 3 });
+    Object.defineProperty(b, 'offsetWidth', { configurable: true, value: widths[idx] });
+    Object.defineProperty(b, 'offsetHeight', { configurable: true, value: 31 });
+  });
+  const fsDesk = require('fs');
+  const cssDeskSrc = fsDesk.readFileSync(require('path').join(__dirname, '..', '..', 'css', 'desktop.css'), 'utf8');
+  const deskSegBtnRule = cssDeskSrc.match(/#browser-shell\s+\.seg-btn\s*\{([^}]*)\}/);
+  assert(deskSegBtnRule && !/min-height\s*:/i.test(deskSegBtnRule[1]), 'desktop .seg-btn menjaga ukuran visual asli tanpa min-height tambahan');
+
+  dSeg._pillPos = null;
+  w.rkSyncSegPills(dSeg, false);
+  const dPill = dSeg.querySelector(':scope > .seg-pill');
+  const dBtnW = dSeg.querySelector('[data-range="w"]');
+  click(dBtnW);
+  assert.strictEqual(dSeg.querySelector(':scope > .seg-pill'), dPill, 'desktop .seg-pill tidak dibuat ulang saat pindah filter');
+  assert(dPill.classList.contains('is-jelly') && dPill.style.width === '70px' && dPill.style.transform.includes('translate3d(3px, 3px, 0)'), 'desktop .seg-pill menyesuaikan lebar & berpindah dengan jelly');
+  dPill.querySelector('.seg-pill-inner').dispatchEvent(new w.Event('animationend'));
+  assert(!dPill.classList.contains('is-jelly'), 'desktop .is-jelly dilepas saat animasi selesai');
+  assert(Math.abs(parseFloat(dPill.style.width) - dBtnW.offsetWidth) <= 1 && Math.abs(parseFloat(dPill.style.height) - dBtnW.offsetHeight) <= 1, 'ukuran pill desktop akhir = ukuran tombol aktif (toleransi 1px)');
+
+  w.ALL.kas.pr.t_seg_test = { id: 't_seg_test', name: 'Trip Seg Uji', it: [], bk: [], ck: [], lk: [], lg: [] };
+  w.setTrip('t_seg_test');
+  w.BR_STATE.tripView = 'detail';
+  w.BR_STATE.tripSubTab = 'ring';
+  w.setMode('trip');
+  const mockTripBtns = (segEl) => {
+    [...segEl.querySelectorAll('.seg-btn')].forEach((b, idx) => {
+      Object.defineProperty(b, 'offsetLeft', { configurable: true, value: 3 + idx * 84 });
+      Object.defineProperty(b, 'offsetTop', { configurable: true, value: 3 });
+      Object.defineProperty(b, 'offsetWidth', { configurable: true, value: 80 });
+      Object.defineProperty(b, 'offsetHeight', { configurable: true, value: 31 });
+    });
+  };
+  let tSubSeg = shell.querySelector('.trip-subtabs');
+  mockTripBtns(tSubSeg);
+  w.rkSyncSegPills(tSubSeg, false);
+  w.BR_STATE.tripSubTab = 'itin';
+  w.BR_STATE._tripSubAnimate = true;
+  w.renderTrip();
+  tSubSeg = shell.querySelector('.trip-subtabs');
+  mockTripBtns(tSubSeg);
+  w.rkSyncSegPills(tSubSeg, true);
+  assert(tSubSeg.querySelector(':scope > .seg-pill').classList.contains('is-jelly'), 'cache posisi pill menjaga transisi meski container .seg dirender ulang');
+
+  // Fase 3: Koreografi Entrance, Line/Bar/Jar Chart marks, Privacy Count-Up, Error Shake, & Sync Shimmer
+  w.setMode('rencana');
+  w.tab('rincian');
+  w.renderAll();
+  assert($('svg-cashflow').querySelector('.rk-anim-line') && $('svg-cashflow').querySelector('.rk-anim-fill-right'), 'SVG arus kas memuat penanda line draw & area fill');
+  assert($('jar-main-stage').querySelector('.rk-anim-fill-up'), 'SVG jar chart memuat grup fill .rk-anim-fill-up');
+  const rincPanel = $('tab-rincian');
+  Object.defineProperty(rincPanel, 'offsetWidth', { configurable: true, value: 960 });
+  const cardsR = [...rincPanel.querySelectorAll('.card, .summary-stat-card, .quick-parse-bar')];
+  w.rkRunEntrance('browser', 'rincian');
+  assert(cardsR.every((c) => c.classList.contains('rk-card-enter')), 'rkRunEntrance menambahkan .rk-card-enter ke card aktif');
+  assert(rincPanel.querySelector('#svg-bar-compare .bar-col.rk-bar-fade'), 'bar chart mendapat .rk-bar-fade saat entrance');
+  assert(rincPanel.querySelector('.rk-anim-line.rk-line-draw'), 'line chart mendapat .rk-line-draw saat entrance');
+  // Re-render kecil (klik filter) hanya menganimasikan grafik terkait tanpa memicu ulang page/card entrance
+  Object.defineProperty($('cashflow-chart-wrap'), 'offsetWidth', { configurable: true, value: 640 });
+  Object.defineProperty($('jar-main-stage'), 'offsetWidth', { configurable: true, value: 320 });
+  Object.defineProperty($('bar-chart-wrap'), 'offsetWidth', { configurable: true, value: 640 });
+  const runBeforeFilter = w._rkEntranceRunId;
+  click(shell.querySelector('[data-range="y"]'));
+  assert.strictEqual(w._rkEntranceRunId, runBeforeFilter, 'klik filter tidak memicu ulang page entrance');
+  assert($('cashflow-chart-wrap').classList.contains('is-filter-anim'), 'klik filter arus kas memberi .is-filter-anim pada grafik terkait');
+  click(shell.querySelector('[data-where-dir="in"]'));
+  assert($('jar-main-stage').classList.contains('is-filter-anim') && w._rkEntranceRunId === runBeforeFilter, 'klik filter arah jar hanya menganimasikan #jar-main-stage');
+  click(shell.querySelector('[data-bsperiod="m"]'));
+  assert($('bar-chart-wrap').classList.contains('is-filter-anim') && w._rkEntranceRunId === runBeforeFilter, 'klik filter bar compare hanya menganimasikan #bar-chart-wrap');
+
+  // Privacy mode melindungi count-up agar angka sensitif tidak terbaca di tengah animasi & tombol privasi/notif berfungsi
+  click($('btn-privacy'));
+  assert(w.document.body.classList.contains('privacy-mode') && $('btn-privacy').classList.contains('on'), 'klik #btn-privacy mengaktifkan mode privasi desktop');
+  const heroEl = $('rincian-saldo-now');
+  Object.defineProperty(heroEl, 'offsetWidth', { configurable: true, value: 240 });
+  const origHeroTxt = heroEl.textContent;
+  w.rkCountUpEl(heroEl, 1900, 0);
+  assert.strictEqual(heroEl.textContent, origHeroTxt, 'count-up dibatalkan seketika saat mode privasi aktif');
+  click($('btn-privacy'));
+  assert(!w.document.body.classList.contains('privacy-mode'), 'klik #btn-privacy kedua mematikan mode privasi');
+  click($('btn-notif'));
+  assert($('notif-popover').classList.contains('open'), 'klik #btn-notif membuka popover notifikasi desktop');
+  click($('btn-notif'));
+  assert(!$('notif-popover').classList.contains('open'), 'klik #btn-notif kedua menutup popover desktop');
+
+  // Error Shake (#8) & novalidate di form desktop
+  ['kas-form', 'item-form', 'sim-add-form', 'quick-tx-form', 'trip-meta-form'].forEach((fid) => {
+    assert($(fid) && $(fid).hasAttribute('novalidate'), 'desktop form ' + fid + ' memakai novalidate');
+  });
+  w.tab('item');
+  $('qp-input').value = 'format salah tanpa angka';
+  click($('qp-submit'));
+  assert($('qp-input').classList.contains('rk-input-error') && $('qp-input').classList.contains('rk-error-shake'), 'input invalid Tambah Cepat memicu border merah & shake');
+  $('qp-input').value = 'Netflix 100rb';
+  fire($('qp-input'), 'input');
+  assert(!$('qp-input').classList.contains('rk-input-error'), 'status error input hilang saat pengguna mengetik ulang');
+  w.tab('sim');
+  $('sim-new-title').value = '';
+  $('sim-new-amt').value = '';
+  fire($('sim-add-form'), 'submit');
+  assert($('sim-new-title').classList.contains('rk-input-error') && $('sim-new-title').classList.contains('rk-error-shake'), 'submit form simulasi kosong memicu error shake');
+
+  // Sync Shimmer (#7) in-card di dalam kartu saldo (tanpa bilah #rk-sync-skeleton)
+  w.tab('rincian');
+  assert(!$('rk-sync-skeleton') && shell.querySelector('#tab-rincian .rk-skel-wrap #rincian-saldo-now'), 'skeleton cloud berada di dalam kartu Kondisi Kas Realtime (#rincian-saldo-now)');
+  w.rkSetSyncLoading(true);
+  assert(w.document.body.classList.contains('rk-syncing') && !$('rk-sync-skeleton'), 'sinkron cloud mengaktifkan in-card shimmer lewat body.rk-syncing');
+  w.rkSetSyncLoading(false);
+  assert(!w.document.body.classList.contains('rk-syncing') && w.document.body.classList.contains('rk-sync-reveal'), 'selesai sinkron menutup shimmer in-card dengan cross-fade');
+
+  // Fase 4 (#16.1, #16.2, #17, #18, #20) Desktop:
+  // #16.2 Icon morphing 2-SVG di tombol privasi & tema
+  assert($('btn-privacy').querySelector('.rk-morph-icon .rk-ico-a') && $('btn-privacy').querySelector('.rk-morph-icon .rk-ico-b'), 'tombol privasi desktop memiliki 2 lapisan SVG untuk morph');
+  click($('btn-privacy'));
+  assert($('btn-privacy').classList.contains('on') && $('priv-morph').classList.contains('is-morphed'), 'mode privasi mengaktifkan morph mata <-> mata-tercoret');
+  // #20 Theme View Transition desktop + Privacy Mode tetap terlindungi selama transisi
+  w.document.startViewTransition = (cb) => {
+    cb();
+    assert(w.document.body.classList.contains('privacy-mode'), 'mode privasi tidak bocor saat startViewTransition mengganti tema');
+    return { finished: Promise.resolve() };
+  };
+  w.setTheme('dark');
+  assert(w.document.documentElement.getAttribute('data-theme') === 'dark' && w.document.documentElement.classList.contains('rk-vt-desktop'), 'ganti tema desktop memicu rk-vt-desktop (circular reveal)');
+  await Promise.resolve();
+  w.document.startViewTransition = undefined;
+  w.setTheme('light');
+  assert(w.document.documentElement.getAttribute('data-theme') === 'light' && w.document.documentElement.classList.contains('rk-theme-fallback'), 'fallback tanpa startViewTransition memakai kelas rk-theme-fallback');
+  click($('btn-privacy'));
+  // #16.1 Bell swing & active state sinkron dengan status popover notif desktop (REVISI 2)
+  click($('btn-notif'));
+  assert($('notif-popover').classList.contains('open') && $('btn-notif').classList.contains('on') && $('btn-notif').classList.contains('active') && $('btn-notif').getAttribute('aria-expanded') === 'true' && $('btn-notif').classList.contains('rk-bell-ringing'), 'klik #btn-notif desktop membuka popover, mengaktifkan state biru (.on/.active), & memicu ayunan lonceng');
+  click($('btn-notif'));
+  assert(!$('notif-popover').classList.contains('open') && !$('btn-notif').classList.contains('on') && !$('btn-notif').classList.contains('active') && $('btn-notif').getAttribute('aria-expanded') === 'false', 'klik #btn-notif kedua menutup popover & melepas class aktif');
+  click($('btn-notif'));
+  assert($('btn-notif').classList.contains('on'), 'popover terbuka kembali -> tombol notif aktif');
+  w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  assert(!$('notif-popover').classList.contains('open') && !$('btn-notif').classList.contains('on') && !$('btn-notif').classList.contains('active'), 'Escape menutup popover desktop & melepas class aktif tombol notif');
+  click($('btn-notif'));
+  click(w.document.body);
+  assert(!$('notif-popover').classList.contains('open') && !$('btn-notif').classList.contains('on'), 'klik di luar popover menutup & melepas class aktif tombol notif desktop');
+  w.tab('jadwal');
+  assert($('btn-toggle-guide').querySelector('.rk-palette-ico'), 'tombol Panduan warna memuat ikon palet SVG');
+  click($('btn-toggle-guide'));
+  assert($('jadwal-guide').classList.contains('open') && $('btn-toggle-guide').getAttribute('aria-expanded') === 'true' && $('btn-toggle-guide').classList.contains('is-spinning'), 'klik Panduan warna memutar ikon palet & membuka drawer dengan animasi swatch');
+  // #17 Elemen default tetap terlihat tanpa Observer & Back-to-Top tersedia
+  assert($('rk-btt-desk') && ![...shell.querySelectorAll('.card')].some((c) => c.classList.contains('rk-scroll-pending')), 'card default tetap terlihat tanpa JS/Observer & tombol back-to-top tersedia');
 
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('Semua pengujian browser_redesign lulus tanpa error!');

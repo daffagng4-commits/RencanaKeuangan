@@ -365,6 +365,217 @@ const { boot } = require('./ui.js');
   assert.strictEqual($('m-user-name').textContent, 'Halo, XXX', 'nama header kembali menjadi Halo, XXX setelah logout Mode APK');
   assert(!$('m-sheet-acct').classList.contains('open'), 'sheet Akun tertutup setelah logout');
 
+  // 9. Fase 2: Kategori check icon + Checkbox .rk-check + Drag-to-dismiss sheet backdrop click
+  w.switchMobileTab('kas');
+  const mCatPick = $('m-kas-cat-pills').querySelector('[data-mkcatpick="Investasi"]');
+  assert(mCatPick && mCatPick.querySelector('.cat-check-ico'), 'pil kategori APK memiliki .cat-check-ico');
+  click(mCatPick);
+  assert($('m-kas-cat-pills').querySelector('.active.just-selected[data-mkcatpick="Investasi"]'), 'pil kategori APK aktif dengan .just-selected');
+  assert($('mobile-app-shell').querySelector('.rk-check .rk-check-svg path'), 'checkbox APK dibungkus .rk-check dengan SVG centang');
+  w.mobOpenSheet('m-sheet-more');
+  assert($('m-sheet-more').classList.contains('open'), 'sheet Lainnya terbuka');
+  click($('m-sheet-more'));
+  assert(!$('m-sheet-more').classList.contains('open'), 'klik backdrop menutup sheet APK');
+
+  // 10. Regresi Masalah A, B, C di Mode APK
+  const curMobShell = $('mobile-app-shell');
+  // Masalah A (1): hapus transaksi -> batal = data utuh & tanpa toast
+  w.kasLinked().tx.push({ id: 'mob_del_tx1', d: '2026-11-12', t: '-', amt: 77000, cat: 'Makanan', note: 'Uji Hapus APK' });
+  w.save();
+  w.switchMobileTab('kas');
+  $('m-toast-box').classList.remove('show');
+  $('m-toast-box').textContent = '';
+  const delTxBtn = curMobShell.querySelector('[data-mdeltx="mob_del_tx1"]');
+  assert(delTxBtn, 'tombol hapus transaksi APK ada');
+  click(delTxBtn);
+  let cfmBox = doc.querySelector('.modal.cfm');
+  assert(cfmBox && cfmBox.classList.contains('open'), 'klik hapus transaksi APK membuka dialog konfirmasi');
+  assert(w.kasLinked().tx.some((x) => x.id === 'mob_del_tx1'), 'data transaksi BELUM terhapus sebelum konfirmasi ditekan');
+  assert(!$('m-toast-box').classList.contains('show'), 'toast terhapus TIDAK muncul di belakang konfirmasi sebelum disetujui');
+  click(cfmBox.querySelector('[data-cf-n]'));
+  assert(!doc.querySelector('.modal.cfm'), 'klik Batal menutup konfirmasi');
+  assert(w.kasLinked().tx.some((x) => x.id === 'mob_del_tx1'), 'klik Batal membiarkan transaksi tetap utuh');
+  assert(!$('m-toast-box').classList.contains('show'), 'klik Batal tidak memunculkan toast');
+
+  // Masalah A (2): hapus transaksi -> konfirmasi = data terhapus & toast muncul sekali
+  click(curMobShell.querySelector('[data-mdeltx="mob_del_tx1"]'));
+  cfmBox = doc.querySelector('.modal.cfm');
+  click(cfmBox.querySelector('[data-cf-y]'));
+  assert(!w.kasLinked().tx.some((x) => x.id === 'mob_del_tx1'), 'klik konfirmasi menghapus transaksi');
+  assert($('m-toast-box').classList.contains('show') && /Transaksi dihapus/.test($('m-toast-box').textContent), 'toast Transaksi dihapus muncul setelah konfirmasi');
+
+  // Masalah A (3): hapus item di Mode APK juga meminta konfirmasi
+  w.S.items.push({ id: 995, name: 'Uji Hapus Item', price: 50000, n: 1, unit: 'sekali', start: '2026-11-18', end: '', cnt: 0, cat: 'Lainnya', ch: [] });
+  w.save();
+  w.MOB_STATE.jadwalSub = 'manage';
+  w.switchMobileTab('jadwal');
+  $('m-toast-box').classList.remove('show');
+  click(curMobShell.querySelector('[data-mdel-it="995"]'));
+  cfmBox = doc.querySelector('.modal.cfm');
+  assert(cfmBox, 'klik hapus item APK membuka dialog konfirmasi');
+  assert(w.S.items.some((x) => x.id === 995) && !$('m-toast-box').classList.contains('show'), 'item belum terhapus & tanpa toast sebelum konfirmasi');
+  click(cfmBox.querySelector('[data-cf-n]'));
+  assert(w.S.items.some((x) => x.id === 995) && !$('m-toast-box').classList.contains('show'), 'batal hapus item membiarkan data utuh tanpa toast');
+  click(curMobShell.querySelector('[data-mdel-it="995"]'));
+  click(doc.querySelector('.modal.cfm [data-cf-y]'));
+  assert(!w.S.items.some((x) => x.id === 995) && $('m-toast-box').classList.contains('show'), 'konfirmasi hapus item menghapus data & memunculkan toast');
+
+  // Masalah C: askConfirm mendukung tutup via tombol Escape tanpa memanggil onYes
+  let escCalled = false;
+  w.askConfirm('Uji Escape', () => { escCalled = true; });
+  assert(doc.querySelector('.modal.cfm.open'), 'askConfirm membuka .modal.cfm.open');
+  doc.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  assert(!doc.querySelector('.modal.cfm') && !escCalled, 'Escape menutup dialog konfirmasi tanpa menghapus data');
+
+  // Masalah B: rkSyncSegPills bergerak dengan 1 elemen pill persisten ketika tombol .seg diklik & ukuran visual tidak membengkak
+  const fsMob = require('fs');
+  const cssMobSrc = fsMob.readFileSync(require('path').join(__dirname, '..', '..', 'css', 'mobile.css'), 'utf8');
+  const mobSegBtnRule = cssMobSrc.match(/#mobile-app-shell\s+\.seg-btn\s*\{([^}]*)\}/);
+  assert(mobSegBtnRule && !/min-height\s*:/i.test(mobSegBtnRule[1]), 'tombol visual .seg-btn APK tidak memakai min-height: 44px agar tinggi .seg tetap sama seperti sebelum Fase 2');
+  assert(/#mobile-app-shell\s+\.seg-btn::before\s*\{[^}]*min-height\s*:\s*var\(--tap\)/s.test(cssMobSrc), 'target sentuh 44px .seg-btn APK memakai pseudo-element ::before transparan');
+
+  w.switchMobileTab('rincian');
+  const mobRangeSeg = curMobShell.querySelector('.cf-range-seg');
+  const mobRangeBtns = [...mobRangeSeg.querySelectorAll('.seg-btn')];
+  mobRangeBtns.forEach((b, idx) => {
+    Object.defineProperty(b, 'offsetLeft', { configurable: true, value: 3 + idx * 92 });
+    Object.defineProperty(b, 'offsetTop', { configurable: true, value: 3 });
+    Object.defineProperty(b, 'offsetWidth', { configurable: true, value: idx === 1 ? 82 : 90 });
+    Object.defineProperty(b, 'offsetHeight', { configurable: true, value: 27 });
+  });
+  w.rkSyncSegPills(mobRangeSeg, false);
+  const firstPill = mobRangeSeg.querySelector(':scope > .seg-pill');
+  assert(firstPill, 'segmented control APK memiliki elemen .seg-pill persisten');
+  const mRangeBtnW = mobRangeSeg.querySelector('[data-mrange="w"]');
+  click(mRangeBtnW);
+  const samePillAfterClick = mobRangeSeg.querySelector(':scope > .seg-pill');
+  assert.strictEqual(firstPill, samePillAfterClick, 'elemen .seg-pill persisten (tidak dibuat ulang)');
+  assert(samePillAfterClick.style.transform.includes('translate3d(3px, 3px, 0)') && samePillAfterClick.style.transform.includes('scale(1, 1)'), 'pill berpindah ke posisi opsi baru tanpa scale tertahan');
+  assert(samePillAfterClick.classList.contains('is-jelly'), 'pill memicu animasi jelly saat berpindah');
+  samePillAfterClick.querySelector('.seg-pill-inner').dispatchEvent(new w.Event('animationend'));
+  assert(!samePillAfterClick.classList.contains('is-jelly'), 'kelas .is-jelly dilepas otomatis saat animationend');
+  assert(Math.abs(parseFloat(samePillAfterClick.style.width) - mRangeBtnW.offsetWidth) <= 1, 'lebar pill akhir sama dengan tombol aktif (toleransi 1px)');
+  assert(Math.abs(parseFloat(samePillAfterClick.style.height) - mRangeBtnW.offsetHeight) <= 1, 'tinggi pill akhir sama dengan tombol aktif (toleransi 1px)');
+
+  // 11. Fase 3 Mode APK: Chart marks, Ringan entrance (#2.2), Undo Toast (#5), Error Shake (#8), & List Stagger (#9)
+  assert($('m-svg-cashflow').querySelector('.rk-anim-line') && $('m-svg-cashflow').querySelector('.rk-anim-fill-right'), 'SVG arus kas APK memuat penanda line draw & fill');
+  assert($('m-jar-stage').querySelector('.rk-anim-fill-up'), 'Jar APK memuat grup .rk-anim-fill-up');
+  const mRincPanel = $('m-tab-rincian');
+  Object.defineProperty(mRincPanel, 'offsetWidth', { configurable: true, value: 360 });
+  w.rkRunEntrance('mobile-app', 'rincian');
+  assert(mRincPanel.querySelector('.card.rk-card-enter') && mRincPanel.querySelector('#m-svg-bar .bar-col.rk-bar-fade'), 'entrance APK ringan menandai card fade-up & bar fade');
+  // Error shake di form kas APK (#8)
+  w.switchMobileTab('kas');
+  $('m-kas-amt').value = '';
+  fire($('m-kas-form'), 'submit');
+  assert($('m-kas-amt').classList.contains('rk-input-error') && $('m-kas-amt').classList.contains('rk-error-shake'), 'submit form kas APK nominal kosong memicu error shake');
+  // Undo toast di APK (#5) memulihkan item terhapus
+  w.S.items.push({ id: 996, name: 'Uji Undo APK', price: 33000, n: 1, unit: 'sekali', start: '2026-11-18', end: '', cnt: 0, cat: 'Lainnya', ch: [] });
+  w.save();
+  w.MOB_STATE.jadwalSub = 'manage';
+  w.switchMobileTab('jadwal');
+  click(curMobShell.querySelector('[data-mdel-it="996"]'));
+  click(doc.querySelector('.modal.cfm [data-cf-y]'));
+  assert(!w.S.items.some((x) => x.id === 996), 'item terhapus setelah konfirmasi');
+  const mobUndoBtn = $('m-toast-box').querySelector('.m-toast-undo');
+  assert($('m-toast-box').classList.contains('has-undo') && mobUndoBtn, 'toast APK menyediakan tombol Urungkan');
+  click(mobUndoBtn);
+  assert(w.S.items.some((x) => x.id === 996), 'klik Urungkan di toast APK memulihkan item terhapus');
+
+  // 12. Regresi MASALAH A-F (APK):
+  // MASALAH A: Remount shell APK (mobile-app -> browser -> mobile-app) tidak menduplikasi listener privasi/notif
+  w.switchMobileTab('rincian');
+  w.setShellMode('browser');
+  w.setShellMode('mobile-app');
+  const remountShell = $('mobile-app-shell');
+  doc.body.classList.remove('privacy-mode', 'privacy-on');
+  click($('m-btn-privacy'));
+  assert(doc.body.classList.contains('privacy-mode') && $('m-btn-privacy').classList.contains('on'), 'MASALAH A APK: ketuk #m-btn-privacy mengaktifkan mode privasi meski setelah remount shell');
+  click($('m-btn-privacy'));
+  assert(!doc.body.classList.contains('privacy-mode') && !$('m-btn-privacy').classList.contains('on'), 'MASALAH A APK: ketuk #m-btn-privacy kedua mematikan mode privasi');
+  click($('m-btn-notif'));
+  assert($('m-notif-popover').classList.contains('open'), 'MASALAH A APK: ketuk #m-btn-notif membuka popover notifikasi');
+  click($('m-btn-notif'));
+  assert(!$('m-notif-popover').classList.contains('open'), 'MASALAH A APK: ketuk #m-btn-notif kedua menutup popover');
+
+  // MASALAH B: Skeleton shimmer sinkron di dalam kartu (.rk-skel-wrap), bukan bilah terpisah (#m-sync-skeleton)
+  assert(!$( 'm-sync-skeleton') && remountShell.querySelector('.wallet-hero .rk-skel-wrap #m-rincian-saldo'), 'MASALAH B APK: skeleton berada di dalam wallet-hero (#m-rincian-saldo) tanpa #m-sync-skeleton');
+  w.rkSetSyncLoading(true);
+  assert(doc.body.classList.contains('rk-syncing') && !$( 'm-sync-skeleton'), 'MASALAH B APK: rkSetSyncLoading(true) memakai body.rk-syncing in-card');
+  w.rkSetSyncLoading(false);
+  assert(!doc.body.classList.contains('rk-syncing'), 'MASALAH B APK: rkSetSyncLoading(false) melepas body.rk-syncing');
+
+  // MASALAH C: Semua form APK punya novalidate dan input kosong memicu rkShakeInvalid
+  ['m-kas-form', 'm-item-form', 'm-sim-form', 'm-trip-meta-form'].forEach((fid) => {
+    const fel = $(fid);
+    assert(fel && fel.hasAttribute('novalidate'), 'MASALAH C APK: form ' + fid + ' memakai novalidate');
+  });
+  w.switchMobileTab('sim');
+  $('m-sim-title').value = '';
+  $('m-sim-price').value = '';
+  fire($('m-sim-form'), 'submit');
+  assert($('m-sim-title').classList.contains('rk-input-error') && $('m-sim-title').classList.contains('rk-error-shake'), 'MASALAH C APK: submit form simulasi kosong memicu error shake');
+  $('m-kp-name').value = '';
+  fire($('m-trip-meta-form'), 'submit');
+  assert($('m-kp-name').classList.contains('rk-input-error') && $('m-kp-name').classList.contains('rk-error-shake'), 'MASALAH C APK: submit form perjalanan kosong memicu error shake');
+
+  // MASALAH F: Klik filter grafik APK menganimasikan grafik terkait (.is-filter-anim) tanpa memicu ulang page entrance
+  w.switchMobileTab('rincian');
+  Object.defineProperty($('m-cf-wrap'), 'offsetWidth', { configurable: true, value: 320 });
+  Object.defineProperty($('m-jar-stage'), 'offsetWidth', { configurable: true, value: 320 });
+  Object.defineProperty($('m-bar-wrap'), 'offsetWidth', { configurable: true, value: 320 });
+  const mobRunBeforeF = w._rkEntranceRunId;
+  click(remountShell.querySelector('[data-mrange="y"]'));
+  assert($('m-cf-wrap').classList.contains('is-filter-anim') && w._rkEntranceRunId === mobRunBeforeF, 'MASALAH F APK: filter rentang arus kas memicu .is-filter-anim tanpa mengulang entrance halaman');
+  click(remountShell.querySelector('[data-mwdir="+"]'));
+  assert($('m-jar-stage').classList.contains('is-filter-anim') && w._rkEntranceRunId === mobRunBeforeF, 'MASALAH F APK: filter arah jar memicu .is-filter-anim tanpa mengulang entrance');
+  click(remountShell.querySelector('[data-mbsp="m"]'));
+  assert($('m-bar-wrap').classList.contains('is-filter-anim') && w._rkEntranceRunId === mobRunBeforeF, 'MASALAH F APK: filter bar compare memicu .is-filter-anim tanpa mengulang entrance');
+
+  // 13. Fase 4 Mode APK (#16 Bottom Nav + Bell/Morph, #17 Scroll/BTT, #20 Theme Cross-fade, #4 Ripple)
+  // #16.2 Privasi 2-SVG morph + remount safety
+  assert($('m-btn-privacy').querySelector('.rk-morph-icon .rk-ico-a') && $('m-btn-privacy').querySelector('.rk-morph-icon .rk-ico-b'), 'tombol privasi APK punya 2 SVG untuk morph');
+  click($('m-btn-privacy'));
+  assert($('m-priv-morph').classList.contains('is-morphed') && doc.body.classList.contains('privacy-mode'), 'klik #m-btn-privacy mengaktifkan morph mata-tercoret');
+  // #20 Theme cross-fade APK + Privacy guard
+  doc.startViewTransition = (cb) => {
+    cb();
+    assert(doc.body.classList.contains('privacy-mode'), 'mode privasi tetap terkunci saat View Transition ganti tema APK');
+    return { finished: Promise.resolve() };
+  };
+  w.setTheme('dark');
+  assert(doc.documentElement.classList.contains('rk-vt-apk') && doc.documentElement.getAttribute('data-theme') === 'dark', 'ganti tema APK memakai rk-vt-apk cross-fade');
+  await Promise.resolve();
+  doc.startViewTransition = undefined;
+  w.setTheme('light');
+  click($('m-btn-privacy'));
+  // #16 Notif bell swing + active state sinkron popover (REVISI 2) & Bottom Nav gaya lama bersih (REVISI 1)
+  click($('m-btn-notif'));
+  assert($('m-notif-popover').classList.contains('open') && $('m-btn-notif').classList.contains('on') && $('m-btn-notif').classList.contains('active') && $('m-btn-notif').getAttribute('aria-expanded') === 'true' && $('m-btn-notif').classList.contains('rk-bell-ringing'), 'ketuk #m-btn-notif memicu ayunan lonceng, membuka popover, & mengaktifkan state biru (.on/.active)');
+  click($('m-btn-notif'));
+  assert(!$('m-notif-popover').classList.contains('open') && !$('m-btn-notif').classList.contains('on') && !$('m-btn-notif').classList.contains('active') && $('m-btn-notif').getAttribute('aria-expanded') === 'false', 'ketuk #m-btn-notif kedua menutup & melepas class aktif');
+  click($('m-btn-notif'));
+  doc.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  assert(!$('m-notif-popover').classList.contains('open') && !$('m-btn-notif').classList.contains('on') && !$('m-btn-notif').classList.contains('active'), 'Escape menutup #m-notif-popover & melepas class aktif tombol notif APK');
+  click($('m-btn-notif'));
+  click($('m-main'));
+  assert(!$('m-notif-popover').classList.contains('open') && !$('m-btn-notif').classList.contains('on'), 'ketuk di luar popover menutup #m-notif-popover & melepas class aktif');
+  const mKasNavBtn = remountShell.querySelector('.mob-bottom-nav [data-mtab="kas"]');
+  w.switchMobileTab('kas');
+  assert(!$('m-bn-pill') && !remountShell.querySelector('.mob-bottom-nav .bn-pill') && mKasNavBtn.classList.contains('active'), 'bottom nav APK kembali bersih tanpa #m-bn-pill, hanya tab .active berwarna emas');
+  // #4 Ripple APK pada tombol utama / list-row dan cleanup
+  const kasSubmitBtn = remountShell.querySelector('#m-kas-form .btn-primary');
+  const pdEvt = new w.Event('pointerdown', { bubbles: true });
+  pdEvt.clientX = 20; pdEvt.clientY = 12; pdEvt.button = 0;
+  kasSubmitBtn.dispatchEvent(pdEvt);
+  const clipEl = kasSubmitBtn.querySelector('.rk-ripple-clip');
+  const waveEl = clipEl && clipEl.querySelector('.rk-ripple');
+  assert(clipEl && waveEl, 'pointerdown tombol utama APK memunculkan ripple di dalam .rk-ripple-clip');
+  waveEl.dispatchEvent(new w.Event('animationend'));
+  assert(!kasSubmitBtn.querySelector('.rk-ripple-clip'), 'elemen ripple dibersihkan setelah animationend');
+  // #17 Sticky topbar scroll & back-to-top APK
+  assert($('m-btt-btn') && $('m-main'), 'APK memiliki #m-btt-btn untuk kembali ke atas');
+
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('OK mobile_app_mode');
   process.exit(0);

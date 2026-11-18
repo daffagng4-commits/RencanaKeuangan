@@ -29,6 +29,15 @@
 <link rel="stylesheet" href="css/mobile.css">
 </head>
 <body>
+<script>
+(function () {
+  try {
+    if (localStorage.getItem('rk-sb-collapsed') === '1') {
+      document.body.classList.add('sidebar-collapsed', 'sb-init-no-anim');
+    }
+  } catch (e) {}
+})();
+</script>
 <div class="app-shell app" id="browser-shell">
   <!-- ========================================================================
        DESKTOP SIDEBAR (SINGLE LOGICAL HOME FOR ACCOUNT + PRIMARY TABS + ALAT)
@@ -107,9 +116,12 @@
           </button>
         </div>
         <button type="button" id="btn-privacy" class="topbar-btn" data-more title="Mode Privasi (Kaburkan Nominal)" aria-pressed="false" aria-label="Mode Privasi">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span class="rk-morph-icon" id="priv-morph" aria-hidden="true">
+            <svg class="rk-ico-a" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <svg class="rk-ico-b" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+          </span>
         </button>
-        <button type="button" id="btn-notif" class="topbar-btn" data-more title="Pengingat tagihan jatuh tempo" aria-label="Notifikasi tagihan">
+        <button type="button" id="btn-notif" class="topbar-btn" data-more title="Pengingat tagihan jatuh tempo" aria-expanded="false" aria-label="Notifikasi tagihan">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span class="notif-dot" id="notif-dot" style="display:none;">0</span>
         </button>
@@ -135,7 +147,8 @@
             <div class="hero-balance-row">
               <div>
                 <div class="hero-label">Kondisi Kas Realtime · Tahun <span class="lbl-year">2026</span></div>
-                <div class="hero-amount pv" id="rincian-saldo-now">Rp 0</div>
+                <div class="rk-sync-hint" aria-live="polite"><span class="rk-sync-hint-dot" aria-hidden="true"></span>Menyinkronkan data cloud…</div>
+                <div class="rk-skel-wrap"><div class="hero-amount pv" id="rincian-saldo-now">Rp 0</div></div>
               </div>
               <div class="seg" role="group" aria-label="Rentang Grafik Kas">
                 <button type="button" class="seg-btn" data-range="w" aria-pressed="false">Minggu</button>
@@ -162,22 +175,22 @@
             <div class="grid-4">
               <div class="metric-tile">
                 <div class="metric-tile-label" id="metric-end-lbl">Sisa saldo akhir Des</div>
-                <div class="metric-tile-val pv" id="metric-end-bal">Rp 0</div>
+                <div class="rk-skel-wrap"><div class="metric-tile-val pv" id="metric-end-bal">Rp 0</div></div>
                 <div class="metric-tile-hint" id="metric-end-hint">—</div>
               </div>
               <div class="metric-tile">
                 <div class="metric-tile-label" id="metric-daily-lbl">Jatah jajan harian</div>
-                <div class="metric-tile-val pv" id="metric-daily-val" style="color: var(--emerald);">Rp 0 / hr</div>
+                <div class="rk-skel-wrap"><div class="metric-tile-val pv" id="metric-daily-val" style="color: var(--emerald);">Rp 0 / hr</div></div>
                 <div class="metric-tile-hint pv" id="metric-daily-hint">—</div>
               </div>
               <div class="metric-tile">
                 <div class="metric-tile-label">Rata-rata beban rutin</div>
-                <div class="metric-tile-val pv" id="metric-avg-bill">Rp 0 / bln</div>
+                <div class="rk-skel-wrap"><div class="metric-tile-val pv" id="metric-avg-bill">Rp 0 / bln</div></div>
                 <div class="metric-tile-hint">Total tahun: <span class="pv" id="metric-total-year">Rp 0</span></div>
               </div>
               <div class="metric-tile">
                 <div class="metric-tile-label">Progres pelunasan</div>
-                <div class="metric-tile-val pv" id="rincian-bills-ratio">0 / 0 tagihan</div>
+                <div class="rk-skel-wrap"><div class="metric-tile-val pv" id="rincian-bills-ratio">0 / 0 tagihan</div></div>
                 <div class="metric-tile-hint">Sudah dibayar: <span class="pv" id="rincian-paid-sum">Rp 0</span></div>
               </div>
             </div>
@@ -330,17 +343,17 @@
             <div class="grid-3">
               <div class="metric-tile">
                 <div class="metric-tile-label">Saldo Kas Tercatat</div>
-                <div class="metric-tile-val pv" id="kas-saldo-val" style="color: var(--accent-ink);">Rp 0</div>
+                <div class="rk-skel-wrap"><div class="metric-tile-val pv" id="kas-saldo-val" style="color: var(--accent-ink);">Rp 0</div></div>
                 <div class="metric-tile-hint">Saldo aktif profil <span class="lbl-year">2026</span></div>
               </div>
               <div class="metric-tile">
                 <div class="metric-tile-label">Total Pemasukan</div>
-                <div class="metric-tile-val pv" id="kas-in-val" style="color: var(--emerald);">+Rp 0</div>
+                <div class="rk-skel-wrap"><div class="metric-tile-val pv" id="kas-in-val" style="color: var(--emerald);">+Rp 0</div></div>
                 <div class="metric-tile-hint">Gaji &amp; pelunasan piutang</div>
               </div>
               <div class="metric-tile">
                 <div class="metric-tile-label">Total Pengeluaran Kas</div>
-                <div class="metric-tile-val pv" id="kas-out-val" style="color: var(--crimson);">-Rp 0</div>
+                <div class="rk-skel-wrap"><div class="metric-tile-val pv" id="kas-out-val" style="color: var(--crimson);">-Rp 0</div></div>
                 <div class="metric-tile-hint">Investasi, rutin &amp; konsumsi</div>
               </div>
             </div>
@@ -355,7 +368,7 @@
                 </div>
                 <button type="button" class="btn btn-secondary btn-sm" id="kas-cancel-edit" hidden>Batal ubah</button>
               </div>
-              <form id="kas-form" class="stack" style="gap: 14px;">
+              <form id="kas-form" class="stack" style="gap: 14px;" novalidate>
                 <div class="seg" style="width: 100%;" role="group" aria-label="Jenis Transaksi">
                   <button type="button" class="seg-btn active" data-kas-type="out" style="flex: 1; justify-content: center;" aria-pressed="true">− Pengeluaran</button>
                   <button type="button" class="seg-btn" data-kas-type="in" style="flex: 1; justify-content: center;" aria-pressed="false">+ Pemasukan</button>
@@ -503,7 +516,7 @@
               <p class="card-sub">Bulan sebelum mulai tidak dihitung · Klik angka tanggal untuk ubah status tagihan</p>
             </div>
             <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-              <button type="button" class="btn btn-secondary btn-sm" id="btn-toggle-guide" aria-expanded="false">Panduan warna</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-toggle-guide" aria-expanded="false"><svg class="rk-palette-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg><span>Panduan warna</span></button>
               <div class="seg jadwal-seg-full" role="group" aria-label="Filter status item">
                 <button type="button" class="seg-btn active" data-jfilter="all" aria-pressed="true">Semua <span class="seg-count" id="jf-cnt-all">0</span></button>
                 <button type="button" class="seg-btn" data-jfilter="unpaid" aria-pressed="false">Belum lunas <span class="seg-count" id="jf-cnt-unpaid">0</span></button>
@@ -693,7 +706,7 @@
                   <p class="card-sub">Uji pemasukan tambahan atau penghematan baru</p>
                 </div>
               </div>
-              <form id="sim-add-form" class="stack" style="gap: 12px;">
+              <form id="sim-add-form" class="stack" style="gap: 12px;" novalidate>
                 <div class="field">
                   <label class="field-label" for="sim-new-title">Nama Skenario</label>
                   <input class="input" id="sim-new-title" type="text" placeholder="Contoh: Jual barang preloved" required />
@@ -810,7 +823,10 @@
     </button>
     <button type="button" class="alat-item" role="menuitem" id="thm" title="Ketuk untuk ganti tema" aria-label="Ganti tema">
       <span style="display:inline-flex;align-items:center;gap:7px;">
-        <svg class="arr-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        <span class="rk-morph-icon arr-icon" id="thm-morph" aria-hidden="true">
+          <svg class="rk-ico-a" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          <svg class="rk-ico-b" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </span>
         <span>Tema</span>
       </span>
       <span class="badge badge-neutral" id="thm-txt">Terang</span>
@@ -1009,7 +1025,7 @@
         <h3 class="card-title" id="mqt-title">Catat transaksi kilat <span class="mono" style="font-size:0.74rem; color:var(--text-muted);">(Shortcut: N)</span></h3>
         <button type="button" class="topbar-btn" style="width:32px; padding:0;" id="qtx-close" aria-label="Tutup">✕</button>
       </div>
-      <form id="quick-tx-form">
+      <form id="quick-tx-form" novalidate>
         <div class="modal-body">
           <div class="seg" style="width: 100%;" role="group" aria-label="Jenis Kilat">
             <button type="button" class="seg-btn active" data-qtype="out" style="flex:1; justify-content:center;" aria-pressed="true">− Keluar</button>
@@ -1086,7 +1102,7 @@
         <h3 class="card-title" id="kpt-title">Perjalanan Baru</h3>
         <button type="button" class="topbar-btn" style="width:32px; padding:0;" id="kpf-close" aria-label="Tutup">✕</button>
       </div>
-      <form id="trip-meta-form">
+      <form id="trip-meta-form" novalidate>
         <div class="modal-body">
           <div class="field">
             <label class="field-label" for="kp-name">Nama perjalanan</label>
@@ -1199,6 +1215,7 @@
     </div>
   </div>
 
+  <button type="button" class="rk-btt-btn" id="rk-btt-desk" aria-label="Kembali ke atas" title="Kembali ke atas">↑ Atas</button>
   <div class="tt" id="tt" hidden><span id="ttm"></span><button id="ttu" type="button">Urungkan</button></div>
   <div class="toast-box" id="toast-box" role="status" aria-live="polite"></div>
 </div><!-- /#browser-shell -->

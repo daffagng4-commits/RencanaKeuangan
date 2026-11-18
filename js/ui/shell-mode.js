@@ -88,7 +88,7 @@ function syncShellSwitchUI(m) {
 }
 
 /** Terapkan mode shell ('browser' | 'mobile-app'), opsional simpan preferensi, dan render ulang bila state siap. */
-function setShellMode(mode, persist) {
+function setShellMode(mode, persist, skipEntrance) {
   var m = mode === 'mobile-app' || mode === 'app' || mode === 'mobile' ? 'mobile-app' : 'browser';
   if (typeof document !== 'undefined') {
     if (document.body) document.body.setAttribute('data-shell', m);
@@ -105,6 +105,7 @@ function setShellMode(mode, persist) {
   }
   if (typeof renderAll === 'function' && typeof S !== 'undefined' && S) {
     renderAll();
+    if (!skipEntrance && typeof rkScheduleEntrance === 'function') rkScheduleEntrance(m);
   }
   return m;
 }
@@ -116,7 +117,7 @@ function toggleShellMode() {
 
 /** Pasang mode awal serta listener delegasi untuk tombol `[data-shell-switch]`. */
 function bindShellMode() {
-  setShellMode(detectShellMode(), false);
+  setShellMode(detectShellMode(), false, true);
   if (typeof document === 'undefined' || document._rkShellBound) return;
   document._rkShellBound = true;
   document.addEventListener('click', function (e) {

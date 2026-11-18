@@ -16,7 +16,11 @@ function themeCur() {
 function setTheme(n) {
   var norm = n === 'dark' || n === 'bwd' ? 'dark' : 'light';
   var de = document.documentElement,
+    privActive = !!(document.body && (document.body.classList.contains('privacy-mode') || document.body.classList.contains('privacy-on'))),
     apply = function () {
+      if (privActive && document.body) {
+        document.body.classList.add('privacy-mode', 'privacy-on');
+      }
       de.setAttribute('data-theme', norm);
       try {
         localStorage.setItem('rk-theme', norm);
@@ -24,16 +28,44 @@ function setTheme(n) {
       themeShow();
       if (typeof renderMobMetaMenus === 'function') renderMobMetaMenus();
     };
-  if (!document.startViewTransition || (typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches))
-    return apply();
-  var b = de.querySelector('#thm'),
-    r = b ? b.getBoundingClientRect() : null,
-    x = r && r.width ? r.left + r.width / 2 : innerWidth - 40,
-    y = r && r.height ? r.top + r.height / 2 : 36;
-  de.style.setProperty('--vtx', x + 'px');
-  de.style.setProperty('--vty', y + 'px');
-  de.style.setProperty('--vtr', Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) + 'px');
-  document.startViewTransition(apply);
+  if (privActive && typeof rkCancelAllCountUps === 'function') rkCancelAllCountUps();
+  var reduced = (typeof rkIsReducedMotion === 'function' && rkIsReducedMotion()) ||
+    (typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  if (reduced) return apply();
+  if (!document.startViewTransition) {
+    de.classList.add('rk-theme-fallback');
+    apply();
+    clearTimeout(window._rkThmFbT);
+    window._rkThmFbT = setTimeout(function () {
+      de.classList.remove('rk-theme-fallback');
+    }, 340);
+    return;
+  }
+  var isApk = (typeof getShellMode === 'function' ? getShellMode() === 'mobile-app' : (document.body && document.body.getAttribute('data-shell') === 'mobile-app'));
+  de.classList.remove('rk-vt-desktop', 'rk-vt-apk');
+  if (isApk) {
+    de.classList.add('rk-vt-apk');
+  } else {
+    var b = de.querySelector('#thm'),
+      r = b ? b.getBoundingClientRect() : null;
+    if (!r || !r.width) {
+      var ab = de.querySelector('#alat-btn');
+      r = ab ? ab.getBoundingClientRect() : r;
+    }
+    var x = r && r.width ? r.left + r.width / 2 : innerWidth - 40,
+      y = r && r.height ? r.top + r.height / 2 : 36;
+    de.style.setProperty('--vtx', x + 'px');
+    de.style.setProperty('--vty', y + 'px');
+    de.style.setProperty('--vtr', Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) + 'px');
+    de.classList.add('rk-vt-desktop');
+  }
+  var cleanVt = function () { de.classList.remove('rk-vt-desktop', 'rk-vt-apk'); };
+  clearTimeout(window._rkVtT);
+  window._rkVtT = setTimeout(cleanVt, isApk ? 420 : 580);
+  var vt = document.startViewTransition(apply);
+  if (vt && vt.finished && typeof vt.finished.then === 'function') {
+    vt.finished.then(cleanVt, cleanVt);
+  }
 }
 
 /** Sinkronkan tombol tema dan pilihan tema di menu dengan tema aktif. */
@@ -43,11 +75,13 @@ function themeShow() {
     label = 'Tema: ' + THEME_NAME[cur],
     txtEl = $('thm-txt'),
     mobEl = $('mob-thm-lbl'),
-    ic = btn && btn.querySelector('svg');
+    morph = $('thm-morph') || (btn && btn.querySelector('.rk-morph-icon')),
+    ic = btn && !morph ? btn.querySelector('svg') : null;
   if (txtEl) txtEl.textContent = THEME_NAME[cur];
   else if (btn) btn.textContent = label;
   if (mobEl) mobEl.textContent = THEME_NAME[cur];
-  if (ic) ic.innerHTML = THEME_ICON[cur];
+  if (morph) morph.classList.toggle('is-morphed', cur === 'dark');
+  else if (ic) ic.innerHTML = THEME_ICON[cur];
   if (btn) {
     btn.title = label + ' (ketuk untuk ganti)';
     btn.setAttribute('aria-label', btn.title);

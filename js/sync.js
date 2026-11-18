@@ -111,6 +111,12 @@ function acctUI(u) {
 function rkResetToEmptyState(prevUid) {
   clearTimeout(pushT);
   pushT = null;
+  if (typeof window !== 'undefined') {
+    window._rkBootDataAnimated = false;
+    clearTimeout(window._rkEnterT);
+    if (window._rkEnterRaf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(window._rkEnterRaf);
+  }
+  if (typeof rkCancelAllCountUps === 'function') rkCancelAllCountUps();
   if (typeof ALL !== 'undefined' && typeof emptyAllState === 'function') {
     ALL = emptyAllState();
     S = ALL.data[ALL.year];
@@ -256,6 +262,10 @@ function applyRemote(row, label) {
 /** Bandingkan cloud vs lokal: akun baru tanpa data cloud selalu mulai kosong total (bukan data lokal/admin). */
 function pull() {
   if (!sb || !sbUser) return Promise.resolve();
+  if (typeof rkSetSyncLoading === 'function') rkSetSyncLoading(true);
+  var finishSync = function (shouldAnimate) {
+    if (typeof rkSetSyncLoading === 'function') rkSetSyncLoading(false, shouldAnimate);
+  };
   return sb
     .from('rk_state')
     .select('data,rev')
@@ -263,6 +273,7 @@ function pull() {
     .maybeSingle()
     .then(function (r) {
       if (r.error) {
+        finishSync(false);
         sbStat('Gagal sinkron: ' + r.error.message, 1);
         return;
       }
@@ -274,6 +285,7 @@ function pull() {
         ALL.rev = Date.now();
         try { if (typeof rkWriteCache === 'function') rkWriteCache(ALL); } catch (e) {}
         syncUI();
+        finishSync(true);
         return push();
       }
       var rr = +row.rev || 0,
@@ -288,15 +300,22 @@ function pull() {
         } catch (e) {}
         setSync(ALL.rev);
         sbStat('Tersinkron ' + clock());
+        finishSync(!window._rkBootDataAnimated);
         return;
       }
       var localChanged = !isPristine() && ls !== null && lr > ls;
-      if ($('cf')) $('cf').hidden = true;
+      if (typeof brCloseModal === 'function' && $('cf')) brCloseModal('cf');
+    else if ($('cf')) $('cf').hidden = true;
       if (!localChanged || rr >= lr) {
         applyRemote(row);
+        finishSync(true);
         return;
       }
+      finishSync(!window._rkBootDataAnimated);
       return push();
+    }, function (err) {
+      finishSync(!window._rkBootDataAnimated);
+      sbStat('Gagal sinkron: ' + ((err && err.message) || 'koneksi'), 1);
     });
 }
 
@@ -338,7 +357,8 @@ function askConflict(row, rn) {
     (rr > lr ? ' (lebih baru)' : '') +
     '</div>' +
     descAll(rn, rr);
-  $('cf').hidden = false;
+  if (typeof brOpenModal === 'function') brOpenModal('cf');
+  else $('cf').hidden = false;
   sbStat('Menunggu pilihan: data berbeda.', 1);
 }
 
@@ -441,6 +461,7 @@ function auth(kind) {
     p = $('lp').value;
   if (!e || p.length < 6) {
     $('lm').textContent = 'Isi email dan password (min. 6 karakter).';
+    if (typeof rkShakeInvalid === 'function') rkShakeInvalid(!e ? $('le') : $('lp'));
     return;
   }
   (kind === 'up'
@@ -455,7 +476,8 @@ function auth(kind) {
       $('lm').textContent = 'Cek email untuk konfirmasi, lalu masuk.';
       return;
     }
-    $('lg').hidden = true;
+    if (typeof brCloseModal === 'function') brCloseModal('lg');
+    else $('lg').hidden = true;
     $('lp').value = '';
   });
 }
@@ -475,11 +497,13 @@ function bindSync() {
     var c = b.dataset.cf,
       row = cfRow;
     if (c === 'later') {
-      $('cf').hidden = true;
+      if (typeof brCloseModal === 'function') brCloseModal('cf');
+      else $('cf').hidden = true;
       sbPending();
       return;
     }
-    $('cf').hidden = true;
+    if (typeof brCloseModal === 'function') brCloseModal('cf');
+    else $('cf').hidden = true;
     cfRow = null;
     syncBlocked = false;
     if (c === 'remote') {
@@ -552,10 +576,12 @@ function bindSync() {
       return;
     }
     $('lm').textContent = '';
-    $('lg').hidden = false;
+    if (typeof brOpenModal === 'function') brOpenModal('lg');
+    else $('lg').hidden = false;
   };
   $('lgc').onclick = function () {
-    $('lg').hidden = true;
+    if (typeof brCloseModal === 'function') brCloseModal('lg');
+    else $('lg').hidden = true;
   };
   $('lin').onclick = function () {
     auth('in');

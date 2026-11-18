@@ -21,6 +21,8 @@ function renderAll() {
   if (typeof renderMobileApp === 'function' && typeof getShellMode === 'function' && getShellMode() === 'mobile-app') {
     renderMobileApp();
   }
+  if (typeof rkEnhanceCheckboxes === 'function') rkEnhanceCheckboxes(document);
+  if (typeof rkSyncSegPills === 'function') rkSyncSegPills(document, false);
 }
 
 /** Migrasi penanda manual lama (localStorage rk-sm-manual) untuk tahun kalender saja.

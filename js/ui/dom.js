@@ -62,11 +62,17 @@ function tab(t) {
   navPill();
   if ($('yb')) $('yb').style.display = '';
   if (typeof syncNav === 'function') syncNav();
+  if (typeof rkSyncSegPills === 'function') rkSyncSegPills($('browser-shell'), false);
+  if (prev !== t && typeof rkScheduleEntrance === 'function') rkScheduleEntrance('browser', t);
 }
 
 /** Tampilkan pesan singkat; bila ada `undo`, muncul tombol Urungkan selama 10 detik. */
 function toast(msg, undo) {
+  if (typeof getShellMode === 'function' && getShellMode() === 'mobile-app' && typeof showMobToast === 'function') {
+    showMobToast(msg, undo);
+  }
   var t = $('tt');
+  if (!t || !$('ttm') || !$('ttu')) return;
   $('ttm').textContent = msg;
   $('ttu').hidden = !undo;
   t._u = undo || null;
@@ -80,27 +86,66 @@ function toast(msg, undo) {
   );
 }
 
-/** Dialog konfirmasi. `onYes` dipanggil hanya bila pengguna menekan tombol aksi. */
+/** Dialog konfirmasi terpadu (#13 Desktop & APK). `onYes` dipanggil hanya bila pengguna menekan tombol aksi. */
 function askConfirm(msg, onYes, yesLabel, title) {
   var old = document.querySelector('.cfm');
-  if (old) old.remove();
+  if (old) {
+    if (old._closeT) clearTimeout(old._closeT);
+    if (old._escFn) document.removeEventListener('keydown', old._escFn);
+    old.remove();
+  }
   var m = document.createElement('div');
   m.className = 'modal cfm';
   m.setAttribute('role', 'dialog');
   m.setAttribute('aria-modal', 'true');
   m.innerHTML =
     '<div class="card"><h2>' + (title || 'Konfirmasi hapus') + '</h2><div class="sub mb10">' + msg + '</div>' +
-    '<div class="row2"><button type="button" class="d" data-cf-y>' + (yesLabel || 'Ya, hapus') + '</button>' +
-    '<button type="button" class="c" data-cf-n>Batal</button></div></div>';
+    '<div class="row2"><button type="button" class="c" data-cf-n>Batal</button>' +
+    '<button type="button" class="d" data-cf-y>' + (yesLabel || 'Ya, hapus') + '</button></div></div>';
   document.body.appendChild(m);
-  m.onclick = function (e) {
-    if (e.target === m || e.target.closest('[data-cf-n]')) m.remove();
-    else if (e.target.closest('[data-cf-y]')) {
-      m.remove();
-      onYes();
-    }
+  var closed = false;
+  var escFn = function (e) {
+    if (e.key === 'Escape') closeConfirm(false);
   };
-  m.querySelector('[data-cf-n]').focus();
+  m._escFn = escFn;
+  document.addEventListener('keydown', escFn);
+
+  function closeConfirm(confirmed) {
+    if (closed) return;
+    closed = true;
+    document.removeEventListener('keydown', escFn);
+    var reduced = typeof rkIsReducedMotion === 'function' && rkIsReducedMotion();
+    var isMob = typeof getShellMode === 'function' && getShellMode() === 'mobile-app';
+    var closeMs = isMob ? 140 : 150;
+    if (!reduced && m.offsetWidth > 0) {
+      m.classList.remove('open');
+      m.classList.add('is-closing');
+      m.setAttribute('aria-hidden', 'true');
+      m._closeT = setTimeout(function () {
+        if (m.parentNode) m.remove();
+      }, closeMs);
+    } else {
+      m.remove();
+    }
+    if (confirmed && typeof onYes === 'function') onYes();
+  }
+
+  m.onclick = function (e) {
+    if (e.target === m || e.target.closest('[data-cf-n]')) closeConfirm(false);
+    else if (e.target.closest('[data-cf-y]')) closeConfirm(true);
+  };
+
+  var reducedInit = typeof rkIsReducedMotion === 'function' && rkIsReducedMotion();
+  if (!reducedInit && m.offsetWidth > 0 && typeof requestAnimationFrame === 'function') {
+    void m.offsetWidth;
+    requestAnimationFrame(function () {
+      if (!closed) m.classList.add('open');
+    });
+  } else {
+    m.classList.add('open');
+  }
+  var cancelBtn = m.querySelector('[data-cf-n]');
+  if (cancelBtn) cancelBtn.focus();
 }
 
 /** Pasang event listener halaman ini. */

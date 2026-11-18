@@ -33,6 +33,9 @@ function main() {
   bindTip();
   resetForm();
   renderAll();
+  if (typeof rkScheduleEntrance === 'function') {
+    rkScheduleEntrance(typeof getShellMode === 'function' ? getShellMode() : 'browser');
+  }
   save();
   bindSync();
   sbInit();

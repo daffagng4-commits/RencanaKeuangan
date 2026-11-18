@@ -415,17 +415,23 @@ function kasDelTx(id) {
   askConfirm(
     'Hapus transaksi ' + (tx ? '<b>' + (tx.t === '+' ? '+' : '&minus;') + ' ' + rp(tx.amt) + '</b> tanggal ' + fmtD(tx.d) : 'ini') + '?',
     function () {
-      var sn = snap('Sebelum menghapus transaksi'),
-        P = kas();
-      P.tx = P.tx.filter(function (x) {
-        return x.id !== id;
-      });
-      if (kasEdit === id) kasEdit = null;
-      save();
-      renderAll();
-      toast('Transaksi dihapus.', function () {
-        restoreSnap(sn.t);
-      });
+      var btn = typeof document !== 'undefined' ? document.querySelector('[data-mdeltx="' + id + '"], [data-kdel="' + id + '"]') : null;
+      var row = btn && btn.closest ? btn.closest('.list-row, .upcoming-item') : null;
+      var doDel = function () {
+        var sn = snap('Sebelum menghapus transaksi'),
+          P = kas();
+        P.tx = P.tx.filter(function (x) {
+          return x.id !== id;
+        });
+        if (kasEdit === id) kasEdit = null;
+        save();
+        renderAll();
+        toast('Transaksi dihapus.', function () {
+          restoreSnap(sn.t);
+        });
+      };
+      if (typeof rkAnimateRowExit === 'function') rkAnimateRowExit(row, doDel);
+      else doDel();
     },
     'Ya, hapus transaksi'
   );

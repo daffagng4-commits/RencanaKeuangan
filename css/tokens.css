@@ -108,37 +108,39 @@
   --transition-fast: 150ms var(--ease-out);
   --transition-med: 240ms var(--ease-out);
 
-  /* Animation Durations & Delays (Phase 1 Tokens) */
+  /* Animation Durations & Delays (Phase 1-3 Tokens) */
   --dur-pill: 450ms;
   --dur-pill-shadow: 650ms;
   --delay-pill-shadow: 80ms;
   --dur-pill-text: 150ms;
-  --dur-card-enter: 420ms;
-  --dur-card-enter-apk: 280ms;
-  --stagger-card: 50ms;
-  --dur-line-draw: 900ms;
+  --dur-card-enter: 560ms;
+  --dur-card-enter-apk: 380ms;
+  --stagger-card: 70ms;
+  --dur-line-draw: 1200ms;
   --delay-line-draw: 150ms;
-  --dur-line-draw-apk: 700ms;
-  --dur-chart-fill: 800ms;
-  --dur-count-hero: 1400ms;
-  --dur-count-kpi: 1000ms;
-  --dur-count-hero-apk: 800ms;
-  --dur-sweep: 600ms;
-  --dur-bar-fade: 300ms;
+  --dur-line-draw-apk: 950ms;
+  --dur-chart-fill: 1050ms;
+  --dur-chart-filter-line: 600ms;
+  --dur-chart-filter-fill: 550ms;
+  --dur-count-hero: 1900ms;
+  --dur-count-kpi: 1400ms;
+  --dur-count-hero-apk: 1100ms;
+  --dur-sweep: 800ms;
+  --dur-bar-fade: 450ms;
   --dur-ripple: 450ms;
   --dur-press: 120ms;
   --dur-row-exit: 160ms;
   --dur-row-collapse: 220ms;
   --dur-sheet-close: 240ms;
   --dur-sheet-snap: 300ms;
-  --dur-shimmer: 1400ms;
+  --dur-shimmer: 1250ms;
   --dur-skeleton-fade: 200ms;
   --dur-shake: 360ms;
   --dur-error-border: 120ms;
-  --dur-list-item: 360ms;
-  --stagger-list: 40ms;
-  --dur-list-item-apk: 280ms;
-  --stagger-list-apk: 30ms;
+  --dur-list-item: 480ms;
+  --stagger-list: 55ms;
+  --dur-list-item-apk: 380ms;
+  --stagger-list-apk: 45ms;
   --dur-check-fill: 120ms;
   --dur-check-draw: 220ms;
   --dur-check-pop: 240ms;
@@ -150,6 +152,8 @@
   --dur-dialog-backdrop: 200ms;
   --dur-dialog-open: 240ms;
   --dur-dialog-close: 150ms;
+  --dur-confirm-open-apk: 260ms;
+  --dur-confirm-close-apk: 140ms;
   --dur-cat-pop: 240ms;
   --dur-cat-bg: 150ms;
   --dur-cat-check: 180ms;
@@ -172,6 +176,8 @@
   --dur-swatch-pop: 240ms;
   --stagger-swatch: 30ms;
   --dur-jar-wave: 3200ms;
+  --dur-jar-wave-back: 2100ms;
+  --dur-jar-bob: 4000ms;
   --dur-theme-desktop: 500ms;
   --dur-theme-apk: 350ms;
   --dur-theme-fallback: 300ms;
@@ -179,8 +185,8 @@
   --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
   --tap: 44px;
 
-  --sidebar-w: 248px;
-  --sidebar-w-collapsed: 74px;
+  --sidebar-w: 260px;
+  --sidebar-w-collapsed: 72px;
   --topbar-h: 58px;
   --bottom-nav-h: 68px;
   --phone-w: 360px;
@@ -360,6 +366,8 @@ body, input, button, select, textarea, table, kbd, code {
     --delay-line-draw: 0ms;
     --dur-line-draw-apk: 0.001ms;
     --dur-chart-fill: 0.001ms;
+    --dur-chart-filter-line: 0.001ms;
+    --dur-chart-filter-fill: 0.001ms;
     --dur-count-hero: 0.001ms;
     --dur-count-kpi: 0.001ms;
     --dur-count-hero-apk: 0.001ms;
@@ -390,6 +398,8 @@ body, input, button, select, textarea, table, kbd, code {
     --dur-dialog-backdrop: 0.001ms;
     --dur-dialog-open: 0.001ms;
     --dur-dialog-close: 0.001ms;
+    --dur-confirm-open-apk: 0.001ms;
+    --dur-confirm-close-apk: 0.001ms;
     --dur-cat-pop: 0.001ms;
     --dur-cat-bg: 0.001ms;
     --dur-cat-check: 0.001ms;
@@ -412,6 +422,8 @@ body, input, button, select, textarea, table, kbd, code {
     --dur-swatch-pop: 0.001ms;
     --stagger-swatch: 0ms;
     --dur-jar-wave: 0.001ms;
+    --dur-jar-wave-back: 0.001ms;
+    --dur-jar-bob: 0.001ms;
     --dur-theme-desktop: 0.001ms;
     --dur-theme-apk: 0.001ms;
     --dur-theme-fallback: 0.001ms;
@@ -493,4 +505,826 @@ body[data-shell="mobile-app"] > #botsheet {
 }
 body:not([data-shell="mobile-app"]) #mobile-app-shell {
   display: none !important;
+}
+
+/* ============================================================
+   Shared Motion Primitives (Fase 2: #1 Pill, #11 Checkbox/Flash, #14 Cat Pop)
+   ============================================================ */
+@keyframes segJellyStretch {
+  0% { transform: scaleX(1) scaleY(1); }
+  35% { transform: scaleX(1.08) scaleY(0.95); }
+  100% { transform: scaleX(1) scaleY(1); }
+}
+
+@keyframes catPopSpring {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+@keyframes rkCheckPop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+@keyframes rowPaidFlash {
+  0% { background-color: var(--emerald-soft); }
+  100% { background-color: transparent; }
+}
+
+.seg {
+  position: relative;
+}
+
+.seg.has-pill .seg-btn {
+  position: relative;
+  z-index: 1;
+}
+
+.seg.has-pill .seg-btn.active,
+.seg.has-pill .seg-btn[aria-pressed="true"] {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.seg-pill-shadow {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 7px;
+  background: transparent;
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+  z-index: 0;
+  transform-origin: 0 0;
+  transition:
+    transform var(--dur-pill-shadow) var(--ease-out) var(--delay-pill-shadow),
+    opacity var(--dur-pill-text) var(--ease-out);
+  will-change: transform;
+}
+
+.seg-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 7px;
+  pointer-events: none;
+  z-index: 0;
+  transform-origin: 0 0;
+  transition:
+    transform var(--dur-pill) var(--ease-spring),
+    opacity var(--dur-pill-text) var(--ease-out);
+  will-change: transform;
+}
+
+.seg-pill-inner {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--bg-surface);
+  transform-origin: center;
+}
+
+.seg-pill.is-jelly .seg-pill-inner {
+  animation: segJellyStretch var(--dur-pill) var(--ease-out);
+}
+
+/* Custom animated SVG checkbox (#11) */
+.rk-check {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.rk-check input[type="checkbox"] {
+  position: absolute;
+  inset: -12px;
+  width: 44px;
+  height: 44px;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.rk-check-box {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.8px solid var(--border-strong);
+  background: var(--bg-surface);
+  display: grid;
+  place-items: center;
+  transition:
+    background-color var(--dur-check-fill) var(--ease-out),
+    border-color var(--dur-check-fill) var(--ease-out);
+  pointer-events: none;
+}
+
+.rk-check input[type="checkbox"]:focus-visible + .rk-check-box {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.rk-check input[type="checkbox"]:checked + .rk-check-box {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.rk-check.is-popping .rk-check-box {
+  animation: rkCheckPop var(--dur-check-pop) var(--ease-spring);
+}
+
+.rk-check-svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: #FFFFFF;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.rk-check-svg path {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  transition: stroke-dashoffset var(--dur-check-draw) var(--ease-out);
+}
+
+.rk-check input[type="checkbox"]:checked + .rk-check-box .rk-check-svg path {
+  stroke-dashoffset: 0;
+}
+
+.is-paid-flash {
+  animation: rowPaidFlash var(--dur-row-flash) var(--ease-out);
+}
+
+/* Confirmation dialog (askConfirm #13 Desktop & APK) */
+.modal.cfm {
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 13, 20, 0.56);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-dialog-backdrop) var(--ease-out);
+}
+
+.modal.cfm.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal.cfm.is-closing {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-dialog-close) var(--ease-in);
+}
+
+.modal.cfm > .card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 440px;
+  padding: 20px 22px;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+  transition:
+    transform var(--dur-dialog-open) var(--ease-out),
+    opacity var(--dur-dialog-open) var(--ease-out);
+  will-change: transform, opacity;
+}
+
+.modal.cfm.open > .card {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.modal.cfm.is-closing > .card {
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+  transition:
+    transform var(--dur-dialog-close) var(--ease-in),
+    opacity var(--dur-dialog-close) var(--ease-in);
+}
+
+body[data-shell="mobile-app"] .modal.cfm.is-closing {
+  transition: opacity var(--dur-confirm-close-apk) var(--ease-in);
+}
+
+body[data-shell="mobile-app"] .modal.cfm > .card {
+  max-width: min(360px, 100%);
+  transform: translateY(12px) scale(0.94);
+  transition:
+    transform var(--dur-confirm-open-apk) var(--ease-spring),
+    opacity var(--dur-confirm-open-apk) var(--ease-out);
+}
+
+body[data-shell="mobile-app"] .modal.cfm.open > .card {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+body[data-shell="mobile-app"] .modal.cfm.is-closing > .card {
+  opacity: 0;
+  transform: translateY(12px) scale(0.94);
+  transition:
+    transform var(--dur-confirm-close-apk) var(--ease-in),
+    opacity var(--dur-confirm-close-apk) var(--ease-in);
+}
+
+.modal.cfm h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+
+.modal.cfm .sub {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+}
+
+.modal.cfm .row2 {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modal.cfm button {
+  min-height: var(--tap);
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform var(--dur-press) var(--ease-out),
+    background-color var(--dur-dd-active) var(--ease-out);
+}
+
+.modal.cfm button:active {
+  transform: scale(0.97);
+}
+
+.modal.cfm button.d {
+  background: var(--crimson);
+  color: #fff;
+  border: 1px solid transparent;
+}
+
+.modal.cfm button.c {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .modal.cfm button.d:hover {
+    opacity: 0.92;
+  }
+  .modal.cfm button.c:hover {
+    background: var(--bg-subtle);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal.cfm,
+  .modal.cfm > .card,
+  .modal.cfm button {
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ============================================================
+   Fase 3 Motion Primitives (#2 Choreography, #2.1 Sweep, #3 Line/Bar,
+   #5 Exit Row, #7 Sync Shimmer, #8 Error Shake, #9 List Stagger)
+   ============================================================ */
+@keyframes rkCardEnterDesktop {
+  0% { opacity: 0; filter: blur(6px); transform: translateY(16px) scale(0.97); }
+  100% { opacity: 1; filter: blur(0); transform: translateY(0) scale(1); }
+}
+
+@keyframes rkCardEnterNoBlur {
+  0% { opacity: 0; transform: translateY(16px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes rkCardEnterApk {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes rkListEnter {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes rkLineDraw {
+  0% { stroke-dashoffset: var(--rk-line-len, 1200); }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes rkChartFillUp {
+  0% { opacity: 0; clip-path: inset(100% 0 0 0); }
+  100% { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+@keyframes rkChartFillRight {
+  0% { opacity: 0; clip-path: inset(0 100% 0 0); }
+  100% { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+@keyframes rkRingFill {
+  0% { opacity: 0; transform: scale(0.92); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes rkBarFade {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes rkSweep {
+  0% { opacity: 0; transform: translateX(-120%) skewX(-18deg); }
+  25% { opacity: 0.85; }
+  75% { opacity: 0.85; }
+  100% { opacity: 0; transform: translateX(140%) skewX(-18deg); }
+}
+
+@keyframes rkErrorShake {
+  0%, 100% { transform: translateX(0); }
+  16% { transform: translateX(-6px); }
+  33% { transform: translateX(6px); }
+  50% { transform: translateX(-6px); }
+  66% { transform: translateX(6px); }
+  83% { transform: translateX(-4px); }
+}
+
+@keyframes rkShimmerSlide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.rk-card-enter {
+  animation: rkCardEnterDesktop var(--dur-card-enter) var(--ease-out) calc(var(--rk-idx, 0) * var(--stagger-card)) both;
+  will-change: transform, opacity;
+}
+
+body.privacy-mode .rk-card-enter,
+body.privacy-on .rk-card-enter,
+.rk-card-enter.rk-noblur {
+  animation-name: rkCardEnterNoBlur;
+}
+
+body[data-shell="mobile-app"] .rk-card-enter {
+  animation: rkCardEnterApk var(--dur-card-enter-apk) var(--ease-out) calc(var(--rk-idx, 0) * var(--stagger-list-apk)) both;
+}
+
+.rk-list-enter {
+  animation: rkListEnter var(--dur-list-item) var(--ease-out) calc(var(--rk-idx, 0) * var(--stagger-list)) both;
+}
+
+body[data-shell="mobile-app"] .rk-list-enter {
+  animation: rkListEnter var(--dur-list-item-apk) var(--ease-out) calc(var(--rk-idx, 0) * var(--stagger-list-apk)) both;
+}
+
+.rk-line-draw {
+  stroke-dasharray: var(--rk-line-len, 1200);
+  stroke-dashoffset: var(--rk-line-len, 1200);
+  animation: rkLineDraw var(--dur-line-draw) var(--ease-out) calc(var(--rk-card-delay, 0ms) + var(--delay-line-draw)) both;
+}
+
+body[data-shell="mobile-app"] .rk-line-draw {
+  animation: rkLineDraw var(--dur-line-draw-apk) var(--ease-out) var(--rk-card-delay, 0ms) both;
+}
+
+.rk-chart-fill-up {
+  animation: rkChartFillUp var(--dur-chart-fill) var(--ease-out) calc(var(--rk-card-delay, 0ms) + var(--delay-line-draw) + var(--dur-line-draw) * 0.6) both;
+}
+
+.rk-chart-fill-right {
+  animation: rkChartFillRight var(--dur-chart-fill) var(--ease-out) calc(var(--rk-card-delay, 0ms) + var(--delay-line-draw) + var(--dur-line-draw) * 0.6) both;
+}
+
+.rk-ring-fill {
+  transform-origin: center;
+  animation: rkRingFill var(--dur-chart-fill) var(--ease-out) calc(var(--rk-card-delay, 0ms) + var(--delay-line-draw) + var(--dur-line-draw) * 0.6) both;
+}
+
+body[data-shell="mobile-app"] .rk-chart-fill-up,
+body[data-shell="mobile-app"] .rk-chart-fill-right,
+body[data-shell="mobile-app"] .rk-ring-fill {
+  animation-delay: calc(var(--rk-card-delay, 0ms) + var(--dur-line-draw-apk) * 0.6);
+}
+
+.is-filter-anim .rk-line-draw {
+  animation-duration: var(--dur-chart-filter-line);
+  animation-delay: 0ms;
+}
+
+.is-filter-anim .rk-chart-fill-up,
+.is-filter-anim .rk-chart-fill-right,
+.is-filter-anim .rk-ring-fill {
+  animation-duration: var(--dur-chart-filter-fill);
+  animation-delay: calc(var(--dur-chart-filter-line) * 0.45);
+}
+
+.is-filter-anim .rk-bar-fade {
+  animation-duration: var(--dur-bar-fade);
+  animation-delay: 0ms;
+}
+
+.rk-bar-fade {
+  animation: rkBarFade var(--dur-bar-fade) var(--ease-out) calc(var(--rk-card-delay, 0ms) + var(--delay-line-draw)) both;
+}
+
+.rk-sweep-host.rk-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.rk-sweep-host.rk-sweep::after {
+  content: "";
+  position: absolute;
+  inset: -4px -20%;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.36) 50%, transparent 100%);
+  pointer-events: none;
+  animation: rkSweep var(--dur-sweep) var(--ease-out) 1 both;
+}
+
+html[data-theme="dark"] .rk-sweep-host.rk-sweep::after {
+  background: linear-gradient(90deg, transparent 0%, rgba(132, 178, 255, 0.24) 50%, transparent 100%);
+}
+
+/* Exit Row (#5) */
+.rk-row-collapse {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--dur-row-collapse) var(--ease-in-out) var(--dur-row-exit);
+}
+
+.rk-row-collapse.is-collapsing {
+  grid-template-rows: 0fr;
+}
+
+.rk-row-collapse-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.rk-row-exit-target {
+  transition:
+    opacity var(--dur-row-exit) var(--ease-in),
+    transform var(--dur-row-exit) var(--ease-in);
+  will-change: opacity, transform;
+}
+
+.rk-row-exit-target.is-exiting {
+  opacity: 0;
+  transform: translateX(14px);
+}
+
+/* Error Shake (#8) */
+.rk-input-error {
+  border-color: var(--crimson) !important;
+  box-shadow: 0 0 0 3px var(--crimson-soft) !important;
+  transition:
+    border-color var(--dur-error-border) var(--ease-out),
+    box-shadow var(--dur-error-border) var(--ease-out);
+}
+
+.rk-error-shake {
+  animation: rkErrorShake var(--dur-shake) var(--ease-out);
+}
+
+/* Skeleton Shimmer In-Place Sync Cloud (#7) */
+.rk-sync-hint {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.71rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+  margin-bottom: 4px;
+  opacity: 0;
+  transition: opacity var(--dur-skeleton-fade) var(--ease-out);
+}
+
+body.rk-syncing .rk-sync-hint {
+  display: inline-flex;
+  opacity: 1;
+}
+
+.rk-sync-hint-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.rk-skel-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-xs);
+}
+
+body.rk-syncing .rk-skel-wrap > .pv,
+body.rk-syncing .rk-skel-wrap > .rk-skel-hide {
+  visibility: hidden;
+}
+
+body.rk-syncing .rk-skel-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 2px 0;
+  border-radius: var(--radius-xs);
+  background: var(--bg-subtle);
+  pointer-events: none;
+}
+
+body.rk-syncing .rk-skel-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 2px 0;
+  border-radius: var(--radius-xs);
+  z-index: 1;
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.56) 50%, transparent 100%);
+  animation: rkShimmerSlide var(--dur-shimmer) linear infinite;
+  will-change: transform;
+  pointer-events: none;
+}
+
+body[data-shell="mobile-app"].rk-syncing .wallet-hero .rk-skel-wrap::after {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+body[data-shell="mobile-app"].rk-syncing .wallet-hero .rk-skel-wrap::before {
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.36) 50%, transparent 100%);
+}
+
+html[data-theme="dark"] body.rk-syncing .rk-skel-wrap::before {
+  background: linear-gradient(90deg, transparent 0%, rgba(148, 163, 184, 0.22) 50%, transparent 100%);
+}
+
+body.rk-sync-reveal .rk-skel-wrap {
+  animation: rkBarFade var(--dur-skeleton-fade) var(--ease-out) both;
+}
+
+@keyframes rkBellSwing {
+  0%, 100% { transform: rotate(0deg); }
+  18% { transform: rotate(15deg); }
+  36% { transform: rotate(-14deg); }
+  54% { transform: rotate(11deg); }
+  72% { transform: rotate(-8deg); }
+  86% { transform: rotate(4deg); }
+}
+
+@keyframes rkBadgePop {
+  0% { opacity: 0; transform: scale(0.5); }
+  65% { opacity: 1; transform: scale(1.18); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes rkScrollFadeUp {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes rkThemeCircleReveal {
+  0% { clip-path: circle(0px at var(--vtx, 50%) var(--vty, 50%)); }
+  100% { clip-path: circle(var(--vtr, 150vmax) at var(--vtx, 50%) var(--vty, 50%)); }
+}
+
+@keyframes rkThemeFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes rkThemeFadeOut {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Icon Morphing (#16 / #16.1 / #16.2) */
+.rk-morph-icon {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+#btn-privacy .rk-morph-icon,
+#thm .rk-morph-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.rk-morph-icon svg {
+  grid-area: 1 / 1;
+  width: 100%;
+  height: 100%;
+  transition:
+    opacity var(--dur-icon-morph) var(--ease-spring),
+    transform var(--dur-icon-morph) var(--ease-spring);
+  will-change: transform, opacity;
+}
+
+.rk-morph-icon .rk-ico-a {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.rk-morph-icon .rk-ico-b {
+  opacity: 0;
+  transform: scale(0.6) rotate(-45deg);
+}
+
+.on > .rk-morph-icon .rk-ico-a,
+.rk-morph-icon.is-morphed .rk-ico-a {
+  opacity: 0;
+  transform: scale(0.6) rotate(45deg);
+}
+
+.on > .rk-morph-icon .rk-ico-b,
+.rk-morph-icon.is-morphed .rk-ico-b {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+/* Notification Bell Swing & Badge Pop (#16 / #16.1) */
+.rk-bell-ringing svg {
+  transform-origin: 50% 18%;
+  animation: rkBellSwing var(--dur-bell) var(--ease-out) 1 both;
+}
+
+.rk-badge-pop {
+  animation: rkBadgePop var(--dur-badge-pop) var(--ease-spring) 1 both;
+}
+
+/* Scroll Reveal & Back-to-Top (#17) — default terlihat bila observer tidak aktif */
+.rk-scroll-pending {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.rk-scroll-reveal {
+  animation: rkScrollFadeUp var(--dur-scroll-reveal) var(--ease-out) both;
+}
+
+.rk-btt-btn {
+  position: fixed;
+  right: 22px;
+  bottom: 24px;
+  z-index: 90;
+  height: 44px;
+  min-width: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  opacity: 0;
+  transform: translateY(8px) scale(0.95);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-btt-fade) var(--ease-out),
+    transform var(--dur-btt-fade) var(--ease-out),
+    visibility 0s linear var(--dur-btt-fade);
+}
+
+.rk-btt-btn.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity var(--dur-btt-fade) var(--ease-out),
+    transform var(--dur-btt-fade) var(--ease-out),
+    visibility 0s;
+}
+
+.rk-btt-btn:active {
+  transform: scale(0.96);
+}
+
+body[data-shell="mobile-app"] #rk-btt-desk {
+  display: none !important;
+}
+
+body:not([data-shell="mobile-app"]) #m-btt-btn {
+  display: none !important;
+}
+
+#m-btt-btn {
+  right: 16px;
+  bottom: calc(var(--bottom-nav-h) + 22px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Theme View Transitions & Privacy Guard (#20) */
+body.privacy-mode .pv,
+body.privacy-on .pv {
+  filter: blur(8px) !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+html.rk-vt-desktop::view-transition-old(root),
+html.rk-vt-desktop::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+html.rk-vt-desktop::view-transition-old(root) {
+  z-index: 1;
+}
+
+html.rk-vt-desktop::view-transition-new(root) {
+  z-index: 999;
+  animation: rkThemeCircleReveal var(--dur-theme-desktop) var(--ease-in-out) both;
+}
+
+html.rk-vt-apk::view-transition-old(root) {
+  animation: rkThemeFadeOut var(--dur-theme-apk) var(--ease-in-out) both;
+}
+
+html.rk-vt-apk::view-transition-new(root) {
+  animation: rkThemeFadeIn var(--dur-theme-apk) var(--ease-in-out) both;
+}
+
+html.rk-theme-fallback,
+html.rk-theme-fallback body,
+html.rk-theme-fallback .card,
+html.rk-theme-fallback .topbar,
+html.rk-theme-fallback .mob-topbar,
+html.rk-theme-fallback .sidebar,
+html.rk-theme-fallback .mob-bottom-nav,
+html.rk-theme-fallback .m-tile,
+html.rk-theme-fallback .metric-tile,
+html.rk-theme-fallback .btn,
+html.rk-theme-fallback .input {
+  transition:
+    background-color var(--dur-theme-fallback) var(--ease-out),
+    color var(--dur-theme-fallback) var(--ease-out),
+    border-color var(--dur-theme-fallback) var(--ease-out) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rk-card-enter,
+  .rk-list-enter,
+  .rk-line-draw,
+  .rk-chart-fill-up,
+  .rk-chart-fill-right,
+  .rk-ring-fill,
+  .rk-bar-fade,
+  .rk-sweep-host.rk-sweep::after,
+  .rk-error-shake,
+  .rk-bell-ringing svg,
+  .rk-badge-pop,
+  .rk-scroll-reveal,
+  .rk-sync-reveal .rk-skel-wrap,
+  body.rk-syncing .rk-skel-wrap::before {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+    clip-path: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+  .rk-scroll-pending {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .rk-row-collapse,
+  .rk-row-exit-target,
+  .rk-sync-hint,
+  .rk-skel-wrap,
+  .rk-morph-icon svg,
+  .rk-btt-btn {
+    transition-duration: 0.001ms !important;
+  }
 }

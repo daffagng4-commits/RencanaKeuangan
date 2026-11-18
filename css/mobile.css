@@ -194,6 +194,10 @@ body[data-shell="mobile-app"] #mobile-app-shell .mob-topbar {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  transition: box-shadow var(--dur-topbar-shadow) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mob-topbar.is-scrolled {
+  box-shadow: var(--shadow-sm);
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .mt-user-btn {
@@ -272,10 +276,26 @@ body[data-shell="mobile-app"] #mobile-app-shell .ico-btn {
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
   position: relative;
-  transition: all 140ms ease;
+  transition:
+    background-color var(--dur-nav-label) var(--ease-out),
+    color var(--dur-nav-label) var(--ease-out),
+    border-color var(--dur-nav-label) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ico-btn::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: transparent;
 }
 
-body[data-shell="mobile-app"] #mobile-app-shell .ico-btn.on { background: var(--accent-soft); color: var(--accent-ink); border-color: var(--accent-border); }
+body[data-shell="mobile-app"] #mobile-app-shell .ico-btn.on,
+body[data-shell="mobile-app"] #mobile-app-shell .ico-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-color: var(--accent-border);
+}
 body[data-shell="mobile-app"] #mobile-app-shell .notif-dot {
   position: absolute;
   top: 4px;
@@ -463,12 +483,29 @@ body[data-shell="mobile-app"] #mobile-app-shell .seg {
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .seg-btn {
+  position: relative;
   padding: 5px 10px;
   border-radius: 8px;
   font-size: 0.74rem;
   font-weight: 700;
   color: var(--text-muted);
-  transition: all 140ms ease;
+  transition: color var(--dur-pill-text) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .seg-btn::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: var(--tap);
+  min-height: var(--tap);
+  background: transparent;
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .seg-pill,
+body[data-shell="mobile-app"] #mobile-app-shell .seg-pill-shadow {
+  border-radius: 8px;
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .seg-btn.active { background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-sm); }
@@ -643,16 +680,22 @@ body[data-shell="mobile-app"] #mobile-app-shell #m-svg-bar .bar-col.is-hovered .
 body[data-shell="mobile-app"] #mobile-app-shell #svg-bar-compare .bar-col.is-hovered .bar-month-lbl { fill: var(--text-primary); font-weight: 800; }
 
 /* Liquid Jar Waves & Categories */
-@keyframes jarWaveShift {
-  0% { transform: translateX(0); }
-  50% { transform: translateX(-55px); }
-  100% { transform: translateX(0); }
+@keyframes jarWaveFlowMob { from { transform: translateX(0); } to { transform: translateX(-120px); } }
+@keyframes jarWaveFlowMobRev { from { transform: translateX(-120px); } to { transform: translateX(0); } }
+@keyframes jarWaveBobMob { 0%, 100% { transform: translateY(-1.2px); } 50% { transform: translateY(1.2px); } }
+body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim { animation: jarWaveFlowMob var(--dur-jar-wave, 3200ms) linear infinite; will-change: transform; }
+body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-back { animation: jarWaveFlowMobRev var(--dur-jar-wave-back, 2100ms) linear infinite; will-change: transform; }
+body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-bob { animation: jarWaveBobMob var(--dur-jar-bob, 4000ms) var(--ease-in-out) infinite; will-change: transform; }
+body[data-shell="mobile-app"] #mobile-app-shell .jar-band,
+body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-back {
+  cursor: pointer;
+  transition: opacity var(--dur-jar-highlight) var(--ease-out), filter var(--dur-jar-highlight) var(--ease-out);
 }
-body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim { animation: jarWaveShift var(--dur-jar-wave, 3200ms) var(--ease-in-out) infinite; }
-body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim-slow { animation: jarWaveShift var(--dur-jar-wave, 3200ms) var(--ease-in-out) infinite reverse; }
-body[data-shell="mobile-app"] #mobile-app-shell .jar-band { cursor: pointer; opacity: 0.92; transition: opacity 160ms ease, filter 160ms ease; }
+body[data-shell="mobile-app"] #mobile-app-shell .jar-band { opacity: 0.92; }
 body[data-shell="mobile-app"] #mobile-app-shell .jar-band.lit { opacity: 1; filter: brightness(1.12); }
-body[data-shell="mobile-app"] #mobile-app-shell .jar-band.dim { opacity: 0.18; }
+body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-back.lit { opacity: 0.62; filter: brightness(1.12); }
+body[data-shell="mobile-app"] #mobile-app-shell .jar-band.dim,
+body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-back.dim { opacity: 0.18; }
 
 body[data-shell="mobile-app"] #mobile-app-shell .cat-logo { display: inline-grid; place-items: center; border-radius: 9px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.14); }
 
@@ -660,15 +703,49 @@ body[data-shell="mobile-app"] #mobile-app-shell .cat-bento-card {
   background: var(--bg-muted-row);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
+  min-height: var(--tap);
   padding: 9px 10px;
   display: flex;
   flex-direction: column;
   gap: 4px;
   position: relative;
   text-align: left;
-  transition: all 140ms ease;
+  transition:
+    background-color var(--dur-cat-bg) var(--ease-out),
+    border-color var(--dur-cat-bg) var(--ease-out),
+    color var(--dur-cat-bg) var(--ease-out);
 }
 body[data-shell="mobile-app"] #mobile-app-shell .cat-bento-card.active { background: var(--accent-soft); border-color: var(--accent-border); }
+body[data-shell="mobile-app"] #mobile-app-shell .cat-bento-card.just-selected,
+body[data-shell="mobile-app"] #mobile-app-shell #m-kas-cat-pills .list-row.just-selected,
+body[data-shell="mobile-app"] #mobile-app-shell #m-item-cat-pills .list-row.just-selected {
+  animation: catPopSpring var(--dur-cat-pop) var(--ease-spring);
+}
+body[data-shell="mobile-app"] #mobile-app-shell #m-kas-cat-pills .list-row,
+body[data-shell="mobile-app"] #mobile-app-shell #m-item-cat-pills .list-row {
+  min-height: var(--tap);
+  transition:
+    background-color var(--dur-cat-bg) var(--ease-out),
+    border-color var(--dur-cat-bg) var(--ease-out),
+    color var(--dur-cat-bg) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .cat-check-ico {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--accent);
+  opacity: 0;
+  transform: scale(0);
+  transition:
+    transform var(--dur-cat-check) var(--ease-spring),
+    opacity var(--dur-cat-bg) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .active .cat-check-ico,
+body[data-shell="mobile-app"] #mobile-app-shell .selected .cat-check-ico {
+  opacity: 1;
+  transform: scale(1);
+}
 body[data-shell="mobile-app"] #mobile-app-shell .cat-bento-pct { position: absolute; top: 10px; right: 10px; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 800; color: var(--text-secondary); }
 
 body[data-shell="mobile-app"] #mobile-app-shell .list-row {
@@ -681,6 +758,40 @@ body[data-shell="mobile-app"] #mobile-app-shell .list-row {
   background: var(--bg-muted-row);
   border: 1px solid transparent;
   min-width: 0;
+  position: relative;
+  transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-dd-active) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .list-row:active,
+body[data-shell="mobile-app"] #mobile-app-shell .btn:active,
+body[data-shell="mobile-app"] #mobile-app-shell .cat-bento-card:active,
+body[data-shell="mobile-app"] #mobile-app-shell .p-chip:active,
+body[data-shell="mobile-app"] #mobile-app-shell .m-scen-card:active {
+  transform: scale(0.97);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .rk-ripple-host:not(.bn-plus-fab) {
+  position: relative;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .rk-ripple-clip {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .rk-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.24;
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+  animation: rkRippleWave var(--dur-ripple) var(--ease-out) forwards;
+  will-change: transform, opacity;
+}
+@keyframes rkRippleWave {
+  0% { opacity: 0.24; transform: translate(-50%, -50%) scale(0); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
 }
 body[data-shell="mobile-app"] #mobile-app-shell .list-row.active { background: var(--accent-soft); border-color: var(--accent-border); }
 body[data-shell="mobile-app"] #mobile-app-shell .list-row.dim { opacity: 0.42; }
@@ -691,18 +802,20 @@ body[data-shell="mobile-app"] #mobile-app-shell .btn {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  min-height: var(--tap);
   padding: 8px 13px;
   border-radius: 10px;
   font-size: 0.79rem;
   font-weight: 700;
-  transition: all 130ms ease;
+  transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-dd-active) var(--ease-out);
   white-space: nowrap;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .btn-primary { background: var(--accent); color: #fff; }
 body[data-shell="mobile-app"] #mobile-app-shell .btn-emerald { background: var(--emerald); color: #fff; }
 body[data-shell="mobile-app"] #mobile-app-shell .btn-secondary { background: var(--bg-surface); border: 1px solid var(--border-strong); color: var(--text-primary); }
 body[data-shell="mobile-app"] #mobile-app-shell .btn-crimson { background: var(--crimson-soft); color: var(--crimson); }
-body[data-shell="mobile-app"] #mobile-app-shell .btn-sm { padding: 5px 10px; font-size: 0.73rem; border-radius: 8px; }
+body[data-shell="mobile-app"] #mobile-app-shell .btn-sm { position: relative; min-height: 36px; padding: 5px 10px; font-size: 0.73rem; border-radius: 8px; }
+body[data-shell="mobile-app"] #mobile-app-shell .btn-sm::after { content: ''; position: absolute; inset: -4px 0; }
 
 body[data-shell="mobile-app"] #mobile-app-shell .field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 body[data-shell="mobile-app"] #mobile-app-shell .field-label { font-size: 0.73rem; font-weight: 700; color: var(--text-secondary); }
@@ -725,7 +838,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .mselect-trigger {
   justify-content: space-between;
   gap: 8px;
   width: 100%;
-  min-height: 37px;
+  min-height: var(--tap);
   padding: 6px 10px;
   border-radius: 10px;
   border: 1px solid var(--border-strong);
@@ -736,7 +849,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .mselect-trigger {
 }
 body[data-shell="mobile-app"] #mobile-app-shell .mselect-val { display: inline-flex; align-items: center; gap: 7px; min-width: 0; flex: 1; overflow: hidden; }
 body[data-shell="mobile-app"] #mobile-app-shell .mselect-val span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-body[data-shell="mobile-app"] #mobile-app-shell .mselect-chev { width: 14px; height: 14px; color: var(--text-muted); flex-shrink: 0; transition: transform 150ms ease; }
+body[data-shell="mobile-app"] #mobile-app-shell .mselect-chev { width: 14px; height: 14px; color: var(--text-muted); flex-shrink: 0; transition: transform var(--dur-dd-open) var(--ease-out); }
 body[data-shell="mobile-app"] #mobile-app-shell .mselect.open .mselect-chev { transform: rotate(180deg); color: var(--accent); }
 body[data-shell="mobile-app"] #mobile-app-shell .mselect-menu {
   position: absolute;
@@ -752,25 +865,46 @@ body[data-shell="mobile-app"] #mobile-app-shell .mselect-menu {
   padding: 5px;
   box-shadow: var(--shadow-lg);
   z-index: 140;
-  display: none;
+  display: flex;
   flex-direction: column;
   gap: 2px;
+  transform-origin: top left;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-4px) scale(0.96);
+  transition:
+    opacity var(--dur-dd-close) var(--ease-in),
+    transform var(--dur-dd-close) var(--ease-in),
+    visibility 0s linear var(--dur-dd-close);
 }
-body[data-shell="mobile-app"] #mobile-app-shell .mselect.open .mselect-menu { display: flex; }
+body[data-shell="mobile-app"] #mobile-app-shell .mselect.open .mselect-menu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity var(--dur-dd-open) var(--ease-out),
+    transform var(--dur-dd-open) var(--ease-out),
+    visibility 0s;
+}
 body[data-shell="mobile-app"] #mobile-app-shell .mselect-opt {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  min-height: var(--tap);
   padding: 7px 9px;
   border-radius: 8px;
   font-size: 0.80rem;
   font-weight: 500;
   text-align: left;
+  transition: background-color var(--dur-dd-active) var(--ease-out);
 }
 @media (hover: hover) and (pointer: fine) {
   body[data-shell="mobile-app"] #mobile-app-shell .mselect-opt:hover { background: var(--bg-subtle); }
 }
+body[data-shell="mobile-app"] #mobile-app-shell .mselect-opt:active { background: var(--bg-subtle); }
 body[data-shell="mobile-app"] #mobile-app-shell .mselect-opt.active { background: var(--accent-soft); color: var(--accent-ink); font-weight: 700; }
 
 /* Modern Calendars */
@@ -800,10 +934,28 @@ body[data-shell="mobile-app"] #mobile-app-shell .picker-popover {
   padding: 12px;
   box-shadow: var(--shadow-lg);
   z-index: 150;
-  display: none;
+  display: block;
+  transform-origin: top left;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-4px) scale(0.96);
+  transition:
+    opacity var(--dur-dd-close) var(--ease-in),
+    transform var(--dur-dd-close) var(--ease-in),
+    visibility 0s linear var(--dur-dd-close);
 }
-body[data-shell="mobile-app"] #mobile-app-shell .picker-popover.align-right { left: auto; right: 0; }
-body[data-shell="mobile-app"] #mobile-app-shell .picker-popover.open { display: block; animation: fadeInUp 140ms var(--ease-out); }
+body[data-shell="mobile-app"] #mobile-app-shell .picker-popover.align-right { left: auto; right: 0; transform-origin: top right; }
+body[data-shell="mobile-app"] #mobile-app-shell .picker-popover.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity var(--dur-dd-open) var(--ease-out),
+    transform var(--dur-dd-open) var(--ease-out),
+    visibility 0s;
+}
 body[data-shell="mobile-app"] #mobile-app-shell .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 body[data-shell="mobile-app"] #mobile-app-shell .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
 body[data-shell="mobile-app"] #mobile-app-shell .cal-dow { font-size: 0.66rem; font-weight: 700; color: var(--text-muted); padding: 3px 0; }
@@ -914,10 +1066,27 @@ body[data-shell="mobile-app"] #mobile-app-shell .bn-btn {
   font-weight: 600;
   color: var(--text-muted);
   position: relative;
-  transition: color 140ms ease;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  transition:
+    color var(--dur-nav-label) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
 }
-
-body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active { color: var(--gold-deep); font-weight: 800; }
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn svg {
+  transition: transform var(--dur-nav-icon) var(--ease-spring);
+  will-change: transform;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn span {
+  opacity: 0.8;
+  transition:
+    opacity var(--dur-nav-label) var(--ease-out),
+    color var(--dur-nav-label) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active { color: var(--gold-deep); font-weight: 800; background: transparent; border: none; box-shadow: none; }
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active svg { transform: translateY(-3px) scale(1.15); }
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active span { opacity: 1; }
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn:active { transform: scale(0.97); }
 html[data-theme="dark"] body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active { color: var(--gold); }
 
 body[data-shell="mobile-app"] #mobile-app-shell .bn-center-slot {
@@ -955,11 +1124,30 @@ body[data-shell="mobile-app"] #mobile-app-shell .modal-backdrop {
   background: rgba(9, 13, 20, 0.52);
   backdrop-filter: blur(3px);
   z-index: 160;
-  display: none;
+  display: flex;
   align-items: flex-end;
   justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-sheet-close) var(--ease-in),
+    visibility 0s linear var(--dur-sheet-close);
 }
-body[data-shell="mobile-app"] #mobile-app-shell .modal-backdrop.open { display: flex; animation: fadeInUp 160ms var(--ease-out); }
+body[data-shell="mobile-app"] #mobile-app-shell .modal-backdrop.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity var(--dur-dialog-backdrop) var(--ease-out),
+    visibility 0s;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .modal-backdrop.is-closing {
+  opacity: 0;
+  visibility: visible;
+  pointer-events: none;
+  transition: opacity var(--dur-sheet-close) var(--ease-in);
+}
 
 body[data-shell="mobile-app"] #mobile-app-shell .modal-sheet {
   width: 100%;
@@ -972,9 +1160,38 @@ body[data-shell="mobile-app"] #mobile-app-shell .modal-sheet {
   flex-direction: column;
   overflow: hidden;
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  transform: translateY(100%);
+  transition: transform var(--dur-sheet-close) var(--ease-in);
+  will-change: transform;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .modal-backdrop.open .modal-sheet {
+  transform: translateY(0);
+  transition: transform var(--dur-dialog-open) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .modal-backdrop.is-closing .modal-sheet {
+  transform: translateY(100%);
+  transition: transform var(--dur-sheet-close) var(--ease-in);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .modal-backdrop.is-dragging,
+body[data-shell="mobile-app"] #mobile-app-shell .modal-backdrop.is-dragging .modal-sheet {
+  transition: none !important;
 }
 
-body[data-shell="mobile-app"] #mobile-app-shell .ms-handle { width: 38px; height: 4px; border-radius: 99px; background: var(--border-strong); margin: 10px auto 2px; flex-shrink: 0; }
+body[data-shell="mobile-app"] #mobile-app-shell .ms-handle {
+  width: 44px;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--border-strong);
+  margin: 10px auto 4px;
+  flex-shrink: 0;
+  touch-action: none;
+  position: relative;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ms-handle::after {
+  content: '';
+  position: absolute;
+  inset: -12px -24px;
+}
 body[data-shell="mobile-app"] #mobile-app-shell .ms-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 18px 12px; border-bottom: 1px solid var(--border-subtle); }
 body[data-shell="mobile-app"] #mobile-app-shell .ms-body { padding: 16px 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 13px; }
 body[data-shell="mobile-app"] #mobile-app-shell .ms-foot { padding: 12px 18px; border-top: 1px solid var(--border-subtle); background: var(--bg-muted-row); display: flex; justify-content: flex-end; gap: 8px; }
@@ -990,9 +1207,27 @@ body[data-shell="mobile-app"] #mobile-app-shell .notif-popover {
   box-shadow: var(--shadow-lg);
   padding: 12px;
   z-index: 170;
-  display: none;
+  display: block;
+  transform-origin: top right;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-4px) scale(0.96);
+  transition:
+    opacity var(--dur-dd-close) var(--ease-in),
+    transform var(--dur-dd-close) var(--ease-in),
+    visibility 0s linear var(--dur-dd-close);
 }
-body[data-shell="mobile-app"] #mobile-app-shell .notif-popover.open { display: block; }
+body[data-shell="mobile-app"] #mobile-app-shell .notif-popover.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity var(--dur-dd-open) var(--ease-out),
+    transform var(--dur-dd-open) var(--ease-out),
+    visibility 0s;
+}
 
 body[data-shell="mobile-app"][data-phone-frame="full"] .notif-popover {
   top: 58px;
@@ -1020,6 +1255,9 @@ body[data-shell="mobile-app"] #mobile-app-shell .toast-box {
   box-shadow: var(--shadow-lg);
 }
 body[data-shell="mobile-app"] #mobile-app-shell .toast-box.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+body[data-shell="mobile-app"] #mobile-app-shell .toast-box.has-undo { display: inline-flex; align-items: center; gap: 10px; }
+body[data-shell="mobile-app"] #mobile-app-shell .toast-box.show.has-undo { pointer-events: auto; }
+body[data-shell="mobile-app"] #mobile-app-shell .m-toast-undo { color: var(--accent-border); font-weight: 800; text-decoration: underline; min-height: 28px; padding: 0 2px; }
 
 body[data-shell="mobile-app"][data-phone-frame="full"] .toast-box { top: calc(var(--topbar-h) + 8px); }
 @media (max-width: 520px) {
@@ -1285,6 +1523,8 @@ body[data-shell="mobile-app"] #mobile-app-shell #m-svg-sim-chart {
     transition-duration: 0.001ms !important;
   }
   body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim,
+  body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-back,
+  body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-bob,
   body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim-slow,
   body[data-shell="mobile-app"] #mobile-app-shell .jar-bubble {
     animation: none !important;

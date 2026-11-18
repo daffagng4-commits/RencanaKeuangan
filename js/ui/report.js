@@ -291,6 +291,10 @@ function renderRepModal(kind) {
 function openRepModal(kind) {
   var D = renderRepModal(kind || 'm');
   if (typeof document !== 'undefined' && document.getElementById) {
+    if (typeof brOpenModal === 'function' && document.getElementById('modal-report')) {
+      brOpenModal('modal-report');
+      return D;
+    }
     var m = document.getElementById('modal-report') || document.getElementById('rep-m');
     if (m) {
       m.hidden = false;
@@ -334,9 +338,14 @@ document.addEventListener('click', function (e) {
   var tabBtn = e.target.closest('[data-drep], [data-rep-tab]');
   if (tabBtn) {
     renderRepModal(tabBtn.getAttribute('data-drep') || tabBtn.getAttribute('data-rep-tab'));
+    if (typeof rkSyncSegPills === 'function' && tabBtn.closest('.seg')) rkSyncSegPills(tabBtn.closest('.seg'), true);
     return;
   }
   if (e.target.closest('#rep-m-cl')) {
+    if (typeof brCloseModal === 'function' && document.getElementById('modal-report')) {
+      brCloseModal('modal-report');
+      return;
+    }
     var rm = document.getElementById('modal-report') || document.getElementById('rep-m');
     if (rm) {
       if (rm.classList) rm.classList.remove('open');
