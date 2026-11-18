@@ -43,7 +43,9 @@ const { boot } = require('./ui.js');
   assert.strictEqual($('m-user-name').textContent.trim(), 'Halo, Davina', 'sapaan Mode APK menjadi nama depan Halo, Davina');
   w.acctUI(null);
   click($('m-acct-btn'));
-  assert($('m-sheet-acct').classList.contains('open') && $('m-lg-google'), 'sheet akun Mode APK memiliki tombol Masuk dengan Google (Gmail)');
+  assert($('m-acct-popover').classList.contains('open') && $('m-acct-btn').classList.contains('on'), 'klik #m-acct-btn membuka popover Akun dengan status aktif');
+  click($('m-menu-acct'));
+  assert($('m-sheet-acct').classList.contains('open') && !$('m-acct-popover').classList.contains('open') && $('m-lg-google'), 'sheet akun Mode APK terbuka dari #m-menu-acct di popover dan memuat tombol Masuk dengan Google (Gmail)');
   click($('m-sheet-acct').querySelector('[data-mclose="m-sheet-acct"]'));
   assert($('m-svg-cashflow'), 'grafik SVG Proyeksi Arus Kas ter-render di tab Rincian');
   assert($('m-svg-jar') && !$('m-jar-spotlight'), 'visual 3D Glass Jar (#m-svg-jar) terpusat tanpa kotak spotlight samping');
@@ -356,7 +358,9 @@ const { boot } = require('./ui.js');
   w.setUser({ user: { id: 'hp_u1', email: 'davinagng@gmail.com', user_metadata: { full_name: 'Davina Pratama' } } });
   assert.strictEqual($('m-user-name').textContent, 'Halo, Davina', 'header Mode APK menampilkan nama akun sebelum logout');
   click($('m-acct-btn'));
-  assert($('m-sheet-acct').classList.contains('open'), 'sheet Akun terbuka dari avatar Mode APK');
+  assert($('m-acct-popover').classList.contains('open'), 'popover Akun terbuka dari avatar Mode APK');
+  click($('m-menu-acct'));
+  assert($('m-sheet-acct').classList.contains('open') && !$('m-acct-popover').classList.contains('open'), 'sheet Akun terbuka dari popover avatar Mode APK');
   const outBtn = $('m-acct-logout');
   assert(outBtn, 'tombol #m-acct-logout tersedia di sheet Akun');
   click(outBtn);
@@ -636,7 +640,7 @@ const { boot } = require('./ui.js');
   assert(!$('m-notif-popover').classList.contains('open') && !$('m-btn-notif').classList.contains('on'), 'ketuk di luar popover menutup #m-notif-popover & melepas class aktif');
   const mKasNavBtn = remountShell.querySelector('.mob-bottom-nav [data-mtab="kas"]');
   w.switchMobileTab('kas');
-  assert(!$('m-bn-pill') && !remountShell.querySelector('.mob-bottom-nav .bn-pill') && mKasNavBtn.classList.contains('active'), 'bottom nav APK kembali bersih tanpa #m-bn-pill, hanya tab .active berwarna emas');
+  assert(!$('m-bn-pill') && !remountShell.querySelector('.mob-bottom-nav .bn-pill') && mKasNavBtn.classList.contains('active'), 'bottom nav APK kembali bersih tanpa #m-bn-pill, tab .active putih penuh tanpa pil latar');
   // #4 Ripple APK pada tombol utama / list-row dan cleanup
   const kasSubmitBtn = remountShell.querySelector('#m-kas-form .btn-primary');
   const pdEvt = new w.Event('pointerdown', { bubbles: true });
@@ -649,6 +653,53 @@ const { boot } = require('./ui.js');
   assert(!kasSubmitBtn.querySelector('.rk-ripple-clip'), 'elemen ripple dibersihkan setelah animationend');
   // #17 Sticky topbar scroll & back-to-top APK
   assert($('m-btt-btn') && $('m-main'), 'APK memiliki #m-btt-btn untuk kembali ke atas');
+
+  // 14. Redesign Header & Bottom Nav v4: struktur, fungsi per tombol, popover Akun, & keamanan privasi
+  w.switchMobileTab('rincian');
+  const hdrBlock = remountShell.querySelector('.apk-header-block');
+  assert(hdrBlock && hdrBlock.querySelector('.hdr-motif') && hdrBlock.querySelector('.mt-wordmark') && hdrBlock.querySelector('#m-user-name'), 'v4: header biru bermotif memuat motif SVG inline, wordmark .mt-wordmark, dan sapaan #m-user-name');
+  const actionIds = [...hdrBlock.querySelectorAll('.mt-actions > button')].map((el) => el.id);
+  assert.deepStrictEqual(actionIds, ['m-acct-btn', 'm-btn-privacy', 'm-btn-notif'], 'v4: urutan tombol kanan header adalah Akun, Privasi, Notifikasi');
+  const v4Hero = remountShell.querySelector('.apk-hero-well .wallet-hero');
+  assert(v4Hero && !v4Hero.querySelector('#card-eye-btn, .card-eye-btn, #m-btn-privacy'), 'v4: kartu Saldo Realtime putih berada di dalam .apk-hero-well tanpa tombol mata di dalam kartu');
+  assert(/\.mt-wordmark\s*\{[^}]*height:\s*22\.5px/i.test(cssMobSrc), 'v4: ukuran teks logo .mt-wordmark adalah 22.5px');
+  assert(/\.av-btn::before,\s*[\r\n\s]*body\[data-shell="mobile-app"\]\s+#mobile-app-shell\s+\.ico-btn::before\s*\{[^}]*inset:\s*-5px/s.test(cssMobSrc), 'v4: tombol aksi header mempertahankan pseudo touch target 44px via ::before');
+  assert.strictEqual(w.$('m-fab-add'), $('m-yr-btn-center'), 'v4: alias m-fab-add di w.$() mengembalikan #m-yr-btn-center yang sama');
+  // Ketuk #m-btn-privacy -> satu aksi toggle + status #m-priv-morph
+  doc.body.classList.remove('privacy-mode', 'privacy-on');
+  click($('m-btn-privacy'));
+  assert(doc.body.classList.contains('privacy-mode') && $('m-btn-privacy').classList.contains('on') && $('m-priv-morph').classList.contains('is-morphed'), 'v4 fungsi: ketuk #m-btn-privacy aktifkan Mode Privasi sekali klik');
+  click($('m-btn-privacy'));
+  assert(!doc.body.classList.contains('privacy-mode') && !$('m-btn-privacy').classList.contains('on'), 'v4 fungsi: ketuk kedua #m-btn-privacy nonaktifkan Mode Privasi');
+  // Seed tahun 2027 & uji Popover Akun (#m-acct-popover): Escape, pilih tahun, Pengaturan & Alat, #m-top-yr-pill
+  if (!w.ALL.data[2027]) {
+    w.ALL.data[2027] = { year: 2027, saldo: 4850000, startMonth: 0, items: [], paid: {}, skip: {}, adj: [] };
+    w.renderMobMetaMenus();
+  }
+  click($('m-acct-btn'));
+  assert($('m-acct-popover').classList.contains('open') && $('m-acct-btn').getAttribute('aria-expanded') === 'true', 'v4 fungsi: ketuk #m-acct-btn membuka #m-acct-popover');
+  doc.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+  assert(!$('m-acct-popover').classList.contains('open') && $('m-acct-btn').getAttribute('aria-expanded') === 'false', 'v4 fungsi: Escape menutup #m-acct-popover dan melepas status aktif');
+  click($('m-acct-btn'));
+  const yrPick2027 = $('m-acct-yr-pills').querySelector('[data-myrpick="2027"]');
+  assert(yrPick2027, 'v4 fungsi: #m-acct-popover memuat pemilih tahun [data-myrpick]');
+  click(yrPick2027);
+  assert.strictEqual(+w.S.year, 2027, 'v4 fungsi: memilih tahun di #m-acct-popover menjalankan switchYear ke 2027');
+  assert(!$('m-acct-popover').classList.contains('open') && $('m-top-yr-txt').textContent.trim() === '2027', 'v4 fungsi: memilih tahun menutup popover dan memperbarui #m-top-yr-txt');
+  w.switchYear(2026);
+  click($('m-acct-btn'));
+  click($('m-top-yr-pill'));
+  assert($('m-sheet-periode').classList.contains('open') && !$('m-acct-popover').classList.contains('open'), 'v4 fungsi: ketuk #m-top-yr-pill di popover Akun membuka #m-sheet-periode');
+  click($('m-sheet-periode').querySelector('[data-mclose="m-sheet-periode"]'));
+  click($('m-acct-btn'));
+  click($('m-acct-go-settings'));
+  assert($('m-tab-settings').classList.contains('active') && !$('m-acct-popover').classList.contains('open'), 'v4 fungsi: Pengaturan & Alat di #m-acct-popover membuka tab #m-tab-settings yang sama');
+  assert.strictEqual(remountShell.querySelector('.mob-shell').getAttribute('data-mtab-active'), 'settings', 'v4 layout: .mob-shell[data-mtab-active] mengikuti tab aktif agar header membulat di luar Rincian');
+  click($('m-yr-btn-center'));
+  assert($('m-sheet-periode').classList.contains('open'), 'v4 fungsi: ketuk #m-yr-btn-center (+) tetap membuka #m-sheet-periode');
+  click($('m-sheet-periode').querySelector('[data-mclose="m-sheet-periode"]'));
+  click(remountShell.querySelector('.mob-bottom-nav [data-mtab="rincian"]'));
+  assert($('m-tab-rincian').classList.contains('active') && remountShell.querySelector('.mob-bottom-nav [data-mtab="rincian"]').getAttribute('aria-current') === 'page', 'v4 fungsi: ketuk tab Rincian berpindah ke #m-tab-rincian');
 
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('OK mobile_app_mode');

@@ -83,14 +83,14 @@ body[data-shell="mobile-app"] #mobile-app-shell .phone-hw-btn.pwr { right: -4px;
 
 body[data-shell="mobile-app"] #mobile-app-shell .phone-status-bar {
   height: 30px;
-  padding: 4px 18px 0;
+  padding: 4px 4px 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bg-hud);
+  background: transparent;
   font-size: 0.72rem;
   font-weight: 800;
-  color: var(--text-primary);
+  color: #FFFFFF;
   flex-shrink: 0;
   user-select: none;
 }
@@ -98,7 +98,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .phone-island {
   width: 92px;
   height: 20px;
   border-radius: 999px;
-  background: #090D16;
+  background: #070B12;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -111,7 +111,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .phone-island-cam {
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #3B82F6, #0F172A 72%);
 }
-body[data-shell="mobile-app"] #mobile-app-shell .phone-sys-icons { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 0.65rem; }
+body[data-shell="mobile-app"] #mobile-app-shell .phone-sys-icons { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 0.65rem; color: #FFFFFF; }
 
 body[data-shell="mobile-app"] #mobile-app-shell .phone-home-indicator {
   position: absolute;
@@ -121,8 +121,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .phone-home-indicator {
   width: 112px;
   height: 4px;
   border-radius: 999px;
-  background: var(--text-primary);
-  opacity: 0.24;
+  background: rgba(255, 255, 255, 0.48);
   pointer-events: none;
   z-index: 95;
 }
@@ -146,6 +145,11 @@ body[data-shell="mobile-app"][data-phone-frame="full"] .phone-device-frame { pad
 body[data-shell="mobile-app"][data-phone-frame="full"] .phone-hw-btn,
 body[data-shell="mobile-app"][data-phone-frame="full"] .phone-status-bar,
 body[data-shell="mobile-app"][data-phone-frame="full"] .phone-home-indicator { display: none; }
+body[data-shell="mobile-app"][data-phone-frame="full"] .apk-header-block {
+  position: sticky;
+  top: 0;
+  padding-top: env(safe-area-inset-top, 0px);
+}
 body[data-shell="mobile-app"][data-phone-frame="full"] .mob-shell {
   width: 100%;
   max-width: 412px;
@@ -164,6 +168,11 @@ body[data-shell="mobile-app"][data-phone-frame="full"] .mob-shell {
 body[data-shell="mobile-app"] #mobile-app-shell .phone-hw-btn,
 body[data-shell="mobile-app"] #mobile-app-shell .phone-status-bar,
 body[data-shell="mobile-app"] #mobile-app-shell .phone-home-indicator { display: none !important; }
+  body[data-shell="mobile-app"] #mobile-app-shell .apk-header-block {
+    position: sticky;
+    top: 0;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
   body[data-shell="mobile-app"] #mobile-app-shell .phone-stage { padding: 0; display: block; }
   body[data-shell="mobile-app"] #mobile-app-shell .phone-device-frame { padding: 0; background: none; border-radius: 0; box-shadow: none; }
   body[data-shell="mobile-app"] #mobile-app-shell .mob-shell {
@@ -178,110 +187,90 @@ body[data-shell="mobile-app"] #mobile-app-shell .phone-home-indicator { display:
   }
 }
 
-/* Minimal Clean App Topbar */
-body[data-shell="mobile-app"] #mobile-app-shell .mob-topbar {
-  position: sticky;
-  top: 0;
+/* ==========================================================================
+   V4 BLUE PATTERNED HEADER BLOCK + TOPBAR + POPOVER AKUN
+   ========================================================================== */
+body[data-shell="mobile-app"] #mobile-app-shell .apk-header-block {
+  position: relative;
   z-index: 60;
-  height: var(--topbar-h);
   flex-shrink: 0;
-  padding: 0 14px;
-  background: var(--bg-hud);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, #0E3F86 0%, #0C3677 100%);
+  color: #FFFFFF;
+  padding: 0 14px 8px;
+  overflow: hidden;
+  transition: box-shadow var(--dur-topbar-shadow) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mob-shell:not([data-mtab-active="rincian"]) .apk-header-block {
+  background: linear-gradient(180deg, #0E3F86 0%, #0A2F6B 100%);
+  padding-bottom: 12px;
+  border-bottom-left-radius: 22px;
+  border-bottom-right-radius: 22px;
+  box-shadow: 0 8px 24px -10px rgba(7, 22, 54, 0.34);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .apk-header-block.is-scrolled {
+  box-shadow: 0 8px 22px -6px rgba(7, 22, 54, 0.38);
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .hdr-motif {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .hdr-inner {
+  position: relative;
+  z-index: 1;
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .mob-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  transition: box-shadow var(--dur-topbar-shadow) var(--ease-out);
-}
-body[data-shell="mobile-app"] #mobile-app-shell .mob-topbar.is-scrolled {
-  box-shadow: var(--shadow-sm);
+  margin-top: 8px;
 }
 
-body[data-shell="mobile-app"] #mobile-app-shell .mt-user-btn {
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wordmark {
+  display: block;
+  height: 22.5px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .mt-actions {
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  padding: 3px 6px 3px 3px;
-  border-radius: var(--radius-pill);
-  min-width: 0;
-}
-
-body[data-shell="mobile-app"] #mobile-app-shell .mt-user-btn:active { background: var(--bg-subtle); }
-
-body[data-shell="mobile-app"] #mobile-app-shell .av-circle {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #0F52BA 0%, #0D7A52 100%);
-  color: #fff;
-  font-weight: 800;
-  font-size: 0.85rem;
-  display: grid;
-  place-items: center;
-  position: relative;
   flex-shrink: 0;
 }
-body[data-shell="mobile-app"] #mobile-app-shell .av-circle.anon {
-  background: #CBD5E1;
-  border: 1.5px solid #94A3B8;
-  color: transparent;
-}
-html[data-theme="dark"] body[data-shell="mobile-app"] #mobile-app-shell .av-circle.anon {
-  background: #475569;
-  border-color: #64748B;
-}
 
-body[data-shell="mobile-app"] #mobile-app-shell .av-dot {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #10B981;
-  border: 2px solid var(--bg-surface);
-}
-
-body[data-shell="mobile-app"] #mobile-app-shell .mt-title-col { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
-body[data-shell="mobile-app"] #mobile-app-shell .mt-name { font-size: 0.88rem; font-weight: 800; line-height: 1.15; letter-spacing: -0.01em; }
-body[data-shell="mobile-app"] #mobile-app-shell .mt-sync { font-size: 0.66rem; color: var(--emerald); font-weight: 600; line-height: 1.15; }
-
-body[data-shell="mobile-app"] #mobile-app-shell .mt-actions { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
-
-body[data-shell="mobile-app"] #mobile-app-shell .yr-chip-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 32px;
-  padding: 0 10px;
-  border-radius: var(--radius-pill);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-subtle);
-  font-size: 0.78rem;
-  font-weight: 800;
-  font-family: var(--font-mono);
-  color: var(--text-primary);
-}
-
+/* Visual 34px, area sentuh 44px via ::before; latar putih transparan 0.12 */
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn,
 body[data-shell="mobile-app"] #mobile-app-shell .ico-btn {
   width: 34px;
   height: 34px;
+  padding: 0;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
   position: relative;
+  flex-shrink: 0;
   transition:
     background-color var(--dur-nav-label) var(--ease-out),
     color var(--dur-nav-label) var(--ease-out),
     border-color var(--dur-nav-label) var(--ease-out),
+    opacity var(--transition-fast),
     transform var(--dur-press) var(--ease-out);
 }
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn {
+  background: rgba(255, 255, 255, 0.16);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn::before,
 body[data-shell="mobile-app"] #mobile-app-shell .ico-btn::before {
   content: "";
   position: absolute;
@@ -290,12 +279,70 @@ body[data-shell="mobile-app"] #mobile-app-shell .ico-btn::before {
   background: transparent;
 }
 
+body[data-shell="mobile-app"] #mobile-app-shell .av-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0E3F86 0%, #0D7A52 100%);
+  color: #FFFFFF;
+  font-weight: 800;
+  font-size: 0.84rem;
+  display: grid;
+  place-items: center;
+  position: relative;
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn .av-circle {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  color: #FFFFFF;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn .av-circle.anon {
+  color: transparent;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-av.anon {
+  background: #CBD5E1;
+  border: 1.5px solid #94A3B8;
+  color: transparent;
+}
+html[data-theme="dark"] body[data-shell="mobile-app"] #mobile-app-shell .ap-av.anon {
+  background: #475569;
+  border-color: #64748B;
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .av-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #10B981;
+  border: 2px solid #0E3F86;
+  pointer-events: none;
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn.on,
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn.active,
 body[data-shell="mobile-app"] #mobile-app-shell .ico-btn.on,
 body[data-shell="mobile-app"] #mobile-app-shell .ico-btn.active {
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-  border-color: var(--accent-border);
+  background: #D8EAFF;
+  color: #0A2F6B;
+  border-color: #93C5FD;
 }
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn.on .av-circle,
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn.active .av-circle {
+  color: #0A2F6B;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  body[data-shell="mobile-app"] #mobile-app-shell .av-btn:hover,
+  body[data-shell="mobile-app"] #mobile-app-shell .ico-btn:hover { opacity: 0.88; }
+}
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn:active,
+body[data-shell="mobile-app"] #mobile-app-shell .ico-btn:active { transform: scale(0.95); }
+
 body[data-shell="mobile-app"] #mobile-app-shell .notif-dot {
   position: absolute;
   top: 4px;
@@ -303,8 +350,184 @@ body[data-shell="mobile-app"] #mobile-app-shell .notif-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--crimson);
-  border: 1.5px solid var(--bg-surface);
+  background: #FB7185;
+  border: 1.5px solid #0E3F86;
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .hdr-greet {
+  margin: 12px 0 3px;
+  font-size: 0.74rem;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.90);
+  font-weight: 400;
+  line-height: 1.2;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .hdr-greet b {
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+/* Popover Akun (#m-acct-popover): buka 160ms, tutup 100ms */
+body[data-shell="mobile-app"] #mobile-app-shell .acct-popover {
+  position: fixed;
+  top: 76px;
+  right: 12px;
+  width: min(264px, calc(100% - 24px));
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  padding: 12px;
+  z-index: 170;
+  transform-origin: top right;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-6px) scale(0.95);
+  transition:
+    opacity var(--dur-dd-close) var(--ease-in),
+    transform var(--dur-dd-close) var(--ease-in),
+    visibility 0s linear var(--dur-dd-close);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .acct-popover.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity var(--dur-dd-open) var(--ease-out),
+    transform var(--dur-dd-open) var(--ease-out),
+    visibility 0s;
+}
+body[data-shell="mobile-app"][data-phone-frame="full"] .acct-popover {
+  top: calc(50px + env(safe-area-inset-top, 0px));
+  right: max(12px, calc(50% - 196px));
+  width: min(272px, calc(100vw - 24px));
+}
+@media (max-width: 520px) {
+  body[data-shell="mobile-app"] #mobile-app-shell .acct-popover {
+    top: calc(50px + env(safe-area-inset-top, 0px));
+    right: 12px;
+    width: min(272px, calc(100vw - 24px));
+  }
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .ap-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 2px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+  transition: opacity var(--transition-fast), transform var(--dur-press) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-meta { min-width: 0; flex: 1; }
+body[data-shell="mobile-app"] #mobile-app-shell .ap-name {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-sync {
+  font-size: 0.68rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-chev {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-sec {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-hd-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-lbl {
+  font-size: 0.69rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-more-yr {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.70rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  position: relative;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-more-yr::before {
+  content: "";
+  position: absolute;
+  inset: -8px -4px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-years {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-yr-btn {
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 800;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  min-height: 34px;
+  position: relative;
+  transition: transform var(--dur-press) var(--ease-out), opacity var(--transition-fast);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-yr-btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: var(--accent-ink);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-yr-btn:active,
+body[data-shell="mobile-app"] #mobile-app-shell .ap-head:active,
+body[data-shell="mobile-app"] #mobile-app-shell .ap-more-yr:active { transform: scale(0.96); }
+body[data-shell="mobile-app"] #mobile-app-shell .ap-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 4px 4px;
+  min-height: 44px;
+  font-size: 0.80rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: left;
+  transition: opacity var(--transition-fast), transform var(--dur-press) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-item-lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-item:active { transform: scale(0.98); }
+@media (hover: hover) and (pointer: fine) {
+  body[data-shell="mobile-app"] #mobile-app-shell .ap-head:hover,
+  body[data-shell="mobile-app"] #mobile-app-shell .ap-yr-btn:hover,
+  body[data-shell="mobile-app"] #mobile-app-shell .ap-more-yr:hover,
+  body[data-shell="mobile-app"] #mobile-app-shell .ap-item:hover { opacity: 0.86; }
 }
 
 /* Main Scrollable Content Area */
@@ -313,8 +536,14 @@ body[data-shell="mobile-app"] #mobile-app-shell .mob-main {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: thin;
-  padding: 12px 12px calc(var(--bottom-nav-h) + 34px + env(safe-area-inset-bottom, 0px));
+  scrollbar-width: none;
+  padding: 12px 12px calc(var(--bottom-nav-h) + 36px + env(safe-area-inset-bottom, 0px));
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mob-main::-webkit-scrollbar {
+  display: none;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mob-shell[data-mtab-active="rincian"] .mob-main {
+  padding-top: 0;
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .tab-panel { display: none; animation: fadeInUp 160ms var(--ease-out); }
@@ -344,23 +573,44 @@ body[data-shell="mobile-app"] #mobile-app-shell .card-hd {
 
 body[data-shell="mobile-app"] #mobile-app-shell .card-title { font-size: 0.94rem; font-weight: 800; letter-spacing: -0.015em; }
 
-/* Fintech Wallet Balance Card (Rincian Hero) */
+/* Fintech Wallet Balance Card (Rincian Hero — V4 Option A White inside Blue Well) */
+body[data-shell="mobile-app"] #mobile-app-shell .apk-hero-well {
+  position: relative;
+  background: linear-gradient(180deg, #0C3677 0%, #0A2F6B 100%);
+  margin: 0 -12px 2px;
+  padding: 4px 14px 18px;
+  border-bottom-left-radius: 26px;
+  border-bottom-right-radius: 26px;
+  box-shadow: 0 8px 24px -10px rgba(7, 22, 54, 0.34);
+  overflow: hidden;
+}
+
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-hero {
-  background: linear-gradient(142deg, #0F172A 0%, #17347A 60%, #0F52BA 100%);
-  color: #FFFFFF;
+  position: relative;
+  z-index: 1;
+  background: #FFFFFF;
+  color: #0F172A;
+  border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: var(--radius-lg);
-  padding: 20px 16px 18px;
-  min-height: 186px;
+  padding: 16px 15px 14px;
+  min-height: 158px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.16);
+  box-shadow: 0 14px 28px -8px rgba(7, 22, 54, 0.42), 0 4px 10px rgba(7, 22, 54, 0.22);
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-hero .rk-sync-hint {
+  color: #475569;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-hero .rk-sync-hint-dot {
+  background: #0E3F86;
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-top > div:first-child { min-width: 0; flex: 1; }
-body[data-shell="mobile-app"] #mobile-app-shell .wallet-kicker { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.78; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-body[data-shell="mobile-app"] #mobile-app-shell .wallet-bal { font-family: var(--font-mono); font-size: clamp(1.26rem, 5.4vw, 1.62rem); font-weight: 800; letter-spacing: -0.02em; margin: 6px 0 14px; white-space: nowrap; }
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-kicker { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-bal { font-family: var(--font-mono); font-size: clamp(1.26rem, 5.4vw, 1.62rem); font-weight: 800; letter-spacing: -0.02em; color: #0F172A; margin: 5px 0 13px; white-space: nowrap; }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-pill {
   display: inline-flex;
   align-items: center;
@@ -369,7 +619,8 @@ body[data-shell="mobile-app"] #mobile-app-shell .wallet-pill {
   gap: 5px;
   padding: 4px 10px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.14);
+  background: #EBF2FE;
+  color: #0E3F86;
   font-size: 0.68rem;
   font-weight: 600;
   line-height: 1.25;
@@ -384,10 +635,10 @@ body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-grid {
   margin-top: auto;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-box {
-  background: rgba(255, 255, 255, 0.11);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: #F1F5FB;
+  border: 1px solid #DCE5F4;
   border-radius: 13px;
-  padding: 10px 10px 9px;
+  padding: 9px 10px;
   min-width: 0;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-hd {
@@ -406,17 +657,17 @@ body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-ico {
   flex-shrink: 0;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-ico.in {
-  background: rgba(16, 185, 129, 0.24);
-  color: #34D399;
+  background: #DCFCE7;
+  color: #0D7A52;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-ico.out {
-  background: rgba(244, 63, 94, 0.26);
-  color: #FB7185;
+  background: #FFE4E6;
+  color: #C93B3B;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-lbl {
   font-size: 0.68rem;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.88);
+  color: #0F172A;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -424,9 +675,9 @@ body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-lbl {
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-val {
   font-size: clamp(0.76rem, 3.25vw, 0.90rem);
   font-weight: 800;
-  color: #FFFFFF;
+  color: #0F172A;
   letter-spacing: -0.02em;
-  margin: 6px 0 2px;
+  margin: 5px 0 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -434,7 +685,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-val {
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-sub {
   font-size: 0.60rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.68);
+  color: #475569;
   letter-spacing: 0.01em;
 }
 
@@ -1035,7 +1286,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .rank-track { height: 7px; borde
 body[data-shell="mobile-app"] #mobile-app-shell .rank-fill { height: 100%; border-radius: 99px; transition: width 260ms var(--ease-out); }
 
 /* ==========================================================================
-   5-SLOT BOTTOM NAVIGATION BAR WITH RAISED GOLD CENTER "+" BUTTON (LIKE REFERENCE)
+   5-SLOT BOTTOM NAVIGATION BAR — V4 BLUE BAR, WHITE TABS, BRIGHT BLUE "+" FAB
    ========================================================================== */
 body[data-shell="mobile-app"] #mobile-app-shell .mob-bottom-nav {
   position: fixed;
@@ -1045,11 +1296,11 @@ body[data-shell="mobile-app"] #mobile-app-shell .mob-bottom-nav {
   max-width: 100%;
   height: calc(var(--bottom-nav-h) + 10px);
   padding: 2px 6px 12px;
-  background: var(--bg-surface);
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
-  border-top: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-nav);
+  background: linear-gradient(180deg, #0E3F86 0%, #0A2F6B 100%);
+  border-top-left-radius: 26px;
+  border-top-right-radius: 26px;
+  border-top: none;
+  box-shadow: 0 -8px 28px rgba(7, 22, 54, 0.22);
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: center;
@@ -1080,33 +1331,42 @@ body[data-shell="mobile-app"] #mobile-app-shell .bn-btn {
   align-items: center;
   justify-content: center;
   gap: 3px;
+  min-width: 44px;
   height: 54px;
   font-size: 0.67rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-weight: 500;
+  color: #FFFFFF;
+  opacity: 0.6;
   position: relative;
   background: transparent;
   border: none;
   box-shadow: none;
   transition:
-    color var(--dur-nav-label) var(--ease-out),
+    opacity var(--dur-nav-label) var(--ease-out),
     transform var(--dur-press) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn::before {
+  content: "";
+  position: absolute;
+  inset: -4px 0;
+  background: transparent;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .bn-btn svg {
   transition: transform var(--dur-nav-icon) var(--ease-spring);
   will-change: transform;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .bn-btn span {
-  opacity: 0.8;
-  transition:
-    opacity var(--dur-nav-label) var(--ease-out),
-    color var(--dur-nav-label) var(--ease-out);
+  opacity: 1;
+  transition: opacity var(--dur-nav-label) var(--ease-out);
 }
-body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active { color: var(--gold-deep); font-weight: 800; background: transparent; border: none; box-shadow: none; }
-body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active svg { transform: translateY(-3px) scale(1.15); }
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active { color: #FFFFFF; opacity: 1; font-weight: 700; background: transparent; border: none; box-shadow: none; }
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active svg { stroke-width: 2.3; transform: translateY(-3px) scale(1.15); }
 body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active span { opacity: 1; }
-body[data-shell="mobile-app"] #mobile-app-shell .bn-btn:active { transform: scale(0.97); }
-html[data-theme="dark"] body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active { color: var(--gold); }
+@media (hover: hover) and (pointer: fine) {
+  body[data-shell="mobile-app"] #mobile-app-shell .bn-btn:not(.active):hover { opacity: 0.88; }
+}
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn:active { transform: scale(0.96); }
+html[data-theme="dark"] body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active { color: #FFFFFF; opacity: 1; }
 
 body[data-shell="mobile-app"] #mobile-app-shell .bn-center-slot {
   display: flex;
@@ -1120,20 +1380,27 @@ body[data-shell="mobile-app"] #mobile-app-shell .bn-center-slot {
 
 body[data-shell="mobile-app"] #mobile-app-shell .bn-plus-fab {
   position: absolute;
-  top: -16px;
+  top: -36px;
   left: 50%;
-  transform: translateX(-50%);
-  width: 52px;
-  height: 52px;
+  transform: translateX(-50%) scale(1);
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
-  background: linear-gradient(145deg, var(--gold) 0%, var(--gold-deep) 100%);
+  background: linear-gradient(155deg, #2F7BEA 0%, #1F63CC 100%);
   color: #FFFFFF;
   display: grid;
   place-items: center;
-  box-shadow: 0 8px 20px rgba(184, 145, 50, 0.38), 0 0 0 4px var(--bg-surface);
-  transition: transform 140ms ease, box-shadow 140ms ease;
+  border: 5px solid #0A2F6B;
+  box-shadow: 0 10px 22px rgba(7, 22, 54, 0.34), 0 1px 0 rgba(255, 255, 255, 0.25) inset;
+  transition: transform var(--dur-press) var(--ease-out);
 }
-body[data-shell="mobile-app"] #mobile-app-shell .bn-plus-fab:active { transform: translateX(-50%) scale(0.93); }
+@media (hover: hover) and (pointer: fine) {
+  body[data-shell="mobile-app"] #mobile-app-shell .bn-plus-fab:hover { transform: translateX(-50%) scale(1.03); }
+}
+body[data-shell="mobile-app"] #mobile-app-shell .bn-plus-fab:active {
+  transform: translateX(-50%) scale(0.95);
+  transition-duration: var(--dur-press);
+}
 body[data-shell="mobile-app"] #mobile-app-shell .bn-center-lbl { font-size: 0.67rem; font-weight: 800; color: var(--text-primary); margin-top: 26px; }
 
 /* Bottom Sheets & Popovers */
@@ -1217,7 +1484,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .ms-foot { padding: 12px 18px; b
 
 body[data-shell="mobile-app"] #mobile-app-shell .notif-popover {
   position: fixed;
-  top: 88px;
+  top: 76px;
   right: 12px;
   width: min(304px, calc(100% - 24px));
   background: var(--bg-surface);
@@ -1249,14 +1516,14 @@ body[data-shell="mobile-app"] #mobile-app-shell .notif-popover.open {
 }
 
 body[data-shell="mobile-app"][data-phone-frame="full"] .notif-popover {
-  top: 58px;
+  top: calc(50px + env(safe-area-inset-top, 0px));
   right: max(12px, calc(50% - 196px));
   width: min(310px, calc(100vw - 24px));
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .toast-box {
   position: fixed;
-  top: 90px;
+  top: 82px;
   left: 50%;
   transform: translateX(-50%) translateY(-12px);
   background: var(--text-primary);
@@ -1278,10 +1545,10 @@ body[data-shell="mobile-app"] #mobile-app-shell .toast-box.has-undo { display: i
 body[data-shell="mobile-app"] #mobile-app-shell .toast-box.show.has-undo { pointer-events: auto; }
 body[data-shell="mobile-app"] #mobile-app-shell .m-toast-undo { color: var(--accent-border); font-weight: 800; text-decoration: underline; min-height: 28px; padding: 0 2px; }
 
-body[data-shell="mobile-app"][data-phone-frame="full"] .toast-box { top: calc(var(--topbar-h) + 8px); }
+body[data-shell="mobile-app"][data-phone-frame="full"] .toast-box { top: calc(var(--topbar-h) + 12px + env(safe-area-inset-top, 0px)); }
 @media (max-width: 520px) {
-  body[data-shell="mobile-app"] #mobile-app-shell .notif-popover { top: 58px; right: 12px; width: min(310px, calc(100vw - 24px)); }
-  body[data-shell="mobile-app"] #mobile-app-shell .toast-box { top: calc(var(--topbar-h) + 8px); max-width: calc(100vw - 24px); }
+  body[data-shell="mobile-app"] #mobile-app-shell .notif-popover { top: calc(50px + env(safe-area-inset-top, 0px)); right: 12px; width: min(310px, calc(100vw - 24px)); }
+  body[data-shell="mobile-app"] #mobile-app-shell .toast-box { top: calc(var(--topbar-h) + 12px + env(safe-area-inset-top, 0px)); max-width: calc(100vw - 24px); }
 }
 
 /* Native Mobile Push Notification Banner (Bar Atas HP) */
@@ -1313,7 +1580,7 @@ body[data-shell="mobile-app"][data-phone-frame="full"] .phone-os-notif.show { tr
 }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-app { display: flex; align-items: center; gap: 7px; font-size: 0.72rem; font-weight: 800; color: #E2E8F0; }
-body[data-shell="mobile-app"] #mobile-app-shell .pon-ico { width: 20px; height: 20px; border-radius: 6px; background: linear-gradient(135deg, #2563EB, #10B981); display: grid; place-items: center; font-size: 0.62rem; font-weight: 800; color: #fff; }
+body[data-shell="mobile-app"] #mobile-app-shell .pon-ico { width: 22px; height: 22px; border-radius: 28%; }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-time { font-size: 0.66rem; color: #94A3B8; }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-title { font-size: 0.80rem; font-weight: 800; margin-bottom: 2px; color: #FFFFFF; }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-body { font-size: 0.72rem; line-height: 1.38; color: #CBD5E1; white-space: pre-line; }

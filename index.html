@@ -8,10 +8,17 @@
 <meta name="theme-color" content="#F3F5F2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0A0E14" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="RenKeu">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Rencana">
-<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="RenKeu">
+<meta property="og:title" content="Rencana Keuangan">
+<meta property="og:site_name" content="RenKeu">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg?v=3">
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png?v=3">
+<link rel="icon" type="image/png" sizes="16x16" href="./favicon-16.png?v=3">
+<link rel="shortcut icon" href="./favicon.ico?v=3">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png?v=3">
+<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=3">
 <script>
 (function () {
   try {
@@ -72,6 +79,12 @@
   --gold: #D1AE52;
   --gold-deep: #B89132;
   --gold-soft: rgba(209, 174, 82, 0.14);
+
+  --rk-logo-bg: #EEF1F5;
+  --rk-logo-bd: #C9D2DE;
+  --rk-logo-ink: #16233B;
+  --rk-logo-coin: #E5432F;
+  --rk-logo-rp: #EEF1F5;
 
   --emerald: #0D7A52;
   --emerald-soft: #E7F6EF;
@@ -279,6 +292,12 @@
     --bl: #6BA2FF;
     --bls: rgba(77, 142, 255, 0.14);
 
+    --rk-logo-bg: #16233B;
+    --rk-logo-bd: rgba(255, 255, 255, 0.14);
+    --rk-logo-ink: #EEF1F5;
+    --rk-logo-coin: #FF6A52;
+    --rk-logo-rp: #16233B;
+
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.25);
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 12px 30px -6px rgba(0, 0, 0, 0.45);
@@ -338,6 +357,12 @@
   --bl: #6BA2FF;
   --bls: rgba(77, 142, 255, 0.14);
 
+  --rk-logo-bg: #16233B;
+  --rk-logo-bd: rgba(255, 255, 255, 0.14);
+  --rk-logo-ink: #EEF1F5;
+  --rk-logo-coin: #FF6A52;
+  --rk-logo-rp: #16233B;
+
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.25);
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 12px 30px -6px rgba(0, 0, 0, 0.45);
@@ -385,6 +410,21 @@ body {
 body, input, button, select, textarea, table, kbd, code {
   font-feature-settings: "tnum" 1;
   font-variant-numeric: tabular-nums;
+}
+
+.rk-brand-tile {
+  background: var(--rk-logo-bg, #EEF1F5);
+  border: 1px solid var(--rk-logo-bd, #C9D2DE);
+  border-radius: 28%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: background-color var(--transition-med), border-color var(--transition-med);
+}
+.rk-brand-tile svg {
+  width: 76%;
+  height: 76%;
+  display: block;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1192,11 +1232,11 @@ body.rk-syncing .rk-skel-wrap::before {
 }
 
 body[data-shell="mobile-app"].rk-syncing .wallet-hero .rk-skel-wrap::after {
-  background: rgba(255, 255, 255, 0.22);
+  background: #E2E8F0;
 }
 
 body[data-shell="mobile-app"].rk-syncing .wallet-hero .rk-skel-wrap::before {
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.36) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.85) 50%, transparent 100%);
 }
 
 html[data-theme="dark"] body.rk-syncing .rk-skel-wrap::before {
@@ -1365,7 +1405,7 @@ body:not([data-shell="mobile-app"]) #m-btt-btn {
 
 #m-btt-btn {
   right: 16px;
-  bottom: calc(var(--bottom-nav-h) + 22px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--bottom-nav-h) + 32px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Theme View Transitions & Privacy Guard (#20) */
@@ -1576,6 +1616,7 @@ html.rk-theme-fallback .input {
     body.sb-init-no-anim #browser-shell .main-shell,
     body.sb-init-no-anim #browser-shell .collapse-btn svg,
     body.sb-init-no-anim #browser-shell .sb-meta,
+    body.sb-init-no-anim #browser-shell .sb-brand-wordmark,
     body.sb-init-no-anim #browser-shell .nav-label,
     body.sb-init-no-anim #browser-shell .nav-badge {
       transition: none !important;
@@ -1586,7 +1627,7 @@ html.rk-theme-fallback .input {
       padding: 14px 10px;
     }
 
-    /* Sidebar Top: Account Profile Button (#acct) + Collapse Toggle */
+    /* Sidebar Header Row: Logo Button (#sb-brand-btn) + Collapse Toggle (#sb-toggle) */
     #browser-shell .sb-top {
       display: flex;
       align-items: center;
@@ -1594,18 +1635,99 @@ html.rk-theme-fallback .input {
       gap: 8px;
       padding-bottom: 12px;
       border-bottom: 1px solid var(--border-subtle);
+      flex-shrink: 0;
     }
 
+    #browser-shell .sb-brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 2px 4px;
+      border-radius: var(--radius-sm);
+      min-width: 0;
+      flex: 1;
+      text-align: left;
+      transform: scale(1);
+      opacity: 1;
+      transition:
+        transform var(--dur-press) var(--ease-out),
+        opacity var(--transition-fast);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .sb-brand:hover {
+      opacity: 0.9;
+      transform: scale(1.015);
+    }
+}
+
+    #browser-shell .sb-brand:active {
+      transform: scale(0.98);
+      opacity: 0.88;
+      transition-duration: var(--dur-press);
+    }
+
+    #browser-shell .sb-brand-mark {
+      width: 38px;
+      height: 38px;
+    }
+
+    #browser-shell .sb-brand-wordmark {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      max-width: 170px;
+      opacity: 1;
+      overflow: hidden;
+      transition:
+        opacity var(--dur-sidebar-label-in) var(--ease-out) var(--delay-sidebar-label-in),
+        max-width var(--dur-sidebar) var(--ease-in-out);
+    }
+
+    #browser-shell .sb-brand-wordmark svg {
+      width: 112px;
+      height: auto;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    body.sidebar-collapsed #browser-shell .sb-top {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding-bottom: 10px;
+    }
+
+    body.sidebar-collapsed #browser-shell .sb-brand {
+      justify-content: center;
+      gap: 0;
+      padding: 0;
+      flex: 0 0 auto;
+      border-radius: 28%;
+    }
+
+    body.sidebar-collapsed #browser-shell .sb-brand-wordmark {
+      max-width: 0;
+      max-height: 38px;
+      opacity: 0;
+      pointer-events: none;
+      transition:
+        opacity var(--dur-sidebar-label-out) var(--ease-in),
+        max-width var(--dur-sidebar) var(--ease-in-out);
+    }
+
+    /* Sidebar Bottom Account Button (#acct) */
     #browser-shell .sb-av {
       display: flex;
       align-items: center;
       gap: 10px;
-      flex: 1;
+      width: 100%;
       min-width: 0;
       padding: 6px 8px;
       border-radius: var(--radius-sm);
       text-align: left;
-      transition: background var(--transition-fast);
+      transition: opacity var(--transition-fast), transform var(--dur-press) var(--ease-out);
     }
 
     @media (hover: hover) and (pointer: fine) {
@@ -1613,6 +1735,11 @@ html.rk-theme-fallback .input {
       background: var(--bg-subtle);
     }
 }
+
+    #browser-shell .sb-av:active {
+      transform: scale(0.98);
+      transition-duration: var(--dur-press);
+    }
 
     #browser-shell .av-circle {
       width: 34px;
@@ -1695,9 +1822,10 @@ html.rk-theme-fallback .input {
         max-width var(--dur-sidebar) var(--ease-in-out);
     }
 
-    body.sidebar-collapsed #browser-shell .sb-top {
-      flex-direction: column;
-      gap: 6px;
+    body.sidebar-collapsed #browser-shell .sb-av {
+      justify-content: center;
+      gap: 0;
+      padding: 6px 0;
     }
 
     #browser-shell .collapse-btn {
@@ -1708,7 +1836,7 @@ html.rk-theme-fallback .input {
       place-items: center;
       color: var(--text-muted);
       flex-shrink: 0;
-      transition: background var(--transition-fast), color var(--transition-fast);
+      transition: transform var(--transition-fast), opacity var(--transition-fast), color var(--transition-fast);
     }
 
     #browser-shell .collapse-btn svg {
@@ -1731,8 +1859,10 @@ html.rk-theme-fallback .input {
       display: flex;
       flex-direction: column;
       gap: 4px;
-      flex: 1;
+      flex: 1 1 auto;
+      min-height: 0;
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 12px 0;
     }
 
@@ -1849,11 +1979,17 @@ html.rk-theme-fallback .input {
       padding: 10px;
     }
 
-    /* Sidebar Bottom: Alat & Pengaturan Menu Trigger (#alat-btn) */
+    #browser-shell #alat-btn[aria-expanded="true"] {
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+    }
+
+    /* Sidebar Bottom: Account Button (#acct) */
     #browser-shell .sb-bot {
       border-top: 1px solid var(--border-subtle);
       padding-top: 10px;
       position: relative;
+      flex-shrink: 0;
     }
 
     /* Main Column */
@@ -3747,8 +3883,8 @@ html.rk-theme-fallback .input {
        ========================================================================== */
     #browser-shell .alat-menu {
       position: fixed;
-      bottom: 58px;
-      left: 16px;
+      top: 320px;
+      left: 268px;
       width: 248px;
       background: var(--bg-surface);
       border: 1px solid var(--border-strong);
@@ -3759,7 +3895,7 @@ html.rk-theme-fallback .input {
       display: flex;
       flex-direction: column;
       gap: 2px;
-      transform-origin: bottom left;
+      transform-origin: top left;
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
@@ -4244,14 +4380,14 @@ body[data-shell="mobile-app"] #mobile-app-shell .phone-hw-btn.pwr { right: -4px;
 
 body[data-shell="mobile-app"] #mobile-app-shell .phone-status-bar {
   height: 30px;
-  padding: 4px 18px 0;
+  padding: 4px 4px 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--bg-hud);
+  background: transparent;
   font-size: 0.72rem;
   font-weight: 800;
-  color: var(--text-primary);
+  color: #FFFFFF;
   flex-shrink: 0;
   user-select: none;
 }
@@ -4259,7 +4395,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .phone-island {
   width: 92px;
   height: 20px;
   border-radius: 999px;
-  background: #090D16;
+  background: #070B12;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -4272,7 +4408,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .phone-island-cam {
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, #3B82F6, #0F172A 72%);
 }
-body[data-shell="mobile-app"] #mobile-app-shell .phone-sys-icons { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 0.65rem; }
+body[data-shell="mobile-app"] #mobile-app-shell .phone-sys-icons { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: 0.65rem; color: #FFFFFF; }
 
 body[data-shell="mobile-app"] #mobile-app-shell .phone-home-indicator {
   position: absolute;
@@ -4282,8 +4418,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .phone-home-indicator {
   width: 112px;
   height: 4px;
   border-radius: 999px;
-  background: var(--text-primary);
-  opacity: 0.24;
+  background: rgba(255, 255, 255, 0.48);
   pointer-events: none;
   z-index: 95;
 }
@@ -4307,6 +4442,11 @@ body[data-shell="mobile-app"][data-phone-frame="full"] .phone-device-frame { pad
 body[data-shell="mobile-app"][data-phone-frame="full"] .phone-hw-btn,
 body[data-shell="mobile-app"][data-phone-frame="full"] .phone-status-bar,
 body[data-shell="mobile-app"][data-phone-frame="full"] .phone-home-indicator { display: none; }
+body[data-shell="mobile-app"][data-phone-frame="full"] .apk-header-block {
+  position: sticky;
+  top: 0;
+  padding-top: env(safe-area-inset-top, 0px);
+}
 body[data-shell="mobile-app"][data-phone-frame="full"] .mob-shell {
   width: 100%;
   max-width: 412px;
@@ -4325,6 +4465,11 @@ body[data-shell="mobile-app"][data-phone-frame="full"] .mob-shell {
 body[data-shell="mobile-app"] #mobile-app-shell .phone-hw-btn,
 body[data-shell="mobile-app"] #mobile-app-shell .phone-status-bar,
 body[data-shell="mobile-app"] #mobile-app-shell .phone-home-indicator { display: none !important; }
+  body[data-shell="mobile-app"] #mobile-app-shell .apk-header-block {
+    position: sticky;
+    top: 0;
+    padding-top: env(safe-area-inset-top, 0px);
+  }
   body[data-shell="mobile-app"] #mobile-app-shell .phone-stage { padding: 0; display: block; }
   body[data-shell="mobile-app"] #mobile-app-shell .phone-device-frame { padding: 0; background: none; border-radius: 0; box-shadow: none; }
   body[data-shell="mobile-app"] #mobile-app-shell .mob-shell {
@@ -4339,110 +4484,90 @@ body[data-shell="mobile-app"] #mobile-app-shell .phone-home-indicator { display:
   }
 }
 
-/* Minimal Clean App Topbar */
-body[data-shell="mobile-app"] #mobile-app-shell .mob-topbar {
-  position: sticky;
-  top: 0;
+/* ==========================================================================
+   V4 BLUE PATTERNED HEADER BLOCK + TOPBAR + POPOVER AKUN
+   ========================================================================== */
+body[data-shell="mobile-app"] #mobile-app-shell .apk-header-block {
+  position: relative;
   z-index: 60;
-  height: var(--topbar-h);
   flex-shrink: 0;
-  padding: 0 14px;
-  background: var(--bg-hud);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, #0E3F86 0%, #0C3677 100%);
+  color: #FFFFFF;
+  padding: 0 14px 8px;
+  overflow: hidden;
+  transition: box-shadow var(--dur-topbar-shadow) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mob-shell:not([data-mtab-active="rincian"]) .apk-header-block {
+  background: linear-gradient(180deg, #0E3F86 0%, #0A2F6B 100%);
+  padding-bottom: 12px;
+  border-bottom-left-radius: 22px;
+  border-bottom-right-radius: 22px;
+  box-shadow: 0 8px 24px -10px rgba(7, 22, 54, 0.34);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .apk-header-block.is-scrolled {
+  box-shadow: 0 8px 22px -6px rgba(7, 22, 54, 0.38);
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .hdr-motif {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .hdr-inner {
+  position: relative;
+  z-index: 1;
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .mob-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  transition: box-shadow var(--dur-topbar-shadow) var(--ease-out);
-}
-body[data-shell="mobile-app"] #mobile-app-shell .mob-topbar.is-scrolled {
-  box-shadow: var(--shadow-sm);
+  margin-top: 8px;
 }
 
-body[data-shell="mobile-app"] #mobile-app-shell .mt-user-btn {
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wordmark {
+  display: block;
+  height: 22.5px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .mt-actions {
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  padding: 3px 6px 3px 3px;
-  border-radius: var(--radius-pill);
-  min-width: 0;
-}
-
-body[data-shell="mobile-app"] #mobile-app-shell .mt-user-btn:active { background: var(--bg-subtle); }
-
-body[data-shell="mobile-app"] #mobile-app-shell .av-circle {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #0F52BA 0%, #0D7A52 100%);
-  color: #fff;
-  font-weight: 800;
-  font-size: 0.85rem;
-  display: grid;
-  place-items: center;
-  position: relative;
   flex-shrink: 0;
 }
-body[data-shell="mobile-app"] #mobile-app-shell .av-circle.anon {
-  background: #CBD5E1;
-  border: 1.5px solid #94A3B8;
-  color: transparent;
-}
-html[data-theme="dark"] body[data-shell="mobile-app"] #mobile-app-shell .av-circle.anon {
-  background: #475569;
-  border-color: #64748B;
-}
 
-body[data-shell="mobile-app"] #mobile-app-shell .av-dot {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #10B981;
-  border: 2px solid var(--bg-surface);
-}
-
-body[data-shell="mobile-app"] #mobile-app-shell .mt-title-col { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
-body[data-shell="mobile-app"] #mobile-app-shell .mt-name { font-size: 0.88rem; font-weight: 800; line-height: 1.15; letter-spacing: -0.01em; }
-body[data-shell="mobile-app"] #mobile-app-shell .mt-sync { font-size: 0.66rem; color: var(--emerald); font-weight: 600; line-height: 1.15; }
-
-body[data-shell="mobile-app"] #mobile-app-shell .mt-actions { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
-
-body[data-shell="mobile-app"] #mobile-app-shell .yr-chip-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 32px;
-  padding: 0 10px;
-  border-radius: var(--radius-pill);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-subtle);
-  font-size: 0.78rem;
-  font-weight: 800;
-  font-family: var(--font-mono);
-  color: var(--text-primary);
-}
-
+/* Visual 34px, area sentuh 44px via ::before; latar putih transparan 0.12 */
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn,
 body[data-shell="mobile-app"] #mobile-app-shell .ico-btn {
   width: 34px;
   height: 34px;
+  padding: 0;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
   position: relative;
+  flex-shrink: 0;
   transition:
     background-color var(--dur-nav-label) var(--ease-out),
     color var(--dur-nav-label) var(--ease-out),
     border-color var(--dur-nav-label) var(--ease-out),
+    opacity var(--transition-fast),
     transform var(--dur-press) var(--ease-out);
 }
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn {
+  background: rgba(255, 255, 255, 0.16);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn::before,
 body[data-shell="mobile-app"] #mobile-app-shell .ico-btn::before {
   content: "";
   position: absolute;
@@ -4451,12 +4576,70 @@ body[data-shell="mobile-app"] #mobile-app-shell .ico-btn::before {
   background: transparent;
 }
 
+body[data-shell="mobile-app"] #mobile-app-shell .av-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0E3F86 0%, #0D7A52 100%);
+  color: #FFFFFF;
+  font-weight: 800;
+  font-size: 0.84rem;
+  display: grid;
+  place-items: center;
+  position: relative;
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn .av-circle {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  color: #FFFFFF;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn .av-circle.anon {
+  color: transparent;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-av.anon {
+  background: #CBD5E1;
+  border: 1.5px solid #94A3B8;
+  color: transparent;
+}
+html[data-theme="dark"] body[data-shell="mobile-app"] #mobile-app-shell .ap-av.anon {
+  background: #475569;
+  border-color: #64748B;
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .av-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #10B981;
+  border: 2px solid #0E3F86;
+  pointer-events: none;
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn.on,
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn.active,
 body[data-shell="mobile-app"] #mobile-app-shell .ico-btn.on,
 body[data-shell="mobile-app"] #mobile-app-shell .ico-btn.active {
-  background: var(--accent-soft);
-  color: var(--accent-ink);
-  border-color: var(--accent-border);
+  background: #D8EAFF;
+  color: #0A2F6B;
+  border-color: #93C5FD;
 }
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn.on .av-circle,
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn.active .av-circle {
+  color: #0A2F6B;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  body[data-shell="mobile-app"] #mobile-app-shell .av-btn:hover,
+  body[data-shell="mobile-app"] #mobile-app-shell .ico-btn:hover { opacity: 0.88; }
+}
+body[data-shell="mobile-app"] #mobile-app-shell .av-btn:active,
+body[data-shell="mobile-app"] #mobile-app-shell .ico-btn:active { transform: scale(0.95); }
+
 body[data-shell="mobile-app"] #mobile-app-shell .notif-dot {
   position: absolute;
   top: 4px;
@@ -4464,8 +4647,184 @@ body[data-shell="mobile-app"] #mobile-app-shell .notif-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--crimson);
-  border: 1.5px solid var(--bg-surface);
+  background: #FB7185;
+  border: 1.5px solid #0E3F86;
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .hdr-greet {
+  margin: 12px 0 3px;
+  font-size: 0.74rem;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.90);
+  font-weight: 400;
+  line-height: 1.2;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .hdr-greet b {
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+/* Popover Akun (#m-acct-popover): buka 160ms, tutup 100ms */
+body[data-shell="mobile-app"] #mobile-app-shell .acct-popover {
+  position: fixed;
+  top: 76px;
+  right: 12px;
+  width: min(264px, calc(100% - 24px));
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  box-shadow: var(--shadow-lg);
+  padding: 12px;
+  z-index: 170;
+  transform-origin: top right;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-6px) scale(0.95);
+  transition:
+    opacity var(--dur-dd-close) var(--ease-in),
+    transform var(--dur-dd-close) var(--ease-in),
+    visibility 0s linear var(--dur-dd-close);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .acct-popover.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity var(--dur-dd-open) var(--ease-out),
+    transform var(--dur-dd-open) var(--ease-out),
+    visibility 0s;
+}
+body[data-shell="mobile-app"][data-phone-frame="full"] .acct-popover {
+  top: calc(50px + env(safe-area-inset-top, 0px));
+  right: max(12px, calc(50% - 196px));
+  width: min(272px, calc(100vw - 24px));
+}
+@media (max-width: 520px) {
+  body[data-shell="mobile-app"] #mobile-app-shell .acct-popover {
+    top: calc(50px + env(safe-area-inset-top, 0px));
+    right: 12px;
+    width: min(272px, calc(100vw - 24px));
+  }
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .ap-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 2px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+  transition: opacity var(--transition-fast), transform var(--dur-press) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-meta { min-width: 0; flex: 1; }
+body[data-shell="mobile-app"] #mobile-app-shell .ap-name {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-sync {
+  font-size: 0.68rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-chev {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-sec {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-hd-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-lbl {
+  font-size: 0.69rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-more-yr {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.70rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  position: relative;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-more-yr::before {
+  content: "";
+  position: absolute;
+  inset: -8px -4px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-years {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-yr-btn {
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 800;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  min-height: 34px;
+  position: relative;
+  transition: transform var(--dur-press) var(--ease-out), opacity var(--transition-fast);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-yr-btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+  color: var(--accent-ink);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-yr-btn:active,
+body[data-shell="mobile-app"] #mobile-app-shell .ap-head:active,
+body[data-shell="mobile-app"] #mobile-app-shell .ap-more-yr:active { transform: scale(0.96); }
+body[data-shell="mobile-app"] #mobile-app-shell .ap-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 4px 4px;
+  min-height: 44px;
+  font-size: 0.80rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: left;
+  transition: opacity var(--transition-fast), transform var(--dur-press) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-item-lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .ap-item:active { transform: scale(0.98); }
+@media (hover: hover) and (pointer: fine) {
+  body[data-shell="mobile-app"] #mobile-app-shell .ap-head:hover,
+  body[data-shell="mobile-app"] #mobile-app-shell .ap-yr-btn:hover,
+  body[data-shell="mobile-app"] #mobile-app-shell .ap-more-yr:hover,
+  body[data-shell="mobile-app"] #mobile-app-shell .ap-item:hover { opacity: 0.86; }
 }
 
 /* Main Scrollable Content Area */
@@ -4474,8 +4833,14 @@ body[data-shell="mobile-app"] #mobile-app-shell .mob-main {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: thin;
-  padding: 12px 12px calc(var(--bottom-nav-h) + 34px + env(safe-area-inset-bottom, 0px));
+  scrollbar-width: none;
+  padding: 12px 12px calc(var(--bottom-nav-h) + 36px + env(safe-area-inset-bottom, 0px));
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mob-main::-webkit-scrollbar {
+  display: none;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mob-shell[data-mtab-active="rincian"] .mob-main {
+  padding-top: 0;
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .tab-panel { display: none; animation: fadeInUp 160ms var(--ease-out); }
@@ -4505,23 +4870,44 @@ body[data-shell="mobile-app"] #mobile-app-shell .card-hd {
 
 body[data-shell="mobile-app"] #mobile-app-shell .card-title { font-size: 0.94rem; font-weight: 800; letter-spacing: -0.015em; }
 
-/* Fintech Wallet Balance Card (Rincian Hero) */
+/* Fintech Wallet Balance Card (Rincian Hero — V4 Option A White inside Blue Well) */
+body[data-shell="mobile-app"] #mobile-app-shell .apk-hero-well {
+  position: relative;
+  background: linear-gradient(180deg, #0C3677 0%, #0A2F6B 100%);
+  margin: 0 -12px 2px;
+  padding: 4px 14px 18px;
+  border-bottom-left-radius: 26px;
+  border-bottom-right-radius: 26px;
+  box-shadow: 0 8px 24px -10px rgba(7, 22, 54, 0.34);
+  overflow: hidden;
+}
+
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-hero {
-  background: linear-gradient(142deg, #0F172A 0%, #17347A 60%, #0F52BA 100%);
-  color: #FFFFFF;
+  position: relative;
+  z-index: 1;
+  background: #FFFFFF;
+  color: #0F172A;
+  border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: var(--radius-lg);
-  padding: 20px 16px 18px;
-  min-height: 186px;
+  padding: 16px 15px 14px;
+  min-height: 158px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.16);
+  box-shadow: 0 14px 28px -8px rgba(7, 22, 54, 0.42), 0 4px 10px rgba(7, 22, 54, 0.22);
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-hero .rk-sync-hint {
+  color: #475569;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-hero .rk-sync-hint-dot {
+  background: #0E3F86;
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-top > div:first-child { min-width: 0; flex: 1; }
-body[data-shell="mobile-app"] #mobile-app-shell .wallet-kicker { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.78; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-body[data-shell="mobile-app"] #mobile-app-shell .wallet-bal { font-family: var(--font-mono); font-size: clamp(1.26rem, 5.4vw, 1.62rem); font-weight: 800; letter-spacing: -0.02em; margin: 6px 0 14px; white-space: nowrap; }
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-kicker { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body[data-shell="mobile-app"] #mobile-app-shell .wallet-bal { font-family: var(--font-mono); font-size: clamp(1.26rem, 5.4vw, 1.62rem); font-weight: 800; letter-spacing: -0.02em; color: #0F172A; margin: 5px 0 13px; white-space: nowrap; }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-pill {
   display: inline-flex;
   align-items: center;
@@ -4530,7 +4916,8 @@ body[data-shell="mobile-app"] #mobile-app-shell .wallet-pill {
   gap: 5px;
   padding: 4px 10px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.14);
+  background: #EBF2FE;
+  color: #0E3F86;
   font-size: 0.68rem;
   font-weight: 600;
   line-height: 1.25;
@@ -4545,10 +4932,10 @@ body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-grid {
   margin-top: auto;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-box {
-  background: rgba(255, 255, 255, 0.11);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: #F1F5FB;
+  border: 1px solid #DCE5F4;
   border-radius: 13px;
-  padding: 10px 10px 9px;
+  padding: 9px 10px;
   min-width: 0;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-hd {
@@ -4567,17 +4954,17 @@ body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-ico {
   flex-shrink: 0;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-ico.in {
-  background: rgba(16, 185, 129, 0.24);
-  color: #34D399;
+  background: #DCFCE7;
+  color: #0D7A52;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-ico.out {
-  background: rgba(244, 63, 94, 0.26);
-  color: #FB7185;
+  background: #FFE4E6;
+  color: #C93B3B;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-lbl {
   font-size: 0.68rem;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.88);
+  color: #0F172A;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4585,9 +4972,9 @@ body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-lbl {
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-val {
   font-size: clamp(0.76rem, 3.25vw, 0.90rem);
   font-weight: 800;
-  color: #FFFFFF;
+  color: #0F172A;
   letter-spacing: -0.02em;
-  margin: 6px 0 2px;
+  margin: 5px 0 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4595,7 +4982,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-val {
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-io-sub {
   font-size: 0.60rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.68);
+  color: #475569;
   letter-spacing: 0.01em;
 }
 
@@ -5196,7 +5583,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .rank-track { height: 7px; borde
 body[data-shell="mobile-app"] #mobile-app-shell .rank-fill { height: 100%; border-radius: 99px; transition: width 260ms var(--ease-out); }
 
 /* ==========================================================================
-   5-SLOT BOTTOM NAVIGATION BAR WITH RAISED GOLD CENTER "+" BUTTON (LIKE REFERENCE)
+   5-SLOT BOTTOM NAVIGATION BAR — V4 BLUE BAR, WHITE TABS, BRIGHT BLUE "+" FAB
    ========================================================================== */
 body[data-shell="mobile-app"] #mobile-app-shell .mob-bottom-nav {
   position: fixed;
@@ -5206,11 +5593,11 @@ body[data-shell="mobile-app"] #mobile-app-shell .mob-bottom-nav {
   max-width: 100%;
   height: calc(var(--bottom-nav-h) + 10px);
   padding: 2px 6px 12px;
-  background: var(--bg-surface);
-  border-top-left-radius: 24px;
-  border-top-right-radius: 24px;
-  border-top: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-nav);
+  background: linear-gradient(180deg, #0E3F86 0%, #0A2F6B 100%);
+  border-top-left-radius: 26px;
+  border-top-right-radius: 26px;
+  border-top: none;
+  box-shadow: 0 -8px 28px rgba(7, 22, 54, 0.22);
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: center;
@@ -5241,33 +5628,42 @@ body[data-shell="mobile-app"] #mobile-app-shell .bn-btn {
   align-items: center;
   justify-content: center;
   gap: 3px;
+  min-width: 44px;
   height: 54px;
   font-size: 0.67rem;
-  font-weight: 600;
-  color: var(--text-muted);
+  font-weight: 500;
+  color: #FFFFFF;
+  opacity: 0.6;
   position: relative;
   background: transparent;
   border: none;
   box-shadow: none;
   transition:
-    color var(--dur-nav-label) var(--ease-out),
+    opacity var(--dur-nav-label) var(--ease-out),
     transform var(--dur-press) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn::before {
+  content: "";
+  position: absolute;
+  inset: -4px 0;
+  background: transparent;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .bn-btn svg {
   transition: transform var(--dur-nav-icon) var(--ease-spring);
   will-change: transform;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .bn-btn span {
-  opacity: 0.8;
-  transition:
-    opacity var(--dur-nav-label) var(--ease-out),
-    color var(--dur-nav-label) var(--ease-out);
+  opacity: 1;
+  transition: opacity var(--dur-nav-label) var(--ease-out);
 }
-body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active { color: var(--gold-deep); font-weight: 800; background: transparent; border: none; box-shadow: none; }
-body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active svg { transform: translateY(-3px) scale(1.15); }
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active { color: #FFFFFF; opacity: 1; font-weight: 700; background: transparent; border: none; box-shadow: none; }
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active svg { stroke-width: 2.3; transform: translateY(-3px) scale(1.15); }
 body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active span { opacity: 1; }
-body[data-shell="mobile-app"] #mobile-app-shell .bn-btn:active { transform: scale(0.97); }
-html[data-theme="dark"] body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active { color: var(--gold); }
+@media (hover: hover) and (pointer: fine) {
+  body[data-shell="mobile-app"] #mobile-app-shell .bn-btn:not(.active):hover { opacity: 0.88; }
+}
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn:active { transform: scale(0.96); }
+html[data-theme="dark"] body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active { color: #FFFFFF; opacity: 1; }
 
 body[data-shell="mobile-app"] #mobile-app-shell .bn-center-slot {
   display: flex;
@@ -5281,20 +5677,27 @@ body[data-shell="mobile-app"] #mobile-app-shell .bn-center-slot {
 
 body[data-shell="mobile-app"] #mobile-app-shell .bn-plus-fab {
   position: absolute;
-  top: -16px;
+  top: -36px;
   left: 50%;
-  transform: translateX(-50%);
-  width: 52px;
-  height: 52px;
+  transform: translateX(-50%) scale(1);
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
-  background: linear-gradient(145deg, var(--gold) 0%, var(--gold-deep) 100%);
+  background: linear-gradient(155deg, #2F7BEA 0%, #1F63CC 100%);
   color: #FFFFFF;
   display: grid;
   place-items: center;
-  box-shadow: 0 8px 20px rgba(184, 145, 50, 0.38), 0 0 0 4px var(--bg-surface);
-  transition: transform 140ms ease, box-shadow 140ms ease;
+  border: 5px solid #0A2F6B;
+  box-shadow: 0 10px 22px rgba(7, 22, 54, 0.34), 0 1px 0 rgba(255, 255, 255, 0.25) inset;
+  transition: transform var(--dur-press) var(--ease-out);
 }
-body[data-shell="mobile-app"] #mobile-app-shell .bn-plus-fab:active { transform: translateX(-50%) scale(0.93); }
+@media (hover: hover) and (pointer: fine) {
+  body[data-shell="mobile-app"] #mobile-app-shell .bn-plus-fab:hover { transform: translateX(-50%) scale(1.03); }
+}
+body[data-shell="mobile-app"] #mobile-app-shell .bn-plus-fab:active {
+  transform: translateX(-50%) scale(0.95);
+  transition-duration: var(--dur-press);
+}
 body[data-shell="mobile-app"] #mobile-app-shell .bn-center-lbl { font-size: 0.67rem; font-weight: 800; color: var(--text-primary); margin-top: 26px; }
 
 /* Bottom Sheets & Popovers */
@@ -5378,7 +5781,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .ms-foot { padding: 12px 18px; b
 
 body[data-shell="mobile-app"] #mobile-app-shell .notif-popover {
   position: fixed;
-  top: 88px;
+  top: 76px;
   right: 12px;
   width: min(304px, calc(100% - 24px));
   background: var(--bg-surface);
@@ -5410,14 +5813,14 @@ body[data-shell="mobile-app"] #mobile-app-shell .notif-popover.open {
 }
 
 body[data-shell="mobile-app"][data-phone-frame="full"] .notif-popover {
-  top: 58px;
+  top: calc(50px + env(safe-area-inset-top, 0px));
   right: max(12px, calc(50% - 196px));
   width: min(310px, calc(100vw - 24px));
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .toast-box {
   position: fixed;
-  top: 90px;
+  top: 82px;
   left: 50%;
   transform: translateX(-50%) translateY(-12px);
   background: var(--text-primary);
@@ -5439,10 +5842,10 @@ body[data-shell="mobile-app"] #mobile-app-shell .toast-box.has-undo { display: i
 body[data-shell="mobile-app"] #mobile-app-shell .toast-box.show.has-undo { pointer-events: auto; }
 body[data-shell="mobile-app"] #mobile-app-shell .m-toast-undo { color: var(--accent-border); font-weight: 800; text-decoration: underline; min-height: 28px; padding: 0 2px; }
 
-body[data-shell="mobile-app"][data-phone-frame="full"] .toast-box { top: calc(var(--topbar-h) + 8px); }
+body[data-shell="mobile-app"][data-phone-frame="full"] .toast-box { top: calc(var(--topbar-h) + 12px + env(safe-area-inset-top, 0px)); }
 @media (max-width: 520px) {
-  body[data-shell="mobile-app"] #mobile-app-shell .notif-popover { top: 58px; right: 12px; width: min(310px, calc(100vw - 24px)); }
-  body[data-shell="mobile-app"] #mobile-app-shell .toast-box { top: calc(var(--topbar-h) + 8px); max-width: calc(100vw - 24px); }
+  body[data-shell="mobile-app"] #mobile-app-shell .notif-popover { top: calc(50px + env(safe-area-inset-top, 0px)); right: 12px; width: min(310px, calc(100vw - 24px)); }
+  body[data-shell="mobile-app"] #mobile-app-shell .toast-box { top: calc(var(--topbar-h) + 12px + env(safe-area-inset-top, 0px)); max-width: calc(100vw - 24px); }
 }
 
 /* Native Mobile Push Notification Banner (Bar Atas HP) */
@@ -5474,7 +5877,7 @@ body[data-shell="mobile-app"][data-phone-frame="full"] .phone-os-notif.show { tr
 }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-app { display: flex; align-items: center; gap: 7px; font-size: 0.72rem; font-weight: 800; color: #E2E8F0; }
-body[data-shell="mobile-app"] #mobile-app-shell .pon-ico { width: 20px; height: 20px; border-radius: 6px; background: linear-gradient(135deg, #2563EB, #10B981); display: grid; place-items: center; font-size: 0.62rem; font-weight: 800; color: #fff; }
+body[data-shell="mobile-app"] #mobile-app-shell .pon-ico { width: 22px; height: 22px; border-radius: 28%; }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-time { font-size: 0.66rem; color: #94A3B8; }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-title { font-size: 0.80rem; font-weight: 800; margin-bottom: 2px; color: #FFFFFF; }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-body { font-size: 0.72rem; line-height: 1.38; color: #CBD5E1; white-space: pre-line; }
@@ -5766,12 +6169,76 @@ body[data-shell="mobile-app"] #mobile-app-shell #m-svg-sim-chart {
   } catch (e) {}
 })();
 </script>
+<svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <defs>
+    <symbol id="rk-brand-symbol" viewBox="0 0 64 64">
+      <path d="M8 16H22V30H34V46H38" fill="none" stroke="var(--rk-logo-ink, #16233B)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="8" cy="16" r="4.5" fill="var(--rk-logo-ink, #16233B)"/>
+      <path d="M33.9 25L33.9 12.46L39.24 12.46Q40.29 12.46 41.14 12.62Q42 12.78 42.65 13.1Q43.31 13.41 43.76 13.86Q44.22 14.3 44.45 14.88Q44.68 15.46 44.68 16.17Q44.68 16.83 44.47 17.36Q44.26 17.89 43.83 18.29Q43.4 18.69 42.76 18.94Q42.11 19.19 41.26 19.3L41.26 19.59Q42.34 19.7 42.94 20.07Q43.54 20.44 43.86 21.05Q44.18 21.66 44.43 22.51L45.15 25L41.75 25L41.2 22.7Q41.03 21.94 40.73 21.52Q40.44 21.11 39.98 20.94Q39.53 20.78 38.84 20.78L36.96 20.78L36.96 25ZM36.96 18.52L39.03 18.52Q40.19 18.52 40.84 18.07Q41.48 17.61 41.48 16.64Q41.48 15.69 40.9 15.23Q40.31 14.78 39.11 14.78L36.96 14.78ZM46.48 25L46.48 12.46L49.53 12.46L49.53 17.95Q50.47 17.53 51.26 16.91Q52.06 16.28 52.68 15.54Q53.3 14.8 53.71 14.01Q54.11 13.22 54.3 12.46L57.84 12.46Q57.61 13.33 57.1 14.24Q56.58 15.14 55.86 15.97Q55.14 16.79 54.31 17.44Q53.49 18.08 52.63 18.46L52.63 18.75Q53.51 18.75 54.18 18.94Q54.85 19.13 55.38 19.53Q55.9 19.93 56.29 20.53Q56.68 21.12 56.96 21.96L58.05 25L54.57 25L53.87 22.51Q53.64 21.68 53.26 21.19Q52.88 20.71 52.25 20.49Q51.62 20.27 50.64 20.27L49.53 20.27L49.53 25Z" fill="var(--rk-logo-ink, #16233B)"/>
+      <circle cx="47" cy="46" r="11" fill="var(--rk-logo-coin, #E5432F)"/>
+      <path d="M40.11 50.2L40.11 42.61L43.34 42.61Q43.98 42.61 44.49 42.71Q45.01 42.81 45.41 43Q45.8 43.19 46.08 43.46Q46.36 43.73 46.49 44.08Q46.63 44.43 46.63 44.85Q46.63 45.26 46.51 45.58Q46.38 45.9 46.12 46.14Q45.86 46.38 45.47 46.53Q45.08 46.68 44.56 46.75L44.56 46.92Q45.22 46.99 45.58 47.22Q45.94 47.44 46.14 47.81Q46.33 48.18 46.48 48.69L46.92 50.2L44.86 50.2L44.53 48.81Q44.42 48.35 44.25 48.1Q44.07 47.84 43.79 47.74Q43.52 47.65 43.1 47.65L41.96 47.65L41.96 50.2ZM41.96 46.28L43.22 46.28Q43.92 46.28 44.31 46Q44.7 45.73 44.7 45.14Q44.7 44.57 44.34 44.29Q43.99 44.01 43.26 44.01L41.96 44.01ZM47.94 52.14L47.94 47.23L47.94 44.13L49.46 44.13L49.48 45.85L49.69 45.88Q49.79 45.23 50.06 44.81Q50.32 44.38 50.74 44.17Q51.16 43.97 51.7 43.97Q52.51 43.97 53.09 44.36Q53.67 44.75 53.98 45.47Q54.29 46.2 54.29 47.21Q54.29 48.11 54.02 48.82Q53.75 49.53 53.2 49.95Q52.66 50.36 51.82 50.36Q51.26 50.36 50.86 50.16Q50.47 49.96 50.2 49.57Q49.93 49.18 49.75 48.59L49.53 48.59Q49.6 48.9 49.66 49.22Q49.71 49.54 49.75 49.84Q49.79 50.14 49.79 50.42L49.79 52.14ZM51.14 48.9Q51.52 48.9 51.79 48.69Q52.06 48.49 52.21 48.11Q52.36 47.73 52.36 47.22Q52.36 46.68 52.2 46.3Q52.05 45.91 51.76 45.7Q51.47 45.49 51.09 45.49Q50.74 45.49 50.49 45.64Q50.24 45.8 50.09 46.04Q49.93 46.29 49.86 46.57Q49.79 46.84 49.79 47.08L49.79 47.34Q49.79 47.56 49.85 47.77Q49.91 47.99 50.02 48.19Q50.14 48.39 50.3 48.56Q50.46 48.72 50.67 48.81Q50.89 48.9 51.14 48.9Z" fill="var(--rk-logo-rp, #EEF1F5)"/>
+    </symbol>
+  </defs>
+</svg>
 <div class="app-shell app" id="browser-shell">
   <!-- ========================================================================
        DESKTOP SIDEBAR (SINGLE LOGICAL HOME FOR ACCOUNT + PRIMARY TABS + ALAT)
        ======================================================================== -->
   <aside class="sidebar" aria-label="Navigasi Utama">
     <div class="sb-top">
+      <button type="button" class="sb-brand" id="sb-brand-btn" aria-label="Buka Rincian Transaksi" title="Buka Rincian Transaksi">
+        <span class="sb-brand-mark rk-brand-tile" aria-hidden="true">
+          <svg viewBox="0 0 64 64"><use href="#rk-brand-symbol"/></svg>
+        </span>
+        <span class="sb-brand-wordmark" aria-hidden="true">
+          <svg viewBox="0 0 106 42" fill="none">
+            <path d="M1.93 22L1.93 3.52L9.8 3.52Q11.34 3.52 12.6 3.76Q13.86 4 14.83 4.46Q15.79 4.92 16.46 5.58Q17.14 6.24 17.47 7.09Q17.81 7.94 17.81 8.98Q17.81 9.96 17.5 10.74Q17.19 11.53 16.56 12.12Q15.93 12.7 14.98 13.07Q14.03 13.43 12.77 13.6L12.77 14.02Q14.36 14.19 15.25 14.73Q16.13 15.28 16.6 16.18Q17.08 17.07 17.44 18.33L18.51 22L13.5 22L12.68 18.61Q12.43 17.49 12 16.88Q11.56 16.26 10.89 16.02Q10.22 15.78 9.21 15.78L6.44 15.78L6.44 22ZM6.44 12.45L9.49 12.45Q11.2 12.45 12.15 11.78Q13.1 11.11 13.1 9.68Q13.1 8.28 12.24 7.61Q11.37 6.94 9.6 6.94L6.44 6.94ZM27.19 22.39Q25.34 22.39 23.88 21.9Q22.43 21.41 21.41 20.46Q20.38 19.51 19.85 18.11Q19.32 16.71 19.32 14.89Q19.32 13.12 19.84 11.64Q20.36 10.16 21.32 9.08Q22.29 8 23.7 7.41Q25.12 6.82 26.88 6.82Q28.67 6.82 30.03 7.4Q31.39 7.97 32.27 9.09Q33.15 10.21 33.57 11.82Q33.99 13.43 33.85 15.5L22.29 15.59L22.29 13.24L31.28 13.15L29.68 14.24Q29.88 12.84 29.51 11.96Q29.15 11.08 28.45 10.67Q27.75 10.27 26.94 10.27Q25.96 10.27 25.21 10.8Q24.47 11.33 24.05 12.34Q23.63 13.35 23.63 14.8Q23.63 17.1 24.63 18.14Q25.62 19.17 27.16 19.17Q27.92 19.17 28.42 18.96Q28.92 18.75 29.25 18.43Q29.57 18.11 29.75 17.72Q29.93 17.32 30.04 16.96L33.96 17.8Q33.74 18.84 33.25 19.68Q32.76 20.52 31.93 21.13Q31.11 21.75 29.95 22.07Q28.78 22.39 27.19 22.39ZM35.76 22L35.76 13.1L35.76 7.22L39.4 7.22L39.45 11.56L40.01 11.56Q40.38 9.99 41.05 8.92Q41.72 7.86 42.76 7.34Q43.79 6.82 45.19 6.82Q47.8 6.82 49.15 8.64Q50.51 10.46 50.51 14.44L50.51 22L45.98 22L45.98 14.94Q45.98 12.65 45.32 11.6Q44.66 10.55 43.37 10.55Q42.31 10.55 41.62 11.19Q40.94 11.84 40.6 12.9Q40.26 13.96 40.26 15.28L40.26 22ZM53.12 22L53.12 3.52L57.62 3.52L57.62 11.61Q59 11 60.17 10.07Q61.35 9.15 62.26 8.06Q63.17 6.96 63.77 5.8Q64.37 4.64 64.65 3.52L69.86 3.52Q69.52 4.81 68.77 6.14Q68.01 7.47 66.95 8.69Q65.88 9.9 64.67 10.86Q63.45 11.81 62.19 12.37L62.19 12.79Q63.48 12.79 64.47 13.07Q65.46 13.35 66.23 13.94Q67 14.52 67.58 15.41Q68.15 16.29 68.57 17.52L70.17 22L65.04 22L64.01 18.33Q63.67 17.1 63.11 16.39Q62.55 15.67 61.63 15.35Q60.7 15.03 59.25 15.03L57.62 15.03L57.62 22ZM78.62 22.39Q76.78 22.39 75.32 21.9Q73.86 21.41 72.84 20.46Q71.82 19.51 71.29 18.11Q70.76 16.71 70.76 14.89Q70.76 13.12 71.27 11.64Q71.79 10.16 72.76 9.08Q73.72 8 75.14 7.41Q76.55 6.82 78.32 6.82Q80.11 6.82 81.47 7.4Q82.82 7.97 83.71 9.09Q84.59 10.21 85.01 11.82Q85.43 13.43 85.29 15.5L73.72 15.59L73.72 13.24L82.71 13.15L81.12 14.24Q81.31 12.84 80.95 11.96Q80.58 11.08 79.88 10.67Q79.18 10.27 78.37 10.27Q77.39 10.27 76.65 10.8Q75.91 11.33 75.49 12.34Q75.07 13.35 75.07 14.8Q75.07 17.1 76.06 18.14Q77.06 19.17 78.6 19.17Q79.35 19.17 79.86 18.96Q80.36 18.75 80.68 18.43Q81 18.11 81.19 17.72Q81.37 17.32 81.48 16.96L85.4 17.8Q85.18 18.84 84.69 19.68Q84.2 20.52 83.37 21.13Q82.54 21.75 81.38 22.07Q80.22 22.39 78.62 22.39ZM92.26 22.39Q89.63 22.39 88.3 20.61Q86.97 18.84 86.97 15.2L86.97 7.22L91.5 7.22L91.5 14.61Q91.5 16.68 92.12 17.7Q92.74 18.72 94 18.72Q94.75 18.72 95.3 18.35Q95.84 17.97 96.22 17.28Q96.6 16.6 96.78 15.7Q96.96 14.8 96.96 13.74L96.96 7.22L101.47 7.22L101.47 16.01L101.47 22L97.89 22L97.8 17.44L97.24 17.44Q96.82 19.17 96.19 20.28Q95.56 21.38 94.61 21.89Q93.66 22.39 92.26 22.39Z" fill="var(--rk-logo-ink, #16233B)"/>
+            <path d="M1.45 38L1.45 30.74L3.98 30.74Q4.53 30.74 4.98 30.83Q5.44 30.92 5.8 31.09Q6.15 31.27 6.4 31.52Q6.65 31.77 6.78 32.11Q6.9 32.45 6.9 32.85Q6.9 33.24 6.79 33.56Q6.67 33.88 6.44 34.12Q6.21 34.36 5.87 34.51Q5.53 34.66 5.08 34.71L5.08 34.85Q5.47 34.9 5.77 35.06Q6.07 35.23 6.28 35.54Q6.48 35.85 6.64 36.37L7.1 38L6.01 38L5.64 36.52Q5.54 36.06 5.3 35.79Q5.06 35.51 4.71 35.38Q4.36 35.25 3.89 35.25L2.46 35.25L2.46 38ZM2.46 34.42L3.89 34.42Q4.87 34.42 5.37 34.07Q5.87 33.72 5.87 32.99Q5.87 32.27 5.39 31.92Q4.91 31.58 3.91 31.58L2.46 31.58ZM11.29 38.14Q10.62 38.14 10.11 37.94Q9.6 37.74 9.24 37.35Q8.89 36.97 8.72 36.44Q8.54 35.91 8.54 35.25Q8.54 34.58 8.72 34.02Q8.89 33.46 9.23 33.04Q9.57 32.62 10.07 32.4Q10.57 32.17 11.2 32.17Q11.76 32.17 12.23 32.36Q12.69 32.54 13.01 32.93Q13.34 33.33 13.5 33.91Q13.67 34.5 13.63 35.29L9.17 35.33L9.17 34.65L13.03 34.61L12.69 35.07Q12.74 34.38 12.56 33.93Q12.37 33.48 12.02 33.25Q11.68 33.02 11.2 33.02Q10.7 33.02 10.31 33.28Q9.93 33.55 9.72 34.04Q9.52 34.53 9.52 35.24Q9.52 36.25 9.97 36.78Q10.42 37.32 11.3 37.32Q11.65 37.32 11.91 37.24Q12.17 37.15 12.35 37Q12.53 36.86 12.65 36.66Q12.77 36.46 12.83 36.23L13.71 36.44Q13.61 36.83 13.41 37.15Q13.2 37.46 12.9 37.68Q12.6 37.9 12.2 38.02Q11.81 38.14 11.29 38.14ZM15.38 38L15.38 34.47L15.38 32.31L16.29 32.31L16.19 34.12L16.37 34.12Q16.53 33.45 16.79 33.02Q17.04 32.59 17.44 32.38Q17.84 32.17 18.36 32.17Q19.31 32.17 19.8 32.85Q20.29 33.52 20.29 34.87L20.29 38L19.28 38L19.28 34.95Q19.28 33.99 18.97 33.52Q18.67 33.06 18.09 33.06Q17.56 33.06 17.19 33.39Q16.82 33.72 16.61 34.26Q16.41 34.8 16.38 35.43L16.38 38ZM24.71 38.14Q23.96 38.14 23.44 37.9Q22.92 37.66 22.59 37.25Q22.27 36.85 22.12 36.32Q21.97 35.79 21.97 35.22Q21.97 34.59 22.14 34.04Q22.3 33.49 22.64 33.07Q22.97 32.64 23.47 32.41Q23.97 32.17 24.65 32.17Q25.29 32.17 25.79 32.4Q26.28 32.62 26.6 33.03Q26.91 33.44 27 34L26.04 34.26Q26.02 33.95 25.86 33.67Q25.7 33.38 25.39 33.2Q25.08 33.02 24.63 33.02Q24.21 33.02 23.9 33.18Q23.6 33.35 23.4 33.64Q23.19 33.94 23.09 34.34Q22.98 34.73 22.98 35.2Q22.98 35.83 23.17 36.31Q23.35 36.78 23.73 37.04Q24.12 37.31 24.71 37.31Q25.17 37.31 25.49 37.15Q25.81 36.99 26 36.7Q26.19 36.41 26.24 36.01L27.16 36.22Q27.09 36.69 26.88 37.05Q26.67 37.42 26.35 37.65Q26.03 37.89 25.62 38.02Q25.21 38.14 24.71 38.14ZM29.95 38.14Q29.49 38.14 29.11 37.96Q28.74 37.78 28.52 37.42Q28.3 37.07 28.3 36.52Q28.3 36.11 28.45 35.8Q28.59 35.49 28.91 35.27Q29.22 35.05 29.72 34.91Q30.21 34.77 30.93 34.67Q31.33 34.61 31.59 34.56Q31.85 34.5 31.97 34.38Q32.09 34.25 32.09 34Q32.09 33.58 31.81 33.29Q31.52 33.01 30.9 33.01Q30.58 33.01 30.26 33.12Q29.92 33.23 29.68 33.48Q29.43 33.74 29.36 34.21L28.44 33.9Q28.53 33.5 28.73 33.18Q28.94 32.86 29.25 32.64Q29.57 32.41 30 32.29Q30.42 32.17 30.94 32.17Q31.65 32.17 32.13 32.41Q32.61 32.65 32.85 33.15Q33.08 33.66 33.08 34.44L33.08 35.7Q33.08 36.04 33.1 36.44Q33.11 36.85 33.15 37.25Q33.18 37.65 33.21 38L32.29 38Q32.26 37.65 32.23 37.3Q32.2 36.94 32.19 36.59L32.05 36.59Q31.88 37 31.61 37.35Q31.33 37.7 30.92 37.92Q30.51 38.14 29.95 38.14ZM30.24 37.33Q30.49 37.33 30.73 37.25Q30.98 37.17 31.23 37Q31.48 36.82 31.7 36.55Q31.93 36.27 32.1 35.89L32.1 34.79L32.39 34.84Q32.21 35.02 31.92 35.11Q31.63 35.2 31.28 35.25Q30.93 35.31 30.57 35.37Q30.22 35.43 29.93 35.54Q29.64 35.66 29.46 35.87Q29.29 36.08 29.29 36.44Q29.29 36.88 29.55 37.1Q29.82 37.33 30.24 37.33ZM35.1 38L35.1 34.47L35.1 32.31L36 32.31L35.9 34.12L36.09 34.12Q36.24 33.45 36.5 33.02Q36.76 32.59 37.15 32.38Q37.55 32.17 38.08 32.17Q39.02 32.17 39.51 32.85Q40 33.52 40 34.87L40 38L38.99 38L38.99 34.95Q38.99 33.99 38.69 33.52Q38.38 33.06 37.8 33.06Q37.27 33.06 36.9 33.39Q36.54 33.72 36.33 34.26Q36.12 34.8 36.1 35.43L36.1 38ZM43.29 38.14Q42.83 38.14 42.45 37.96Q42.08 37.78 41.86 37.42Q41.64 37.07 41.64 36.52Q41.64 36.11 41.79 35.8Q41.94 35.49 42.25 35.27Q42.56 35.05 43.06 34.91Q43.55 34.77 44.27 34.67Q44.68 34.61 44.93 34.56Q45.19 34.5 45.31 34.38Q45.44 34.25 45.44 34Q45.44 33.58 45.15 33.29Q44.86 33.01 44.25 33.01Q43.93 33.01 43.6 33.12Q43.27 33.23 43.02 33.48Q42.77 33.74 42.71 34.21L41.78 33.9Q41.87 33.5 42.07 33.18Q42.28 32.86 42.6 32.64Q42.92 32.41 43.34 32.29Q43.76 32.17 44.28 32.17Q45 32.17 45.47 32.41Q45.95 32.65 46.19 33.15Q46.43 33.66 46.43 34.44L46.43 35.7Q46.43 36.04 46.44 36.44Q46.46 36.85 46.49 37.25Q46.52 37.65 46.56 38L45.63 38Q45.6 37.65 45.57 37.3Q45.55 36.94 45.53 36.59L45.39 36.59Q45.23 37 44.95 37.35Q44.68 37.7 44.26 37.92Q43.85 38.14 43.29 38.14ZM43.59 37.33Q43.83 37.33 44.08 37.25Q44.32 37.17 44.57 37Q44.82 36.82 45.04 36.55Q45.27 36.27 45.45 35.89L45.45 34.79L45.73 34.84Q45.56 35.02 45.26 35.11Q44.97 35.2 44.62 35.25Q44.27 35.31 43.92 35.37Q43.57 35.43 43.27 35.54Q42.98 35.66 42.81 35.87Q42.63 36.08 42.63 36.44Q42.63 36.88 42.89 37.1Q43.16 37.33 43.59 37.33ZM51.63 38L51.63 30.74L52.64 30.74L52.64 34.21Q53.25 34 53.82 33.64Q54.4 33.28 54.88 32.82Q55.37 32.37 55.73 31.83Q56.09 31.3 56.28 30.74L57.4 30.74Q57.18 31.38 56.83 31.94Q56.47 32.5 56.01 32.96Q55.56 33.42 55.07 33.77Q54.58 34.11 54.09 34.32L54.09 34.46Q54.63 34.46 55.07 34.6Q55.5 34.74 55.86 35.02Q56.22 35.29 56.5 35.72Q56.78 36.15 57.01 36.74L57.47 38L56.34 38L56.04 37.03Q55.79 36.34 55.45 35.89Q55.12 35.45 54.6 35.22Q54.09 35 53.29 35L52.64 35L52.64 38ZM61.54 38.14Q60.87 38.14 60.36 37.94Q59.85 37.74 59.49 37.35Q59.14 36.97 58.97 36.44Q58.79 35.91 58.79 35.25Q58.79 34.58 58.97 34.02Q59.14 33.46 59.48 33.04Q59.82 32.62 60.32 32.4Q60.81 32.17 61.45 32.17Q62.01 32.17 62.47 32.36Q62.94 32.54 63.26 32.93Q63.59 33.33 63.75 33.91Q63.92 34.5 63.88 35.29L59.42 35.33L59.42 34.65L63.28 34.61L62.94 35.07Q62.99 34.38 62.8 33.93Q62.62 33.48 62.27 33.25Q61.92 33.02 61.45 33.02Q60.95 33.02 60.56 33.28Q60.18 33.55 59.97 34.04Q59.77 34.53 59.77 35.24Q59.77 36.25 60.22 36.78Q60.67 37.32 61.55 37.32Q61.9 37.32 62.16 37.24Q62.42 37.15 62.6 37Q62.78 36.86 62.9 36.66Q63.01 36.46 63.08 36.23L63.96 36.44Q63.86 36.83 63.66 37.15Q63.45 37.46 63.15 37.68Q62.85 37.9 62.45 38.02Q62.06 38.14 61.54 38.14ZM67.46 38.14Q66.51 38.14 66.03 37.48Q65.54 36.82 65.54 35.51L65.54 32.31L66.56 32.31L66.56 35.43Q66.56 36.35 66.84 36.8Q67.13 37.25 67.74 37.25Q68.08 37.25 68.35 37.09Q68.62 36.92 68.83 36.61Q69.04 36.31 69.17 35.88Q69.31 35.46 69.35 34.96L69.35 32.31L70.35 32.31L70.35 35.62L70.35 38L69.46 38L69.55 36.17L69.38 36.17Q69.24 36.86 68.98 37.29Q68.72 37.73 68.34 37.93Q67.95 38.14 67.46 38.14ZM73.73 38.14Q73.27 38.14 72.89 37.96Q72.52 37.78 72.3 37.42Q72.08 37.07 72.08 36.52Q72.08 36.11 72.23 35.8Q72.37 35.49 72.69 35.27Q73 35.05 73.5 34.91Q73.99 34.77 74.71 34.67Q75.11 34.61 75.37 34.56Q75.63 34.5 75.75 34.38Q75.87 34.25 75.87 34Q75.87 33.58 75.59 33.29Q75.3 33.01 74.68 33.01Q74.37 33.01 74.04 33.12Q73.71 33.23 73.46 33.48Q73.21 33.74 73.14 34.21L72.22 33.9Q72.31 33.5 72.51 33.18Q72.72 32.86 73.03 32.64Q73.35 32.41 73.78 32.29Q74.2 32.17 74.72 32.17Q75.43 32.17 75.91 32.41Q76.39 32.65 76.63 33.15Q76.86 33.66 76.86 34.44L76.86 35.7Q76.86 36.04 76.88 36.44Q76.9 36.85 76.93 37.25Q76.96 37.65 76.99 38L76.07 38Q76.04 37.65 76.01 37.3Q75.98 36.94 75.97 36.59L75.83 36.59Q75.66 37 75.39 37.35Q75.11 37.7 74.7 37.92Q74.29 38.14 73.73 38.14ZM74.02 37.33Q74.27 37.33 74.51 37.25Q74.76 37.17 75.01 37Q75.26 36.82 75.48 36.55Q75.71 36.27 75.88 35.89L75.88 34.79L76.17 34.84Q75.99 35.02 75.7 35.11Q75.41 35.2 75.06 35.25Q74.71 35.31 74.35 35.37Q74 35.43 73.71 35.54Q73.42 35.66 73.24 35.87Q73.07 36.08 73.07 36.44Q73.07 36.88 73.33 37.1Q73.6 37.33 74.02 37.33ZM78.88 38L78.88 34.47L78.88 32.31L79.78 32.31L79.68 34.12L79.86 34.12Q80.02 33.45 80.28 33.02Q80.54 32.59 80.93 32.38Q81.33 32.17 81.86 32.17Q82.8 32.17 83.29 32.85Q83.78 33.52 83.78 34.87L83.78 38L82.77 38L82.77 34.95Q82.77 33.99 82.47 33.52Q82.16 33.06 81.58 33.06Q81.05 33.06 80.68 33.39Q80.32 33.72 80.11 34.26Q79.9 34.8 79.88 35.43L79.88 38ZM87.88 39.92Q86.98 39.92 86.4 39.79Q85.83 39.65 85.55 39.37Q85.28 39.09 85.28 38.67Q85.28 38.17 85.67 37.84Q86.07 37.51 86.87 37.4L86.87 37.2Q86.29 37.2 85.99 37.05Q85.7 36.91 85.7 36.63Q85.7 36.33 85.99 36.12Q86.29 35.92 86.96 35.74L86.96 35.54Q86.29 35.53 85.94 35.13Q85.59 34.74 85.59 34.12Q85.59 33.56 85.89 33.14Q86.19 32.73 86.77 32.51Q87.35 32.28 88.15 32.28L90.83 32.28L90.83 33.13L89.07 32.85L89.07 33.06Q89.71 33.19 90.05 33.51Q90.39 33.82 90.39 34.35Q90.39 34.82 90.12 35.17Q89.84 35.53 89.31 35.72Q88.78 35.91 87.99 35.91Q87.84 35.91 87.67 35.89Q87.5 35.88 87.22 35.83Q86.93 36.02 86.75 36.17Q86.56 36.33 86.56 36.45Q86.56 36.57 86.73 36.64Q86.91 36.71 87.15 36.74Q87.39 36.76 87.6 36.76L88.89 36.76Q89.1 36.76 89.44 36.8Q89.78 36.85 90.11 36.99Q90.45 37.13 90.68 37.43Q90.91 37.73 90.91 38.25Q90.91 38.85 90.56 39.22Q90.21 39.6 89.53 39.76Q88.86 39.92 87.88 39.92ZM87.91 39.1Q88.63 39.1 89.09 39.01Q89.56 38.91 89.77 38.72Q89.99 38.52 89.99 38.21Q89.99 37.92 89.84 37.76Q89.69 37.6 89.47 37.54Q89.25 37.47 89.03 37.46Q88.81 37.44 88.65 37.44L87.37 37.44Q86.73 37.58 86.49 37.84Q86.24 38.09 86.24 38.37Q86.24 38.68 86.46 38.84Q86.69 38.99 87.06 39.05Q87.44 39.1 87.91 39.1ZM88.04 35.26Q88.73 35.26 89.08 34.98Q89.44 34.69 89.44 34.21Q89.44 33.69 89.08 33.35Q88.72 33.02 88.01 33.02Q87.31 33.02 86.94 33.34Q86.57 33.66 86.57 34.16Q86.57 34.49 86.75 34.74Q86.92 34.99 87.24 35.12Q87.57 35.26 88.04 35.26ZM93.8 38.14Q93.34 38.14 92.97 37.96Q92.59 37.78 92.37 37.42Q92.15 37.07 92.15 36.52Q92.15 36.11 92.3 35.8Q92.45 35.49 92.76 35.27Q93.08 35.05 93.57 34.91Q94.07 34.77 94.78 34.67Q95.19 34.61 95.45 34.56Q95.71 34.5 95.83 34.38Q95.95 34.25 95.95 34Q95.95 33.58 95.66 33.29Q95.38 33.01 94.76 33.01Q94.44 33.01 94.11 33.12Q93.78 33.23 93.53 33.48Q93.29 33.74 93.22 34.21L92.3 33.9Q92.38 33.5 92.59 33.18Q92.79 32.86 93.11 32.64Q93.43 32.41 93.85 32.29Q94.28 32.17 94.79 32.17Q95.51 32.17 95.99 32.41Q96.46 32.65 96.7 33.15Q96.94 33.66 96.94 34.44L96.94 35.7Q96.94 36.04 96.95 36.44Q96.97 36.85 97 37.25Q97.04 37.65 97.07 38L96.15 38Q96.11 37.65 96.08 37.3Q96.06 36.94 96.05 36.59L95.9 36.59Q95.74 37 95.46 37.35Q95.19 37.7 94.78 37.92Q94.36 38.14 93.8 38.14ZM94.1 37.33Q94.34 37.33 94.59 37.25Q94.84 37.17 95.08 37Q95.33 36.82 95.56 36.55Q95.78 36.27 95.96 35.89L95.96 34.79L96.24 34.84Q96.07 35.02 95.78 35.11Q95.49 35.2 95.13 35.25Q94.78 35.31 94.43 35.37Q94.08 35.43 93.79 35.54Q93.49 35.66 93.32 35.87Q93.14 36.08 93.14 36.44Q93.14 36.88 93.41 37.1Q93.67 37.33 94.1 37.33ZM98.95 38L98.95 34.47L98.95 32.31L99.85 32.31L99.75 34.12L99.94 34.12Q100.09 33.45 100.35 33.02Q100.61 32.59 101.01 32.38Q101.4 32.17 101.93 32.17Q102.88 32.17 103.37 32.85Q103.86 33.52 103.86 34.87L103.86 38L102.84 38L102.84 34.95Q102.84 33.99 102.54 33.52Q102.24 33.06 101.66 33.06Q101.13 33.06 100.76 33.39Q100.39 33.72 100.18 34.26Q99.97 34.8 99.95 35.43L99.95 38Z" fill="var(--rk-logo-ink, #16233B)" fill-opacity="0.78"/>
+          </svg>
+        </span>
+      </button>
+      <button type="button" class="collapse-btn" id="sb-toggle" title="Ciutkan sidebar" aria-label="Ciutkan sidebar" aria-expanded="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 3v18"/></svg>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav" id="rk-nav" role="tablist" aria-label="Bagian rencana">
+      <button type="button" class="nav-btn active" role="tab" data-tab="rincian" data-t="rincian" title="Rincian Transaksi" aria-selected="true">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></svg>
+        <span class="nav-label">Rincian Transaksi</span>
+      </button>
+      <button type="button" class="nav-btn" role="tab" data-tab="kas" data-t="kas" title="Transaksi" aria-selected="false">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H5a2 2 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15V7"/><circle cx="16" cy="14" r="1.2"/></svg>
+        <span class="nav-label">Transaksi</span>
+        <span class="nav-badge ok" id="nav-badge-kas">0 tx</span>
+      </button>
+      <button type="button" class="nav-btn" role="tab" data-tab="jadwal" data-t="jadwal" title="Jadwal Tagihan" aria-selected="false">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 15h3M8 18h6"/></svg>
+        <span class="nav-label">Jadwal Tagihan</span>
+        <span class="nav-badge warn" id="nav-badge-jadwal">0 belum</span>
+      </button>
+      <button type="button" class="nav-btn" role="tab" data-tab="item" data-t="item" title="Kelola Item" aria-selected="false">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7.5 12 3l9 4.5-9 4.5z"/><path d="M3 12.5 12 17l9-4.5M3 17l9 4.5 9-4.5"/></svg>
+        <span class="nav-label">Kelola Item</span>
+        <span class="nav-badge" id="nav-badge-item">0</span>
+      </button>
+      <button type="button" class="nav-btn" role="tab" data-tab="sim" data-t="sim" title="Simulasi" aria-selected="false">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
+        <span class="nav-label">Simulasi</span>
+        <span class="nav-badge" id="nav-badge-sim">0 aktif</span>
+      </button>
+      <button type="button" class="nav-btn" id="nav-btn-trip" data-go-trip="1" title="Perjalanan">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+        <span class="nav-label">Perjalanan</span>
+        <span class="nav-badge ok" id="nav-badge-trip">0 trip</span>
+      </button>
+      <button type="button" class="nav-btn" id="alat-btn" title="Pengaturan &amp; Alat" aria-label="Pengaturan &amp; Alat" aria-haspopup="true" aria-expanded="false">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span class="nav-label">Pengaturan &amp; Alat</span>
+      </button>
+    </nav>
+
+    <div class="sb-bot">
       <button type="button" class="sb-av" id="acct" title="Masuk / daftar untuk sinkron" aria-label="Akun">
         <div class="av-circle anon">
           <span id="sb-ini"></span>
@@ -5782,48 +6249,6 @@ body[data-shell="mobile-app"] #mobile-app-shell #m-svg-sim-chart {
           <b id="sb-name">Halo, XXX</b>
           <span id="sb-sub">Mode lokal · tersimpan</span>
         </div>
-      </button>
-      <button type="button" class="collapse-btn" id="sb-toggle" title="Ciutkan sidebar" aria-label="Ciutkan sidebar" aria-expanded="true">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 3v18"/></svg>
-      </button>
-    </div>
-
-    <nav class="sidebar-nav" id="rk-nav" role="tablist" aria-label="Bagian rencana">
-      <button type="button" class="nav-btn active" role="tab" data-tab="rincian" data-t="rincian" aria-selected="true">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/><path d="M9.5 21v-6h5v6"/></svg>
-        <span class="nav-label">Rincian Transaksi</span>
-      </button>
-      <button type="button" class="nav-btn" role="tab" data-tab="kas" data-t="kas" aria-selected="false">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7H5a2 2 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15V7"/><circle cx="16" cy="14" r="1.2"/></svg>
-        <span class="nav-label">Transaksi</span>
-        <span class="nav-badge ok" id="nav-badge-kas">0 tx</span>
-      </button>
-      <button type="button" class="nav-btn" role="tab" data-tab="jadwal" data-t="jadwal" aria-selected="false">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 15h3M8 18h6"/></svg>
-        <span class="nav-label">Jadwal Tagihan</span>
-        <span class="nav-badge warn" id="nav-badge-jadwal">0 belum</span>
-      </button>
-      <button type="button" class="nav-btn" role="tab" data-tab="item" data-t="item" aria-selected="false">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7.5 12 3l9 4.5-9 4.5z"/><path d="M3 12.5 12 17l9-4.5M3 17l9 4.5 9-4.5"/></svg>
-        <span class="nav-label">Kelola Item</span>
-        <span class="nav-badge" id="nav-badge-item">0</span>
-      </button>
-      <button type="button" class="nav-btn" role="tab" data-tab="sim" data-t="sim" aria-selected="false">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>
-        <span class="nav-label">Simulasi</span>
-        <span class="nav-badge" id="nav-badge-sim">0 aktif</span>
-      </button>
-      <button type="button" class="nav-btn" id="nav-btn-trip" data-go-trip="1">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
-        <span class="nav-label">Perjalanan</span>
-        <span class="nav-badge ok" id="nav-badge-trip">0 trip</span>
-      </button>
-    </nav>
-
-    <div class="sb-bot">
-      <button type="button" class="nav-btn" id="alat-btn" aria-haspopup="true" aria-expanded="false">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span class="nav-label">Pengaturan &amp; Alat</span>
       </button>
     </div>
   </aside>
@@ -6652,9 +7077,12 @@ body[data-shell="mobile-app"] #mobile-app-shell #m-svg-sim-chart {
   <div class="modal-backdrop" id="lg" role="dialog" aria-modal="true" aria-labelledby="lg-h2" hidden>
     <div class="modal-box" style="max-width: 480px;">
       <div class="modal-head">
-        <div>
-          <h2 class="card-title" id="lg-h2">Akun &amp; Sinkronisasi Cloud</h2>
-          <p class="card-sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span class="rk-brand-tile" style="width:40px;height:40px;" aria-hidden="true"><svg viewBox="0 0 64 64"><use href="#rk-brand-symbol"/></svg></span>
+          <div>
+            <h2 class="card-title" id="lg-h2">Akun &amp; Sinkronisasi Cloud</h2>
+            <p class="card-sub">Data disimpan di akun Supabase Anda dan sinkron antar perangkat. Tanpa masuk, data tetap lokal.</p>
+          </div>
         </div>
         <button type="button" class="topbar-btn" style="width:32px; padding:0;" id="lgc" aria-label="Tutup">✕</button>
       </div>
@@ -8732,7 +9160,9 @@ function csvItems(rows) {
  */
 
 var $ = function (i) {
-  return document.getElementById(i);
+  var el = document.getElementById(i);
+  if (!el && i === 'm-fab-add') return document.getElementById('m-yr-btn-center');
+  return el;
 };
 
 /** Geser pil penanda tab (rail sidebar) ke tombol aktif; lebar rail saja. */
@@ -18767,8 +19197,10 @@ function navGo(k) {
     if (mode !== 'trip') setMode('trip');
     return;
   }
-  if (mode !== 'rencana') setMode('rencana');
+  var wasTrip = typeof mode !== 'undefined' && mode !== 'rencana';
+  if (wasTrip) setMode('rencana');
   tab(k);
+  if (wasTrip && typeof rkScheduleEntrance === 'function') rkScheduleEntrance('browser', k);
 }
 
 /** Perjalanan tampil? Pilihan eksplisit (rk-trip-vis) menang; bila belum pernah dipilih: tampil hanya jika sudah ada data perjalanan. */
@@ -19665,9 +20097,15 @@ function getShellMode() {
 /** Perbarui label/atribut tombol pemindah mode bila tersedia di DOM. */
 function syncShellSwitchUI(m) {
   if (typeof document === 'undefined') return;
+  var isApp = m === 'mobile-app';
+  try {
+    document.querySelectorAll('meta[name="theme-color"]').forEach(function (mt) {
+      if (!mt.dataset.origColor) mt.dataset.origColor = mt.getAttribute('content') || '';
+      mt.setAttribute('content', isApp ? '#0E3F86' : mt.dataset.origColor);
+    });
+  } catch (e) {}
   var btn = typeof $ === 'function' ? $('alat-shell-mode') : document.getElementById('alat-shell-mode');
   if (!btn) return;
-  var isApp = m === 'mobile-app';
   btn.setAttribute('data-shell-switch', isApp ? 'browser' : 'mobile-app');
   var span = btn.querySelector('span');
   if (span) span.textContent = isApp ? 'Mode Browser' : 'Mode Aplikasi HP';
@@ -19794,6 +20232,19 @@ function bindPrivacy() {
   syncNotifBtn();
 }
 
+/** Sinkronkan keadaan aktif tombol Akun APK dengan status buka/tutup popover Akun. */
+function rkSyncAcctOpenUI() {
+  if (typeof document === 'undefined') return;
+  var aPop = document.getElementById('m-acct-popover'),
+    aBtn = document.getElementById('m-acct-btn'),
+    aOpen = !!(aPop && aPop.classList.contains('open'));
+  if (aBtn) {
+    aBtn.classList.toggle('on', aOpen);
+    aBtn.classList.toggle('active', aOpen);
+    aBtn.setAttribute('aria-expanded', aOpen ? 'true' : 'false');
+  }
+}
+
 /** Sinkronkan keadaan aktif tombol notifikasi dengan status buka/tutup popover (Desktop & APK). */
 function rkSyncNotifOpenUI() {
   if (typeof document === 'undefined') return;
@@ -19813,6 +20264,7 @@ function rkSyncNotifOpenUI() {
     mBtn.classList.toggle('active', mOpen);
     mBtn.setAttribute('aria-expanded', mOpen ? 'true' : 'false');
   }
+  rkSyncAcctOpenUI();
 }
 
 /** Label & aksesibilitas tombol notifikasi (keadaan aktif .on mengikuti status popover). */
@@ -20977,7 +21429,12 @@ function brSyncAccountUI() {
     else sub.textContent = (typeof sb !== 'undefined' && sb) ? 'Klik untuk masuk Google / email' : 'Mode lokal · tersimpan';
   }
   var acctEl = $('acct'), av = acctEl && acctEl.querySelector('.av-circle');
-  if (acctEl) acctEl.classList.toggle('on', !!u);
+  if (acctEl) {
+    acctEl.classList.toggle('on', !!u);
+    var tip = 'Halo, ' + du.name + (sub && sub.textContent ? ' · ' + sub.textContent : '');
+    acctEl.title = tip;
+    acctEl.setAttribute('aria-label', tip);
+  }
   if (av) av.classList.toggle('anon', !u);
 }
 
@@ -23173,6 +23630,12 @@ function brBindEvents() {
       try { localStorage.setItem('rk-sb-collapsed', col ? '1' : '0'); } catch (e) {}
     };
   }
+  if ($('sb-brand-btn')) {
+    $('sb-brand-btn').onclick = function () {
+      if (typeof navGo === 'function') navGo('rincian');
+      else if (typeof tab === 'function') tab('rincian');
+    };
+  }
   if ($('nav-btn-trip')) {
     $('nav-btn-trip').onclick = function () { setMode(mode === 'trip' ? 'rencana' : 'trip'); };
   }
@@ -23246,6 +23709,18 @@ function brBindEvents() {
       if ($('chip-popover')) $('chip-popover').classList.remove('open');
       var open = alatMenu.classList.toggle('open');
       alatBtn.setAttribute('aria-expanded', String(open));
+      if (open && alatBtn.getBoundingClientRect) {
+        var br = alatBtn.getBoundingClientRect();
+        var vw = window.innerWidth || 1280;
+        var vh = window.innerHeight || 800;
+        var mw = alatMenu.offsetWidth || 248;
+        var mh = alatMenu.offsetHeight || 340;
+        var leftPos = br.right + 8 + mw <= vw - 12 ? br.right + 8 : Math.max(12, br.left);
+        var topPos = Math.max(12, Math.min(br.top, vh - mh - 12));
+        alatMenu.style.left = leftPos + 'px';
+        alatMenu.style.top = topPos + 'px';
+        alatMenu.style.bottom = 'auto';
+      }
     };
   }
   if ($('btn-notif')) {
@@ -24376,8 +24851,12 @@ function syncMobileCloudUI() {
   if (typeof USER_NAME !== 'undefined') USER_NAME = du.name;
   var av = $('m-acct-btn') && $('m-acct-btn').querySelector('.av-circle');
   if (av) av.classList.toggle('anon', !du.loggedIn);
+  var popAv = $('m-menu-acct') && $('m-menu-acct').querySelector('.ap-av');
+  if (popAv) popAv.classList.toggle('anon', !du.loggedIn);
   if ($('m-acct-ini')) $('m-acct-ini').textContent = du.initial;
-  if ($('m-user-name')) $('m-user-name').textContent = 'Halo, ' + du.name;
+  if ($('m-pop-acct-ini')) $('m-pop-acct-ini').textContent = du.initial;
+  if ($('m-user-name')) $('m-user-name').innerHTML = 'Halo, <b>' + esc(du.name) + '</b>';
+  if ($('m-pop-user-name')) $('m-pop-user-name').textContent = 'Halo, ' + du.name;
   var lbl = $('m-sync-lbl'), setSt = $('m-set-acct-status');
   var statusTxt = '● Mode Lokal', statusCol = 'var(--text-muted)';
   if (typeof sb !== 'undefined' && sb) {
@@ -24419,6 +24898,8 @@ function syncMobileCloudUI() {
   }
 }
 
+var RK_WORDMARK_PATH = 'M1.93 22L1.93 3.52L9.8 3.52Q11.34 3.52 12.6 3.76Q13.86 4 14.83 4.46Q15.79 4.92 16.46 5.58Q17.14 6.24 17.47 7.09Q17.81 7.94 17.81 8.98Q17.81 9.96 17.5 10.74Q17.19 11.53 16.56 12.12Q15.93 12.7 14.98 13.07Q14.03 13.43 12.77 13.6L12.77 14.02Q14.36 14.19 15.25 14.73Q16.13 15.28 16.6 16.18Q17.08 17.07 17.44 18.33L18.51 22L13.5 22L12.68 18.61Q12.43 17.49 12 16.88Q11.56 16.26 10.89 16.02Q10.22 15.78 9.21 15.78L6.44 15.78L6.44 22ZM6.44 12.45L9.49 12.45Q11.2 12.45 12.15 11.78Q13.1 11.11 13.1 9.68Q13.1 8.28 12.24 7.61Q11.37 6.94 9.6 6.94L6.44 6.94ZM27.19 22.39Q25.34 22.39 23.88 21.9Q22.43 21.41 21.41 20.46Q20.38 19.51 19.85 18.11Q19.32 16.71 19.32 14.89Q19.32 13.12 19.84 11.64Q20.36 10.16 21.32 9.08Q22.29 8 23.7 7.41Q25.12 6.82 26.88 6.82Q28.67 6.82 30.03 7.4Q31.39 7.97 32.27 9.09Q33.15 10.21 33.57 11.82Q33.99 13.43 33.85 15.5L22.29 15.59L22.29 13.24L31.28 13.15L29.68 14.24Q29.88 12.84 29.51 11.96Q29.15 11.08 28.45 10.67Q27.75 10.27 26.94 10.27Q25.96 10.27 25.21 10.8Q24.47 11.33 24.05 12.34Q23.63 13.35 23.63 14.8Q23.63 17.1 24.63 18.14Q25.62 19.17 27.16 19.17Q27.92 19.17 28.42 18.96Q28.92 18.75 29.25 18.43Q29.57 18.11 29.75 17.72Q29.93 17.32 30.04 16.96L33.96 17.8Q33.74 18.84 33.25 19.68Q32.76 20.52 31.93 21.13Q31.11 21.75 29.95 22.07Q28.78 22.39 27.19 22.39ZM35.76 22L35.76 13.1L35.76 7.22L39.4 7.22L39.45 11.56L40.01 11.56Q40.38 9.99 41.05 8.92Q41.72 7.86 42.76 7.34Q43.79 6.82 45.19 6.82Q47.8 6.82 49.15 8.64Q50.51 10.46 50.51 14.44L50.51 22L45.98 22L45.98 14.94Q45.98 12.65 45.32 11.6Q44.66 10.55 43.37 10.55Q42.31 10.55 41.62 11.19Q40.94 11.84 40.6 12.9Q40.26 13.96 40.26 15.28L40.26 22ZM53.12 22L53.12 3.52L57.62 3.52L57.62 11.61Q59 11 60.17 10.07Q61.35 9.15 62.26 8.06Q63.17 6.96 63.77 5.8Q64.37 4.64 64.65 3.52L69.86 3.52Q69.52 4.81 68.77 6.14Q68.01 7.47 66.95 8.69Q65.88 9.9 64.67 10.86Q63.45 11.81 62.19 12.37L62.19 12.79Q63.48 12.79 64.47 13.07Q65.46 13.35 66.23 13.94Q67 14.52 67.58 15.41Q68.15 16.29 68.57 17.52L70.17 22L65.04 22L64.01 18.33Q63.67 17.1 63.11 16.39Q62.55 15.67 61.63 15.35Q60.7 15.03 59.25 15.03L57.62 15.03L57.62 22ZM78.62 22.39Q76.78 22.39 75.32 21.9Q73.86 21.41 72.84 20.46Q71.82 19.51 71.29 18.11Q70.76 16.71 70.76 14.89Q70.76 13.12 71.27 11.64Q71.79 10.16 72.76 9.08Q73.72 8 75.14 7.41Q76.55 6.82 78.32 6.82Q80.11 6.82 81.47 7.4Q82.82 7.97 83.71 9.09Q84.59 10.21 85.01 11.82Q85.43 13.43 85.29 15.5L73.72 15.59L73.72 13.24L82.71 13.15L81.12 14.24Q81.31 12.84 80.95 11.96Q80.58 11.08 79.88 10.67Q79.18 10.27 78.37 10.27Q77.39 10.27 76.65 10.8Q75.91 11.33 75.49 12.34Q75.07 13.35 75.07 14.8Q75.07 17.1 76.06 18.14Q77.06 19.17 78.6 19.17Q79.35 19.17 79.86 18.96Q80.36 18.75 80.68 18.43Q81 18.11 81.19 17.72Q81.37 17.32 81.48 16.96L85.4 17.8Q85.18 18.84 84.69 19.68Q84.2 20.52 83.37 21.13Q82.54 21.75 81.38 22.07Q80.22 22.39 78.62 22.39ZM92.26 22.39Q89.63 22.39 88.3 20.61Q86.97 18.84 86.97 15.2L86.97 7.22L91.5 7.22L91.5 14.61Q91.5 16.68 92.12 17.7Q92.74 18.72 94 18.72Q94.75 18.72 95.3 18.35Q95.84 17.97 96.22 17.28Q96.6 16.6 96.78 15.7Q96.96 14.8 96.96 13.74L96.96 7.22L101.47 7.22L101.47 16.01L101.47 22L97.89 22L97.8 17.44L97.24 17.44Q96.82 19.17 96.19 20.28Q95.56 21.38 94.61 21.89Q93.66 22.39 92.26 22.39Z';
+
 function mobShellTemplate() {
   return (
     '<div class="phone-preview-bar" id="m-phone-preview-bar" role="toolbar" aria-label="Ukuran Pratinjau HP">' +
@@ -24435,9 +24916,9 @@ function mobShellTemplate() {
     '<div class="phone-hw-btn vol-up" aria-hidden="true"></div>' +
     '<div class="phone-hw-btn vol-dn" aria-hidden="true"></div>' +
     '<div class="phone-hw-btn pwr" aria-hidden="true"></div>' +
-    '<div class="mob-shell">' +
+    '<div class="mob-shell" data-mtab-active="rincian">' +
     '<div class="phone-os-notif" id="m-os-notif" role="alert" aria-live="polite">' +
-    '<div class="pon-top"><span class="pon-app"><span class="pon-ico">RK</span>Rencana Keuangan</span>' +
+    '<div class="pon-top"><span class="pon-app"><span class="pon-ico rk-brand-tile" aria-hidden="true"><svg viewBox="0 0 64 64"><use href="#rk-brand-symbol"/></svg></span>Rencana Keuangan</span>' +
     '<div style="display:flex;align-items:center;gap:6px"><span class="pon-time">Baru saja</span>' +
     '<button type="button" id="m-pon-close" style="color:#94A3B8;font-size:0.78rem;padding:0 3px" aria-label="Tutup notifikasi">✕</button></div></div>' +
     '<div class="pon-title" id="m-pon-title">Pengingat Tagihan Jatuh Tempo</div>' +
@@ -24446,26 +24927,56 @@ function mobShellTemplate() {
     '<button type="button" class="pon-btn primary" id="m-pon-paid">✓ Tandai Lunas</button>' +
     '<button type="button" class="pon-btn" id="m-pon-set">Atur Notif</button>' +
     '</div></div>' +
+    '<div class="apk-header-block">' +
+    '<svg class="hdr-motif" viewBox="0 0 390 150" preserveAspectRatio="xMidYMin slice" aria-hidden="true">' +
+    '<circle cx="348" cy="24" r="146" fill="none" stroke="#FFFFFF" stroke-opacity="0.075" stroke-width="1.5"/>' +
+    '<circle cx="348" cy="24" r="106" fill="none" stroke="#FFFFFF" stroke-opacity="0.065" stroke-width="1.2"/>' +
+    '<circle cx="348" cy="24" r="68" fill="#FFFFFF" fill-opacity="0.055"/>' +
+    '<path d="M230 -10 L398 158 M268 -10 L398 120" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="1.2"/>' +
+    '</svg>' +
+    '<div class="hdr-inner">' +
     '<div class="phone-status-bar" aria-hidden="true"><span>09:41</span><div class="phone-island"><span class="phone-island-cam"></span></div><div class="phone-sys-icons"><span>5G</span><span>94%</span></div></div>' +
     '<header class="mob-topbar">' +
-    '<button type="button" class="mt-user-btn" id="m-acct-btn" aria-label="Akun dan Sinkron Cloud">' +
-    '<div class="av-circle anon"><span id="m-acct-ini"></span><span class="av-dot"></span></div>' +
-    '<div class="mt-title-col"><span class="mt-name" id="m-user-name">Halo, XXX</span><span class="mt-sync" id="m-sync-lbl">● Mode Lokal</span></div>' +
-    '</button>' +
+    '<svg class="mt-wordmark" viewBox="1.9 2.5 101 21" fill="none" role="img" aria-label="RenKeu"><path d="' + RK_WORDMARK_PATH + '" fill="#FFFFFF"/></svg>' +
     '<div class="mt-actions">' +
-    '<button type="button" class="yr-chip-btn" id="m-top-yr-pill" title="Ubah Tahun &amp; Saldo Awal"><span id="m-top-yr-txt">2026</span><span style="font-size:0.65rem;opacity:0.65">▾</span></button>' +
+    '<button type="button" class="av-btn" id="m-acct-btn" aria-label="Akun, Tahun &amp; Pengaturan" aria-expanded="false" aria-haspopup="true" title="Akun, Tahun &amp; Pengaturan">' +
+    '<div class="av-circle anon"><span id="m-acct-ini"></span><span class="av-dot" aria-hidden="true"></span></div>' +
+    '</button>' +
     '<button type="button" class="ico-btn" id="m-btn-privacy" aria-label="Mode Privasi" aria-pressed="false" title="Kaburkan Nominal"><span class="rk-morph-icon" id="m-priv-morph" aria-hidden="true"><svg class="rk-ico-a" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg class="rk-ico-b" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></span></button>' +
     '<button type="button" class="ico-btn" id="m-btn-notif" aria-label="Notifikasi" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="notif-dot" id="m-notif-dot" style="display:none"></span></button>' +
     '</div></header>' +
+    '<p class="hdr-greet" id="m-user-name">Halo, <b>XXX</b></p>' +
+    '</div></div>' +
+    '<div class="acct-popover" id="m-acct-popover" role="dialog" aria-label="Menu Akun &amp; Pengaturan">' +
+    '<button type="button" class="ap-head" id="m-menu-acct">' +
+    '<div class="av-circle ap-av anon"><span id="m-pop-acct-ini"></span></div>' +
+    '<div class="ap-meta"><div class="ap-name" id="m-pop-user-name">Halo, XXX</div><div class="ap-sync" id="m-sync-lbl">● Mode Lokal</div></div>' +
+    '<span class="ap-chev" aria-hidden="true">&rsaquo;</span>' +
+    '</button>' +
+    '<div class="ap-sec">' +
+    '<div class="ap-hd-row"><div class="ap-lbl">Tahun Aktif</div><button type="button" class="ap-more-yr" id="m-top-yr-pill" title="Ubah Tahun &amp; Saldo Awal"><span id="m-top-yr-txt">2026</span><span aria-hidden="true">&#9662;</span></button></div>' +
+    '<div class="ap-years" id="m-acct-yr-pills"></div>' +
+    '</div>' +
+    '<button type="button" class="ap-item" id="m-acct-go-settings" data-mgo="settings">' +
+    '<span class="ap-item-lbl"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Pengaturan &amp; Alat</span>' +
+    '<span class="ap-chev" aria-hidden="true">&rsaquo;</span>' +
+    '</button>' +
+    '</div>' +
     '<main class="mob-main" id="m-main">' +
     // TAB 1: RINCIAN
     '<section class="tab-panel active" id="m-tab-rincian"><div class="stack">' +
-    '<div class="wallet-hero"><div class="rk-sync-hint" style="color:rgba(255,255,255,0.88)"><span class="rk-sync-hint-dot" style="background:#FFFFFF" aria-hidden="true"></span>Menyinkronkan data cloud…</div><div class="wallet-top"><div><div class="wallet-kicker">Saldo Realtime &middot; <span id="m-hero-lbl">2026</span></div>' +
+    '<div class="apk-hero-well">' +
+    '<svg class="hdr-motif hdr-motif-well" viewBox="0 0 390 210" preserveAspectRatio="xMidYMax slice" aria-hidden="true">' +
+    '<circle cx="28" cy="186" r="132" fill="none" stroke="#FFFFFF" stroke-opacity="0.07" stroke-width="1.5"/>' +
+    '<circle cx="28" cy="186" r="88" fill="none" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="1.2"/>' +
+    '<path d="M-12 94 L118 224 M-12 132 L80 224" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="1.2"/>' +
+    '</svg>' +
+    '<div class="wallet-hero"><div class="rk-sync-hint"><span class="rk-sync-hint-dot" aria-hidden="true"></span>Menyinkronkan data cloud…</div><div class="wallet-top"><div><div class="wallet-kicker">Saldo Realtime &middot; <span id="m-hero-lbl">2026</span></div>' +
     '<div class="rk-skel-wrap"><div class="wallet-bal pv" id="m-rincian-saldo">Rp 0</div></div></div></div>' +
     '<div class="wallet-io-grid">' +
     '<div class="wallet-io-box"><div class="wallet-io-hd"><span class="wallet-io-ico in" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg></span><span class="wallet-io-lbl">Pemasukan</span></div><div class="rk-skel-wrap"><div class="wallet-io-val mono pv" id="m-hero-inc">Rp 0</div></div><div class="wallet-io-sub">Total setahun</div></div>' +
     '<div class="wallet-io-box"><div class="wallet-io-hd"><span class="wallet-io-ico out" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg></span><span class="wallet-io-lbl">Pengeluaran</span></div><div class="rk-skel-wrap"><div class="wallet-io-val mono pv" id="m-hero-out">Rp 0</div></div><div class="wallet-io-sub">Total setahun</div></div>' +
-    '</div></div>' +
+    '</div></div></div>' +
     '<div class="card"><div class="card-hd" style="margin-bottom:8px"><h2 class="card-title">Proyeksi Arus Kas</h2>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="m-btn-expand-cf">⤢ Perbesar</button></div>' +
     '<div class="seg cf-range-seg" role="group" aria-label="Rentang Grafik">' +
@@ -24703,7 +25214,7 @@ function mobShellTemplate() {
     '<button type="button" class="list-row" data-mexp="bulan"><span>Rincian Bulanan</span><span class="badge b-em">.CSV</span></button>' +
     '<button type="button" class="list-row" data-mexp="ics"><span>Kalender Pengingat</span><span class="badge b-nt">.ICS</span></button></div></div></div>' +
     '<div class="modal-backdrop" id="m-sheet-acct"><div class="modal-sheet"><div class="ms-handle"></div>' +
-    '<div class="ms-head"><strong class="card-title">Akun &amp; Sinkron Cloud</strong><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-acct">✕</button></div>' +
+    '<div class="ms-head"><div style="display:flex;align-items:center;gap:10px"><span class="rk-brand-tile" style="width:32px;height:32px" aria-hidden="true"><svg viewBox="0 0 64 64"><use href="#rk-brand-symbol"/></svg></span><strong class="card-title">Akun &amp; Sinkron Cloud</strong></div><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-acct">✕</button></div>' +
     '<div class="ms-body" id="m-acct-body"></div></div></div>' +
     '<div class="notif-popover" id="m-notif-popover"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:800;font-size:0.82rem">Pengingat Jatuh Tempo</span>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="m-pop-to-set">Atur Notif &rarr;</button></div><div id="m-pop-os-cta"></div><div class="stack" style="gap:7px" id="m-notif-pop-list"></div>' +
@@ -24718,6 +25229,8 @@ function rkSyncMobScrollUi() {
   var sy = (mm ? mm.scrollTop : 0) || (typeof window !== 'undefined' ? (window.scrollY || 0) : 0);
   var tb = document.querySelector('#mobile-app-shell .mob-topbar');
   if (tb) tb.classList.toggle('is-scrolled', sy > 8);
+  var hb = document.querySelector('#mobile-app-shell .apk-header-block');
+  if (hb) hb.classList.toggle('is-scrolled', sy > 8);
   var btt = $('m-btt-btn');
   if (btt) btt.classList.toggle('is-visible', sy > 280);
 }
@@ -24736,6 +25249,8 @@ function ensureMobileShell() {
     }
     rkSyncMobScrollUi();
   }
+  var ms = root.querySelector('.mob-shell');
+  if (ms) ms.setAttribute('data-mtab-active', MOB_STATE.tab || 'rincian');
   return root;
 }
 
@@ -24746,14 +25261,28 @@ function switchMobileTab(tabId) {
   }
   var prevMobTab = MOB_STATE.tab;
   MOB_STATE.tab = tabId;
+  var ms = document.querySelector('#mobile-app-shell .mob-shell');
+  if (ms) ms.setAttribute('data-mtab-active', tabId);
+  if ($('m-acct-popover') && $('m-acct-popover').classList.contains('open')) {
+    $('m-acct-popover').classList.remove('open');
+    if (typeof rkSyncAcctOpenUI === 'function') rkSyncAcctOpenUI();
+  }
   document.querySelectorAll('#mobile-app-shell .tab-panel').forEach(function (el) {
     el.classList.toggle('active', el.id === 'm-tab-' + tabId);
   });
   document.querySelectorAll('#mobile-app-shell .mob-bottom-nav [data-mtab]').forEach(function (b) {
-    b.classList.toggle('active', b.getAttribute('data-mtab') === tabId);
+    var on = b.getAttribute('data-mtab') === tabId;
+    b.classList.toggle('active', on);
+    if (on) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
   });
   var mb = $('m-btn-more');
-  if (mb) mb.classList.toggle('active', ['sim', 'trip', 'settings'].indexOf(tabId) >= 0);
+  if (mb) {
+    var moreOn = ['sim', 'trip', 'settings'].indexOf(tabId) >= 0;
+    mb.classList.toggle('active', moreOn);
+    if (moreOn) mb.setAttribute('aria-current', 'page');
+    else mb.removeAttribute('aria-current');
+  }
   var mm = $('m-main');
   if (mm) mm.scrollTop = 0;
   rkSyncMobScrollUi();
@@ -24786,7 +25315,7 @@ function renderMobRincian() {
   if ($('m-hero-lbl')) $('m-hero-lbl').textContent = y + ' · ' + FULL_MON[smEff()];
   if ($('m-rincian-saldo')) {
     $('m-rincian-saldo').textContent = rp(KB.bal);
-    $('m-rincian-saldo').style.color = KB.bal < 0 ? '#FDA4AF' : '#FFFFFF';
+    $('m-rincian-saldo').style.color = KB.bal < 0 ? '#C93B3B' : '#0F172A';
   }
   if ($('m-hero-inc')) $('m-hero-inc').textContent = rp(C.inc || 0);
   if ($('m-hero-out')) $('m-hero-out').textContent = rp(C.out || 0);
@@ -25897,6 +26426,13 @@ function renderMobReportPreview(kind) {
 
 function renderMobMetaMenus() {
   if ($('m-top-yr-txt')) $('m-top-yr-txt').textContent = S.year;
+  var aYr = $('m-acct-yr-pills');
+  if (aYr && typeof ALL === 'object' && ALL && ALL.data) {
+    var yrs = Object.keys(ALL.data).map(Number).filter(Boolean).sort(function (a, b) { return a - b; });
+    aYr.innerHTML = yrs.map(function (y) {
+      return '<button type="button" class="ap-yr-btn' + (y === +S.year ? ' active' : '') + '" data-myrpick="' + y + '">' + y + '</button>';
+    }).join('');
+  }
   if ($('m-menu-cnt-item')) $('m-menu-cnt-item').textContent = S.items.length + ' item';
   if ($('m-menu-cnt-sim')) $('m-menu-cnt-sim').textContent = (typeof SIM !== 'undefined' ? SIM.length : 0) + ' aktif';
   var trs = mobTrips();
@@ -26094,6 +26630,11 @@ function bindMobileShellEvents(root) {
         mp.classList.remove('open');
         if (typeof rkSyncNotifOpenUI === 'function') rkSyncNotifOpenUI();
       }
+      var ap = $('m-acct-popover');
+      if (ap && ap.classList.contains('open') && !e.target.closest('#m-acct-popover') && !e.target.closest('#m-acct-btn')) {
+        ap.classList.remove('open');
+        if (typeof rkSyncAcctOpenUI === 'function') rkSyncAcctOpenUI();
+      }
     });
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
@@ -26103,13 +26644,18 @@ function bindMobileShellEvents(root) {
         mp.classList.remove('open');
         if (typeof rkSyncNotifOpenUI === 'function') rkSyncNotifOpenUI();
       }
+      var ap = $('m-acct-popover');
+      if (ap && ap.classList.contains('open')) {
+        ap.classList.remove('open');
+        if (typeof rkSyncAcctOpenUI === 'function') rkSyncAcctOpenUI();
+      }
     });
   }
   root.addEventListener('pointerdown', function (e) {
     if (typeof rkIsReducedMotion === 'function' && rkIsReducedMotion()) return;
     if (e.button && e.button !== 0) return;
-    var host = e.target && e.target.closest ? e.target.closest('.btn, .list-row, .cat-bento-card, .p-chip, .m-scen-card, .bn-btn, .bn-plus-fab') : null;
-    if (!host || host.disabled || host.classList.contains('ico-btn') || host.classList.contains('seg-btn')) return;
+    var host = e.target && e.target.closest ? e.target.closest('.btn, .list-row, .cat-bento-card, .p-chip, .m-scen-card, .bn-btn') : null;
+    if (!host || host.disabled || host.classList.contains('ico-btn') || host.classList.contains('av-btn') || host.classList.contains('seg-btn')) return;
     host.classList.add('rk-ripple-host');
     var rect = typeof host.getBoundingClientRect === 'function' ? host.getBoundingClientRect() : { left: 0, top: 0, width: 64, height: 44 };
     var w = rect.width || 64, h = rect.height || 44;
@@ -26222,6 +26768,12 @@ function bindMobileShellEvents(root) {
       if ($('m-notif-popover')) {
         $('m-notif-popover').classList.remove('open');
         if (typeof rkSyncNotifOpenUI === 'function') rkSyncNotifOpenUI();
+      }
+    }
+    if (!e.target.closest('#m-acct-popover') && !e.target.closest('#m-acct-btn')) {
+      if ($('m-acct-popover') && $('m-acct-popover').classList.contains('open')) {
+        $('m-acct-popover').classList.remove('open');
+        if (typeof rkSyncAcctOpenUI === 'function') rkSyncAcctOpenUI();
       }
     }
     if (!e.target.closest('.picker-wrap')) {
@@ -26365,6 +26917,7 @@ function bindMobileShellEvents(root) {
       return;
     }
     if (e.target.closest('#m-btn-notif')) {
+      if ($('m-acct-popover')) $('m-acct-popover').classList.remove('open');
       if (typeof rkTriggerBell === 'function') rkTriggerBell(e.target.closest('#m-btn-notif'));
       renderMobNotifPopover();
       var pop = $('m-notif-popover');
@@ -26373,7 +26926,23 @@ function bindMobileShellEvents(root) {
       return;
     }
 
-    if (e.target.closest('#m-acct-btn') || e.target.closest('#m-menu-acct') || e.target.closest('#m-set-open-acct')) { mobCloseSheet('m-sheet-more'); openMobAcctSheet(); return; }
+    if (e.target.closest('#m-acct-btn')) {
+      renderMobMetaMenus();
+      if ($('m-notif-popover')) $('m-notif-popover').classList.remove('open');
+      var aPop = $('m-acct-popover');
+      if (aPop) aPop.classList.toggle('open');
+      if (typeof rkSyncNotifOpenUI === 'function') rkSyncNotifOpenUI();
+      return;
+    }
+    if (e.target.closest('#m-menu-acct') || e.target.closest('#m-set-open-acct')) {
+      if ($('m-acct-popover')) {
+        $('m-acct-popover').classList.remove('open');
+        if (typeof rkSyncAcctOpenUI === 'function') rkSyncAcctOpenUI();
+      }
+      mobCloseSheet('m-sheet-more');
+      openMobAcctSheet();
+      return;
+    }
     if (e.target.closest('#m-lg-google')) { if (typeof authGoogle === 'function') authGoogle(); else showMobToast('Sinkron Google belum aktif'); return; }
     if (e.target.closest('#m-acct-sync-now')) { if (typeof pull === 'function') pull(); mobCloseSheet('m-sheet-acct'); return; }
     if (e.target.closest('#m-acct-logout')) {
@@ -26402,7 +26971,14 @@ function bindMobileShellEvents(root) {
       return;
     }
 
-    if (e.target.closest('#m-top-yr-pill') || e.target.closest('#m-yr-btn-center')) { openMobPeriodeSheet(); return; }
+    if (e.target.closest('#m-top-yr-pill') || e.target.closest('#m-yr-btn-center') || e.target.closest('#m-fab-add')) {
+      if ($('m-acct-popover')) {
+        $('m-acct-popover').classList.remove('open');
+        if (typeof rkSyncAcctOpenUI === 'function') rkSyncAcctOpenUI();
+      }
+      openMobPeriodeSheet();
+      return;
+    }
     if (e.target.closest('#m-btn-more')) { renderMobMetaMenus(); mobOpenSheet('m-sheet-more'); return; }
     if (e.target.closest('#m-menu-backup')) { mobCloseSheet('m-sheet-more'); mobOpenSheet('m-sheet-backup'); return; }
     var expBtn = e.target.closest('[data-mexp]');
@@ -26522,9 +27098,23 @@ function bindMobileShellEvents(root) {
       return;
     }
 
-    // Period & Year sheet handlers
+    // Period & Year sheet / account popover handlers
     var yp = e.target.closest('[data-myrpick]');
-    if (yp) { switchYear(+yp.getAttribute('data-myrpick')); openMobPeriodeSheet(); if (typeof rkAnimateChartOnly === 'function') rkAnimateChartOnly($('m-tab-rincian')); return; }
+    if (yp) {
+      var fromAcctPop = !!yp.closest('#m-acct-popover');
+      switchYear(+yp.getAttribute('data-myrpick'));
+      if (fromAcctPop) {
+        if ($('m-acct-popover')) {
+          $('m-acct-popover').classList.remove('open');
+          if (typeof rkSyncAcctOpenUI === 'function') rkSyncAcctOpenUI();
+        }
+        showMobToast('Tahun diganti ke ' + S.year);
+      } else {
+        openMobPeriodeSheet();
+      }
+      if (typeof rkAnimateChartOnly === 'function') rkAnimateChartOnly($('m-tab-rincian'));
+      return;
+    }
     if (e.target.closest('#m-cfg-save')) {
       var ny = parseInt($('m-cfg-year') ? $('m-cfg-year').value : S.year, 10);
       if (!(ny >= 1900 && ny <= 2200)) {

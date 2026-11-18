@@ -4,7 +4,9 @@
  */
 
 var $ = function (i) {
-  return document.getElementById(i);
+  var el = document.getElementById(i);
+  if (!el && i === 'm-fab-add') return document.getElementById('m-yr-btn-center');
+  return el;
 };
 
 /** Geser pil penanda tab (rail sidebar) ke tombol aktif; lebar rail saja. */

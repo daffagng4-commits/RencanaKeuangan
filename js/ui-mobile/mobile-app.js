@@ -319,8 +319,12 @@ function syncMobileCloudUI() {
   if (typeof USER_NAME !== 'undefined') USER_NAME = du.name;
   var av = $('m-acct-btn') && $('m-acct-btn').querySelector('.av-circle');
   if (av) av.classList.toggle('anon', !du.loggedIn);
+  var popAv = $('m-menu-acct') && $('m-menu-acct').querySelector('.ap-av');
+  if (popAv) popAv.classList.toggle('anon', !du.loggedIn);
   if ($('m-acct-ini')) $('m-acct-ini').textContent = du.initial;
-  if ($('m-user-name')) $('m-user-name').textContent = 'Halo, ' + du.name;
+  if ($('m-pop-acct-ini')) $('m-pop-acct-ini').textContent = du.initial;
+  if ($('m-user-name')) $('m-user-name').innerHTML = 'Halo, <b>' + esc(du.name) + '</b>';
+  if ($('m-pop-user-name')) $('m-pop-user-name').textContent = 'Halo, ' + du.name;
   var lbl = $('m-sync-lbl'), setSt = $('m-set-acct-status');
   var statusTxt = '● Mode Lokal', statusCol = 'var(--text-muted)';
   if (typeof sb !== 'undefined' && sb) {
@@ -362,6 +366,8 @@ function syncMobileCloudUI() {
   }
 }
 
+var RK_WORDMARK_PATH = 'M1.93 22L1.93 3.52L9.8 3.52Q11.34 3.52 12.6 3.76Q13.86 4 14.83 4.46Q15.79 4.92 16.46 5.58Q17.14 6.24 17.47 7.09Q17.81 7.94 17.81 8.98Q17.81 9.96 17.5 10.74Q17.19 11.53 16.56 12.12Q15.93 12.7 14.98 13.07Q14.03 13.43 12.77 13.6L12.77 14.02Q14.36 14.19 15.25 14.73Q16.13 15.28 16.6 16.18Q17.08 17.07 17.44 18.33L18.51 22L13.5 22L12.68 18.61Q12.43 17.49 12 16.88Q11.56 16.26 10.89 16.02Q10.22 15.78 9.21 15.78L6.44 15.78L6.44 22ZM6.44 12.45L9.49 12.45Q11.2 12.45 12.15 11.78Q13.1 11.11 13.1 9.68Q13.1 8.28 12.24 7.61Q11.37 6.94 9.6 6.94L6.44 6.94ZM27.19 22.39Q25.34 22.39 23.88 21.9Q22.43 21.41 21.41 20.46Q20.38 19.51 19.85 18.11Q19.32 16.71 19.32 14.89Q19.32 13.12 19.84 11.64Q20.36 10.16 21.32 9.08Q22.29 8 23.7 7.41Q25.12 6.82 26.88 6.82Q28.67 6.82 30.03 7.4Q31.39 7.97 32.27 9.09Q33.15 10.21 33.57 11.82Q33.99 13.43 33.85 15.5L22.29 15.59L22.29 13.24L31.28 13.15L29.68 14.24Q29.88 12.84 29.51 11.96Q29.15 11.08 28.45 10.67Q27.75 10.27 26.94 10.27Q25.96 10.27 25.21 10.8Q24.47 11.33 24.05 12.34Q23.63 13.35 23.63 14.8Q23.63 17.1 24.63 18.14Q25.62 19.17 27.16 19.17Q27.92 19.17 28.42 18.96Q28.92 18.75 29.25 18.43Q29.57 18.11 29.75 17.72Q29.93 17.32 30.04 16.96L33.96 17.8Q33.74 18.84 33.25 19.68Q32.76 20.52 31.93 21.13Q31.11 21.75 29.95 22.07Q28.78 22.39 27.19 22.39ZM35.76 22L35.76 13.1L35.76 7.22L39.4 7.22L39.45 11.56L40.01 11.56Q40.38 9.99 41.05 8.92Q41.72 7.86 42.76 7.34Q43.79 6.82 45.19 6.82Q47.8 6.82 49.15 8.64Q50.51 10.46 50.51 14.44L50.51 22L45.98 22L45.98 14.94Q45.98 12.65 45.32 11.6Q44.66 10.55 43.37 10.55Q42.31 10.55 41.62 11.19Q40.94 11.84 40.6 12.9Q40.26 13.96 40.26 15.28L40.26 22ZM53.12 22L53.12 3.52L57.62 3.52L57.62 11.61Q59 11 60.17 10.07Q61.35 9.15 62.26 8.06Q63.17 6.96 63.77 5.8Q64.37 4.64 64.65 3.52L69.86 3.52Q69.52 4.81 68.77 6.14Q68.01 7.47 66.95 8.69Q65.88 9.9 64.67 10.86Q63.45 11.81 62.19 12.37L62.19 12.79Q63.48 12.79 64.47 13.07Q65.46 13.35 66.23 13.94Q67 14.52 67.58 15.41Q68.15 16.29 68.57 17.52L70.17 22L65.04 22L64.01 18.33Q63.67 17.1 63.11 16.39Q62.55 15.67 61.63 15.35Q60.7 15.03 59.25 15.03L57.62 15.03L57.62 22ZM78.62 22.39Q76.78 22.39 75.32 21.9Q73.86 21.41 72.84 20.46Q71.82 19.51 71.29 18.11Q70.76 16.71 70.76 14.89Q70.76 13.12 71.27 11.64Q71.79 10.16 72.76 9.08Q73.72 8 75.14 7.41Q76.55 6.82 78.32 6.82Q80.11 6.82 81.47 7.4Q82.82 7.97 83.71 9.09Q84.59 10.21 85.01 11.82Q85.43 13.43 85.29 15.5L73.72 15.59L73.72 13.24L82.71 13.15L81.12 14.24Q81.31 12.84 80.95 11.96Q80.58 11.08 79.88 10.67Q79.18 10.27 78.37 10.27Q77.39 10.27 76.65 10.8Q75.91 11.33 75.49 12.34Q75.07 13.35 75.07 14.8Q75.07 17.1 76.06 18.14Q77.06 19.17 78.6 19.17Q79.35 19.17 79.86 18.96Q80.36 18.75 80.68 18.43Q81 18.11 81.19 17.72Q81.37 17.32 81.48 16.96L85.4 17.8Q85.18 18.84 84.69 19.68Q84.2 20.52 83.37 21.13Q82.54 21.75 81.38 22.07Q80.22 22.39 78.62 22.39ZM92.26 22.39Q89.63 22.39 88.3 20.61Q86.97 18.84 86.97 15.2L86.97 7.22L91.5 7.22L91.5 14.61Q91.5 16.68 92.12 17.7Q92.74 18.72 94 18.72Q94.75 18.72 95.3 18.35Q95.84 17.97 96.22 17.28Q96.6 16.6 96.78 15.7Q96.96 14.8 96.96 13.74L96.96 7.22L101.47 7.22L101.47 16.01L101.47 22L97.89 22L97.8 17.44L97.24 17.44Q96.82 19.17 96.19 20.28Q95.56 21.38 94.61 21.89Q93.66 22.39 92.26 22.39Z';
+
 function mobShellTemplate() {
   return (
     '<div class="phone-preview-bar" id="m-phone-preview-bar" role="toolbar" aria-label="Ukuran Pratinjau HP">' +
@@ -378,9 +384,9 @@ function mobShellTemplate() {
     '<div class="phone-hw-btn vol-up" aria-hidden="true"></div>' +
     '<div class="phone-hw-btn vol-dn" aria-hidden="true"></div>' +
     '<div class="phone-hw-btn pwr" aria-hidden="true"></div>' +
-    '<div class="mob-shell">' +
+    '<div class="mob-shell" data-mtab-active="rincian">' +
     '<div class="phone-os-notif" id="m-os-notif" role="alert" aria-live="polite">' +
-    '<div class="pon-top"><span class="pon-app"><span class="pon-ico">RK</span>Rencana Keuangan</span>' +
+    '<div class="pon-top"><span class="pon-app"><span class="pon-ico rk-brand-tile" aria-hidden="true"><svg viewBox="0 0 64 64"><use href="#rk-brand-symbol"/></svg></span>Rencana Keuangan</span>' +
     '<div style="display:flex;align-items:center;gap:6px"><span class="pon-time">Baru saja</span>' +
     '<button type="button" id="m-pon-close" style="color:#94A3B8;font-size:0.78rem;padding:0 3px" aria-label="Tutup notifikasi">✕</button></div></div>' +
     '<div class="pon-title" id="m-pon-title">Pengingat Tagihan Jatuh Tempo</div>' +
@@ -389,26 +395,56 @@ function mobShellTemplate() {
     '<button type="button" class="pon-btn primary" id="m-pon-paid">✓ Tandai Lunas</button>' +
     '<button type="button" class="pon-btn" id="m-pon-set">Atur Notif</button>' +
     '</div></div>' +
+    '<div class="apk-header-block">' +
+    '<svg class="hdr-motif" viewBox="0 0 390 150" preserveAspectRatio="xMidYMin slice" aria-hidden="true">' +
+    '<circle cx="348" cy="24" r="146" fill="none" stroke="#FFFFFF" stroke-opacity="0.075" stroke-width="1.5"/>' +
+    '<circle cx="348" cy="24" r="106" fill="none" stroke="#FFFFFF" stroke-opacity="0.065" stroke-width="1.2"/>' +
+    '<circle cx="348" cy="24" r="68" fill="#FFFFFF" fill-opacity="0.055"/>' +
+    '<path d="M230 -10 L398 158 M268 -10 L398 120" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="1.2"/>' +
+    '</svg>' +
+    '<div class="hdr-inner">' +
     '<div class="phone-status-bar" aria-hidden="true"><span>09:41</span><div class="phone-island"><span class="phone-island-cam"></span></div><div class="phone-sys-icons"><span>5G</span><span>94%</span></div></div>' +
     '<header class="mob-topbar">' +
-    '<button type="button" class="mt-user-btn" id="m-acct-btn" aria-label="Akun dan Sinkron Cloud">' +
-    '<div class="av-circle anon"><span id="m-acct-ini"></span><span class="av-dot"></span></div>' +
-    '<div class="mt-title-col"><span class="mt-name" id="m-user-name">Halo, XXX</span><span class="mt-sync" id="m-sync-lbl">● Mode Lokal</span></div>' +
-    '</button>' +
+    '<svg class="mt-wordmark" viewBox="1.9 2.5 101 21" fill="none" role="img" aria-label="RenKeu"><path d="' + RK_WORDMARK_PATH + '" fill="#FFFFFF"/></svg>' +
     '<div class="mt-actions">' +
-    '<button type="button" class="yr-chip-btn" id="m-top-yr-pill" title="Ubah Tahun &amp; Saldo Awal"><span id="m-top-yr-txt">2026</span><span style="font-size:0.65rem;opacity:0.65">▾</span></button>' +
+    '<button type="button" class="av-btn" id="m-acct-btn" aria-label="Akun, Tahun &amp; Pengaturan" aria-expanded="false" aria-haspopup="true" title="Akun, Tahun &amp; Pengaturan">' +
+    '<div class="av-circle anon"><span id="m-acct-ini"></span><span class="av-dot" aria-hidden="true"></span></div>' +
+    '</button>' +
     '<button type="button" class="ico-btn" id="m-btn-privacy" aria-label="Mode Privasi" aria-pressed="false" title="Kaburkan Nominal"><span class="rk-morph-icon" id="m-priv-morph" aria-hidden="true"><svg class="rk-ico-a" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg class="rk-ico-b" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></span></button>' +
     '<button type="button" class="ico-btn" id="m-btn-notif" aria-label="Notifikasi" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="notif-dot" id="m-notif-dot" style="display:none"></span></button>' +
     '</div></header>' +
+    '<p class="hdr-greet" id="m-user-name">Halo, <b>XXX</b></p>' +
+    '</div></div>' +
+    '<div class="acct-popover" id="m-acct-popover" role="dialog" aria-label="Menu Akun &amp; Pengaturan">' +
+    '<button type="button" class="ap-head" id="m-menu-acct">' +
+    '<div class="av-circle ap-av anon"><span id="m-pop-acct-ini"></span></div>' +
+    '<div class="ap-meta"><div class="ap-name" id="m-pop-user-name">Halo, XXX</div><div class="ap-sync" id="m-sync-lbl">● Mode Lokal</div></div>' +
+    '<span class="ap-chev" aria-hidden="true">&rsaquo;</span>' +
+    '</button>' +
+    '<div class="ap-sec">' +
+    '<div class="ap-hd-row"><div class="ap-lbl">Tahun Aktif</div><button type="button" class="ap-more-yr" id="m-top-yr-pill" title="Ubah Tahun &amp; Saldo Awal"><span id="m-top-yr-txt">2026</span><span aria-hidden="true">&#9662;</span></button></div>' +
+    '<div class="ap-years" id="m-acct-yr-pills"></div>' +
+    '</div>' +
+    '<button type="button" class="ap-item" id="m-acct-go-settings" data-mgo="settings">' +
+    '<span class="ap-item-lbl"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Pengaturan &amp; Alat</span>' +
+    '<span class="ap-chev" aria-hidden="true">&rsaquo;</span>' +
+    '</button>' +
+    '</div>' +
     '<main class="mob-main" id="m-main">' +
     // TAB 1: RINCIAN
     '<section class="tab-panel active" id="m-tab-rincian"><div class="stack">' +
-    '<div class="wallet-hero"><div class="rk-sync-hint" style="color:rgba(255,255,255,0.88)"><span class="rk-sync-hint-dot" style="background:#FFFFFF" aria-hidden="true"></span>Menyinkronkan data cloud…</div><div class="wallet-top"><div><div class="wallet-kicker">Saldo Realtime &middot; <span id="m-hero-lbl">2026</span></div>' +
+    '<div class="apk-hero-well">' +
+    '<svg class="hdr-motif hdr-motif-well" viewBox="0 0 390 210" preserveAspectRatio="xMidYMax slice" aria-hidden="true">' +
+    '<circle cx="28" cy="186" r="132" fill="none" stroke="#FFFFFF" stroke-opacity="0.07" stroke-width="1.5"/>' +
+    '<circle cx="28" cy="186" r="88" fill="none" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="1.2"/>' +
+    '<path d="M-12 94 L118 224 M-12 132 L80 224" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="1.2"/>' +
+    '</svg>' +
+    '<div class="wallet-hero"><div class="rk-sync-hint"><span class="rk-sync-hint-dot" aria-hidden="true"></span>Menyinkronkan data cloud…</div><div class="wallet-top"><div><div class="wallet-kicker">Saldo Realtime &middot; <span id="m-hero-lbl">2026</span></div>' +
     '<div class="rk-skel-wrap"><div class="wallet-bal pv" id="m-rincian-saldo">Rp 0</div></div></div></div>' +
     '<div class="wallet-io-grid">' +
     '<div class="wallet-io-box"><div class="wallet-io-hd"><span class="wallet-io-ico in" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg></span><span class="wallet-io-lbl">Pemasukan</span></div><div class="rk-skel-wrap"><div class="wallet-io-val mono pv" id="m-hero-inc">Rp 0</div></div><div class="wallet-io-sub">Total setahun</div></div>' +
     '<div class="wallet-io-box"><div class="wallet-io-hd"><span class="wallet-io-ico out" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg></span><span class="wallet-io-lbl">Pengeluaran</span></div><div class="rk-skel-wrap"><div class="wallet-io-val mono pv" id="m-hero-out">Rp 0</div></div><div class="wallet-io-sub">Total setahun</div></div>' +
-    '</div></div>' +
+    '</div></div></div>' +
     '<div class="card"><div class="card-hd" style="margin-bottom:8px"><h2 class="card-title">Proyeksi Arus Kas</h2>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="m-btn-expand-cf">⤢ Perbesar</button></div>' +
     '<div class="seg cf-range-seg" role="group" aria-label="Rentang Grafik">' +
@@ -646,7 +682,7 @@ function mobShellTemplate() {
     '<button type="button" class="list-row" data-mexp="bulan"><span>Rincian Bulanan</span><span class="badge b-em">.CSV</span></button>' +
     '<button type="button" class="list-row" data-mexp="ics"><span>Kalender Pengingat</span><span class="badge b-nt">.ICS</span></button></div></div></div>' +
     '<div class="modal-backdrop" id="m-sheet-acct"><div class="modal-sheet"><div class="ms-handle"></div>' +
-    '<div class="ms-head"><strong class="card-title">Akun &amp; Sinkron Cloud</strong><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-acct">✕</button></div>' +
+    '<div class="ms-head"><div style="display:flex;align-items:center;gap:10px"><span class="rk-brand-tile" style="width:32px;height:32px" aria-hidden="true"><svg viewBox="0 0 64 64"><use href="#rk-brand-symbol"/></svg></span><strong class="card-title">Akun &amp; Sinkron Cloud</strong></div><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-acct">✕</button></div>' +
     '<div class="ms-body" id="m-acct-body"></div></div></div>' +
     '<div class="notif-popover" id="m-notif-popover"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:800;font-size:0.82rem">Pengingat Jatuh Tempo</span>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="m-pop-to-set">Atur Notif &rarr;</button></div><div id="m-pop-os-cta"></div><div class="stack" style="gap:7px" id="m-notif-pop-list"></div>' +
@@ -661,6 +697,8 @@ function rkSyncMobScrollUi() {
   var sy = (mm ? mm.scrollTop : 0) || (typeof window !== 'undefined' ? (window.scrollY || 0) : 0);
   var tb = document.querySelector('#mobile-app-shell .mob-topbar');
   if (tb) tb.classList.toggle('is-scrolled', sy > 8);
+  var hb = document.querySelector('#mobile-app-shell .apk-header-block');
+  if (hb) hb.classList.toggle('is-scrolled', sy > 8);
   var btt = $('m-btt-btn');
   if (btt) btt.classList.toggle('is-visible', sy > 280);
 }
@@ -679,6 +717,8 @@ function ensureMobileShell() {
     }
     rkSyncMobScrollUi();
   }
+  var ms = root.querySelector('.mob-shell');
+  if (ms) ms.setAttribute('data-mtab-active', MOB_STATE.tab || 'rincian');
   return root;
 }
 
@@ -689,14 +729,28 @@ function switchMobileTab(tabId) {
   }
   var prevMobTab = MOB_STATE.tab;
   MOB_STATE.tab = tabId;
+  var ms = document.querySelector('#mobile-app-shell .mob-shell');
+  if (ms) ms.setAttribute('data-mtab-active', tabId);
+  if ($('m-acct-popover') && $('m-acct-popover').classList.contains('open')) {
+    $('m-acct-popover').classList.remove('open');
+    if (typeof rkSyncAcctOpenUI === 'function') rkSyncAcctOpenUI();
+  }
   document.querySelectorAll('#mobile-app-shell .tab-panel').forEach(function (el) {
     el.classList.toggle('active', el.id === 'm-tab-' + tabId);
   });
   document.querySelectorAll('#mobile-app-shell .mob-bottom-nav [data-mtab]').forEach(function (b) {
-    b.classList.toggle('active', b.getAttribute('data-mtab') === tabId);
+    var on = b.getAttribute('data-mtab') === tabId;
+    b.classList.toggle('active', on);
+    if (on) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
   });
   var mb = $('m-btn-more');
-  if (mb) mb.classList.toggle('active', ['sim', 'trip', 'settings'].indexOf(tabId) >= 0);
+  if (mb) {
+    var moreOn = ['sim', 'trip', 'settings'].indexOf(tabId) >= 0;
+    mb.classList.toggle('active', moreOn);
+    if (moreOn) mb.setAttribute('aria-current', 'page');
+    else mb.removeAttribute('aria-current');
+  }
   var mm = $('m-main');
   if (mm) mm.scrollTop = 0;
   rkSyncMobScrollUi();
@@ -729,7 +783,7 @@ function renderMobRincian() {
   if ($('m-hero-lbl')) $('m-hero-lbl').textContent = y + ' · ' + FULL_MON[smEff()];
   if ($('m-rincian-saldo')) {
     $('m-rincian-saldo').textContent = rp(KB.bal);
-    $('m-rincian-saldo').style.color = KB.bal < 0 ? '#FDA4AF' : '#FFFFFF';
+    $('m-rincian-saldo').style.color = KB.bal < 0 ? '#C93B3B' : '#0F172A';
   }
   if ($('m-hero-inc')) $('m-hero-inc').textContent = rp(C.inc || 0);
   if ($('m-hero-out')) $('m-hero-out').textContent = rp(C.out || 0);
@@ -1840,6 +1894,13 @@ function renderMobReportPreview(kind) {
 
 function renderMobMetaMenus() {
   if ($('m-top-yr-txt')) $('m-top-yr-txt').textContent = S.year;
+  var aYr = $('m-acct-yr-pills');
+  if (aYr && typeof ALL === 'object' && ALL && ALL.data) {
+    var yrs = Object.keys(ALL.data).map(Number).filter(Boolean).sort(function (a, b) { return a - b; });
+    aYr.innerHTML = yrs.map(function (y) {
+      return '<button type="button" class="ap-yr-btn' + (y === +S.year ? ' active' : '') + '" data-myrpick="' + y + '">' + y + '</button>';
+    }).join('');
+  }
   if ($('m-menu-cnt-item')) $('m-menu-cnt-item').textContent = S.items.length + ' item';
   if ($('m-menu-cnt-sim')) $('m-menu-cnt-sim').textContent = (typeof SIM !== 'undefined' ? SIM.length : 0) + ' aktif';
   var trs = mobTrips();
@@ -2037,6 +2098,11 @@ function bindMobileShellEvents(root) {
         mp.classList.remove('open');
         if (typeof rkSyncNotifOpenUI === 'function') rkSyncNotifOpenUI();
       }
+      var ap = $('m-acct-popover');
+      if (ap && ap.classList.contains('open') && !e.target.closest('#m-acct-popover') && !e.target.closest('#m-acct-btn')) {
+        ap.classList.remove('open');
+        if (typeof rkSyncAcctOpenUI === 'function') rkSyncAcctOpenUI();
+      }
     });
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
@@ -2046,13 +2112,18 @@ function bindMobileShellEvents(root) {
         mp.classList.remove('open');
         if (typeof rkSyncNotifOpenUI === 'function') rkSyncNotifOpenUI();
       }
+      var ap = $('m-acct-popover');
+      if (ap && ap.classList.contains('open')) {
+        ap.classList.remove('open');
+        if (typeof rkSyncAcctOpenUI === 'function') rkSyncAcctOpenUI();
+      }
     });
   }
   root.addEventListener('pointerdown', function (e) {
     if (typeof rkIsReducedMotion === 'function' && rkIsReducedMotion()) return;
     if (e.button && e.button !== 0) return;
-    var host = e.target && e.target.closest ? e.target.closest('.btn, .list-row, .cat-bento-card, .p-chip, .m-scen-card, .bn-btn, .bn-plus-fab') : null;
-    if (!host || host.disabled || host.classList.contains('ico-btn') || host.classList.contains('seg-btn')) return;
+    var host = e.target && e.target.closest ? e.target.closest('.btn, .list-row, .cat-bento-card, .p-chip, .m-scen-card, .bn-btn') : null;
+    if (!host || host.disabled || host.classList.contains('ico-btn') || host.classList.contains('av-btn') || host.classList.contains('seg-btn')) return;
     host.classList.add('rk-ripple-host');
     var rect = typeof host.getBoundingClientRect === 'function' ? host.getBoundingClientRect() : { left: 0, top: 0, width: 64, height: 44 };
     var w = rect.width || 64, h = rect.height || 44;
@@ -2165,6 +2236,12 @@ function bindMobileShellEvents(root) {
       if ($('m-notif-popover')) {
         $('m-notif-popover').classList.remove('open');
         if (typeof rkSyncNotifOpenUI === 'function') rkSyncNotifOpenUI();
+      }
+    }
+    if (!e.target.closest('#m-acct-popover') && !e.target.closest('#m-acct-btn')) {
+      if ($('m-acct-popover') && $('m-acct-popover').classList.contains('open')) {
+        $('m-acct-popover').classList.remove('open');
+        if (typeof rkSyncAcctOpenUI === 'function') rkSyncAcctOpenUI();
       }
     }
     if (!e.target.closest('.picker-wrap')) {
@@ -2308,6 +2385,7 @@ function bindMobileShellEvents(root) {
       return;
     }
     if (e.target.closest('#m-btn-notif')) {
+      if ($('m-acct-popover')) $('m-acct-popover').classList.remove('open');
       if (typeof rkTriggerBell === 'function') rkTriggerBell(e.target.closest('#m-btn-notif'));
       renderMobNotifPopover();
       var pop = $('m-notif-popover');
@@ -2316,7 +2394,23 @@ function bindMobileShellEvents(root) {
       return;
     }
 
-    if (e.target.closest('#m-acct-btn') || e.target.closest('#m-menu-acct') || e.target.closest('#m-set-open-acct')) { mobCloseSheet('m-sheet-more'); openMobAcctSheet(); return; }
+    if (e.target.closest('#m-acct-btn')) {
+      renderMobMetaMenus();
+      if ($('m-notif-popover')) $('m-notif-popover').classList.remove('open');
+      var aPop = $('m-acct-popover');
+      if (aPop) aPop.classList.toggle('open');
+      if (typeof rkSyncNotifOpenUI === 'function') rkSyncNotifOpenUI();
+      return;
+    }
+    if (e.target.closest('#m-menu-acct') || e.target.closest('#m-set-open-acct')) {
+      if ($('m-acct-popover')) {
+        $('m-acct-popover').classList.remove('open');
+        if (typeof rkSyncAcctOpenUI === 'function') rkSyncAcctOpenUI();
+      }
+      mobCloseSheet('m-sheet-more');
+      openMobAcctSheet();
+      return;
+    }
     if (e.target.closest('#m-lg-google')) { if (typeof authGoogle === 'function') authGoogle(); else showMobToast('Sinkron Google belum aktif'); return; }
     if (e.target.closest('#m-acct-sync-now')) { if (typeof pull === 'function') pull(); mobCloseSheet('m-sheet-acct'); return; }
     if (e.target.closest('#m-acct-logout')) {
@@ -2345,7 +2439,14 @@ function bindMobileShellEvents(root) {
       return;
     }
 
-    if (e.target.closest('#m-top-yr-pill') || e.target.closest('#m-yr-btn-center')) { openMobPeriodeSheet(); return; }
+    if (e.target.closest('#m-top-yr-pill') || e.target.closest('#m-yr-btn-center') || e.target.closest('#m-fab-add')) {
+      if ($('m-acct-popover')) {
+        $('m-acct-popover').classList.remove('open');
+        if (typeof rkSyncAcctOpenUI === 'function') rkSyncAcctOpenUI();
+      }
+      openMobPeriodeSheet();
+      return;
+    }
     if (e.target.closest('#m-btn-more')) { renderMobMetaMenus(); mobOpenSheet('m-sheet-more'); return; }
     if (e.target.closest('#m-menu-backup')) { mobCloseSheet('m-sheet-more'); mobOpenSheet('m-sheet-backup'); return; }
     var expBtn = e.target.closest('[data-mexp]');
@@ -2465,9 +2566,23 @@ function bindMobileShellEvents(root) {
       return;
     }
 
-    // Period & Year sheet handlers
+    // Period & Year sheet / account popover handlers
     var yp = e.target.closest('[data-myrpick]');
-    if (yp) { switchYear(+yp.getAttribute('data-myrpick')); openMobPeriodeSheet(); if (typeof rkAnimateChartOnly === 'function') rkAnimateChartOnly($('m-tab-rincian')); return; }
+    if (yp) {
+      var fromAcctPop = !!yp.closest('#m-acct-popover');
+      switchYear(+yp.getAttribute('data-myrpick'));
+      if (fromAcctPop) {
+        if ($('m-acct-popover')) {
+          $('m-acct-popover').classList.remove('open');
+          if (typeof rkSyncAcctOpenUI === 'function') rkSyncAcctOpenUI();
+        }
+        showMobToast('Tahun diganti ke ' + S.year);
+      } else {
+        openMobPeriodeSheet();
+      }
+      if (typeof rkAnimateChartOnly === 'function') rkAnimateChartOnly($('m-tab-rincian'));
+      return;
+    }
     if (e.target.closest('#m-cfg-save')) {
       var ny = parseInt($('m-cfg-year') ? $('m-cfg-year').value : S.year, 10);
       if (!(ny >= 1900 && ny <= 2200)) {

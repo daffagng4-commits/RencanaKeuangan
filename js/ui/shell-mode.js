@@ -79,9 +79,15 @@ function getShellMode() {
 /** Perbarui label/atribut tombol pemindah mode bila tersedia di DOM. */
 function syncShellSwitchUI(m) {
   if (typeof document === 'undefined') return;
+  var isApp = m === 'mobile-app';
+  try {
+    document.querySelectorAll('meta[name="theme-color"]').forEach(function (mt) {
+      if (!mt.dataset.origColor) mt.dataset.origColor = mt.getAttribute('content') || '';
+      mt.setAttribute('content', isApp ? '#0E3F86' : mt.dataset.origColor);
+    });
+  } catch (e) {}
   var btn = typeof $ === 'function' ? $('alat-shell-mode') : document.getElementById('alat-shell-mode');
   if (!btn) return;
-  var isApp = m === 'mobile-app';
   btn.setAttribute('data-shell-switch', isApp ? 'browser' : 'mobile-app');
   var span = btn.querySelector('span');
   if (span) span.textContent = isApp ? 'Mode Browser' : 'Mode Aplikasi HP';

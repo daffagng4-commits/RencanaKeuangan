@@ -53,8 +53,23 @@ function main() {
   fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
   fs.writeFileSync(idx, html);
   fs.writeFileSync(path.join(root, 'dist/index.html'), html);
-  // Salin file pendukung (manifest, service worker, ikon, tools) ke dist/
-  ['manifest.webmanifest', 'sw.js', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png'].forEach((f) => {
+  // Salin file pendukung (manifest, service worker, ikon, logo, tools) ke dist/
+  [
+    'manifest.webmanifest',
+    'sw.js',
+    'favicon.svg',
+    'favicon.ico',
+    'favicon-16.png',
+    'favicon-32.png',
+    'apple-touch-icon.png',
+    'icon-192.png',
+    'icon-512.png',
+    'icon-maskable-512.png',
+    'icon-adaptive-fg-512.png',
+    'icon-adaptive-bg-512.png',
+    'logo-lockup-light.svg',
+    'logo-lockup-dark.svg',
+  ].forEach((f) => {
     const p = path.join(root, f);
     if (fs.existsSync(p)) fs.copyFileSync(p, path.join(root, 'dist', f));
   });

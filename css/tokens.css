@@ -46,6 +46,12 @@
   --gold-deep: #B89132;
   --gold-soft: rgba(209, 174, 82, 0.14);
 
+  --rk-logo-bg: #EEF1F5;
+  --rk-logo-bd: #C9D2DE;
+  --rk-logo-ink: #16233B;
+  --rk-logo-coin: #E5432F;
+  --rk-logo-rp: #EEF1F5;
+
   --emerald: #0D7A52;
   --emerald-soft: #E7F6EF;
   --emerald-border: #A7E3C6;
@@ -252,6 +258,12 @@
     --bl: #6BA2FF;
     --bls: rgba(77, 142, 255, 0.14);
 
+    --rk-logo-bg: #16233B;
+    --rk-logo-bd: rgba(255, 255, 255, 0.14);
+    --rk-logo-ink: #EEF1F5;
+    --rk-logo-coin: #FF6A52;
+    --rk-logo-rp: #16233B;
+
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.25);
     --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 12px 30px -6px rgba(0, 0, 0, 0.45);
@@ -311,6 +323,12 @@
   --bl: #6BA2FF;
   --bls: rgba(77, 142, 255, 0.14);
 
+  --rk-logo-bg: #16233B;
+  --rk-logo-bd: rgba(255, 255, 255, 0.14);
+  --rk-logo-ink: #EEF1F5;
+  --rk-logo-coin: #FF6A52;
+  --rk-logo-rp: #16233B;
+
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.25);
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 12px 30px -6px rgba(0, 0, 0, 0.45);
@@ -358,6 +376,21 @@ body {
 body, input, button, select, textarea, table, kbd, code {
   font-feature-settings: "tnum" 1;
   font-variant-numeric: tabular-nums;
+}
+
+.rk-brand-tile {
+  background: var(--rk-logo-bg, #EEF1F5);
+  border: 1px solid var(--rk-logo-bd, #C9D2DE);
+  border-radius: 28%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: background-color var(--transition-med), border-color var(--transition-med);
+}
+.rk-brand-tile svg {
+  width: 76%;
+  height: 76%;
+  display: block;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1165,11 +1198,11 @@ body.rk-syncing .rk-skel-wrap::before {
 }
 
 body[data-shell="mobile-app"].rk-syncing .wallet-hero .rk-skel-wrap::after {
-  background: rgba(255, 255, 255, 0.22);
+  background: #E2E8F0;
 }
 
 body[data-shell="mobile-app"].rk-syncing .wallet-hero .rk-skel-wrap::before {
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.36) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.85) 50%, transparent 100%);
 }
 
 html[data-theme="dark"] body.rk-syncing .rk-skel-wrap::before {
@@ -1338,7 +1371,7 @@ body:not([data-shell="mobile-app"]) #m-btt-btn {
 
 #m-btt-btn {
   right: 16px;
-  bottom: calc(var(--bottom-nav-h) + 22px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--bottom-nav-h) + 32px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Theme View Transitions & Privacy Guard (#20) */

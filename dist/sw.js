@@ -1,14 +1,21 @@
 /**
  * Service Worker untuk Rencana Keuangan: offline cache & notifikasi lokal tagihan.
  */
-const CACHE_NAME = 'rk-cache-v14';
+const CACHE_NAME = 'rk-cache-v15';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
+  './favicon.svg',
+  './favicon.ico',
+  './favicon-16.png',
+  './favicon-32.png',
   './icon-192.png',
   './icon-512.png',
-  './apple-touch-icon.png'
+  './icon-maskable-512.png',
+  './apple-touch-icon.png',
+  './logo-lockup-light.svg',
+  './logo-lockup-dark.svg'
 ];
 
 self.addEventListener('install', (e) => {
@@ -74,7 +81,7 @@ self.addEventListener('fetch', (e) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
         }
         return res;
-      }).catch(() => cached);
+      }).catch(() => cached || caches.match(e.request, { ignoreSearch: true }));
       return cached || fetchPromise;
     })
   );

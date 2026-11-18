@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="id" data-variant="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup Redesign Header &amp; Bottom Nav APK — RenKeu</title>
+<style>
+  /* ==========================================================================
+     TOKEN PROYEK (disalin dari css/tokens.css & css/mobile.css tanpa diubah)
+     ========================================================================== */
+  :root {
+    --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    --bg-canvas: #F3F5F2;
+    --bg-surface: #FFFFFF;
+    --bg-subtle: #EDF1EC;
+    --border-subtle: #E2E8E2;
+    --border-strong: #CBD5CD;
+
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #64748B;
+
+    --accent: #0F52BA;
+    --accent-hover: #0B4197;
+    --emerald: #0D7A52;
+    --crimson: #C93B3B;
+    --gold: #D1AE52;
+    --gold-deep: #B89132;
+
+    --rk-navy: #16233B;
+    --rk-navy-mid: #1D2F4F;
+    --rk-navy-deep: #0F192B;
+    --rk-paper: #EEF1F5;
+    --rk-coin: #E5432F;
+    --rk-coin-dark: #FF6A52;
+
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+    --radius-xl: 22px;
+    --radius-pill: 9999px;
+
+    --shadow-card: 0 2px 10px rgba(15, 23, 42, 0.04), 0 0 0 1px var(--border-subtle);
+    --shadow-hero: 0 14px 28px -8px rgba(10, 18, 34, 0.34), 0 4px 10px rgba(10, 18, 34, 0.16);
+    --shadow-nav: 0 -8px 28px rgba(15, 23, 42, 0.16);
+
+    /* Token Animasi Proyek */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --transition-fast: 150ms var(--ease-out);
+    --transition-med: 240ms var(--ease-out);
+    --dur-card-enter-apk: 380ms;
+    --dur-nav-icon: 300ms;
+    --dur-nav-label: 150ms;
+    --dur-bell: 500ms;
+    --dur-badge-pop: 240ms;
+    --dur-icon-morph: 240ms;
+    --dur-press: 120ms;
+
+    /* Semantik Varian A (Terang — Rekomendasi) */
+    --hdr-bg: linear-gradient(162deg, #16233B 0%, #1D3156 58%, #16233B 100%);
+    --strip-bg: linear-gradient(125deg, #0F52BA 0%, #156FA8 54%, #0D7A52 100%);
+    --card-bg: #FFFFFF;
+    --card-fg: #0F172A;
+    --card-muted: #64748B;
+    --card-border: rgba(255, 255, 255, 0.16);
+    --card-div: #E2E8F0;
+    --card-link: #0F52BA;
+    --screen-bg: #ECEFF3;
+    --placeholder-card: #E2E6EC;
+    --placeholder-bar: #CFD6E0;
+    --botnav-bg: #16233B;
+    --nav-active: #F5D270;
+    --nav-inactive-op: 0.55;
+    --fab-bg: linear-gradient(145deg, #D9B75A 0%, #B89132 100%);
+    --fab-shadow: 0 8px 20px rgba(10, 18, 34, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.18) inset;
+    --rk-tile-bg: #EEF1F5;
+    --rk-tile-bd: #C9D2DE;
+    --rk-tile-ink: #16233B;
+    --rk-tile-coin: #E5432F;
+    --rk-tile-rp: #EEF1F5;
+  }
+
+  /* Varian B: Gelap (kartu gelap, aksen emas) */
+  html[data-variant="dark"] {
+    --hdr-bg: linear-gradient(162deg, #0B1220 0%, #16233B 64%, #0E1729 100%);
+    --strip-bg: linear-gradient(125deg, #1C2E4C 0%, #3E4756 44%, #9C7823 100%);
+    --card-bg: #141E2E;
+    --card-fg: #F1F5F9;
+    --card-muted: #94A3B8;
+    --card-border: rgba(224, 189, 99, 0.24);
+    --card-div: rgba(148, 163, 184, 0.18);
+    --card-link: #E0BD63;
+    --screen-bg: #0A0F18;
+    --placeholder-card: #121A28;
+    --placeholder-bar: #1D283B;
+    --botnav-bg: #111B2E;
+    --nav-active: #E8C568;
+    --nav-inactive-op: 0.55;
+    --fab-bg: linear-gradient(145deg, #E8C568 0%, #B89132 100%);
+    --fab-shadow: 0 10px 24px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.22) inset;
+    --rk-tile-bg: #16233B;
+    --rk-tile-bd: rgba(255, 255, 255, 0.18);
+    --rk-tile-ink: #EEF1F5;
+    --rk-tile-coin: #FF6A52;
+    --rk-tile-rp: #16233B;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --transition-fast: 0.001ms;
+      --transition-med: 0.001ms;
+      --dur-card-enter-apk: 0.001ms;
+      --dur-nav-icon: 0.001ms;
+      --dur-nav-label: 0.001ms;
+      --dur-bell: 0.001ms;
+      --dur-badge-pop: 0.001ms;
+      --dur-icon-morph: 0.001ms;
+      --dur-press: 0.001ms;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-sans);
+    background: #DFE4EC;
+    color: #0F172A;
+    min-height: 100vh;
+    padding: 24px 16px 56px;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "tnum" 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  button { font: inherit; color: inherit; cursor: pointer; background: none; border: none; }
+  button:focus-visible { outline: 2px solid #F5D270; outline-offset: 2px; }
+
+  /* ==========================================================================
+     TOOLBAR LUAR FRAME HP (Switcher Varian & Ulangi Entrance)
+     ========================================================================== */
+  .stage-wrap {
+    max-width: 920px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .stage-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid #CBD5E1;
+    border-radius: var(--radius-pill);
+    padding: 6px 8px;
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+  }
+
+  .var-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: var(--radius-pill);
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #475569;
+    transition: transform var(--dur-press) var(--ease-out), opacity var(--transition-fast);
+  }
+
+  .var-btn[aria-pressed="true"] {
+    background: #16233B;
+    color: #FFFFFF;
+  }
+
+  .var-badge {
+    font-size: 0.64rem;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: var(--radius-pill);
+    background: #E0BD63;
+    color: #16233B;
+    letter-spacing: 0.02em;
+  }
+
+  .replay-btn {
+    padding: 7px 12px;
+    border-radius: var(--radius-pill);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #0F52BA;
+    border: 1px solid #BFDBFE;
+    background: #EBF2FE;
+    transition: transform var(--dur-press) var(--ease-out), opacity var(--transition-fast);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .var-btn:not([aria-pressed="true"]):hover,
+    .replay-btn:hover { opacity: 0.85; }
+  }
+  .var-btn:active, .replay-btn:active { transform: scale(0.96); }
+
+  /* ==========================================================================
+     FRAME HP 390 x 844
+     ========================================================================== */
+  .phone-frame {
+    width: 390px;
+    height: 844px;
+    max-width: 100%;
+    background: var(--screen-bg);
+    border-radius: 44px;
+    border: 8px solid #1E293B;
+    box-shadow: 0 28px 64px -14px rgba(15, 23, 42, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.35);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .phone-screen {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--screen-bg);
+    position: relative;
+  }
+
+  /* ==========================================================================
+     1. HEADER ATAS (Menyatu ke atas layar, sudut bawah membulat, berisi kartu)
+     ========================================================================== */
+  .apk-header {
+    background: var(--hdr-bg);
+    color: #FFFFFF;
+    padding: 0 16px 20px;
+    border-bottom-left-radius: 28px;
+    border-bottom-right-radius: 28px;
+    flex-shrink: 0;
+    box-shadow: 0 8px 24px -10px rgba(15, 23, 42, 0.35);
+    position: relative;
+    z-index: 10;
+  }
+
+  .status-bar {
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 4px 0;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: 0.01em;
+  }
+
+  .notch-pill {
+    width: 96px;
+    height: 22px;
+    border-radius: var(--radius-pill);
+    background: #070B12;
+  }
+
+  /* Baris 1: Logo RenKeu + 3 Ikon Aksi (Privasi, Notif, Pengaturan) */
+  .hdr-row1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 6px;
+  }
+
+  .hdr-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+  }
+
+  .rk-brand-tile {
+    width: 32px;
+    height: 32px;
+    border-radius: 28%;
+    background: var(--rk-tile-bg);
+    border: 1px solid var(--rk-tile-bd);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .rk-brand-tile svg { width: 76%; height: 76%; display: block; }
+
+  .hdr-wordmark {
+    display: block;
+    width: 92px;
+    height: auto;
+  }
+
+  .hdr-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  /* Area visual 34px, area sentuh 44px via ::before */
+  .hdr-ico-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    position: relative;
+    transition: transform var(--dur-press) var(--ease-out), opacity var(--transition-fast);
+  }
+  .hdr-ico-btn::before {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .hdr-ico-btn:hover { opacity: 0.88; transform: scale(1.04); }
+  }
+  .hdr-ico-btn:active { transform: scale(0.95); opacity: 0.82; }
+
+  /* Titik badge notifikasi */
+  .notif-dot {
+    position: absolute;
+    top: 4px;
+    right: 5px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #F43F5E;
+    border: 1.5px solid #16233B;
+    transform-origin: center;
+  }
+
+  /* Baris 2: Sapaan "HALO, MIX" */
+  .hdr-greet {
+    margin: 14px 2px 12px;
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.78);
+    font-weight: 500;
+  }
+  .hdr-greet b {
+    font-weight: 800;
+    color: #FFFFFF;
+  }
+
+  /* Kartu Saldo Menggantung di dalam Header */
+  .bal-card {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--card-bg);
+    color: var(--card-fg);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--shadow-hero);
+  }
+
+  .bal-card.is-entering {
+    animation: rkCardEnterApk var(--dur-card-enter-apk) var(--ease-out) both;
+  }
+
+  @keyframes rkCardEnterApk {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .bal-strip {
+    background: var(--strip-bg);
+    color: #FFFFFF;
+    padding: 13px 15px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .bal-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    align-self: flex-start;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.34);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bal-sync-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.77rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+  }
+
+  .sync-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .sync-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #34D399;
+    flex-shrink: 0;
+  }
+
+  .sync-icon-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: #FFFFFF;
+    position: relative;
+    transition: transform var(--dur-press) var(--ease-out), opacity var(--transition-fast);
+  }
+  .sync-icon-btn::before { content: ""; position: absolute; inset: -8px; }
+  @media (hover: hover) and (pointer: fine) {
+    .sync-icon-btn:hover { opacity: 0.85; }
+  }
+  .sync-icon-btn:active { transform: scale(0.92); }
+  .sync-icon-btn.is-syncing svg {
+    animation: rkSpin 550ms var(--ease-out) 1;
+  }
+  @keyframes rkSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .bal-body {
+    padding: 15px 15px 12px;
+    background: var(--card-bg);
+  }
+
+  .bal-lbl {
+    font-size: 0.76rem;
+    font-weight: 600;
+    color: var(--card-muted);
+    margin-bottom: 4px;
+  }
+
+  .bal-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 36px;
+  }
+
+  .bal-val {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 1.48rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--card-fg);
+    line-height: 1.15;
+    white-space: nowrap;
+    transition: opacity var(--dur-nav-label) var(--ease-out), transform var(--dur-nav-label) var(--ease-out);
+  }
+
+  .bal-val.is-swap {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+
+  .card-eye-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--card-link);
+    position: relative;
+    flex-shrink: 0;
+    transition: transform var(--dur-press) var(--ease-out), opacity var(--transition-fast);
+  }
+  .card-eye-btn::before { content: ""; position: absolute; inset: -5px; border-radius: 50%; }
+  @media (hover: hover) and (pointer: fine) {
+    .card-eye-btn:hover { opacity: 0.8; transform: scale(1.06); }
+  }
+  .card-eye-btn:active { transform: scale(0.94); }
+
+  .bal-divider {
+    height: 1px;
+    background: var(--card-div);
+    margin: 12px -15px 10px;
+  }
+
+  .bal-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 2px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--card-link);
+    position: relative;
+    transition: transform var(--dur-press) var(--ease-out), opacity var(--transition-fast);
+  }
+  .bal-link::before { content: ""; position: absolute; inset: -6px -10px; }
+  @media (hover: hover) and (pointer: fine) {
+    .bal-link:hover { opacity: 0.8; }
+  }
+  .bal-link:active { transform: scale(0.97); }
+
+  /* ==========================================================================
+     ICON MORPHING & BELL SWING (sama persis dengan css/tokens.css)
+     ========================================================================== */
+  .rk-morph-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 19px;
+    height: 19px;
+    pointer-events: none;
+  }
+  .rk-morph-icon svg {
+    grid-area: 1 / 1;
+    width: 100%;
+    height: 100%;
+    transition:
+      opacity var(--dur-icon-morph) var(--ease-spring),
+      transform var(--dur-icon-morph) var(--ease-spring);
+  }
+  .rk-morph-icon .rk-ico-a { opacity: 1; transform: scale(1) rotate(0deg); }
+  .rk-morph-icon .rk-ico-b { opacity: 0; transform: scale(0.6) rotate(-45deg); }
+  .is-morphed .rk-morph-icon .rk-ico-a { opacity: 0; transform: scale(0.6) rotate(45deg); }
+  .is-morphed .rk-morph-icon .rk-ico-b { opacity: 1; transform: scale(1) rotate(0deg); }
+
+  @keyframes rkBellSwing {
+    0%, 100% { transform: rotate(0deg); }
+    18% { transform: rotate(15deg); }
+    36% { transform: rotate(-14deg); }
+    54% { transform: rotate(11deg); }
+    72% { transform: rotate(-8deg); }
+    86% { transform: rotate(4deg); }
+  }
+  @keyframes rkBadgePop {
+    0% { opacity: 0; transform: scale(0.5); }
+    65% { opacity: 1; transform: scale(1.18); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .rk-bell-ringing svg {
+    transform-origin: 50% 18%;
+    animation: rkBellSwing var(--dur-bell) var(--ease-out) 1 both;
+  }
+  .rk-badge-pop {
+    animation: rkBadgePop var(--dur-badge-pop) var(--ease-spring) 1 both;
+  }
+
+  /* ==========================================================================
+     KONTEN TENGAH PLACEHOLDER KOSONG ABU-ABU
+     ========================================================================== */
+  .mid-placeholder {
+    flex: 1;
+    min-height: 0;
+    padding: 18px 16px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+  }
+
+  .ph-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--card-muted);
+    text-align: center;
+    margin-bottom: 2px;
+    opacity: 0.7;
+  }
+
+  .ph-box {
+    background: var(--placeholder-card);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .ph-line {
+    height: 12px;
+    border-radius: 6px;
+    background: var(--placeholder-bar);
+  }
+  .ph-line.short { width: 42%; }
+  .ph-line.med { width: 68%; }
+
+  /* ==========================================================================
+     2. BOTTOM NAV NAVY + TOMBOL TENGAH EMAS 64PX MENONJOL 24PX
+     ========================================================================== */
+  .apk-botnav {
+    position: relative;
+    flex-shrink: 0;
+    background: var(--botnav-bg);
+    border-top-left-radius: 26px;
+    border-top-right-radius: 26px;
+    box-shadow: var(--shadow-nav);
+    padding: 8px 6px calc(12px + env(safe-area-inset-bottom, 0px));
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: end;
+    min-height: 74px;
+    z-index: 20;
+  }
+
+  .bn-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 44px;
+    min-height: 48px;
+    padding: 4px 2px 2px;
+    color: #FFFFFF;
+    opacity: var(--nav-inactive-op);
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    transition:
+      opacity var(--dur-nav-label) var(--ease-out),
+      color var(--dur-nav-label) var(--ease-out),
+      transform var(--dur-press) var(--ease-out);
+  }
+
+  .bn-item svg {
+    width: 21px;
+    height: 21px;
+    transition: transform var(--dur-nav-icon) var(--ease-spring);
+  }
+
+  .bn-item span {
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: 0.01em;
+    transition: color var(--dur-nav-label) var(--ease-out);
+  }
+
+  .bn-item.active {
+    opacity: 1;
+    color: var(--nav-active);
+  }
+  .bn-item.active svg {
+    transform: translateY(-3px) scale(1.15);
+  }
+  .bn-item.active span {
+    font-weight: 800;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .bn-item:not(.active):hover { opacity: 0.84; }
+  }
+  .bn-item:active { transform: scale(0.96); }
+
+  /* Tombol tengah emas 64px menonjol ~24px di atas bar dengan efek takik selaras warna bar */
+  .bn-center {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    min-height: 48px;
+  }
+
+  .bn-fab {
+    position: absolute;
+    top: -38px; /* menonjol tepat 24px di atas tepi bar */
+    left: 50%;
+    transform: translateX(-50%) scale(1);
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--fab-bg);
+    color: #FFFFFF;
+    border: 5px solid var(--botnav-bg);
+    box-shadow: var(--fab-shadow);
+    display: grid;
+    place-items: center;
+    transition: transform var(--dur-press) var(--ease-out);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .bn-fab:hover { transform: translateX(-50%) scale(1.03); }
+  }
+  .bn-fab:active {
+    transform: translateX(-50%) scale(0.95);
+    transition-duration: var(--dur-press);
+  }
+
+  /* Toast ringan khusus feedback tombol dalam mockup */
+  .mock-toast {
+    position: absolute;
+    bottom: 106px;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: rgba(15, 23, 42, 0.94);
+    color: #FFFFFF;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+    z-index: 30;
+  }
+  .mock-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ==========================================================================
+     RINGKASAN PERBANDINGAN & DAMPAK DI BAWAH FRAME
+     ========================================================================== */
+  .spec-panel {
+    width: 100%;
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    border-radius: 18px;
+    padding: 20px 22px;
+    box-shadow: 0 6px 24px rgba(15, 23, 42, 0.06);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px 24px;
+  }
+  .spec-panel h2 {
+    font-size: 0.94rem;
+    font-weight: 800;
+    color: #16233B;
+    margin-bottom: 10px;
+  }
+  .spec-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.81rem;
+    line-height: 1.5;
+    color: #334155;
+  }
+  .spec-list code {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    background: #F1F5F9;
+    padding: 1px 5px;
+    border-radius: 5px;
+    color: #0F52BA;
+  }
+  .rec-note {
+    grid-column: 1 / -1;
+    background: #EEF1F5;
+    border: 1px solid #C9D2DE;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 0.81rem;
+    color: #16233B;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <defs>
+    <symbol id="rk-brand-symbol" viewBox="0 0 64 64">
+      <path d="M8 16H22V30H34V46H38" fill="none" stroke="var(--rk-tile-ink, #16233B)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="8" cy="16" r="4.5" fill="var(--rk-tile-ink, #16233B)"/>
+      <path d="M33.9 25L33.9 12.46L39.24 12.46Q40.29 12.46 41.14 12.62Q42 12.78 42.65 13.1Q43.31 13.41 43.76 13.86Q44.22 14.3 44.45 14.88Q44.68 15.46 44.68 16.17Q44.68 16.83 44.47 17.36Q44.26 17.89 43.83 18.29Q43.4 18.69 42.76 18.94Q42.11 19.19 41.26 19.3L41.26 19.59Q42.34 19.7 42.94 20.07Q43.54 20.44 43.86 21.05Q44.18 21.66 44.43 22.51L45.15 25L41.75 25L41.2 22.7Q41.03 21.94 40.73 21.52Q40.44 21.11 39.98 20.94Q39.53 20.78 38.84 20.78L36.96 20.78L36.96 25ZM36.96 18.52L39.03 18.52Q40.19 18.52 40.84 18.07Q41.48 17.61 41.48 16.64Q41.48 15.69 40.9 15.23Q40.31 14.78 39.11 14.78L36.96 14.78ZM46.48 25L46.48 12.46L49.53 12.46L49.53 17.95Q50.47 17.53 51.26 16.91Q52.06 16.28 52.68 15.54Q53.3 14.8 53.71 14.01Q54.11 13.22 54.3 12.46L57.84 12.46Q57.61 13.33 57.1 14.24Q56.58 15.14 55.86 15.97Q55.14 16.79 54.31 17.44Q53.49 18.08 52.63 18.46L52.63 18.75Q53.51 18.75 54.18 18.94Q54.85 19.13 55.38 19.53Q55.9 19.93 56.29 20.53Q56.68 21.12 56.96 21.96L58.05 25L54.57 25L53.87 22.51Q53.64 21.68 53.26 21.19Q52.88 20.71 52.25 20.49Q51.62 20.27 50.64 20.27L49.53 20.27L49.53 25Z" fill="var(--rk-tile-ink, #16233B)"/>
+      <circle cx="47" cy="46" r="11" fill="var(--rk-tile-coin, #E5432F)"/>
+      <path d="M40.11 50.2L40.11 42.61L43.34 42.61Q43.98 42.61 44.49 42.71Q45.01 42.81 45.41 43Q45.8 43.19 46.08 43.46Q46.36 43.73 46.49 44.08Q46.63 44.43 46.63 44.85Q46.63 45.26 46.51 45.58Q46.38 45.9 46.12 46.14Q45.86 46.38 45.47 46.53Q45.08 46.68 44.56 46.75L44.56 46.92Q45.22 46.99 45.58 47.22Q45.94 47.44 46.14 47.81Q46.33 48.18 46.48 48.69L46.92 50.2L44.86 50.2L44.53 48.81Q44.42 48.35 44.25 48.1Q44.07 47.84 43.79 47.74Q43.52 47.65 43.1 47.65L41.96 47.65L41.96 50.2ZM41.96 46.28L43.22 46.28Q43.92 46.28 44.31 46Q44.7 45.73 44.7 45.14Q44.7 44.57 44.34 44.29Q43.99 44.01 43.26 44.01L41.96 44.01ZM47.94 52.14L47.94 47.23L47.94 44.13L49.46 44.13L49.48 45.85L49.69 45.88Q49.79 45.23 50.06 44.81Q50.32 44.38 50.74 44.17Q51.16 43.97 51.7 43.97Q52.51 43.97 53.09 44.36Q53.67 44.75 53.98 45.47Q54.29 46.2 54.29 47.21Q54.29 48.11 54.02 48.82Q53.75 49.53 53.2 49.95Q52.66 50.36 51.82 50.36Q51.26 50.36 50.86 50.16Q50.47 49.96 50.2 49.57Q49.93 49.18 49.75 48.59L49.53 48.59Q49.6 48.9 49.66 49.22Q49.71 49.54 49.75 49.84Q49.79 50.14 49.79 50.42L49.79 52.14ZM51.14 48.9Q51.52 48.9 51.79 48.69Q52.06 48.49 52.21 48.11Q52.36 47.73 52.36 47.22Q52.36 46.68 52.2 46.3Q52.05 45.91 51.76 45.7Q51.47 45.49 51.09 45.49Q50.74 45.49 50.49 45.64Q50.24 45.8 50.09 46.04Q49.93 46.29 49.86 46.57Q49.79 46.84 49.79 47.08L49.79 47.34Q49.79 47.56 49.85 47.77Q49.91 47.99 50.02 48.19Q50.14 48.39 50.3 48.56Q50.46 48.72 50.67 48.81Q50.89 48.9 51.14 48.9Z" fill="var(--rk-tile-rp, #EEF1F5)"/>
+    </symbol>
+  </defs>
+</svg>
+
+<main class="stage-wrap">
+  <!-- Switcher Varian di luar frame HP -->
+  <div class="stage-bar" role="toolbar" aria-label="Kontrol Mockup">
+    <button type="button" class="var-btn" id="btn-var-a" data-set-variant="light" aria-pressed="true">
+      <span>Varian A: Terang</span>
+      <span class="var-badge">Rekomendasi</span>
+    </button>
+    <button type="button" class="var-btn" id="btn-var-b" data-set-variant="dark" aria-pressed="false">
+      <span>Varian B: Gelap (Aksen Emas)</span>
+    </button>
+    <button type="button" class="replay-btn" id="btn-replay">↻ Ulangi Entrance 380ms</button>
+  </div>
+
+  <!-- Frame HP 390 x 844 -->
+  <section class="phone-frame" aria-label="Mockup APK 390 kali 844">
+    <div class="phone-screen">
+
+      <!-- 1. BLOK HEADER ATAS -->
+      <header class="apk-header">
+        <div class="status-bar" aria-hidden="true">
+          <span>09:41</span>
+          <span class="notch-pill"></span>
+          <span>5G · 94%</span>
+        </div>
+
+        <!-- Baris 1: Simbol RK Sudut + Wordmark "RenKeu" (persis logo desktop) & 3 Ikon Aksi -->
+        <div class="hdr-row1">
+          <div class="hdr-brand" aria-label="RenKeu">
+            <span class="rk-brand-tile" aria-hidden="true">
+              <svg viewBox="0 0 64 64"><use href="#rk-brand-symbol"/></svg>
+            </span>
+            <svg class="hdr-wordmark" viewBox="0 0 105 26" fill="none" role="img" aria-label="RenKeu">
+              <path d="M1.93 22L1.93 3.52L9.8 3.52Q11.34 3.52 12.6 3.76Q13.86 4 14.83 4.46Q15.79 4.92 16.46 5.58Q17.14 6.24 17.47 7.09Q17.81 7.94 17.81 8.98Q17.81 9.96 17.5 10.74Q17.19 11.53 16.56 12.12Q15.93 12.7 14.98 13.07Q14.03 13.43 12.77 13.6L12.77 14.02Q14.36 14.19 15.25 14.73Q16.13 15.28 16.6 16.18Q17.08 17.07 17.44 18.33L18.51 22L13.5 22L12.68 18.61Q12.43 17.49 12 16.88Q11.56 16.26 10.89 16.02Q10.22 15.78 9.21 15.78L6.44 15.78L6.44 22ZM6.44 12.45L9.49 12.45Q11.2 12.45 12.15 11.78Q13.1 11.11 13.1 9.68Q13.1 8.28 12.24 7.61Q11.37 6.94 9.6 6.94L6.44 6.94ZM27.19 22.39Q25.34 22.39 23.88 21.9Q22.43 21.41 21.41 20.46Q20.38 19.51 19.85 18.11Q19.32 16.71 19.32 14.89Q19.32 13.12 19.84 11.64Q20.36 10.16 21.32 9.08Q22.29 8 23.7 7.41Q25.12 6.82 26.88 6.82Q28.67 6.82 30.03 7.4Q31.39 7.97 32.27 9.09Q33.15 10.21 33.57 11.82Q33.99 13.43 33.85 15.5L22.29 15.59L22.29 13.24L31.28 13.15L29.68 14.24Q29.88 12.84 29.51 11.96Q29.15 11.08 28.45 10.67Q27.75 10.27 26.94 10.27Q25.96 10.27 25.21 10.8Q24.47 11.33 24.05 12.34Q23.63 13.35 23.63 14.8Q23.63 17.1 24.63 18.14Q25.62 19.17 27.16 19.17Q27.92 19.17 28.42 18.96Q28.92 18.75 29.25 18.43Q29.57 18.11 29.75 17.72Q29.93 17.32 30.04 16.96L33.96 17.8Q33.74 18.84 33.25 19.68Q32.76 20.52 31.93 21.13Q31.11 21.75 29.95 22.07Q28.78 22.39 27.19 22.39ZM35.76 22L35.76 13.1L35.76 7.22L39.4 7.22L39.45 11.56L40.01 11.56Q40.38 9.99 41.05 8.92Q41.72 7.86 42.76 7.34Q43.79 6.82 45.19 6.82Q47.8 6.82 49.15 8.64Q50.51 10.46 50.51 14.44L50.51 22L45.98 22L45.98 14.94Q45.98 12.65 45.32 11.6Q44.66 10.55 43.37 10.55Q42.31 10.55 41.62 11.19Q40.94 11.84 40.6 12.9Q40.26 13.96 40.26 15.28L40.26 22ZM53.12 22L53.12 3.52L57.62 3.52L57.62 11.61Q59 11 60.17 10.07Q61.35 9.15 62.26 8.06Q63.17 6.96 63.77 5.8Q64.37 4.64 64.65 3.52L69.86 3.52Q69.52 4.81 68.77 6.14Q68.01 7.47 66.95 8.69Q65.88 9.9 64.67 10.86Q63.45 11.81 62.19 12.37L62.19 12.79Q63.48 12.79 64.47 13.07Q65.46 13.35 66.23 13.94Q67 14.52 67.58 15.41Q68.15 16.29 68.57 17.52L70.17 22L65.04 22L64.01 18.33Q63.67 17.1 63.11 16.39Q62.55 15.67 61.63 15.35Q60.7 15.03 59.25 15.03L57.62 15.03L57.62 22ZM78.62 22.39Q76.78 22.39 75.32 21.9Q73.86 21.41 72.84 20.46Q71.82 19.51 71.29 18.11Q70.76 16.71 70.76 14.89Q70.76 13.12 71.27 11.64Q71.79 10.16 72.76 9.08Q73.72 8 75.14 7.41Q76.55 6.82 78.32 6.82Q80.11 6.82 81.47 7.4Q82.82 7.97 83.71 9.09Q84.59 10.21 85.01 11.82Q85.43 13.43 85.29 15.5L73.72 15.59L73.72 13.24L82.71 13.15L81.12 14.24Q81.31 12.84 80.95 11.96Q80.58 11.08 79.88 10.67Q79.18 10.27 78.37 10.27Q77.39 10.27 76.65 10.8Q75.91 11.33 75.49 12.34Q75.07 13.35 75.07 14.8Q75.07 17.1 76.06 18.14Q77.06 19.17 78.6 19.17Q79.35 19.17 79.86 18.96Q80.36 18.75 80.68 18.43Q81 18.11 81.19 17.72Q81.37 17.32 81.48 16.96L85.4 17.8Q85.18 18.84 84.69 19.68Q84.2 20.52 83.37 21.13Q82.54 21.75 81.38 22.07Q80.22 22.39 78.62 22.39ZM92.26 22.39Q89.63 22.39 88.3 20.61Q86.97 18.84 86.97 15.2L86.97 7.22L91.5 7.22L91.5 14.61Q91.5 16.68 92.12 17.7Q92.74 18.72 94 18.72Q94.75 18.72 95.3 18.35Q95.84 17.97 96.22 17.28Q96.6 16.6 96.78 15.7Q96.96 14.8 96.96 13.74L96.96 7.22L101.47 7.22L101.47 16.01L101.47 22L97.89 22L97.8 17.44L97.24 17.44Q96.82 19.17 96.19 20.28Q95.56 21.38 94.61 21.89Q93.66 22.39 92.26 22.39Z" fill="#EEF1F5"/>
+            </svg>
+          </div>
+
+          <div class="hdr-actions">
+            <button type="button" class="hdr-ico-btn" id="hdr-privacy-btn" aria-label="Mode Privasi" aria-pressed="true" title="Tampilkan / Sembunyikan Saldo">
+              <span class="rk-morph-icon" aria-hidden="true">
+                <svg class="rk-ico-a" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="rk-ico-b" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </span>
+            </button>
+            <button type="button" class="hdr-ico-btn" id="hdr-notif-btn" aria-label="Notifikasi" title="Notifikasi Tagihan">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span class="notif-dot" id="hdr-notif-dot"></span>
+            </button>
+            <button type="button" class="hdr-ico-btn" id="hdr-settings-btn" aria-label="Pengaturan" title="Pengaturan">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Baris 2: Sapaan "HALO, MIX" -->
+        <p class="hdr-greet">HALO, <b>MIX</b></p>
+
+        <!-- Kartu Saldo Menggantung di dalam Header -->
+        <article class="bal-card is-entering" id="bal-card" aria-label="Ringkasan Saldo">
+          <div class="bal-strip">
+            <span class="bal-chip">Tahun 2026</span>
+            <div class="bal-sync-row">
+              <span class="sync-status">
+                <span class="sync-dot" aria-hidden="true"></span>
+                <span>Tersinkron · Cloud aktif</span>
+              </span>
+              <button type="button" class="sync-icon-btn" id="btn-cloud-sync" aria-label="Sinkronkan Cloud" title="Sinkronkan Cloud">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-15.5-6.3L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 15.5 6.3L21 16"/><path d="M16 16h5v5"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="bal-body">
+            <div class="bal-lbl">Saldo Hari Ini</div>
+            <div class="bal-row">
+              <div class="bal-val" id="bal-val">Rp ●●●●●●●●</div>
+              <button type="button" class="card-eye-btn is-morphed" id="card-eye-btn" aria-label="Tampilkan atau sembunyikan saldo" aria-pressed="true" title="Tampilkan / Sembunyikan Saldo">
+                <span class="rk-morph-icon" aria-hidden="true">
+                  <svg class="rk-ico-a" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="rk-ico-b" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </span>
+              </button>
+            </div>
+            <div class="bal-divider"></div>
+            <button type="button" class="bal-link" id="btn-lihat-tx">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h7M7 17h4"/></svg>
+              <span>Lihat Transaksi</span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </article>
+      </header>
+
+      <!-- AREA TENGAH PLACEHOLDER KOSONG ABU-ABU -->
+      <div class="mid-placeholder" aria-hidden="true">
+        <div class="ph-label">Placeholder Konten Tengah (390×844)</div>
+        <div class="ph-box">
+          <div class="ph-line short"></div>
+          <div class="ph-line"></div>
+          <div class="ph-line med"></div>
+        </div>
+        <div class="ph-box">
+          <div class="ph-line short"></div>
+          <div class="ph-line"></div>
+        </div>
+        <div class="ph-box" style="flex:1;opacity:0.65;">
+          <div class="ph-line med"></div>
+        </div>
+      </div>
+
+      <div class="mock-toast" id="mock-toast" role="status" aria-live="polite"></div>
+
+      <!-- 2. BOTTOM NAV NAVY + TOMBOL TENGAH EMAS 64PX -->
+      <nav class="apk-botnav" id="apk-botnav" aria-label="Navigasi Aplikasi">
+        <button type="button" class="bn-item active" data-nav="rincian" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg>
+          <span>Rincian</span>
+        </button>
+        <button type="button" class="bn-item" data-nav="kas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H5a2 2 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15V7"/></svg>
+          <span>Transaksi</span>
+        </button>
+        <div class="bn-center">
+          <button type="button" class="bn-fab" id="bn-fab-add" aria-label="Tambah transaksi atau atur saldo" title="Tambah / Tahun">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+        <button type="button" class="bn-item" data-nav="jadwal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <span>Jadwal</span>
+        </button>
+        <button type="button" class="bn-item" data-nav="menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>
+          <span>Menu</span>
+        </button>
+      </nav>
+
+    </div>
+  </section>
+
+  <!-- Daftar Singkat Perubahan & Dampak Bila Diterapkan -->
+  <section class="spec-panel" aria-label="Ringkasan Perubahan dan Dampak Implementasi">
+    <div class="rec-note">
+      <strong>Varian A (Terang) direkomendasikan sebagai default</strong> karena menjaga keterbacaan angka dan daftar tagihan berlatar terang pada penggunaan luar ruang, sekaligus memberi kontras merek navy (<code>#16233B</code>) yang tegas pada bingkai atas (header) dan bilah navigasi bawah tanpa membuat keseluruhan layar terasa berat.
+    </div>
+
+    <div>
+      <h2>Apa yang Berubah Dibanding APK Sekarang</h2>
+      <ul class="spec-list">
+        <li><b>Header menyatu (.mob-topbar &rarr; .apk-header):</b> bilah putih terpisah diganti blok gradien navy mulus ke atas layar dengan sudut bawah membulat, logo teks <code>RenKeu</code>, 3 ikon aksi putih (Privasi, Notif, Pengaturan), serta sapaan <code>HALO, MIX</code>.</li>
+        <li><b>Kartu Saldo menggantung (.wallet-hero):</b> dipindah ke dalam header; strip aksen memuat chip <code>Tahun 2026</code> dan status <code>Tersinkron · Cloud aktif</code> + tombol sinkron, sementara area isi menampilkan <code>Saldo Hari Ini</code> bertogel mata plus tautan cepat <code>Lihat Transaksi</code>.</li>
+        <li><b>Bottom Nav bernuansa Navy (.mob-bottom-nav):</b> latar putih/permukaan berubah ke navy tua sudut membulat <code>26px</code>, item aktif putih/emas tanpa pil latar/bayangan, dan tombol tengah emas diperbesar menjadi <code>64px</code> menonjol <code>24px</code> dengan cincin takik <code>5px</code>.</li>
+      </ul>
+    </div>
+
+    <div>
+      <h2>Elemen &amp; File yang Terkena Bila Diterapkan</h2>
+      <ul class="spec-list">
+        <li><code>css/mobile.css</code>: selector <code>.mob-topbar</code>, <code>.yr-chip-btn</code>, <code>.ico-btn</code>, <code>.wallet-hero</code>, <code>.mob-main</code> (padding atas/bawah), <code>.mob-bottom-nav</code>, <code>.bn-btn</code>, dan <code>.bn-plus-fab</code>.</li>
+        <li><code>js/ui-mobile/mobile-app.js</code>: template header/topbar di <code>ensureMobileShell()</code>, handler <code>#m-btn-privacy</code> + tombol mata kartu + tombol pengaturan header, sinkron <code>#m-top-yr-txt</code> &amp; <code>#m-sync-lbl</code>, serta tombol cepat <code>Lihat Transaksi</code> menuju tab <code>kas</code>.</li>
+        <li><code>css/tokens.css</code>: token warna navy header/bottom-nav dan ring notch adaptif mode terang/gelap (opsional tanpa mengganggu desktop).</li>
+        <li><b>Tab Rincian (<code>#m-tab-rincian</code>) &amp; <code>#m-fab-add</code>:</b> bila kartu saldo sudah menetap di header atau khusus aktif di tab Rincian, tata letak <code>.wallet-io-grid</code> (Pemasukan/Pengeluaran) di tab Rincian perlu dipisah menjadi kartu ringkas terpisah; fungsi FAB tengah <code>#m-yr-btn-center</code> / <code>#m-fab-add</code> tetap dipertahankan.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var balVal = document.getElementById('bal-val');
+    var cardEye = document.getElementById('card-eye-btn');
+    var hdrEye = document.getElementById('hdr-privacy-btn');
+    var hdrNotif = document.getElementById('hdr-notif-btn');
+    var hdrDot = document.getElementById('hdr-notif-dot');
+    var hdrSet = document.getElementById('hdr-settings-btn');
+    var btnSync = document.getElementById('btn-cloud-sync');
+    var btnLihatTx = document.getElementById('btn-lihat-tx');
+    var fabAdd = document.getElementById('bn-fab-add');
+    var balCard = document.getElementById('bal-card');
+    var toastEl = document.getElementById('mock-toast');
+    var navItems = document.querySelectorAll('.bn-item[data-nav]');
+    var varBtns = document.querySelectorAll('[data-set-variant]');
+    var btnReplay = document.getElementById('btn-replay');
+
+    var isHidden = true; // default: "Rp ●●●●●●●●"
+    var MASKED = 'Rp ●●●●●●●●';
+    var REAL_VAL = 'Rp 1.206.725';
+    var toastTimer = null;
+    var swapTimer = null;
+
+    function showToast(msg) {
+      if (!toastEl) return;
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () {
+        toastEl.classList.remove('show');
+      }, 1700);
+    }
+
+    function setActiveNav(key) {
+      navItems.forEach(function (btn) {
+        var on = btn.getAttribute('data-nav') === key;
+        btn.classList.toggle('active', on);
+        if (on) btn.setAttribute('aria-current', 'page');
+        else btn.removeAttribute('aria-current');
+      });
+    }
+
+    function syncPrivacyUI() {
+      // Nominal diganti seketika sebelum fase muncul sehingga angka asli tidak pernah terbaca saat transisi
+      clearTimeout(swapTimer);
+      balVal.textContent = isHidden ? MASKED : REAL_VAL;
+      balVal.classList.add('is-swap');
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          balVal.classList.remove('is-swap');
+        });
+      });
+
+      [cardEye, hdrEye].forEach(function (btn) {
+        if (!btn) return;
+        btn.classList.toggle('is-morphed', isHidden);
+        btn.setAttribute('aria-pressed', String(isHidden));
+      });
+    }
+
+    function togglePrivacy() {
+      isHidden = !isHidden;
+      syncPrivacyUI();
+    }
+
+    if (cardEye) cardEye.addEventListener('click', togglePrivacy);
+    if (hdrEye) hdrEye.addEventListener('click', togglePrivacy);
+    // Sinkron keadaan awal (hdrEye memakai is-morphed sama dengan cardEye karena default tersembunyi)
+    if (hdrEye) hdrEye.classList.add('is-morphed');
+
+    if (hdrNotif) {
+      hdrNotif.addEventListener('click', function () {
+        hdrNotif.classList.remove('rk-bell-ringing');
+        if (hdrDot) hdrDot.classList.remove('rk-badge-pop');
+        void hdrNotif.offsetWidth;
+        hdrNotif.classList.add('rk-bell-ringing');
+        if (hdrDot) hdrDot.classList.add('rk-badge-pop');
+        clearTimeout(hdrNotif._t);
+        hdrNotif._t = setTimeout(function () {
+          hdrNotif.classList.remove('rk-bell-ringing');
+        }, 520);
+        showToast('Notifikasi tagihan dibuka');
+      });
+    }
+
+    if (hdrSet) {
+      hdrSet.addEventListener('click', function () {
+        showToast('Pengaturan & Akun');
+      });
+    }
+
+    if (btnSync) {
+      btnSync.addEventListener('click', function () {
+        btnSync.classList.remove('is-syncing');
+        void btnSync.offsetWidth;
+        btnSync.classList.add('is-syncing');
+        clearTimeout(btnSync._t);
+        btnSync._t = setTimeout(function () {
+          btnSync.classList.remove('is-syncing');
+        }, 560);
+        showToast('Cloud disinkronkan · 2026');
+      });
+    }
+
+    if (btnLihatTx) {
+      btnLihatTx.addEventListener('click', function () {
+        setActiveNav('kas');
+        showToast('Membuka daftar Transaksi');
+      });
+    }
+
+    navItems.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var key = btn.getAttribute('data-nav');
+        setActiveNav(key);
+        showToast('Tab: ' + btn.querySelector('span').textContent);
+      });
+    });
+
+    if (fabAdd) {
+      fabAdd.addEventListener('click', function () {
+        showToast('Aksi tengah (+): Tambah / Atur Tahun');
+      });
+    }
+
+    varBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var v = btn.getAttribute('data-set-variant');
+        root.setAttribute('data-variant', v);
+        varBtns.forEach(function (b) {
+          b.setAttribute('aria-pressed', String(b === btn));
+        });
+      });
+    });
+
+    if (btnReplay && balCard) {
+      btnReplay.addEventListener('click', function () {
+        balCard.classList.remove('is-entering');
+        void balCard.offsetWidth;
+        balCard.classList.add('is-entering');
+      });
+    }
+  })();
+</script>
+</body>
+</html>

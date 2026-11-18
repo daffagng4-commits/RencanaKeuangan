@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="id" data-nav-blue="A">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup v2 Redesign Header &amp; Bottom Nav APK — RenKeu</title>
+<style>
+  /* ==========================================================================
+     TOKEN PROYEK (disalin dari css/tokens.css & css/mobile.css tanpa diubah)
+     ========================================================================== */
+  :root {
+    --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    --bg-outer: #E8EEF5;
+    --bg-canvas: #F3F5F2;
+    --bg-surface: #FFFFFF;
+    --bg-subtle: #EDF1EC;
+    --bg-hud: rgba(255, 255, 255, 0.98);
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #64748B;
+    --border-subtle: #E2E8E2;
+    --border-strong: #CBD5CD;
+
+    --accent: #0F52BA;
+    --accent-hover: #0B4197;
+    --accent-soft: #EBF2FE;
+    --accent-border: #BFDBFE;
+    --accent-ink: #0F52BA;
+
+    --emerald: #0D7A52;
+    --emerald-soft: #E7F6EF;
+    --crimson: #C93B3B;
+    --gold: #D1AE52;
+    --gold-deep: #B89132;
+
+    --rk-logo-ink: #16233B;
+
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+    --radius-pill: 9999px;
+
+    --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+    --shadow-md: 0 12px 30px -6px rgba(15, 23, 42, 0.14), 0 4px 12px -4px rgba(15, 23, 42, 0.06);
+    --shadow-card: 0 2px 10px rgba(15, 23, 42, 0.04), 0 0 0 1px var(--border-subtle);
+    --shadow-nav: 0 -8px 28px rgba(15, 23, 42, 0.16);
+
+    --topbar-h: 60px;
+    --bottom-nav-h: 68px;
+
+    /* Token Animasi Proyek */
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in: cubic-bezier(0.4, 0, 1, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --transition-fast: 150ms var(--ease-out);
+    --dur-nav-icon: 300ms;
+    --dur-nav-label: 150ms;
+    --dur-bell: 500ms;
+    --dur-badge-pop: 240ms;
+    --dur-icon-morph: 240ms;
+    --dur-dd-open: 160ms;
+    --dur-dd-close: 100ms;
+    --dur-press: 120ms;
+    --dur-card-enter-apk: 380ms;
+
+    /* Token Bottom Nav Persib Blue (Pilihan A default) */
+    --botnav-blue: #1E4DB7;
+    --nav-gold-active: #FFE07D;
+    --nav-inactive-opacity: 0.78;
+  }
+
+  html[data-nav-blue="B"] { --botnav-blue: #2A5BD7; }
+  html[data-nav-blue="C"] { --botnav-blue: #1A3FA0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    :root {
+      --transition-fast: 0.001ms;
+      --dur-nav-icon: 0.001ms;
+      --dur-nav-label: 0.001ms;
+      --dur-bell: 0.001ms;
+      --dur-badge-pop: 0.001ms;
+      --dur-icon-morph: 0.001ms;
+      --dur-dd-open: 0.001ms;
+      --dur-dd-close: 0.001ms;
+      --dur-press: 0.001ms;
+      --dur-card-enter-apk: 0.001ms;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg-outer);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 24px 16px 56px;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "tnum" 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  button { font: inherit; color: inherit; cursor: pointer; background: none; border: none; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ==========================================================================
+     PANEL KONTROL DI LUAR FRAME HP (3 Pilihan Biru + Preview Popover Akun)
+     ========================================================================== */
+  .stage-wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .ctrl-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid #CBD5E1;
+    border-radius: 20px;
+    padding: 8px 12px;
+    box-shadow: 0 6px 22px rgba(15, 23, 42, 0.08);
+  }
+
+  .blue-opt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 12px;
+    border-radius: 12px;
+    border: 1.5px solid #E2E8F0;
+    background: #FFFFFF;
+    transition: transform var(--dur-press) var(--ease-out), opacity var(--transition-fast);
+  }
+  .blue-opt-top {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #0F172A;
+  }
+  .blue-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid rgba(15, 23, 42, 0.16);
+  }
+  .blue-hex {
+    font-family: var(--font-mono);
+    font-size: 0.67rem;
+    font-weight: 700;
+    color: #64748B;
+  }
+  .rec-tag {
+    font-size: 0.61rem;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: var(--radius-pill);
+    background: #E0BD63;
+    color: #16233B;
+  }
+  .blue-opt[aria-pressed="true"] {
+    border-color: #1E4DB7;
+    background: #EBF2FE;
+  }
+
+  .acct-preview-btn {
+    padding: 8px 13px;
+    border-radius: 12px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #16233B;
+    background: #EDF1EC;
+    border: 1px solid #CBD5CD;
+    transition: transform var(--dur-press) var(--ease-out), opacity var(--transition-fast);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .blue-opt:hover, .acct-preview-btn:hover { opacity: 0.88; }
+  }
+  .blue-opt:active, .acct-preview-btn:active { transform: scale(0.96); }
+
+  /* ==========================================================================
+     FRAME HP 390 x 844
+     ========================================================================== */
+  .phone-frame {
+    width: 390px;
+    height: 844px;
+    max-width: 100%;
+    background: var(--bg-canvas);
+    border-radius: 44px;
+    border: 8px solid #1E293B;
+    box-shadow: 0 28px 64px -14px rgba(15, 23, 42, 0.34), 0 0 0 1px rgba(255, 255, 255, 0.45);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mob-shell {
+    flex: 1;
+    min-height: 0;
+    background: var(--bg-canvas);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .phone-status-bar {
+    height: 30px;
+    padding: 4px 18px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-hud);
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  .phone-island {
+    width: 92px;
+    height: 20px;
+    border-radius: 999px;
+    background: #090D16;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 7px;
+  }
+  .phone-island-cam {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #3B82F6, #0F172A 72%);
+  }
+  .phone-sys-icons {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+  }
+
+  /* ==========================================================================
+     1. HEADER ATAS (.mob-topbar): Latar --bg-hud, RenKeu rata kiri dgn kartu
+     ========================================================================== */
+  .mob-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    height: var(--topbar-h);
+    flex-shrink: 0;
+    padding: 0 12px; /* sama dengan padding-left .mob-main (12px) sehingga RenKeu rata kiri dgn kartu */
+    background: var(--bg-hud);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .mt-brand-col {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .mt-wordmark {
+    display: block;
+    height: 17px;
+    width: auto;
+  }
+
+  .mt-hello {
+    font-size: 0.74rem;
+    line-height: 1.15;
+    color: var(--text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .mt-hello b {
+    font-weight: 800;
+    color: var(--rk-logo-ink);
+  }
+
+  .mt-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  /* Area visual 34px, area sentuh 44px via ::before transparan */
+  .av-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0F52BA 0%, #0D7A52 100%);
+    color: #FFFFFF;
+    font-weight: 800;
+    font-size: 0.85rem;
+    display: grid;
+    place-items: center;
+    position: relative;
+    flex-shrink: 0;
+    transition: transform var(--dur-press) var(--ease-out), opacity var(--transition-fast);
+  }
+  .av-btn::before {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+  }
+
+  .av-dot {
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #10B981;
+    border: 2px solid var(--bg-surface);
+    pointer-events: none;
+  }
+
+  .ico-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border-subtle);
+    color: var(--rk-logo-ink);
+    position: relative;
+    transition: transform var(--dur-press) var(--ease-out), opacity var(--transition-fast);
+  }
+  .ico-btn::before {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+  }
+
+  .ico-btn.on,
+  .ico-btn.active {
+    background: var(--accent-soft);
+    color: var(--accent-ink);
+    border-color: var(--accent-border);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .av-btn:hover, .ico-btn:hover { opacity: 0.88; }
+  }
+  .av-btn:active, .ico-btn:active { transform: scale(0.95); }
+
+  .notif-dot {
+    position: absolute;
+    top: 4px;
+    right: 5px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--crimson);
+    border: 1.5px solid var(--bg-surface);
+  }
+
+  /* Icon Morphing, Bell Swing, Badge Pop */
+  .rk-morph-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+  }
+  .rk-morph-icon svg {
+    grid-area: 1 / 1;
+    width: 100%;
+    height: 100%;
+    transition:
+      opacity var(--dur-icon-morph) var(--ease-spring),
+      transform var(--dur-icon-morph) var(--ease-spring);
+  }
+  .rk-morph-icon .rk-ico-a { opacity: 1; transform: scale(1) rotate(0deg); }
+  .rk-morph-icon .rk-ico-b { opacity: 0; transform: scale(0.6) rotate(-45deg); }
+  .on .rk-morph-icon .rk-ico-a { opacity: 0; transform: scale(0.6) rotate(45deg); }
+  .on .rk-morph-icon .rk-ico-b { opacity: 1; transform: scale(1) rotate(0deg); }
+
+  @keyframes rkBellSwing {
+    0%, 100% { transform: rotate(0deg); }
+    18% { transform: rotate(15deg); }
+    36% { transform: rotate(-14deg); }
+    54% { transform: rotate(11deg); }
+    72% { transform: rotate(-8deg); }
+    86% { transform: rotate(4deg); }
+  }
+  @keyframes rkBadgePop {
+    0% { opacity: 0; transform: scale(0.5); }
+    65% { opacity: 1; transform: scale(1.18); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .rk-bell-ringing svg {
+    transform-origin: 50% 18%;
+    animation: rkBellSwing var(--dur-bell) var(--ease-out) 1 both;
+  }
+  .rk-badge-pop {
+    animation: rkBadgePop var(--dur-badge-pop) var(--ease-spring) 1 both;
+  }
+
+  /* ==========================================================================
+     POPOVER AKUN (#m-acct-popover): Buka 160ms, Tutup 100ms
+     ========================================================================== */
+  .acct-popover {
+    position: absolute;
+    top: 86px;
+    right: 12px;
+    width: 248px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 16px;
+    box-shadow: var(--shadow-md);
+    padding: 12px;
+    z-index: 120;
+    transform-origin: top right;
+    opacity: 0;
+    transform: translateY(-6px) scale(0.95);
+    pointer-events: none;
+    transition:
+      opacity var(--dur-dd-close) var(--ease-in),
+      transform var(--dur-dd-close) var(--ease-in);
+  }
+  .acct-popover.open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    transition:
+      opacity var(--dur-dd-open) var(--ease-out),
+      transform var(--dur-dd-open) var(--ease-out);
+  }
+
+  .ap-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .ap-av {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #0F52BA 0%, #0D7A52 100%);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.84rem;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .ap-name { font-size: 0.84rem; font-weight: 800; color: var(--text-primary); }
+  .ap-sync {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--emerald);
+    margin-top: 2px;
+  }
+  .ap-sync-dot { width: 6px; height: 6px; border-radius: 50%; background: #10B981; }
+
+  .ap-sec {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .ap-lbl {
+    font-size: 0.69rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .ap-years {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .ap-yr-btn {
+    padding: 7px 10px;
+    border-radius: 10px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 800;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-subtle);
+    color: var(--text-secondary);
+    transition: transform var(--dur-press) var(--ease-out), opacity var(--transition-fast);
+  }
+  .ap-yr-btn.active {
+    background: var(--accent-soft);
+    border-color: var(--accent-border);
+    color: var(--accent-ink);
+  }
+  .ap-yr-btn:active { transform: scale(0.96); }
+
+  .ap-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 9px 6px 5px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-align: left;
+    transition: opacity var(--transition-fast), transform var(--dur-press) var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .ap-item:hover { opacity: 0.78; }
+  }
+  .ap-item:active { transform: scale(0.98); }
+
+  /* ==========================================================================
+     KONTEN TENGAH (Meniru APK saat ini: .wallet-hero & Proyeksi Arus Kas)
+     ========================================================================== */
+  .mob-main {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 12px 12px 92px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .wallet-hero {
+    background: linear-gradient(142deg, #0F172A 0%, #17347A 60%, #0F52BA 100%);
+    color: #FFFFFF;
+    border-radius: var(--radius-lg);
+    padding: 18px 16px 16px;
+    min-height: 176px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.16);
+    animation: rkCardEnterApk var(--dur-card-enter-apk) var(--ease-out) both;
+  }
+
+  @keyframes rkCardEnterApk {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .wallet-kicker {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.78;
+    font-weight: 700;
+  }
+
+  .wallet-bal {
+    font-family: var(--font-mono);
+    font-size: 1.54rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 6px 0 14px;
+    white-space: nowrap;
+    transition: opacity var(--dur-nav-label) var(--ease-out), transform var(--dur-nav-label) var(--ease-out);
+  }
+  .wallet-bal.is-swap { opacity: 0; transform: translateY(2px); }
+
+  .wallet-io-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .wallet-io-box {
+    background: rgba(255, 255, 255, 0.11);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 13px;
+    padding: 9px 10px;
+  }
+  .wallet-io-hd {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.88);
+  }
+  .wallet-io-ico {
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    display: inline-grid;
+    place-items: center;
+    font-size: 0.68rem;
+    font-weight: 800;
+  }
+  .wallet-io-ico.in { background: rgba(16, 185, 129, 0.24); color: #34D399; }
+  .wallet-io-ico.out { background: rgba(244, 63, 94, 0.26); color: #FB7185; }
+  .wallet-io-val {
+    font-family: var(--font-mono);
+    font-size: 0.86rem;
+    font-weight: 800;
+    margin-top: 5px;
+    transition: opacity var(--dur-nav-label) var(--ease-out);
+  }
+  .wallet-io-sub { font-size: 0.63rem; color: rgba(255, 255, 255, 0.7); margin-top: 2px; }
+
+  .card {
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: 14px;
+  }
+  .card-hd {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .card-title { font-size: 0.92rem; font-weight: 800; letter-spacing: -0.015em; }
+  .exp-btn {
+    padding: 5px 10px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border-radius: 10px;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+  }
+  .seg {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: var(--bg-subtle);
+    border-radius: 11px;
+    padding: 3px;
+    margin-bottom: 10px;
+  }
+  .seg-btn {
+    padding: 6px 0;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 9px;
+    color: var(--text-muted);
+  }
+  .seg-btn.active {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  }
+  .chart-stage {
+    background: #F8FAFC;
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    padding: 6px;
+  }
+
+  /* ==========================================================================
+     2. BOTTOM NAV BIRU PERSIB + AKTIF EMAS (#FFE07D) + TOMBOL "+" EMAS
+     ========================================================================== */
+  .mob-bottom-nav {
+    position: relative;
+    flex-shrink: 0;
+    width: 100%;
+    height: calc(var(--bottom-nav-h) + 8px + env(safe-area-inset-bottom, 0px));
+    padding: 2px 6px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: var(--botnav-blue);
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    box-shadow: var(--shadow-nav);
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    align-items: center;
+    z-index: 80;
+  }
+
+  .bn-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 44px;
+    height: 54px;
+    font-size: 0.67rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, var(--nav-inactive-opacity));
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    transition:
+      color var(--dur-nav-label) var(--ease-out),
+      transform var(--dur-press) var(--ease-out);
+  }
+
+  .bn-btn svg {
+    width: 20px;
+    height: 20px;
+    transition: transform var(--dur-nav-icon) var(--ease-spring);
+  }
+  .bn-btn span {
+    transition: color var(--dur-nav-label) var(--ease-out);
+  }
+
+  .bn-btn.active {
+    color: var(--nav-gold-active);
+    font-weight: 800;
+  }
+  .bn-btn.active svg {
+    transform: translateY(-3px) scale(1.15);
+  }
+  .bn-btn:active {
+    color: var(--nav-gold-active);
+    transform: scale(0.97);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .bn-btn:not(.active):hover { color: rgba(255, 255, 255, 0.94); }
+  }
+
+  .bn-center-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 54px;
+    position: relative;
+  }
+
+  /* Tombol "+" tengah: ukuran & posisi sama dengan APK sekarang + cincin biru bar */
+  .bn-plus-fab {
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%) scale(1);
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, var(--gold) 0%, var(--gold-deep) 100%);
+    color: #FFFFFF;
+    display: grid;
+    place-items: center;
+    border: 4px solid var(--botnav-blue);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.32);
+    transition: transform var(--dur-press) var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .bn-plus-fab:hover { transform: translateX(-50%) scale(1.03); }
+  }
+  .bn-plus-fab:active {
+    transform: translateX(-50%) scale(0.95);
+    transition-duration: var(--dur-press);
+  }
+
+  .mock-toast {
+    position: absolute;
+    bottom: 92px;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: rgba(15, 23, 42, 0.92);
+    color: #FFFFFF;
+    font-size: 0.74rem;
+    font-weight: 700;
+    padding: 8px 14px;
+    border-radius: var(--radius-pill);
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+    z-index: 95;
+  }
+  .mock-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ==========================================================================
+     PANEL RINGKASAN PERBANDINGAN, KONTRAS & RISIKO DI LUAR FRAME
+     ========================================================================== */
+  .spec-panel {
+    width: 100%;
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    border-radius: 18px;
+    padding: 20px 22px;
+    box-shadow: 0 6px 24px rgba(15, 23, 42, 0.06);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+    gap: 18px 22px;
+  }
+  .spec-panel h2 { font-size: 0.92rem; font-weight: 800; color: #16233B; margin-bottom: 10px; }
+  .spec-list { list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 0.8rem; line-height: 1.5; color: #334155; }
+  .spec-list code {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    background: #F1F5F9;
+    padding: 1px 5px;
+    border-radius: 5px;
+    color: #0F52BA;
+  }
+  .risk-box {
+    grid-column: 1 / -1;
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 0.8rem;
+    color: #78350F;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+
+<main class="stage-wrap">
+  <!-- Panel Switcher 3 Biru Bottom Nav + Preview Popover Akun -->
+  <div class="ctrl-bar" role="toolbar" aria-label="Pilihan Warna Biru Bottom Nav">
+    <button type="button" class="blue-opt" data-blue="A" aria-pressed="true">
+      <span class="blue-opt-top"><span class="blue-swatch" style="background:#1E4DB7"></span>Biru A <span class="rec-tag">Rekomendasi</span></span>
+      <span class="blue-hex">#1E4DB7</span>
+    </button>
+    <button type="button" class="blue-opt" data-blue="B" aria-pressed="false">
+      <span class="blue-opt-top"><span class="blue-swatch" style="background:#2A5BD7"></span>Biru B</span>
+      <span class="blue-hex">#2A5BD7</span>
+    </button>
+    <button type="button" class="blue-opt" data-blue="C" aria-pressed="false">
+      <span class="blue-opt-top"><span class="blue-swatch" style="background:#1A3FA0"></span>Biru C</span>
+      <span class="blue-hex">#1A3FA0</span>
+    </button>
+    <button type="button" class="acct-preview-btn" id="btn-toggle-acct">Preview Popover Akun</button>
+  </div>
+
+  <!-- Frame HP 390 x 844 -->
+  <section class="phone-frame" aria-label="Mockup v2 APK 390 kali 844">
+    <div class="mob-shell">
+      <div class="phone-status-bar" aria-hidden="true">
+        <span>09:41</span>
+        <div class="phone-island"><span class="phone-island-cam"></span></div>
+        <div class="phone-sys-icons"><span>5G</span><span>94%</span></div>
+      </div>
+
+      <!-- 1. HEADER ATAS (.mob-topbar) -->
+      <header class="mob-topbar">
+        <!-- Kiri: HANYA "RenKeu" (rata kiri dgn kartu 12px) + "Halo, Mix" di bawahnya -->
+        <div class="mt-brand-col">
+          <svg class="mt-wordmark" viewBox="1.9 2.5 101 21" fill="none" role="img" aria-label="RenKeu">
+            <path d="M1.93 22L1.93 3.52L9.8 3.52Q11.34 3.52 12.6 3.76Q13.86 4 14.83 4.46Q15.79 4.92 16.46 5.58Q17.14 6.24 17.47 7.09Q17.81 7.94 17.81 8.98Q17.81 9.96 17.5 10.74Q17.19 11.53 16.56 12.12Q15.93 12.7 14.98 13.07Q14.03 13.43 12.77 13.6L12.77 14.02Q14.36 14.19 15.25 14.73Q16.13 15.28 16.6 16.18Q17.08 17.07 17.44 18.33L18.51 22L13.5 22L12.68 18.61Q12.43 17.49 12 16.88Q11.56 16.26 10.89 16.02Q10.22 15.78 9.21 15.78L6.44 15.78L6.44 22ZM6.44 12.45L9.49 12.45Q11.2 12.45 12.15 11.78Q13.1 11.11 13.1 9.68Q13.1 8.28 12.24 7.61Q11.37 6.94 9.6 6.94L6.44 6.94ZM27.19 22.39Q25.34 22.39 23.88 21.9Q22.43 21.41 21.41 20.46Q20.38 19.51 19.85 18.11Q19.32 16.71 19.32 14.89Q19.32 13.12 19.84 11.64Q20.36 10.16 21.32 9.08Q22.29 8 23.7 7.41Q25.12 6.82 26.88 6.82Q28.67 6.82 30.03 7.4Q31.39 7.97 32.27 9.09Q33.15 10.21 33.57 11.82Q33.99 13.43 33.85 15.5L22.29 15.59L22.29 13.24L31.28 13.15L29.68 14.24Q29.88 12.84 29.51 11.96Q29.15 11.08 28.45 10.67Q27.75 10.27 26.94 10.27Q25.96 10.27 25.21 10.8Q24.47 11.33 24.05 12.34Q23.63 13.35 23.63 14.8Q23.63 17.1 24.63 18.14Q25.62 19.17 27.16 19.17Q27.92 19.17 28.42 18.96Q28.92 18.75 29.25 18.43Q29.57 18.11 29.75 17.72Q29.93 17.32 30.04 16.96L33.96 17.8Q33.74 18.84 33.25 19.68Q32.76 20.52 31.93 21.13Q31.11 21.75 29.95 22.07Q28.78 22.39 27.19 22.39ZM35.76 22L35.76 13.1L35.76 7.22L39.4 7.22L39.45 11.56L40.01 11.56Q40.38 9.99 41.05 8.92Q41.72 7.86 42.76 7.34Q43.79 6.82 45.19 6.82Q47.8 6.82 49.15 8.64Q50.51 10.46 50.51 14.44L50.51 22L45.98 22L45.98 14.94Q45.98 12.65 45.32 11.6Q44.66 10.55 43.37 10.55Q42.31 10.55 41.62 11.19Q40.94 11.84 40.6 12.9Q40.26 13.96 40.26 15.28L40.26 22ZM53.12 22L53.12 3.52L57.62 3.52L57.62 11.61Q59 11 60.17 10.07Q61.35 9.15 62.26 8.06Q63.17 6.96 63.77 5.8Q64.37 4.64 64.65 3.52L69.86 3.52Q69.52 4.81 68.77 6.14Q68.01 7.47 66.95 8.69Q65.88 9.9 64.67 10.86Q63.45 11.81 62.19 12.37L62.19 12.79Q63.48 12.79 64.47 13.07Q65.46 13.35 66.23 13.94Q67 14.52 67.58 15.41Q68.15 16.29 68.57 17.52L70.17 22L65.04 22L64.01 18.33Q63.67 17.1 63.11 16.39Q62.55 15.67 61.63 15.35Q60.7 15.03 59.25 15.03L57.62 15.03L57.62 22ZM78.62 22.39Q76.78 22.39 75.32 21.9Q73.86 21.41 72.84 20.46Q71.82 19.51 71.29 18.11Q70.76 16.71 70.76 14.89Q70.76 13.12 71.27 11.64Q71.79 10.16 72.76 9.08Q73.72 8 75.14 7.41Q76.55 6.82 78.32 6.82Q80.11 6.82 81.47 7.4Q82.82 7.97 83.71 9.09Q84.59 10.21 85.01 11.82Q85.43 13.43 85.29 15.5L73.72 15.59L73.72 13.24L82.71 13.15L81.12 14.24Q81.31 12.84 80.95 11.96Q80.58 11.08 79.88 10.67Q79.18 10.27 78.37 10.27Q77.39 10.27 76.65 10.8Q75.91 11.33 75.49 12.34Q75.07 13.35 75.07 14.8Q75.07 17.1 76.06 18.14Q77.06 19.17 78.6 19.17Q79.35 19.17 79.86 18.96Q80.36 18.75 80.68 18.43Q81 18.11 81.19 17.72Q81.37 17.32 81.48 16.96L85.4 17.8Q85.18 18.84 84.69 19.68Q84.2 20.52 83.37 21.13Q82.54 21.75 81.38 22.07Q80.22 22.39 78.62 22.39ZM92.26 22.39Q89.63 22.39 88.3 20.61Q86.97 18.84 86.97 15.2L86.97 7.22L91.5 7.22L91.5 14.61Q91.5 16.68 92.12 17.7Q92.74 18.72 94 18.72Q94.75 18.72 95.3 18.35Q95.84 17.97 96.22 17.28Q96.6 16.6 96.78 15.7Q96.96 14.8 96.96 13.74L96.96 7.22L101.47 7.22L101.47 16.01L101.47 22L97.89 22L97.8 17.44L97.24 17.44Q96.82 19.17 96.19 20.28Q95.56 21.38 94.61 21.89Q93.66 22.39 92.26 22.39Z" fill="var(--rk-logo-ink)"/>
+          </svg>
+          <span class="mt-hello">Halo, <b>Mix</b></span>
+        </div>
+
+        <!-- Kanan: Urutan Akun (Avatar M + titik sinkron hijau) -> Privasi -> Notifikasi -->
+        <div class="mt-actions">
+          <button type="button" class="av-btn" id="m-acct-btn" aria-label="Akun, Tahun &amp; Pengaturan" aria-expanded="false" aria-haspopup="true" title="Akun Mix · Tersinkron Cloud">
+            <span>M</span>
+            <span class="av-dot" aria-hidden="true"></span>
+          </button>
+
+          <button type="button" class="ico-btn" id="m-btn-privacy" aria-label="Mode Privasi" aria-pressed="false" title="Kaburkan Nominal">
+            <span class="rk-morph-icon" aria-hidden="true">
+              <svg class="rk-ico-a" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="rk-ico-b" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            </span>
+          </button>
+
+          <button type="button" class="ico-btn" id="m-btn-notif" aria-label="Notifikasi" aria-expanded="false" title="Pengingat Tagihan">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="notif-dot" id="m-notif-dot"></span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Popover Akun (membuka Tahun 2026/2027, Status Sinkron, & Pengaturan & Alat) -->
+      <div class="acct-popover" id="m-acct-popover" role="dialog" aria-label="Menu Akun &amp; Pengaturan">
+        <div class="ap-head">
+          <div class="ap-av">M</div>
+          <div>
+            <div class="ap-name">Halo, Mix</div>
+            <div class="ap-sync"><span class="ap-sync-dot"></span>Tersinkron &middot; Cloud aktif</div>
+          </div>
+        </div>
+        <div class="ap-sec">
+          <div class="ap-lbl">Tahun Aktif</div>
+          <div class="ap-years">
+            <button type="button" class="ap-yr-btn active" data-yr="2026">2026</button>
+            <button type="button" class="ap-yr-btn" data-yr="2027">2027</button>
+          </div>
+        </div>
+        <button type="button" class="ap-item" id="ap-open-settings">
+          <span style="display:inline-flex;align-items:center;gap:8px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Pengaturan &amp; Alat
+          </span>
+          <span style="opacity:0.55;font-size:0.85rem;">&rsaquo;</span>
+        </button>
+      </div>
+
+      <!-- KONTEN TENGAH (Meniru APK saat ini: .wallet-hero navy + Proyeksi Arus Kas) -->
+      <main class="mob-main">
+        <div class="wallet-hero">
+          <div>
+            <div class="wallet-kicker">SALDO REALTIME &middot; <span id="hero-yr-lbl">2026</span> &middot; NOVEMBER</div>
+            <div class="wallet-bal" id="hero-bal-val">Rp 1.206.725</div>
+          </div>
+          <div class="wallet-io-grid">
+            <div class="wallet-io-box">
+              <div class="wallet-io-hd"><span class="wallet-io-ico in">&uarr;</span>Pemasukan</div>
+              <div class="wallet-io-val" id="hero-inc-val">Rp 3.293.000</div>
+              <div class="wallet-io-sub">Total setahun</div>
+            </div>
+            <div class="wallet-io-box">
+              <div class="wallet-io-hd"><span class="wallet-io-ico out">&darr;</span>Pengeluaran</div>
+              <div class="wallet-io-val" id="hero-out-val">Rp 8.946.775</div>
+              <div class="wallet-io-sub">Total setahun</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd">
+            <h2 class="card-title">Proyeksi Arus Kas</h2>
+            <button type="button" class="exp-btn" id="btn-expand">⤢ Perbesar</button>
+          </div>
+          <div class="seg" role="group" aria-label="Rentang Grafik">
+            <button type="button" class="seg-btn active">Minggu</button>
+            <button type="button" class="seg-btn">Bulan</button>
+            <button type="button" class="seg-btn">Tahun</button>
+          </div>
+          <div class="chart-stage">
+            <svg viewBox="0 0 330 165" style="width:100%;height:auto;display:block">
+              <defs>
+                <linearGradient id="cfFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#0F52BA" stop-opacity="0.24"/>
+                  <stop offset="100%" stop-color="#C93B3B" stop-opacity="0.1"/>
+                </linearGradient>
+              </defs>
+              <line x1="40" y1="22" x2="320" y2="22" stroke="#E2E8E2" stroke-dasharray="3 3"/>
+              <line x1="40" y1="62" x2="320" y2="62" stroke="#E2E8E2" stroke-dasharray="3 3"/>
+              <line x1="40" y1="102" x2="320" y2="102" stroke="#E2E8E2" stroke-dasharray="3 3"/>
+              <line x1="40" y1="126" x2="320" y2="126" stroke="#C93B3B" stroke-dasharray="4 3" stroke-opacity="0.65"/>
+              <line x1="215" y1="14" x2="215" y2="138" stroke="#0F52BA" stroke-opacity="0.5" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <path d="M40 34 C95 36, 130 56, 215 66 L320 66 L320 138 L40 138 Z" fill="url(#cfFill)"/>
+              <path d="M40 34 C95 36, 130 56, 215 66" fill="none" stroke="#1E40AF" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M215 66 L320 66" fill="none" stroke="#0D7A52" stroke-width="2.5" stroke-dasharray="5 4"/>
+              <circle cx="40" cy="34" r="3.5" fill="#1E40AF" stroke="#fff" stroke-width="1.5"/>
+              <circle cx="118" cy="45" r="3.5" fill="#1E40AF" stroke="#fff" stroke-width="1.5"/>
+              <circle cx="215" cy="66" r="4.5" fill="#0F52BA" stroke="#fff" stroke-width="2"/>
+              <text x="8" y="25" font-size="9" fill="#64748B" font-family="ui-monospace,monospace">2,0jt</text>
+              <text x="8" y="65" font-size="9" fill="#64748B" font-family="ui-monospace,monospace">1,4jt</text>
+              <text x="8" y="105" font-size="9" fill="#64748B" font-family="ui-monospace,monospace">789rb</text>
+              <text x="40" y="156" font-size="9" fill="#64748B" font-family="ui-monospace,monospace">15 Nov</text>
+              <text x="196" y="156" font-size="9" font-weight="700" fill="#0F52BA">Hari ini</text>
+              <text x="278" y="156" font-size="9" fill="#64748B" font-family="ui-monospace,monospace">22 Nov</text>
+            </svg>
+          </div>
+        </div>
+      </main>
+
+      <div class="mock-toast" id="mock-toast" role="status" aria-live="polite"></div>
+
+      <!-- 2. BOTTOM NAV BIRU PERSIB + AKTIF EMAS + TOMBOL TENGAH EMAS (+) -->
+      <nav class="mob-bottom-nav" aria-label="Navigasi Aplikasi">
+        <button type="button" class="bn-btn active" data-mtab="rincian" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg>
+          <span>Rincian</span>
+        </button>
+        <button type="button" class="bn-btn" data-mtab="kas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H5a2 2 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15V7"/></svg>
+          <span>Transaksi</span>
+        </button>
+        <div class="bn-center-slot">
+          <button type="button" class="bn-plus-fab" id="m-yr-btn-center" aria-label="Tambah transaksi atau atur saldo" title="Tambah">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+        <button type="button" class="bn-btn" data-mtab="jadwal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          <span>Jadwal</span>
+        </button>
+        <button type="button" class="bn-btn" data-mtab="menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>
+          <span>Menu</span>
+        </button>
+      </nav>
+    </div>
+  </section>
+
+  <!-- Ringkasan Perubahan, Kontras & Risiko di Luar Frame -->
+  <section class="spec-panel" aria-label="Ringkasan Mockup v2">
+    <div>
+      <h2>Yang Berubah Dibanding APK Sekarang</h2>
+      <ul class="spec-list">
+        <li><b>Header kiri diringkas:</b> kotak simbol RK dan chip tahun <code>2026</code> dihapus dari bar atas; tulisan <code>RenKeu</code> memakai wordmark kurva desktop diratakan lurus kiri (`12px`) tepat sejajar tepi kartu saldo, diikuti sapaan kecil <code>Halo, Mix</code>.</li>
+        <li><b>Status Sinkron &amp; Urutan Tombol Kanan:</b> teks status di bawah nama dipindah ke titik hijau pojok avatar <code>M</code>; tombol kanan diurutkan dari kiri ke kanan: <b>Akun</b> &rarr; <b>Privasi</b> &rarr; <b>Notifikasi</b>.</li>
+        <li><b>Popover Akun:</b> mengetuk avatar <code>M</code> membuka popover kecil berisi pemilih tahun <code>2026 / 2027</code>, status sinkron cloud, dan akses ke <b>Pengaturan &amp; Alat</b>.</li>
+        <li><b>Bottom Nav Biru Persib:</b> latar bar memakai biru cerah (default <code>#1E4DB7</code>), item aktif berwarna emas hangat <code>#FFE07D</code> (kontras <code>5,41:1</code> terhadap <code>#1E4DB7</code> dan <code>4,53:1</code> terhadap <code>#2A5BD7</code>), item tidak aktif putih <code>opacity: 0.78</code> (kontras <code>&gt;= 4,28:1</code> agar lebih jelas dari 0.65), plus cincin <code>4px</code> biru bar di sekitar tombol emas <code>+</code>.</li>
+      </ul>
+    </div>
+
+    <div>
+      <h2>Elemen &amp; File yang Terkena Jika Diterapkan</h2>
+      <ul class="spec-list">
+        <li><code>css/mobile.css</code>: <code>.mob-topbar</code> (padding kiri/kanan `12px`), <code>.mt-wordmark</code> &amp; <code>.mt-hello</code>, posisi baru <code>#m-acct-btn</code> (<code>34px</code> bulat + <code>::before</code> 44px), penghapusan <code>.mob-brand-mark</code> &amp; <code>.yr-chip-btn</code> dari header, penambahan gaya <code>#m-acct-popover</code>, serta warna bar &amp; ring pada <code>.mob-bottom-nav</code> / <code>.bn-btn</code> / <code>.bn-plus-fab</code>.</li>
+        <li><code>js/ui-mobile/mobile-app.js</code>: pembaruan markup <code>.mob-topbar</code> di <code>ensureMobileShell()</code>, handler <code>#m-btn-privacy</code>, <code>#m-btn-notif</code>, dan <code>#m-yr-btn-center</code> / <code>#m-fab-add</code> tetap aktif; penambahan logika buka/tutup <code>#m-acct-popover</code>, pilihan tahun di dalamnya, dan pintasan menuju pengaturan/backup.</li>
+        <li><code>css/tokens.css</code>: token warna biru bottom nav &amp; emas aktif ber-kontras tinggi (termasuk varian mode gelap bila dipakai).</li>
+      </ul>
+    </div>
+
+    <div class="risk-box">
+      <strong>Risiko yang Perlu Diperhatikan:</strong> Memindahkan pemilih tahun (<code>2026 / 2027</code>) dan tombol Pengaturan ke dalam menu avatar Akun membuat keduanya membutuhkan 1 ketukan ekstra dibanding tombol tahun langsung di topbar. Mitigasi: berikan petunjuk tahun aktif tetap terbaca jelas di <code>wallet-kicker</code> kartu saldo (<code>SALDO REALTIME · 2026</code>) dan sertakan indikator jelas pada ikon/badge avatar saat ada pembaruan/pengaturan penting.
+    </div>
+  </section>
+</main>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var privBtn = document.getElementById('m-btn-privacy');
+    var notifBtn = document.getElementById('m-btn-notif');
+    var notifDot = document.getElementById('m-notif-dot');
+    var acctBtn = document.getElementById('m-acct-btn');
+    var acctPop = document.getElementById('m-acct-popover');
+    var fabBtn = document.getElementById('m-yr-btn-center');
+    var yrBtns = document.querySelectorAll('.ap-yr-btn[data-yr]');
+    var navBtns = document.querySelectorAll('.bn-btn[data-mtab]');
+    var blueBtns = document.querySelectorAll('.blue-opt[data-blue]');
+    var previewAcctBtn = document.getElementById('btn-toggle-acct');
+    var openSettingsBtn = document.getElementById('ap-open-settings');
+    var balVal = document.getElementById('hero-bal-val');
+    var incVal = document.getElementById('hero-inc-val');
+    var outVal = document.getElementById('hero-out-val');
+    var yrLbl = document.getElementById('hero-yr-lbl');
+    var toastEl = document.getElementById('mock-toast');
+
+    var isPrivate = false;
+    var activeYear = '2026';
+    var toastT = null;
+
+    var YEAR_DATA = {
+      '2026': { bal: 'Rp 1.206.725', inc: 'Rp 3.293.000', out: 'Rp 8.946.775' },
+      '2027': { bal: 'Rp 4.850.000', inc: 'Rp 9.600.000', out: 'Rp 4.750.000' }
+    };
+
+    function showToast(msg) {
+      if (!toastEl) return;
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(toastT);
+      toastT = setTimeout(function () { toastEl.classList.remove('show'); }, 1600);
+    }
+
+    function renderAmounts(animateSwap) {
+      var d = YEAR_DATA[activeYear] || YEAR_DATA['2026'];
+      balVal.textContent = isPrivate ? 'Rp ●●●●●●●●' : d.bal;
+      incVal.textContent = isPrivate ? 'Rp ●●●●●●' : d.inc;
+      outVal.textContent = isPrivate ? 'Rp ●●●●●●' : d.out;
+      if (animateSwap) {
+        balVal.classList.add('is-swap');
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () { balVal.classList.remove('is-swap'); });
+        });
+      }
+    }
+
+    function setAcctOpen(open) {
+      if (!acctPop || !acctBtn) return;
+      acctPop.classList.toggle('open', open);
+      acctBtn.setAttribute('aria-expanded', String(open));
+    }
+
+    privBtn.addEventListener('click', function () {
+      isPrivate = !isPrivate;
+      privBtn.classList.toggle('on', isPrivate);
+      privBtn.setAttribute('aria-pressed', String(isPrivate));
+      renderAmounts(true);
+    });
+
+    notifBtn.addEventListener('click', function () {
+      var active = notifBtn.classList.toggle('active');
+      notifBtn.setAttribute('aria-expanded', String(active));
+      notifBtn.classList.remove('rk-bell-ringing');
+      notifDot.classList.remove('rk-badge-pop');
+      void notifBtn.offsetWidth;
+      notifBtn.classList.add('rk-bell-ringing');
+      notifDot.classList.add('rk-badge-pop');
+      clearTimeout(notifBtn._t);
+      notifBtn._t = setTimeout(function () { notifBtn.classList.remove('rk-bell-ringing'); }, 520);
+      showToast('Notifikasi tagihan ' + (active ? 'dibuka' : 'ditutup'));
+    });
+
+    acctBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      setAcctOpen(!acctPop.classList.contains('open'));
+    });
+
+    if (previewAcctBtn) {
+      previewAcctBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        setAcctOpen(!acctPop.classList.contains('open'));
+      });
+    }
+
+    document.addEventListener('click', function (e) {
+      if (acctPop.classList.contains('open') && !acctPop.contains(e.target) && !acctBtn.contains(e.target) && e.target !== previewAcctBtn) {
+        setAcctOpen(false);
+      }
+    });
+
+    yrBtns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        activeYear = b.getAttribute('data-yr');
+        yrBtns.forEach(function (x) { x.classList.toggle('active', x === b); });
+        yrLbl.textContent = activeYear;
+        renderAmounts(true);
+        setAcctOpen(false);
+        showToast('Tahun diganti ke ' + activeYear);
+      });
+    });
+
+    if (openSettingsBtn) {
+      openSettingsBtn.addEventListener('click', function () {
+        setAcctOpen(false);
+        showToast('Membuka Pengaturan & Alat');
+      });
+    }
+
+    navBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        navBtns.forEach(function (x) {
+          var on = x === btn;
+          x.classList.toggle('active', on);
+          if (on) x.setAttribute('aria-current', 'page');
+          else x.removeAttribute('aria-current');
+        });
+        showToast('Tab: ' + btn.querySelector('span').textContent);
+      });
+    });
+
+    fabBtn.addEventListener('click', function () {
+      showToast('Aksi tengah (+): Tambah Data');
+    });
+
+    blueBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var code = btn.getAttribute('data-blue');
+        root.setAttribute('data-nav-blue', code);
+        blueBtns.forEach(function (x) { x.setAttribute('aria-pressed', String(x === btn)); });
+      });
+    });
+  })();
+</script>
+</body>
+</html>

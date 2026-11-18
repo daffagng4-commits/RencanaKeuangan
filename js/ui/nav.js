@@ -18,8 +18,10 @@ function navGo(k) {
     if (mode !== 'trip') setMode('trip');
     return;
   }
-  if (mode !== 'rencana') setMode('rencana');
+  var wasTrip = typeof mode !== 'undefined' && mode !== 'rencana';
+  if (wasTrip) setMode('rencana');
   tab(k);
+  if (wasTrip && typeof rkScheduleEntrance === 'function') rkScheduleEntrance('browser', k);
 }
 
 /** Perjalanan tampil? Pilihan eksplisit (rk-trip-vis) menang; bila belum pernah dipilih: tampil hanya jika sudah ada data perjalanan. */

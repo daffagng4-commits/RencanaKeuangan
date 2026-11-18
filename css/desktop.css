@@ -110,6 +110,7 @@
     body.sb-init-no-anim #browser-shell .main-shell,
     body.sb-init-no-anim #browser-shell .collapse-btn svg,
     body.sb-init-no-anim #browser-shell .sb-meta,
+    body.sb-init-no-anim #browser-shell .sb-brand-wordmark,
     body.sb-init-no-anim #browser-shell .nav-label,
     body.sb-init-no-anim #browser-shell .nav-badge {
       transition: none !important;
@@ -120,7 +121,7 @@
       padding: 14px 10px;
     }
 
-    /* Sidebar Top: Account Profile Button (#acct) + Collapse Toggle */
+    /* Sidebar Header Row: Logo Button (#sb-brand-btn) + Collapse Toggle (#sb-toggle) */
     #browser-shell .sb-top {
       display: flex;
       align-items: center;
@@ -128,18 +129,99 @@
       gap: 8px;
       padding-bottom: 12px;
       border-bottom: 1px solid var(--border-subtle);
+      flex-shrink: 0;
     }
 
+    #browser-shell .sb-brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 2px 4px;
+      border-radius: var(--radius-sm);
+      min-width: 0;
+      flex: 1;
+      text-align: left;
+      transform: scale(1);
+      opacity: 1;
+      transition:
+        transform var(--dur-press) var(--ease-out),
+        opacity var(--transition-fast);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .sb-brand:hover {
+      opacity: 0.9;
+      transform: scale(1.015);
+    }
+}
+
+    #browser-shell .sb-brand:active {
+      transform: scale(0.98);
+      opacity: 0.88;
+      transition-duration: var(--dur-press);
+    }
+
+    #browser-shell .sb-brand-mark {
+      width: 38px;
+      height: 38px;
+    }
+
+    #browser-shell .sb-brand-wordmark {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      max-width: 170px;
+      opacity: 1;
+      overflow: hidden;
+      transition:
+        opacity var(--dur-sidebar-label-in) var(--ease-out) var(--delay-sidebar-label-in),
+        max-width var(--dur-sidebar) var(--ease-in-out);
+    }
+
+    #browser-shell .sb-brand-wordmark svg {
+      width: 112px;
+      height: auto;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    body.sidebar-collapsed #browser-shell .sb-top {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding-bottom: 10px;
+    }
+
+    body.sidebar-collapsed #browser-shell .sb-brand {
+      justify-content: center;
+      gap: 0;
+      padding: 0;
+      flex: 0 0 auto;
+      border-radius: 28%;
+    }
+
+    body.sidebar-collapsed #browser-shell .sb-brand-wordmark {
+      max-width: 0;
+      max-height: 38px;
+      opacity: 0;
+      pointer-events: none;
+      transition:
+        opacity var(--dur-sidebar-label-out) var(--ease-in),
+        max-width var(--dur-sidebar) var(--ease-in-out);
+    }
+
+    /* Sidebar Bottom Account Button (#acct) */
     #browser-shell .sb-av {
       display: flex;
       align-items: center;
       gap: 10px;
-      flex: 1;
+      width: 100%;
       min-width: 0;
       padding: 6px 8px;
       border-radius: var(--radius-sm);
       text-align: left;
-      transition: background var(--transition-fast);
+      transition: opacity var(--transition-fast), transform var(--dur-press) var(--ease-out);
     }
 
     @media (hover: hover) and (pointer: fine) {
@@ -147,6 +229,11 @@
       background: var(--bg-subtle);
     }
 }
+
+    #browser-shell .sb-av:active {
+      transform: scale(0.98);
+      transition-duration: var(--dur-press);
+    }
 
     #browser-shell .av-circle {
       width: 34px;
@@ -229,9 +316,10 @@
         max-width var(--dur-sidebar) var(--ease-in-out);
     }
 
-    body.sidebar-collapsed #browser-shell .sb-top {
-      flex-direction: column;
-      gap: 6px;
+    body.sidebar-collapsed #browser-shell .sb-av {
+      justify-content: center;
+      gap: 0;
+      padding: 6px 0;
     }
 
     #browser-shell .collapse-btn {
@@ -242,7 +330,7 @@
       place-items: center;
       color: var(--text-muted);
       flex-shrink: 0;
-      transition: background var(--transition-fast), color var(--transition-fast);
+      transition: transform var(--transition-fast), opacity var(--transition-fast), color var(--transition-fast);
     }
 
     #browser-shell .collapse-btn svg {
@@ -265,8 +353,10 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
-      flex: 1;
+      flex: 1 1 auto;
+      min-height: 0;
       overflow-y: auto;
+      overflow-x: hidden;
       padding: 12px 0;
     }
 
@@ -383,11 +473,17 @@
       padding: 10px;
     }
 
-    /* Sidebar Bottom: Alat & Pengaturan Menu Trigger (#alat-btn) */
+    #browser-shell #alat-btn[aria-expanded="true"] {
+      background: var(--bg-subtle);
+      color: var(--text-primary);
+    }
+
+    /* Sidebar Bottom: Account Button (#acct) */
     #browser-shell .sb-bot {
       border-top: 1px solid var(--border-subtle);
       padding-top: 10px;
       position: relative;
+      flex-shrink: 0;
     }
 
     /* Main Column */
@@ -2281,8 +2377,8 @@
        ========================================================================== */
     #browser-shell .alat-menu {
       position: fixed;
-      bottom: 58px;
-      left: 16px;
+      top: 320px;
+      left: 268px;
       width: 248px;
       background: var(--bg-surface);
       border: 1px solid var(--border-strong);
@@ -2293,7 +2389,7 @@
       display: flex;
       flex-direction: column;
       gap: 2px;
-      transform-origin: bottom left;
+      transform-origin: top left;
       opacity: 0;
       visibility: hidden;
       pointer-events: none;

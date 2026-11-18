@@ -1108,7 +1108,12 @@ function brSyncAccountUI() {
     else sub.textContent = (typeof sb !== 'undefined' && sb) ? 'Klik untuk masuk Google / email' : 'Mode lokal · tersimpan';
   }
   var acctEl = $('acct'), av = acctEl && acctEl.querySelector('.av-circle');
-  if (acctEl) acctEl.classList.toggle('on', !!u);
+  if (acctEl) {
+    acctEl.classList.toggle('on', !!u);
+    var tip = 'Halo, ' + du.name + (sub && sub.textContent ? ' · ' + sub.textContent : '');
+    acctEl.title = tip;
+    acctEl.setAttribute('aria-label', tip);
+  }
   if (av) av.classList.toggle('anon', !u);
 }
 
@@ -3304,6 +3309,12 @@ function brBindEvents() {
       try { localStorage.setItem('rk-sb-collapsed', col ? '1' : '0'); } catch (e) {}
     };
   }
+  if ($('sb-brand-btn')) {
+    $('sb-brand-btn').onclick = function () {
+      if (typeof navGo === 'function') navGo('rincian');
+      else if (typeof tab === 'function') tab('rincian');
+    };
+  }
   if ($('nav-btn-trip')) {
     $('nav-btn-trip').onclick = function () { setMode(mode === 'trip' ? 'rencana' : 'trip'); };
   }
@@ -3377,6 +3388,18 @@ function brBindEvents() {
       if ($('chip-popover')) $('chip-popover').classList.remove('open');
       var open = alatMenu.classList.toggle('open');
       alatBtn.setAttribute('aria-expanded', String(open));
+      if (open && alatBtn.getBoundingClientRect) {
+        var br = alatBtn.getBoundingClientRect();
+        var vw = window.innerWidth || 1280;
+        var vh = window.innerHeight || 800;
+        var mw = alatMenu.offsetWidth || 248;
+        var mh = alatMenu.offsetHeight || 340;
+        var leftPos = br.right + 8 + mw <= vw - 12 ? br.right + 8 : Math.max(12, br.left);
+        var topPos = Math.max(12, Math.min(br.top, vh - mh - 12));
+        alatMenu.style.left = leftPos + 'px';
+        alatMenu.style.top = topPos + 'px';
+        alatMenu.style.bottom = 'auto';
+      }
     };
   }
   if ($('btn-notif')) {

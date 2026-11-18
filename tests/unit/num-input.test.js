@@ -184,3 +184,52 @@ test('PWA standalone config: manifest.webmanifest, sw.js, index.dev.html, dan di
   const tripSrc = fs.readFileSync(path.join(root, 'js', 'ui', 'trip.js'), 'utf8');
   assert(tripSrc.includes('requireInteraction: true') && tripSrc.includes("badge: './icon-192.png'"), 'triggerSystemNotification menyetel requireInteraction & badge agar bertahan di Laci Notifikasi/Lock Screen');
 });
+
+test('Brand RenKeu & aset logo: manifest, favicon, maskable, adaptif, kurva SVG murni tanpa Google Fonts', () => {
+  const root = path.join(__dirname, '..', '..');
+  const mf = JSON.parse(fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8'));
+  assert.equal(mf.name, 'Rencana Keuangan');
+  assert.equal(mf.short_name, 'RenKeu');
+  assert.equal(mf.theme_color, '#16233B');
+  assert.equal(mf.background_color, '#EEF1F5');
+  assert(mf.icons.some((ic) => ic.sizes === '192x192' && ic.purpose === 'any'), 'wajib ada ikon 192x192 purpose any');
+  assert(mf.icons.some((ic) => ic.sizes === '512x512' && ic.purpose === 'any'), 'wajib ada ikon 512x512 purpose any');
+  assert(mf.icons.some((ic) => ic.sizes === '512x512' && ic.purpose === 'maskable'), 'wajib ada ikon 512x512 purpose maskable');
+
+  const brandFiles = [
+    'favicon.svg', 'favicon.ico', 'favicon-16.png', 'favicon-32.png',
+    'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png',
+    'icon-adaptive-fg-512.png', 'icon-adaptive-bg-512.png',
+    'logo-lockup-light.svg', 'logo-lockup-dark.svg',
+  ];
+  for (const rel of brandFiles) {
+    assert(fs.existsSync(path.join(root, rel)), 'aset root ada: ' + rel);
+    assert(fs.existsSync(path.join(root, 'dist', rel)), 'aset dist/ ada: ' + rel);
+  }
+
+  for (const svgFile of ['favicon.svg', 'logo-lockup-light.svg', 'logo-lockup-dark.svg']) {
+    const svgSrc = fs.readFileSync(path.join(root, svgFile), 'utf8');
+    assert(svgSrc.includes('<path '), svgFile + ' memakai path kurva SVG');
+    assert(!/<text[\s>]/i.test(svgSrc), svgFile + ' tidak boleh mengandung elemen <text>');
+    assert(!/fonts\.googleapis\.com|fonts\.gstatic\.com/i.test(svgSrc), svgFile + ' bebas permintaan Google Fonts');
+  }
+
+  for (const htmlRel of ['index.dev.html', 'index.html', path.join('dist', 'index.html')]) {
+    const html = fs.readFileSync(path.join(root, htmlRel), 'utf8');
+    assert(html.includes('<title>Rencana Keuangan</title>'), htmlRel + ' punya <title> Rencana Keuangan');
+    assert(html.includes('name="apple-mobile-web-app-title" content="RenKeu"'), htmlRel + ' apple-mobile-web-app-title = RenKeu');
+    assert(html.includes('name="application-name" content="RenKeu"'), htmlRel + ' application-name = RenKeu');
+    assert(html.includes('property="og:title" content="Rencana Keuangan"'), htmlRel + ' og:title = Rencana Keuangan');
+    assert(!html.includes('content="Rencana"'), htmlRel + ' tidak boleh menyisakan short_name lama Rencana');
+    assert(html.includes('./favicon.svg?v=3') && html.includes('./favicon-16.png?v=3') && html.includes('./favicon-32.png?v=3'), htmlRel + ' memuat tautan favicon cache-busted ?v=3');
+    assert(!/fonts\.googleapis\.com|fonts\.gstatic\.com/i.test(html), htmlRel + ' bebas permintaan Google Fonts');
+    const symMatch = html.match(/<symbol id="rk-brand-symbol"[\s\S]*?<\/symbol>/i);
+    assert(symMatch && !/<text[\s>]/i.test(symMatch[0]), htmlRel + ' simbol inline murni path tanpa <text>');
+    const wmMatch = html.match(/<span class="sb-brand-wordmark"[\s\S]*?<\/span>/i);
+    assert(wmMatch && wmMatch[0].includes('<path ') && !/<text[\s>]/i.test(wmMatch[0]), htmlRel + ' wordmark sidebar murni path tanpa <text>');
+  }
+
+  const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  assert(!sw.includes("rk-cache-v14"), 'sw.js harus menaikkan versi CACHE_NAME dari v14');
+  assert(sw.includes('./favicon.svg') && sw.includes('./icon-maskable-512.png'), 'sw.js melakukan precache aset logo baru');
+});

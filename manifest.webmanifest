@@ -1,26 +1,26 @@
 {
   "id": "./",
   "name": "Rencana Keuangan",
-  "short_name": "Rencana",
+  "short_name": "RenKeu",
   "description": "Perencana keuangan berbasis jadwal tagihan dan arus kas",
   "start_url": "./?mode=app",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#f8fafc",
-  "theme_color": "#4f46e5",
+  "background_color": "#EEF1F5",
+  "theme_color": "#16233B",
   "icons": [
     {
-      "src": "./icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any"
     },
     {
       "src": "./icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable"
+      "purpose": "any"
     },
     {
       "src": "./icon-512.png",
@@ -29,7 +29,7 @@
       "purpose": "any"
     },
     {
-      "src": "./icon-512.png",
+      "src": "./icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

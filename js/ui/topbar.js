@@ -69,6 +69,19 @@ function bindPrivacy() {
   syncNotifBtn();
 }
 
+/** Sinkronkan keadaan aktif tombol Akun APK dengan status buka/tutup popover Akun. */
+function rkSyncAcctOpenUI() {
+  if (typeof document === 'undefined') return;
+  var aPop = document.getElementById('m-acct-popover'),
+    aBtn = document.getElementById('m-acct-btn'),
+    aOpen = !!(aPop && aPop.classList.contains('open'));
+  if (aBtn) {
+    aBtn.classList.toggle('on', aOpen);
+    aBtn.classList.toggle('active', aOpen);
+    aBtn.setAttribute('aria-expanded', aOpen ? 'true' : 'false');
+  }
+}
+
 /** Sinkronkan keadaan aktif tombol notifikasi dengan status buka/tutup popover (Desktop & APK). */
 function rkSyncNotifOpenUI() {
   if (typeof document === 'undefined') return;
@@ -88,6 +101,7 @@ function rkSyncNotifOpenUI() {
     mBtn.classList.toggle('active', mOpen);
     mBtn.setAttribute('aria-expanded', mOpen ? 'true' : 'false');
   }
+  rkSyncAcctOpenUI();
 }
 
 /** Label & aksesibilitas tombol notifikasi (keadaan aktif .on mengikuti status popover). */
