@@ -48,9 +48,31 @@ body[data-shell="mobile-app"] #mobile-app-shell .pp-btn.active { background: var
 body[data-shell="mobile-app"] #mobile-app-shell .pp-div { width: 1px; height: 18px; background: var(--border-strong); margin: 0 2px; }
 
 body[data-shell="mobile-app"] {
+  padding-top: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  --mob-hdr-top: #0E3F86;
+  --mob-hdr-mid: #0C3677;
+  --mob-hdr-bot: #0A2F6B;
+  --mob-fab-top: #2F7BEA;
+  --mob-fab-bot: #1F63CC;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) body[data-shell="mobile-app"] {
+    --mob-hdr-top: #092B60;
+    --mob-hdr-mid: #082452;
+    --mob-hdr-bot: #061C42;
+    --mob-fab-top: #286ED6;
+    --mob-fab-bot: #1A52AD;
+  }
+}
+html[data-theme="dark"] body[data-shell="mobile-app"] {
+  --mob-hdr-top: #092B60;
+  --mob-hdr-mid: #082452;
+  --mob-hdr-bot: #061C42;
+  --mob-fab-top: #286ED6;
+  --mob-fab-bot: #1A52AD;
 }
 
 body[data-shell="mobile-app"][data-phone-frame="390"] { --phone-w: 390px; --phone-h: 844px; }
@@ -194,14 +216,14 @@ body[data-shell="mobile-app"] #mobile-app-shell .apk-header-block {
   position: relative;
   z-index: 60;
   flex-shrink: 0;
-  background: linear-gradient(180deg, #0E3F86 0%, #0C3677 100%);
+  background: linear-gradient(180deg, var(--mob-hdr-top) 0%, var(--mob-hdr-mid) 100%);
   color: #FFFFFF;
   padding: 0 14px 8px;
   overflow: hidden;
   transition: box-shadow var(--dur-topbar-shadow) var(--ease-out);
 }
 body[data-shell="mobile-app"] #mobile-app-shell .mob-shell:not([data-mtab-active="rincian"]) .apk-header-block {
-  background: linear-gradient(180deg, #0E3F86 0%, #0A2F6B 100%);
+  background: linear-gradient(180deg, var(--mob-hdr-top) 0%, var(--mob-hdr-bot) 100%);
   padding-bottom: 12px;
   border-bottom-left-radius: 22px;
   border-bottom-right-radius: 22px;
@@ -319,7 +341,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .av-dot {
   height: 10px;
   border-radius: 50%;
   background: #10B981;
-  border: 2px solid #0E3F86;
+  border: 2px solid var(--mob-hdr-top);
   pointer-events: none;
 }
 
@@ -351,7 +373,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .notif-dot {
   height: 8px;
   border-radius: 50%;
   background: #FB7185;
-  border: 1.5px solid #0E3F86;
+  border: 1.5px solid var(--mob-hdr-top);
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .hdr-greet {
@@ -576,7 +598,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .card-title { font-size: 0.94rem
 /* Fintech Wallet Balance Card (Rincian Hero — V4 Option A White inside Blue Well) */
 body[data-shell="mobile-app"] #mobile-app-shell .apk-hero-well {
   position: relative;
-  background: linear-gradient(180deg, #0C3677 0%, #0A2F6B 100%);
+  background: linear-gradient(180deg, var(--mob-hdr-mid) 0%, var(--mob-hdr-bot) 100%);
   margin: 0 -12px 2px;
   padding: 4px 14px 18px;
   border-bottom-left-radius: 26px;
@@ -1296,7 +1318,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .mob-bottom-nav {
   max-width: 100%;
   height: calc(var(--bottom-nav-h) + 10px);
   padding: 2px 6px 12px;
-  background: linear-gradient(180deg, #0E3F86 0%, #0A2F6B 100%);
+  background: linear-gradient(180deg, var(--mob-hdr-top) 0%, var(--mob-hdr-bot) 100%);
   border-top-left-radius: 26px;
   border-top-right-radius: 26px;
   border-top: none;
@@ -1386,11 +1408,11 @@ body[data-shell="mobile-app"] #mobile-app-shell .bn-plus-fab {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(155deg, #2F7BEA 0%, #1F63CC 100%);
+  background: linear-gradient(155deg, var(--mob-fab-top) 0%, var(--mob-fab-bot) 100%);
   color: #FFFFFF;
   display: grid;
   place-items: center;
-  border: 5px solid #0A2F6B;
+  border: 5px solid var(--mob-hdr-bot);
   box-shadow: 0 10px 22px rgba(7, 22, 54, 0.34), 0 1px 0 rgba(255, 255, 255, 0.25) inset;
   transition: transform var(--dur-press) var(--ease-out);
 }

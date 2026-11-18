@@ -701,6 +701,21 @@ const { boot } = require('./ui.js');
   click(remountShell.querySelector('.mob-bottom-nav [data-mtab="rincian"]'));
   assert($('m-tab-rincian').classList.contains('active') && remountShell.querySelector('.mob-bottom-nav [data-mtab="rincian"]').getAttribute('aria-current') === 'page', 'v4 fungsi: ketuk tab Rincian berpindah ke #m-tab-rincian');
 
+  // 15. Status bar & theme-color sinkron di Mode APK (Terang #0E3F86 / Gelap #092B60) dan Mode Browser
+  assert(/body\[data-shell="mobile-app"\]\s*\{[^}]*padding-top:\s*0\b/s.test(cssMobSrc), 'Mode APK mereset body padding-top: 0 agar safe-area-inset-top terisi langsung oleh .apk-header-block tanpa celah');
+  const metaTheme = doc.getElementById('rk-meta-theme');
+  assert(metaTheme, 'meta #rk-meta-theme tersedia');
+  w.setTheme('light');
+  assert.strictEqual(metaTheme.getAttribute('content'), '#0E3F86', 'APK tema terang menyetel theme-color #0E3F86 (sama dengan bagian atas gradien header)');
+  w.setTheme('dark');
+  assert.strictEqual(metaTheme.getAttribute('content'), '#092B60', 'APK tema gelap menyetel theme-color #092B60 (biru header versi gelap)');
+  w.setShellMode('browser');
+  assert.strictEqual(metaTheme.getAttribute('content'), '#0A0E14', 'Browser tema gelap menyetel theme-color #0A0E14');
+  w.setTheme('light');
+  assert.strictEqual(metaTheme.getAttribute('content'), '#F3F5F2', 'Browser tema terang menyetel theme-color #F3F5F2');
+  w.setShellMode('mobile-app');
+  assert.strictEqual(metaTheme.getAttribute('content'), '#0E3F86', 'kembali ke Mode APK memulihkan theme-color #0E3F86');
+
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('OK mobile_app_mode');
   process.exit(0);

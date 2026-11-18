@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover">
 <title>Rencana Keuangan</title>
 <link rel="manifest" href="./manifest.webmanifest">
-<meta name="theme-color" content="#F3F5F2" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0A0E14" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" id="rk-meta-theme" content="#F3F5F2">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="RenKeu">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="RenKeu">
 <meta property="og:title" content="Rencana Keuangan">
 <meta property="og:site_name" content="RenKeu">
@@ -25,6 +25,15 @@
     var t = localStorage.getItem('rk-theme');
     if (t === 'bwd') t = 'dark';
     if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    var isDark = t ? t === 'dark' : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    var q = location.search || '';
+    var qm = q.match(/[?&]mode=([^&#]+)/i);
+    var mv = qm && qm[1] ? decodeURIComponent(qm[1]).toLowerCase() : '';
+    var savedShell = localStorage.getItem('rk-shell-mode');
+    var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true || /;\s*wv\)/i.test(navigator.userAgent || '');
+    var isApp = mv ? (mv === 'app' || mv === 'mobile' || mv === 'mobile-app') : (savedShell ? savedShell === 'mobile-app' : standalone);
+    var mt = document.getElementById('rk-meta-theme');
+    if (mt) mt.setAttribute('content', isApp ? (isDark ? '#092B60' : '#0E3F86') : (isDark ? '#0A0E14' : '#F3F5F2'));
   } catch (e) {}
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     window.__rkSwReg = navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(function () {});
@@ -4345,9 +4354,31 @@ body[data-shell="mobile-app"] #mobile-app-shell .pp-btn.active { background: var
 body[data-shell="mobile-app"] #mobile-app-shell .pp-div { width: 1px; height: 18px; background: var(--border-strong); margin: 0 2px; }
 
 body[data-shell="mobile-app"] {
+  padding-top: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  --mob-hdr-top: #0E3F86;
+  --mob-hdr-mid: #0C3677;
+  --mob-hdr-bot: #0A2F6B;
+  --mob-fab-top: #2F7BEA;
+  --mob-fab-bot: #1F63CC;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) body[data-shell="mobile-app"] {
+    --mob-hdr-top: #092B60;
+    --mob-hdr-mid: #082452;
+    --mob-hdr-bot: #061C42;
+    --mob-fab-top: #286ED6;
+    --mob-fab-bot: #1A52AD;
+  }
+}
+html[data-theme="dark"] body[data-shell="mobile-app"] {
+  --mob-hdr-top: #092B60;
+  --mob-hdr-mid: #082452;
+  --mob-hdr-bot: #061C42;
+  --mob-fab-top: #286ED6;
+  --mob-fab-bot: #1A52AD;
 }
 
 body[data-shell="mobile-app"][data-phone-frame="390"] { --phone-w: 390px; --phone-h: 844px; }
@@ -4491,14 +4522,14 @@ body[data-shell="mobile-app"] #mobile-app-shell .apk-header-block {
   position: relative;
   z-index: 60;
   flex-shrink: 0;
-  background: linear-gradient(180deg, #0E3F86 0%, #0C3677 100%);
+  background: linear-gradient(180deg, var(--mob-hdr-top) 0%, var(--mob-hdr-mid) 100%);
   color: #FFFFFF;
   padding: 0 14px 8px;
   overflow: hidden;
   transition: box-shadow var(--dur-topbar-shadow) var(--ease-out);
 }
 body[data-shell="mobile-app"] #mobile-app-shell .mob-shell:not([data-mtab-active="rincian"]) .apk-header-block {
-  background: linear-gradient(180deg, #0E3F86 0%, #0A2F6B 100%);
+  background: linear-gradient(180deg, var(--mob-hdr-top) 0%, var(--mob-hdr-bot) 100%);
   padding-bottom: 12px;
   border-bottom-left-radius: 22px;
   border-bottom-right-radius: 22px;
@@ -4616,7 +4647,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .av-dot {
   height: 10px;
   border-radius: 50%;
   background: #10B981;
-  border: 2px solid #0E3F86;
+  border: 2px solid var(--mob-hdr-top);
   pointer-events: none;
 }
 
@@ -4648,7 +4679,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .notif-dot {
   height: 8px;
   border-radius: 50%;
   background: #FB7185;
-  border: 1.5px solid #0E3F86;
+  border: 1.5px solid var(--mob-hdr-top);
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .hdr-greet {
@@ -4873,7 +4904,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .card-title { font-size: 0.94rem
 /* Fintech Wallet Balance Card (Rincian Hero — V4 Option A White inside Blue Well) */
 body[data-shell="mobile-app"] #mobile-app-shell .apk-hero-well {
   position: relative;
-  background: linear-gradient(180deg, #0C3677 0%, #0A2F6B 100%);
+  background: linear-gradient(180deg, var(--mob-hdr-mid) 0%, var(--mob-hdr-bot) 100%);
   margin: 0 -12px 2px;
   padding: 4px 14px 18px;
   border-bottom-left-radius: 26px;
@@ -5593,7 +5624,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .mob-bottom-nav {
   max-width: 100%;
   height: calc(var(--bottom-nav-h) + 10px);
   padding: 2px 6px 12px;
-  background: linear-gradient(180deg, #0E3F86 0%, #0A2F6B 100%);
+  background: linear-gradient(180deg, var(--mob-hdr-top) 0%, var(--mob-hdr-bot) 100%);
   border-top-left-radius: 26px;
   border-top-right-radius: 26px;
   border-top: none;
@@ -5683,11 +5714,11 @@ body[data-shell="mobile-app"] #mobile-app-shell .bn-plus-fab {
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: linear-gradient(155deg, #2F7BEA 0%, #1F63CC 100%);
+  background: linear-gradient(155deg, var(--mob-fab-top) 0%, var(--mob-fab-bot) 100%);
   color: #FFFFFF;
   display: grid;
   place-items: center;
-  border: 5px solid #0A2F6B;
+  border: 5px solid var(--mob-hdr-bot);
   box-shadow: 0 10px 22px rgba(7, 22, 54, 0.34), 0 1px 0 rgba(255, 255, 255, 0.25) inset;
   transition: transform var(--dur-press) var(--ease-out);
 }
@@ -16263,9 +16294,30 @@ function themeCur() {
   return t === 'dark' || t === 'bwd' ? 'dark' : 'light';
 }
 
+/** Sinkronkan meta theme-color dengan mode shell (APK/Browser) & tema aktif (Terang/Gelap). */
+function rkSyncThemeColorMeta(themeOverride, shellOverride) {
+  if (typeof document === 'undefined') return '';
+  var isDark = themeOverride ? (themeOverride === 'dark' || themeOverride === 'bwd') : (themeCur() === 'dark');
+  if (!themeOverride && !document.documentElement.getAttribute('data-theme')) {
+    try {
+      if (typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches) isDark = true;
+    } catch (e) {}
+  }
+  var shell = shellOverride || (typeof getShellMode === 'function'
+    ? getShellMode()
+    : (document.body && document.body.getAttribute('data-shell')) || 'browser');
+  var color = shell === 'mobile-app'
+    ? (isDark ? '#092B60' : '#0E3F86')
+    : (isDark ? '#0A0E14' : '#F3F5F2');
+  var mt = document.getElementById('rk-meta-theme') || document.querySelector('meta[name="theme-color"]');
+  if (mt && mt.getAttribute('content') !== color) mt.setAttribute('content', color);
+  return color;
+}
+
 /** Terapkan dan simpan tema (hanya Terang / Gelap), lalu perbarui tombol dan menu. */
 function setTheme(n) {
   var norm = n === 'dark' || n === 'bwd' ? 'dark' : 'light';
+  rkSyncThemeColorMeta(norm);
   var de = document.documentElement,
     privActive = !!(document.body && (document.body.classList.contains('privacy-mode') || document.body.classList.contains('privacy-on'))),
     apply = function () {
@@ -16321,6 +16373,7 @@ function setTheme(n) {
 
 /** Sinkronkan tombol tema dan pilihan tema di menu dengan tema aktif. */
 function themeShow() {
+  rkSyncThemeColorMeta();
   var btn = $('thm'),
     cur = themeCur(),
     label = 'Tema: ' + THEME_NAME[cur],
@@ -20098,12 +20151,14 @@ function getShellMode() {
 function syncShellSwitchUI(m) {
   if (typeof document === 'undefined') return;
   var isApp = m === 'mobile-app';
-  try {
-    document.querySelectorAll('meta[name="theme-color"]').forEach(function (mt) {
-      if (!mt.dataset.origColor) mt.dataset.origColor = mt.getAttribute('content') || '';
-      mt.setAttribute('content', isApp ? '#0E3F86' : mt.dataset.origColor);
-    });
-  } catch (e) {}
+  if (typeof rkSyncThemeColorMeta === 'function') {
+    rkSyncThemeColorMeta(null, m);
+  } else {
+    try {
+      var mt = document.getElementById('rk-meta-theme') || document.querySelector('meta[name="theme-color"]');
+      if (mt) mt.setAttribute('content', isApp ? '#0E3F86' : '#F3F5F2');
+    } catch (e) {}
+  }
   var btn = typeof $ === 'function' ? $('alat-shell-mode') : document.getElementById('alat-shell-mode');
   if (!btn) return;
   btn.setAttribute('data-shell-switch', isApp ? 'browser' : 'mobile-app');

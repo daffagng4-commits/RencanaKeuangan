@@ -12,9 +12,30 @@ function themeCur() {
   return t === 'dark' || t === 'bwd' ? 'dark' : 'light';
 }
 
+/** Sinkronkan meta theme-color dengan mode shell (APK/Browser) & tema aktif (Terang/Gelap). */
+function rkSyncThemeColorMeta(themeOverride, shellOverride) {
+  if (typeof document === 'undefined') return '';
+  var isDark = themeOverride ? (themeOverride === 'dark' || themeOverride === 'bwd') : (themeCur() === 'dark');
+  if (!themeOverride && !document.documentElement.getAttribute('data-theme')) {
+    try {
+      if (typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches) isDark = true;
+    } catch (e) {}
+  }
+  var shell = shellOverride || (typeof getShellMode === 'function'
+    ? getShellMode()
+    : (document.body && document.body.getAttribute('data-shell')) || 'browser');
+  var color = shell === 'mobile-app'
+    ? (isDark ? '#092B60' : '#0E3F86')
+    : (isDark ? '#0A0E14' : '#F3F5F2');
+  var mt = document.getElementById('rk-meta-theme') || document.querySelector('meta[name="theme-color"]');
+  if (mt && mt.getAttribute('content') !== color) mt.setAttribute('content', color);
+  return color;
+}
+
 /** Terapkan dan simpan tema (hanya Terang / Gelap), lalu perbarui tombol dan menu. */
 function setTheme(n) {
   var norm = n === 'dark' || n === 'bwd' ? 'dark' : 'light';
+  rkSyncThemeColorMeta(norm);
   var de = document.documentElement,
     privActive = !!(document.body && (document.body.classList.contains('privacy-mode') || document.body.classList.contains('privacy-on'))),
     apply = function () {
@@ -70,6 +91,7 @@ function setTheme(n) {
 
 /** Sinkronkan tombol tema dan pilihan tema di menu dengan tema aktif. */
 function themeShow() {
+  rkSyncThemeColorMeta();
   var btn = $('thm'),
     cur = themeCur(),
     label = 'Tema: ' + THEME_NAME[cur],

@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover">
 <title>Rencana Keuangan</title>
 <link rel="manifest" href="./manifest.webmanifest">
-<meta name="theme-color" content="#F3F5F2" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0A0E14" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" id="rk-meta-theme" content="#F3F5F2">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="application-name" content="RenKeu">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="RenKeu">
 <meta property="og:title" content="Rencana Keuangan">
 <meta property="og:site_name" content="RenKeu">
@@ -25,6 +25,15 @@
     var t = localStorage.getItem('rk-theme');
     if (t === 'bwd') t = 'dark';
     if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    var isDark = t ? t === 'dark' : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    var q = location.search || '';
+    var qm = q.match(/[?&]mode=([^&#]+)/i);
+    var mv = qm && qm[1] ? decodeURIComponent(qm[1]).toLowerCase() : '';
+    var savedShell = localStorage.getItem('rk-shell-mode');
+    var standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true || /;\s*wv\)/i.test(navigator.userAgent || '');
+    var isApp = mv ? (mv === 'app' || mv === 'mobile' || mv === 'mobile-app') : (savedShell ? savedShell === 'mobile-app' : standalone);
+    var mt = document.getElementById('rk-meta-theme');
+    if (mt) mt.setAttribute('content', isApp ? (isDark ? '#092B60' : '#0E3F86') : (isDark ? '#0A0E14' : '#F3F5F2'));
   } catch (e) {}
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     window.__rkSwReg = navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(function () {});

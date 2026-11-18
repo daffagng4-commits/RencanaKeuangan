@@ -190,7 +190,7 @@ test('Brand RenKeu & aset logo: manifest, favicon, maskable, adaptif, kurva SVG 
   const mf = JSON.parse(fs.readFileSync(path.join(root, 'manifest.webmanifest'), 'utf8'));
   assert.equal(mf.name, 'Rencana Keuangan');
   assert.equal(mf.short_name, 'RenKeu');
-  assert.equal(mf.theme_color, '#16233B');
+  assert.equal(mf.theme_color, '#0E3F86');
   assert.equal(mf.background_color, '#EEF1F5');
   assert(mf.icons.some((ic) => ic.sizes === '192x192' && ic.purpose === 'any'), 'wajib ada ikon 192x192 purpose any');
   assert(mf.icons.some((ic) => ic.sizes === '512x512' && ic.purpose === 'any'), 'wajib ada ikon 512x512 purpose any');
@@ -222,6 +222,8 @@ test('Brand RenKeu & aset logo: manifest, favicon, maskable, adaptif, kurva SVG 
     assert(html.includes('property="og:title" content="Rencana Keuangan"'), htmlRel + ' og:title = Rencana Keuangan');
     assert(!html.includes('content="Rencana"'), htmlRel + ' tidak boleh menyisakan short_name lama Rencana');
     assert(html.includes('./favicon.svg?v=3') && html.includes('./favicon-16.png?v=3') && html.includes('./favicon-32.png?v=3'), htmlRel + ' memuat tautan favicon cache-busted ?v=3');
+    assert(html.includes('id="rk-meta-theme"'), htmlRel + ' memuat meta #rk-meta-theme');
+    assert(html.includes('name="apple-mobile-web-app-status-bar-style" content="black-translucent"'), htmlRel + ' menyetel status bar iOS black-translucent');
     assert(!/fonts\.googleapis\.com|fonts\.gstatic\.com/i.test(html), htmlRel + ' bebas permintaan Google Fonts');
     const symMatch = html.match(/<symbol id="rk-brand-symbol"[\s\S]*?<\/symbol>/i);
     assert(symMatch && !/<text[\s>]/i.test(symMatch[0]), htmlRel + ' simbol inline murni path tanpa <text>');
@@ -230,6 +232,6 @@ test('Brand RenKeu & aset logo: manifest, favicon, maskable, adaptif, kurva SVG 
   }
 
   const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
-  assert(!sw.includes("rk-cache-v14"), 'sw.js harus menaikkan versi CACHE_NAME dari v14');
+  assert(!sw.includes("rk-cache-v14") && !sw.includes("rk-cache-v15"), 'sw.js harus menaikkan versi CACHE_NAME dari v15');
   assert(sw.includes('./favicon.svg') && sw.includes('./icon-maskable-512.png'), 'sw.js melakukan precache aset logo baru');
 });
