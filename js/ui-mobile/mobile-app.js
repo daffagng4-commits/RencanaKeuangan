@@ -427,7 +427,7 @@ function mobShellTemplate() {
     '<div class="card"><div class="card-hd"><h2 class="card-title">Tagihan Terdekat</h2><button type="button" class="btn btn-secondary btn-sm" data-mnav="jadwal">Semua &rarr;</button></div>' +
     '<div class="stack" style="gap:7px" id="m-upcoming-bills"></div></div>' +
     '<div class="card"><div class="card-hd"><h2 class="card-title">Ke Mana Uangnya Pergi</h2>' +
-    '<div class="seg"><button type="button" class="seg-btn active" data-mwstyle="jar">Jar 3D</button><button type="button" class="seg-btn" data-mwstyle="ring">Ring</button></div></div>' +
+    '<div class="seg"><button type="button" class="seg-btn active" data-mwstyle="jar">Jar 3D</button><button type="button" class="seg-btn" data-mwstyle="bar">Bar</button></div></div>' +
     '<div class="where-filter-row">' +
     '<div class="seg"><button type="button" class="seg-btn" data-mwperiod="w">Minggu</button><button type="button" class="seg-btn" data-mwperiod="m">Bulan</button><button type="button" class="seg-btn active" data-mwperiod="y">Tahun</button></div>' +
     '<div class="seg"><button type="button" class="seg-btn active" data-mwdir="-">Keluar</button><button type="button" class="seg-btn" data-mwdir="+">Masuk</button></div></div>' +
@@ -592,9 +592,9 @@ function mobShellTemplate() {
     '<button type="button" class="seg-btn active" data-mzmode="scrub">👆 Garis</button>' +
     '<button type="button" class="seg-btn" data-mzmode="pan">✋ Geser</button></div>' +
     '<div class="cf-legend-bar" style="margin-bottom:0">' +
-    '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--accent)"></span>Saldo Nyata</span>' +
-    '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--emerald)"></span>Proyeksi</span>' +
-    '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--crimson)"></span>Defisit (&lt;0)</span></div></div>' +
+    '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--accent)"></span>Saldo Hari Ini</span>' +
+    '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--emerald)"></span>Masa Depan</span>' +
+    '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--crimson)"></span>&lt; Rp 0</span></div></div>' +
     '<div class="cf-zoom-stage" id="m-cf-zoom-stage"><div class="cf-zoom-scroll" id="m-cf-zoom-wrap"><svg id="m-svg-cf-zoom" viewBox="0 0 600 320"></svg></div><div class="hud-tooltip" id="m-cf-zoom-tip"></div></div>' +
     '<div class="slider-wrap" style="margin-top:2px"><div class="slider-hd"><span style="font-size:0.71rem;color:var(--text-muted);font-weight:700">Geser garis grafik</span><span style="font-size:0.69rem;color:var(--accent-ink);font-weight:700" id="m-cf-zoom-scrub-lbl">Sentuh grafik atau geser &harr;</span></div>' +
     '<input type="range" class="modern-slider" id="m-cf-zoom-scrub" min="0" max="100" step="1" value="50" /></div>' +
@@ -802,7 +802,7 @@ function renderMobCashflowSvg(P, curBal) {
   var W = 340,
     H = 210,
     pL = 40,
-    pR = 16,
+    pR = 0,
     pT = 14,
     pB = 26;
   svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
@@ -841,33 +841,43 @@ function renderMobCashflowSvg(P, curBal) {
     futC = coords.filter(function (c) { return !c.actual; }),
     projC = (actualC.length ? [actualC[actualC.length - 1]] : []).concat(futC);
   var zeroPct = Math.max(0, Math.min(100, ((zY - pT) / Math.max(1, H - pT - pB)) * 100));
+  var lblPosMob = function (x) { return Math.max(pL, Math.min(W - 22, x)); };
   var xShow = {}, xUsed = [];
   function markXLbl(idx) {
     if (idx < 0 || idx >= coords.length || xShow[idx]) return;
-    var cx = coords[idx].x;
+    var cx = lblPosMob(coords[idx].x);
     if (xUsed.some(function (ux) { return Math.abs(ux - cx) < 48; })) return;
     xShow[idx] = true;
     xUsed.push(cx);
   }
-  coords.forEach(function (c, ix) { if (c.today) { xShow[ix] = true; xUsed.push(c.x); } });
+  coords.forEach(function (c, ix) { if (c.today) { xShow[ix] = true; xUsed.push(lblPosMob(c.x)); } });
   markXLbl(0);
   markXLbl(coords.length - 1);
   markXLbl(Math.floor((coords.length - 1) / 2));
+  var mHitX = Math.max(0, pL - 8),
+    mHitW = Math.min(W - mHitX, W - pL - pR + 16),
+    mTodayCoord = coords.filter(function (c) { return c.today; })[0] || null,
+    mTodayLine = mTodayCoord
+      ? '<line class="cf-today-line rk-anim-today-line" x1="' + mTodayCoord.x.toFixed(1) + '" y1="' + pT + '" x2="' + mTodayCoord.x.toFixed(1) + '" y2="' + (H - pB) + '" stroke="var(--accent)" stroke-width="1.4" stroke-dasharray="4 3" opacity="0.5" pointer-events="none"/>'
+      : '';
   svg.innerHTML =
     '<defs><linearGradient id="mDual" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity="0.28"/><stop offset="' + zeroPct.toFixed(1) + '%" stop-color="var(--crimson)" stop-opacity="0.22"/></linearGradient></defs>' +
     grid +
     '<path class="rk-anim-fill-right" d="' + pathFn(coords) + ' L ' + coords[coords.length - 1].x.toFixed(1) + ' ' + Math.min(zY, H - pB).toFixed(1) + ' L ' + coords[0].x.toFixed(1) + ' ' + Math.min(zY, H - pB).toFixed(1) + ' Z" fill="url(#mDual)"/>' +
+    mTodayLine +
     '<path id="m-cf-seg-glow" fill="none" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" opacity="0.34" style="display:none;pointer-events:none"/>' +
     (actualC.length >= 2 ? '<path class="rk-anim-line" d="' + pathFn(actualC) + '" fill="none" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round"/>' : '') +
     (projC.length >= 2 ? '<path d="' + pathFn(projC) + '" fill="none" stroke="var(--emerald)" stroke-width="2.8" stroke-dasharray="5 4" stroke-linecap="round"/>' : '') +
     '<g id="m-cf-ch" style="display:none;pointer-events:none"><line id="m-cf-cx" y1="' + pT + '" y2="' + (H - pB) + '" stroke="var(--accent)" stroke-width="1.3" stroke-dasharray="3 3"/><circle id="m-cf-cd" r="5" fill="var(--accent)" stroke="#fff" stroke-width="2"/></g>' +
     coords.map(function (c, ix) {
       var showLbl = !!xShow[ix];
+      var nodeX = c.today ? c.x : Math.min(W - 5.5, c.x);
+      var lx = lblPosMob(c.x);
       var fillC = c.val < 0 ? 'var(--crimson)' : c.actual ? 'var(--accent)' : 'var(--emerald)';
-      return '<circle class="cf-node" cx="' + c.x.toFixed(1) + '" cy="' + c.y.toFixed(1) + '" r="' + (c.val < 0 || c.today ? 4.8 : 3.5) + '" fill="' + fillC + '" stroke="var(--bg-surface)" stroke-width="1.6"/>' +
-        (showLbl ? '<text x="' + c.x.toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle" fill="' + (c.today ? 'var(--accent-ink)' : 'var(--text-muted)') + '" font-size="8.8" font-weight="700" font-family="var(--font-mono)">' + esc(c.lbl) + '</text>' : '');
+      return '<circle class="cf-node' + (c.today ? ' is-today' : '') + '" cx="' + nodeX.toFixed(1) + '" cy="' + c.y.toFixed(1) + '" r="' + (c.val < 0 || c.today ? 4.8 : 3.5) + '" fill="' + fillC + '" stroke="var(--bg-surface)" stroke-width="1.6"/>' +
+        (showLbl ? '<text x="' + lx.toFixed(1) + '" y="' + (H - 7) + '" text-anchor="middle" fill="' + (c.today ? 'var(--accent-ink)' : 'var(--text-muted)') + '" font-size="8.8" font-weight="700" font-family="var(--font-mono)">' + esc(c.lbl) + '</text>' : '');
     }).join('') +
-    '<rect id="m-cf-hit" x="' + Math.max(0, pL - 8) + '" y="0" width="' + (W - pL - pR + 16) + '" height="' + H + '" fill="transparent" style="touch-action:none;cursor:ew-resize"/>';
+    '<rect id="m-cf-hit" x="' + mHitX + '" y="0" width="' + mHitW + '" height="' + H + '" fill="transparent" style="touch-action:none;cursor:ew-resize"/>';
 
   var hit = svg.querySelector('#m-cf-hit'),
     ch = svg.querySelector('#m-cf-ch'),
@@ -1003,6 +1013,7 @@ function renderMobCashflowZoom() {
       svgW: wide ? 920 : 600,
       svgH: wide ? 340 : 320,
       padL: wide ? 68 : 56,
+      padR: 0,
       fontSize: wide ? 13 : 13.5,
       dotR: 5.5,
       skipInspector: true,
@@ -1060,57 +1071,38 @@ function renderMobWhere(C) {
     catsEl = $('m-where-cats'),
     itemsEl = $('m-where-items');
   if (stage) {
-    if (MOB_STATE.whereStyle === 'ring') {
-      var size = 154, cx = 77, cy = 77, rad = 56, sw = 20, circ = 2 * Math.PI * rad, off = 0;
-      var segs = cats.map(function (c) {
-        var frac = grand ? c.v / grand : 0, dash = frac * circ, col = mobGetCatMeta(c.name).hex;
+    var isBar = MOB_STATE.whereStyle === 'bar' || MOB_STATE.whereStyle === 'ring';
+    stage.classList.toggle('is-segbar', isBar);
+    if (isBar) {
+      var segs = cats.map(function (c, idx) {
+        var frac = grand ? (c.v / grand) * 100 : 0, col = mobGetCatMeta(c.name).hex;
         var act = !MOB_STATE.whereLock || MOB_STATE.whereLock === c.name;
-        var sg = '<circle class="jar-band ' + (MOB_STATE.whereLock ? (act ? 'lit' : 'dim') : '') + '" data-mkcat="' + esc(c.name) + '" cx="' + cx + '" cy="' + cy + '" r="' + rad + '" fill="none" stroke="' + col + '" stroke-width="' + sw + '" stroke-dasharray="' + dash.toFixed(1) + ' ' + (circ - dash).toFixed(1) + '" stroke-dashoffset="' + (-off).toFixed(1) + '" transform="rotate(-90 ' + cx + ' ' + cy + ')"/>';
-        off += dash;
-        return sg;
+        return '<button type="button" class="jar-band m-segbar-item ' + (MOB_STATE.whereLock ? (act ? 'lit' : 'dim') : '') + '" data-mkcat="' + esc(c.name) + '" data-pct="' + frac.toFixed(1) + '" aria-label="' + esc(c.name + ' ' + Math.round(frac) + '%') + '" style="flex:' + Math.max(0.5, frac).toFixed(3) + ' 1 0%;min-width:6px;background:' + col + ';--rk-seg-idx:' + idx + '"></button>';
       }).join('');
-      stage.innerHTML = '<svg id="m-svg-jar" viewBox="0 0 ' + size + ' ' + size + '" style="width:100%;max-width:144px;margin:0 auto;display:block"><circle cx="' + cx + '" cy="' + cy + '" r="' + rad + '" fill="none" stroke="var(--bg-subtle)" stroke-width="' + sw + '"/><g class="rk-anim-ring-fill">' + segs + '</g><text x="' + cx + '" y="' + (cy + 3) + '" text-anchor="middle" fill="var(--text-primary)" font-size="14" font-weight="800" font-family="var(--font-mono)">' + (cats.length ? '100%' : '0%') + '</text><text x="' + cx + '" y="' + (cy + 16) + '" text-anchor="middle" fill="var(--text-muted)" font-size="8.5" font-weight="700">' + cats.length + ' kat</text></svg>';
+      stage.innerHTML = '<div class="m-where-segbar-wrap" id="m-where-segbar"><div class="m-where-segbar-meta"><span class="mono">' + (cats.length ? '100%' : '0%') + ' &middot; ' + cats.length + ' kat</span></div><div class="m-where-segbar">' + (segs || '<div class="m-segbar-empty"></div>') + '</div></div>';
     } else {
-      var W = 186, H = 228, xL = 16, xR = 136, yC = 38, cH = 172, yB = yC + cH - 4, chH = cH - 12, yT = yB - chH, cX = (xL + xR) / 2, jarW = xR - xL;
-      var stack = cats.slice(0, 6).sort(function (a, b) { return b.v - a.v; }), curY = yT;
-      var bandItems = stack.map(function (c, i) {
-        var pct = grand ? (c.v / grand) * 100 : 0, h = i === stack.length - 1 ? Math.max(8, yB - curY) : Math.max(10, (pct / 100) * chH), y = curY;
-        curY += h;
-        return { name: c.name, y: y, h: h, col: mobGetCatMeta(c.name).hex, act: !MOB_STATE.whereLock || MOB_STATE.whereLock === c.name };
+      var jarBands = cats.map(function (c) {
+        var pct = grand ? (c.v / grand) * 100 : 0;
+        var act = !MOB_STATE.whereLock || MOB_STATE.whereLock === c.name;
+        return {
+          mkcat: c.name,
+          cat: c.name,
+          pct: pct,
+          total: c.v,
+          color: mobGetCatMeta(c.name).hex,
+          cls: MOB_STATE.whereLock ? (act ? 'lit' : 'dim') : '',
+        };
       });
-      var topBand = bandItems[0] || null;
-      var topBotY = topBand ? (bandItems.length === 1 ? yB + 4 : topBand.y + topBand.h + 3) : yB;
-      var waveFn = typeof jarWaveLayerPath === 'function' ? jarWaveLayerPath : function (xl, p, yt, yb) { return 'M ' + xl + ' ' + yt + ' H ' + (xl + 2 * p) + ' V ' + yb + ' H ' + xl + ' Z'; };
-      var topCls = MOB_STATE.whereLock ? (topBand && topBand.act ? 'lit' : 'dim') : '';
-      var topWave = topBand
-        ? '<g class="jar-wave-bob">' +
-          '<path class="jar-wave-back ' + topCls + '" d="' + waveFn(xL, jarW, yT - 0.5, topBotY, [1.5, 0.7, 0.3], [1.4, 2.8, 0.6]) + '" fill="' + topBand.col + '" opacity="0.5" style="pointer-events:none;"/>' +
-          '<path class="jar-band jar-wave-anim ' + topCls + '" data-mkcat="' + esc(topBand.name) + '" d="' + waveFn(xL, jarW, yT, topBotY, [1.8, 0.8, 0.35], [0, 1.1, 2.4]) + '" fill="' + topBand.col + '"/>' +
-          '</g>'
+      stage.innerHTML = typeof rkBuildWaterJarSvg === 'function'
+        ? rkBuildWaterJarSvg({
+            svgId: 'm-svg-jar',
+            clipId: 'clip-m-jar',
+            gradPrefix: 'm',
+            style: 'width:100%;height:auto;display:block',
+            bands: jarBands,
+            showHud: false,
+          })
         : '';
-      var lowerBands = bandItems.slice(1).map(function (b) {
-        return '<rect class="jar-band ' + (MOB_STATE.whereLock ? (b.act ? 'lit' : 'dim') : '') + '" data-mkcat="' + esc(b.name) + '" x="' + xL + '" y="' + b.y.toFixed(1) + '" width="' + jarW + '" height="' + b.h.toFixed(1) + '" fill="' + b.col + '"/>' +
-          '<line x1="' + xL + '" y1="' + b.y.toFixed(1) + '" x2="' + xR + '" y2="' + b.y.toFixed(1) + '" stroke="rgba(255,255,255,0.55)" stroke-width="1" style="pointer-events:none;"/>';
-      }).join('');
-      var ticks = [100, 75, 50, 25, 0].map(function (tk) {
-        return '<text x="' + (xR + 6) + '" y="' + (yB - (tk / 100) * chH + 3).toFixed(1) + '" fill="var(--text-muted)" font-size="8.5" font-weight="700" font-family="var(--font-mono)">' + tk + '%</text>';
-      }).join('');
-      stage.innerHTML =
-        '<svg id="m-svg-jar" viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block">' +
-        '<defs><clipPath id="clip-m-jar"><rect x="' + xL + '" y="' + yC + '" width="' + jarW + '" height="' + cH + '" rx="22"/></clipPath>' +
-        '<linearGradient id="mJarCapGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#9A7624"/><stop offset="38%" stop-color="#EED484"/><stop offset="72%" stop-color="#C89F3D"/><stop offset="100%" stop-color="#8B681D"/></linearGradient>' +
-        '<linearGradient id="mJarGlassShine" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.48"/><stop offset="22%" stop-color="#FFFFFF" stop-opacity="0.10"/><stop offset="82%" stop-color="#FFFFFF" stop-opacity="0.02"/><stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.28"/></linearGradient></defs>' +
-        '<ellipse cx="' + cX + '" cy="' + (yB + 10) + '" rx="52" ry="6" fill="rgba(15,23,42,0.14)"/>' +
-        '<rect x="' + (cX - 42) + '" y="6" width="84" height="19" rx="6" fill="url(#mJarCapGrad)" stroke="rgba(15,23,42,0.18)" stroke-width="1"/>' +
-        '<rect x="' + (cX - 38) + '" y="11" width="76" height="3" rx="1.5" fill="rgba(255,255,255,0.36)"/>' +
-        '<rect x="' + (cX - 34) + '" y="25" width="68" height="13" rx="4" fill="var(--bg-subtle)" stroke="var(--border-strong)" stroke-width="1.4"/>' +
-        '<rect x="' + xL + '" y="' + yC + '" width="' + jarW + '" height="' + cH + '" rx="22" fill="var(--bg-surface)" stroke="var(--border-strong)" stroke-width="2"/>' +
-        '<g clip-path="url(#clip-m-jar)">' +
-        '<g class="rk-anim-fill-up">' + topWave + lowerBands + '</g>' +
-        (stack.length ? '<circle class="jar-bubble" cx="' + (xL + 30) + '" cy="' + (yB - 28) + '" r="3" fill="#fff"/><circle class="jar-bubble" style="animation-delay:1.2s" cx="' + (xR - 32) + '" cy="' + (yB - 54) + '" r="2.2" fill="#fff"/><circle class="jar-bubble" style="animation-delay:2.1s" cx="' + cX + '" cy="' + (yB - 18) + '" r="2.6" fill="#fff"/>' : '') +
-        '<rect x="' + xL + '" y="' + yC + '" width="' + (xR - xL) + '" height="' + cH + '" fill="url(#mJarGlassShine)" pointer-events="none"/>' +
-        '<rect x="' + (xL + 8) + '" y="' + (yC + 14) + '" width="6" height="' + (cH - 34) + '" rx="3" fill="#FFFFFF" opacity="0.42" pointer-events="none"/>' +
-        '</g>' + ticks + '</svg>';
     }
   }
   if ($('m-btn-reset-where')) $('m-btn-reset-where').style.display = MOB_STATE.whereLock ? 'inline-flex' : 'none';
@@ -1131,7 +1123,9 @@ function renderMobWhere(C) {
     var topRows = groupExpenseItems(filtEntries).rows.slice(0, 5);
     itemsEl.innerHTML = topRows.length
       ? topRows.map(function (r) {
-          return '<div class="list-row"><span style="display:flex;align-items:center;gap:8px;min-width:0">' + mobCatLogo(r.cat || 'Tagihan rutin', 20) + '<span style="font-size:0.78rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.name) + '</span></span><strong class="mono pv" style="font-size:0.78rem">' + rp(r.v) + '</strong></div>';
+          var rCat = r.cat || 'Tanpa kategori';
+          var isAct = MOB_STATE.whereLock === rCat;
+          return '<button type="button" class="list-row' + (isAct ? ' active' : '') + '" data-mkcat="' + esc(rCat) + '" style="width:100%;text-align:left"><span style="display:flex;align-items:center;gap:8px;min-width:0">' + mobCatLogo(rCat, 20) + '<span style="font-size:0.78rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.name) + '</span></span><strong class="mono pv" style="font-size:0.78rem">' + rp(r.v) + '</strong></button>';
         }).join('')
       : '<div style="font-size:0.75rem;color:var(--text-muted)">Belum ada rincian.</div>';
   }
@@ -1156,16 +1150,25 @@ function renderMobBarSvg(C) {
   var maxV = Math.max(1000000, Math.max.apply(null, bars.map(function (b) { return Math.max(b.inc, b.out); }))),
     bandW = (W - pL - pR) / bars.length,
     bw = Math.min(16, bandW * 0.36);
+  var netPtsM = bars.map(function (b, i) {
+    var cx = pL + bandW * (i + 0.5), net = b.inc - b.out;
+    return { x: cx, y: pT + pH * (1 - Math.max(0, net) / maxV), net: net };
+  });
+  var netPathM = netPtsM.length > 1
+    ? (typeof brCubicPath === 'function' ? brCubicPath(netPtsM) : 'M ' + netPtsM.map(function (p) { return p.x.toFixed(1) + ' ' + p.y.toFixed(1); }).join(' L '))
+    : '';
   svg.innerHTML = bars.map(function (b, i) {
     var cx = pL + bandW * (i + 0.5),
       ih = b.inc ? Math.max(3, (b.inc / maxV) * pH) : 2,
       eh = b.out ? Math.max(3, (b.out / maxV) * pH) : 2;
-    return '<g class="bar-col" data-mbidx="' + i + '" style="cursor:pointer">' +
+    return '<g class="bar-col" data-mbidx="' + i + '" style="cursor:pointer;--rk-bar-idx:' + i + '">' +
       '<rect class="bar-month-bg" x="' + (pL + bandW * i + 2).toFixed(1) + '" y="' + pT + '" width="' + Math.max(4, bandW - 4).toFixed(1) + '" height="' + (pH + 2) + '" rx="6"/>' +
-      '<rect x="' + (cx - bw - 1).toFixed(1) + '" y="' + (pT + pH - ih).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + ih.toFixed(1) + '" rx="3" fill="var(--emerald)"/>' +
-      '<rect x="' + (cx + 1).toFixed(1) + '" y="' + (pT + pH - eh).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + eh.toFixed(1) + '" rx="3" fill="var(--accent)"/>' +
+      '<rect class="rk-bar-rect" x="' + (cx - bw - 1).toFixed(1) + '" y="' + (pT + pH - ih).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + ih.toFixed(1) + '" rx="3" fill="var(--emerald)"/>' +
+      '<rect class="rk-bar-rect" x="' + (cx + 1).toFixed(1) + '" y="' + (pT + pH - eh).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + eh.toFixed(1) + '" rx="3" fill="var(--accent)"/>' +
       '<text class="bar-month-lbl" x="' + cx.toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle" fill="var(--text-muted)" font-size="8.5" font-weight="700">' + b.m[0] + '</text></g>';
-  }).join('');
+  }).join('') +
+  (netPathM ? '<path class="rk-anim-line rk-bar-net-line" d="' + netPathM + '" fill="none" stroke="var(--amber)" stroke-width="1.9" stroke-dasharray="3 2.5"/>' : '') +
+  netPtsM.map(function (x) { return '<circle class="rk-bar-net-dot" cx="' + x.x.toFixed(1) + '" cy="' + x.y.toFixed(1) + '" r="2.6" fill="var(--amber)" stroke="var(--bg-surface)" stroke-width="1.2"/>'; }).join('');
   svg.querySelectorAll('.bar-col').forEach(function (g) {
     var ix = +g.getAttribute('data-mbidx'), d = bars[ix];
     function showBar() {

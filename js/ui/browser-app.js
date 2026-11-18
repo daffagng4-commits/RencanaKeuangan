@@ -370,29 +370,115 @@ function rkTriggerSweep(el) {
   el._rkSweepT = setTimeout(clean, 860);
 }
 
-function rkCountUpEl(el, durMs, delayMs) {
+function rkParseCountSlots(str) {
+  if (typeof str !== 'string' || !str) return null;
+  var re = /((?:[-−]\s*Rp\s*|Rp\s*[-−]\s*|Rp\s+|[-−]\s*(?=\d))?)(\d[\d.]*)/g;
+  var parts = [], slots = [], last = 0, m;
+  while ((m = re.exec(str)) !== null) {
+    parts.push(str.slice(last, m.index));
+    var pre = m[1] || '', rawNum = m[2];
+    var isRp = /Rp/i.test(pre);
+    var isNeg = /[-−]/.test(pre);
+    var abs = parseInt(rawNum.replace(/\./g, ''), 10) || 0;
+    var val = isNeg ? -abs : abs;
+    var rpNegAfter = isRp && /Rp\s*[-−]/i.test(pre);
+    slots.push({ val: val, isRp: isRp, rpNegAfter: rpNegAfter });
+    last = m.index + m[0].length;
+  }
+  if (!slots.length) return null;
+  parts.push(str.slice(last));
+  return { parts: parts, slots: slots };
+}
+
+function rkSnapshotCuPrev(el) {
   if (!el || typeof el.textContent !== 'string') return;
+  var parsed = rkParseCountSlots(el.textContent);
+  if (parsed) el._rkPrevParsed = parsed;
+}
+
+function rkFormatCountSlot(slot, curVal, fmtNum) {
+  var v = Math.round(curVal);
+  if (!slot.isRp) {
+    return (v < 0 ? '-' : '') + fmtNum(Math.abs(v));
+  }
+  if (v < 0) {
+    return (slot.rpNegAfter ? 'Rp -' : '-Rp ') + fmtNum(Math.abs(v));
+  }
+  return 'Rp ' + fmtNum(v);
+}
+
+var RK_RINCIAN_KPI_SPECS = [
+  ['rincian-saldo-now', 1900, true],
+  ['metric-end-bal', 1400, true],
+  ['metric-daily-val', 1400, true],
+  ['metric-daily-hint', 1400, false],
+  ['metric-avg-bill', 1400, true],
+  ['metric-total-year', 1400, false],
+  ['rincian-bills-ratio', 1400, true],
+  ['rincian-paid-sum', 1400, false],
+  ['top5-total-badge', 1400, false],
+];
+
+function rkAnimateRincianKpis(fromPrev) {
+  if (typeof document === 'undefined' || rkIsReducedMotion() || rkIsPrivacyMode()) return;
+  if (typeof getShellMode === 'function' && getShellMode() === 'mobile-app') return;
+  var panel = $('tab-rincian');
+  if (!panel || panel.offsetWidth <= 0) return;
+  var cards = Array.prototype.slice.call(panel.querySelectorAll('.card, .summary-stat-card, .quick-parse-bar'));
+  RK_RINCIAN_KPI_SPECS.forEach(function (sp) {
+    var el = $(sp[0]);
+    if (!el) return;
+    var hostCard = el.closest('.card, .summary-stat-card, .quick-parse-bar');
+    var idx = hostCard ? cards.indexOf(hostCard) : 0;
+    var stIdx = idx >= 0 && idx < 8 ? idx : 0;
+    rkCountUpEl(el, sp[1], stIdx * 70, { fromPrev: !!fromPrev, sweep: sp[2] });
+  });
+}
+
+function rkCountUpEl(el, durMs, delayMs, opts) {
+  if (!el || typeof el.textContent !== 'string') return;
+  opts = opts || {};
   var finalStr = el.textContent;
   el.dataset.rkFinal = finalStr;
-  if (rkIsReducedMotion() || rkIsPrivacyMode() || el.offsetWidth <= 0 || typeof requestAnimationFrame !== 'function') {
+  var parsed = rkParseCountSlots(finalStr);
+  var prevParsed = el._rkPrevParsed || null;
+  if (!parsed) {
+    el._rkPrevParsed = null;
     return;
   }
-  var m = finalStr.match(/^([+-]?\s*(?:Rp\s*)?[-−]?)(\d[\d.]*)(.*)$/);
-  if (!m) return;
-  var prefix = m[1] || '',
-    targetAbs = parseInt(m[2].replace(/\./g, ''), 10) || 0,
-    suffix = m[3] || '';
-  if (targetAbs <= 0) return;
+  if (rkIsReducedMotion() || rkIsPrivacyMode() || el.offsetWidth <= 0 || typeof requestAnimationFrame !== 'function') {
+    el._rkPrevParsed = parsed;
+    return;
+  }
+  var usePrev = !!opts.fromPrev && prevParsed && prevParsed.slots.length === parsed.slots.length;
+  var starts = parsed.slots.map(function (s, idx) {
+    return usePrev ? prevParsed.slots[idx].val : 0;
+  });
+  var hasAnim = parsed.slots.some(function (s, idx) {
+    return s.val !== starts[idx];
+  });
+  el._rkPrevParsed = parsed;
+  if (!hasAnim) return;
 
   if (el._rkCuRec) {
     if (el._rkCuRec.timer) clearTimeout(el._rkCuRec.timer);
     if (el._rkCuRec.raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(el._rkCuRec.raf);
   }
+  var useSweep = opts.sweep !== undefined ? !!opts.sweep : true;
   var nf = typeof Intl !== 'undefined' && Intl.NumberFormat ? new Intl.NumberFormat('id-ID') : null;
   var fmtNum = function (v) { return nf ? nf.format(v) : v.toLocaleString('id-ID'); };
   var rec = { el: el, finalStr: finalStr, timer: null, raf: null };
   el._rkCuRec = rec;
   _rkActiveCountUps.push(rec);
+
+  function renderFrame(eased) {
+    var out = parsed.parts[0];
+    for (var i = 0; i < parsed.slots.length; i++) {
+      var curV = starts[i] + (parsed.slots[i].val - starts[i]) * eased;
+      out += rkFormatCountSlot(parsed.slots[i], curV, fmtNum) + parsed.parts[i + 1];
+    }
+    return out;
+  }
 
   function startLoop() {
     if (rkIsPrivacyMode() || rkIsReducedMotion() || el.dataset.rkFinal !== finalStr) {
@@ -410,13 +496,13 @@ function rkCountUpEl(el, durMs, delayMs) {
       var eased = p >= 1 ? 1 : 1 - Math.pow(2, -10 * p);
       if (p >= 1) {
         el.textContent = finalStr;
-        rkTriggerSweep(el);
+        if (useSweep) rkTriggerSweep(el);
         return;
       }
-      el.textContent = prefix + fmtNum(Math.round(targetAbs * eased)) + suffix;
+      el.textContent = renderFrame(eased);
       rec.raf = requestAnimationFrame(step);
     }
-    el.textContent = prefix + '0' + suffix;
+    el.textContent = renderFrame(0);
     rec.raf = requestAnimationFrame(step);
   }
 
@@ -478,23 +564,18 @@ function rkRunEntrance(shellMode, tabId) {
     setTimeout(cleanCard, 2250);
   });
 
-  // 2. Count-up (#2.1 desktop hero 1900ms / KPI 1400ms, #2.2 APK hero 1100ms)
+  // 2. Count-up (#2.1 desktop hero 1900ms / KPI 1400ms, #2.2 APK hero 1100ms, REVISI 2 semua KPI Rincian)
   rkCancelAllCountUps();
   var countSpecs = isApk
-    ? (panel.id === 'm-tab-rincian' ? [['m-rincian-saldo', 1100], ['m-hero-inc', 1100], ['m-hero-out', 1100]] : [])
+    ? (panel.id === 'm-tab-rincian' ? [['m-rincian-saldo', 1100, true], ['m-hero-inc', 1100, true], ['m-hero-out', 1100, true]] : [])
     : (panel.id === 'tab-rincian'
-      ? [
-          ['rincian-saldo-now', 1900],
-          ['metric-end-bal', 1400], ['metric-daily-val', 1400],
-          ['metric-avg-bill', 1400], ['metric-total-year', 1400],
-          ['rincian-paid-sum', 1400], ['top5-total-badge', 1400],
-        ]
+      ? RK_RINCIAN_KPI_SPECS
       : panel.id === 'tab-kas'
-        ? [['kas-saldo-val', 1900], ['kas-in-val', 1400], ['kas-out-val', 1400]]
+        ? [['kas-saldo-val', 1900, true], ['kas-in-val', 1400, true], ['kas-out-val', 1400, true]]
         : panel.id === 'tab-jadwal'
-          ? [['jad-paid-amt', 1400], ['jad-paid-pct', 1400], ['jad-unpaid-amt', 1400]]
+          ? [['jad-paid-amt', 1400, true], ['jad-paid-pct', 1400, true], ['jad-unpaid-amt', 1400, true]]
           : panel.id === 'tab-sim'
-            ? [['sim-base-end', 1400], ['sim-end-bal', 1900], ['sim-delta-val', 1400]]
+            ? [['sim-base-end', 1400, true], ['sim-end-bal', 1900, true], ['sim-delta-val', 1400, true]]
             : []);
   countSpecs.forEach(function (sp) {
     if (runId !== _rkEntranceRunId) return;
@@ -502,10 +583,10 @@ function rkRunEntrance(shellMode, tabId) {
     if (!el) return;
     var hostCard = el.closest(cardSel);
     var cIdx = hostCard && cardIndexMap.has(hostCard) ? cardIndexMap.get(hostCard) : 0;
-    rkCountUpEl(el, sp[1], isApk ? 0 : cIdx * 70);
+    rkCountUpEl(el, sp[1], isApk ? 0 : cIdx * 70, { sweep: sp[2] !== false });
   });
 
-  // 3. SVG Line Draw (#3 / #2 / #2.2), Chart Fill (#2), & Bar Fade (#3)
+  // 3. SVG Line Draw (#3 / #2 / #2.2), Chart Fill (#2), & Bar Grow + Label Fade (REVISI 1)
   panel.querySelectorAll('.rk-anim-line').forEach(function (pathEl) {
     var len = 1200;
     try { if (typeof pathEl.getTotalLength === 'function') len = Math.max(10, Math.ceil(pathEl.getTotalLength())); } catch (e) {}
@@ -517,10 +598,8 @@ function rkRunEntrance(shellMode, tabId) {
     pathEl.addEventListener('animationend', function () { pathEl.classList.remove('rk-line-draw'); }, { once: true });
     setTimeout(function () { pathEl.classList.remove('rk-line-draw'); }, 2250);
   });
-  panel.querySelectorAll('.rk-anim-fill-right, .rk-anim-fill-up, .rk-anim-ring-fill').forEach(function (el) {
-    var cls = el.classList.contains('rk-anim-fill-up') ? 'rk-chart-fill-up'
-      : el.classList.contains('rk-anim-ring-fill') ? 'rk-ring-fill'
-      : 'rk-chart-fill-right';
+  panel.querySelectorAll('.rk-anim-fill-right, .rk-anim-fill-up').forEach(function (el) {
+    var cls = el.classList.contains('rk-anim-fill-up') ? 'rk-chart-fill-up' : 'rk-chart-fill-right';
     el.style.setProperty('--rk-card-delay', '0ms');
     el.classList.remove(cls);
     void el.offsetWidth;
@@ -528,13 +607,35 @@ function rkRunEntrance(shellMode, tabId) {
     el.addEventListener('animationend', function () { el.classList.remove(cls); }, { once: true });
     setTimeout(function () { el.classList.remove(cls); }, 2250);
   });
-  panel.querySelectorAll('#svg-bar-compare .bar-col, #m-svg-bar .bar-col').forEach(function (col) {
-    col.style.setProperty('--rk-card-delay', '0ms');
-    col.classList.remove('rk-bar-fade');
-    void col.offsetWidth;
-    col.classList.add('rk-bar-fade');
-    col.addEventListener('animationend', function () { col.classList.remove('rk-bar-fade'); }, { once: true });
-    setTimeout(function () { col.classList.remove('rk-bar-fade'); }, 1200);
+  panel.querySelectorAll('.rk-anim-today-line').forEach(function (lnEl) {
+    lnEl.style.setProperty('--rk-card-delay', '0ms');
+    lnEl.classList.remove('rk-today-line-draw');
+    void lnEl.offsetWidth;
+    lnEl.classList.add('rk-today-line-draw');
+    lnEl.addEventListener('animationend', function () { lnEl.classList.remove('rk-today-line-draw'); }, { once: true });
+    setTimeout(function () { lnEl.classList.remove('rk-today-line-draw'); }, 1200);
+  });
+  panel.querySelectorAll('.m-where-segbar').forEach(function (sb) {
+    clearTimeout(sb._rkSegAnimT);
+    sb.querySelectorAll('.m-segbar-item').forEach(function (seg, idx) {
+      seg.style.setProperty('--rk-seg-idx', String(idx));
+    });
+    sb.classList.remove('rk-segbar-anim');
+    void sb.offsetWidth;
+    sb.classList.add('rk-segbar-anim');
+    sb._rkSegAnimT = setTimeout(function () { sb.classList.remove('rk-segbar-anim'); }, 1100);
+  });
+  panel.querySelectorAll('#svg-bar-compare, #m-svg-bar').forEach(function (barSvg) {
+    clearTimeout(barSvg._rkBarAnimT);
+    barSvg.querySelectorAll('.bar-col').forEach(function (col, idx) {
+      col.style.setProperty('--rk-bar-idx', String(idx));
+    });
+    barSvg.classList.remove('rk-bar-anim');
+    void barSvg.offsetWidth;
+    barSvg.classList.add('rk-bar-anim');
+    barSvg._rkBarAnimT = setTimeout(function () {
+      barSvg.classList.remove('rk-bar-anim');
+    }, 1850);
   });
 
   // 4. List Stagger Entrance (#9)
@@ -639,7 +740,7 @@ function rkAnimateChartOnly(containerEl) {
   void containerEl.offsetWidth;
   containerEl.classList.add('is-filter-anim');
 
-  var cleanList = [];
+  var cleanList = [], barSvgs = [];
   containerEl.querySelectorAll('.rk-anim-line').forEach(function (pathEl) {
     var len = 1200;
     try { if (typeof pathEl.getTotalLength === 'function') len = Math.max(10, Math.ceil(pathEl.getTotalLength())); } catch (e) {}
@@ -650,27 +751,49 @@ function rkAnimateChartOnly(containerEl) {
     pathEl.classList.add('rk-line-draw');
     cleanList.push([pathEl, 'rk-line-draw']);
   });
-  containerEl.querySelectorAll('.rk-anim-fill-right, .rk-anim-fill-up, .rk-anim-ring-fill').forEach(function (el) {
-    var cls = el.classList.contains('rk-anim-fill-up') ? 'rk-chart-fill-up'
-      : el.classList.contains('rk-anim-ring-fill') ? 'rk-ring-fill'
-      : 'rk-chart-fill-right';
+  containerEl.querySelectorAll('.rk-anim-fill-right, .rk-anim-fill-up').forEach(function (el) {
+    var cls = el.classList.contains('rk-anim-fill-up') ? 'rk-chart-fill-up' : 'rk-chart-fill-right';
     el.style.setProperty('--rk-card-delay', '0ms');
     el.classList.remove(cls);
     void el.offsetWidth;
     el.classList.add(cls);
     cleanList.push([el, cls]);
   });
-  containerEl.querySelectorAll('#svg-bar-compare .bar-col, #m-svg-bar .bar-col').forEach(function (col) {
-    col.style.setProperty('--rk-card-delay', '0ms');
-    col.classList.remove('rk-bar-fade');
-    void col.offsetWidth;
-    col.classList.add('rk-bar-fade');
-    cleanList.push([col, 'rk-bar-fade']);
+  containerEl.querySelectorAll('.rk-anim-today-line').forEach(function (lnEl) {
+    lnEl.style.setProperty('--rk-card-delay', '0ms');
+    lnEl.classList.remove('rk-today-line-draw');
+    void lnEl.offsetWidth;
+    lnEl.classList.add('rk-today-line-draw');
+    cleanList.push([lnEl, 'rk-today-line-draw']);
+  });
+  containerEl.querySelectorAll('.m-where-segbar').forEach(function (sb) {
+    clearTimeout(sb._rkSegAnimT);
+    sb.querySelectorAll('.m-segbar-item').forEach(function (seg, idx) {
+      seg.style.setProperty('--rk-seg-idx', String(idx));
+    });
+    sb.classList.remove('rk-segbar-anim');
+    void sb.offsetWidth;
+    sb.classList.add('rk-segbar-anim');
+    cleanList.push([sb, 'rk-segbar-anim']);
+  });
+  if (containerEl.matches && containerEl.matches('#svg-bar-compare, #m-svg-bar')) barSvgs.push(containerEl);
+  containerEl.querySelectorAll('#svg-bar-compare, #m-svg-bar').forEach(function (bs) {
+    if (barSvgs.indexOf(bs) < 0) barSvgs.push(bs);
+  });
+  barSvgs.forEach(function (barSvg) {
+    clearTimeout(barSvg._rkBarAnimT);
+    barSvg.querySelectorAll('.bar-col').forEach(function (col, idx) {
+      col.style.setProperty('--rk-bar-idx', String(idx));
+    });
+    barSvg.classList.remove('rk-bar-anim');
+    void barSvg.offsetWidth;
+    barSvg.classList.add('rk-bar-anim');
+    cleanList.push([barSvg, 'rk-bar-anim']);
   });
   containerEl._rkFilterAnimT = setTimeout(function () {
     containerEl.classList.remove('is-filter-anim');
     cleanList.forEach(function (pair) { pair[0].classList.remove(pair[1]); });
-  }, 950);
+  }, 1150);
 }
 
 function rkAnimateRowExit(rowEl, commitFn) {
@@ -1086,12 +1209,17 @@ function brBuildCashflowPoints(range) {
     sm = typeof smEff === 'function' ? smEff() : 0,
     balNow = P ? kasBal(P).bal : (+S.saldo || 0),
     F = P ? kasFlow(P) : null;
-  var fromD, toD;
+  var fromD, toD, todayYr = +today.slice(0, 4);
   if (range === 'w') {
-    fromD = addDaysISO(today, -3);
-    toD = addDaysISO(today, 4);
+    if (y === todayYr) {
+      fromD = addDaysISO(today, -3);
+      toD = addDaysISO(today, 4);
+    } else {
+      fromD = y + '-' + pad2(sm + 1) + '-01';
+      toD = addDaysISO(fromD, 7);
+    }
   } else if (range === 'm') {
-    var curM = +today.slice(5, 7);
+    var curM = y === todayYr ? +today.slice(5, 7) : (sm + 1);
     var dimM = new Date(Date.UTC(y, curM, 0)).getUTCDate();
     fromD = y + '-' + pad2(curM) + '-01';
     toD = y + '-' + pad2(curM) + '-' + pad2(dimM);
@@ -1100,12 +1228,17 @@ function brBuildCashflowPoints(range) {
     toD = y + '-12-31';
   }
   if (fromD > toD) fromD = y + '-01-01';
+  var hasTodayInRange = fromD <= today && today <= toD;
   if (!F || !F.allDates.length) {
-    return [
-      { d: fromD, lbl: brFmtShortIndo(fromD), val: balNow, delta: 0, bill: 'Saldo awal', actual: true },
-      { d: today, lbl: 'Hari ini', val: balNow, delta: 0, bill: 'Kondisi kas saat ini', actual: true, today: true },
-      { d: toD, lbl: brFmtShortIndo(toD), val: balNow, delta: 0, bill: 'Proyeksi akhir', actual: false },
-    ];
+    var emptyPts = [{ d: fromD, lbl: brFmtShortIndo(fromD), val: balNow, delta: 0, bill: 'Saldo awal', actual: fromD <= today }];
+    if (hasTodayInRange && fromD !== today && toD !== today) {
+      emptyPts.push({ d: today, lbl: 'Hari ini', val: balNow, delta: 0, bill: 'Kondisi kas saat ini', actual: true, today: true });
+    } else if (hasTodayInRange && fromD === today) {
+      emptyPts[0].lbl = 'Hari ini';
+      emptyPts[0].today = true;
+    }
+    emptyPts.push({ d: toD, lbl: toD === today ? 'Hari ini' : brFmtShortIndo(toD), val: balNow, delta: 0, bill: 'Proyeksi akhir', actual: toD <= today, today: hasTodayInRange && toD === today });
+    return emptyPts;
   }
   // Delta masa depan (> hari ini) yang BELUM masuk ke dalam kasBal(P).bal
   var futNetByDate = {};
@@ -1161,21 +1294,23 @@ function brBuildCashflowPoints(range) {
       today: isToday,
     });
   });
-  if (!addedToday && fromD <= today && today <= toD) {
+  if (!addedToday && hasTodayInRange) {
     pts.push({ d: today, lbl: 'Hari ini', val: balNow, delta: 0, bill: 'Saldo realtime hari ini', actual: true, today: true });
     pts.sort(function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; });
   }
   if (!pts.length) {
-    pts.push({ d: today, lbl: 'Hari ini', val: balNow, delta: 0, bill: 'Saldo realtime hari ini', actual: true, today: true });
+    if (hasTodayInRange) {
+      pts.push({ d: today, lbl: 'Hari ini', val: balNow, delta: 0, bill: 'Saldo realtime hari ini', actual: true, today: true });
+    } else {
+      pts.push({ d: fromD, lbl: brFmtShortIndo(fromD), val: balBeforeFrom, delta: 0, bill: 'Saldo awal', actual: fromD <= today });
+    }
   }
-  if (range === 'w' || range === 'm') {
-    if (pts[0].d > fromD && fromD !== today) {
-      pts.unshift({ d: fromD, lbl: brFmtShortIndo(fromD), val: balBeforeFrom, delta: 0, bill: range === 'w' ? 'Awal minggu' : 'Awal bulan', actual: fromD <= today });
-    }
-    var lastPt = pts[pts.length - 1];
-    if (lastPt && lastPt.d < toD && toD !== today) {
-      pts.push({ d: toD, lbl: brFmtShortIndo(toD), val: lastPt.val, delta: 0, bill: range === 'w' ? 'Akhir minggu' : 'Proyeksi 30 hari', actual: toD <= today });
-    }
+  if (pts[0].d > fromD && fromD !== today) {
+    pts.unshift({ d: fromD, lbl: brFmtShortIndo(fromD), val: balBeforeFrom, delta: 0, bill: range === 'w' ? 'Awal minggu' : range === 'm' ? 'Awal bulan' : 'Awal periode', actual: fromD <= today });
+  }
+  var lastPt = pts[pts.length - 1];
+  if (lastPt && lastPt.d < toD && toD !== today) {
+    pts.push({ d: toD, lbl: brFmtShortIndo(toD), val: lastPt.val, delta: 0, bill: range === 'w' ? 'Akhir minggu' : range === 'm' ? 'Proyeksi 30 hari' : 'Proyeksi akhir tahun', actual: toD <= today });
   }
   if (pts.length === 1) {
     var endC = calc().end;
@@ -1207,8 +1342,8 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
   var pts = brBuildCashflowPoints(range || 'y');
   var W = opts.svgW || 1060,
     H = opts.svgH || 250,
-    padL = opts.padL || 68,
-    padR = 26,
+    padL = opts.padL != null ? opts.padL : 68,
+    padR = opts.padR != null ? opts.padR : 0,
     padT = 22,
     padB = opts.padB || 36,
     fs = opts.fontSize || 11.5,
@@ -1234,22 +1369,33 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
       samples.push({ x: pt.x, y: pt.y, val: pt.val, t: st / 24, p0: p0, p1: p1 });
     }
   }
-  var grid = '';
+  var grid = '',
+    yLblInside = padL < 28;
   for (var g = 0; g <= 4; g++) {
     var gv = minV + ((maxV - minV) * g) / 4, gy = yPos(gv);
     grid += '<line x1="' + padL + '" y1="' + gy + '" x2="' + (W - padR) + '" y2="' + gy + '" stroke="var(--border-subtle)" stroke-dasharray="4 4"/>';
-    grid += '<text x="' + (padL - 10) + '" y="' + (gy + 4) + '" text-anchor="end" fill="var(--text-muted)" font-size="' + fs + '" font-family="var(--font-mono)">' + brFmtShort(Math.round(gv)) + '</text>';
+    if (yLblInside) {
+      var ly = g === 4 ? (gy + fs + 2) : (gy - 4);
+      grid += '<text x="' + (padL + 8) + '" y="' + ly + '" text-anchor="start" fill="var(--text-muted)" font-size="' + fs + '" font-family="var(--font-mono)">' + brFmtShort(Math.round(gv)) + '</text>';
+    } else {
+      grid += '<text x="' + (padL - 10) + '" y="' + (gy + 4) + '" text-anchor="end" fill="var(--text-muted)" font-size="' + fs + '" font-family="var(--font-mono)">' + brFmtShort(Math.round(gv)) + '</text>';
+    }
   }
   if (minV < 0 && maxV > 0) {
     grid += '<rect x="' + padL + '" y="' + zeroY + '" width="' + (W - padL - padR) + '" height="' + Math.max(0, H - padB - zeroY) + '" fill="var(--crimson)" opacity="0.08"/>';
     grid += '<line x1="' + padL + '" y1="' + zeroY + '" x2="' + (W - padR) + '" y2="' + zeroY + '" stroke="var(--crimson)" stroke-width="1.5" stroke-dasharray="6 4"/>';
-    grid += '<text x="' + (W - padR - 6) + '" y="' + (zeroY - 6) + '" text-anchor="end" fill="var(--crimson)" font-size="' + fs + '" font-weight="700">Batas Defisit (Rp 0)</text>';
   }
   var fullCurve = brCubicPath(coords),
     actualCoords = coords.filter(function (c) { return c.actual; }),
     projCoords = (actualCoords.length ? [actualCoords[actualCoords.length - 1]] : []).concat(coords.filter(function (c) { return !c.actual; })),
     baseLineY = Math.min(zeroY, H - padB),
-    areaD = fullCurve + ' L ' + coords[coords.length - 1].x + ' ' + baseLineY + ' L ' + coords[0].x + ' ' + baseLineY + ' Z';
+    areaD = fullCurve + ' L ' + coords[coords.length - 1].x + ' ' + baseLineY + ' L ' + coords[0].x + ' ' + baseLineY + ' Z',
+    todayCoord = coords.filter(function (c) { return c.today; })[0] || null,
+    todayLineMarkup = todayCoord
+      ? '<line class="cf-today-line rk-anim-today-line" x1="' + todayCoord.x.toFixed(1) + '" y1="' + padT + '" x2="' + todayCoord.x.toFixed(1) + '" y2="' + (H - padB) + '" stroke="var(--accent)" stroke-width="1.4" stroke-dasharray="4 3" opacity="0.5" pointer-events="none"/>'
+      : '';
+  var hitX = Math.max(0, padL - 8),
+    hitW = Math.min(W - hitX, W - padL - padR + 16);
   svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
   svg.innerHTML =
     '<defs><linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">' +
@@ -1260,6 +1406,7 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
     '<filter id="' + glowFiltId + '" x="-15%" y="-15%" width="130%" height="130%"><feGaussianBlur stdDeviation="3.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>' +
     grid +
     '<path class="rk-anim-fill-right" d="' + areaD + '" fill="url(#' + gradId + ')"/>' +
+    todayLineMarkup +
     '<path id="' + segGlowId + '" fill="none" stroke="var(--accent)" stroke-width="6.5" stroke-linecap="round" opacity="0.34" style="display:none;pointer-events:none;"/>' +
     (actualCoords.length > 1 ? '<path class="rk-anim-line" d="' + brCubicPath(actualCoords) + '" fill="none" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" filter="url(#' + glowFiltId + ')"/>' : '') +
     (projCoords.length > 1 ? '<path d="' + brCubicPath(projCoords) + '" fill="none" stroke="var(--emerald)" stroke-width="2.8" stroke-dasharray="7 5" stroke-linecap="round"/>' : '') +
@@ -1269,15 +1416,16 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
     '<circle id="' + chRingId + '" r="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>' +
     '<circle id="' + chDotId + '" r="4.5" fill="var(--accent)" stroke="var(--bg-surface)" stroke-width="2"/></g>' +
     (function () {
+      var lblPos = function (x) { return Math.max(padL, Math.min(W - 26, x)); };
       var lblMap = (function () {
         var sh = {}, uX = [];
         function tk(idx) {
           if (idx < 0 || idx >= coords.length || sh[idx]) return;
-          var cx = coords[idx].x;
+          var cx = lblPos(coords[idx].x);
           if (uX.some(function (ux) { return Math.abs(ux - cx) < 72; })) return;
           sh[idx] = true; uX.push(cx);
         }
-        coords.forEach(function (cc, idx) { if (cc.today) { sh[idx] = true; uX.push(cc.x); } });
+        coords.forEach(function (cc, idx) { if (cc.today) { sh[idx] = true; uX.push(lblPos(cc.x)); } });
         tk(0);
         tk(coords.length - 1);
         var st = coords.length <= 9 ? 1 : 2;
@@ -1285,14 +1433,16 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
         return sh;
       })();
       return coords.map(function (c, i) {
-        var showLbl = !!lblMap[i];
-        return '<g>' + ((c.today || c.val < 0) ? '<circle class="pulse-ring" cx="' + c.x + '" cy="' + c.y + '" r="' + (dotR + 3.5) + '" fill="' + (c.val < 0 ? 'var(--crimson)' : 'var(--accent)') + '"/>' : '') +
-          '<circle class="cf-node" data-nodeidx="' + c.idx + '" cx="' + c.x + '" cy="' + c.y + '" r="' + (c.val < 0 ? dotR + 1 : dotR) + '" fill="' + (c.val < 0 ? 'var(--crimson)' : c.actual ? 'var(--accent)' : 'var(--emerald)') + '" stroke="var(--bg-surface)" stroke-width="2"/>' +
-          (showLbl ? '<text x="' + c.x + '" y="' + (H - 10) + '" text-anchor="middle" fill="' + (c.today ? 'var(--accent-ink)' : 'var(--text-muted)') + '" font-weight="' + (c.today ? '700' : '500') + '" font-size="' + fs + '" font-family="var(--font-mono)">' + esc(c.lbl) + '</text>' : '') +
+        var showLbl = !!lblMap[i],
+          nodeX = c.today ? c.x : Math.min(W - (dotR + 3), c.x),
+          lx = lblPos(c.x);
+        return '<g>' + ((c.today || c.val < 0) ? '<circle class="pulse-ring" cx="' + nodeX.toFixed(1) + '" cy="' + c.y + '" r="' + (dotR + 3.5) + '" fill="' + (c.val < 0 ? 'var(--crimson)' : 'var(--accent)') + '"/>' : '') +
+          '<circle class="cf-node' + (c.today ? ' is-today' : '') + '" data-nodeidx="' + c.idx + '" cx="' + nodeX.toFixed(1) + '" cy="' + c.y + '" r="' + (c.val < 0 ? dotR + 1 : dotR) + '" fill="' + (c.val < 0 ? 'var(--crimson)' : c.actual ? 'var(--accent)' : 'var(--emerald)') + '" stroke="var(--bg-surface)" stroke-width="2"/>' +
+          (showLbl ? '<text x="' + lx + '" y="' + (H - 10) + '" text-anchor="middle" fill="' + (c.today ? 'var(--accent-ink)' : 'var(--text-muted)') + '" font-weight="' + (c.today ? '700' : '500') + '" font-size="' + fs + '" font-family="var(--font-mono)">' + esc(c.lbl) + '</text>' : '') +
           '</g>';
       }).join('');
     })() +
-    '<rect id="' + hitId + '" x="' + (padL - 8) + '" y="0" width="' + (W - padL - padR + 16) + '" height="' + H + '" fill="transparent"/>';
+    '<rect id="' + hitId + '" x="' + hitX + '" y="0" width="' + hitW + '" height="' + H + '" fill="transparent"/>';
 
   var hit = svg.querySelector('#' + hitId),
     ch = svg.querySelector('#' + chId),
@@ -1324,7 +1474,7 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
     chRing.setAttribute('cx', c.x); chRing.setAttribute('cy', c.y); chRing.setAttribute('stroke', tone);
     chDot.setAttribute('cx', c.x); chDot.setAttribute('cy', c.y); chDot.setAttribute('fill', tone);
     var statusCls = c.val < 0 ? 'badge-crimson' : c.actual ? 'badge-accent' : 'badge-emerald',
-      statusLbl = c.val < 0 ? 'Defisit' : c.actual ? 'Saldo Nyata' : 'Proyeksi';
+      statusLbl = c.val < 0 ? '< Rp 0' : c.actual ? 'Saldo Hari Ini' : 'Masa Depan';
     tip.innerHTML =
       '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;"><strong>' + esc(fmtD(c.d)) + '</strong><span class="badge ' + statusCls + '">' + statusLbl + '</span></div>' +
       '<div class="mono pv" style="font-size:0.96rem;font-weight:800;color:' + (c.val < 0 ? 'var(--crimson)' : 'var(--text-primary)') + ';">' + rp(c.val) + '</div>' +
@@ -1570,15 +1720,15 @@ function renderBarCompareChart() {
         pinned = BR_STATE.pinnedBarIdx === i,
         net = b.inc - b.exp,
         topY = Math.min(ih ? iy : H - padB, eh ? ey : H - padB);
-      return '<g class="bar-col' + (pinned ? ' is-pinned' : '') + '" data-bidx="' + i + '" style="cursor:pointer;" pointer-events="all">' +
+      return '<g class="bar-col' + (pinned ? ' is-pinned' : '') + '" data-bidx="' + i + '" style="cursor:pointer;--rk-bar-idx:' + i + ';" pointer-events="all">' +
         '<rect class="bar-month-bg" x="' + (cx - bandW * 0.45).toFixed(1) + '" y="6" width="' + (bandW * 0.9).toFixed(1) + '" height="' + (H - padB - 4) + '" rx="9"/>' +
-        (ih ? '<rect x="' + (cx - bw - 1.5).toFixed(1) + '" y="' + iy.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + ih.toFixed(1) + '" rx="5" fill="url(#gInc)"/>' : '') +
-        (eh ? '<rect x="' + (cx + 1.5).toFixed(1) + '" y="' + ey.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + eh.toFixed(1) + '" rx="5" fill="url(#gExp)"/>' : '') +
-        ((ih || eh) ? '<text x="' + cx.toFixed(1) + '" y="' + Math.max(15, topY - 6).toFixed(1) + '" text-anchor="middle" fill="' + (net >= 0 ? 'var(--emerald)' : 'var(--crimson)') + '" font-size="9.5" font-family="var(--font-mono)" font-weight="700">' + (net >= 0 ? '+' : '-') + brFmtShort(Math.abs(net)) + '</text>' : '') +
+        (ih ? '<rect class="rk-bar-rect" x="' + (cx - bw - 1.5).toFixed(1) + '" y="' + iy.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + ih.toFixed(1) + '" rx="5" fill="url(#gInc)"/>' : '') +
+        (eh ? '<rect class="rk-bar-rect" x="' + (cx + 1.5).toFixed(1) + '" y="' + ey.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + eh.toFixed(1) + '" rx="5" fill="url(#gExp)"/>' : '') +
+        ((ih || eh) ? '<text class="rk-bar-net-label" x="' + cx.toFixed(1) + '" y="' + Math.max(15, topY - 6).toFixed(1) + '" text-anchor="middle" fill="' + (net >= 0 ? 'var(--emerald)' : 'var(--crimson)') + '" font-size="9.5" font-family="var(--font-mono)" font-weight="700">' + (net >= 0 ? '+' : '-') + brFmtShort(Math.abs(net)) + '</text>' : '') +
         '<text class="bar-month-lbl" x="' + cx.toFixed(1) + '" y="' + (H - 11) + '" text-anchor="middle" fill="var(--text-secondary)" font-size="11" font-weight="700">' + b.m + '</text></g>';
     }).join('') +
-    (netPts.length > 1 ? '<path d="' + brCubicPath(netPts) + '" fill="none" stroke="var(--amber)" stroke-width="2.2" stroke-dasharray="4 3"/>' : '') +
-    netPts.map(function (x) { return '<circle cx="' + x.x.toFixed(1) + '" cy="' + x.y.toFixed(1) + '" r="3.6" fill="var(--amber)" stroke="var(--bg-surface)" stroke-width="1.6"/>'; }).join('');
+    (netPts.length > 1 ? '<path class="rk-anim-line rk-bar-net-line" d="' + brCubicPath(netPts) + '" fill="none" stroke="var(--amber)" stroke-width="2.2" stroke-dasharray="4 3"/>' : '') +
+    netPts.map(function (x) { return '<circle class="rk-bar-net-dot" cx="' + x.x.toFixed(1) + '" cy="' + x.y.toFixed(1) + '" r="3.6" fill="var(--amber)" stroke="var(--bg-surface)" stroke-width="1.6"/>'; }).join('');
 
   function defFoot() {
     var totInc = bars.reduce(function (s, r) { return s + r.inc; }, 0),
@@ -1625,87 +1775,171 @@ function brGetItemShade(cat, idx) {
   return arr[idx % arr.length];
 }
 
-function jarWaveLayerPath(xL, period, yTop, yBottom, amps, phases) {
+function jarWaveTopCurve(xL, period, yTop, amps, phases) {
   var N = 24,
     dx = period / N,
+    xStart = xL - period,
+    totalSteps = 4 * N,
     pts = [];
-  for (var i = 0; i <= 2 * N; i++) {
+  for (var i = 0; i <= totalSteps; i++) {
     var t = (i / N) * 2 * Math.PI;
     var y =
       yTop +
       (amps[0] || 0) * Math.sin(t + (phases[0] || 0)) +
       (amps[1] || 0) * Math.sin(2 * t + (phases[1] || 0)) +
       (amps[2] || 0) * Math.sin(3 * t + (phases[2] || 0));
-    pts.push({ x: xL + i * dx, y: y });
+    pts.push({ x: xStart + i * dx, y: y });
   }
   var d = 'M ' + pts[0].x.toFixed(2) + ' ' + pts[0].y.toFixed(2);
-  for (var k = 0; k < 2 * N; k++) {
+  for (var k = 0; k < totalSteps; k++) {
     var p0x = pts[k].x - dx,
       p0y = pts[k === 0 ? N - 1 : k - 1].y,
       p1 = pts[k],
       p2 = pts[k + 1],
       p3x = pts[k + 1].x + dx,
-      p3y = pts[(k + 2) % (2 * N)].y;
+      p3y = pts[(k + 2) % totalSteps].y;
     var c1x = p1.x + (p2.x - p0x) / 6,
       c1y = p1.y + (p2.y - p0y) / 6,
       c2x = p2.x - (p3x - p1.x) / 6,
       c2y = p2.y - (p3y - p1.y) / 6;
     d += ' C ' + c1x.toFixed(2) + ' ' + c1y.toFixed(2) + ', ' + c2x.toFixed(2) + ' ' + c2y.toFixed(2) + ', ' + p2.x.toFixed(2) + ' ' + p2.y.toFixed(2);
   }
-  return d + ' L ' + (xL + 2 * period).toFixed(1) + ' ' + yBottom.toFixed(1) + ' L ' + xL.toFixed(1) + ' ' + yBottom.toFixed(1) + ' Z';
+  return d;
+}
+
+function jarWaveLayerPath(xL, period, yTop, yBottom, amps, phases) {
+  var xStart = xL - period;
+  return jarWaveTopCurve(xL, period, yTop, amps, phases) + ' L ' + (xStart + 4 * period).toFixed(1) + ' ' + yBottom.toFixed(1) + ' L ' + xStart.toFixed(1) + ' ' + yBottom.toFixed(1) + ' Z';
+}
+
+/** Fungsi bersama pembentuk SVG Jar 3D (dipakai identik oleh Desktop & APK, REVISI 3.1). */
+function rkBuildWaterJarSvg(opts) {
+  opts = opts || {};
+  var svgId = opts.svgId || 'svg-jar-main',
+    clipId = opts.clipId || 'clip-shared-jar',
+    px = opts.gradPrefix || 'rk',
+    maxStyle = opts.style || 'width:100%;height:auto;display:block;',
+    bandsIn = opts.bands || [];
+  var W = 186, H = 228, xL = 16, xR = 136, yC = 38, cH = 172, yB = yC + cH - 4, chH = cH - 12, yT = yB - chH, cX = (xL + xR) / 2, jarW = xR - xL;
+  var minBandH = bandsIn.length ? Math.min(8, chH / bandsIn.length) : 0;
+  var rawHeights = bandsIn.map(function (b) { return Math.max(minBandH, ((b.pct || 0) / 100) * chH); });
+  var rawSum = rawHeights.reduce(function (s, h) { return s + h; }, 0);
+  if (rawSum > chH && bandsIn.length > 0) {
+    var fixedTotal = minBandH * bandsIn.length;
+    var availVar = Math.max(0, chH - fixedTotal);
+    var varSum = rawHeights.reduce(function (s, h) { return s + Math.max(0, h - minBandH); }, 0) || 1;
+    rawHeights = rawHeights.map(function (h) {
+      return minBandH + (Math.max(0, h - minBandH) / varSum) * availVar;
+    });
+  }
+  var curY = yT;
+  var bandItems = bandsIn.map(function (b, i) {
+    var h = i === bandsIn.length - 1 ? Math.max(minBandH, (yC + cH) - curY) : rawHeights[i], y = curY;
+    curY += (i === bandsIn.length - 1 ? Math.max(minBandH, yB - y) : h);
+    return Object.assign({}, b, { y: y, h: h, midY: Math.min(yB - 4, Math.max(yT + 4, y + h / 2)) });
+  });
+  var topBand = bandItems[0] || null;
+  var topBotY = topBand ? (bandItems.length === 1 ? (yC + cH + 2) : (topBand.y + topBand.h + 1.2)) : yB;
+  var buildAttr = function (b) {
+    var attrs = '';
+    if (b.id != null) attrs += ' data-item="' + esc(b.id) + '"';
+    if (b.cat != null) attrs += ' data-cat="' + esc(b.cat) + '"';
+    if (b.mkcat != null) attrs += ' data-mkcat="' + esc(b.mkcat) + '"';
+    if (b.pct != null) attrs += ' data-pct="' + Number(b.pct).toFixed(1) + '"';
+    if (b.total != null) attrs += ' data-amt="' + b.total + '"';
+    if (b.name != null) attrs += ' data-name="' + esc(b.name) + '"';
+    attrs += ' data-midy="' + b.midY.toFixed(1) + '"';
+    return attrs;
+  };
+  var topCls = topBand && topBand.cls ? (' ' + topBand.cls) : '';
+  var topWave = topBand
+    ? '<g class="jar-wave-bob">' +
+      '<path class="jar-wave-back' + topCls + '" d="' + jarWaveLayerPath(xL, jarW, yT - 0.5, topBotY, [1.5, 0.7, 0.3], [1.4, 2.8, 0.6]) + '" fill="' + topBand.color + '" opacity="0.5" style="pointer-events:none;"/>' +
+      '<path class="jar-band jar-wave-anim' + topCls + '"' + buildAttr(topBand) + ' d="' + jarWaveLayerPath(xL, jarW, yT, topBotY, [1.8, 0.8, 0.35], [0, 1.1, 2.4]) + '" fill="' + topBand.color + '"/>' +
+      '<path class="jar-wave-hl jar-layer-aux' + topCls + '" data-cat="' + esc(topBand.cat || topBand.mkcat || '') + '" d="' + jarWaveTopCurve(xL, jarW, yT, [1.8, 0.8, 0.35], [0, 1.1, 2.4]) + '" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1" style="pointer-events:none;"/>' +
+      '</g>'
+    : '';
+  var gradZone = 6, menSag = 1.6, blendDefs = '';
+  var lowerBands = bandItems.slice(1).map(function (b, i) {
+    var bCls = b.cls ? (' ' + b.cls) : '';
+    var prevB = bandItems[i];
+    var catName = esc(b.cat || b.mkcat || '');
+    var y0 = b.y, yEdge = y0 - menSag, yCtrl = y0 + menSag;
+    var showGrad = prevB && prevB.h >= gradZone && b.h >= gradZone;
+    var blendMarkup = '';
+    if (showGrad) {
+      var gId = px + 'JarBlend_' + (i + 1);
+      blendDefs += '<linearGradient id="' + gId + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="' + b.color + '" stop-opacity="0"/>' +
+        '<stop offset="49%" stop-color="' + b.color + '" stop-opacity="0.5"/>' +
+        '<stop offset="51%" stop-color="' + prevB.color + '" stop-opacity="0.5"/>' +
+        '<stop offset="100%" stop-color="' + prevB.color + '" stop-opacity="0"/></linearGradient>';
+      var halfZ = gradZone / 2;
+      blendMarkup = '<path class="jar-meniscus-blend jar-layer-aux' + bCls + '" data-cat="' + catName + '" d="M ' + xL + ' ' + (yEdge - halfZ).toFixed(1) + ' Q ' + cX + ' ' + (yCtrl - halfZ).toFixed(1) + ' ' + xR + ' ' + (yEdge - halfZ).toFixed(1) + ' L ' + xR + ' ' + (yEdge + halfZ).toFixed(1) + ' Q ' + cX + ' ' + (yCtrl + halfZ).toFixed(1) + ' ' + xL + ' ' + (yEdge + halfZ).toFixed(1) + ' Z" fill="url(#' + gId + ')" style="pointer-events:none;"/>';
+    }
+    var meniscusCap = '<path class="jar-meniscus-cap jar-layer-aux' + bCls + '" data-cat="' + catName + '" d="M ' + xL + ' ' + yEdge.toFixed(1) + ' Q ' + cX + ' ' + yCtrl.toFixed(1) + ' ' + xR + ' ' + yEdge.toFixed(1) + ' L ' + xR + ' ' + y0.toFixed(1) + ' L ' + xL + ' ' + y0.toFixed(1) + ' Z" fill="' + b.color + '" style="pointer-events:none;"/>';
+    var meniscusHl = '<path class="jar-meniscus-hl jar-layer-aux' + bCls + '" data-cat="' + catName + '" d="M ' + xL + ' ' + yEdge.toFixed(1) + ' Q ' + cX + ' ' + yCtrl.toFixed(1) + ' ' + xR + ' ' + yEdge.toFixed(1) + '" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="1" style="pointer-events:none;"/>';
+    return '<rect class="jar-band' + bCls + '"' + buildAttr(b) + ' x="' + xL + '" y="' + y0.toFixed(1) + '" width="' + jarW + '" height="' + b.h.toFixed(1) + '" fill="' + b.color + '"/>' +
+      meniscusCap + blendMarkup + meniscusHl;
+  }).join('');
+  var ticks = [100, 75, 50, 25, 0].map(function (tk) {
+    return '<text x="' + (xR + 6) + '" y="' + (yB - (tk / 100) * chH + 3).toFixed(1) + '" fill="var(--text-muted)" font-size="8.5" font-weight="700" font-family="var(--font-mono)">' + tk + '%</text>';
+  }).join('');
+  var hudMarkup = opts.showHud
+    ? '<polygon id="jar-ptr" points="' + (xL - 9) + ',-4 ' + (xL - 1) + ',0 ' + (xL - 9) + ',4" fill="var(--accent)" style="display:none;pointer-events:none;"/>'
+    : '';
+  return (
+    '<svg id="' + svgId + '" viewBox="0 0 ' + W + ' ' + H + '" style="' + maxStyle + '" aria-label="Jar Chart Pengeluaran">' +
+    '<defs><clipPath id="' + clipId + '"><rect x="' + (xL + 1) + '" y="' + (yC + 1) + '" width="' + (jarW - 2) + '" height="' + (cH - 2) + '" rx="21"/></clipPath>' +
+    '<linearGradient id="' + px + 'JarCapGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#9A7624"/><stop offset="38%" stop-color="#EED484"/><stop offset="72%" stop-color="#C89F3D"/><stop offset="100%" stop-color="#8B681D"/></linearGradient>' +
+    '<linearGradient id="' + px + 'JarGlassShine" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.48"/><stop offset="22%" stop-color="#FFFFFF" stop-opacity="0.10"/><stop offset="82%" stop-color="#FFFFFF" stop-opacity="0.02"/><stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.28"/></linearGradient>' +
+    blendDefs + '</defs>' +
+    '<ellipse cx="' + cX + '" cy="' + (yB + 10) + '" rx="52" ry="6" fill="rgba(15,23,42,0.14)"/>' +
+    '<rect x="' + (cX - 42) + '" y="6" width="84" height="19" rx="6" fill="url(#' + px + 'JarCapGrad)" stroke="rgba(15,23,42,0.18)" stroke-width="1"/>' +
+    '<rect x="' + (cX - 38) + '" y="11" width="76" height="3" rx="1.5" fill="rgba(255,255,255,0.36)"/>' +
+    '<rect x="' + (cX - 34) + '" y="25" width="68" height="13" rx="4" fill="var(--bg-subtle)" stroke="var(--border-strong)" stroke-width="1.4"/>' +
+    '<rect x="' + xL + '" y="' + yC + '" width="' + jarW + '" height="' + cH + '" rx="22" fill="var(--bg-surface)"/>' +
+    '<g clip-path="url(#' + clipId + ')">' +
+    (bandItems.length === 0 ? '<rect x="' + xL + '" y="' + yT + '" width="' + jarW + '" height="' + chH + '" fill="var(--bg-subtle)" opacity="0.5"/>' : '') +
+    '<g class="rk-anim-fill-up">' + topWave + lowerBands + '</g>' +
+    (bandItems.length ? '<circle class="jar-bubble" cx="' + (xL + 30) + '" cy="' + (yB - 28) + '" r="3" fill="#fff"/><circle class="jar-bubble" style="animation-delay:1.2s" cx="' + (xR - 32) + '" cy="' + (yB - 54) + '" r="2.2" fill="#fff"/><circle class="jar-bubble" style="animation-delay:2.1s" cx="' + cX + '" cy="' + (yB - 18) + '" r="2.6" fill="#fff"/>' : '') +
+    '<rect x="' + xL + '" y="' + yC + '" width="' + jarW + '" height="' + cH + '" fill="url(#' + px + 'JarGlassShine)" pointer-events="none"/>' +
+    '<rect x="' + (xL + 8) + '" y="' + (yC + 14) + '" width="6" height="' + (cH - 34) + '" rx="3" fill="#FFFFFF" opacity="0.42" pointer-events="none"/>' +
+    '</g>' +
+    '<rect x="' + xL + '" y="' + yC + '" width="' + jarW + '" height="' + cH + '" rx="22" fill="none" stroke="var(--border-strong)" stroke-width="2" pointer-events="none"/>' +
+    ticks + hudMarkup + '</svg>'
+  );
 }
 
 function renderFullWaterJarSvg(rows, grand) {
-  var W = 320, H = 438, xL = 28, xR = 248, yChamberTop = 58, yTop = 82, yBot = 414,
-    chamberH = yBot - yChamberTop, chH = yBot - yTop, centerX = Math.round((xL + xR) / 2),
-    jarW = xR - xL;
-  var sortedRows = (rows || []).slice().sort(function (a, b) { return (b.total || 0) - (a.total || 0); });
-  var catSeen = {}, curY = yTop;
-  var bands = sortedRows.map(function (r, i) {
-    var ci = catSeen[r.cat] || 0; catSeen[r.cat] = ci + 1;
-    var color = brGetItemShade(r.cat, ci),
-      pct = grand > 0 ? (r.total / grand) * 100 : 0,
-      h = i === sortedRows.length - 1 ? Math.max(4, yBot - curY) : Math.max(4.5, (pct / 100) * chH),
-      y = curY;
-    curY += h;
-    return Object.assign({}, r, { pct: pct, color: color, y: y, h: h, midY: y + h / 2 });
+  var catMap = {};
+  (rows || []).forEach(function (r) {
+    if (!r) return;
+    var cat = String(r.cat || r.name || 'Lainnya').trim();
+    if (!catMap[cat]) catMap[cat] = { cat: cat, total: 0 };
+    catMap[cat].total += (r.total || 0);
   });
-  var ticks = [100, 75, 50, 25, 0].map(function (tk) {
-    var ty = yBot - (tk / 100) * chH;
-    return '<line x1="' + (xR + 3) + '" y1="' + ty + '" x2="' + (xR + 12) + '" y2="' + ty + '" stroke="var(--text-muted)" stroke-width="1.3" opacity="0.8"/><text x="' + (xR + 17) + '" y="' + (ty + 4) + '" text-anchor="start" fill="var(--text-muted)" font-size="11" font-weight="600" font-family="var(--font-mono)">' + tk + '%</text>';
-  }).join('');
-  var topBand = bands[0] || null;
-  var topBotY = topBand ? (bands.length === 1 ? yBot + 4 : topBand.y + topBand.h + 3) : yBot;
-  var topWaveMarkup = topBand
-    ? '<g class="jar-wave-bob">' +
-      '<path class="jar-wave-back" d="' + jarWaveLayerPath(xL, jarW, yTop - 0.5, topBotY, [1.8, 0.9, 0.4], [1.4, 2.8, 0.6]) + '" fill="' + topBand.color + '" opacity="0.5" style="pointer-events:none;"/>' +
-      '<path class="jar-band jar-wave-anim" data-item="' + esc(topBand.id) + '" data-cat="' + esc(topBand.cat) + '" data-pct="' + topBand.pct.toFixed(1) + '" data-amt="' + topBand.total + '" data-name="' + esc(topBand.name) + '" data-midy="' + topBand.midY.toFixed(1) + '" d="' + jarWaveLayerPath(xL, jarW, yTop, topBotY, [2.2, 1.0, 0.45], [0, 1.1, 2.4]) + '" fill="' + topBand.color + '"/>' +
-      '</g>'
-    : '';
-  var lowerBandsMarkup = bands.slice(1).map(function (b) {
-    return '<rect class="jar-band" data-item="' + esc(b.id) + '" data-cat="' + esc(b.cat) + '" data-pct="' + b.pct.toFixed(1) + '" data-amt="' + b.total + '" data-name="' + esc(b.name) + '" data-midy="' + b.midY.toFixed(1) + '" x="' + xL + '" y="' + b.y.toFixed(1) + '" width="' + jarW + '" height="' + b.h.toFixed(1) + '" fill="' + b.color + '"/>' +
-      '<line x1="' + xL + '" y1="' + b.y.toFixed(1) + '" x2="' + xR + '" y2="' + b.y.toFixed(1) + '" stroke="rgba(255,255,255,0.48)" stroke-width="1" style="pointer-events:none;"/>';
-  }).join('');
-  return (
-    '<svg id="svg-jar-main" viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" style="display:block;width:100%;max-width:320px;height:auto;margin:0 auto;" aria-label="Jar Chart Pengeluaran">' +
-    '<defs><clipPath id="clip_full_jar"><rect x="' + xL + '" y="' + yChamberTop + '" width="' + jarW + '" height="' + chamberH + '" rx="26"/></clipPath></defs>' +
-    '<rect x="' + (centerX - 58) + '" y="4" width="116" height="22" rx="7" fill="var(--border-strong)"/>' +
-    '<rect x="' + (centerX - 46) + '" y="24" width="92" height="18" rx="4" fill="var(--bg-subtle)" stroke="var(--border-strong)" stroke-width="1.6"/>' +
-    '<path d="M ' + (centerX - 46) + ' ' + (yChamberTop - 16) + ' Q ' + xL + ' ' + (yChamberTop - 8) + ' ' + xL + ' ' + (yChamberTop + 12) + ' L ' + xR + ' ' + (yChamberTop + 12) + ' Q ' + xR + ' ' + (yChamberTop - 8) + ' ' + (centerX + 46) + ' ' + (yChamberTop - 16) + ' Z" fill="var(--bg-subtle)" stroke="var(--border-strong)" stroke-width="1.6"/>' +
-    '<rect x="' + xL + '" y="' + yChamberTop + '" width="' + jarW + '" height="' + chamberH + '" rx="26" fill="var(--bg-surface)" stroke="var(--border-strong)" stroke-width="2.4"/>' +
-    '<g clip-path="url(#clip_full_jar)">' +
-    (bands.length === 0 ? '<rect x="' + xL + '" y="' + yTop + '" width="' + jarW + '" height="' + chH + '" fill="var(--bg-subtle)" opacity="0.5"/>' : '') +
-    '<g class="rk-anim-fill-up">' + topWaveMarkup + lowerBandsMarkup + '</g>' +
-    '</g>' +
-    '<rect x="' + (xL + 11) + '" y="' + (yChamberTop + 16) + '" width="13" height="' + (chamberH - 32) + '" rx="12" fill="#FFFFFF" opacity="0.26" style="pointer-events:none;"/>' +
-    ticks +
-    '<polygon id="jar-ptr" points="' + (xL - 12) + ',-6 ' + (xL - 2) + ',0 ' + (xL - 12) + ',6" fill="var(--accent)" style="display:none;pointer-events:none;"/>' +
-    '<rect x="' + (centerX - 82) + '" y="205" width="164" height="78" rx="14" fill="var(--bg-hud)" stroke="var(--border-strong)" stroke-width="1.2" style="pointer-events:none;"/>' +
-    '<text id="jar-hud-pct" x="' + centerX + '" y="237" text-anchor="middle" fill="var(--text-primary)" font-size="27" font-weight="800" font-family="var(--font-mono)" style="pointer-events:none;">' + (bands.length ? '100%' : '0%') + '</text>' +
-    '<text id="jar-hud-sub" x="' + centerX + '" y="256" text-anchor="middle" fill="var(--text-secondary)" font-size="11.5" font-weight="700" style="pointer-events:none;">' + (bands.length ? 'Semua (' + bands.length + ' item)' : 'Kosong') + '</text>' +
-    '<text id="jar-hud-amt" x="' + centerX + '" y="272" text-anchor="middle" fill="var(--accent-ink)" font-size="11" font-weight="700" font-family="var(--font-mono)" style="pointer-events:none;">' + esc(rp(grand)) + '</text>' +
-    '</svg>'
-  );
+  var catsSorted = Object.keys(catMap).map(function (k) { return catMap[k]; }).sort(function (a, b) { return b.total - a.total; });
+  var denom = grand > 0 ? grand : catsSorted.reduce(function (s, c) { return s + c.total; }, 0);
+  var bands = catsSorted.map(function (c) {
+    return {
+      id: c.cat,
+      cat: c.cat,
+      mkcat: c.cat,
+      name: c.cat,
+      total: c.total,
+      pct: denom > 0 ? (c.total / denom) * 100 : 0,
+      color: brGetCatMeta(c.cat).hex,
+    };
+  });
+  return rkBuildWaterJarSvg({
+    svgId: 'svg-jar-main',
+    clipId: 'clip_full_jar',
+    gradPrefix: 'd',
+    style: 'display:block;width:100%;max-width:300px;height:auto;margin:0 auto;',
+    bands: bands,
+    showHud: true,
+  });
 }
 
 function brGetWhereDataset() {
@@ -1757,55 +1991,46 @@ function brApplyWhereHighlight() {
   if (resetBtn) resetBtn.style.display = BR_STATE.whereLock ? 'inline-flex' : 'none';
   var bands = document.querySelectorAll('#svg-jar-main .jar-band'),
     waveBack = document.querySelector('#svg-jar-main .jar-wave-back'),
+    auxLayers = document.querySelectorAll('#svg-jar-main .jar-layer-aux'),
     catRows = document.querySelectorAll('#where-cat-list .simple-row'),
     itemRows = document.querySelectorAll('#top5-items-list .simple-row'),
-    ptr = $('jar-ptr'), hudPct = $('jar-hud-pct'), hudSub = $('jar-hud-sub'), hudAmt = $('jar-hud-amt'),
-    ds = window._brWhereDs || { rows: [], cats: [], grand: 0 }, grand = ds.grand;
-  if (!hudPct) return;
+    ptr = $('jar-ptr'),
+    ds = window._brWhereDs || { rows: [], cats: [], grand: 0 };
   if (!target) {
     bands.forEach(function (b) { b.classList.remove('lit', 'dim'); });
+    auxLayers.forEach(function (a) { a.classList.remove('lit', 'dim'); });
     if (waveBack) waveBack.classList.remove('lit', 'dim');
     catRows.forEach(function (r) { r.classList.remove('active', 'dim'); });
     itemRows.forEach(function (r) { r.classList.remove('active', 'dim'); });
     if (ptr) ptr.style.display = 'none';
-    hudPct.textContent = ds.rows.length ? '100%' : '0%';
-    hudSub.textContent = ds.rows.length ? 'Semua (' + ds.rows.length + ' item)' : 'Kosong';
-    hudAmt.textContent = rp(grand);
     return;
   }
+  var itObj = target.type === 'item' ? ds.rows.filter(function (r) { return r.id === target.val; })[0] : null;
+  var activeCat = target.type === 'cat' ? target.val : ((itObj && itObj.cat) || target.cat || '');
+  var matchMid = null;
+  bands.forEach(function (b, idx) {
+    var m = b.dataset.cat === activeCat;
+    b.classList.toggle('lit', m); b.classList.toggle('dim', !m);
+    if (idx === 0 && waveBack) { waveBack.classList.toggle('lit', m); waveBack.classList.toggle('dim', !m); }
+    if (m && matchMid === null) matchMid = +b.dataset.midy;
+  });
+  auxLayers.forEach(function (a) {
+    var m = a.dataset.cat === activeCat;
+    a.classList.toggle('lit', m); a.classList.toggle('dim', !m);
+  });
+  catRows.forEach(function (r) { var m = r.dataset.wcat === activeCat; r.classList.toggle('active', m); r.classList.toggle('dim', !m); });
   if (target.type === 'cat') {
-    var catObj = ds.cats.filter(function (c) { return c.cat === target.val; })[0],
-      pct = catObj && grand > 0 ? ((catObj.total / grand) * 100).toFixed(1) + '%' : '0%',
-      firstMid = null;
-    bands.forEach(function (b, idx) {
-      var m = b.dataset.cat === target.val;
-      b.classList.toggle('lit', m); b.classList.toggle('dim', !m);
-      if (idx === 0 && waveBack) { waveBack.classList.toggle('lit', m); waveBack.classList.toggle('dim', !m); }
-      if (m && firstMid === null) firstMid = +b.dataset.midy;
-    });
-    catRows.forEach(function (r) { var m = r.dataset.wcat === target.val; r.classList.toggle('active', m); r.classList.toggle('dim', !m); });
-    itemRows.forEach(function (r) { var m = r.dataset.wcat === target.val; r.classList.toggle('active', m); r.classList.toggle('dim', !m); });
-    if (ptr && firstMid !== null) { ptr.setAttribute('transform', 'translate(0,' + firstMid + ')'); ptr.style.display = 'block'; }
-    hudPct.textContent = pct;
-    hudSub.textContent = target.val.length > 18 ? target.val.slice(0, 17) + '…' : target.val;
-    hudAmt.textContent = rp(catObj ? catObj.total : 0);
+    itemRows.forEach(function (r) { var m = r.dataset.wcat === activeCat; r.classList.toggle('active', m); r.classList.toggle('dim', !m); });
   } else {
-    var itObj = ds.rows.filter(function (r) { return r.id === target.val; })[0],
-      pctI = itObj && grand > 0 ? ((itObj.total / grand) * 100).toFixed(1) + '%' : '0%',
-      midY = null;
-    bands.forEach(function (b, idx) {
-      var m = b.dataset.item === target.val;
-      b.classList.toggle('lit', m); b.classList.toggle('dim', !m);
-      if (idx === 0 && waveBack) { waveBack.classList.toggle('lit', m); waveBack.classList.toggle('dim', !m); }
-      if (m) midY = +b.dataset.midy;
-    });
-    catRows.forEach(function (r) { var m = itObj && r.dataset.wcat === itObj.cat; r.classList.toggle('active', !!m); r.classList.toggle('dim', !m); });
     itemRows.forEach(function (r) { var m = r.dataset.witem === target.val; r.classList.toggle('active', m); r.classList.toggle('dim', !m); });
-    if (ptr && midY !== null) { ptr.setAttribute('transform', 'translate(0,' + midY + ')'); ptr.style.display = 'block'; }
-    var nm = itObj ? itObj.name : '';
-    hudPct.textContent = pctI;
-    hudSub.textContent = nm.length > 18 ? nm.slice(0, 17) + '…' : nm;
-    hudAmt.textContent = rp(itObj ? itObj.total : 0);
+  }
+  if (ptr) {
+    if (matchMid !== null) {
+      ptr.setAttribute('transform', 'translate(0,' + matchMid + ')');
+      ptr.style.display = 'block';
+    } else {
+      ptr.style.display = 'none';
+    }
   }
 }
 
@@ -1822,12 +2047,12 @@ function renderWhereMoney() {
   if ($('top5-total-badge')) $('top5-total-badge').textContent = rp(grand);
   var jarStage = $('jar-main-stage');
   if (jarStage) {
-    jarStage.innerHTML = renderFullWaterJarSvg(ds.rows, grand);
+    jarStage.innerHTML = renderFullWaterJarSvg(cats, grand);
     jarStage.querySelectorAll('.jar-band').forEach(function (b) {
-      b.onmouseenter = function () { BR_STATE.whereHover = { type: 'item', val: b.dataset.item }; brApplyWhereHighlight(); };
+      b.onmouseenter = function () { BR_STATE.whereHover = { type: 'cat', val: b.dataset.cat }; brApplyWhereHighlight(); };
       b.onmouseleave = function () { BR_STATE.whereHover = null; brApplyWhereHighlight(); };
       b.onclick = function () {
-        BR_STATE.whereLock = (BR_STATE.whereLock && BR_STATE.whereLock.type === 'item' && BR_STATE.whereLock.val === b.dataset.item) ? null : { type: 'item', val: b.dataset.item };
+        BR_STATE.whereLock = (BR_STATE.whereLock && BR_STATE.whereLock.type === 'cat' && BR_STATE.whereLock.val === b.dataset.cat) ? null : { type: 'cat', val: b.dataset.cat };
         brApplyWhereHighlight();
       };
     });
@@ -1853,10 +2078,8 @@ function renderWhereMoney() {
   }
   var itemsEl = $('top5-items-list');
   if (itemsEl) {
-    var seen = {};
     itemsEl.innerHTML = ds.rows.length ? ds.rows.slice(0, 8).map(function (r, idx) {
-      var ci = seen[r.cat] || 0; seen[r.cat] = ci + 1;
-      var pct = grand > 0 ? (r.total / grand) * 100 : 0, hex = brGetItemShade(r.cat, ci);
+      var pct = grand > 0 ? (r.total / grand) * 100 : 0, hex = brGetCatMeta(r.cat).hex;
       return '<div class="simple-row" data-witem="' + esc(r.id) + '" data-wcat="' + esc(r.cat) + '">' +
         '<span class="simple-row-rank">' + (idx + 1) + '</span>' + brCatLogo(r.cat, 24) +
         '<span class="simple-row-name" title="' + esc(r.name) + '">' + esc(r.name) + '</span>' +
@@ -1865,10 +2088,10 @@ function renderWhereMoney() {
         '<span class="simple-row-amt pv">' + rp(r.total) + '</span></div>';
     }).join('') : '<div style="padding:20px;text-align:center;color:var(--text-muted);">Belum ada data pada periode ini.</div>';
     itemsEl.querySelectorAll('.simple-row').forEach(function (row) {
-      row.onmouseenter = function () { BR_STATE.whereHover = { type: 'item', val: row.dataset.witem }; brApplyWhereHighlight(); };
+      row.onmouseenter = function () { BR_STATE.whereHover = { type: 'item', val: row.dataset.witem, cat: row.dataset.wcat }; brApplyWhereHighlight(); };
       row.onmouseleave = function () { BR_STATE.whereHover = null; brApplyWhereHighlight(); };
       row.onclick = function () {
-        BR_STATE.whereLock = (BR_STATE.whereLock && BR_STATE.whereLock.type === 'item' && BR_STATE.whereLock.val === row.dataset.witem) ? null : { type: 'item', val: row.dataset.witem };
+        BR_STATE.whereLock = (BR_STATE.whereLock && BR_STATE.whereLock.type === 'item' && BR_STATE.whereLock.val === row.dataset.witem) ? null : { type: 'item', val: row.dataset.witem, cat: row.dataset.wcat };
         brApplyWhereHighlight();
       };
     });
@@ -1883,6 +2106,14 @@ function renderRincianCharts() {
 }
 
 function renderRincian() {
+  rkSnapshotCuPrev($('rincian-saldo-now'));
+  rkSnapshotCuPrev($('metric-end-bal'));
+  rkSnapshotCuPrev($('metric-daily-val'));
+  rkSnapshotCuPrev($('metric-daily-hint'));
+  rkSnapshotCuPrev($('metric-avg-bill'));
+  rkSnapshotCuPrev($('metric-total-year'));
+  rkSnapshotCuPrev($('rincian-bills-ratio'));
+  rkSnapshotCuPrev($('rincian-paid-sum'));
   var c = calc(), P = kasLinked(), KB = P ? kasBal(P) : { bal: +S.saldo || 0 },
     rw = P ? kasRunway(P, KB.bal) : null, today = todayISO(), balNow = P ? KB.bal : (+S.saldo || 0),
     negDate = P && typeof kasFirstNegative === 'function' ? kasFirstNegative(P) : null;
@@ -2940,6 +3171,10 @@ function brBindEvents() {
   if ($('sm')) {
     $('sm').onchange = function () {
       setStartMonth(this.value === 'auto' ? 'auto' : +this.value);
+      rkAnimateRincianKpis(true);
+      rkAnimateChartOnly($('cashflow-chart-wrap'));
+      rkAnimateChartOnly($('bar-chart-wrap'));
+      rkAnimateChartOnly($('jar-main-stage'));
     };
   }
   if ($('saldo')) {
@@ -2948,13 +3183,22 @@ function brBindEvents() {
       this.value = S.saldo.toLocaleString('id-ID');
       save();
       renderAll();
+      rkAnimateRincianKpis(true);
+      rkAnimateChartOnly($('cashflow-chart-wrap'));
     };
   }
   if ($('yb')) {
     $('yb').onclick = function (e) {
       var b = e.target.closest('button');
       if (!b) return;
-      if (b.dataset.y) { switchYear(+b.dataset.y); rkAnimateChartOnly($('tab-rincian')); return; }
+      if (b.dataset.y) {
+        switchYear(+b.dataset.y);
+        rkAnimateRincianKpis(true);
+        rkAnimateChartOnly($('cashflow-chart-wrap'));
+        rkAnimateChartOnly($('bar-chart-wrap'));
+        rkAnimateChartOnly($('jar-main-stage'));
+        return;
+      }
       if (b.dataset.dy) {
         var yy = S.year;
         askConfirm('Hapus tahun <b>' + yy + '</b> beserta ' + S.items.length + ' item dan status pembayarannya?', delYear, 'Ya, hapus tahun');
@@ -2976,7 +3220,10 @@ function brBindEvents() {
       if (v !== +S.year) switchYear(v);
       S.saldo = salVal;
       setStartMonth(smVal === 'auto' ? 'auto' : +smVal);
-      rkAnimateChartOnly($('tab-rincian'));
+      rkAnimateRincianKpis(true);
+      rkAnimateChartOnly($('cashflow-chart-wrap'));
+      rkAnimateChartOnly($('bar-chart-wrap'));
+      rkAnimateChartOnly($('jar-main-stage'));
       brCloseModal('yr-panel');
       toast('Profil tahun ' + S.year + ' disimpan');
     };

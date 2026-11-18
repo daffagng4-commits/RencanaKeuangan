@@ -989,6 +989,19 @@
       overflow: visible;
     }
 
+    #browser-shell #cashflow-chart-wrap {
+      padding: 14px 0 10px 16px;
+      overflow: visible;
+    }
+
+    #browser-shell #cashflow-chart-wrap .chart-legend-bar {
+      padding: 0 16px 0 0;
+    }
+
+    #browser-shell #svg-cashflow {
+      overflow: visible;
+    }
+
     #browser-shell .chart-legend-bar {
       display: flex;
       align-items: center;
@@ -1075,20 +1088,21 @@
 
     @keyframes jarWaveFlow {
       from { transform: translateX(0); }
-      to { transform: translateX(-220px); }
+      to { transform: translateX(-120px); }
     }
 
     @keyframes jarWaveFlowRev {
-      from { transform: translateX(-220px); }
+      from { transform: translateX(-120px); }
       to { transform: translateX(0); }
     }
 
     @keyframes jarWaveBob {
-      0%, 100% { transform: translateY(-1.5px); }
-      50% { transform: translateY(1.5px); }
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-0.7px); }
     }
 
-    #browser-shell .jar-wave-anim {
+    #browser-shell .jar-wave-anim,
+    #browser-shell .jar-wave-hl {
       animation: jarWaveFlow var(--dur-jar-wave, 3200ms) linear infinite;
       will-change: transform;
     }
@@ -1099,7 +1113,7 @@
     }
 
     #browser-shell .jar-wave-bob {
-      animation: jarWaveBob var(--dur-jar-bob, 4000ms) var(--ease-in-out) infinite;
+      animation: jarWaveBob var(--dur-jar-bob, 6000ms) var(--ease-in-out) infinite;
       will-change: transform;
     }
 
@@ -1207,12 +1221,17 @@
         filter var(--dur-jar-highlight) var(--ease-out);
     }
 
-    #browser-shell .jar-band {
+    #browser-shell .jar-band,
+    #browser-shell .jar-meniscus-cap {
       opacity: 0.9;
     }
 
-    #browser-shell .jar-band.lit {
+    #browser-shell .jar-band.lit,
+    #browser-shell .jar-meniscus-cap.lit {
       opacity: 1;
+    }
+
+    #browser-shell .jar-band.lit {
       filter: brightness(1.12) drop-shadow(0 0 8px rgba(255, 255, 255, 0.4));
     }
 
@@ -1222,8 +1241,14 @@
     }
 
     #browser-shell .jar-band.dim,
-    #browser-shell .jar-wave-back.dim {
+    #browser-shell .jar-wave-back.dim,
+    #browser-shell .jar-layer-aux.dim {
       opacity: 0.16;
+    }
+
+    #browser-shell .jar-layer-aux {
+      pointer-events: none;
+      transition: opacity var(--dur-jar-highlight) var(--ease-out);
     }
 
     #browser-shell .simple-list {

@@ -55,7 +55,8 @@ const { boot } = require('./ui.js');
     const paths = [...svg.querySelectorAll('path[stroke]')];
     assert(paths.some((p) => !p.getAttribute('stroke-dasharray') && p.getAttribute('d')), 'garis solid saldo nyata ada');
     assert(paths.some((p) => /7 5/.test(p.getAttribute('stroke-dasharray') || '') && p.getAttribute('d')), 'garis putus-putus proyeksi ada');
-    assert(/Batas Defisit/.test(svg.textContent), 'penanda Batas Defisit ada');
+    assert(svg.querySelector('line[stroke="var(--crimson)"][stroke-dasharray]') && svg.querySelector('rect[fill="var(--crimson)"]'), 'REVISI 2.1: garis & zona merah defisit dipertahankan');
+    assert(!/Batas Defisit/.test(svg.textContent), 'REVISI 2.1: teks label Batas Defisit (Rp 0) dihapus');
 
     // === A1: grafik bar compare masuk/keluar ada ===
     assert(w.document.getElementById('svg-bar-compare'), 'grafik bar perbandingan ada');

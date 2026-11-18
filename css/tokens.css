@@ -122,11 +122,20 @@
   --dur-chart-fill: 1050ms;
   --dur-chart-filter-line: 600ms;
   --dur-chart-filter-fill: 550ms;
+  --dur-today-line: 400ms;
+  --dur-today-line-filter: 250ms;
   --dur-count-hero: 1900ms;
   --dur-count-kpi: 1400ms;
   --dur-count-hero-apk: 1100ms;
   --dur-sweep: 800ms;
   --dur-bar-fade: 450ms;
+  --dur-bar-grow: 650ms;
+  --stagger-bar: 40ms;
+  --dur-bar-grow-filter: 450ms;
+  --dur-bar-label-fade: 300ms;
+  --dur-segbar-grow: 600ms;
+  --dur-segbar-filter: 400ms;
+  --stagger-segbar: 50ms;
   --dur-ripple: 450ms;
   --dur-press: 120ms;
   --dur-row-exit: 160ms;
@@ -177,7 +186,7 @@
   --stagger-swatch: 30ms;
   --dur-jar-wave: 3200ms;
   --dur-jar-wave-back: 2100ms;
-  --dur-jar-bob: 4000ms;
+  --dur-jar-bob: 6000ms;
   --dur-theme-desktop: 500ms;
   --dur-theme-apk: 350ms;
   --dur-theme-fallback: 300ms;
@@ -373,6 +382,10 @@ body, input, button, select, textarea, table, kbd, code {
     --dur-count-hero-apk: 0.001ms;
     --dur-sweep: 0.001ms;
     --dur-bar-fade: 0.001ms;
+    --dur-bar-grow: 0.001ms;
+    --stagger-bar: 0ms;
+    --dur-bar-grow-filter: 0.001ms;
+    --dur-bar-label-fade: 0.001ms;
     --dur-ripple: 0.001ms;
     --dur-press: 0.001ms;
     --dur-row-exit: 0.001ms;
@@ -848,14 +861,29 @@ body[data-shell="mobile-app"] .modal.cfm.is-closing > .card {
   100% { opacity: 1; clip-path: inset(0 0 0 0); }
 }
 
-@keyframes rkRingFill {
-  0% { opacity: 0; transform: scale(0.92); }
-  100% { opacity: 1; transform: scale(1); }
+@keyframes rkTodayLineGrow {
+  0% { opacity: 0; transform: scaleY(0); }
+  100% { opacity: 0.5; transform: scaleY(1); }
+}
+
+@keyframes rkSegBarGrow {
+  0% { opacity: 0; transform: scaleX(0); }
+  100% { opacity: 1; transform: scaleX(1); }
 }
 
 @keyframes rkBarFade {
   0% { opacity: 0; }
   100% { opacity: 1; }
+}
+
+@keyframes rkBarGrow {
+  0% { opacity: 0.35; transform: scaleY(0); }
+  100% { opacity: 1; transform: scaleY(1); }
+}
+
+@keyframes bubbleFloat {
+  0% { transform: translateY(0); opacity: 0.75; }
+  100% { transform: translateY(-28px); opacity: 0; }
 }
 
 @keyframes rkSweep {
@@ -920,14 +948,37 @@ body[data-shell="mobile-app"] .rk-line-draw {
   animation: rkChartFillRight var(--dur-chart-fill) var(--ease-out) calc(var(--rk-card-delay, 0ms) + var(--delay-line-draw) + var(--dur-line-draw) * 0.6) both;
 }
 
-.rk-ring-fill {
-  transform-origin: center;
-  animation: rkRingFill var(--dur-chart-fill) var(--ease-out) calc(var(--rk-card-delay, 0ms) + var(--delay-line-draw) + var(--dur-line-draw) * 0.6) both;
+.cf-today-line {
+  opacity: 0.5;
+  transform-box: fill-box;
+  transform-origin: center top;
+  pointer-events: none;
+}
+
+.rk-today-line-draw {
+  transform-box: fill-box;
+  transform-origin: center top;
+  animation: rkTodayLineGrow var(--dur-today-line) var(--ease-out) calc(var(--rk-card-delay, 0ms) + var(--delay-line-draw)) both;
+  will-change: transform, opacity;
+}
+
+body[data-shell="mobile-app"] .rk-today-line-draw {
+  animation: rkTodayLineGrow var(--dur-today-line) var(--ease-out) var(--rk-card-delay, 0ms) both;
+}
+
+.is-filter-anim .rk-today-line-draw {
+  animation-duration: var(--dur-today-line-filter);
+  animation-delay: 0ms;
+}
+
+.rk-segbar-anim .m-segbar-item {
+  transform-origin: left center;
+  animation: rkSegBarGrow var(--dur-segbar-grow) var(--ease-out) calc(var(--rk-seg-idx, 0) * var(--stagger-segbar)) both;
+  will-change: transform, opacity;
 }
 
 body[data-shell="mobile-app"] .rk-chart-fill-up,
-body[data-shell="mobile-app"] .rk-chart-fill-right,
-body[data-shell="mobile-app"] .rk-ring-fill {
+body[data-shell="mobile-app"] .rk-chart-fill-right {
   animation-delay: calc(var(--rk-card-delay, 0ms) + var(--dur-line-draw-apk) * 0.6);
 }
 
@@ -937,10 +988,15 @@ body[data-shell="mobile-app"] .rk-ring-fill {
 }
 
 .is-filter-anim .rk-chart-fill-up,
-.is-filter-anim .rk-chart-fill-right,
-.is-filter-anim .rk-ring-fill {
+.is-filter-anim .rk-chart-fill-right {
   animation-duration: var(--dur-chart-filter-fill);
   animation-delay: calc(var(--dur-chart-filter-line) * 0.45);
+}
+
+.is-filter-anim .rk-segbar-anim .m-segbar-item,
+.is-filter-anim .m-segbar-item {
+  transform-origin: left center;
+  animation: rkSegBarGrow var(--dur-segbar-filter) var(--ease-out) calc(var(--rk-seg-idx, 0) * var(--stagger-segbar)) both;
 }
 
 .is-filter-anim .rk-bar-fade {
@@ -950,6 +1006,46 @@ body[data-shell="mobile-app"] .rk-ring-fill {
 
 .rk-bar-fade {
   animation: rkBarFade var(--dur-bar-fade) var(--ease-out) calc(var(--rk-card-delay, 0ms) + var(--delay-line-draw)) both;
+}
+
+/* Bar Chart Growth + Net Line/Label Choreography (#REVISI 1) */
+.rk-bar-anim .bar-col .rk-bar-rect {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: rkBarGrow var(--dur-bar-grow) var(--ease-out) calc(var(--delay-line-draw) + var(--rk-bar-idx, 0) * var(--stagger-bar)) both;
+  will-change: transform, opacity;
+}
+
+.rk-bar-anim .bar-col .rk-bar-net-label {
+  animation: rkBarFade var(--dur-bar-label-fade) var(--ease-out) calc(var(--delay-line-draw) + var(--rk-bar-idx, 0) * var(--stagger-bar) + var(--dur-bar-grow)) both;
+}
+
+.rk-bar-anim .rk-bar-net-dot {
+  animation: rkBarFade var(--dur-bar-label-fade) var(--ease-out) calc(var(--delay-line-draw) + var(--dur-line-draw) * 0.5) both;
+}
+
+.is-filter-anim .rk-bar-anim .bar-col .rk-bar-rect,
+.is-filter-anim.rk-bar-anim .bar-col .rk-bar-rect {
+  animation-duration: var(--dur-bar-grow-filter);
+  animation-delay: calc(var(--rk-bar-idx, 0) * 25ms);
+}
+
+.is-filter-anim .rk-bar-anim .bar-col .rk-bar-net-label,
+.is-filter-anim.rk-bar-anim .bar-col .rk-bar-net-label {
+  animation-delay: calc(var(--rk-bar-idx, 0) * 25ms + var(--dur-bar-grow-filter));
+}
+
+.is-filter-anim .rk-bar-anim .rk-bar-net-dot,
+.is-filter-anim.rk-bar-anim .rk-bar-net-dot {
+  animation-delay: calc(var(--dur-chart-filter-line) * 0.45);
+}
+
+body[data-shell="mobile-app"] .rk-bar-anim .bar-col .rk-bar-rect {
+  animation-delay: calc(var(--rk-bar-idx, 0) * var(--stagger-bar));
+}
+
+.jar-bubble {
+  animation: bubbleFloat 3.6s ease-in infinite;
 }
 
 .rk-sweep-host.rk-sweep {
@@ -1299,8 +1395,15 @@ html.rk-theme-fallback .input {
   .rk-line-draw,
   .rk-chart-fill-up,
   .rk-chart-fill-right,
-  .rk-ring-fill,
+  .rk-today-line-draw,
+  .rk-segbar-anim .m-segbar-item,
+  .is-filter-anim .m-segbar-item,
   .rk-bar-fade,
+  .rk-bar-anim .bar-col .rk-bar-rect,
+  .rk-bar-anim .bar-col .rk-bar-net-label,
+  .rk-bar-anim .rk-bar-net-dot,
+  .jar-bubble,
+  .jar-wave-bob,
   .rk-sweep-host.rk-sweep::after,
   .rk-error-shake,
   .rk-bell-ringing svg,
@@ -1318,6 +1421,10 @@ html.rk-theme-fallback .input {
   .rk-scroll-pending {
     opacity: 1 !important;
     transform: none !important;
+  }
+  .cf-today-line,
+  .cf-today-line.rk-today-line-draw {
+    opacity: 0.5 !important;
   }
   .rk-row-collapse,
   .rk-row-exit-target,

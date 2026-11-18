@@ -459,11 +459,85 @@ const { boot } = require('./ui.js');
 
   // 11. Fase 3 Mode APK: Chart marks, Ringan entrance (#2.2), Undo Toast (#5), Error Shake (#8), & List Stagger (#9)
   assert($('m-svg-cashflow').querySelector('.rk-anim-line') && $('m-svg-cashflow').querySelector('.rk-anim-fill-right'), 'SVG arus kas APK memuat penanda line draw & fill');
+  const mobCfArea = $('m-svg-cashflow').querySelector('.rk-anim-fill-right').getAttribute('d');
+  const mobAreaM = mobCfArea.match(/L\s*([\d.]+)\s+[\d.]+\s+L\s*([\d.]+)\s+[\d.]+\s*Z$/);
+  assert(parseFloat(mobAreaM[2]) === 40 && parseFloat(mobAreaM[1]) === 340, 'REVISI 1 APK: area fill arus kas mulai di inset kiri pL=40 dan memanjang sampai tepi kanan 340');
+  const mYTexts = [...$('m-svg-cashflow').querySelectorAll('text[text-anchor="end"]')];
+  assert(mYTexts.length >= 4 && mYTexts.every((el) => parseFloat(el.getAttribute('x')) <= 35), 'REVISI 1 APK: label sumbu Y berada di kolom inset kiri pL=40 (x <= 35)');
+  const mTodayLine = $('m-svg-cashflow').querySelector('.cf-today-line');
+  const mTodayDot = $('m-svg-cashflow').querySelector('.cf-node.is-today');
+  assert(mTodayLine && mTodayDot && Math.abs(parseFloat(mTodayLine.getAttribute('x1')) - parseFloat(mTodayDot.getAttribute('cx'))) <= 0.1, 'APK: garis vertikal permanen hari ini sejajar tepat dengan titik Hari ini');
+  const mCfHtml = $('m-svg-cashflow').innerHTML;
+  assert(mCfHtml.indexOf('rk-anim-fill-right') < mCfHtml.indexOf('cf-today-line') && mCfHtml.indexOf('cf-today-line') < mCfHtml.indexOf('cf-node') && mCfHtml.indexOf('cf-today-line') < mCfHtml.indexOf('m-cf-ch'), 'APK: garis hari ini di atas area fill dan di bawah titik serta crosshair');
+  assert(!/\bToday\b/.test($('m-cf-wrap').textContent) && $('m-svg-cashflow').textContent.includes('Hari ini'), 'APK: tanpa label Today, pakai Hari ini di sumbu X');
+  const prevMobYr = w.S.year;
+  w.switchYear(2027);
+  w.renderAll();
+  assert.strictEqual($('m-svg-cashflow').querySelector('.cf-today-line'), null, 'APK: garis hari ini tidak tampil di tahun yang tidak memuat hari ini');
+  w.switchYear(prevMobYr);
+  w.renderAll();
+  const zoomLegendTxt = $('m-sheet-cf-zoom').querySelector('.cf-legend-bar').textContent;
+  assert(zoomLegendTxt.includes('Saldo Hari Ini') && zoomLegendTxt.includes('Masa Depan') && zoomLegendTxt.includes('< Rp 0'), 'REVISI 2.2 APK: legenda grafik memakai Saldo Hari Ini / Masa Depan / < Rp 0');
+  const prevMobItems = w.S.items.slice();
+  const jarCaseSets = [
+    [{ id: 981, name: 'Jar100', price: 1000000, n: 1, unit: 'sekali', start: '2026-11-12', end: '', cnt: 0, cat: 'Tagihan rutin', ch: [] }],
+    [
+      { id: 981, name: 'Jar70', price: 700000, n: 1, unit: 'sekali', start: '2026-11-12', end: '', cnt: 0, cat: 'Tagihan rutin', ch: [] },
+      { id: 982, name: 'Jar30', price: 300000, n: 1, unit: 'sekali', start: '2026-11-12', end: '', cnt: 0, cat: 'Makanan', ch: [] },
+    ],
+    [
+      { id: 981, name: 'Jar40', price: 400000, n: 1, unit: 'sekali', start: '2026-11-12', end: '', cnt: 0, cat: 'Tagihan rutin', ch: [] },
+      { id: 982, name: 'Jar35', price: 350000, n: 1, unit: 'sekali', start: '2026-11-12', end: '', cnt: 0, cat: 'Makanan', ch: [] },
+      { id: 983, name: 'Jar25', price: 250000, n: 1, unit: 'sekali', start: '2026-11-12', end: '', cnt: 0, cat: 'Transportasi', ch: [] },
+    ],
+    [
+      { id: 981, name: 'Jar15', price: 150000, n: 1, unit: 'sekali', start: '2026-11-12', end: '', cnt: 0, cat: 'Tagihan rutin', ch: [] },
+      { id: 982, name: 'Jar14b', price: 145000, n: 1, unit: 'sekali', start: '2026-11-12', end: '', cnt: 0, cat: 'Makanan', ch: [] },
+      { id: 983, name: 'Jar14c', price: 140000, n: 1, unit: 'sekali', start: '2026-11-12', end: '', cnt: 0, cat: 'Transportasi', ch: [] },
+      { id: 984, name: 'Jar13d', price: 135000, n: 1, unit: 'sekali', start: '2026-11-12', end: '', cnt: 0, cat: 'Belanja', ch: [] },
+      { id: 985, name: 'Jar13e', price: 130000, n: 1, unit: 'sekali', start: '2026-11-12', end: '', cnt: 0, cat: 'Hiburan', ch: [] },
+      { id: 986, name: 'Jar12f', price: 125000, n: 1, unit: 'sekali', start: '2026-11-12', end: '', cnt: 0, cat: 'Kesehatan', ch: [] },
+      { id: 987, name: 'Jar10g', price: 100000, n: 1, unit: 'sekali', start: '2026-11-12', end: '', cnt: 0, cat: 'Pendidikan', ch: [] },
+      { id: 988, name: 'Jar07h', price: 75000, n: 1, unit: 'sekali', start: '2026-11-12', end: '', cnt: 0, cat: 'Lainnya', ch: [] },
+    ],
+  ];
+  jarCaseSets.forEach((itemsSet) => {
+    w.S.items = itemsSet;
+    w.renderAll();
+    const mJar = $('m-svg-jar');
+    const mClipG = mJar && mJar.querySelector('[clip-path="url(#clip-m-jar)"]');
+    const mFront = mJar && mJar.querySelector('.jar-wave-anim');
+    const mBack = mJar && mJar.querySelector('.jar-wave-back');
+    assert(mClipG && !mClipG.classList.contains('jar-wave-anim') && !mClipG.classList.contains('jar-wave-back') && mClipG.contains(mFront) && mClipG.contains(mBack), 'clipPath jar APK dipasang di grup statis, gelombang ada di dalamnya');
+    const mFEnd = mFront.getAttribute('d').match(/L\s*(-?[\d.]+)\s+[\d.]+\s+L\s*(-?[\d.]+)\s+[\d.]+\s*Z$/);
+    const mBEnd = mBack.getAttribute('d').match(/L\s*(-?[\d.]+)\s+[\d.]+\s+L\s*(-?[\d.]+)\s+[\d.]+\s*Z$/);
+    assert(parseFloat(mFEnd[1]) - parseFloat(mFEnd[2]) >= 240 && mFEnd[1] === mBEnd[1] && mFEnd[2] === mBEnd[2], 'gelombang depan & belakang APK selebar >= 2x lebar jar dengan asal & lebar identik');
+    if (itemsSet.length >= 2) {
+      assert(mClipG.querySelector('.jar-meniscus-hl') && mClipG.querySelector('.jar-meniscus-blend'), 'REVISI 2 APK: batas antar lapisan jar memakai kurva meniscus & gradien lembut di dalam clipPath');
+    }
+  });
+  // REVISI 3 APK: Jar 3D / Bar menggantikan Ring donut dengan bar bersegmen horizontal per kategori
+  const barStyleBtn = curMobShell.querySelector('[data-mwstyle="bar"]');
+  assert(barStyleBtn && barStyleBtn.textContent.trim() === 'Bar' && !curMobShell.querySelector('[data-mwstyle="ring"]'), 'REVISI 3 APK: toggle Jar 3D / Bar tersedia tanpa opsi Ring');
+  click(barStyleBtn);
+  const segWrap = $('m-jar-stage').querySelector('.m-where-segbar-wrap');
+  const segItems = [...$('m-jar-stage').querySelectorAll('.m-segbar-item')];
+  assert(segWrap && segItems.length === 8 && !$('m-jar-stage').querySelector('circle'), 'REVISI 3 APK: bar horizontal bersegmen 1 per kategori tanpa donut SVG');
+  assert(segWrap.querySelector('.m-where-segbar-meta').textContent.includes('100% · 8 kat'), 'REVISI 3 APK: teks ringkasan 100% · N kat tampil di atas bar');
+  assert(segItems[0].getAttribute('data-mkcat') === 'Tagihan rutin' && parseFloat(segItems[0].getAttribute('data-pct')) >= parseFloat(segItems[1].getAttribute('data-pct')), 'REVISI 3 APK: segmen kategori terbesar di paling kiri');
+  click(segItems[1]);
+  const lockedSegs = [...$('m-jar-stage').querySelectorAll('.m-segbar-item')];
+  assert(lockedSegs[1].classList.contains('lit') && lockedSegs[0].classList.contains('dim'), 'REVISI 3 APK: ketuk segmen menyalakan kategori & meredupkan segmen lain');
+  click(curMobShell.querySelector('[data-mwstyle="jar"]'));
+  assert($('m-svg-jar'), 'kembali ke Jar 3D merender #m-svg-jar');
+  w.MOB_STATE.whereLock = null;
+  w.S.items = prevMobItems;
+  w.renderAll();
   assert($('m-jar-stage').querySelector('.rk-anim-fill-up'), 'Jar APK memuat grup .rk-anim-fill-up');
   const mRincPanel = $('m-tab-rincian');
   Object.defineProperty(mRincPanel, 'offsetWidth', { configurable: true, value: 360 });
   w.rkRunEntrance('mobile-app', 'rincian');
-  assert(mRincPanel.querySelector('.card.rk-card-enter') && mRincPanel.querySelector('#m-svg-bar .bar-col.rk-bar-fade'), 'entrance APK ringan menandai card fade-up & bar fade');
+  assert(mRincPanel.querySelector('.card.rk-card-enter') && mRincPanel.querySelector('#m-svg-bar.rk-bar-anim') && mRincPanel.querySelector('#m-svg-bar .rk-bar-rect') && mRincPanel.querySelector('#m-svg-bar .rk-bar-net-line.rk-line-draw'), 'entrance APK menandai card entrance, bar grow (.rk-bar-anim), & line draw Tren Arus Bersih');
   // Error shake di form kas APK (#8)
   w.switchMobileTab('kas');
   $('m-kas-amt').value = '';
@@ -526,7 +600,7 @@ const { boot } = require('./ui.js');
   Object.defineProperty($('m-bar-wrap'), 'offsetWidth', { configurable: true, value: 320 });
   const mobRunBeforeF = w._rkEntranceRunId;
   click(remountShell.querySelector('[data-mrange="y"]'));
-  assert($('m-cf-wrap').classList.contains('is-filter-anim') && w._rkEntranceRunId === mobRunBeforeF, 'MASALAH F APK: filter rentang arus kas memicu .is-filter-anim tanpa mengulang entrance halaman');
+  assert($('m-cf-wrap').classList.contains('is-filter-anim') && $('m-svg-cashflow').querySelector('.cf-today-line.rk-today-line-draw') && w._rkEntranceRunId === mobRunBeforeF, 'MASALAH F APK: filter rentang arus kas memicu .is-filter-anim + animasi garis hari ini tanpa mengulang entrance halaman');
   click(remountShell.querySelector('[data-mwdir="+"]'));
   assert($('m-jar-stage').classList.contains('is-filter-anim') && w._rkEntranceRunId === mobRunBeforeF, 'MASALAH F APK: filter arah jar memicu .is-filter-anim tanpa mengulang entrance');
   click(remountShell.querySelector('[data-mbsp="m"]'));

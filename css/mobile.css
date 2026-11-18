@@ -651,6 +651,12 @@ body[data-shell="mobile-app"] #mobile-app-shell .chart-stage {
   padding: 8px 6px 4px;
   overflow: visible;
 }
+body[data-shell="mobile-app"] #mobile-app-shell #m-cf-wrap {
+  padding: 8px 0 4px 6px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell #m-svg-cashflow {
+  overflow: visible;
+}
 
 body[data-shell="mobile-app"] #mobile-app-shell .hud-tooltip {
   position: absolute;
@@ -682,20 +688,29 @@ body[data-shell="mobile-app"] #mobile-app-shell #svg-bar-compare .bar-col.is-hov
 /* Liquid Jar Waves & Categories */
 @keyframes jarWaveFlowMob { from { transform: translateX(0); } to { transform: translateX(-120px); } }
 @keyframes jarWaveFlowMobRev { from { transform: translateX(-120px); } to { transform: translateX(0); } }
-@keyframes jarWaveBobMob { 0%, 100% { transform: translateY(-1.2px); } 50% { transform: translateY(1.2px); } }
-body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim { animation: jarWaveFlowMob var(--dur-jar-wave, 3200ms) linear infinite; will-change: transform; }
+@keyframes jarWaveBobMob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.7px); } }
+body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim,
+body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-hl { animation: jarWaveFlowMob var(--dur-jar-wave, 3200ms) linear infinite; will-change: transform; }
 body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-back { animation: jarWaveFlowMobRev var(--dur-jar-wave-back, 2100ms) linear infinite; will-change: transform; }
-body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-bob { animation: jarWaveBobMob var(--dur-jar-bob, 4000ms) var(--ease-in-out) infinite; will-change: transform; }
+body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-bob { animation: jarWaveBobMob var(--dur-jar-bob, 6000ms) var(--ease-in-out) infinite; will-change: transform; }
 body[data-shell="mobile-app"] #mobile-app-shell .jar-band,
 body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-back {
   cursor: pointer;
   transition: opacity var(--dur-jar-highlight) var(--ease-out), filter var(--dur-jar-highlight) var(--ease-out);
 }
-body[data-shell="mobile-app"] #mobile-app-shell .jar-band { opacity: 0.92; }
-body[data-shell="mobile-app"] #mobile-app-shell .jar-band.lit { opacity: 1; filter: brightness(1.12); }
+body[data-shell="mobile-app"] #mobile-app-shell .jar-layer-aux {
+  pointer-events: none;
+  transition: opacity var(--dur-jar-highlight) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .jar-band,
+body[data-shell="mobile-app"] #mobile-app-shell .jar-meniscus-cap { opacity: 0.92; }
+body[data-shell="mobile-app"] #mobile-app-shell .jar-band.lit,
+body[data-shell="mobile-app"] #mobile-app-shell .jar-meniscus-cap.lit { opacity: 1; }
+body[data-shell="mobile-app"] #mobile-app-shell .jar-band.lit { filter: brightness(1.12); }
 body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-back.lit { opacity: 0.62; filter: brightness(1.12); }
 body[data-shell="mobile-app"] #mobile-app-shell .jar-band.dim,
-body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-back.dim { opacity: 0.18; }
+body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-back.dim,
+body[data-shell="mobile-app"] #mobile-app-shell .jar-layer-aux.dim { opacity: 0.18; }
 
 body[data-shell="mobile-app"] #mobile-app-shell .cat-logo { display: inline-grid; place-items: center; border-radius: 9px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.14); }
 
@@ -760,6 +775,10 @@ body[data-shell="mobile-app"] #mobile-app-shell .list-row {
   min-width: 0;
   position: relative;
   transition: transform var(--dur-press) var(--ease-out), background-color var(--dur-dd-active) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .list-row.active {
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
 }
 body[data-shell="mobile-app"] #mobile-app-shell .list-row:active,
 body[data-shell="mobile-app"] #mobile-app-shell .btn:active,
@@ -1341,13 +1360,57 @@ body[data-shell="mobile-app"] #mobile-app-shell #m-jar-stage {
   max-width: 196px;
   margin: 0 auto;
 }
+body[data-shell="mobile-app"] #mobile-app-shell #m-jar-stage.is-segbar {
+  max-width: 100%;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-where-segbar-wrap {
+  width: 100%;
+  padding: 4px 0 2px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-where-segbar-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-where-segbar-meta strong {
+  color: var(--text-primary);
+  font-weight: 800;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-where-segbar {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  height: 15px;
+  gap: 3.5px;
+  border-radius: var(--radius-pill);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-segbar-item {
+  height: 100%;
+  min-width: 6px;
+  border-radius: var(--radius-pill);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transform-origin: left center;
+  transition: opacity var(--dur-jar-highlight) var(--ease-out), filter var(--dur-jar-highlight) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-segbar-empty {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--bg-subtle);
+}
 @keyframes bubbleFloat { 0% { transform: translateY(0); opacity: 0.75; } 100% { transform: translateY(-28px); opacity: 0; } }
 body[data-shell="mobile-app"] #mobile-app-shell .jar-bubble { animation: bubbleFloat 3.6s ease-in infinite; }
 
 /* Cashflow Zoom Popup (Desktop-grade chart inside APK) */
 body[data-shell="mobile-app"] #mobile-app-shell .cf-zoom-sheet { max-width: 100%; width: 100%; max-height: 92%; border-radius: 22px 22px 0 0; }
 body[data-shell="mobile-app"] #mobile-app-shell .cf-zoom-stage { position: relative; width: 100%; }
-body[data-shell="mobile-app"] #mobile-app-shell .cf-zoom-scroll { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; border: 1px solid var(--border-subtle); border-radius: 14px; background: var(--bg-surface); padding: 6px 4px; }
+body[data-shell="mobile-app"] #mobile-app-shell .cf-zoom-scroll { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; border: 1px solid var(--border-subtle); border-radius: 14px; background: var(--bg-surface); padding: 6px 0 6px 4px; }
 body[data-shell="mobile-app"] #mobile-app-shell #m-svg-cf-zoom { width: 100%; height: 295px; display: block; touch-action: none; }
 body[data-shell="mobile-app"] #mobile-app-shell #m-svg-cf-zoom.is-zoom-wide { min-width: 960px; height: 325px; }
 body[data-shell="mobile-app"] #mobile-app-shell #m-cf-zoom-tip { max-width: min(230px, calc(100% - 16px)); font-size: 0.74rem; padding: 7px 10px; z-index: 20; }

@@ -46,11 +46,94 @@ const { boot } = require('./ui.js');
   assert(jar.querySelectorAll('.jar-wave-anim').length === 1 && jar.querySelectorAll('.jar-wave-back').length === 1, 'ada 1 gelombang utama dan 1 gelombang belakang');
   assert.strictEqual(jar.querySelector('.jar-wave-back').getAttribute('fill'), jarBands[0].getAttribute('fill'), 'gelombang belakang memakai warna lapisan teratas');
   assert.strictEqual(jar.querySelector('.jar-wave-back').getAttribute('opacity'), '0.5', 'gelombang belakang memakai opacity 0.5');
+  // Bugfix Jar Top Layer: lebar path >= 2x lebar jar (-104..376 = 480px) & clipPath statis tidak ikut translateX
+  const jarInnerW = 120;
+  const extractPathXSpan = (dStr) => {
+    const startMatch = dStr.match(/^M\s*(-?[\d.]+)/);
+    const endMatch = dStr.match(/L\s*(-?[\d.]+)\s+[\d.]+\s+L\s*(-?[\d.]+)\s+[\d.]+\s*Z$/);
+    const minX = Math.min(parseFloat(startMatch[1]), parseFloat(endMatch[2]));
+    const maxX = parseFloat(endMatch[1]);
+    return { minX, maxX, span: maxX - minX };
+  };
+  const clipGroupDesk = jar.querySelector('[clip-path="url(#clip_full_jar)"]');
+  assert(clipGroupDesk && !clipGroupDesk.classList.contains('jar-wave-anim') && !clipGroupDesk.classList.contains('jar-wave-back') && !clipGroupDesk.classList.contains('jar-wave-bob'), 'clipPath jar desktop dipasang di grup induk statis tanpa translate');
+  assert(clipGroupDesk.contains(jar.querySelector('.jar-wave-anim')) && clipGroupDesk.contains(jar.querySelector('.jar-wave-back')), 'kedua gelombang berada di dalam grup clipPath statis');
+  const spFront = extractPathXSpan(jar.querySelector('.jar-wave-anim').getAttribute('d'));
+  const spBack = extractPathXSpan(jar.querySelector('.jar-wave-back').getAttribute('d'));
+  assert(spFront.span >= 2 * jarInnerW && spBack.span >= 2 * jarInnerW, 'lebar path gelombang depan & belakang >= 2x lebar dalam jar (' + spFront.span + ', ' + spBack.span + ')');
+  assert.strictEqual(spFront.minX, spBack.minX, 'x-origin gelombang depan dan belakang identik');
+  assert.strictEqual(spFront.maxX, spBack.maxX, 'lebar total gelombang depan dan belakang identik');
+  [0, -30, -60, -90, -120].forEach((tx) => {
+    assert(spFront.minX + tx <= 16 && spFront.maxX + tx >= 136, 'tidak ada celah kiri/kanan pada pergeseran translateX(' + tx + 'px)');
+  });
+  // Cek render pada 4 persentase lapisan teratas: 100%, 70%, 40%, 15%
+  [
+    [{ id: 'p100', name: 'Satu', cat: 'Tagihan rutin', total: 1000 }],
+    [{ id: 'p70a', name: 'Utama', cat: 'Tagihan rutin', total: 700 }, { id: 'p70b', name: 'Sisa', cat: 'Investasi', total: 300 }],
+    [{ id: 'p40a', name: 'A', cat: 'Tagihan rutin', total: 400 }, { id: 'p40b', name: 'B', cat: 'Investasi', total: 350 }, { id: 'p40c', name: 'C', cat: 'Lainnya', total: 250 }],
+    [{ id: 'p15_1', name: 'Top15', cat: 'Tagihan rutin', total: 150 }, { id: 'p15_2', name: 'K2', cat: 'Investasi', total: 150 }, { id: 'p15_3', name: 'K3', cat: 'Makanan', total: 140 }, { id: 'p15_4', name: 'K4', cat: 'Transportasi', total: 140 }, { id: 'p15_5', name: 'K5', cat: 'Hiburan', total: 140 }, { id: 'p15_6', name: 'K6', cat: 'Kesehatan', total: 140 }, { id: 'p15_7', name: 'K7', cat: 'Lainnya', total: 140 }],
+  ].forEach((sampleRows) => {
+    const tmpBox = w.document.createElement('div');
+    const sum = sampleRows.reduce((s, x) => s + x.total, 0);
+    tmpBox.innerHTML = w.renderFullWaterJarSvg(sampleRows, sum);
+    const fSp = extractPathXSpan(tmpBox.querySelector('.jar-wave-anim').getAttribute('d'));
+    const bSp = extractPathXSpan(tmpBox.querySelector('.jar-wave-back').getAttribute('d'));
+    assert(fSp.minX === -104 && fSp.maxX === 376 && bSp.minX === -104 && bSp.maxX === 376, 'gelombang tetap menutupi penuh pada skenario total ' + sampleRows[0].total);
+  });
+  assert(!$('jar-hover-hint'), 'REVISI 3: teks "Tabung penuh 100% ..." dihapus dari kartu jar');
+  assert(jar.getAttribute('viewBox') === '0 0 186 228', 'REVISI 3.1: jar desktop memakai viewBox & geometri yang sama dengan jar APK');
+  assert(!$('jar-hud-box') && !$('jar-hud-pct') && !$('jar-hud-sub') && !$('jar-hud-amt'), 'REVISI 1: kotak info #jar-hud-box dihapus sepenuhnya dari jar');
   const invBand = jar.querySelector('.jar-band[data-cat="Investasi"]');
   invBand.dispatchEvent(new w.MouseEvent('mouseenter', { bubbles: true }));
-  assert.strictEqual($('jar-hud-pct').textContent.trim(), '25.0%', 'hover band menyalakan porsi');
+  assert(invBand.classList.contains('lit') && $('jar-ptr').style.display === 'block' && !$('jar-hud-box'), 'REVISI 1: hover band menyalakan lapisan + panah #jar-ptr tanpa kotak info');
   invBand.dispatchEvent(new w.MouseEvent('mouseleave', { bubbles: true }));
-  assert.strictEqual($('jar-hud-pct').textContent.trim(), '100%', 'mouseleave mengembalikan HUD ke 100%');
+  assert(!invBand.classList.contains('lit') && $('jar-ptr').style.display === 'none', 'mouseleave melepas sorotan lapisan & menyembunyikan #jar-ptr');
+
+  // REVISI 1.1: 1 kategori = 1 lapisan air di Jar + hover item di Rincian Item menyalakan kategori induknya
+  w.S.items = [
+    { id: 'c1', name: 'ETF 60%', price: 460000, n: 1, unit: 'sekali', start: '2026-11-15', cat: 'Investasi', ch: [] },
+    { id: 'c2', name: 'Saham Lokal 40%', price: 306000, n: 1, unit: 'sekali', start: '2026-11-16', cat: 'Investasi', ch: [] },
+    { id: 'c3', name: 'Makan Siang', price: 234000, n: 1, unit: 'sekali', start: '2026-11-17', cat: 'Makanan', ch: [] },
+  ];
+  w.renderAll();
+  const catJar = $('svg-jar-main');
+  const catJarBands = [...catJar.querySelectorAll('.jar-band')];
+  assert.strictEqual(catJarBands.length, 2, 'REVISI 1.1: 3 item dalam 2 kategori digambar sebagai 2 lapisan kategori (bukan 3 lapisan item)');
+  assert.strictEqual(catJarBands[0].dataset.cat, 'Investasi', 'kategori terbesar (Investasi 76.6%) di lapisan atas');
+  assert.strictEqual(catJarBands[0].getAttribute('data-pct'), '76.6', 'persentase lapisan atas = total kategori (76.6%)');
+  const btcRow = [...$('top5-items-list').querySelectorAll('.simple-row')].find((r) => r.dataset.wcat === 'Investasi');
+  assert(btcRow, 'baris item Investasi ada di #top5-items-list');
+  btcRow.dispatchEvent(new w.MouseEvent('mouseenter', { bubbles: true }));
+  assert(catJarBands[0].classList.contains('lit') && !catJarBands[1].classList.contains('lit') && catJarBands[1].classList.contains('dim') && $('jar-ptr').style.display === 'block', 'REVISI 1.1: sorot item menyalakan lapisan kategori induknya dan meredupkan lainnya');
+  btcRow.dispatchEvent(new w.MouseEvent('mouseleave', { bubbles: true }));
+  // REVISI 2: meniscus cekung + highlight putih tipis 0.25 + gradien vertikal tipis antar lapisan (2-3 kat & 6+ kat, nonaktif bila lapisan < 6px)
+  assert(catJar.querySelector('.jar-wave-hl') && catJar.querySelector('.jar-wave-hl').getAttribute('stroke') === 'rgba(255,255,255,0.25)', 'REVISI 2: permukaan atas memiliki highlight putih transparan 0.25');
+  assert(catJar.querySelector('.jar-meniscus-hl') && /Q\s/.test(catJar.querySelector('.jar-meniscus-hl').getAttribute('d')), 'REVISI 2: pemisah antar lapisan memakai kurva meniscus halus (Q), bukan garis lurus');
+  assert(catJar.querySelector('.jar-meniscus-blend') && catJar.querySelector('#dJarBlend_1'), 'REVISI 2: pemisah antar lapisan dilengkapi linearGradient transisi lembut 6px');
+  const sevenCats = [
+    { id: 'g1', name: 'A', cat: 'Tagihan rutin', total: 400 },
+    { id: 'g2', name: 'B', cat: 'Investasi', total: 200 },
+    { id: 'g3', name: 'C', cat: 'Makanan', total: 150 },
+    { id: 'g4', name: 'D', cat: 'Transportasi', total: 100 },
+    { id: 'g5', name: 'E', cat: 'Hiburan', total: 80 },
+    { id: 'g6', name: 'F', cat: 'Kesehatan', total: 50 },
+    { id: 'g7', name: 'G', cat: 'Lainnya', total: 20 },
+  ];
+  const sevenBox = w.document.createElement('div');
+  sevenBox.innerHTML = w.renderFullWaterJarSvg(sevenCats, 1000);
+  assert.strictEqual(sevenBox.querySelectorAll('.jar-band').length, 7, 'REVISI 2: 7 kategori menghasilkan 7 lapisan jar');
+  assert(sevenBox.querySelectorAll('.jar-meniscus-hl').length === 6 && sevenBox.querySelectorAll('.jar-meniscus-blend').length >= 1, 'REVISI 2: 6+ kategori merender kurva meniscus & gradien pemisah yang valid');
+  const thinBox = w.document.createElement('div');
+  thinBox.innerHTML = w.rkBuildWaterJarSvg({
+    svgId: 'thin-jar',
+    clipId: 'clip-thin-jar',
+    gradPrefix: 'th',
+    bands: [
+      { id: 't1', cat: 'Investasi', total: 990, pct: 99, color: '#0F52BA' },
+      { id: 't2', cat: 'Lainnya', total: 10, pct: 1, color: '#64748B' },
+    ].concat(Array.from({ length: 26 }, (_, k) => ({ id: 'x' + k, cat: 'Kat' + k, total: 1, pct: 0.1, color: '#10B981' }))),
+  });
+  assert.strictEqual(thinBox.querySelectorAll('.jar-meniscus-blend').length, 0, 'REVISI 2: gradien pemisah otomatis nonaktif jika lapisan lebih tipis dari zona gradien 6px');
 
   // 4. Tab Kelola Item: 4 opsi mockup, kalender modern #item-date-trigger (tanpa #item-day & tanpa .pk-in), auto-format ribuan
   w.tab('item');
@@ -235,6 +318,36 @@ const { boot } = require('./ui.js');
   tmEv.touches = [{ clientX: 380 }];
   $('cf-hit').dispatchEvent(tmEv);
   assert($('cashflow-tooltip').classList.contains('visible'), 'touchmove menggeser crosshair & tooltip grafik kas');
+  // REVISI 2, 2.1, 2.2: edge-to-edge fill 0..1060, tanpa instruksi & tanpa "Batas Defisit (Rp 0)", legenda baru
+  const cfWrapTxt = $('cashflow-chart-wrap').textContent;
+  assert(cfWrapTxt.includes('Saldo Hari Ini') && cfWrapTxt.includes('Masa Depan') && cfWrapTxt.includes('< Rp 0'), 'REVISI 2.2: teks legenda desktop diperbarui');
+  assert(!/Saldo Nyata \(s\/d Hari Ini\)|Proyeksi Kas|Zona Defisit|Sorot grafik untuk crosshair/.test(cfWrapTxt), 'REVISI 2.1 & 2.2: teks lama & instruksi crosshair dihapus');
+  assert(!/Batas Defisit/.test($('svg-cashflow').textContent), 'REVISI 2.1: teks Batas Defisit dihapus dari SVG');
+  ['w', 'm', 'y'].forEach((rg) => {
+    click(shell.querySelector('[data-range="' + rg + '"]'));
+    const areaPath = $('svg-cashflow').querySelector('.rk-anim-fill-right').getAttribute('d');
+    const areaStartX = parseFloat(areaPath.match(/^M\s*([\d.]+)/)[1]);
+    const areaEndX = parseFloat(areaPath.match(/L\s*([\d.]+)\s+[\d.]+\s+L\s*([\d.]+)\s+[\d.]+\s*Z$/)[1]);
+    assert.strictEqual(areaStartX, 68, 'REVISI 1: grafik arus kas (' + rg + ') mulai pada inset kiri padL=68 agar tidak menimpa label sumbu Y');
+    assert.strictEqual(areaEndX, 1060, 'REVISI 1: grafik arus kas (' + rg + ') tetap memanjang sampai tepi kanan x=1060');
+    const tLine = $('svg-cashflow').querySelector('.cf-today-line');
+    const tNode = $('svg-cashflow').querySelector('.cf-node.is-today');
+    assert(tLine && tNode, 'garis permanen hari ini & titik Hari ini ada di rentang ' + rg);
+    assert.strictEqual(tLine.getAttribute('x1'), tLine.getAttribute('x2'), 'garis hari ini vertikal lurus');
+    assert(Math.abs(parseFloat(tLine.getAttribute('x1')) - parseFloat(tNode.getAttribute('cx'))) <= 0.1, 'garis hari ini tepat pada posisi x titik Hari ini (' + rg + ')');
+    assert.strictEqual(tLine.getAttribute('stroke'), 'var(--accent)', 'warna garis hari ini memakai biru accent');
+    assert.strictEqual(tLine.getAttribute('stroke-dasharray'), '4 3', 'garis hari ini putus-putus halus 4 3');
+    const cfHtml = $('svg-cashflow').innerHTML;
+    assert(cfHtml.indexOf('rk-anim-fill-right') < cfHtml.indexOf('cf-today-line') && cfHtml.indexOf('cf-today-line') < cfHtml.indexOf('cf-node') && cfHtml.indexOf('cf-today-line') < cfHtml.indexOf('cf-crosshair'), 'garis hari ini berada di atas area fill dan di bawah titik serta crosshair');
+  });
+  assert(!/\bToday\b/.test($('cashflow-chart-wrap').textContent) && $('svg-cashflow').textContent.includes('Hari ini'), 'tanpa pill Today, memakai label Hari ini di sumbu X');
+  const yTextsDesk = [...$('svg-cashflow').querySelectorAll('text[text-anchor="end"]')];
+  assert(yTextsDesk.length >= 4 && yTextsDesk.every((el) => parseFloat(el.getAttribute('x')) <= 58), 'REVISI 1: seluruh label sumbu Y desktop berada di kolom inset kiri (x <= 58)');
+  w.switchYear(2027);
+  w.renderAll();
+  assert.strictEqual($('svg-cashflow').querySelector('.cf-today-line'), null, 'garis hari ini tidak tampil di tahun yang tidak memuat tanggal hari ini');
+  w.switchYear(2026);
+  w.renderAll();
 
   // Fase 2: Sidebar persistensi localStorage, kategori check icon + just-selected, checkbox .rk-check
   click($('sb-toggle'));
@@ -343,8 +456,21 @@ const { boot } = require('./ui.js');
   const cardsR = [...rincPanel.querySelectorAll('.card, .summary-stat-card, .quick-parse-bar')];
   w.rkRunEntrance('browser', 'rincian');
   assert(cardsR.every((c) => c.classList.contains('rk-card-enter')), 'rkRunEntrance menambahkan .rk-card-enter ke card aktif');
-  assert(rincPanel.querySelector('#svg-bar-compare .bar-col.rk-bar-fade'), 'bar chart mendapat .rk-bar-fade saat entrance');
+  assert(rincPanel.querySelector('#svg-bar-compare.rk-bar-anim') && rincPanel.querySelector('#svg-bar-compare .rk-bar-rect') && rincPanel.querySelector('#svg-bar-compare .rk-bar-net-line.rk-line-draw'), 'REVISI 1: bar chart tumbuh .rk-bar-anim & garis Tren Arus Bersih mendapat .rk-line-draw saat entrance');
   assert(rincPanel.querySelector('.rk-anim-line.rk-line-draw'), 'line chart mendapat .rk-line-draw saat entrance');
+  // REVISI 2: rkCountUpEl mendukung negatif (-Rp), sub-teks ("Atau Rp ... / bln"), dan 2 angka ("7 / 15 tagihan")
+  const negEl = $('metric-end-bal'), ratioEl = $('rincian-bills-ratio'), hintEl = $('metric-daily-hint');
+  Object.defineProperty(negEl, 'offsetWidth', { configurable: true, value: 160 });
+  Object.defineProperty(ratioEl, 'offsetWidth', { configurable: true, value: 160 });
+  Object.defineProperty(hintEl, 'offsetWidth', { configurable: true, value: 160 });
+  negEl.textContent = '-Rp 1.178.275';
+  ratioEl.textContent = '7 / 15 tagihan';
+  hintEl.textContent = 'Atau Rp 1.340.820 / bln';
+  w.rkAnimateRincianKpis(false);
+  assert(negEl.dataset.rkFinal === '-Rp 1.178.275' && negEl.textContent.includes('Rp '), 'REVISI 2: count-up memproses nominal negatif -Rp');
+  assert(/\d+\s*\/\s*\d+\s*tagihan/.test(ratioEl.textContent), 'REVISI 2: count-up memproses dua angka & unit pada tagihan');
+  assert(/^Atau\s+Rp\s+[\d.]+\s+\/\s+bln$/.test(hintEl.textContent), 'REVISI 2: count-up memproses teks turunan "Atau Rp ... / bln"');
+  w.rkCancelAllCountUps();
   // Re-render kecil (klik filter) hanya menganimasikan grafik terkait tanpa memicu ulang page/card entrance
   Object.defineProperty($('cashflow-chart-wrap'), 'offsetWidth', { configurable: true, value: 640 });
   Object.defineProperty($('jar-main-stage'), 'offsetWidth', { configurable: true, value: 320 });
