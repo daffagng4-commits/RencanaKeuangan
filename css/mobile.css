@@ -226,7 +226,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .apk-header-block {
   flex-shrink: 0;
   background: linear-gradient(180deg, var(--mob-hdr-top) 0%, var(--mob-hdr-bot) 100%);
   color: #FFFFFF;
-  padding: 0 14px 18px;
+  padding: env(safe-area-inset-top, 0px) 14px 18px;
   border-bottom-left-radius: 26px;
   border-bottom-right-radius: 26px;
   box-shadow: 0 8px 24px -10px rgba(7, 22, 54, 0.34);
@@ -249,8 +249,8 @@ body[data-shell="mobile-app"] #mobile-app-shell .hdr-motif {
   height: 100%;
   pointer-events: none;
   z-index: 0;
-  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.96) 72%, rgba(0, 0, 0, 0.52) 100%);
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.96) 72%, rgba(0, 0, 0, 0.52) 100%);
+  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.28) 0%, rgba(0, 0, 0, 0.96) 20px, rgba(0, 0, 0, 0.96) 72%, rgba(0, 0, 0, 0.45) 100%);
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.28) 0%, rgba(0, 0, 0, 0.96) 20px, rgba(0, 0, 0, 0.96) 72%, rgba(0, 0, 0, 0.45) 100%);
 }
 body[data-shell="mobile-app"] #mobile-app-shell .hdr-inner {
   position: relative;

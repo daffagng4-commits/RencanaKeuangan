@@ -791,6 +791,9 @@ const { boot } = require('./ui.js');
   assert.strictEqual(motifEl.getAttribute('preserveAspectRatio'), 'xMidYMin slice', '.hdr-motif memakai preserveAspectRatio="xMidYMin slice" agar skala mengikuti lebar layar, bukan tinggi header');
   assert(!motifEl.querySelector('path'), '.hdr-motif tidak memakai garis lurus diagonal <path> yang memotong tepi');
   assert(/\.hdr-motif\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0[^}]*width:\s*100%[^}]*height:\s*100%[^}]*z-index:\s*0/s.test(cssMobSrc), 'CSS .hdr-motif mengisi penuh .apk-header-block (inset:0; width:100%; height:100%; z-index:0)');
+  assert(/\.apk-header-block\s*\{[^}]*padding:\s*env\(safe-area-inset-top,\s*0px\)/s.test(cssMobSrc), 'CSS .apk-header-block memberi padding-top safe-area hanya untuk konten sementara latar & .hdr-motif dimulai dari top:0');
+  assert(motifEl.querySelector('#rk-hdr-glow-tr') && motifEl.querySelector('#rk-hdr-arc-tr') && motifEl.querySelector('#rk-hdr-arc-bl') && motifEl.querySelector('#rk-hdr-diag-grad') && motifEl.querySelector('#rk-hdr-dots'), 'motif header memuat glow kanan atas, lengkung konsentris kanan atas & kiri bawah, garis diagonal memudar, dan dot grid kiri atas');
+  assert(/viewport-fit=cover/i.test(doc.querySelector('meta[name="viewport"]').getAttribute('content') || ''), 'meta viewport menyertakan viewport-fit=cover untuk edge-to-edge');
   assert(/\.apk-hero-well\s*\{[^}]*z-index:\s*1[^}]*background:\s*transparent[^}]*overflow:\s*visible/s.test(cssMobSrc), 'CSS .apk-hero-well punya z-index:1 (> .hdr-motif), background:transparent, dan overflow:visible agar tidak memotong/menutupi motif');
   assert(/\.wallet-hero\s*\{[^}]*z-index:\s*1/s.test(cssMobSrc), 'CSS .wallet-hero punya z-index:1 (> .hdr-motif)');
 

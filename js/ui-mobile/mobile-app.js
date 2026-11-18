@@ -404,30 +404,51 @@ function mobShellTemplate() {
     '<div class="apk-header-block">' +
     '<svg class="hdr-motif" viewBox="0 0 400 320" preserveAspectRatio="xMidYMin slice" aria-hidden="true">' +
     '<defs>' +
-    '<radialGradient id="rk-hdr-glow-tr" cx="436" cy="-36" r="240" gradientUnits="userSpaceOnUse">' +
-    '<stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.09"/>' +
-    '<stop offset="55%" stop-color="#FFFFFF" stop-opacity="0.035"/>' +
+    '<radialGradient id="rk-hdr-glow-tr" cx="424" cy="-24" r="245" gradientUnits="userSpaceOnUse">' +
+    '<stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.10"/>' +
+    '<stop offset="52%" stop-color="#FFFFFF" stop-opacity="0.04"/>' +
     '<stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>' +
     '</radialGradient>' +
     '<radialGradient id="rk-hdr-arc-tr" cx="436" cy="-36" r="350" gradientUnits="userSpaceOnUse">' +
+    '<stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.095"/>' +
+    '<stop offset="66%" stop-color="#FFFFFF" stop-opacity="0.065"/>' +
+    '<stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>' +
+    '</radialGradient>' +
+    '<radialGradient id="rk-hdr-arc-bl" cx="-34" cy="298" r="270" gradientUnits="userSpaceOnUse">' +
+    '<stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.075"/>' +
+    '<stop offset="65%" stop-color="#FFFFFF" stop-opacity="0.05"/>' +
+    '<stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>' +
+    '</radialGradient>' +
+    '<linearGradient id="rk-hdr-diag-grad" x1="170" y1="0" x2="395" y2="235" gradientUnits="userSpaceOnUse">' +
+    '<stop offset="0%" stop-color="#FFFFFF" stop-opacity="0"/>' +
+    '<stop offset="35%" stop-color="#FFFFFF" stop-opacity="0.065"/>' +
+    '<stop offset="68%" stop-color="#FFFFFF" stop-opacity="0.05"/>' +
+    '<stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>' +
+    '</linearGradient>' +
+    '<pattern id="rk-hdr-dots" width="14" height="14" patternUnits="userSpaceOnUse">' +
+    '<circle cx="2" cy="2" r="1.05" fill="#FFFFFF"/>' +
+    '</pattern>' +
+    '<radialGradient id="rk-hdr-dots-fade" cx="26" cy="24" r="132" gradientUnits="userSpaceOnUse">' +
     '<stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.09"/>' +
-    '<stop offset="68%" stop-color="#FFFFFF" stop-opacity="0.065"/>' +
+    '<stop offset="58%" stop-color="#FFFFFF" stop-opacity="0.045"/>' +
     '<stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>' +
     '</radialGradient>' +
-    '<radialGradient id="rk-hdr-arc-bl" cx="-38" cy="306" r="310" gradientUnits="userSpaceOnUse">' +
-    '<stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.085"/>' +
-    '<stop offset="65%" stop-color="#FFFFFF" stop-opacity="0.055"/>' +
-    '<stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>' +
-    '</radialGradient>' +
+    '<mask id="rk-hdr-dots-mask">' +
+    '<rect x="0" y="0" width="200" height="190" fill="url(#rk-hdr-dots-fade)"/>' +
+    '</mask>' +
     '</defs>' +
-    '<circle cx="436" cy="-36" r="240" fill="url(#rk-hdr-glow-tr)"/>' +
+    '<circle cx="424" cy="-24" r="245" fill="url(#rk-hdr-glow-tr)"/>' +
+    '<rect x="0" y="0" width="200" height="190" fill="url(#rk-hdr-dots)" mask="url(#rk-hdr-dots-mask)" opacity="0.9"/>' +
+    '<line x1="178" y1="-16" x2="386" y2="192" stroke="url(#rk-hdr-diag-grad)" stroke-width="1"/>' +
+    '<line x1="214" y1="-16" x2="412" y2="182" stroke="url(#rk-hdr-diag-grad)" stroke-width="1"/>' +
+    '<line x1="250" y1="-16" x2="424" y2="158" stroke="url(#rk-hdr-diag-grad)" stroke-width="0.9"/>' +
     '<circle cx="436" cy="-36" r="128" fill="none" stroke="url(#rk-hdr-arc-tr)" stroke-width="1.5"/>' +
     '<circle cx="436" cy="-36" r="192" fill="none" stroke="url(#rk-hdr-arc-tr)" stroke-width="1.35"/>' +
     '<circle cx="436" cy="-36" r="260" fill="none" stroke="url(#rk-hdr-arc-tr)" stroke-width="1.2"/>' +
     '<circle cx="436" cy="-36" r="332" fill="none" stroke="url(#rk-hdr-arc-tr)" stroke-width="1"/>' +
-    '<circle cx="-38" cy="306" r="145" fill="none" stroke="url(#rk-hdr-arc-bl)" stroke-width="1.5"/>' +
-    '<circle cx="-38" cy="306" r="215" fill="none" stroke="url(#rk-hdr-arc-bl)" stroke-width="1.3"/>' +
-    '<circle cx="-38" cy="306" r="288" fill="none" stroke="url(#rk-hdr-arc-bl)" stroke-width="1.1"/>' +
+    '<circle cx="-34" cy="298" r="126" fill="none" stroke="url(#rk-hdr-arc-bl)" stroke-width="1.4"/>' +
+    '<circle cx="-34" cy="298" r="188" fill="none" stroke="url(#rk-hdr-arc-bl)" stroke-width="1.2"/>' +
+    '<circle cx="-34" cy="298" r="252" fill="none" stroke="url(#rk-hdr-arc-bl)" stroke-width="1"/>' +
     '</svg>' +
     '<div class="hdr-inner">' +
     '<div class="phone-status-bar" aria-hidden="true"><span>09:41</span><div class="phone-island"><span class="phone-island-cam"></span></div><div class="phone-sys-icons"><span>5G</span><span>94%</span></div></div>' +
