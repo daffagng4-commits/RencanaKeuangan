@@ -102,10 +102,82 @@
 
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --transition-fast: 150ms var(--ease-out);
   --transition-med: 240ms var(--ease-out);
+
+  /* Animation Durations & Delays (Phase 1 Tokens) */
+  --dur-pill: 450ms;
+  --dur-pill-shadow: 650ms;
+  --delay-pill-shadow: 80ms;
+  --dur-pill-text: 150ms;
+  --dur-card-enter: 420ms;
+  --dur-card-enter-apk: 280ms;
+  --stagger-card: 50ms;
+  --dur-line-draw: 900ms;
+  --delay-line-draw: 150ms;
+  --dur-line-draw-apk: 700ms;
+  --dur-chart-fill: 800ms;
+  --dur-count-hero: 1400ms;
+  --dur-count-kpi: 1000ms;
+  --dur-count-hero-apk: 800ms;
+  --dur-sweep: 600ms;
+  --dur-bar-fade: 300ms;
+  --dur-ripple: 450ms;
+  --dur-press: 120ms;
+  --dur-row-exit: 160ms;
+  --dur-row-collapse: 220ms;
+  --dur-sheet-close: 240ms;
+  --dur-sheet-snap: 300ms;
+  --dur-shimmer: 1400ms;
+  --dur-skeleton-fade: 200ms;
+  --dur-shake: 360ms;
+  --dur-error-border: 120ms;
+  --dur-list-item: 360ms;
+  --stagger-list: 40ms;
+  --dur-list-item-apk: 280ms;
+  --stagger-list-apk: 30ms;
+  --dur-check-fill: 120ms;
+  --dur-check-draw: 220ms;
+  --dur-check-pop: 240ms;
+  --dur-row-flash: 600ms;
+  --dur-dd-open: 160ms;
+  --dur-dd-close: 100ms;
+  --dur-dd-highlight: 140ms;
+  --dur-dd-active: 100ms;
+  --dur-dialog-backdrop: 200ms;
+  --dur-dialog-open: 240ms;
+  --dur-dialog-close: 150ms;
+  --dur-cat-pop: 240ms;
+  --dur-cat-bg: 150ms;
+  --dur-cat-check: 180ms;
+  --dur-jar-highlight: 200ms;
+  --dur-sidebar: 280ms;
+  --dur-sidebar-label-out: 100ms;
+  --dur-sidebar-label-in: 160ms;
+  --delay-sidebar-label-in: 120ms;
+  --dur-nav-icon: 300ms;
+  --dur-nav-pill: 280ms;
+  --dur-nav-label: 150ms;
+  --dur-bell: 500ms;
+  --dur-badge-pop: 240ms;
+  --dur-icon-morph: 240ms;
+  --dur-chevron: 280ms;
+  --dur-scroll-reveal: 400ms;
+  --dur-topbar-shadow: 160ms;
+  --dur-btt-fade: 200ms;
+  --dur-palette-spin: 300ms;
+  --dur-swatch-pop: 240ms;
+  --stagger-swatch: 30ms;
+  --dur-jar-wave: 3200ms;
+  --dur-theme-desktop: 500ms;
+  --dur-theme-apk: 350ms;
+  --dur-theme-fallback: 300ms;
+
   --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
-  --tap: 40px;
+  --tap: 44px;
 
   --sidebar-w: 248px;
   --sidebar-w-collapsed: 74px;
@@ -268,7 +340,89 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
-body, input, button, select, textarea, table, kbd, code { font-feature-settings: "tnum" 1; }
+body, input, button, select, textarea, table, kbd, code {
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0.001ms;
+    --transition-med: 0.001ms;
+    --dur-pill: 0.001ms;
+    --dur-pill-shadow: 0.001ms;
+    --delay-pill-shadow: 0ms;
+    --dur-pill-text: 0.001ms;
+    --dur-card-enter: 0.001ms;
+    --dur-card-enter-apk: 0.001ms;
+    --stagger-card: 0ms;
+    --dur-line-draw: 0.001ms;
+    --delay-line-draw: 0ms;
+    --dur-line-draw-apk: 0.001ms;
+    --dur-chart-fill: 0.001ms;
+    --dur-count-hero: 0.001ms;
+    --dur-count-kpi: 0.001ms;
+    --dur-count-hero-apk: 0.001ms;
+    --dur-sweep: 0.001ms;
+    --dur-bar-fade: 0.001ms;
+    --dur-ripple: 0.001ms;
+    --dur-press: 0.001ms;
+    --dur-row-exit: 0.001ms;
+    --dur-row-collapse: 0.001ms;
+    --dur-sheet-close: 0.001ms;
+    --dur-sheet-snap: 0.001ms;
+    --dur-shimmer: 0.001ms;
+    --dur-skeleton-fade: 0.001ms;
+    --dur-shake: 0.001ms;
+    --dur-error-border: 0.001ms;
+    --dur-list-item: 0.001ms;
+    --stagger-list: 0ms;
+    --dur-list-item-apk: 0.001ms;
+    --stagger-list-apk: 0ms;
+    --dur-check-fill: 0.001ms;
+    --dur-check-draw: 0.001ms;
+    --dur-check-pop: 0.001ms;
+    --dur-row-flash: 0.001ms;
+    --dur-dd-open: 0.001ms;
+    --dur-dd-close: 0.001ms;
+    --dur-dd-highlight: 0.001ms;
+    --dur-dd-active: 0.001ms;
+    --dur-dialog-backdrop: 0.001ms;
+    --dur-dialog-open: 0.001ms;
+    --dur-dialog-close: 0.001ms;
+    --dur-cat-pop: 0.001ms;
+    --dur-cat-bg: 0.001ms;
+    --dur-cat-check: 0.001ms;
+    --dur-jar-highlight: 0.001ms;
+    --dur-sidebar: 0.001ms;
+    --dur-sidebar-label-out: 0.001ms;
+    --dur-sidebar-label-in: 0.001ms;
+    --delay-sidebar-label-in: 0ms;
+    --dur-nav-icon: 0.001ms;
+    --dur-nav-pill: 0.001ms;
+    --dur-nav-label: 0.001ms;
+    --dur-bell: 0.001ms;
+    --dur-badge-pop: 0.001ms;
+    --dur-icon-morph: 0.001ms;
+    --dur-chevron: 0.001ms;
+    --dur-scroll-reveal: 0.001ms;
+    --dur-topbar-shadow: 0.001ms;
+    --dur-btt-fade: 0.001ms;
+    --dur-palette-spin: 0.001ms;
+    --dur-swatch-pop: 0.001ms;
+    --stagger-swatch: 0ms;
+    --dur-jar-wave: 0.001ms;
+    --dur-theme-desktop: 0.001ms;
+    --dur-theme-apk: 0.001ms;
+    --dur-theme-fallback: 0.001ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 ::selection { background: color-mix(in srgb, var(--ac) 22%, transparent); }
 
 /* ============================================================

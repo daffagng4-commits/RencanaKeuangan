@@ -52,9 +52,9 @@ const {boot}=require('./ui.js');
  click($('btn-privacy'));
  // tab periode menyinkronkan jar dan daftar kategori
  const where=$('card-where-money');
- const subBefore=$('where-sub-lbl').textContent;
+ const subBefore=$('top5-total-badge').textContent;
  click(where.querySelector('[data-where-period="w"]'));
- const subAfter=$('where-sub-lbl').textContent;
+ const subAfter=$('top5-total-badge').textContent;
  assert(subAfter!==subBefore,'tab 7 hari mengubah data kategori');
  click(where.querySelector('[data-where-period="y"]'));
  click(where.querySelector('[data-where-dir="in"]'));

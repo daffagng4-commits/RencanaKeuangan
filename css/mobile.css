@@ -41,7 +41,9 @@ body[data-shell="mobile-app"] #mobile-app-shell .pp-btn {
   transition: all 140ms ease;
   white-space: nowrap;
 }
-body[data-shell="mobile-app"] #mobile-app-shell .pp-btn:hover { background: var(--bg-subtle); color: var(--text-primary); }
+@media (hover: hover) and (pointer: fine) {
+  body[data-shell="mobile-app"] #mobile-app-shell .pp-btn:hover { background: var(--bg-subtle); color: var(--text-primary); }
+}
 body[data-shell="mobile-app"] #mobile-app-shell .pp-btn.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(15, 82, 186, 0.28); }
 body[data-shell="mobile-app"] #mobile-app-shell .pp-div { width: 1px; height: 18px; background: var(--border-strong); margin: 0 2px; }
 
@@ -641,9 +643,13 @@ body[data-shell="mobile-app"] #mobile-app-shell #m-svg-bar .bar-col.is-hovered .
 body[data-shell="mobile-app"] #mobile-app-shell #svg-bar-compare .bar-col.is-hovered .bar-month-lbl { fill: var(--text-primary); font-weight: 800; }
 
 /* Liquid Jar Waves & Categories */
-@keyframes jarWaveShift { 0% { transform: translateX(0); } 100% { transform: translateX(-110px); } }
-body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim { animation: jarWaveShift 3.2s linear infinite; }
-body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim-slow { animation: jarWaveShift 5.2s linear infinite reverse; }
+@keyframes jarWaveShift {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(-55px); }
+  100% { transform: translateX(0); }
+}
+body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim { animation: jarWaveShift var(--dur-jar-wave, 3200ms) var(--ease-in-out) infinite; }
+body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim-slow { animation: jarWaveShift var(--dur-jar-wave, 3200ms) var(--ease-in-out) infinite reverse; }
 body[data-shell="mobile-app"] #mobile-app-shell .jar-band { cursor: pointer; opacity: 0.92; transition: opacity 160ms ease, filter 160ms ease; }
 body[data-shell="mobile-app"] #mobile-app-shell .jar-band.lit { opacity: 1; filter: brightness(1.12); }
 body[data-shell="mobile-app"] #mobile-app-shell .jar-band.dim { opacity: 0.18; }
@@ -762,7 +768,9 @@ body[data-shell="mobile-app"] #mobile-app-shell .mselect-opt {
   font-weight: 500;
   text-align: left;
 }
-body[data-shell="mobile-app"] #mobile-app-shell .mselect-opt:hover { background: var(--bg-subtle); }
+@media (hover: hover) and (pointer: fine) {
+  body[data-shell="mobile-app"] #mobile-app-shell .mselect-opt:hover { background: var(--bg-subtle); }
+}
 body[data-shell="mobile-app"] #mobile-app-shell .mselect-opt.active { background: var(--accent-soft); color: var(--accent-ink); font-weight: 700; }
 
 /* Modern Calendars */
@@ -800,7 +808,9 @@ body[data-shell="mobile-app"] #mobile-app-shell .cal-head { display: flex; align
 body[data-shell="mobile-app"] #mobile-app-shell .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
 body[data-shell="mobile-app"] #mobile-app-shell .cal-dow { font-size: 0.66rem; font-weight: 700; color: var(--text-muted); padding: 3px 0; }
 body[data-shell="mobile-app"] #mobile-app-shell .cal-day { height: 29px; border-radius: 7px; font-size: 0.75rem; font-family: var(--font-mono); display: grid; place-items: center; }
-body[data-shell="mobile-app"] #mobile-app-shell .cal-day:hover { background: var(--bg-subtle); }
+@media (hover: hover) and (pointer: fine) {
+  body[data-shell="mobile-app"] #mobile-app-shell .cal-day:hover { background: var(--bg-subtle); }
+}
 body[data-shell="mobile-app"] #mobile-app-shell .cal-day.today { border: 1px solid var(--accent); color: var(--accent-ink); font-weight: 700; }
 body[data-shell="mobile-app"] #mobile-app-shell .cal-day.in-range { background: var(--accent-soft); color: var(--accent-ink); font-weight: 700; }
 body[data-shell="mobile-app"] #mobile-app-shell .cal-day.range-edge,
@@ -1259,3 +1269,24 @@ body[data-shell="mobile-app"] #mobile-app-shell .rep-table td.r { text-align: ri
 body[data-shell="mobile-app"] #mobile-app-shell .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 11px; border-radius: 12px; background: var(--bg-muted-row); font-size: 0.79rem; }
 
 body[data-shell="mobile-app"] #mobile-app-shell .sec-hidden { display: none !important; }
+
+body[data-shell="mobile-app"] #mobile-app-shell .chart-stage,
+body[data-shell="mobile-app"] #mobile-app-shell #m-svg-cf,
+body[data-shell="mobile-app"] #mobile-app-shell #m-svg-sim-chart {
+  touch-action: pan-y;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-shell="mobile-app"] #mobile-app-shell *,
+  body[data-shell="mobile-app"] #mobile-app-shell *::before,
+  body[data-shell="mobile-app"] #mobile-app-shell *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim,
+  body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim-slow,
+  body[data-shell="mobile-app"] #mobile-app-shell .jar-bubble {
+    animation: none !important;
+  }
+}

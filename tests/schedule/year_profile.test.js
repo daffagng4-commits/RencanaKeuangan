@@ -31,7 +31,7 @@ function findCard(doc, re) {
     assert(cfText && /Nov/i.test(cfText), 'Grafik Arus Saldo Minggu 2026 ter-render: ' + cfText);
 
     // Ke Mana Uangnya Pergi Minggu
-    let sub = w.document.getElementById('where-sub-lbl').textContent || '';
+    let sub = w.brGetWhereDataset().label || '';
     assert(/7 Hari Terakhir/.test(sub), 'Top expenses Minggu 2026: ' + sub);
     assert(!/· rencana/.test(sub), 'Tahun berjalan bukan · rencana');
 
@@ -46,7 +46,7 @@ function findCard(doc, re) {
     w.document.querySelector('#tab-rincian [data-range="w"]').click();
     w.document.querySelector('#card-where-money [data-where-period="w"]').click();
     w.renderAll();
-    sub = w.document.getElementById('where-sub-lbl').textContent || '';
+    sub = w.brGetWhereDataset().label || '';
     assert(/7 Hari Terakhir · rencana/.test(sub), '2027 harus · rencana: ' + sub);
 
     // --- tahun lampau 2025 ---
@@ -61,7 +61,7 @@ function findCard(doc, re) {
     w.document.querySelector('#tab-rincian [data-range="w"]').click();
     w.document.querySelector('#card-where-money [data-where-period="w"]').click();
     w.renderAll();
-    sub = w.document.getElementById('where-sub-lbl').textContent || '';
+    sub = w.brGetWhereDataset().label || '';
     assert(!/· rencana/.test(sub), 'Tahun lampau 2025 bukan rencana: ' + sub);
 
     // --- pergantian 31 Des -> 1 Jan, tahun berjalan 2027 ---

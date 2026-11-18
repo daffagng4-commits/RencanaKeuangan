@@ -797,30 +797,77 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
       svg.style.touchAction = 'pan-x pan-y';
       hit.style.touchAction = 'pan-x pan-y';
     } else {
-      svg.style.touchAction = 'none';
-      hit.style.touchAction = 'none';
-      hit.addEventListener('pointerdown', function (e) { inspectFromX(e.clientX); });
+      svg.style.touchAction = 'pan-y';
+      hit.style.touchAction = 'pan-y';
+      var tState = { near: false, locked: null, sx: 0, sy: 0 };
+      var isNearLine = function (cx, cy) {
+        if (!coords.length) return false;
+        var sR = svg.getBoundingClientRect(),
+          sW = sR.width || W,
+          sH = sR.height || H,
+          svgX = Math.max(coords[0].x, Math.min(coords[coords.length - 1].x, ((cx - sR.left) / sW) * W)),
+          svgY = ((cy - sR.top) / sH) * H,
+          nearNode = coords.reduce(function (b, c) { return Math.abs(c.x - svgX) < Math.abs(b.x - svgX) ? c : b; }, coords[0]),
+          pt = Math.abs(nearNode.x - svgX) <= 12 || !samples.length
+            ? nearNode
+            : samples.reduce(function (b, s) { return Math.abs(s.x - svgX) < Math.abs(b.x - svgX) ? s : b; }, samples[0]);
+        return Math.abs(svgY - pt.y) * (sH / H) <= 24;
+      };
+      hit.addEventListener('pointerdown', function (e) {
+        if (e.pointerType === 'mouse') inspectFromX(e.clientX);
+      });
       hit.addEventListener('pointermove', function (e) {
-        if (e.pointerType !== 'mouse' || e.buttons) inspectFromX(e.clientX);
+        if (e.pointerType === 'mouse' && e.buttons) inspectFromX(e.clientX);
       });
       hit.addEventListener('touchstart', function (e) {
-        if (e.touches && e.touches[0]) {
-          if (e.cancelable) e.preventDefault();
-          inspectFromX(e.touches[0].clientX);
-        }
-      }, { passive: false });
+        if (!e.touches || !e.touches[0]) return;
+        var t0 = e.touches[0];
+        tState.sx = t0.clientX;
+        tState.sy = t0.clientY;
+        tState.locked = null;
+        tState.near = isNearLine(t0.clientX, t0.clientY);
+        if (tState.near) inspectFromX(t0.clientX);
+      }, { passive: true });
       hit.addEventListener('touchmove', function (e) {
-        if (e.touches && e.touches[0]) {
+        if (!e.touches || !e.touches[0]) return;
+        var t0 = e.touches[0];
+        if (typeof t0.clientY !== 'number') {
           if (e.cancelable) e.preventDefault();
-          inspectFromX(e.touches[0].clientX);
+          inspectFromX(t0.clientX);
+          return;
+        }
+        if (!tState.near) return;
+        var dx = Math.abs(t0.clientX - tState.sx),
+          dy = Math.abs(t0.clientY - tState.sy);
+        if (tState.locked === null) {
+          if (dx < 8 && dy < 8) return;
+          if (dy > dx) {
+            tState.locked = 'v';
+            tState.near = false;
+            var piV = getPin();
+            if (piV === null || !coords[piV]) hideHUD();
+            else showPointHUD(coords[piV]);
+            return;
+          }
+          tState.locked = 'h';
+        }
+        if (tState.locked === 'h') {
+          if (e.cancelable) e.preventDefault();
+          inspectFromX(t0.clientX);
         }
       }, { passive: false });
       hit.addEventListener('touchend', function () {
+        tState.near = false;
+        tState.locked = null;
         var pi = getPin();
         if (pi === null || !coords[pi]) hideHUD();
         else showPointHUD(coords[pi]);
       });
-      hit.addEventListener('touchcancel', function () { hideHUD(); });
+      hit.addEventListener('touchcancel', function () {
+        tState.near = false;
+        tState.locked = null;
+        hideHUD();
+      });
     }
     hit.onmousemove = function (e) { inspectFromX(e.clientX); };
     hit.onmouseleave = function () {
@@ -1054,7 +1101,6 @@ function renderFullWaterJarSvg(rows, grand) {
         '<path d="' + b.crestD + '" fill="none" stroke="rgba(255,255,255,0.72)" stroke-width="1.5" style="pointer-events:none;"/>';
     }).join('') +
     (bands.length ? '<path class="jar-wave-anim" d="' + scrollWave(yTop + 2, 10, 32) + '" fill="#FFFFFF" opacity="0.28" style="pointer-events:none;"/>' : '') +
-    (bands.length ? '<path class="jar-wave-anim-slow" d="' + scrollWave(yBot - chH * 0.42, 8.5, 24) + '" fill="#FFFFFF" opacity="0.14" style="pointer-events:none;"/>' : '') +
     '</g>' +
     '<rect x="' + (xL + 11) + '" y="' + (yChamberTop + 16) + '" width="13" height="' + (chamberH - 32) + '" rx="12" fill="#FFFFFF" opacity="0.26" style="pointer-events:none;"/>' +
     ticks +
@@ -1175,7 +1221,6 @@ function renderWhereMoney() {
   var cats = Object.keys(catMap).map(function (k) { return catMap[k]; }).sort(function (a, b) { return b.total - a.total; });
   window._brWhereDs = { rows: ds.rows, cats: cats, grand: grand };
   if ($('top5-total-badge')) $('top5-total-badge').textContent = rp(grand);
-  if ($('where-sub-lbl')) $('where-sub-lbl').textContent = 'Total ' + (BR_STATE.whereDir === 'out' ? 'keluar' : 'masuk') + ' ' + rp(grand) + ' · ' + ds.label;
   var jarStage = $('jar-main-stage');
   if (jarStage) {
     jarStage.innerHTML = renderFullWaterJarSvg(ds.rows, grand);

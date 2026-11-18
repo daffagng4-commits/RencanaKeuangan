@@ -32,7 +32,7 @@ const { boot } = require('./ui.js');
     assert(select, 'pemilih bulan'); assert.strictEqual(select.options.length, 12);
     assert.strictEqual(select.value, '5', 'bulan berjalan (Juni = idx 5) dipilih');
     select.value = '11'; select.dispatchEvent(new w.Event('change', { bubbles: true }));
-    assert(w.document.getElementById('where-sub-lbl').textContent.includes('Rp 100'));
+    assert(w.document.getElementById('top5-total-badge').textContent.includes('Rp 100'));
     w.S.items = [
       { id: 'one', name: 'BTC', price: 100, n: 1, unit: 'sekali', start: '2026-12-20', cat: 'Investasi', ch: [] },
       { id: 'two', name: 'BTC', price: 200, n: 1, unit: 'sekali', start: '2026-12-20', cat: 'Investasi', ch: [] }

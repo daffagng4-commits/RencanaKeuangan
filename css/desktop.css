@@ -59,15 +59,22 @@
       user-select: none;
       transition: filter var(--transition-fast);
     }
-    body.privacy-on #browser-shell .pv:hover {
+    @media (hover: hover) and (pointer: fine) {
+  body.privacy-on #browser-shell .pv:hover {
       filter: blur(3px);
     }
+}
 
     @media (prefers-reduced-motion: reduce) {
       #browser-shell *, #browser-shell *::before, #browser-shell *::after {
-        animation-duration: 0.01ms !important;
+        animation-duration: 0.001ms !important;
         animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
+        transition-duration: 0.001ms !important;
+      }
+      #browser-shell .jar-wave-anim,
+      #browser-shell .jar-wave-anim-slow,
+      #browser-shell .pulse-ring {
+        animation: none !important;
       }
     }
 
@@ -122,9 +129,11 @@
       transition: background var(--transition-fast);
     }
 
-    #browser-shell .sb-av:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .sb-av:hover {
       background: var(--bg-subtle);
     }
+}
 
     #browser-shell .av-circle {
       width: 34px;
@@ -212,10 +221,12 @@
       transition: background var(--transition-fast), color var(--transition-fast);
     }
 
-    #browser-shell .collapse-btn:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .collapse-btn:hover {
       background: var(--bg-subtle);
       color: var(--text-primary);
     }
+}
 
     body.sidebar-collapsed #browser-shell .collapse-btn svg {
       transform: rotate(180deg);
@@ -246,10 +257,12 @@
       width: 100%;
     }
 
-    #browser-shell .nav-btn:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .nav-btn:hover {
       background: var(--bg-subtle);
       color: var(--text-primary);
     }
+}
 
     #browser-shell .nav-btn.active {
       background: var(--accent-soft);
@@ -376,9 +389,11 @@
       white-space: nowrap;
     }
 
-    #browser-shell .yp:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .yp:hover {
       color: var(--text-primary);
     }
+}
 
     #browser-shell .yp.on {
       background: var(--bg-surface);
@@ -395,9 +410,11 @@
       transition: background var(--transition-fast);
     }
 
-    #browser-shell .yp-del:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .yp-del:hover {
       background: var(--crimson-soft);
     }
+}
 
     #browser-shell .yp-trip {
       display: inline-flex;
@@ -414,10 +431,12 @@
       transition: all var(--transition-fast);
     }
 
-    #browser-shell .yp-trip:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .yp-trip:hover {
       border-color: var(--border-strong);
       color: var(--text-primary);
     }
+}
 
     #browser-shell .yp-trip.on {
       background: var(--accent-soft);
@@ -454,11 +473,13 @@
       position: relative;
     }
 
-    #browser-shell .topbar-btn:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .topbar-btn:hover {
       background: var(--bg-subtle);
       color: var(--text-primary);
       border-color: var(--border-strong);
     }
+}
 
     #browser-shell .topbar-btn.on {
       background: var(--accent-soft);
@@ -475,11 +496,13 @@
       background: var(--accent-soft);
     }
 
-    #browser-shell .yr-plus:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .yr-plus:hover {
       background: var(--accent);
       color: #fff;
       border-color: var(--accent);
     }
+}
 
     #browser-shell .acct-btn {
       padding: 0 4px;
@@ -488,9 +511,11 @@
       box-shadow: none;
     }
 
-    #browser-shell .acct-btn:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .acct-btn:hover {
       background: transparent;
     }
+}
 
     #browser-shell .tb-more {
       width: 30px;
@@ -663,7 +688,9 @@
       white-space: nowrap;
     }
 
-    #browser-shell .seg-btn:hover { color: var(--text-primary); }
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .seg-btn:hover { color: var(--text-primary); }
+}
 
     #browser-shell .seg-btn.active,
     #browser-shell .seg-btn[aria-pressed="true"] {
@@ -705,20 +732,26 @@
       color: #fff;
       box-shadow: 0 2px 8px rgba(15, 82, 186, 0.22);
     }
-    #browser-shell .btn-primary:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .btn-primary:hover {
       background: var(--accent-hover);
       transform: translateY(-1px);
     }
+}
 
     #browser-shell .btn-secondary {
       background: var(--bg-surface);
       border-color: var(--border-strong);
       color: var(--text-primary);
     }
-    #browser-shell .btn-secondary:hover { background: var(--bg-subtle); }
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .btn-secondary:hover { background: var(--bg-subtle); }
+}
 
     #browser-shell .btn-ghost { color: var(--text-secondary); }
-    #browser-shell .btn-ghost:hover { background: var(--bg-subtle); color: var(--text-primary); }
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .btn-ghost:hover { background: var(--bg-subtle); color: var(--text-primary); }
+}
 
     #browser-shell .btn-emerald {
       background: var(--emerald-soft);
@@ -815,10 +848,12 @@
       transition: all var(--transition-fast);
     }
 
-    #browser-shell .cat-pill-opt:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .cat-pill-opt:hover {
       background: var(--bg-subtle);
       border-color: var(--border-strong);
     }
+}
 
     #browser-shell .cat-pill-opt.selected {
       background: var(--accent-soft);
@@ -927,15 +962,16 @@
 
     @keyframes jarWaveShift {
       0% { transform: translateX(0); }
-      100% { transform: translateX(-110px); }
+      50% { transform: translateX(-55px); }
+      100% { transform: translateX(0); }
     }
 
     #browser-shell .jar-wave-anim {
-      animation: jarWaveShift 3.2s linear infinite;
+      animation: jarWaveShift var(--dur-jar-wave, 3200ms) var(--ease-in-out) infinite;
     }
 
     #browser-shell .jar-wave-anim-slow {
-      animation: jarWaveShift 5.2s linear infinite reverse;
+      animation: jarWaveShift var(--dur-jar-wave, 3200ms) var(--ease-in-out) infinite reverse;
     }
 
     #browser-shell #svg-bar-compare .bar-month-bg {
@@ -950,27 +986,41 @@
       stroke: var(--accent-border);
     }
 
-    #browser-shell #svg-bar-compare .bar-col:hover .bar-month-bg,
     #browser-shell #svg-bar-compare .bar-col.is-hovered .bar-month-bg {
       fill: rgba(15, 23, 42, 0.24);
       stroke: rgba(15, 23, 42, 0.55);
     }
+@media (hover: hover) and (pointer: fine) {
+  #browser-shell #svg-bar-compare .bar-col:hover .bar-month-bg {
+      fill: rgba(15, 23, 42, 0.24);
+      stroke: rgba(15, 23, 42, 0.55);
+    }
+}
 
-    [data-theme="dark"] #browser-shell #svg-bar-compare .bar-col:hover .bar-month-bg,
     [data-theme="dark"] #browser-shell #svg-bar-compare .bar-col.is-hovered .bar-month-bg {
       fill: rgba(0, 0, 0, 0.65);
       stroke: rgba(255, 255, 255, 0.28);
     }
+@media (hover: hover) and (pointer: fine) {
+  [data-theme="dark"] #browser-shell #svg-bar-compare .bar-col:hover .bar-month-bg {
+      fill: rgba(0, 0, 0, 0.65);
+      stroke: rgba(255, 255, 255, 0.28);
+    }
+}
 
-    #browser-shell #svg-bar-compare:hover .bar-col:not(:hover) {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell #svg-bar-compare:hover .bar-col:not(:hover) {
       opacity: 0.72;
       transition: opacity 150ms ease;
     }
+}
 
-    #browser-shell #svg-bar-compare .bar-col:hover .bar-month-lbl {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell #svg-bar-compare .bar-col:hover .bar-month-lbl {
       fill: var(--text-primary);
       font-weight: 800;
     }
+}
 
     #browser-shell .where-layout {
       display: grid;
@@ -1054,11 +1104,16 @@
       min-width: 0;
     }
 
-    #browser-shell .simple-row:hover,
     #browser-shell .simple-row.active {
       background: var(--accent-soft);
       border-color: var(--accent-border);
     }
+@media (hover: hover) and (pointer: fine) {
+  #browser-shell .simple-row:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent-border);
+    }
+}
 
     #browser-shell .simple-row.dim {
       opacity: 0.42;
@@ -1176,10 +1231,12 @@
       text-align: left;
     }
 
-    #browser-shell .mselect-trigger:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .mselect-trigger:hover {
       background: var(--bg-muted-row);
       border-color: var(--accent);
     }
+}
 
     #browser-shell .mselect.open .mselect-trigger,
     #browser-shell .mselect-trigger:focus-visible {
@@ -1282,9 +1339,11 @@
       transition: background 110ms ease, color 110ms ease;
     }
 
-    #browser-shell .mselect-opt:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .mselect-opt:hover {
       background: var(--bg-muted-row);
     }
+}
 
     #browser-shell .mselect-opt.active {
       background: var(--accent-soft);
@@ -1330,11 +1389,16 @@
       transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
     }
 
-    #browser-shell .cal-trigger-btn:hover,
     #browser-shell .cal-trigger-btn.open {
       border-color: var(--accent);
       background: var(--bg-muted-row);
     }
+@media (hover: hover) and (pointer: fine) {
+  #browser-shell .cal-trigger-btn:hover {
+      border-color: var(--accent);
+      background: var(--bg-muted-row);
+    }
+}
 
     #browser-shell .cal-range-popover {
       width: 312px;
@@ -1362,12 +1426,18 @@
       transition: all 120ms ease;
     }
 
-    #browser-shell .cal-preset-pill:hover,
     #browser-shell .cal-preset-pill.active {
       background: var(--accent-soft);
       color: var(--accent);
       border-color: var(--accent);
     }
+@media (hover: hover) and (pointer: fine) {
+  #browser-shell .cal-preset-pill:hover {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+}
 
     #browser-shell .cal-day.in-range {
       background: var(--accent-soft);
@@ -1477,10 +1547,12 @@
       transition: border-color var(--transition-fast), background var(--transition-fast);
     }
 
-    #browser-shell .upcoming-item:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .upcoming-item:hover {
       border-color: var(--border-strong);
       background: var(--bg-subtle);
     }
+}
 
     #browser-shell .upcoming-left {
       display: flex;
@@ -1535,7 +1607,9 @@
     }
 
     #browser-shell .flow-row-clickable { cursor: pointer; }
-    #browser-shell .flow-row-clickable:hover { background: var(--bg-subtle); }
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .flow-row-clickable:hover { background: var(--bg-subtle); }
+}
     #browser-shell .flow-drawer { background: var(--bg-muted-row); }
 
     #browser-shell .tx-day-group {
@@ -1804,10 +1878,12 @@
       transition: transform var(--transition-fast), box-shadow var(--transition-fast);
     }
 
-    #browser-shell .dt-chip:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .dt-chip:hover {
       transform: translateY(-1px);
       box-shadow: var(--shadow-sm);
     }
+}
 
     #browser-shell .dt-chip.paid { background: var(--accent); color: #fff; border-color: var(--accent); }
     #browser-shell .dt-chip.paid.done-row { background: var(--emerald); border-color: var(--emerald); }
@@ -1859,7 +1935,9 @@
     #browser-shell .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
     #browser-shell .cal-dow { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); padding: 4px 0; }
     #browser-shell .cal-day { height: 30px; border-radius: 7px; font-size: 0.78rem; font-family: var(--font-mono); display: grid; place-items: center; }
-    #browser-shell .cal-day:hover { background: var(--bg-subtle); }
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .cal-day:hover { background: var(--bg-subtle); }
+}
     #browser-shell .cal-day.today { border: 1px solid var(--accent); color: var(--accent-ink); font-weight: 700; }
     #browser-shell .cal-day.selected { background: var(--accent); color: #fff; font-weight: 700; }
     #browser-shell .cal-presets { display: flex; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-subtle); flex-wrap: wrap; }
@@ -1965,7 +2043,9 @@
       text-decoration: none;
     }
 
-    #browser-shell .alat-item:hover { background: var(--bg-subtle); }
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .alat-item:hover { background: var(--bg-subtle); }
+}
     #browser-shell .alat-sep { height: 1px; background: var(--border-subtle); margin: 5px 4px; }
     #browser-shell .alat-sec-h { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); padding: 4px 10px 2px; }
 
@@ -1986,7 +2066,9 @@
 
     #browser-shell .chip-pop-head { padding: 6px 8px 8px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 6px; }
     #browser-shell .chip-pop-btn { width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 9px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; text-align: left; }
-    #browser-shell .chip-pop-btn:hover { background: var(--bg-subtle); }
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .chip-pop-btn:hover { background: var(--bg-subtle); }
+}
     #browser-shell .seg.trip-subtabs { flex-wrap: wrap; max-width: 100%; }
 
     #browser-shell .modal-backdrop {
@@ -2045,7 +2127,9 @@
 
     #browser-shell .scenario-grid-6 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
     #browser-shell .scen-card { border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px; text-align: left; background: var(--bg-muted-row); transition: all var(--transition-fast); }
-    #browser-shell .scen-card:hover { border-color: var(--accent); background: var(--bg-surface); }
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .scen-card:hover { border-color: var(--accent); background: var(--bg-surface); }
+}
     #browser-shell .scen-card.active { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
 
     #browser-shell .mobile-bottom-nav { display: none; }
@@ -2176,9 +2260,11 @@ body.privacy-on #browser-shell .pv {
   user-select: none;
   transition: filter var(--transition-fast);
 }
-body.privacy-mode #browser-shell .pv:hover,
-body.privacy-on #browser-shell .pv:hover {
+@media (hover: hover) and (pointer: fine) {
+  body.privacy-mode #browser-shell .pv:hover,
+  body.privacy-on #browser-shell .pv:hover {
   filter: blur(3px);
+}
 }
 
 #browser-shell .rank-track {

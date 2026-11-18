@@ -78,7 +78,7 @@ const { boot } = require('./ui.js');
   assert(whereRow && whereRow.querySelector('[data-mwperiod]') && whereRow.querySelector('[data-mwdir]'), 'filter Minggu/Bulan/Tahun dan Keluar/Masuk berada pada satu baris .where-filter-row');
   click($('m-btn-expand-cf'));
   assert($('m-sheet-cf-zoom').classList.contains('open') && $('m-svg-cf-zoom').querySelector('.cf-node'), 'tombol Perbesar membuka popup grafik mode desktop');
-  assert.strictEqual($('m-svg-cf-zoom').style.touchAction, 'none', 'grafik Perbesar default mendukung geser jari langsung di garis grafik');
+  assert.strictEqual($('m-svg-cf-zoom').style.touchAction, 'pan-y', 'grafik Perbesar memakai touch-action: pan-y agar scroll vertikal tetap jalan');
   assert.strictEqual($('m-svg-cf-zoom').getAttribute('viewBox'), '0 0 600 320', 'grafik Perbesar memakai rasio lebih tinggi agar besar dan jelas di HP');
   $('m-cf-zoom-scrub').value = '75';
   fire($('m-cf-zoom-scrub'), 'input');

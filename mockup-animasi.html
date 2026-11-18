@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Lab Animasi Baru — Rencana Keuangan (Belum Ada di Program Utama)</title>
+<style>
+  /* ==========================================================================
+     TOKENS — Fiscal Atelier + Motion Tokens Baru
+     ========================================================================== */
+  :root {
+    color-scheme: light;
+    --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    --bg-canvas: #F3F5F2;
+    --bg-surface: #FFFFFF;
+    --bg-subtle: #EDF1EC;
+    --bg-muted: #F7F9F6;
+    --bg-hud: rgba(255, 255, 255, 0.94);
+
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #64748B;
+
+    --border-subtle: #E2E8E2;
+    --border-strong: #CBD5CD;
+
+    --accent: #0F52BA;
+    --accent-hover: #0B4197;
+    --accent-soft: #EBF2FE;
+    --accent-ink: #0F52BA;
+    --emerald: #0D7A52;
+    --emerald-soft: #E7F6EF;
+    --crimson: #C93B3B;
+    --crimson-soft: #FEF2F2;
+
+    --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+    --shadow-md: 0 12px 28px -8px rgba(15, 23, 42, 0.12);
+    --shadow-lg: 0 24px 56px -12px rgba(15, 23, 42, 0.22);
+
+    --dur-fast: 120ms;
+    --dur-med: 220ms;
+    --dur-slow: 360ms;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  html[data-theme="dark"] {
+    color-scheme: dark;
+    --bg-canvas: #0A0E14;
+    --bg-surface: #121821;
+    --bg-subtle: #1A222E;
+    --bg-muted: #151C26;
+    --bg-hud: rgba(18, 24, 33, 0.94);
+
+    --text-primary: #F1F5F9;
+    --text-secondary: #CBD5E1;
+    --text-muted: #94A3B8;
+
+    --border-subtle: #232D3B;
+    --border-strong: #334155;
+
+    --accent: #3B82F6;
+    --accent-hover: #2563EB;
+    --accent-soft: rgba(59, 130, 246, 0.16);
+    --accent-ink: #60A5FA;
+    --emerald: #34D399;
+    --emerald-soft: rgba(16, 185, 129, 0.16);
+    --crimson: #FB7185;
+    --crimson-soft: rgba(244, 63, 94, 0.16);
+
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.32);
+    --shadow-md: 0 12px 28px -8px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 24px 56px -12px rgba(0, 0, 0, 0.65);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  html.force-reduced *, html.force-reduced *::before, html.force-reduced *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background: var(--bg-canvas);
+    color: var(--text-primary);
+    line-height: 1.45;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  /* Header & Controls */
+  .lab-top {
+    position: sticky; top: 0; z-index: 40;
+    background: var(--bg-hud);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .lab-top-in {
+    max-width: 1200px; margin: 0 auto; padding: 12px 16px;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .lab-top h1 { margin: 0; font-size: 1.02rem; font-weight: 800; letter-spacing: -0.02em; }
+  .lab-top p { margin: 2px 0 0; font-size: 0.75rem; color: var(--text-muted); }
+  .lab-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+  .token-bar {
+    max-width: 1200px; margin: 14px auto 0; padding: 0 16px;
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .t-pill {
+    padding: 4px 10px; border-radius: 999px; background: var(--bg-surface);
+    border: 1px solid var(--border-subtle); font-size: 0.71rem; font-weight: 600; color: var(--text-secondary);
+  }
+  .t-pill code { font-family: var(--font-mono); color: var(--accent-ink); font-weight: 700; }
+
+  .lab-grid {
+    max-width: 1200px; margin: 14px auto 60px; padding: 0 16px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 355px), 1fr));
+    gap: 16px; align-items: start;
+  }
+
+  .card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 18px;
+    box-shadow: var(--shadow-sm);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .card[hidden] { display: none; }
+  .card-hd {
+    padding: 14px 16px 10px; border-bottom: 1px solid var(--border-subtle);
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
+  }
+  .card-hd h2 { margin: 0; font-size: 0.89rem; font-weight: 800; letter-spacing: -0.01em; }
+  .card-hd p { margin: 3px 0 0; font-size: 0.73rem; color: var(--text-muted); }
+  .card-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 11px; }
+  .card-ft {
+    padding: 9px 16px; background: var(--bg-muted); border-top: 1px solid var(--border-subtle);
+    display: flex; justify-content: space-between; font-size: 0.70rem; color: var(--text-muted);
+  }
+  .badge { padding: 3px 8px; border-radius: 999px; font-size: 0.66rem; font-weight: 700; white-space: nowrap; }
+  .b-desk { background: var(--accent-soft); color: var(--accent-ink); }
+  .b-apk { background: var(--emerald-soft); color: var(--emerald); }
+  .b-both { background: var(--bg-subtle); color: var(--text-secondary); }
+
+  .btn {
+    position: relative; overflow: hidden;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 7px 12px; border-radius: 9px; border: 1px solid var(--border-strong);
+    background: var(--bg-surface); color: var(--text-primary);
+    font-family: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer;
+    user-select: none;
+    transition: transform var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+  }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* 1. Segmented Control Sliding Pill */
+  .seg-slide {
+    position: relative; display: grid; grid-template-columns: repeat(3, 1fr);
+    background: var(--bg-subtle); border: 1px solid var(--border-subtle);
+    border-radius: 11px; padding: 3px;
+  }
+  .seg-ind {
+    position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / 3);
+    border-radius: 8px; background: var(--bg-surface); box-shadow: var(--shadow-sm);
+    transition: transform var(--dur-med) var(--ease-out); pointer-events: none;
+  }
+  .seg-btn {
+    position: relative; z-index: 1; border: none; background: none; padding: 7px 6px;
+    font-family: inherit; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); cursor: pointer;
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .seg-btn.active { color: var(--text-primary); }
+
+  /* 2. Count-Up + Highlight Sweep */
+  .num-box {
+    position: relative; overflow: hidden; padding: 10px 12px; border-radius: 12px;
+    background: var(--bg-muted); border: 1px solid var(--border-subtle);
+  }
+  .num-box.sweep-up::after, .num-box.sweep-down::after {
+    content: ""; position: absolute; inset: 0;
+    transform: translateX(-100%);
+    animation: sweepFlash 460ms var(--ease-out) forwards;
+    pointer-events: none;
+  }
+  .num-box.sweep-up::after { background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.24), transparent); }
+  .num-box.sweep-down::after { background: linear-gradient(90deg, transparent, rgba(244, 63, 94, 0.24), transparent); }
+  @keyframes sweepFlash { to { transform: translateX(100%); } }
+
+  /* 3. Line Draw & Bar Grow */
+  .bar-rect {
+    transform-origin: bottom;
+    transform-box: fill-box;
+    transition: transform 420ms var(--ease-out);
+  }
+  .bar-rect.zero { transform: scaleY(0.02); }
+
+  /* 4. Auto-Height Accordion */
+  .auto-acc {
+    display: grid; grid-template-rows: 0fr; opacity: 0;
+    transition: grid-template-rows var(--dur-med) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
+  }
+  .auto-acc.open { grid-template-rows: 1fr; opacity: 1; }
+  .auto-acc > div { overflow: hidden; }
+  .inp {
+    width: 100%; padding: 8px 10px; border-radius: 9px;
+    border: 1px solid var(--border-strong); background: var(--bg-surface); color: var(--text-primary);
+    font-family: inherit; font-size: 0.78rem;
+  }
+  .inp:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .inp.shake { border-color: var(--crimson); animation: errShake 280ms var(--ease-in-out); }
+  @keyframes errShake {
+    0%,100% { transform: translateX(0); }
+    22% { transform: translateX(-6px); }
+    44% { transform: translateX(5px); }
+    66% { transform: translateX(-4px); }
+    88% { transform: translateX(3px); }
+  }
+
+  /* 5. Checkbox SVG Draw + Row Exit Collapse */
+  .bill-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 9px 11px; border-radius: 10px; border: 1px solid var(--border-subtle);
+    background: var(--bg-muted); cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out),
+                transform var(--dur-med) var(--ease-out), opacity var(--dur-med) var(--ease-out);
+  }
+  .bill-row.paid { background: var(--emerald-soft); border-color: var(--emerald); }
+  .bill-row.exiting { transform: translateX(18px); opacity: 0; }
+  .chk-svg path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset 240ms var(--ease-out); }
+  .bill-row.paid .chk-svg path { stroke-dashoffset: 0; }
+
+  /* 6. Desktop Spotlight Follow vs APK Press + Ripple */
+  .spot-hero {
+    position: relative; overflow: hidden; border-radius: 14px; padding: 15px;
+    background: linear-gradient(142deg, #0F172A 0%, #17347A 60%, #0F52BA 100%); color: #fff;
+    cursor: pointer; transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .spot-hero::before {
+    content: ""; position: absolute; inset: 0; opacity: 0; pointer-events: none;
+    background: radial-gradient(200px circle at var(--sx, 50%) var(--sy, 50%), rgba(255,255,255,0.22), transparent 65%);
+    transition: opacity var(--dur-med) var(--ease-out);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .spot-hero:hover::before { opacity: 1; }
+  }
+  .spot-hero.flash::before { opacity: 1; }
+  .btn-apk:active { transform: scale(0.95); }
+  .ripple {
+    position: absolute; border-radius: 50%; transform: scale(0); pointer-events: none;
+    background: rgba(255,255,255,0.40); animation: ripOut 420ms var(--ease-out) forwards;
+  }
+  .btn:not(.btn-primary) .ripple { background: rgba(15, 82, 186, 0.20); }
+  @keyframes ripOut { to { transform: scale(3.2); opacity: 0; } }
+
+  /* 7. Bottom Sheet Drag-to-Dismiss */
+  .sh-backdrop {
+    position: fixed; inset: 0; z-index: 90; background: rgba(10,14,20,0.52);
+    backdrop-filter: blur(4px); display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity var(--dur-med) var(--ease-out);
+  }
+  .sh-backdrop.open { opacity: 1; pointer-events: auto; }
+  .sh-panel {
+    width: 100%; max-width: 420px; background: var(--bg-surface);
+    border-radius: 22px 22px 0 0; padding: 10px 18px 22px; box-shadow: var(--shadow-lg);
+    transform: translateY(100%); transition: transform var(--dur-med) var(--ease-out);
+    touch-action: none;
+  }
+  .sh-backdrop.open .sh-panel { transform: translateY(0); }
+  .sh-handle { width: 40px; height: 4px; border-radius: 99px; background: var(--border-strong); margin: 0 auto 12px; cursor: grab; }
+
+  /* 8. Skeleton Shimmer */
+  .skel-wrap { display: flex; flex-direction: column; gap: 7px; }
+  .skel-line {
+    height: 14px; border-radius: 8px;
+    background: linear-gradient(90deg, var(--bg-subtle) 25%, var(--bg-muted) 50%, var(--bg-subtle) 75%);
+    background-size: 200% 100%;
+    animation: shimmerMove 1.25s linear infinite;
+  }
+  @keyframes shimmerMove { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+  /* 10. List Stagger Entrance */
+  .stag-list { display: flex; flex-direction: column; gap: 6px; }
+  .stag-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 11px; border-radius: 10px; background: var(--bg-muted); border: 1px solid var(--border-subtle);
+    font-size: 0.77rem; font-weight: 700;
+  }
+  .stag-row.go {
+    opacity: 0;
+    animation: stagIn var(--dur-med) var(--ease-out) forwards;
+    animation-delay: calc(var(--i, 0) * 35ms);
+  }
+  @keyframes stagIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<header class="lab-top">
+  <div class="lab-top-in">
+    <div>
+      <h1>Lab 10 Animasi Baru — Rencana Keuangan</h1>
+      <p>Hanya animasi yang <strong>belum ada</strong> di program utama. Setiap kartu terpisah untuk dicoba di Desktop &amp; APK.</p>
+    </div>
+    <div class="lab-actions">
+      <div class="seg-slide" id="flt" style="width:230px">
+        <div class="seg-ind" id="flt-ind"></div>
+        <button type="button" class="seg-btn active" data-f="all">Semua</button>
+        <button type="button" class="seg-btn" data-f="desktop">Desktop</button>
+        <button type="button" class="seg-btn" data-f="apk">APK (HP)</button>
+      </div>
+      <button type="button" class="btn btn-apk" id="btn-theme">🌙 Gelap</button>
+      <button type="button" class="btn btn-apk" id="btn-rm">♿ Reduce Motion: Mati</button>
+    </div>
+  </div>
+</header>
+
+<div class="token-bar">
+  <span class="t-pill">Cepat <code>120ms</code></span>
+  <span class="t-pill">Sedang <code>220ms</code></span>
+  <span class="t-pill">Lambat <code>360ms</code></span>
+  <span class="t-pill">Masuk <code>cubic-bezier(0.22,1,0.36,1)</code></span>
+  <span class="t-pill">Spring <code>cubic-bezier(0.34,1.56,0.64,1)</code></span>
+</div>
+
+<main class="lab-grid">
+
+  <!-- 1 -->
+  <section class="card" data-p="both">
+    <div class="card-hd">
+      <div><h2>1. Segmented Control Sliding Pill</h2><p>Pil latar meluncur di filter Minggu / Bulan / Tahun</p></div>
+      <span class="badge b-both">Desktop &amp; APK</span>
+    </div>
+    <div class="card-body">
+      <div class="seg-slide" id="c1-seg">
+        <div class="seg-ind" id="c1-ind" style="transform:translateX(100%)"></div>
+        <button type="button" class="seg-btn" data-c1="0">Minggu</button>
+        <button type="button" class="seg-btn active" data-c1="1">Bulan</button>
+        <button type="button" class="seg-btn" data-c1="2">Tahun</button>
+      </div>
+      <div style="font-size:0.75rem;color:var(--text-secondary)" id="c1-lbl">Aktif: <strong>Bulan ini</strong></div>
+    </div>
+    <div class="card-ft"><span>220ms ease-out</span><span>Ganti loncatan warna instan</span></div>
+  </section>
+
+  <!-- 2 -->
+  <section class="card" data-p="both">
+    <div class="card-hd">
+      <div><h2>2. Count-Up + Highlight Sweep Nominal</h2><p>Angka berjalan halus + kilau hijau/merah saat saldo berubah</p></div>
+      <span class="badge b-both">Desktop &amp; APK</span>
+    </div>
+    <div class="card-body">
+      <div class="num-box" id="c2-box">
+        <div style="font-size:0.68rem;color:var(--text-muted);font-weight:700">SALDO REALTIME</div>
+        <div class="mono" id="c2-val" style="font-size:1.45rem;font-weight:800;margin-top:2px">Rp 13.156.725</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn btn-primary btn-apk" id="c2-up">+ Pemasukan 5jt</button>
+        <button type="button" class="btn btn-apk" id="c2-dn">− Pengeluaran 2jt</button>
+      </div>
+    </div>
+    <div class="card-ft"><span>360ms rAF + tabular-nums</span><span>Angka tidak bergoyang</span></div>
+  </section>
+
+  <!-- 3 -->
+  <section class="card" data-p="both">
+    <div class="card-hd">
+      <div><h2>3. Line Draw &amp; Bar Grow Grafik SVG</h2><p>Kurva arus kas tergambar &amp; batang tumbuh saat muncul</p></div>
+      <span class="badge b-both">Desktop &amp; APK</span>
+    </div>
+    <div class="card-body">
+      <svg viewBox="0 0 300 108" style="width:100%;height:auto;background:var(--bg-muted);border-radius:10px;border:1px solid var(--border-subtle)">
+        <rect class="bar-rect" x="28" y="48" width="22" height="50" rx="5" fill="#10B981" opacity="0.28"/>
+        <rect class="bar-rect" x="56" y="64" width="22" height="34" rx="5" fill="#F43F5E" opacity="0.28"/>
+        <rect class="bar-rect" x="114" y="34" width="22" height="64" rx="5" fill="#10B981" opacity="0.28"/>
+        <rect class="bar-rect" x="142" y="54" width="22" height="44" rx="5" fill="#F43F5E" opacity="0.28"/>
+        <rect class="bar-rect" x="200" y="26" width="22" height="72" rx="5" fill="#10B981" opacity="0.28"/>
+        <rect class="bar-rect" x="228" y="40" width="22" height="58" rx="5" fill="#F43F5E" opacity="0.28"/>
+        <path id="c3-line" d="M 24 72 C 74 68, 98 40, 148 46 C 198 52, 224 22, 274 28" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <button type="button" class="btn btn-apk" id="c3-play" style="align-self:flex-start">▶ Putar Animasi Grafik</button>
+    </div>
+    <div class="card-ft"><span>420ms ease-out</span><span>Ganti render statis</span></div>
+  </section>
+
+  <!-- 4 -->
+  <section class="card" data-p="both">
+    <div class="card-hd">
+      <div><h2>4. Auto-Height Form (Utang / Piutang)</h2><p>Ruang form mengembang mulus tanpa lonjakan layout</p></div>
+      <span class="badge b-both">Desktop &amp; APK</span>
+    </div>
+    <div class="card-body">
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.78rem;font-weight:700;cursor:pointer">
+        <input type="checkbox" id="c4-chk" /> Tandai sebagai Utang / Piutang
+      </label>
+      <div class="auto-acc" id="c4-acc">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <input class="inp" placeholder="Nama orang (mis. Daffa)" />
+          <select class="inp"><option>Piutang baru (saya pinjamkan)</option><option>Utang baru</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="card-ft"><span>grid-template-rows: 0fr → 1fr</span><span>Ganti display:none mendadak</span></div>
+  </section>
+
+  <!-- 5 -->
+  <section class="card" data-p="both">
+    <div class="card-hd">
+      <div><h2>5. Checkbox SVG Draw &amp; Exit Row</h2><p>Centang tergambar saat lunas + baris keluar halus saat dihapus</p></div>
+      <span class="badge b-both">Desktop &amp; APK</span>
+    </div>
+    <div class="card-body" id="c5-wrap">
+      <div class="bill-row" id="c5-bill">
+        <div style="display:flex;align-items:center;gap:9px">
+          <svg class="chk-svg" width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="2" width="20" height="20" rx="6" stroke="var(--emerald)" stroke-width="2"/>
+            <path d="M7 12.5l3.2 3.2L17.5 8.5" stroke="var(--emerald)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div>
+            <div style="font-size:0.79rem;font-weight:700">Asuransi Jiwa</div>
+            <div style="font-size:0.69rem;color:var(--text-muted)" id="c5-sub">Ketuk untuk tandai lunas</div>
+          </div>
+        </div>
+        <span class="mono" style="font-size:0.78rem;font-weight:800">Rp 750.000</span>
+      </div>
+      <div class="bill-row" id="c5-del-row" style="cursor:default">
+        <span style="font-size:0.77rem;font-weight:700">☕ Kopi &amp; Makan Siang</span>
+        <button type="button" class="btn btn-apk" id="c5-del-btn" style="padding:4px 9px;font-size:0.71rem;color:var(--crimson)">Hapus</button>
+      </div>
+    </div>
+    <div class="card-ft"><span>240ms stroke-dashoffset</span><span>Aksi lunas &amp; hapus lebih jelas</span></div>
+  </section>
+
+  <!-- 6 -->
+  <section class="card" data-p="both">
+    <div class="card-hd">
+      <div><h2>6. Spotlight Kursor (Desktop) &amp; Ripple (APK)</h2><p>Cahaya ikut kursor di Desktop, tekan + ripple di APK</p></div>
+      <span class="badge b-both">Desktop &amp; APK</span>
+    </div>
+    <div class="card-body">
+      <div class="spot-hero" id="c6-hero">
+        <div style="font-size:0.67rem;opacity:0.78;font-weight:700">CARD SALDO REALTIME</div>
+        <div class="mono" style="font-size:1.30rem;font-weight:800;margin-top:3px">Rp 13.156.725</div>
+        <div style="font-size:0.70rem;opacity:0.75;margin-top:4px">Gerakkan kursor di atas kartu atau ketuk</div>
+      </div>
+      <button type="button" class="btn btn-primary btn-apk" data-rip="1" style="align-self:flex-start">Tombol Simpan + Ripple Sentuh</button>
+    </div>
+    <div class="card-ft"><span>Pointer vs Touch parity</span><span>Tidak lengket di HP</span></div>
+  </section>
+
+  <!-- 7 -->
+  <section class="card" data-p="apk">
+    <div class="card-hd">
+      <div><h2>7. Bottom Sheet Drag-to-Dismiss</h2><p>Pegangan atas sheet bisa ditarik ke bawah dengan jari/mouse</p></div>
+      <span class="badge b-apk">APK (HP)</span>
+    </div>
+    <div class="card-body">
+      <button type="button" class="btn btn-primary btn-apk" id="c7-open">Buka Bottom Sheet APK</button>
+      <div style="font-size:0.73rem;color:var(--text-muted)">Setelah terbuka, seret garis abu-abu di bagian atas sheet ke bawah untuk menutup.</div>
+    </div>
+    <div class="card-ft"><span>220ms + pointer drag</span><span>Gesture native Android/iOS</span></div>
+  </section>
+
+  <!-- 8 -->
+  <section class="card" data-p="both">
+    <div class="card-hd">
+      <div><h2>8. Skeleton Shimmer Sync Cloud</h2><p>Placeholder berkilau saat sinkron awal / tarik data cloud</p></div>
+      <span class="badge b-both">Desktop &amp; APK</span>
+    </div>
+    <div class="card-body">
+      <div id="c8-stage">
+        <div class="skel-wrap">
+          <div class="skel-line" style="width:45%"></div>
+          <div class="skel-line" style="width:82%;height:22px"></div>
+          <div class="skel-line" style="width:65%"></div>
+        </div>
+      </div>
+      <button type="button" class="btn btn-apk" id="c8-tog" style="align-self:flex-start">✓ Selesai Sync (Tampilkan Konten)</button>
+    </div>
+    <div class="card-ft"><span>1.25s shimmer gradient</span><span>Pengganti loading teks datar</span></div>
+  </section>
+
+  <!-- 9 -->
+  <section class="card" data-p="both">
+    <div class="card-hd">
+      <div><h2>9. Error Shake pada Input Validasi</h2><p>Kolom bergetar ringan saat pengguna lupa mengisi nominal/catatan</p></div>
+      <span class="badge b-both">Desktop &amp; APK</span>
+    </div>
+    <div class="card-body">
+      <input class="inp" id="c9-inp" placeholder="Nominal (Rp) — biarkan kosong lalu klik Simpan" />
+      <button type="button" class="btn btn-apk" id="c9-btn" style="align-self:flex-start">Simpan Transaksi</button>
+    </div>
+    <div class="card-ft"><span>280ms translateX</span><span>Fokus langsung ke error</span></div>
+  </section>
+
+  <!-- 10 -->
+  <section class="card" data-p="both">
+    <div class="card-hd">
+      <div><h2>10. List Stagger Entrance (Maks. 5 Item)</h2><p>Daftar tagihan masuk berurutan dengan jeda halus 35ms</p></div>
+      <span class="badge b-both">Desktop &amp; APK</span>
+    </div>
+    <div class="card-body">
+      <div class="stag-list" id="c10-list">
+        <div class="stag-row" style="--i:0"><span>🌐 Internet Biznet</span><span class="mono">Rp 375.000</span></div>
+        <div class="stag-row" style="--i:1"><span>🎬 Netflix 4K</span><span class="mono">Rp 186.000</span></div>
+        <div class="stag-row" style="--i:2"><span>🏠 Cicilan Kos</span><span class="mono">Rp 1.500.000</span></div>
+        <div class="stag-row" style="--i:3"><span>📈 Saham BCA</span><span class="mono">Rp 2.000.000</span></div>
+      </div>
+      <button type="button" class="btn btn-apk" id="c10-play" style="align-self:flex-start">↻ Putar Stagger</button>
+    </div>
+    <div class="card-ft"><span>220ms + 35ms/item</span><span>Ritme baca lebih rapi</span></div>
+  </section>
+
+</main>
+
+<!-- Bottom Sheet -->
+<div class="sh-backdrop" id="c7-bd" role="dialog" aria-modal="true" aria-labelledby="c7-ttl">
+  <div class="sh-panel" id="c7-panel">
+    <div class="sh-handle" id="c7-handle" title="Tarik ke bawah untuk menutup"></div>
+    <h3 id="c7-ttl" style="margin:0 0 6px;font-size:0.96rem">Detail Tagihan — Tarik Turun untuk Tutup</h3>
+    <p style="margin:0 0 14px;font-size:0.77rem;color:var(--text-muted)">Seret garis abu-abu di atas ke bawah (&gt;65px) untuk menutup sheet.</p>
+    <button type="button" class="btn btn-primary btn-apk" style="width:100%" id="c7-close">Tutup</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+
+  // Filter Desktop / APK
+  $('flt').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-f]');
+    if (!b) return;
+    var f = b.getAttribute('data-f');
+    $('flt-ind').style.transform = 'translateX(' + (f === 'all' ? 0 : f === 'desktop' ? 100 : 200) + '%)';
+    this.querySelectorAll('.seg-btn').forEach(function (x) { x.classList.toggle('active', x === b); });
+    document.querySelectorAll('.card[data-p]').forEach(function (c) {
+      var p = c.getAttribute('data-p');
+      c.hidden = !(f === 'all' || p === 'both' || p === f);
+    });
+  });
+
+  // Theme & Reduce Motion
+  $('btn-theme').addEventListener('click', function () {
+    var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    this.textContent = next === 'dark' ? '☀️ Terang' : '🌙 Gelap';
+  });
+  $('btn-rm').addEventListener('click', function () {
+    var on = document.documentElement.classList.toggle('force-reduced');
+    this.textContent = on ? '♿ Reduce Motion: Aktif' : '♿ Reduce Motion: Mati';
+  });
+
+  // 1. Sliding Pill
+  var c1Txt = ['7 Hari Terakhir', 'Bulan Ini', 'Tahun 2026'];
+  $('c1-seg').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-c1]');
+    if (!b) return;
+    var i = +b.getAttribute('data-c1');
+    $('c1-ind').style.transform = 'translateX(' + (i * 100) + '%)';
+    this.querySelectorAll('.seg-btn').forEach(function (x) { x.classList.toggle('active', x === b); });
+    $('c1-lbl').innerHTML = 'Aktif: <strong>' + c1Txt[i] + '</strong>';
+  });
+
+  // 2. Count-Up + Highlight Sweep
+  var c2Val = 13156725, c2Raf = null;
+  function runCount(delta) {
+    if (c2Raf) cancelAnimationFrame(c2Raf);
+    var start = c2Val, target = Math.max(0, start + delta), box = $('c2-box');
+    box.classList.remove('sweep-up', 'sweep-down');
+    void box.offsetWidth;
+    box.classList.add(delta >= 0 ? 'sweep-up' : 'sweep-down');
+    if (document.documentElement.classList.contains('force-reduced')) {
+      c2Val = target; $('c2-val').textContent = 'Rp ' + c2Val.toLocaleString('id-ID'); return;
+    }
+    var t0 = performance.now(), dur = 360;
+    function step(now) {
+      var p = Math.min(1, (now - t0) / dur);
+      var v = Math.round(start + (target - start) * (1 - Math.pow(1 - p, 3)));
+      $('c2-val').textContent = 'Rp ' + v.toLocaleString('id-ID');
+      if (p < 1) c2Raf = requestAnimationFrame(step); else c2Val = target;
+    }
+    c2Raf = requestAnimationFrame(step);
+  }
+  $('c2-up').addEventListener('click', function () { runCount(5000000); });
+  $('c2-dn').addEventListener('click', function () { runCount(-2000000); });
+
+  // 3. Line Draw & Bar Grow
+  var c3Line = $('c3-line'), c3Len = c3Line.getTotalLength();
+  $('c3-play').addEventListener('click', function () {
+    document.querySelectorAll('.bar-rect').forEach(function (r) { r.classList.add('zero'); });
+    c3Line.style.transition = 'none';
+    c3Line.style.strokeDasharray = c3Len;
+    c3Line.style.strokeDashoffset = c3Len;
+    void c3Line.getBoundingClientRect();
+    requestAnimationFrame(function () {
+      document.querySelectorAll('.bar-rect').forEach(function (r) { r.classList.remove('zero'); });
+      c3Line.style.transition = 'stroke-dashoffset 420ms cubic-bezier(0.22, 1, 0.36, 1)';
+      c3Line.style.strokeDashoffset = '0';
+    });
+  });
+
+  // 4. Auto-Height
+  $('c4-chk').addEventListener('change', function () { $('c4-acc').classList.toggle('open', this.checked); });
+
+  // 5. Checkbox Draw + Row Exit
+  $('c5-bill').addEventListener('click', function () {
+    var paid = this.classList.toggle('paid');
+    $('c5-sub').textContent = paid ? 'Lunas (centang tergambar SVG)' : 'Ketuk untuk tandai lunas';
+  });
+  $('c5-del-btn').addEventListener('click', function () {
+    var r = $('c5-del-row');
+    r.classList.add('exiting');
+    setTimeout(function () { r.classList.remove('exiting'); }, 900);
+  });
+
+  // 6. Spotlight + Ripple
+  var hero = $('c6-hero');
+  hero.addEventListener('mousemove', function (e) {
+    var r = hero.getBoundingClientRect();
+    hero.style.setProperty('--sx', (e.clientX - r.left) + 'px');
+    hero.style.setProperty('--sy', (e.clientY - r.top) + 'px');
+  });
+  hero.addEventListener('pointerdown', function (e) {
+    var r = hero.getBoundingClientRect();
+    hero.style.setProperty('--sx', (e.clientX - r.left) + 'px');
+    hero.style.setProperty('--sy', (e.clientY - r.top) + 'px');
+    hero.classList.add('flash');
+    setTimeout(function () { hero.classList.remove('flash'); }, 240);
+  });
+  document.addEventListener('pointerdown', function (e) {
+    var b = e.target.closest('[data-rip]');
+    if (!b || document.documentElement.classList.contains('force-reduced')) return;
+    var r = b.getBoundingClientRect(), sz = Math.max(r.width, r.height), s = document.createElement('span');
+    s.className = 'ripple'; s.style.width = s.style.height = sz + 'px';
+    s.style.left = (e.clientX - r.left - sz / 2) + 'px'; s.style.top = (e.clientY - r.top - sz / 2) + 'px';
+    b.appendChild(s); setTimeout(function () { s.remove(); }, 460);
+  });
+
+  // 7. Bottom Sheet Drag-to-Dismiss
+  var bd = $('c7-bd'), pnl = $('c7-panel'), hdl = $('c7-handle'), y0 = null, dy = 0;
+  $('c7-open').addEventListener('click', function () { pnl.style.transform = ''; bd.classList.add('open'); });
+  $('c7-close').addEventListener('click', function () { bd.classList.remove('open'); });
+  bd.addEventListener('click', function (e) { if (e.target === bd) bd.classList.remove('open'); });
+  hdl.addEventListener('pointerdown', function (e) { y0 = e.clientY; dy = 0; pnl.style.transition = 'none'; hdl.setPointerCapture(e.pointerId); });
+  hdl.addEventListener('pointermove', function (e) { if (y0 == null) return; dy = Math.max(0, e.clientY - y0); pnl.style.transform = 'translateY(' + dy + 'px)'; });
+  hdl.addEventListener('pointerup', function () {
+    if (y0 == null) return; pnl.style.transition = '';
+    if (dy > 65) bd.classList.remove('open');
+    pnl.style.transform = ''; y0 = null;
+  });
+
+  // 8. Skeleton Shimmer
+  var skelOn = true;
+  $('c8-tog').addEventListener('click', function () {
+    skelOn = !skelOn;
+    $('c8-stage').innerHTML = skelOn
+      ? '<div class="skel-wrap"><div class="skel-line" style="width:45%"></div><div class="skel-line" style="width:82%;height:22px"></div><div class="skel-line" style="width:65%"></div></div>'
+      : '<div style="padding:8px 10px;border-radius:10px;background:var(--bg-muted);border:1px solid var(--border-subtle)"><div style="font-size:0.70rem;color:var(--text-muted)">Sinkron Selesai</div><div class="mono" style="font-size:1.05rem;font-weight:800">Rp 13.156.725</div></div>';
+    this.textContent = skelOn ? '✓ Selesai Sync (Tampilkan Konten)' : '↻ Simulasi Loading Cloud';
+  });
+
+  // 9. Error Shake
+  $('c9-btn').addEventListener('click', function () {
+    var inp = $('c9-inp');
+    inp.classList.remove('shake'); void inp.offsetWidth;
+    if (!inp.value.trim()) inp.classList.add('shake');
+  });
+
+  // 10. List Stagger
+  $('c10-play').addEventListener('click', function () {
+    $('c10-list').querySelectorAll('.stag-row').forEach(function (el) {
+      el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
+    });
+  });
+})();
+</script>
+</body>
+</html>

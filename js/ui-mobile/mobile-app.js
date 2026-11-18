@@ -839,18 +839,58 @@ function renderMobCashflowSvg(P, curBal) {
     if (tip) tip.classList.remove('visible');
   }
   if (hit) {
+    svg.style.touchAction = 'pan-y';
+    hit.style.touchAction = 'pan-y';
+    var mTState = { near: false, locked: null, sx: 0, sy: 0 };
+    var isMobNearLine = function (cx, cy) {
+      if (!coords.length) return false;
+      var sR = svg.getBoundingClientRect(),
+        sW = sR.width || W,
+        sH = sR.height || H,
+        svgX = Math.max(coords[0].x, Math.min(coords[coords.length - 1].x, ((cx - sR.left) / sW) * W)),
+        svgY = ((cy - sR.top) / sH) * H,
+        nearN = coords.reduce(function (b, c) { return Math.abs(c.x - svgX) < Math.abs(b.x - svgX) ? c : b; }, coords[0]),
+        tPt = Math.abs(nearN.x - svgX) <= 12 || !samples.length
+          ? nearN
+          : samples.reduce(function (b, s) { return Math.abs(s.x - svgX) < Math.abs(b.x - svgX) ? s : b; }, samples[0]);
+      return Math.abs(svgY - tPt.y) * (sH / H) <= 24;
+    };
     hit.addEventListener('mousemove', function (e) { inspectX(e.clientX); });
-    hit.addEventListener('pointerdown', function (e) { inspectX(e.clientX); });
-    hit.addEventListener('pointermove', function (e) { if (e.pointerType !== 'mouse' || e.buttons) inspectX(e.clientX); });
+    hit.addEventListener('pointerdown', function (e) { if (e.pointerType === 'mouse') inspectX(e.clientX); });
+    hit.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse' && e.buttons) inspectX(e.clientX); });
     hit.addEventListener('touchstart', function (e) {
-      if (e.touches && e.touches[0]) { if (e.cancelable) e.preventDefault(); inspectX(e.touches[0].clientX); }
-    }, { passive: false });
+      if (!e.touches || !e.touches[0]) return;
+      var t0 = e.touches[0];
+      mTState.sx = t0.clientX;
+      mTState.sy = t0.clientY;
+      mTState.locked = null;
+      mTState.near = isMobNearLine(t0.clientX, t0.clientY);
+      if (mTState.near) inspectX(t0.clientX);
+    }, { passive: true });
     hit.addEventListener('touchmove', function (e) {
-      if (e.touches && e.touches[0]) { if (e.cancelable) e.preventDefault(); inspectX(e.touches[0].clientX); }
+      if (!e.touches || !e.touches[0]) return;
+      var t0 = e.touches[0];
+      if (typeof t0.clientY !== 'number') {
+        if (e.cancelable) e.preventDefault();
+        inspectX(t0.clientX);
+        return;
+      }
+      if (!mTState.near) return;
+      var dx = Math.abs(t0.clientX - mTState.sx),
+        dy = Math.abs(t0.clientY - mTState.sy);
+      if (mTState.locked === null) {
+        if (dx < 8 && dy < 8) return;
+        if (dy > dx) { mTState.locked = 'v'; mTState.near = false; hideMobCfHUD(); return; }
+        mTState.locked = 'h';
+      }
+      if (mTState.locked === 'h') {
+        if (e.cancelable) e.preventDefault();
+        inspectX(t0.clientX);
+      }
     }, { passive: false });
-    hit.addEventListener('touchend', hideMobCfHUD);
-    hit.addEventListener('touchcancel', hideMobCfHUD);
-    hit.addEventListener('pointerup', function (e) { if (e.pointerType !== 'mouse') hideMobCfHUD(); });
+    hit.addEventListener('touchend', function () { mTState.near = false; mTState.locked = null; hideMobCfHUD(); });
+    hit.addEventListener('touchcancel', function () { mTState.near = false; mTState.locked = null; hideMobCfHUD(); });
+    hit.addEventListener('pointerup', function (e) { if (e.pointerType === 'mouse') hideMobCfHUD(); });
     hit.addEventListener('mouseleave', hideMobCfHUD);
   }
 }
@@ -1364,7 +1404,7 @@ function renderMobSim() {
   if (svg && A.rows.length) {
     var W = 340, H = 185, pL = 38, pR = 12, pT = 14, pB = 22, n = A.rows.length;
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-    svg.style.touchAction = 'none';
+    svg.style.touchAction = 'pan-y';
     var vals = A.rows.map(function (r) { return +r.ak || 0; }).concat(B.rows.map(function (r) { return +r.ak || 0; }), [0]);
     var minV = Math.min.apply(null, vals) - 200000, maxV = Math.max.apply(null, vals) + 200000;
     if (!isFinite(minV) || !isFinite(maxV)) { minV = -200000; maxV = 200000; }

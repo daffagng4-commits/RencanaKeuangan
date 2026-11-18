@@ -129,10 +129,82 @@
 
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --transition-fast: 150ms var(--ease-out);
   --transition-med: 240ms var(--ease-out);
+
+  /* Animation Durations & Delays (Phase 1 Tokens) */
+  --dur-pill: 450ms;
+  --dur-pill-shadow: 650ms;
+  --delay-pill-shadow: 80ms;
+  --dur-pill-text: 150ms;
+  --dur-card-enter: 420ms;
+  --dur-card-enter-apk: 280ms;
+  --stagger-card: 50ms;
+  --dur-line-draw: 900ms;
+  --delay-line-draw: 150ms;
+  --dur-line-draw-apk: 700ms;
+  --dur-chart-fill: 800ms;
+  --dur-count-hero: 1400ms;
+  --dur-count-kpi: 1000ms;
+  --dur-count-hero-apk: 800ms;
+  --dur-sweep: 600ms;
+  --dur-bar-fade: 300ms;
+  --dur-ripple: 450ms;
+  --dur-press: 120ms;
+  --dur-row-exit: 160ms;
+  --dur-row-collapse: 220ms;
+  --dur-sheet-close: 240ms;
+  --dur-sheet-snap: 300ms;
+  --dur-shimmer: 1400ms;
+  --dur-skeleton-fade: 200ms;
+  --dur-shake: 360ms;
+  --dur-error-border: 120ms;
+  --dur-list-item: 360ms;
+  --stagger-list: 40ms;
+  --dur-list-item-apk: 280ms;
+  --stagger-list-apk: 30ms;
+  --dur-check-fill: 120ms;
+  --dur-check-draw: 220ms;
+  --dur-check-pop: 240ms;
+  --dur-row-flash: 600ms;
+  --dur-dd-open: 160ms;
+  --dur-dd-close: 100ms;
+  --dur-dd-highlight: 140ms;
+  --dur-dd-active: 100ms;
+  --dur-dialog-backdrop: 200ms;
+  --dur-dialog-open: 240ms;
+  --dur-dialog-close: 150ms;
+  --dur-cat-pop: 240ms;
+  --dur-cat-bg: 150ms;
+  --dur-cat-check: 180ms;
+  --dur-jar-highlight: 200ms;
+  --dur-sidebar: 280ms;
+  --dur-sidebar-label-out: 100ms;
+  --dur-sidebar-label-in: 160ms;
+  --delay-sidebar-label-in: 120ms;
+  --dur-nav-icon: 300ms;
+  --dur-nav-pill: 280ms;
+  --dur-nav-label: 150ms;
+  --dur-bell: 500ms;
+  --dur-badge-pop: 240ms;
+  --dur-icon-morph: 240ms;
+  --dur-chevron: 280ms;
+  --dur-scroll-reveal: 400ms;
+  --dur-topbar-shadow: 160ms;
+  --dur-btt-fade: 200ms;
+  --dur-palette-spin: 300ms;
+  --dur-swatch-pop: 240ms;
+  --stagger-swatch: 30ms;
+  --dur-jar-wave: 3200ms;
+  --dur-theme-desktop: 500ms;
+  --dur-theme-apk: 350ms;
+  --dur-theme-fallback: 300ms;
+
   --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
-  --tap: 40px;
+  --tap: 44px;
 
   --sidebar-w: 248px;
   --sidebar-w-collapsed: 74px;
@@ -295,7 +367,89 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
-body, input, button, select, textarea, table, kbd, code { font-feature-settings: "tnum" 1; }
+body, input, button, select, textarea, table, kbd, code {
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0.001ms;
+    --transition-med: 0.001ms;
+    --dur-pill: 0.001ms;
+    --dur-pill-shadow: 0.001ms;
+    --delay-pill-shadow: 0ms;
+    --dur-pill-text: 0.001ms;
+    --dur-card-enter: 0.001ms;
+    --dur-card-enter-apk: 0.001ms;
+    --stagger-card: 0ms;
+    --dur-line-draw: 0.001ms;
+    --delay-line-draw: 0ms;
+    --dur-line-draw-apk: 0.001ms;
+    --dur-chart-fill: 0.001ms;
+    --dur-count-hero: 0.001ms;
+    --dur-count-kpi: 0.001ms;
+    --dur-count-hero-apk: 0.001ms;
+    --dur-sweep: 0.001ms;
+    --dur-bar-fade: 0.001ms;
+    --dur-ripple: 0.001ms;
+    --dur-press: 0.001ms;
+    --dur-row-exit: 0.001ms;
+    --dur-row-collapse: 0.001ms;
+    --dur-sheet-close: 0.001ms;
+    --dur-sheet-snap: 0.001ms;
+    --dur-shimmer: 0.001ms;
+    --dur-skeleton-fade: 0.001ms;
+    --dur-shake: 0.001ms;
+    --dur-error-border: 0.001ms;
+    --dur-list-item: 0.001ms;
+    --stagger-list: 0ms;
+    --dur-list-item-apk: 0.001ms;
+    --stagger-list-apk: 0ms;
+    --dur-check-fill: 0.001ms;
+    --dur-check-draw: 0.001ms;
+    --dur-check-pop: 0.001ms;
+    --dur-row-flash: 0.001ms;
+    --dur-dd-open: 0.001ms;
+    --dur-dd-close: 0.001ms;
+    --dur-dd-highlight: 0.001ms;
+    --dur-dd-active: 0.001ms;
+    --dur-dialog-backdrop: 0.001ms;
+    --dur-dialog-open: 0.001ms;
+    --dur-dialog-close: 0.001ms;
+    --dur-cat-pop: 0.001ms;
+    --dur-cat-bg: 0.001ms;
+    --dur-cat-check: 0.001ms;
+    --dur-jar-highlight: 0.001ms;
+    --dur-sidebar: 0.001ms;
+    --dur-sidebar-label-out: 0.001ms;
+    --dur-sidebar-label-in: 0.001ms;
+    --delay-sidebar-label-in: 0ms;
+    --dur-nav-icon: 0.001ms;
+    --dur-nav-pill: 0.001ms;
+    --dur-nav-label: 0.001ms;
+    --dur-bell: 0.001ms;
+    --dur-badge-pop: 0.001ms;
+    --dur-icon-morph: 0.001ms;
+    --dur-chevron: 0.001ms;
+    --dur-scroll-reveal: 0.001ms;
+    --dur-topbar-shadow: 0.001ms;
+    --dur-btt-fade: 0.001ms;
+    --dur-palette-spin: 0.001ms;
+    --dur-swatch-pop: 0.001ms;
+    --stagger-swatch: 0ms;
+    --dur-jar-wave: 0.001ms;
+    --dur-theme-desktop: 0.001ms;
+    --dur-theme-apk: 0.001ms;
+    --dur-theme-fallback: 0.001ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 ::selection { background: color-mix(in srgb, var(--ac) 22%, transparent); }
 
 /* ============================================================
@@ -430,15 +584,22 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       user-select: none;
       transition: filter var(--transition-fast);
     }
-    body.privacy-on #browser-shell .pv:hover {
+    @media (hover: hover) and (pointer: fine) {
+  body.privacy-on #browser-shell .pv:hover {
       filter: blur(3px);
     }
+}
 
     @media (prefers-reduced-motion: reduce) {
       #browser-shell *, #browser-shell *::before, #browser-shell *::after {
-        animation-duration: 0.01ms !important;
+        animation-duration: 0.001ms !important;
         animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
+        transition-duration: 0.001ms !important;
+      }
+      #browser-shell .jar-wave-anim,
+      #browser-shell .jar-wave-anim-slow,
+      #browser-shell .pulse-ring {
+        animation: none !important;
       }
     }
 
@@ -493,9 +654,11 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       transition: background var(--transition-fast);
     }
 
-    #browser-shell .sb-av:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .sb-av:hover {
       background: var(--bg-subtle);
     }
+}
 
     #browser-shell .av-circle {
       width: 34px;
@@ -583,10 +746,12 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       transition: background var(--transition-fast), color var(--transition-fast);
     }
 
-    #browser-shell .collapse-btn:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .collapse-btn:hover {
       background: var(--bg-subtle);
       color: var(--text-primary);
     }
+}
 
     body.sidebar-collapsed #browser-shell .collapse-btn svg {
       transform: rotate(180deg);
@@ -617,10 +782,12 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       width: 100%;
     }
 
-    #browser-shell .nav-btn:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .nav-btn:hover {
       background: var(--bg-subtle);
       color: var(--text-primary);
     }
+}
 
     #browser-shell .nav-btn.active {
       background: var(--accent-soft);
@@ -747,9 +914,11 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       white-space: nowrap;
     }
 
-    #browser-shell .yp:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .yp:hover {
       color: var(--text-primary);
     }
+}
 
     #browser-shell .yp.on {
       background: var(--bg-surface);
@@ -766,9 +935,11 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       transition: background var(--transition-fast);
     }
 
-    #browser-shell .yp-del:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .yp-del:hover {
       background: var(--crimson-soft);
     }
+}
 
     #browser-shell .yp-trip {
       display: inline-flex;
@@ -785,10 +956,12 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       transition: all var(--transition-fast);
     }
 
-    #browser-shell .yp-trip:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .yp-trip:hover {
       border-color: var(--border-strong);
       color: var(--text-primary);
     }
+}
 
     #browser-shell .yp-trip.on {
       background: var(--accent-soft);
@@ -825,11 +998,13 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       position: relative;
     }
 
-    #browser-shell .topbar-btn:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .topbar-btn:hover {
       background: var(--bg-subtle);
       color: var(--text-primary);
       border-color: var(--border-strong);
     }
+}
 
     #browser-shell .topbar-btn.on {
       background: var(--accent-soft);
@@ -846,11 +1021,13 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       background: var(--accent-soft);
     }
 
-    #browser-shell .yr-plus:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .yr-plus:hover {
       background: var(--accent);
       color: #fff;
       border-color: var(--accent);
     }
+}
 
     #browser-shell .acct-btn {
       padding: 0 4px;
@@ -859,9 +1036,11 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       box-shadow: none;
     }
 
-    #browser-shell .acct-btn:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .acct-btn:hover {
       background: transparent;
     }
+}
 
     #browser-shell .tb-more {
       width: 30px;
@@ -1034,7 +1213,9 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       white-space: nowrap;
     }
 
-    #browser-shell .seg-btn:hover { color: var(--text-primary); }
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .seg-btn:hover { color: var(--text-primary); }
+}
 
     #browser-shell .seg-btn.active,
     #browser-shell .seg-btn[aria-pressed="true"] {
@@ -1076,20 +1257,26 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       color: #fff;
       box-shadow: 0 2px 8px rgba(15, 82, 186, 0.22);
     }
-    #browser-shell .btn-primary:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .btn-primary:hover {
       background: var(--accent-hover);
       transform: translateY(-1px);
     }
+}
 
     #browser-shell .btn-secondary {
       background: var(--bg-surface);
       border-color: var(--border-strong);
       color: var(--text-primary);
     }
-    #browser-shell .btn-secondary:hover { background: var(--bg-subtle); }
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .btn-secondary:hover { background: var(--bg-subtle); }
+}
 
     #browser-shell .btn-ghost { color: var(--text-secondary); }
-    #browser-shell .btn-ghost:hover { background: var(--bg-subtle); color: var(--text-primary); }
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .btn-ghost:hover { background: var(--bg-subtle); color: var(--text-primary); }
+}
 
     #browser-shell .btn-emerald {
       background: var(--emerald-soft);
@@ -1186,10 +1373,12 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       transition: all var(--transition-fast);
     }
 
-    #browser-shell .cat-pill-opt:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .cat-pill-opt:hover {
       background: var(--bg-subtle);
       border-color: var(--border-strong);
     }
+}
 
     #browser-shell .cat-pill-opt.selected {
       background: var(--accent-soft);
@@ -1298,15 +1487,16 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
 
     @keyframes jarWaveShift {
       0% { transform: translateX(0); }
-      100% { transform: translateX(-110px); }
+      50% { transform: translateX(-55px); }
+      100% { transform: translateX(0); }
     }
 
     #browser-shell .jar-wave-anim {
-      animation: jarWaveShift 3.2s linear infinite;
+      animation: jarWaveShift var(--dur-jar-wave, 3200ms) var(--ease-in-out) infinite;
     }
 
     #browser-shell .jar-wave-anim-slow {
-      animation: jarWaveShift 5.2s linear infinite reverse;
+      animation: jarWaveShift var(--dur-jar-wave, 3200ms) var(--ease-in-out) infinite reverse;
     }
 
     #browser-shell #svg-bar-compare .bar-month-bg {
@@ -1321,27 +1511,41 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       stroke: var(--accent-border);
     }
 
-    #browser-shell #svg-bar-compare .bar-col:hover .bar-month-bg,
     #browser-shell #svg-bar-compare .bar-col.is-hovered .bar-month-bg {
       fill: rgba(15, 23, 42, 0.24);
       stroke: rgba(15, 23, 42, 0.55);
     }
+@media (hover: hover) and (pointer: fine) {
+  #browser-shell #svg-bar-compare .bar-col:hover .bar-month-bg {
+      fill: rgba(15, 23, 42, 0.24);
+      stroke: rgba(15, 23, 42, 0.55);
+    }
+}
 
-    [data-theme="dark"] #browser-shell #svg-bar-compare .bar-col:hover .bar-month-bg,
     [data-theme="dark"] #browser-shell #svg-bar-compare .bar-col.is-hovered .bar-month-bg {
       fill: rgba(0, 0, 0, 0.65);
       stroke: rgba(255, 255, 255, 0.28);
     }
+@media (hover: hover) and (pointer: fine) {
+  [data-theme="dark"] #browser-shell #svg-bar-compare .bar-col:hover .bar-month-bg {
+      fill: rgba(0, 0, 0, 0.65);
+      stroke: rgba(255, 255, 255, 0.28);
+    }
+}
 
-    #browser-shell #svg-bar-compare:hover .bar-col:not(:hover) {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell #svg-bar-compare:hover .bar-col:not(:hover) {
       opacity: 0.72;
       transition: opacity 150ms ease;
     }
+}
 
-    #browser-shell #svg-bar-compare .bar-col:hover .bar-month-lbl {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell #svg-bar-compare .bar-col:hover .bar-month-lbl {
       fill: var(--text-primary);
       font-weight: 800;
     }
+}
 
     #browser-shell .where-layout {
       display: grid;
@@ -1425,11 +1629,16 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       min-width: 0;
     }
 
-    #browser-shell .simple-row:hover,
     #browser-shell .simple-row.active {
       background: var(--accent-soft);
       border-color: var(--accent-border);
     }
+@media (hover: hover) and (pointer: fine) {
+  #browser-shell .simple-row:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent-border);
+    }
+}
 
     #browser-shell .simple-row.dim {
       opacity: 0.42;
@@ -1547,10 +1756,12 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       text-align: left;
     }
 
-    #browser-shell .mselect-trigger:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .mselect-trigger:hover {
       background: var(--bg-muted-row);
       border-color: var(--accent);
     }
+}
 
     #browser-shell .mselect.open .mselect-trigger,
     #browser-shell .mselect-trigger:focus-visible {
@@ -1653,9 +1864,11 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       transition: background 110ms ease, color 110ms ease;
     }
 
-    #browser-shell .mselect-opt:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .mselect-opt:hover {
       background: var(--bg-muted-row);
     }
+}
 
     #browser-shell .mselect-opt.active {
       background: var(--accent-soft);
@@ -1701,11 +1914,16 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
     }
 
-    #browser-shell .cal-trigger-btn:hover,
     #browser-shell .cal-trigger-btn.open {
       border-color: var(--accent);
       background: var(--bg-muted-row);
     }
+@media (hover: hover) and (pointer: fine) {
+  #browser-shell .cal-trigger-btn:hover {
+      border-color: var(--accent);
+      background: var(--bg-muted-row);
+    }
+}
 
     #browser-shell .cal-range-popover {
       width: 312px;
@@ -1733,12 +1951,18 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       transition: all 120ms ease;
     }
 
-    #browser-shell .cal-preset-pill:hover,
     #browser-shell .cal-preset-pill.active {
       background: var(--accent-soft);
       color: var(--accent);
       border-color: var(--accent);
     }
+@media (hover: hover) and (pointer: fine) {
+  #browser-shell .cal-preset-pill:hover {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+}
 
     #browser-shell .cal-day.in-range {
       background: var(--accent-soft);
@@ -1848,10 +2072,12 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       transition: border-color var(--transition-fast), background var(--transition-fast);
     }
 
-    #browser-shell .upcoming-item:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .upcoming-item:hover {
       border-color: var(--border-strong);
       background: var(--bg-subtle);
     }
+}
 
     #browser-shell .upcoming-left {
       display: flex;
@@ -1906,7 +2132,9 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
     }
 
     #browser-shell .flow-row-clickable { cursor: pointer; }
-    #browser-shell .flow-row-clickable:hover { background: var(--bg-subtle); }
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .flow-row-clickable:hover { background: var(--bg-subtle); }
+}
     #browser-shell .flow-drawer { background: var(--bg-muted-row); }
 
     #browser-shell .tx-day-group {
@@ -2175,10 +2403,12 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       transition: transform var(--transition-fast), box-shadow var(--transition-fast);
     }
 
-    #browser-shell .dt-chip:hover {
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .dt-chip:hover {
       transform: translateY(-1px);
       box-shadow: var(--shadow-sm);
     }
+}
 
     #browser-shell .dt-chip.paid { background: var(--accent); color: #fff; border-color: var(--accent); }
     #browser-shell .dt-chip.paid.done-row { background: var(--emerald); border-color: var(--emerald); }
@@ -2230,7 +2460,9 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
     #browser-shell .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
     #browser-shell .cal-dow { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); padding: 4px 0; }
     #browser-shell .cal-day { height: 30px; border-radius: 7px; font-size: 0.78rem; font-family: var(--font-mono); display: grid; place-items: center; }
-    #browser-shell .cal-day:hover { background: var(--bg-subtle); }
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .cal-day:hover { background: var(--bg-subtle); }
+}
     #browser-shell .cal-day.today { border: 1px solid var(--accent); color: var(--accent-ink); font-weight: 700; }
     #browser-shell .cal-day.selected { background: var(--accent); color: #fff; font-weight: 700; }
     #browser-shell .cal-presets { display: flex; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border-subtle); flex-wrap: wrap; }
@@ -2336,7 +2568,9 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
       text-decoration: none;
     }
 
-    #browser-shell .alat-item:hover { background: var(--bg-subtle); }
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .alat-item:hover { background: var(--bg-subtle); }
+}
     #browser-shell .alat-sep { height: 1px; background: var(--border-subtle); margin: 5px 4px; }
     #browser-shell .alat-sec-h { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); padding: 4px 10px 2px; }
 
@@ -2357,7 +2591,9 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
 
     #browser-shell .chip-pop-head { padding: 6px 8px 8px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 6px; }
     #browser-shell .chip-pop-btn { width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 9px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; text-align: left; }
-    #browser-shell .chip-pop-btn:hover { background: var(--bg-subtle); }
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .chip-pop-btn:hover { background: var(--bg-subtle); }
+}
     #browser-shell .seg.trip-subtabs { flex-wrap: wrap; max-width: 100%; }
 
     #browser-shell .modal-backdrop {
@@ -2416,7 +2652,9 @@ body:not([data-shell="mobile-app"]) #mobile-app-shell {
 
     #browser-shell .scenario-grid-6 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
     #browser-shell .scen-card { border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px; text-align: left; background: var(--bg-muted-row); transition: all var(--transition-fast); }
-    #browser-shell .scen-card:hover { border-color: var(--accent); background: var(--bg-surface); }
+    @media (hover: hover) and (pointer: fine) {
+  #browser-shell .scen-card:hover { border-color: var(--accent); background: var(--bg-surface); }
+}
     #browser-shell .scen-card.active { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
 
     #browser-shell .mobile-bottom-nav { display: none; }
@@ -2547,9 +2785,11 @@ body.privacy-on #browser-shell .pv {
   user-select: none;
   transition: filter var(--transition-fast);
 }
-body.privacy-mode #browser-shell .pv:hover,
-body.privacy-on #browser-shell .pv:hover {
+@media (hover: hover) and (pointer: fine) {
+  body.privacy-mode #browser-shell .pv:hover,
+  body.privacy-on #browser-shell .pv:hover {
   filter: blur(3px);
+}
 }
 
 #browser-shell .rank-track {
@@ -2681,7 +2921,9 @@ body[data-shell="mobile-app"] #mobile-app-shell .pp-btn {
   transition: all 140ms ease;
   white-space: nowrap;
 }
-body[data-shell="mobile-app"] #mobile-app-shell .pp-btn:hover { background: var(--bg-subtle); color: var(--text-primary); }
+@media (hover: hover) and (pointer: fine) {
+  body[data-shell="mobile-app"] #mobile-app-shell .pp-btn:hover { background: var(--bg-subtle); color: var(--text-primary); }
+}
 body[data-shell="mobile-app"] #mobile-app-shell .pp-btn.active { background: var(--accent); color: #fff; box-shadow: 0 2px 8px rgba(15, 82, 186, 0.28); }
 body[data-shell="mobile-app"] #mobile-app-shell .pp-div { width: 1px; height: 18px; background: var(--border-strong); margin: 0 2px; }
 
@@ -3281,9 +3523,13 @@ body[data-shell="mobile-app"] #mobile-app-shell #m-svg-bar .bar-col.is-hovered .
 body[data-shell="mobile-app"] #mobile-app-shell #svg-bar-compare .bar-col.is-hovered .bar-month-lbl { fill: var(--text-primary); font-weight: 800; }
 
 /* Liquid Jar Waves & Categories */
-@keyframes jarWaveShift { 0% { transform: translateX(0); } 100% { transform: translateX(-110px); } }
-body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim { animation: jarWaveShift 3.2s linear infinite; }
-body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim-slow { animation: jarWaveShift 5.2s linear infinite reverse; }
+@keyframes jarWaveShift {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(-55px); }
+  100% { transform: translateX(0); }
+}
+body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim { animation: jarWaveShift var(--dur-jar-wave, 3200ms) var(--ease-in-out) infinite; }
+body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim-slow { animation: jarWaveShift var(--dur-jar-wave, 3200ms) var(--ease-in-out) infinite reverse; }
 body[data-shell="mobile-app"] #mobile-app-shell .jar-band { cursor: pointer; opacity: 0.92; transition: opacity 160ms ease, filter 160ms ease; }
 body[data-shell="mobile-app"] #mobile-app-shell .jar-band.lit { opacity: 1; filter: brightness(1.12); }
 body[data-shell="mobile-app"] #mobile-app-shell .jar-band.dim { opacity: 0.18; }
@@ -3402,7 +3648,9 @@ body[data-shell="mobile-app"] #mobile-app-shell .mselect-opt {
   font-weight: 500;
   text-align: left;
 }
-body[data-shell="mobile-app"] #mobile-app-shell .mselect-opt:hover { background: var(--bg-subtle); }
+@media (hover: hover) and (pointer: fine) {
+  body[data-shell="mobile-app"] #mobile-app-shell .mselect-opt:hover { background: var(--bg-subtle); }
+}
 body[data-shell="mobile-app"] #mobile-app-shell .mselect-opt.active { background: var(--accent-soft); color: var(--accent-ink); font-weight: 700; }
 
 /* Modern Calendars */
@@ -3440,7 +3688,9 @@ body[data-shell="mobile-app"] #mobile-app-shell .cal-head { display: flex; align
 body[data-shell="mobile-app"] #mobile-app-shell .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
 body[data-shell="mobile-app"] #mobile-app-shell .cal-dow { font-size: 0.66rem; font-weight: 700; color: var(--text-muted); padding: 3px 0; }
 body[data-shell="mobile-app"] #mobile-app-shell .cal-day { height: 29px; border-radius: 7px; font-size: 0.75rem; font-family: var(--font-mono); display: grid; place-items: center; }
-body[data-shell="mobile-app"] #mobile-app-shell .cal-day:hover { background: var(--bg-subtle); }
+@media (hover: hover) and (pointer: fine) {
+  body[data-shell="mobile-app"] #mobile-app-shell .cal-day:hover { background: var(--bg-subtle); }
+}
 body[data-shell="mobile-app"] #mobile-app-shell .cal-day.today { border: 1px solid var(--accent); color: var(--accent-ink); font-weight: 700; }
 body[data-shell="mobile-app"] #mobile-app-shell .cal-day.in-range { background: var(--accent-soft); color: var(--accent-ink); font-weight: 700; }
 body[data-shell="mobile-app"] #mobile-app-shell .cal-day.range-edge,
@@ -3899,6 +4149,27 @@ body[data-shell="mobile-app"] #mobile-app-shell .rep-table td.r { text-align: ri
 body[data-shell="mobile-app"] #mobile-app-shell .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 11px; border-radius: 12px; background: var(--bg-muted-row); font-size: 0.79rem; }
 
 body[data-shell="mobile-app"] #mobile-app-shell .sec-hidden { display: none !important; }
+
+body[data-shell="mobile-app"] #mobile-app-shell .chart-stage,
+body[data-shell="mobile-app"] #mobile-app-shell #m-svg-cf,
+body[data-shell="mobile-app"] #mobile-app-shell #m-svg-sim-chart {
+  touch-action: pan-y;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-shell="mobile-app"] #mobile-app-shell *,
+  body[data-shell="mobile-app"] #mobile-app-shell *::before,
+  body[data-shell="mobile-app"] #mobile-app-shell *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim,
+  body[data-shell="mobile-app"] #mobile-app-shell .jar-wave-anim-slow,
+  body[data-shell="mobile-app"] #mobile-app-shell .jar-bubble {
+    animation: none !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -4099,7 +4370,6 @@ body[data-shell="mobile-app"] #mobile-app-shell .sec-hidden { display: none !imp
             <div class="card-header">
               <div>
                 <h2 class="card-title">Ke Mana Uangnya Pergi</h2>
-                <p class="card-sub" id="where-sub-lbl">Total keluar Rp 0 · Sepanjang 2026</p>
               </div>
               <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                 <div class="seg" role="group" aria-label="Periode Ke Mana Uangnya Pergi">
@@ -18615,30 +18885,77 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
       svg.style.touchAction = 'pan-x pan-y';
       hit.style.touchAction = 'pan-x pan-y';
     } else {
-      svg.style.touchAction = 'none';
-      hit.style.touchAction = 'none';
-      hit.addEventListener('pointerdown', function (e) { inspectFromX(e.clientX); });
+      svg.style.touchAction = 'pan-y';
+      hit.style.touchAction = 'pan-y';
+      var tState = { near: false, locked: null, sx: 0, sy: 0 };
+      var isNearLine = function (cx, cy) {
+        if (!coords.length) return false;
+        var sR = svg.getBoundingClientRect(),
+          sW = sR.width || W,
+          sH = sR.height || H,
+          svgX = Math.max(coords[0].x, Math.min(coords[coords.length - 1].x, ((cx - sR.left) / sW) * W)),
+          svgY = ((cy - sR.top) / sH) * H,
+          nearNode = coords.reduce(function (b, c) { return Math.abs(c.x - svgX) < Math.abs(b.x - svgX) ? c : b; }, coords[0]),
+          pt = Math.abs(nearNode.x - svgX) <= 12 || !samples.length
+            ? nearNode
+            : samples.reduce(function (b, s) { return Math.abs(s.x - svgX) < Math.abs(b.x - svgX) ? s : b; }, samples[0]);
+        return Math.abs(svgY - pt.y) * (sH / H) <= 24;
+      };
+      hit.addEventListener('pointerdown', function (e) {
+        if (e.pointerType === 'mouse') inspectFromX(e.clientX);
+      });
       hit.addEventListener('pointermove', function (e) {
-        if (e.pointerType !== 'mouse' || e.buttons) inspectFromX(e.clientX);
+        if (e.pointerType === 'mouse' && e.buttons) inspectFromX(e.clientX);
       });
       hit.addEventListener('touchstart', function (e) {
-        if (e.touches && e.touches[0]) {
-          if (e.cancelable) e.preventDefault();
-          inspectFromX(e.touches[0].clientX);
-        }
-      }, { passive: false });
+        if (!e.touches || !e.touches[0]) return;
+        var t0 = e.touches[0];
+        tState.sx = t0.clientX;
+        tState.sy = t0.clientY;
+        tState.locked = null;
+        tState.near = isNearLine(t0.clientX, t0.clientY);
+        if (tState.near) inspectFromX(t0.clientX);
+      }, { passive: true });
       hit.addEventListener('touchmove', function (e) {
-        if (e.touches && e.touches[0]) {
+        if (!e.touches || !e.touches[0]) return;
+        var t0 = e.touches[0];
+        if (typeof t0.clientY !== 'number') {
           if (e.cancelable) e.preventDefault();
-          inspectFromX(e.touches[0].clientX);
+          inspectFromX(t0.clientX);
+          return;
+        }
+        if (!tState.near) return;
+        var dx = Math.abs(t0.clientX - tState.sx),
+          dy = Math.abs(t0.clientY - tState.sy);
+        if (tState.locked === null) {
+          if (dx < 8 && dy < 8) return;
+          if (dy > dx) {
+            tState.locked = 'v';
+            tState.near = false;
+            var piV = getPin();
+            if (piV === null || !coords[piV]) hideHUD();
+            else showPointHUD(coords[piV]);
+            return;
+          }
+          tState.locked = 'h';
+        }
+        if (tState.locked === 'h') {
+          if (e.cancelable) e.preventDefault();
+          inspectFromX(t0.clientX);
         }
       }, { passive: false });
       hit.addEventListener('touchend', function () {
+        tState.near = false;
+        tState.locked = null;
         var pi = getPin();
         if (pi === null || !coords[pi]) hideHUD();
         else showPointHUD(coords[pi]);
       });
-      hit.addEventListener('touchcancel', function () { hideHUD(); });
+      hit.addEventListener('touchcancel', function () {
+        tState.near = false;
+        tState.locked = null;
+        hideHUD();
+      });
     }
     hit.onmousemove = function (e) { inspectFromX(e.clientX); };
     hit.onmouseleave = function () {
@@ -18872,7 +19189,6 @@ function renderFullWaterJarSvg(rows, grand) {
         '<path d="' + b.crestD + '" fill="none" stroke="rgba(255,255,255,0.72)" stroke-width="1.5" style="pointer-events:none;"/>';
     }).join('') +
     (bands.length ? '<path class="jar-wave-anim" d="' + scrollWave(yTop + 2, 10, 32) + '" fill="#FFFFFF" opacity="0.28" style="pointer-events:none;"/>' : '') +
-    (bands.length ? '<path class="jar-wave-anim-slow" d="' + scrollWave(yBot - chH * 0.42, 8.5, 24) + '" fill="#FFFFFF" opacity="0.14" style="pointer-events:none;"/>' : '') +
     '</g>' +
     '<rect x="' + (xL + 11) + '" y="' + (yChamberTop + 16) + '" width="13" height="' + (chamberH - 32) + '" rx="12" fill="#FFFFFF" opacity="0.26" style="pointer-events:none;"/>' +
     ticks +
@@ -18993,7 +19309,6 @@ function renderWhereMoney() {
   var cats = Object.keys(catMap).map(function (k) { return catMap[k]; }).sort(function (a, b) { return b.total - a.total; });
   window._brWhereDs = { rows: ds.rows, cats: cats, grand: grand };
   if ($('top5-total-badge')) $('top5-total-badge').textContent = rp(grand);
-  if ($('where-sub-lbl')) $('where-sub-lbl').textContent = 'Total ' + (BR_STATE.whereDir === 'out' ? 'keluar' : 'masuk') + ' ' + rp(grand) + ' · ' + ds.label;
   var jarStage = $('jar-main-stage');
   if (jarStage) {
     jarStage.innerHTML = renderFullWaterJarSvg(ds.rows, grand);
@@ -21771,18 +22086,58 @@ function renderMobCashflowSvg(P, curBal) {
     if (tip) tip.classList.remove('visible');
   }
   if (hit) {
+    svg.style.touchAction = 'pan-y';
+    hit.style.touchAction = 'pan-y';
+    var mTState = { near: false, locked: null, sx: 0, sy: 0 };
+    var isMobNearLine = function (cx, cy) {
+      if (!coords.length) return false;
+      var sR = svg.getBoundingClientRect(),
+        sW = sR.width || W,
+        sH = sR.height || H,
+        svgX = Math.max(coords[0].x, Math.min(coords[coords.length - 1].x, ((cx - sR.left) / sW) * W)),
+        svgY = ((cy - sR.top) / sH) * H,
+        nearN = coords.reduce(function (b, c) { return Math.abs(c.x - svgX) < Math.abs(b.x - svgX) ? c : b; }, coords[0]),
+        tPt = Math.abs(nearN.x - svgX) <= 12 || !samples.length
+          ? nearN
+          : samples.reduce(function (b, s) { return Math.abs(s.x - svgX) < Math.abs(b.x - svgX) ? s : b; }, samples[0]);
+      return Math.abs(svgY - tPt.y) * (sH / H) <= 24;
+    };
     hit.addEventListener('mousemove', function (e) { inspectX(e.clientX); });
-    hit.addEventListener('pointerdown', function (e) { inspectX(e.clientX); });
-    hit.addEventListener('pointermove', function (e) { if (e.pointerType !== 'mouse' || e.buttons) inspectX(e.clientX); });
+    hit.addEventListener('pointerdown', function (e) { if (e.pointerType === 'mouse') inspectX(e.clientX); });
+    hit.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse' && e.buttons) inspectX(e.clientX); });
     hit.addEventListener('touchstart', function (e) {
-      if (e.touches && e.touches[0]) { if (e.cancelable) e.preventDefault(); inspectX(e.touches[0].clientX); }
-    }, { passive: false });
+      if (!e.touches || !e.touches[0]) return;
+      var t0 = e.touches[0];
+      mTState.sx = t0.clientX;
+      mTState.sy = t0.clientY;
+      mTState.locked = null;
+      mTState.near = isMobNearLine(t0.clientX, t0.clientY);
+      if (mTState.near) inspectX(t0.clientX);
+    }, { passive: true });
     hit.addEventListener('touchmove', function (e) {
-      if (e.touches && e.touches[0]) { if (e.cancelable) e.preventDefault(); inspectX(e.touches[0].clientX); }
+      if (!e.touches || !e.touches[0]) return;
+      var t0 = e.touches[0];
+      if (typeof t0.clientY !== 'number') {
+        if (e.cancelable) e.preventDefault();
+        inspectX(t0.clientX);
+        return;
+      }
+      if (!mTState.near) return;
+      var dx = Math.abs(t0.clientX - mTState.sx),
+        dy = Math.abs(t0.clientY - mTState.sy);
+      if (mTState.locked === null) {
+        if (dx < 8 && dy < 8) return;
+        if (dy > dx) { mTState.locked = 'v'; mTState.near = false; hideMobCfHUD(); return; }
+        mTState.locked = 'h';
+      }
+      if (mTState.locked === 'h') {
+        if (e.cancelable) e.preventDefault();
+        inspectX(t0.clientX);
+      }
     }, { passive: false });
-    hit.addEventListener('touchend', hideMobCfHUD);
-    hit.addEventListener('touchcancel', hideMobCfHUD);
-    hit.addEventListener('pointerup', function (e) { if (e.pointerType !== 'mouse') hideMobCfHUD(); });
+    hit.addEventListener('touchend', function () { mTState.near = false; mTState.locked = null; hideMobCfHUD(); });
+    hit.addEventListener('touchcancel', function () { mTState.near = false; mTState.locked = null; hideMobCfHUD(); });
+    hit.addEventListener('pointerup', function (e) { if (e.pointerType === 'mouse') hideMobCfHUD(); });
     hit.addEventListener('mouseleave', hideMobCfHUD);
   }
 }
@@ -22296,7 +22651,7 @@ function renderMobSim() {
   if (svg && A.rows.length) {
     var W = 340, H = 185, pL = 38, pR = 12, pT = 14, pB = 22, n = A.rows.length;
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
-    svg.style.touchAction = 'none';
+    svg.style.touchAction = 'pan-y';
     var vals = A.rows.map(function (r) { return +r.ak || 0; }).concat(B.rows.map(function (r) { return +r.ak || 0; }), [0]);
     var minV = Math.min.apply(null, vals) - 200000, maxV = Math.max.apply(null, vals) + 200000;
     if (!isFinite(minV) || !isFinite(maxV)) { minV = -200000; maxV = 200000; }
