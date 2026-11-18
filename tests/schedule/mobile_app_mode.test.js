@@ -781,6 +781,19 @@ const { boot } = require('./ui.js');
   assert.strictEqual(remountShell.querySelector('.mob-shell').getAttribute('data-mtab-active'), 'rincian', 'kembali ke tab Rincian memulihkan data-mtab-active="rincian"');
   assert($('m-user-name').textContent.includes('Halo,'), '#m-user-name tetap dinamis menampilkan sapaan akun');
 
+  // 18. Satu lapisan motif kontinu di .apk-header-block tanpa terpotong di kanan atas / sekitar kartu saldo
+  const allMotifs = remountShell.querySelectorAll('.hdr-motif');
+  assert.strictEqual(allMotifs.length, 1, 'hanya ada satu elemen .hdr-motif di seluruh shell APK (tidak ada duplikat .hdr-motif-well)');
+  const motifEl = allMotifs[0];
+  const mainHdrBlock = remountShell.querySelector('.apk-header-block');
+  assert(mainHdrBlock && mainHdrBlock.contains(motifEl), 'satu-satunya .hdr-motif berada di dalam .apk-header-block');
+  assert(mainHdrBlock.contains(remountShell.querySelector('.apk-hero-well .wallet-hero')), '.apk-hero-well dan .wallet-hero berada di dalam .apk-header-block agar motif menerus di belakang kartu saldo');
+  assert.strictEqual(motifEl.getAttribute('preserveAspectRatio'), 'xMidYMin slice', '.hdr-motif memakai preserveAspectRatio="xMidYMin slice" agar skala mengikuti lebar layar, bukan tinggi header');
+  assert(!motifEl.querySelector('path'), '.hdr-motif tidak memakai garis lurus diagonal <path> yang memotong tepi');
+  assert(/\.hdr-motif\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0[^}]*width:\s*100%[^}]*height:\s*100%[^}]*z-index:\s*0/s.test(cssMobSrc), 'CSS .hdr-motif mengisi penuh .apk-header-block (inset:0; width:100%; height:100%; z-index:0)');
+  assert(/\.apk-hero-well\s*\{[^}]*z-index:\s*1[^}]*background:\s*transparent[^}]*overflow:\s*visible/s.test(cssMobSrc), 'CSS .apk-hero-well punya z-index:1 (> .hdr-motif), background:transparent, dan overflow:visible agar tidak memotong/menutupi motif');
+  assert(/\.wallet-hero\s*\{[^}]*z-index:\s*1/s.test(cssMobSrc), 'CSS .wallet-hero punya z-index:1 (> .hdr-motif)');
+
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('OK mobile_app_mode');
   process.exit(0);

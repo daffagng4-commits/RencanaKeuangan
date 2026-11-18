@@ -172,6 +172,10 @@ body[data-shell="mobile-app"][data-phone-frame="full"] .apk-header-block {
   top: 0;
   padding-top: env(safe-area-inset-top, 0px);
 }
+body[data-shell="mobile-app"][data-phone-frame="full"] .mob-shell[data-mtab-active="rincian"] .apk-header-block {
+  position: relative;
+  top: auto;
+}
 body[data-shell="mobile-app"][data-phone-frame="full"] .mob-shell {
   width: 100%;
   max-width: 412px;
@@ -195,6 +199,10 @@ body[data-shell="mobile-app"] #mobile-app-shell .phone-home-indicator { display:
     top: 0;
     padding-top: env(safe-area-inset-top, 0px);
   }
+  body[data-shell="mobile-app"] #mobile-app-shell .mob-shell[data-mtab-active="rincian"] .apk-header-block {
+    position: relative;
+    top: auto;
+  }
   body[data-shell="mobile-app"] #mobile-app-shell .phone-stage { padding: 0; display: block; }
   body[data-shell="mobile-app"] #mobile-app-shell .phone-device-frame { padding: 0; background: none; border-radius: 0; box-shadow: none; }
   body[data-shell="mobile-app"] #mobile-app-shell .mob-shell {
@@ -216,18 +224,19 @@ body[data-shell="mobile-app"] #mobile-app-shell .apk-header-block {
   position: relative;
   z-index: 60;
   flex-shrink: 0;
-  background: linear-gradient(180deg, var(--mob-hdr-top) 0%, var(--mob-hdr-mid) 100%);
+  background: linear-gradient(180deg, var(--mob-hdr-top) 0%, var(--mob-hdr-bot) 100%);
   color: #FFFFFF;
-  padding: 0 14px 8px;
+  padding: 0 14px 18px;
+  border-bottom-left-radius: 26px;
+  border-bottom-right-radius: 26px;
+  box-shadow: 0 8px 24px -10px rgba(7, 22, 54, 0.34);
   overflow: hidden;
   transition: box-shadow var(--dur-topbar-shadow) var(--ease-out);
 }
 body[data-shell="mobile-app"] #mobile-app-shell .mob-shell:not([data-mtab-active="rincian"]) .apk-header-block {
-  background: linear-gradient(180deg, var(--mob-hdr-top) 0%, var(--mob-hdr-bot) 100%);
   padding-bottom: 12px;
   border-bottom-left-radius: 22px;
   border-bottom-right-radius: 22px;
-  box-shadow: 0 8px 24px -10px rgba(7, 22, 54, 0.34);
 }
 body[data-shell="mobile-app"] #mobile-app-shell .apk-header-block.is-scrolled {
   box-shadow: 0 8px 22px -6px rgba(7, 22, 54, 0.38);
@@ -240,6 +249,8 @@ body[data-shell="mobile-app"] #mobile-app-shell .hdr-motif {
   height: 100%;
   pointer-events: none;
   z-index: 0;
+  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.96) 72%, rgba(0, 0, 0, 0.52) 100%);
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.92) 0%, rgba(0, 0, 0, 0.96) 72%, rgba(0, 0, 0, 0.52) 100%);
 }
 body[data-shell="mobile-app"] #mobile-app-shell .hdr-inner {
   position: relative;
@@ -581,9 +592,6 @@ body[data-shell="mobile-app"] #mobile-app-shell .mob-main {
 body[data-shell="mobile-app"] #mobile-app-shell .mob-main::-webkit-scrollbar {
   display: none;
 }
-body[data-shell="mobile-app"] #mobile-app-shell .mob-shell[data-mtab-active="rincian"] .mob-main {
-  padding-top: 0;
-}
 
 body[data-shell="mobile-app"] #mobile-app-shell .tab-panel { display: none; animation: fadeInUp 160ms var(--ease-out); }
 body[data-shell="mobile-app"] #mobile-app-shell .tab-panel.active { display: block; }
@@ -612,16 +620,19 @@ body[data-shell="mobile-app"] #mobile-app-shell .card-hd {
 
 body[data-shell="mobile-app"] #mobile-app-shell .card-title { font-size: 0.94rem; font-weight: 800; letter-spacing: -0.015em; }
 
-/* Fintech Wallet Balance Card (Rincian Hero — V4 Option A White inside Blue Well) */
+/* Fintech Wallet Balance Card (Rincian Hero — V4 Option A White inside Blue Header) */
 body[data-shell="mobile-app"] #mobile-app-shell .apk-hero-well {
   position: relative;
-  background: linear-gradient(180deg, var(--mob-hdr-mid) 0%, var(--mob-hdr-bot) 100%);
-  margin: 0 -12px 2px;
-  padding: 4px 14px 18px;
-  border-bottom-left-radius: 26px;
-  border-bottom-right-radius: 26px;
-  box-shadow: 0 8px 24px -10px rgba(7, 22, 54, 0.34);
-  overflow: hidden;
+  z-index: 1;
+  background: transparent;
+  margin: 11px 0 0;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mob-shell:not([data-mtab-active="rincian"]) .apk-hero-well {
+  display: none;
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .wallet-hero {

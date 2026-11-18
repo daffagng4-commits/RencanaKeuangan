@@ -402,11 +402,32 @@ function mobShellTemplate() {
     '<div class="mob-shell" data-mtab-active="' + esc(MOB_STATE.tab || 'rincian') + '">' +
     mobOsNotifHtml() +
     '<div class="apk-header-block">' +
-    '<svg class="hdr-motif" viewBox="0 0 390 150" preserveAspectRatio="xMidYMin slice" aria-hidden="true">' +
-    '<circle cx="348" cy="24" r="146" fill="none" stroke="#FFFFFF" stroke-opacity="0.075" stroke-width="1.5"/>' +
-    '<circle cx="348" cy="24" r="106" fill="none" stroke="#FFFFFF" stroke-opacity="0.065" stroke-width="1.2"/>' +
-    '<circle cx="348" cy="24" r="68" fill="#FFFFFF" fill-opacity="0.055"/>' +
-    '<path d="M230 -10 L398 158 M268 -10 L398 120" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="1.2"/>' +
+    '<svg class="hdr-motif" viewBox="0 0 400 320" preserveAspectRatio="xMidYMin slice" aria-hidden="true">' +
+    '<defs>' +
+    '<radialGradient id="rk-hdr-glow-tr" cx="436" cy="-36" r="240" gradientUnits="userSpaceOnUse">' +
+    '<stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.09"/>' +
+    '<stop offset="55%" stop-color="#FFFFFF" stop-opacity="0.035"/>' +
+    '<stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>' +
+    '</radialGradient>' +
+    '<radialGradient id="rk-hdr-arc-tr" cx="436" cy="-36" r="350" gradientUnits="userSpaceOnUse">' +
+    '<stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.09"/>' +
+    '<stop offset="68%" stop-color="#FFFFFF" stop-opacity="0.065"/>' +
+    '<stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>' +
+    '</radialGradient>' +
+    '<radialGradient id="rk-hdr-arc-bl" cx="-38" cy="306" r="310" gradientUnits="userSpaceOnUse">' +
+    '<stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.085"/>' +
+    '<stop offset="65%" stop-color="#FFFFFF" stop-opacity="0.055"/>' +
+    '<stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>' +
+    '</radialGradient>' +
+    '</defs>' +
+    '<circle cx="436" cy="-36" r="240" fill="url(#rk-hdr-glow-tr)"/>' +
+    '<circle cx="436" cy="-36" r="128" fill="none" stroke="url(#rk-hdr-arc-tr)" stroke-width="1.5"/>' +
+    '<circle cx="436" cy="-36" r="192" fill="none" stroke="url(#rk-hdr-arc-tr)" stroke-width="1.35"/>' +
+    '<circle cx="436" cy="-36" r="260" fill="none" stroke="url(#rk-hdr-arc-tr)" stroke-width="1.2"/>' +
+    '<circle cx="436" cy="-36" r="332" fill="none" stroke="url(#rk-hdr-arc-tr)" stroke-width="1"/>' +
+    '<circle cx="-38" cy="306" r="145" fill="none" stroke="url(#rk-hdr-arc-bl)" stroke-width="1.5"/>' +
+    '<circle cx="-38" cy="306" r="215" fill="none" stroke="url(#rk-hdr-arc-bl)" stroke-width="1.3"/>' +
+    '<circle cx="-38" cy="306" r="288" fill="none" stroke="url(#rk-hdr-arc-bl)" stroke-width="1.1"/>' +
     '</svg>' +
     '<div class="hdr-inner">' +
     '<div class="phone-status-bar" aria-hidden="true"><span>09:41</span><div class="phone-island"><span class="phone-island-cam"></span></div><div class="phone-sys-icons"><span>5G</span><span>94%</span></div></div>' +
@@ -420,7 +441,15 @@ function mobShellTemplate() {
     '<button type="button" class="ico-btn" id="m-btn-notif" aria-label="Notifikasi" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><span class="notif-dot" id="m-notif-dot" style="display:none"></span></button>' +
     '</div></header>' +
     '<p class="hdr-greet" id="m-user-name">Halo, <b>XXX</b></p>' +
-    '</div></div>' +
+    '</div>' +
+    '<div class="apk-hero-well">' +
+    '<div class="wallet-hero"><div class="rk-sync-hint"><span class="rk-sync-hint-dot" aria-hidden="true"></span>Menyinkronkan data cloud…</div><div class="wallet-top"><div><div class="wallet-kicker">Saldo Realtime &middot; <span id="m-hero-lbl">2026</span></div>' +
+    '<div class="rk-skel-wrap"><div class="wallet-bal pv" id="m-rincian-saldo">Rp 0</div></div></div></div>' +
+    '<div class="wallet-io-grid">' +
+    '<div class="wallet-io-box"><div class="wallet-io-hd"><span class="wallet-io-ico in" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg></span><span class="wallet-io-lbl">Pemasukan</span></div><div class="rk-skel-wrap"><div class="wallet-io-val mono pv" id="m-hero-inc">Rp 0</div></div><div class="wallet-io-sub">Total setahun</div></div>' +
+    '<div class="wallet-io-box"><div class="wallet-io-hd"><span class="wallet-io-ico out" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg></span><span class="wallet-io-lbl">Pengeluaran</span></div><div class="rk-skel-wrap"><div class="wallet-io-val mono pv" id="m-hero-out">Rp 0</div></div><div class="wallet-io-sub">Total setahun</div></div>' +
+    '</div></div></div>' +
+    '</div>' +
     '<div class="acct-popover" id="m-acct-popover" role="dialog" aria-label="Menu Akun &amp; Pengaturan">' +
     '<button type="button" class="ap-head" id="m-menu-acct">' +
     '<div class="av-circle ap-av anon"><span id="m-pop-acct-ini"></span></div>' +
@@ -439,18 +468,6 @@ function mobShellTemplate() {
     '<main class="mob-main" id="m-main">' +
     // TAB 1: RINCIAN
     '<section class="tab-panel active" id="m-tab-rincian"><div class="stack">' +
-    '<div class="apk-hero-well">' +
-    '<svg class="hdr-motif hdr-motif-well" viewBox="0 0 390 210" preserveAspectRatio="xMidYMax slice" aria-hidden="true">' +
-    '<circle cx="28" cy="186" r="132" fill="none" stroke="#FFFFFF" stroke-opacity="0.07" stroke-width="1.5"/>' +
-    '<circle cx="28" cy="186" r="88" fill="none" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="1.2"/>' +
-    '<path d="M-12 94 L118 224 M-12 132 L80 224" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="1.2"/>' +
-    '</svg>' +
-    '<div class="wallet-hero"><div class="rk-sync-hint"><span class="rk-sync-hint-dot" aria-hidden="true"></span>Menyinkronkan data cloud…</div><div class="wallet-top"><div><div class="wallet-kicker">Saldo Realtime &middot; <span id="m-hero-lbl">2026</span></div>' +
-    '<div class="rk-skel-wrap"><div class="wallet-bal pv" id="m-rincian-saldo">Rp 0</div></div></div></div>' +
-    '<div class="wallet-io-grid">' +
-    '<div class="wallet-io-box"><div class="wallet-io-hd"><span class="wallet-io-ico in" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg></span><span class="wallet-io-lbl">Pemasukan</span></div><div class="rk-skel-wrap"><div class="wallet-io-val mono pv" id="m-hero-inc">Rp 0</div></div><div class="wallet-io-sub">Total setahun</div></div>' +
-    '<div class="wallet-io-box"><div class="wallet-io-hd"><span class="wallet-io-ico out" aria-hidden="true"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg></span><span class="wallet-io-lbl">Pengeluaran</span></div><div class="rk-skel-wrap"><div class="wallet-io-val mono pv" id="m-hero-out">Rp 0</div></div><div class="wallet-io-sub">Total setahun</div></div>' +
-    '</div></div></div>' +
     '<div class="card"><div class="card-hd" style="margin-bottom:8px"><h2 class="card-title">Proyeksi Arus Kas</h2>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="m-btn-expand-cf">⤢ Perbesar</button></div>' +
     '<div class="seg cf-range-seg" role="group" aria-label="Rentang Grafik">' +
