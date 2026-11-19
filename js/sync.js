@@ -79,6 +79,7 @@ function sbInit() {
   sb.auth.onAuthStateChange(function (_e, s) {
     setUser(s);
   });
+  rkInitCapacitorAuth();
 }
 
 /** Perbarui tombol akun, avatar, dan nama sapaan sesuai sesi login Supabase. */
@@ -415,6 +416,124 @@ function rkSignOut() {
   });
 }
 
+function rkNativeIsCapacitor() {
+  return typeof window !== 'undefined' && !!window.Capacitor &&
+    (typeof window.Capacitor.isNativePlatform !== 'function' || window.Capacitor.isNativePlatform());
+}
+
+function rkSetGoogleBtnsBusy(busy) {
+  ['lg-google', 'm-lg-google'].forEach(function (id) {
+    var btn = $(id);
+    if (btn) btn.disabled = !!busy;
+  });
+}
+
+function rkShowOAuthError(msg) {
+  sbStat(msg, 1);
+  if ($('lm')) $('lm').textContent = msg;
+  if ($('m-lg-err')) $('m-lg-err').textContent = msg;
+  if (typeof toast === 'function') toast(msg);
+  if (typeof showMobToast === 'function' && typeof getShellMode === 'function' && getShellMode() === 'mobile-app') showMobToast(msg);
+}
+
+function rkHandleOAuthRedirectUrl(rawUrl) {
+  if (!rawUrl || String(rawUrl).indexOf('id.renkeu.app://auth') !== 0) return Promise.resolve(false);
+  if (typeof window !== 'undefined') window._rkOAuthPending = false;
+  rkSetGoogleBtnsBusy(false);
+  try {
+    var br = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
+    if (br && typeof br.close === 'function') Promise.resolve(br.close()).catch(function () {});
+  } catch (e) {}
+
+  if (!sb || !sb.auth) {
+    rkShowOAuthError('Sinkron belum aktif. Pastikan Supabase dikonfigurasi.');
+    return Promise.resolve(false);
+  }
+
+  var qStr = '', hStr = '';
+  var qIdx = rawUrl.indexOf('?'), hIdx = rawUrl.indexOf('#');
+  if (qIdx >= 0) qStr = rawUrl.slice(qIdx + 1, hIdx > qIdx ? hIdx : rawUrl.length);
+  if (hIdx >= 0) hStr = rawUrl.slice(hIdx + 1);
+  var qp = new URLSearchParams(qStr);
+  var hp = new URLSearchParams(hStr);
+
+  var oauthErr = qp.get('error_description') || hp.get('error_description') || qp.get('error') || hp.get('error');
+  if (oauthErr) {
+    var rawErr = decodeURIComponent(String(oauthErr).replace(/\+/g, ' '));
+    var errMsg = /Signups not allowed/i.test(rawErr)
+      ? 'Pendaftaran akun baru dimatikan di Supabase. Aktifkan "Allow new users to sign up" di Authentication → Sign In / Providers.'
+      : ('Login Google gagal: ' + rawErr);
+    rkShowOAuthError(errMsg);
+    return Promise.resolve(false);
+  }
+
+  var code = qp.get('code');
+  var accessToken = hp.get('access_token') || qp.get('access_token');
+  var refreshToken = hp.get('refresh_token') || qp.get('refresh_token') || '';
+  var recover = null;
+  if (code && typeof sb.auth.exchangeCodeForSession === 'function') {
+    recover = sb.auth.exchangeCodeForSession(code);
+  } else if (accessToken && typeof sb.auth.setSession === 'function') {
+    recover = sb.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+  } else {
+    rkShowOAuthError('Login Google dibatalkan atau respons sesi tidak lengkap.');
+    return Promise.resolve(false);
+  }
+
+  return Promise.resolve(recover).then(function (res) {
+    if (res && res.error) {
+      rkShowOAuthError('Login Google gagal: ' + (res.error.message || 'Gagal memulihkan sesi'));
+      return false;
+    }
+    var sess = res && res.data ? res.data.session : null;
+    if (sess) setUser(sess);
+    if ($('lm')) $('lm').textContent = '';
+    if ($('m-lg-err')) $('m-lg-err').textContent = '';
+    if (typeof brCloseModal === 'function') brCloseModal('lg');
+    else if ($('lg')) $('lg').hidden = true;
+    if (typeof mobCloseSheet === 'function' && $('m-sheet-acct') && $('m-sheet-acct').classList.contains('open')) {
+      mobCloseSheet('m-sheet-acct');
+    }
+    return true;
+  }).catch(function (e) {
+    rkShowOAuthError('Login Google gagal: ' + ((e && e.message) || 'kesalahan jaringan'));
+    return false;
+  });
+}
+
+function rkInitCapacitorAuth() {
+  if (!rkNativeIsCapacitor()) return;
+  if (typeof window !== 'undefined' && window._rkCapAuthBound) return;
+  var capPlugins = window.Capacitor && window.Capacitor.Plugins;
+  var appPlugin = capPlugins && capPlugins.App;
+  var browserPlugin = capPlugins && capPlugins.Browser;
+  if (!appPlugin || typeof appPlugin.addListener !== 'function') return;
+  window._rkCapAuthBound = true;
+
+  appPlugin.addListener('appUrlOpen', function (ev) {
+    if (ev && ev.url) rkHandleOAuthRedirectUrl(ev.url);
+  });
+  if (typeof appPlugin.getLaunchUrl === 'function') {
+    Promise.resolve(appPlugin.getLaunchUrl()).then(function (launch) {
+      if (launch && launch.url) rkHandleOAuthRedirectUrl(launch.url);
+    }).catch(function () {});
+  }
+  if (browserPlugin && typeof browserPlugin.addListener === 'function') {
+    browserPlugin.addListener('browserFinished', function () {
+      if (window._rkOAuthPending) {
+        window._rkOAuthPending = false;
+        rkSetGoogleBtnsBusy(false);
+        if (!sbUser) rkShowOAuthError('Login Google dibatalkan.');
+      }
+    });
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.rkHandleOAuthRedirectUrl = rkHandleOAuthRedirectUrl;
+  window.rkInitCapacitorAuth = rkInitCapacitorAuth;
+}
+
 /** Masuk dengan akun Google (Gmail) melalui Supabase OAuth; data tersimpan ke rk_state sesuai user_id. */
 function authGoogle() {
   if (!sb || !sb.auth) {
@@ -426,6 +545,40 @@ function authGoogle() {
       localStorage.setItem('rk-shell-mode', getShellMode());
     }
   } catch (e) {}
+
+  if (rkNativeIsCapacitor()) {
+    rkInitCapacitorAuth();
+    rkSetGoogleBtnsBusy(true);
+    if ($('lm')) $('lm').textContent = '';
+    if ($('m-lg-err')) $('m-lg-err').textContent = '';
+    return sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: 'id.renkeu.app://auth', skipBrowserRedirect: true },
+    }).then(function (r) {
+      if (r && r.error) {
+        rkSetGoogleBtnsBusy(false);
+        rkShowOAuthError('Gagal login Google: ' + (r.error.message || 'Gagal membuka login Google'));
+        return r;
+      }
+      var authUrl = r && r.data && r.data.url;
+      var br = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
+      if (authUrl && br && typeof br.open === 'function') {
+        window._rkOAuthPending = true;
+        return Promise.resolve(br.open({ url: authUrl })).catch(function (err) {
+          window._rkOAuthPending = false;
+          rkSetGoogleBtnsBusy(false);
+          rkShowOAuthError('Gagal membuka browser login: ' + ((err && err.message) || ''));
+        }).then(function () { return r; });
+      }
+      rkSetGoogleBtnsBusy(false);
+      rkShowOAuthError('Plugin Browser Capacitor tidak tersedia untuk login Google.');
+      return r;
+    }).catch(function (err) {
+      rkSetGoogleBtnsBusy(false);
+      rkShowOAuthError('Gagal login Google: ' + ((err && err.message) || 'kesalahan jaringan'));
+    });
+  }
+
   var redir;
   try {
     if (typeof location !== 'undefined' && /^(https?|capacitor|ionic):/i.test(location.origin || '')) {

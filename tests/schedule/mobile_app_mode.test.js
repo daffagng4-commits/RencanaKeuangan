@@ -854,6 +854,151 @@ const { boot } = require('./ui.js');
   assert.strictEqual(exitCount, 1, 'Back kedua dalam 2 detik memanggil App.exitApp()');
   w.Capacitor = origCap;
 
+  // 20. Login Google native (Browser Custom Tab + appUrlOpen) & adaptor notifikasi native (LocalNotifications)
+  const fs = require('fs');
+  const path = require('path');
+  const manifestXml = fs.readFileSync(path.join(process.cwd(), 'android', 'app', 'src', 'main', 'AndroidManifest.xml'), 'utf8');
+  assert(/android:scheme="id\.renkeu\.app"[^>]*android:host="auth"/s.test(manifestXml), 'AndroidManifest.xml mendaftarkan deep link scheme="id.renkeu.app" host="auth"');
+  assert(/android:launchMode="singleTask"/.test(manifestXml), 'MainActivity memakai launchMode="singleTask"');
+  assert(/android\.permission\.POST_NOTIFICATIONS/.test(manifestXml), 'AndroidManifest.xml meminta POST_NOTIFICATIONS');
+  assert(!/SCHEDULE_EXACT_ALARM/.test(manifestXml), 'AndroidManifest.xml tidak meminta SCHEDULE_EXACT_ALARM');
+
+  // 20a. OAuth Google di native Capacitor vs browser
+  const origSb = w.sb;
+  const origPull = w.pull;
+  const oauthCalls = [];
+  const exchCalls = [];
+  const setSessCalls = [];
+  let pullCount = 0;
+  w.pull = () => { pullCount += 1; return Promise.resolve(); };
+  w.sb = {
+    from: () => ({
+      select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null }) }) }),
+      upsert: () => ({
+        select: () => Promise.resolve({ data: [{ rev: 1 }], error: null }),
+        then: (fn) => Promise.resolve({ error: null }).then(fn),
+      }),
+    }),
+    auth: {
+      signInWithOAuth(arg) {
+        oauthCalls.push(arg);
+        const u = (arg && arg.options && arg.options.skipBrowserRedirect)
+          ? 'https://accounts.google.com/o/oauth2/v2/auth?mock=1'
+          : '#oauth-mock';
+        return Promise.resolve({ data: { url: u }, error: null });
+      },
+      exchangeCodeForSession(code) { exchCalls.push(code); return Promise.resolve({ data: { session: { user: { id: 'u-cap-1', email: 'cap@example.com' } } }, error: null }); },
+      setSession(sess) { setSessCalls.push(sess); return Promise.resolve({ data: { session: { user: { id: 'u-cap-2', email: 'imp@example.com' } } }, error: null }); },
+    },
+  };
+  let urlOpenCb = null;
+  let brFinCb = null;
+  let urlOpenCount = 0;
+  const brOpened = [];
+  let brClosed = 0;
+  w._rkCapAuthBound = false;
+  w.Capacitor = {
+    isNativePlatform: () => true,
+    Plugins: {
+      App: {
+        addListener(ev, fn) { if (ev === 'appUrlOpen') { urlOpenCount += 1; urlOpenCb = fn; } },
+        getLaunchUrl: () => Promise.resolve(null),
+      },
+      Browser: {
+        open(opts) { brOpened.push(opts.url); return Promise.resolve(); },
+        close() { brClosed += 1; return Promise.resolve(); },
+        addListener(ev, fn) { if (ev === 'browserFinished') brFinCb = fn; },
+      },
+    },
+  };
+  w.rkInitCapacitorAuth();
+  w.rkInitCapacitorAuth();
+  assert.strictEqual(urlOpenCount, 1, 'listener appUrlOpen hanya didaftarkan satu kali (tanpa duplikat)');
+  await w.authGoogle();
+  assert.strictEqual(oauthCalls.length, 1, 'authGoogle di native memanggil signInWithOAuth');
+  assert.strictEqual(oauthCalls[0].options.redirectTo, 'id.renkeu.app://auth', 'authGoogle native memakai redirectTo id.renkeu.app://auth');
+  assert.strictEqual(oauthCalls[0].options.skipBrowserRedirect, true, 'authGoogle native menyertakan skipBrowserRedirect: true');
+  assert.strictEqual(brOpened.length, 1, 'Browser.open dipanggil untuk membuka URL OAuth di Custom Tab');
+  assert(typeof brFinCb === 'function', 'browserFinished listener terdaftar');
+  await w.rkHandleOAuthRedirectUrl('id.renkeu.app://auth?code=pkce-abc-123');
+  assert.strictEqual(brClosed, 1, 'Browser.close() dipanggil saat callback deep link masuk');
+  assert.strictEqual(exchCalls[0], 'pkce-abc-123', 'exchangeCodeForSession dipanggil dengan code PKCE dari deep link');
+  assert(w.sbUser && w.sbUser.id === 'u-cap-1', 'sesi pengguna dipulihkan setelah callback deep link');
+  assert(pullCount >= 1, 'pull() dijalankan setelah sesi Google pulih');
+  // Implicit flow (#access_token & refresh_token)
+  await w.rkHandleOAuthRedirectUrl('id.renkeu.app://auth#access_token=at-99&refresh_token=rt-88');
+  assert.strictEqual(setSessCalls[0].access_token, 'at-99', 'setSession dipanggil bila callback membawa access_token di hash');
+  // Browser flow tidak berubah (tidak pakai skipBrowserRedirect)
+  w.Capacitor = { isNativePlatform: () => false };
+  await w.authGoogle();
+  assert.strictEqual(oauthCalls[oauthCalls.length - 1].options.skipBrowserRedirect, undefined, 'di browser authGoogle tidak memakai skipBrowserRedirect');
+  w.setUser(null);
+
+  // 20b. Adaptor Notifikasi rkNotify (native LocalNotifications vs browser)
+  const origNotif = w.Notification;
+  delete w.Notification;
+  w.Capacitor = { isNativePlatform: () => false };
+  assert.strictEqual(w.rkNotify.isSupported(), false, 'di browser tanpa Notification API, rkNotify.isSupported() bernilai false');
+
+  let chanCreated = null;
+  let permState = 'granted';
+  let pendingList = [];
+  const canceledBatches = [];
+  const scheduledBatches = [];
+  w.Capacitor = {
+    isNativePlatform: () => true,
+    Plugins: {
+      LocalNotifications: {
+        createChannel(ch) { chanCreated = ch; return Promise.resolve(); },
+        checkPermissions() { return Promise.resolve({ display: permState }); },
+        requestPermissions() { permState = 'granted'; return Promise.resolve({ display: 'granted' }); },
+        getPending() { return Promise.resolve({ notifications: pendingList.slice() }); },
+        schedule(opts) {
+          scheduledBatches.push(opts.notifications);
+          opts.notifications.forEach((n) => {
+            if (!pendingList.some((x) => x.id === n.id)) pendingList.push({ id: n.id, title: n.title });
+          });
+          return Promise.resolve();
+        },
+        cancel(opts) {
+          canceledBatches.push(opts.notifications);
+          const rm = new Set(opts.notifications.map((n) => n.id));
+          pendingList = pendingList.filter((n) => !rm.has(n.id));
+          return Promise.resolve();
+        },
+      },
+    },
+  };
+  assert.strictEqual(w.rkNotify.isNative(), true, 'rkNotify.isNative() aktif di Capacitor walau window.Notification tidak ada');
+  assert.strictEqual(w.rkNotify.isSupported(), true, 'rkNotify.isSupported() bernilai true di native');
+  w.rkSetNotifReset(false);
+  w.requestNotifPermission();
+  await new Promise((r) => setTimeout(r, 80));
+  assert(chanCreated && chanCreated.id === 'rk-bill-reminders', 'channel Android "Pengingat Tagihan" dibuat di native');
+  assert(!String($('toast')?.textContent || '').includes('belum mendukung'), 'pesan browser tidak mendukung notifikasi tidak muncul di native');
+  // Tambah tagihan jatuh tempo hari ini untuk uji schedule & cancel saat lunas
+  w.__today = '2026-11-12';
+  w.switchYear(2026);
+  w.S.startMonth = 10;
+  w.S.items.push({ id: 995, name: 'Air PDAM', price: 150000, n: 1, unit: 'bulan', start: '2026-11-12', end: '', cnt: 0, cat: 'Tagihan rutin', ch: [] });
+  w.S.paid = {};
+  w.syncUI();
+  await new Promise((r) => setTimeout(r, 80));
+  assert(pendingList.length >= 1, 'notifikasi tagihan lokal terjadwal deterministik di native');
+  const pdamId = w.rkNotify.hashId('995|2026-11-12');
+  assert(pendingList.some((n) => n.id === pdamId), 'id notifikasi deterministik terdaftar untuk tagihan 995|2026-11-12');
+  // Tandai lunas -> jadwal dibatalkan
+  w.S.paid['995|2026-11-12'] = 1;
+  w.syncUI();
+  await new Promise((r) => setTimeout(r, 80));
+  assert(canceledBatches.some((b) => b.some((x) => x.id === pdamId)), 'jadwal notifikasi tagihan otomatis dibatalkan saat ditandai lunas');
+
+  w.setUser(null);
+  w.Notification = origNotif;
+  w.sb = origSb;
+  w.pull = origPull;
+  w.Capacitor = origCap;
+
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('OK mobile_app_mode');
   process.exit(0);

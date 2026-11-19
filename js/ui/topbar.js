@@ -106,8 +106,8 @@ function rkSyncNotifOpenUI() {
 
 /** Label & aksesibilitas tombol notifikasi (keadaan aktif .on mengikuti status popover). */
 function syncNotifBtn() {
-  var hasN = typeof Notification !== 'undefined' && 'Notification' in window && !!Notification;
-  var p = hasN ? Notification.permission : 'default';
+  var hasN = (typeof rkNotify !== 'undefined' && rkNotify.isSupported()) || (typeof Notification !== 'undefined' && 'Notification' in window && !!Notification);
+  var p = (typeof rkNotify !== 'undefined' && rkNotify.getPermission) ? rkNotify.getPermission() : (hasN ? Notification.permission : 'default');
   var isOn = p === 'granted' && !(typeof rkIsNotifReset === 'function' && rkIsNotifReset());
   var b = document.getElementById('btn-notif');
   if (b && hasN) {

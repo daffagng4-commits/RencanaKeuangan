@@ -1986,8 +1986,11 @@ function renderMobSettings() {
   if (typeof rkIsNotifReset === 'function' && rkIsNotifReset()) MOB_STATE.notifEnabled = false;
   var due = getMobDueList(),
     osActive = isMobNotifOsActive(),
-    osPerm = typeof Notification !== 'undefined' && 'Notification' in window && Notification ? Notification.permission : 'unsupported',
+    osPerm = (typeof rkNotify !== 'undefined' && rkNotify.getPermission) ? rkNotify.getPermission() : (typeof Notification !== 'undefined' && 'Notification' in window && Notification ? Notification.permission : 'unsupported'),
     needsA2HS = typeof rkIsIosNeedsA2HS === 'function' && rkIsIosNeedsA2HS();
+  if (typeof rkNotify !== 'undefined' && rkNotify.isNative()) {
+    rkNotify.syncBillSchedules(due, !!MOB_STATE.notifEnabled && osActive);
+  }
   syncMobNotifDot();
   if ($('m-set-notif-enabled')) $('m-set-notif-enabled').checked = !!MOB_STATE.notifEnabled;
   if ($('m-rem-cnt-badge')) $('m-rem-cnt-badge').textContent = due.length + ' item';
@@ -3306,7 +3309,8 @@ function bindMobileShellEvents(root) {
       MOB_STATE.notifLate = !$('m-set-notif-late') || $('m-set-notif-late').checked;
       if (t.id === 'm-set-notif-enabled') {
         if (typeof rkSetNotifReset === 'function') rkSetNotifReset(!MOB_STATE.notifEnabled);
-        if (MOB_STATE.notifEnabled && typeof Notification !== 'undefined' && Notification && Notification.permission === 'default' && typeof requestNotifPermission === 'function') {
+        var curPerm = (typeof rkNotify !== 'undefined' && rkNotify.getPermission) ? rkNotify.getPermission() : (typeof Notification !== 'undefined' && Notification ? Notification.permission : 'unsupported');
+        if (MOB_STATE.notifEnabled && curPerm === 'default' && typeof requestNotifPermission === 'function') {
           requestNotifPermission();
         }
       }

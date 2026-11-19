@@ -15826,6 +15826,7 @@ function sbInit() {
   sb.auth.onAuthStateChange(function (_e, s) {
     setUser(s);
   });
+  rkInitCapacitorAuth();
 }
 
 /** Perbarui tombol akun, avatar, dan nama sapaan sesuai sesi login Supabase. */
@@ -16162,6 +16163,124 @@ function rkSignOut() {
   });
 }
 
+function rkNativeIsCapacitor() {
+  return typeof window !== 'undefined' && !!window.Capacitor &&
+    (typeof window.Capacitor.isNativePlatform !== 'function' || window.Capacitor.isNativePlatform());
+}
+
+function rkSetGoogleBtnsBusy(busy) {
+  ['lg-google', 'm-lg-google'].forEach(function (id) {
+    var btn = $(id);
+    if (btn) btn.disabled = !!busy;
+  });
+}
+
+function rkShowOAuthError(msg) {
+  sbStat(msg, 1);
+  if ($('lm')) $('lm').textContent = msg;
+  if ($('m-lg-err')) $('m-lg-err').textContent = msg;
+  if (typeof toast === 'function') toast(msg);
+  if (typeof showMobToast === 'function' && typeof getShellMode === 'function' && getShellMode() === 'mobile-app') showMobToast(msg);
+}
+
+function rkHandleOAuthRedirectUrl(rawUrl) {
+  if (!rawUrl || String(rawUrl).indexOf('id.renkeu.app://auth') !== 0) return Promise.resolve(false);
+  if (typeof window !== 'undefined') window._rkOAuthPending = false;
+  rkSetGoogleBtnsBusy(false);
+  try {
+    var br = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
+    if (br && typeof br.close === 'function') Promise.resolve(br.close()).catch(function () {});
+  } catch (e) {}
+
+  if (!sb || !sb.auth) {
+    rkShowOAuthError('Sinkron belum aktif. Pastikan Supabase dikonfigurasi.');
+    return Promise.resolve(false);
+  }
+
+  var qStr = '', hStr = '';
+  var qIdx = rawUrl.indexOf('?'), hIdx = rawUrl.indexOf('#');
+  if (qIdx >= 0) qStr = rawUrl.slice(qIdx + 1, hIdx > qIdx ? hIdx : rawUrl.length);
+  if (hIdx >= 0) hStr = rawUrl.slice(hIdx + 1);
+  var qp = new URLSearchParams(qStr);
+  var hp = new URLSearchParams(hStr);
+
+  var oauthErr = qp.get('error_description') || hp.get('error_description') || qp.get('error') || hp.get('error');
+  if (oauthErr) {
+    var rawErr = decodeURIComponent(String(oauthErr).replace(/\+/g, ' '));
+    var errMsg = /Signups not allowed/i.test(rawErr)
+      ? 'Pendaftaran akun baru dimatikan di Supabase. Aktifkan "Allow new users to sign up" di Authentication → Sign In / Providers.'
+      : ('Login Google gagal: ' + rawErr);
+    rkShowOAuthError(errMsg);
+    return Promise.resolve(false);
+  }
+
+  var code = qp.get('code');
+  var accessToken = hp.get('access_token') || qp.get('access_token');
+  var refreshToken = hp.get('refresh_token') || qp.get('refresh_token') || '';
+  var recover = null;
+  if (code && typeof sb.auth.exchangeCodeForSession === 'function') {
+    recover = sb.auth.exchangeCodeForSession(code);
+  } else if (accessToken && typeof sb.auth.setSession === 'function') {
+    recover = sb.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+  } else {
+    rkShowOAuthError('Login Google dibatalkan atau respons sesi tidak lengkap.');
+    return Promise.resolve(false);
+  }
+
+  return Promise.resolve(recover).then(function (res) {
+    if (res && res.error) {
+      rkShowOAuthError('Login Google gagal: ' + (res.error.message || 'Gagal memulihkan sesi'));
+      return false;
+    }
+    var sess = res && res.data ? res.data.session : null;
+    if (sess) setUser(sess);
+    if ($('lm')) $('lm').textContent = '';
+    if ($('m-lg-err')) $('m-lg-err').textContent = '';
+    if (typeof brCloseModal === 'function') brCloseModal('lg');
+    else if ($('lg')) $('lg').hidden = true;
+    if (typeof mobCloseSheet === 'function' && $('m-sheet-acct') && $('m-sheet-acct').classList.contains('open')) {
+      mobCloseSheet('m-sheet-acct');
+    }
+    return true;
+  }).catch(function (e) {
+    rkShowOAuthError('Login Google gagal: ' + ((e && e.message) || 'kesalahan jaringan'));
+    return false;
+  });
+}
+
+function rkInitCapacitorAuth() {
+  if (!rkNativeIsCapacitor()) return;
+  if (typeof window !== 'undefined' && window._rkCapAuthBound) return;
+  var capPlugins = window.Capacitor && window.Capacitor.Plugins;
+  var appPlugin = capPlugins && capPlugins.App;
+  var browserPlugin = capPlugins && capPlugins.Browser;
+  if (!appPlugin || typeof appPlugin.addListener !== 'function') return;
+  window._rkCapAuthBound = true;
+
+  appPlugin.addListener('appUrlOpen', function (ev) {
+    if (ev && ev.url) rkHandleOAuthRedirectUrl(ev.url);
+  });
+  if (typeof appPlugin.getLaunchUrl === 'function') {
+    Promise.resolve(appPlugin.getLaunchUrl()).then(function (launch) {
+      if (launch && launch.url) rkHandleOAuthRedirectUrl(launch.url);
+    }).catch(function () {});
+  }
+  if (browserPlugin && typeof browserPlugin.addListener === 'function') {
+    browserPlugin.addListener('browserFinished', function () {
+      if (window._rkOAuthPending) {
+        window._rkOAuthPending = false;
+        rkSetGoogleBtnsBusy(false);
+        if (!sbUser) rkShowOAuthError('Login Google dibatalkan.');
+      }
+    });
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.rkHandleOAuthRedirectUrl = rkHandleOAuthRedirectUrl;
+  window.rkInitCapacitorAuth = rkInitCapacitorAuth;
+}
+
 /** Masuk dengan akun Google (Gmail) melalui Supabase OAuth; data tersimpan ke rk_state sesuai user_id. */
 function authGoogle() {
   if (!sb || !sb.auth) {
@@ -16173,6 +16292,40 @@ function authGoogle() {
       localStorage.setItem('rk-shell-mode', getShellMode());
     }
   } catch (e) {}
+
+  if (rkNativeIsCapacitor()) {
+    rkInitCapacitorAuth();
+    rkSetGoogleBtnsBusy(true);
+    if ($('lm')) $('lm').textContent = '';
+    if ($('m-lg-err')) $('m-lg-err').textContent = '';
+    return sb.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: 'id.renkeu.app://auth', skipBrowserRedirect: true },
+    }).then(function (r) {
+      if (r && r.error) {
+        rkSetGoogleBtnsBusy(false);
+        rkShowOAuthError('Gagal login Google: ' + (r.error.message || 'Gagal membuka login Google'));
+        return r;
+      }
+      var authUrl = r && r.data && r.data.url;
+      var br = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
+      if (authUrl && br && typeof br.open === 'function') {
+        window._rkOAuthPending = true;
+        return Promise.resolve(br.open({ url: authUrl })).catch(function (err) {
+          window._rkOAuthPending = false;
+          rkSetGoogleBtnsBusy(false);
+          rkShowOAuthError('Gagal membuka browser login: ' + ((err && err.message) || ''));
+        }).then(function () { return r; });
+      }
+      rkSetGoogleBtnsBusy(false);
+      rkShowOAuthError('Plugin Browser Capacitor tidak tersedia untuk login Google.');
+      return r;
+    }).catch(function (err) {
+      rkSetGoogleBtnsBusy(false);
+      rkShowOAuthError('Gagal login Google: ' + ((err && err.message) || 'kesalahan jaringan'));
+    });
+  }
+
   var redir;
   try {
     if (typeof location !== 'undefined' && /^(https?|capacitor|ionic):/i.test(location.origin || '')) {
@@ -18698,6 +18851,9 @@ function rkSetNotifReset(reset) {
   if (val && typeof document !== 'undefined') {
     var osBanner = $('m-os-notif');
     if (osBanner) osBanner.classList.remove('show');
+    if (typeof rkNotify !== 'undefined' && rkNotify.isNative()) {
+      rkNotify.syncBillSchedules([], false);
+    }
     if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && navigator.serviceWorker.ready) {
       navigator.serviceWorker.ready.then(function (reg) {
         if (reg && reg.getNotifications) {
@@ -18710,42 +18866,227 @@ function rkSetNotifReset(reset) {
   }
 }
 
+/* Adaptor notifikasi tunggal: native Capacitor LocalNotifications vs Web Notification API. */
+var rkNotify = (function () {
+  var CHANNEL_ID = 'rk-bill-reminders';
+  var SCHED_BASE = 500000;
+  var SCHED_SPAN = 400000;
+  var nativePerm = 'default';
+  var chanReady = false;
+  var syncInFlight = null;
+
+  function plugin() {
+    if (typeof window === 'undefined' || !window.Capacitor) return null;
+    if (typeof window.Capacitor.isNativePlatform === 'function' && !window.Capacitor.isNativePlatform()) return null;
+    return (window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) || null;
+  }
+  function isNative() { return !!plugin(); }
+  function isSupported() {
+    if (isNative()) return true;
+    return typeof Notification !== 'undefined' && 'Notification' in window && !!Notification;
+  }
+  function mapNativePerm(res) {
+    var d = res && res.display;
+    if (d === 'granted') return 'granted';
+    if (d === 'denied') return 'denied';
+    return 'default';
+  }
+  function getPermission() {
+    if (isNative()) return nativePerm;
+    return (typeof Notification !== 'undefined' && 'Notification' in window && Notification) ? Notification.permission : 'unsupported';
+  }
+  function refreshPermission() {
+    var ln = plugin();
+    if (!ln || typeof ln.checkPermissions !== 'function') return Promise.resolve(getPermission());
+    return Promise.resolve(ln.checkPermissions()).then(function (res) {
+      var prev = nativePerm;
+      nativePerm = mapNativePerm(res);
+      if (nativePerm !== prev) {
+        if (typeof syncNotifBtn === 'function') syncNotifBtn();
+        if (typeof renderMobSettings === 'function') renderMobSettings();
+        if (typeof renderMobNotifPopover === 'function') renderMobNotifPopover();
+      }
+      return nativePerm;
+    }).catch(function () { return nativePerm; });
+  }
+  function ensureChannel() {
+    var ln = plugin();
+    if (!ln || chanReady || typeof ln.createChannel !== 'function') return Promise.resolve();
+    chanReady = true;
+    return Promise.resolve(ln.createChannel({
+      id: CHANNEL_ID,
+      name: 'Pengingat Tagihan',
+      description: 'Pengingat jatuh tempo tagihan RenKeu',
+      importance: 4,
+      visibility: 1,
+    })).catch(function () {});
+  }
+  function requestPermission() {
+    var ln = plugin();
+    if (ln) {
+      return ensureChannel().then(function () {
+        if (typeof ln.requestPermissions !== 'function') return nativePerm;
+        return Promise.resolve(ln.requestPermissions()).then(function (res) {
+          nativePerm = mapNativePerm(res);
+          return nativePerm;
+        });
+      }).catch(function () { return nativePerm; });
+    }
+    if (!isSupported()) return Promise.resolve('unsupported');
+    return new Promise(function (resolve) {
+      var done = false;
+      var fin = function (p) { if (done) return; done = true; resolve(p); };
+      try {
+        var req = Notification.requestPermission(fin);
+        if (req && typeof req.then === 'function') req.then(fin, function () { fin('denied'); });
+      } catch (e) { fin('denied'); }
+    });
+  }
+  function hashId(str) {
+    var h = 0;
+    for (var i = 0; i < str.length; i++) h = ((h * 31) + str.charCodeAt(i)) | 0;
+    return SCHED_BASE + (Math.abs(h) % SCHED_SPAN);
+  }
+  function show(title, body, tag) {
+    var ln = plugin();
+    if (ln) {
+      var id = hashId(String(tag || ('now|' + title)) + '|now') % 499999 || 101;
+      return ensureChannel().then(function () {
+        return ln.schedule({
+          notifications: [{
+            id: id,
+            title: title,
+            body: body,
+            channelId: CHANNEL_ID,
+            smallIcon: 'ic_stat_renkeu',
+            iconColor: '#0E3F86',
+            schedule: { at: new Date(Date.now() + 200) },
+          }],
+        });
+      }).catch(function () {});
+    }
+    var opt = {
+      body: body,
+      tag: tag || 'bill-due-' + Date.now(),
+      icon: './icon-192.png',
+      badge: './icon-192.png',
+      renotify: true,
+      requireInteraction: true,
+      vibrate: [180, 80, 180],
+      timestamp: Date.now(),
+      data: { url: './?mode=app' },
+    };
+    var minOpt = { body: body, tag: opt.tag, icon: './icon-192.png', data: opt.data };
+    var fallbackNew = function () {
+      try { new Notification(title, opt); } catch (e1) {
+        try { new Notification(title, minOpt); } catch (e2) {}
+      }
+    };
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      return navigator.serviceWorker.ready.then(function (reg) {
+        if (reg && reg.showNotification) {
+          return reg.showNotification(title, opt).catch(function () {
+            return reg.showNotification(title, minOpt);
+          });
+        }
+        fallbackNew();
+      }).catch(fallbackNew);
+    }
+    fallbackNew();
+    return Promise.resolve();
+  }
+  function dueTriggerDate(iso, diffDays) {
+    var now = new Date();
+    if (diffDays > 0) {
+      var pts = String(iso || '').split('-');
+      if (pts.length === 3) {
+        var dt = new Date(+pts[0], +pts[1] - 1, +pts[2], 8, 0, 0, 0);
+        if (dt.getTime() > now.getTime() + 5000) return dt;
+      }
+    }
+    if (diffDays === 0) {
+      var todayAt8 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0, 0);
+      if (todayAt8.getTime() > now.getTime() + 5000) return todayAt8;
+      return new Date(now.getTime() + 8000);
+    }
+    // Tagihan terlewat belum dibayar: jadwalkan pengingat berikutnya pukul 08:00 esok hari
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 8, 0, 0, 0);
+  }
+  function syncBillSchedules(dueList, enabled) {
+    var ln = plugin();
+    if (!ln || typeof ln.schedule !== 'function') return Promise.resolve();
+    var desired = [];
+    var desiredIds = Object.create(null);
+    if (enabled && nativePerm === 'granted' && !(typeof rkIsNotifReset === 'function' && rkIsNotifReset())) {
+      (dueList || []).slice(0, 24).forEach(function (x) {
+        if (!x || !x.it) return;
+        var iso = x.iso || x.d || (typeof isoD === 'function' && x.t ? isoD(x.t) : '');
+        if (!iso) return;
+        var id = hashId(String(x.it.id) + '|' + iso);
+        if (desiredIds[id]) return;
+        desiredIds[id] = true;
+        var diff = typeof x.diff === 'number' ? x.diff : 0;
+        var timing = diff < 0 ? ('Terlewat ' + Math.abs(diff) + ' hari') : (diff === 0 ? 'Jatuh tempo hari ini' : (diff + ' hari lagi'));
+        desired.push({
+          id: id,
+          title: 'Pengingat: ' + x.it.name,
+          body: (typeof rp === 'function' ? rp(x.price) : String(x.price)) + ' · ' + timing,
+          channelId: CHANNEL_ID,
+          smallIcon: 'ic_stat_renkeu',
+          iconColor: '#0E3F86',
+          schedule: { at: dueTriggerDate(iso, diff) },
+        });
+      });
+    }
+    var doSync = function () {
+      return ensureChannel().then(function () {
+        return typeof ln.getPending === 'function' ? Promise.resolve(ln.getPending()) : Promise.resolve({ notifications: [] });
+      }).then(function (pendingRes) {
+        var pend = (pendingRes && pendingRes.notifications) || [];
+        var existingIds = Object.create(null);
+        var toCancel = [];
+        pend.forEach(function (item) {
+          var pid = Number(item && item.id);
+          if (pid >= SCHED_BASE && pid < SCHED_BASE + SCHED_SPAN) {
+            if (!desiredIds[pid]) toCancel.push({ id: pid });
+            else existingIds[pid] = true;
+          }
+        });
+        var pCancel = (toCancel.length && typeof ln.cancel === 'function')
+          ? Promise.resolve(ln.cancel({ notifications: toCancel }))
+          : Promise.resolve();
+        return pCancel.then(function () {
+          var toAdd = desired.filter(function (n) { return !existingIds[n.id]; });
+          if (!toAdd.length) return;
+          return ln.schedule({ notifications: toAdd });
+        });
+      }).catch(function () {});
+    };
+    var run = (syncInFlight || Promise.resolve()).then(doSync, doSync);
+    syncInFlight = run;
+    return run;
+  }
+  return {
+    isNative: isNative,
+    isSupported: isSupported,
+    getPermission: getPermission,
+    refreshPermission: refreshPermission,
+    requestPermission: requestPermission,
+    show: show,
+    syncBillSchedules: syncBillSchedules,
+    hashId: hashId,
+  };
+})();
+if (typeof window !== 'undefined') window.rkNotify = rkNotify;
+
 function rkCanOsNotif() {
-  return typeof Notification !== 'undefined' && 'Notification' in window && !!Notification && Notification.permission === 'granted' && !rkIsNotifReset();
+  return rkNotify.isSupported() && rkNotify.getPermission() === 'granted' && !rkIsNotifReset();
 }
 
-/** Kirim notifikasi sistem baik via ServiceWorkerRegistration (Android & iOS 16.4+ PWA) maupun Notification API browser. */
+/** Kirim notifikasi sistem baik via Capacitor LocalNotifications (native APK) maupun ServiceWorker/Notification API (browser/PWA). */
 function triggerSystemNotification(title, body, tag) {
   if (!rkCanOsNotif()) return;
-  var opt = {
-    body: body,
-    tag: tag || 'bill-due-' + Date.now(),
-    icon: './icon-192.png',
-    badge: './icon-192.png',
-    renotify: true,
-    requireInteraction: true,
-    vibrate: [180, 80, 180],
-    timestamp: Date.now(),
-    data: { url: './?mode=app' },
-  };
-  var minOpt = { body: body, tag: opt.tag, icon: './icon-192.png', data: opt.data };
-  var fallbackNew = function () {
-    try { new Notification(title, opt); } catch (e1) {
-      try { new Notification(title, minOpt); } catch (e2) {}
-    }
-  };
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready.then(function (reg) {
-      if (reg && reg.showNotification) {
-        return reg.showNotification(title, opt).catch(function () {
-          return reg.showNotification(title, minOpt);
-        });
-      }
-      fallbackNew();
-    }).catch(fallbackNew);
-  } else {
-    fallbackNew();
-  }
+  rkNotify.show(title, body, tag);
 }
 
 /** Pengingat tagihan jatuh tempo lokal (Notification API + fallback bar/toast dalam aplikasi). */
@@ -18765,6 +19106,12 @@ function checkDueNotifications(force) {
     var diffDays = Math.round((row.t - todayMs) / 864e5);
     dueList.push({ it: row.it, d: row.iso, diff: diffDays, price: row.price, late: false });
   });
+
+  if (rkNotify.isNative()) {
+    var schedItems = typeof getMobDueList === 'function' ? getMobDueList() : dueList;
+    var schedEnabled = rkCanOsNotif() && (typeof MOB_STATE === 'undefined' || !MOB_STATE || MOB_STATE.notifEnabled !== false);
+    rkNotify.syncBillSchedules(schedItems, schedEnabled);
+  }
 
   if (!dueList.length) {
     if (force && rkCanOsNotif()) {
@@ -18829,6 +19176,20 @@ function checkDueNotifications(force) {
 
 function requestNotifPermission() {
   rkSetNotifReset(false);
+  if (rkNotify.isNative()) {
+    rkNotify.requestPermission().then(function (perm) {
+      if (typeof syncNotifBtn === 'function') syncNotifBtn();
+      if (typeof renderMobSettings === 'function') renderMobSettings();
+      if (typeof renderMobNotifPopover === 'function') renderMobNotifPopover();
+      if (perm === 'granted') {
+        toast('Notifikasi aktif! Mengirim pengingat...');
+        checkDueNotifications(true);
+      } else {
+        toast('Izin notifikasi tidak diberikan. Aktifkan di Pengaturan HP → Aplikasi → RenKeu → Notifikasi.');
+      }
+    });
+    return;
+  }
   if (rkIsIosNeedsA2HS()) {
     toast('Di iPhone/iPad (iOS 16.4+), ketuk Bagikan (Share) → "Tambah ke Layar Utama", lalu buka dari ikon aplikasi untuk mengaktifkan notifikasi OS.');
     if (typeof syncNotifBtn === 'function') syncNotifBtn();
@@ -18836,13 +19197,13 @@ function requestNotifPermission() {
     if (typeof renderMobNotifPopover === 'function') renderMobNotifPopover();
     return;
   }
-  if (typeof Notification === 'undefined' || !('Notification' in window) || !Notification) {
+  if (!rkNotify.isSupported()) {
     toast('Browser ini belum mendukung fitur Notifikasi Web.');
     if (typeof renderMobSettings === 'function') renderMobSettings();
     if (typeof renderMobNotifPopover === 'function') renderMobNotifPopover();
     return;
   }
-  if (Notification.permission === 'granted') {
+  if (rkNotify.getPermission() === 'granted') {
     toast('Notifikasi aktif! Memeriksa pengingat tagihan...');
     if (typeof syncNotifBtn === 'function') syncNotifBtn();
     checkDueNotifications(true);
@@ -18850,7 +19211,7 @@ function requestNotifPermission() {
     if (typeof renderMobNotifPopover === 'function') renderMobNotifPopover();
     return;
   }
-  if (Notification.permission === 'denied') {
+  if (rkNotify.getPermission() === 'denied') {
     toast(
       rkIsIosDevice()
         ? 'Izin notifikasi iOS diblokir. Buka Pengaturan iOS → Pemberitahuan → pilih Rencana Keuangan lalu nyalakan Izinkan.'
@@ -18861,10 +19222,7 @@ function requestNotifPermission() {
     if (typeof renderMobNotifPopover === 'function') renderMobNotifPopover();
     return;
   }
-  var handled = false;
-  var onPerm = function (perm) {
-    if (handled) return;
-    handled = true;
+  rkNotify.requestPermission().then(function (perm) {
     if (typeof syncNotifBtn === 'function') syncNotifBtn();
     if (typeof renderMobSettings === 'function') renderMobSettings();
     if (typeof renderMobNotifPopover === 'function') renderMobNotifPopover();
@@ -18874,18 +19232,14 @@ function requestNotifPermission() {
     } else {
       toast('Izin notifikasi tidak diberikan.');
     }
-  };
-  try {
-    var req = Notification.requestPermission(onPerm);
-    if (req && typeof req.then === 'function') req.then(onPerm);
-  } catch (e) {
-    toast('Gagal meminta izin notifikasi.');
-  }
+  });
 }
 
-/** PWA: daftar service worker (hanya di https/http), tombol "Pasang aplikasi", dan auto check tagihan. */
+/** PWA: daftar service worker (hanya di https/http non-Capacitor), tombol "Pasang aplikasi", dan auto check tagihan. */
 function bindPwa() {
-  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  if (rkNotify.isNative()) rkNotify.refreshPermission();
+  var inCap = typeof window !== 'undefined' && !!window.Capacitor && (typeof window.Capacitor.isNativePlatform !== 'function' || window.Capacitor.isNativePlatform());
+  if (!inCap && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     (window.__rkSwReg || navigator.serviceWorker.register('./sw.js', { scope: './' })).then(function (reg) {
       if (reg && reg.update) reg.update();
     }).catch(function () {});
@@ -20390,8 +20744,8 @@ function rkSyncNotifOpenUI() {
 
 /** Label & aksesibilitas tombol notifikasi (keadaan aktif .on mengikuti status popover). */
 function syncNotifBtn() {
-  var hasN = typeof Notification !== 'undefined' && 'Notification' in window && !!Notification;
-  var p = hasN ? Notification.permission : 'default';
+  var hasN = (typeof rkNotify !== 'undefined' && rkNotify.isSupported()) || (typeof Notification !== 'undefined' && 'Notification' in window && !!Notification);
+  var p = (typeof rkNotify !== 'undefined' && rkNotify.getPermission) ? rkNotify.getPermission() : (hasN ? Notification.permission : 'default');
   var isOn = p === 'granted' && !(typeof rkIsNotifReset === 'function' && rkIsNotifReset());
   var b = document.getElementById('btn-notif');
   if (b && hasN) {
@@ -26837,8 +27191,11 @@ function renderMobSettings() {
   if (typeof rkIsNotifReset === 'function' && rkIsNotifReset()) MOB_STATE.notifEnabled = false;
   var due = getMobDueList(),
     osActive = isMobNotifOsActive(),
-    osPerm = typeof Notification !== 'undefined' && 'Notification' in window && Notification ? Notification.permission : 'unsupported',
+    osPerm = (typeof rkNotify !== 'undefined' && rkNotify.getPermission) ? rkNotify.getPermission() : (typeof Notification !== 'undefined' && 'Notification' in window && Notification ? Notification.permission : 'unsupported'),
     needsA2HS = typeof rkIsIosNeedsA2HS === 'function' && rkIsIosNeedsA2HS();
+  if (typeof rkNotify !== 'undefined' && rkNotify.isNative()) {
+    rkNotify.syncBillSchedules(due, !!MOB_STATE.notifEnabled && osActive);
+  }
   syncMobNotifDot();
   if ($('m-set-notif-enabled')) $('m-set-notif-enabled').checked = !!MOB_STATE.notifEnabled;
   if ($('m-rem-cnt-badge')) $('m-rem-cnt-badge').textContent = due.length + ' item';
@@ -28157,7 +28514,8 @@ function bindMobileShellEvents(root) {
       MOB_STATE.notifLate = !$('m-set-notif-late') || $('m-set-notif-late').checked;
       if (t.id === 'm-set-notif-enabled') {
         if (typeof rkSetNotifReset === 'function') rkSetNotifReset(!MOB_STATE.notifEnabled);
-        if (MOB_STATE.notifEnabled && typeof Notification !== 'undefined' && Notification && Notification.permission === 'default' && typeof requestNotifPermission === 'function') {
+        var curPerm = (typeof rkNotify !== 'undefined' && rkNotify.getPermission) ? rkNotify.getPermission() : (typeof Notification !== 'undefined' && Notification ? Notification.permission : 'unsupported');
+        if (MOB_STATE.notifEnabled && curPerm === 'default' && typeof requestNotifPermission === 'function') {
           requestNotifPermission();
         }
       }
