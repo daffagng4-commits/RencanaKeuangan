@@ -2406,7 +2406,8 @@ function bindMobileShellEvents(root) {
       var mm = $('m-main');
       var mTop = mm ? mm.scrollTop : 0;
       var wTop = (typeof window !== 'undefined' ? (window.scrollY || 0) : 0) ||
-        (typeof document !== 'undefined' && document.documentElement ? document.documentElement.scrollTop : 0);
+        (typeof document !== 'undefined' && document.documentElement ? document.documentElement.scrollTop : 0) ||
+        (typeof document !== 'undefined' && document.body ? document.body.scrollTop : 0);
       return Math.max(mTop || 0, wTop || 0);
     }
 
@@ -2448,7 +2449,19 @@ function bindMobileShellEvents(root) {
       }
     }
 
+    function detachActiveMove() {
+      root.removeEventListener('touchmove', onActiveMove, { passive: false });
+      root.removeEventListener('touchend', onActiveEnd);
+      root.removeEventListener('touchcancel', onActiveCancel);
+    }
+
+    function clearGesture() {
+      ptr = null;
+      detachActiveMove();
+    }
+
     function finishRefresh(msg) {
+      clearGesture();
       refreshing = false;
       cooldownUntil = Date.now() + 1000;
       resetVisual('is-exiting');
@@ -2492,14 +2505,66 @@ function bindMobileShellEvents(root) {
       finishRefresh('Data diperbarui');
     }
 
+    function onActiveMove(e) {
+      if (!ptr || !e.touches || !e.touches.length) {
+        clearGesture();
+        return;
+      }
+      if ((typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') || getScrollY() > 0) {
+        if (ptr.locked) resetVisual('is-snapping');
+        clearGesture();
+        return;
+      }
+      var dx = e.touches[0].clientX - ptr.startX;
+      var dy = e.touches[0].clientY - ptr.startY;
+      if (!ptr.locked) {
+        if (Math.hypot(dx, dy) < LOCK_PX) return;
+        if (dy <= 0 || Math.abs(dx) >= dy) {
+          clearGesture();
+          return;
+        }
+        ptr.locked = true;
+        var ind0 = $('m-ptr-ind');
+        if (ind0) {
+          positionUnderHeader(ind0);
+          ind0.classList.remove('is-snapping', 'is-exiting', 'is-refreshing');
+        }
+      }
+      // preventDefault hanya dipanggil saat gestur sudah terkunci sebagai tarikan bawah dari posisi scroll 0
+      if (e.cancelable) e.preventDefault();
+      var pullY = Math.min(PULL_MAX, Math.max(0, dy * 0.5));
+      ptr.pullY = pullY;
+      var ratio = Math.min(1, pullY / PULL_TRIG);
+      setPtrVars($('m-ptr-ind'), pullY - 46, Math.min(1, ratio * 1.15), ratio * 180, 0.8 + ratio * 0.2);
+    }
+
+    function endPtr(cancelled) {
+      if (!ptr) {
+        detachActiveMove();
+        return;
+      }
+      var cur = ptr;
+      clearGesture();
+      if (!cur.locked) return;
+      if (!cancelled && cur.pullY >= PULL_TRIG) {
+        runRefresh();
+      } else {
+        resetVisual('is-snapping');
+      }
+    }
+
+    function onActiveEnd() { endPtr(false); }
+    function onActiveCancel() { endPtr(true); }
+
     window._rkPtrReset = function () {
-      ptr = null;
+      clearGesture();
       refreshing = false;
       cooldownUntil = 0;
       resetVisual('');
     };
 
     root.addEventListener('touchstart', function (e) {
+      clearGesture();
       if (typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') return;
       if (refreshing || Date.now() < cooldownUntil) return;
       if (!e.touches || e.touches.length !== 1) return;
@@ -2511,47 +2576,10 @@ function bindMobileShellEvents(root) {
         pullY: 0,
         locked: false,
       };
+      root.addEventListener('touchmove', onActiveMove, { passive: false });
+      root.addEventListener('touchend', onActiveEnd, { passive: true });
+      root.addEventListener('touchcancel', onActiveCancel, { passive: true });
     }, { passive: true });
-
-    root.addEventListener('touchmove', function (e) {
-      if (!ptr || !e.touches || !e.touches.length) return;
-      if (typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') { ptr = null; return; }
-      var dx = e.touches[0].clientX - ptr.startX;
-      var dy = e.touches[0].clientY - ptr.startY;
-      if (!ptr.locked) {
-        if (Math.hypot(dx, dy) < LOCK_PX) return;
-        if (dy <= 0 || Math.abs(dx) >= dy || getScrollY() > 0) {
-          ptr = null;
-          return;
-        }
-        ptr.locked = true;
-        var ind0 = $('m-ptr-ind');
-        if (ind0) {
-          positionUnderHeader(ind0);
-          ind0.classList.remove('is-snapping', 'is-exiting', 'is-refreshing');
-        }
-      }
-      if (e.cancelable) e.preventDefault();
-      var pullY = Math.min(PULL_MAX, Math.max(0, dy * 0.5));
-      ptr.pullY = pullY;
-      var ratio = Math.min(1, pullY / PULL_TRIG);
-      var ind = $('m-ptr-ind');
-      setPtrVars(ind, pullY - 46, Math.min(1, ratio * 1.15), ratio * 180, 0.8 + ratio * 0.2);
-    }, { passive: false });
-
-    function onTouchEnd(cancelled) {
-      if (!ptr) return;
-      var cur = ptr;
-      ptr = null;
-      if (!cur.locked) return;
-      if (!cancelled && cur.pullY >= PULL_TRIG) {
-        runRefresh();
-      } else {
-        resetVisual('is-snapping');
-      }
-    }
-    root.addEventListener('touchend', function () { onTouchEnd(false); }, { passive: true });
-    root.addEventListener('touchcancel', function () { onTouchEnd(true); }, { passive: true });
   })();
   if (typeof document !== 'undefined' && !document._rkMobDocNotifBound) {
     document._rkMobDocNotifBound = true;

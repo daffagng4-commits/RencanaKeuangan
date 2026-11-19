@@ -187,6 +187,10 @@ body[data-shell="mobile-app"][data-phone-frame="full"] .mob-shell {
   transform: none;
   box-shadow: 0 0 48px rgba(15, 23, 42, 0.12);
 }
+body[data-shell="mobile-app"][data-phone-frame="full"] #mobile-app-shell .mob-main {
+  overflow-y: visible;
+  overscroll-behavior-y: auto;
+}
 
 @media (max-width: 520px) {
   body[data-shell="mobile-app"] { background: var(--bg-canvas); display: block; }
@@ -214,6 +218,10 @@ body[data-shell="mobile-app"] #mobile-app-shell .phone-home-indicator { display:
     overflow: visible !important;
     transform: none !important;
     box-shadow: none !important;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell .mob-main {
+    overflow-y: visible !important;
+    overscroll-behavior-y: auto !important;
   }
 }
 
@@ -588,10 +596,14 @@ body[data-shell="mobile-app"] #mobile-app-shell .ap-item:active { transform: sca
   body[data-shell="mobile-app"] #mobile-app-shell .ap-item:hover { opacity: 0.86; }
 }
 
-/* Pull-to-Refresh & Overscroll Guard (Khusus Mode APK) */
-body[data-shell="mobile-app"],
-body[data-shell="mobile-app"] #mobile-app-shell .mob-main {
+/* Pull-to-Refresh & Overscroll Guard (Khusus Mode APK; html saja di full mode agar scroll window normal) */
+html.rk-mob-app {
   overscroll-behavior-y: contain;
+}
+@media (min-width: 521px) {
+  body[data-shell="mobile-app"]:not([data-phone-frame="full"]) #mobile-app-shell .mob-main {
+    overscroll-behavior-y: contain;
+  }
 }
 body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind {
   position: absolute;

@@ -7,9 +7,10 @@ const { boot } = require('./ui.js');
     await t.ready();
     const doc = t.w.document;
 
-    // Load standard data fixture
+    // Load local deterministic fixture from repo (tests/fixtures/)
     const fs = require('fs');
-    const rawData = fs.readFileSync('C:/Users/daffa/Downloads/data.json', 'utf8');
+    const path = require('path');
+    const rawData = fs.readFileSync(path.join(__dirname, '../fixtures/jadwal-tab-sample.json'), 'utf8');
     t.w.__today = '2026-11-15';
     t.w.ALL = t.w.norm(JSON.parse(rawData));
     t.w.ALL.year = 2026;

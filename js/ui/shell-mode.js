@@ -80,6 +80,9 @@ function getShellMode() {
 function syncShellSwitchUI(m) {
   if (typeof document === 'undefined') return;
   var isApp = m === 'mobile-app';
+  if (document.documentElement && document.documentElement.classList) {
+    document.documentElement.classList.toggle('rk-mob-app', isApp);
+  }
   if (typeof rkSyncThemeColorMeta === 'function') {
     rkSyncThemeColorMeta(null, m);
   } else {

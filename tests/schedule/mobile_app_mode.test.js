@@ -1001,6 +1001,9 @@ const { boot } = require('./ui.js');
 
   // 21. Pull-to-Refresh (hanya mode APK, di semua tab, hormati zona kecualian & cooldown)
   assert(/overscroll-behavior-y:\s*contain/.test(cssMobSrc), 'CSS menyetel overscroll-behavior-y: contain di mode app agar tidak bentrok dengan PTR WebView');
+  assert(!/body\[data-shell="mobile-app"\]\s*\{[^}]*overscroll-behavior-y:\s*contain/s.test(cssMobSrc), 'CSS tidak menyetel overscroll-behavior-y: contain pada body[data-shell="mobile-app"]');
+  assert(/data-phone-frame="full"\]\s+#mobile-app-shell\s+\.mob-main\s*\{[^}]*overflow-y:\s*visible[^}]*overscroll-behavior-y:\s*auto/s.test(cssMobSrc), 'CSS layar penuh membuka overflow-y: visible & overscroll-behavior-y: auto pada .mob-main agar scroll window tidak terkunci');
+  assert(doc.documentElement.classList.contains('rk-mob-app'), 'html mendapat kelas .rk-mob-app saat mode mobile-app aktif');
   const ptrInd = $('m-ptr-ind');
   assert(ptrInd, 'elemen indikator #m-ptr-ind tersedia di shell APK');
   const origSb21 = w.sb;
@@ -1076,8 +1079,44 @@ const { boot } = require('./ui.js');
   assert($('m-toast-box').textContent.includes('Data diperbarui'), 'mode lokal tanpa login menampilkan toast Data diperbarui saat PTR');
   assert(doc.body.classList.contains('privacy-mode'), 'Mode Privasi tetap terkunci saat render ulang PTR');
   doc.body.classList.remove('privacy-mode');
-  // 21i. Tidak aktif di mode browser/desktop
+  // 21j. Scroll biasa (atas/bawah) tidak pernah memanggil preventDefault(); hanya saat terkunci tarik bawah di scrollY=0
+  const fireTouchEv = (el, type, clientX, clientY) => {
+    const ev = new w.Event(type, { bubbles: true, cancelable: true });
+    const pt = { clientX, clientY };
+    ev.touches = type === 'touchend' || type === 'touchcancel' ? [] : [pt];
+    ev.changedTouches = [pt];
+    el.dispatchEvent(ev);
+    return ev;
+  };
+  for (const tabId of ['rincian', 'kas', 'jadwal', 'settings']) {
+    w.switchMobileTab(tabId);
+    w._rkPtrReset();
+    $('m-main').scrollTop = 0;
+    fireTouchEv($('m-tab-' + tabId), 'touchstart', 150, 400);
+    const upMv = fireTouchEv($('m-tab-' + tabId), 'touchmove', 150, 260);
+    assert.strictEqual(upMv.defaultPrevented, false, 'scroll biasa ke bawah (jari naik) di tab ' + tabId + ' tidak memanggil preventDefault');
+    fireTouchEv($('m-tab-' + tabId), 'touchend', 150, 260);
+  }
+  w.switchMobileTab('rincian');
+  w._rkPtrReset();
+  // Saat terkunci tarik bawah dari scrollY=0, barulah preventDefault dipanggil; touchcancel lalu mereset agar scroll berikutnya normal
+  const beforeCancel = ptrPullCount;
+  fireTouchEv($('m-tab-rincian'), 'touchstart', 150, 200);
+  const subLockMv = fireTouchEv($('m-tab-rincian'), 'touchmove', 150, 204);
+  assert.strictEqual(subLockMv.defaultPrevented, false, 'sebelum melewati 8px lock, touchmove tidak memanggil preventDefault');
+  const lockedMv = fireTouchEv($('m-tab-rincian'), 'touchmove', 150, 240);
+  assert.strictEqual(lockedMv.defaultPrevented, true, 'setelah terkunci tarik bawah dari scrollY=0, preventDefault dipanggil');
+  fireTouchEv($('m-tab-rincian'), 'touchcancel', 150, 240);
+  assert.strictEqual(ptrPullCount, beforeCancel, 'touchcancel mereset gestur PTR tanpa memicu refresh');
+  $('m-main').scrollTop = 90;
+  fireTouchEv($('m-tab-rincian'), 'touchstart', 150, 300);
+  const scrolledDownMv = fireTouchEv($('m-tab-rincian'), 'touchmove', 150, 420);
+  assert.strictEqual(scrolledDownMv.defaultPrevented, false, 'saat scrollTop > 0 gestur tarik ke bawah pun tidak memanggil preventDefault');
+  fireTouchEv($('m-tab-rincian'), 'touchend', 150, 420);
+  $('m-main').scrollTop = 0;
+
   w.setShellMode('browser');
+  assert(!doc.documentElement.classList.contains('rk-mob-app'), 'kelas .rk-mob-app dilepas saat kembali ke mode browser');
   w.sbUser = { id: 'u-ptr-1' };
   const beforeBr = ptrPullCount;
   doPtr(remountShell, 0, 160);

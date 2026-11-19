@@ -1,0 +1,31 @@
+{
+  "year": 2026,
+  "rev": 1,
+  "data": {
+    "2026": {
+      "saldo": 10000000,
+      "startMonth": 10,
+      "items": [
+        { "id": 101, "name": "JKT48", "price": 350000, "n": 1, "unit": "sekali", "start": "2026-11-05", "end": "", "cnt": 0, "cat": "Hiburan", "ch": [] },
+        { "id": 102, "name": "ETF 60%", "price": 1000000, "n": 1, "unit": "bulan", "start": "2026-11-15", "end": "", "cnt": 0, "cat": "Investasi", "ch": [{ "from": "2026-11-15", "price": 1600000 }] },
+        { "id": 103, "name": "Saham Lokal 40%", "price": 400000, "n": 1, "unit": "bulan", "start": "2026-11-05", "end": "", "cnt": 0, "cat": "Investasi", "ch": [] },
+        { "id": 104, "name": "BPJS", "price": 150000, "n": 1, "unit": "bulan", "start": "2026-11-10", "end": "", "cnt": 0, "cat": "Kesehatan", "ch": [] },
+        { "id": 105, "name": "Kuota", "price": 100000, "n": 1, "unit": "bulan", "start": "2026-11-17", "end": "", "cnt": 0, "cat": "Tagihan rutin", "ch": [] },
+        { "id": 106, "name": "Warp", "price": 15000, "n": 1, "unit": "bulan", "start": "2026-11-07", "end": "", "cnt": 0, "cat": "Langganan", "ch": [] },
+        { "id": 107, "name": "BTC", "price": 550000, "n": 1, "unit": "bulan", "start": "2026-11-25", "end": "", "cnt": 0, "cat": "Investasi", "ch": [] },
+        { "id": 108, "name": "Vidio", "price": 200000, "n": 1, "unit": "sekali", "start": "2026-12-12", "end": "", "cnt": 0, "cat": "Langganan", "ch": [] },
+        { "id": 109, "name": "Torbox", "price": 1420000, "n": 1, "unit": "sekali", "start": "2026-12-24", "end": "", "cnt": 0, "cat": "Langganan", "ch": [] }
+      ],
+      "paid": {
+        "101|2026-11-05": 1,
+        "102|2026-11-15": 1,
+        "103|2026-11-05": 1,
+        "104|2026-11-10": 1,
+        "105|2026-11-17": 1,
+        "106|2026-11-07": 1
+      },
+      "skip": {},
+      "adj": []
+    }
+  }
+}
