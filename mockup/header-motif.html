@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pratinjau Motif Header Organik — RenKeu APK</title>
+<style>
+  :root {
+    --hdr-top: #0E3F86;
+    --hdr-bot: #0A2F6B;
+    --bg-canvas: #F3F5F2;
+    --bg-surface: #FFFFFF;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --border-subtle: rgba(15, 23, 42, 0.08);
+    --phone-w: 390px;
+    --sat: 34px;
+    --wave1-a: 0.17;
+    --wave1-b: 0.09;
+    --wave2-a: 0.19;
+    --wave2-b: 0.08;
+    --petal-a: 0.11;
+    --petal-b: 0.04;
+    --depth-a: 0.32;
+    --depth-b: 0.14;
+    --glow-a: 0.20;
+    --glow-b: 0.07;
+  }
+  html[data-theme="dark"] {
+    --hdr-top: #092B60;
+    --hdr-bot: #061C42;
+    --bg-canvas: #0A0E14;
+    --bg-surface: #121822;
+    --text-primary: #F1F5F9;
+    --text-secondary: #94A3B8;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --wave1-a: 0.12;
+    --wave1-b: 0.05;
+    --wave2-a: 0.16;
+    --wave2-b: 0.06;
+    --petal-a: 0.08;
+    --petal-b: 0.03;
+    --depth-a: 0.40;
+    --depth-b: 0.18;
+    --glow-a: 0.14;
+    --glow-b: 0.04;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #E2E8F0;
+    color: #0F172A;
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  html[data-theme="dark"] body { background: #05080D; color: #F1F5F9; }
+
+  .ctrl-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    padding: 10px 14px;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    max-width: 780px;
+  }
+  html[data-theme="dark"] .ctrl-bar {
+    background: rgba(18, 24, 34, 0.92);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  .ctrl-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(15, 23, 42, 0.05);
+    padding: 3px;
+    border-radius: 10px;
+  }
+  html[data-theme="dark"] .ctrl-group { background: rgba(255, 255, 255, 0.06); }
+  .ctrl-btn {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 150ms ease, color 150ms ease;
+  }
+  .ctrl-btn.active {
+    background: #0E3F86;
+    color: #FFFFFF;
+  }
+
+  .phone-frame {
+    width: var(--phone-w);
+    min-height: 760px;
+    background: var(--bg-canvas);
+    border-radius: 38px;
+    overflow: hidden;
+    box-shadow: 0 28px 64px rgba(15, 23, 42, 0.28), 0 0 0 8px #0F172A;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: width 220ms ease;
+  }
+
+  /* Header block: dimulai dari top:0 termasuk safe-area */
+  .apk-header-block {
+    position: relative;
+    z-index: 10;
+    background: linear-gradient(180deg, var(--hdr-top) 0%, var(--hdr-bot) 100%);
+    color: #FFFFFF;
+    padding: var(--sat) 14px 18px;
+    border-bottom-left-radius: 26px;
+    border-bottom-right-radius: 26px;
+    box-shadow: 0 8px 24px -10px rgba(7, 22, 54, 0.34);
+    overflow: hidden;
+    transition: padding 220ms ease, border-radius 220ms ease;
+  }
+  .phone-frame[data-tab="short"] .apk-header-block {
+    padding-bottom: 12px;
+    border-bottom-left-radius: 22px;
+    border-bottom-right-radius: 22px;
+  }
+
+  /* Simulasi bar status OS */
+  .os-statusbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--sat);
+    padding: 6px 18px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 700;
+    color: #FFFFFF;
+    z-index: 3;
+    pointer-events: none;
+    transition: background 180ms ease;
+  }
+  .phone-frame[data-edge="fallback"] .os-statusbar {
+    background: var(--hdr-top);
+  }
+  .os-sys {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+  }
+
+  /* Satu lapisan SVG motif organik */
+  .hdr-motif {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .phone-frame[data-edge="fallback"] .hdr-motif {
+    -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) var(--sat), rgba(0, 0, 0, 0.92) calc(var(--sat) + 22px), rgba(0, 0, 0, 1) 100%);
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) var(--sat), rgba(0, 0, 0, 0.92) calc(var(--sat) + 22px), rgba(0, 0, 0, 1) 100%);
+  }
+
+  .hdr-inner {
+    position: relative;
+    z-index: 1;
+  }
+  .mob-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+  .wordmark {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #FFFFFF;
+  }
+  .mt-actions {
+    display: inline-flex;
+    gap: 9px;
+  }
+  .ico-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .hdr-greet {
+    margin: 12px 0 3px;
+    font-size: 11.8px;
+    letter-spacing: 0.055em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.92);
+    font-weight: 400;
+    transition: opacity 220ms ease, transform 220ms ease;
+  }
+  .phone-frame[data-tab="short"] .hdr-greet {
+    position: absolute;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    margin: 0;
+  }
+
+  .apk-hero-well {
+    position: relative;
+    z-index: 1;
+    margin-top: 11px;
+    background: transparent;
+    overflow: visible;
+  }
+  .phone-frame[data-tab="short"] .apk-hero-well {
+    display: none;
+  }
+
+  .wallet-hero {
+    position: relative;
+    z-index: 1;
+    background: #FFFFFF;
+    color: #0F172A;
+    border-radius: 18px;
+    padding: 16px 15px 14px;
+    box-shadow: 0 14px 28px -8px rgba(7, 22, 54, 0.42), 0 4px 10px rgba(7, 22, 54, 0.22);
+  }
+  .wallet-kicker {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #475569;
+    font-weight: 700;
+  }
+  .wallet-bal {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 24px;
+    font-weight: 800;
+    margin: 5px 0 13px;
+  }
+  .wallet-io-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .wallet-io-box {
+    background: #F4F6FA;
+    border-radius: 12px;
+    padding: 10px 11px;
+  }
+  .wallet-io-lbl { font-size: 11px; color: #475569; font-weight: 600; }
+  .wallet-io-val { font-size: 13.5px; font-weight: 800; margin-top: 3px; font-family: ui-monospace, monospace; }
+
+  .mob-main {
+    flex: 1;
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .card {
+    background: var(--bg-surface);
+    border-radius: 18px;
+    padding: 14px;
+    border: 1px solid var(--border-subtle);
+  }
+  .card-title { font-size: 15px; font-weight: 800; color: var(--text-primary); }
+  .card-sub { font-size: 12px; color: var(--text-secondary); margin-top: 6px; line-height: 1.5; }
+</style>
+</head>
+<body>
+  <div class="ctrl-bar" role="toolbar" aria-label="Kontrol Pratinjau Motif Header">
+    <div class="ctrl-group">
+      <button type="button" class="ctrl-btn active" data-set-tab="rincian">Tab Rincian (Penuh)</button>
+      <button type="button" class="ctrl-btn" data-set-tab="short">Tab Lain (Pendek)</button>
+    </div>
+    <div class="ctrl-group">
+      <button type="button" class="ctrl-btn active" data-set-theme="light">Terang</button>
+      <button type="button" class="ctrl-btn" data-set-theme="dark">Gelap</button>
+    </div>
+    <div class="ctrl-group">
+      <button type="button" class="ctrl-btn" data-set-w="360">360px</button>
+      <button type="button" class="ctrl-btn active" data-set-w="390">390px</button>
+      <button type="button" class="ctrl-btn" data-set-w="430">430px</button>
+    </div>
+    <div class="ctrl-group">
+      <button type="button" class="ctrl-btn active" data-set-edge="edge">Jalur A: Edge-to-Edge</button>
+      <button type="button" class="ctrl-btn" data-set-edge="fallback">Jalur B: Cadangan Bar Solid</button>
+    </div>
+  </div>
+
+  <div class="phone-frame" id="phone" data-tab="rincian" data-edge="edge">
+    <div class="apk-header-block">
+      <div class="os-statusbar" aria-hidden="true">
+        <span>07.38</span>
+        <span class="os-sys"><span>5G</span><span>84%</span></span>
+      </div>
+
+      <!-- SATU LAPISAN MOTIF ORGANIK 5 LAPISAN -->
+      <svg class="hdr-motif" viewBox="0 0 400 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs>
+          <!-- 5. Radial glow lembut kanan atas (~40% lebar layar = r 165) -->
+          <radialGradient id="m-glow-tr" cx="348" cy="18" r="172" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="var(--glow-a)"/>
+            <stop offset="48%" stop-color="#FFFFFF" stop-opacity="var(--glow-b)"/>
+            <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+          </radialGradient>
+
+          <!-- 4. Bentuk gelap pengisi kedalaman di tengah kanan -->
+          <linearGradient id="m-depth-mr" x1="210" y1="75" x2="420" y2="290" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#061C42" stop-opacity="0"/>
+            <stop offset="32%" stop-color="#061C42" stop-opacity="var(--depth-a)"/>
+            <stop offset="78%" stop-color="#061C42" stop-opacity="var(--depth-b)"/>
+            <stop offset="100%" stop-color="#061C42" stop-opacity="0"/>
+          </linearGradient>
+
+          <!-- 1. Gelombang besar terang dari kanan atas meluber keluar layar -->
+          <linearGradient id="m-wave-tr" x1="420" y1="-20" x2="175" y2="215" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="var(--wave1-a)"/>
+            <stop offset="56%" stop-color="#FFFFFF" stop-opacity="var(--wave1-b)"/>
+            <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+          </linearGradient>
+
+          <!-- 2. Gelombang kedua melengkung dari kiri tengah meluber keluar kiri -->
+          <linearGradient id="m-wave-ml" x1="-30" y1="150" x2="275" y2="245" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#5B9BFF" stop-opacity="var(--wave2-a)"/>
+            <stop offset="60%" stop-color="#5B9BFF" stop-opacity="var(--wave2-b)"/>
+            <stop offset="100%" stop-color="#5B9BFF" stop-opacity="0"/>
+          </linearGradient>
+
+          <!-- 3. Bentuk kelopak lebar dari bawah kiri -->
+          <linearGradient id="m-petal-bl" x1="-10" y1="340" x2="215" y2="175" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="var(--petal-a)"/>
+            <stop offset="58%" stop-color="#FFFFFF" stop-opacity="var(--petal-b)"/>
+            <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+          </linearGradient>
+
+          <filter id="m-soft-edge" x="-15%" y="-15%" width="130%" height="130%">
+            <feGaussianBlur stdDeviation="8"/>
+          </filter>
+        </defs>
+
+        <!-- Lapisan 4: Bentuk gelap pengisi kedalaman (tengah kanan) -->
+        <path d="M 435 45 C 335 55, 255 110, 210 185 C 172 248, 200 325, 285 350 L 445 350 Z"
+              fill="url(#m-depth-mr)" filter="url(#m-soft-edge)"/>
+
+        <!-- Lapisan 2: Gelombang kedua biru muda #5B9BFF dari kiri tengah meluber keluar kiri -->
+        <path d="M -55 72 C 45 78, 125 112, 185 168 C 245 224, 305 258, 365 272 L 320 355 L -55 355 Z"
+              fill="url(#m-wave-ml)" filter="url(#m-soft-edge)"/>
+
+        <!-- Lapisan 1: Gelombang besar terang dari kanan atas meluber keluar layar -->
+        <path d="M 155 -40 C 175 42, 228 112, 308 148 C 362 172, 412 178, 445 170 L 445 -40 Z"
+              fill="url(#m-wave-tr)" filter="url(#m-soft-edge)"/>
+
+        <!-- Lapisan 3: Bentuk kelopak lebar dari bawah kiri -->
+        <path d="M -45 205 C 35 198, 118 228, 178 278 C 206 302, 224 328, 236 355 L -45 355 Z"
+              fill="url(#m-petal-bl)" filter="url(#m-soft-edge)"/>
+
+        <!-- Lapisan 5: Radial glow lembut kanan atas (~40% lebar layar) -->
+        <circle cx="348" cy="18" r="172" fill="url(#m-glow-tr)"/>
+      </svg>
+
+      <div class="hdr-inner">
+        <header class="mob-topbar">
+          <div class="wordmark">RenKeu</div>
+          <div class="mt-actions">
+            <div class="ico-btn">M</div>
+            <div class="ico-btn">◉</div>
+            <div class="ico-btn">🔔</div>
+          </div>
+        </header>
+        <p class="hdr-greet">HALO, <b>MIX</b></p>
+      </div>
+
+      <div class="apk-hero-well">
+        <div class="wallet-hero">
+          <div class="wallet-kicker">Saldo Realtime · 2026 · November</div>
+          <div class="wallet-bal">Rp 1.206.725</div>
+          <div class="wallet-io-grid">
+            <div class="wallet-io-box">
+              <div class="wallet-io-lbl">Pemasukan</div>
+              <div class="wallet-io-val">Rp 3.293.000</div>
+            </div>
+            <div class="wallet-io-box">
+              <div class="wallet-io-lbl">Pengeluaran</div>
+              <div class="wallet-io-val">Rp 8.946.775</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <main class="mob-main">
+      <div class="card">
+        <div class="card-title">Pratinjau Karakter Motif Organik</div>
+        <div class="card-sub">
+          Gunakan tombol di atas untuk menguji <b>Tab Rincian vs Tab Pendek</b>, <b>Tema Terang vs Gelap</b>,
+          <b>Lebar 360 / 390 / 430px</b>, serta perbandingan <b>Jalur A (Edge-to-Edge)</b> dan <b>Jalur B (Cadangan)</b>.
+        </div>
+      </div>
+    </main>
+  </div>
+
+<script>
+  const phone = document.getElementById('phone');
+  function bindGroup(attr, fn) {
+    const btns = document.querySelectorAll('[' + attr + ']');
+    btns.forEach((b) => b.addEventListener('click', () => {
+      btns.forEach((x) => x.classList.remove('active'));
+      b.classList.add('active');
+      fn(b.getAttribute(attr));
+    }));
+  }
+  bindGroup('data-set-tab', (v) => phone.setAttribute('data-tab', v));
+  bindGroup('data-set-theme', (v) => document.documentElement.setAttribute('data-theme', v));
+  bindGroup('data-set-w', (v) => document.documentElement.style.setProperty('--phone-w', v + 'px'));
+  bindGroup('data-set-edge', (v) => phone.setAttribute('data-edge', v));
+</script>
+</body>
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="id" data-variant="batik-halus" data-tab="rincian">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pratinjau Motif Header v3 — Batik Bunga &amp; Burung Ornamen</title>
+<style>
+  :root {
+    --m-op: 1;
+    --m-scale: 1;
+    --m-x: 0px;
+    --hdr-bg: linear-gradient(180deg, #0E3F86 0%, #0A2F6B 100%);
+    --sb-col: #FFFFFF;
+    --ui-col: #FFFFFF;
+    --ui-sub: rgba(255,255,255,0.88);
+  }
+  html[data-variant="batik-tegas"],
+  html[data-variant="burung-tegas"] {
+    --hdr-bg: linear-gradient(180deg, #F4F6FA 0%, #E9EEF7 100%);
+    --sb-col: #0F172A;
+    --ui-col: #0F172A;
+    --ui-sub: #334155;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #E2E8F0;
+    color: #0F172A;
+    padding: 16px 14px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .toolbar {
+    background: #FFFFFF;
+    border: 1px solid rgba(15,23,42,0.1);
+    border-radius: 16px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+    max-width: 720px;
+    width: 100%;
+  }
+  .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+  }
+  .v-btn {
+    border: 1px solid rgba(15,23,42,0.12);
+    background: #F8FAFC;
+    color: #1E293B;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 7px 11px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background 140ms ease, color 140ms ease;
+  }
+  .v-btn.active {
+    background: #0E3F86;
+    color: #FFFFFF;
+    border-color: #0E3F86;
+  }
+  .sliders {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    justify-content: center;
+    align-items: center;
+  }
+  .sl-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #334155;
+  }
+  .sl-item input { width: 104px; accent-color: #0E3F86; }
+  .sl-val { font-family: ui-monospace, monospace; font-size: 11px; min-width: 38px; color: #0E3F86; }
+
+  /* Frame HP 390x844 */
+  .phone-390 {
+    width: 390px;
+    height: 844px;
+    background: #F3F5F2;
+    border-radius: 38px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(15,23,42,0.28), 0 0 0 8px #0F172A;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .apk-header-block {
+    position: relative;
+    background: var(--hdr-bg);
+    padding: 0 14px 18px;
+    border-bottom-left-radius: 26px;
+    border-bottom-right-radius: 26px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px -10px rgba(7,22,54,0.28);
+    transition: padding 220ms ease, border-radius 220ms ease;
+  }
+  html[data-tab="short"] .apk-header-block {
+    padding-bottom: 12px;
+    border-bottom-left-radius: 22px;
+    border-bottom-right-radius: 22px;
+  }
+  .hdr-motif {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    opacity: var(--m-op);
+    transform: translateX(var(--m-x)) scale(var(--m-scale));
+    transform-origin: center top;
+  }
+  .motif-layer { display: none; }
+  html[data-variant="batik-tegas"] .motif-batik.tegas { display: block; }
+  html[data-variant="batik-halus"] .motif-batik.halus { display: block; }
+  html[data-variant="burung-tegas"] .motif-burung.tegas { display: block; }
+  html[data-variant="burung-halus"] .motif-burung.halus { display: block; }
+
+  .statusbar {
+    position: relative; z-index: 2;
+    height: 34px; padding: 8px 6px 0;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 12px; font-weight: 700; color: var(--sb-col);
+  }
+  .topbar {
+    position: relative; z-index: 2;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 8px;
+  }
+  .brand { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; color: var(--ui-col); }
+  .actions { display: inline-flex; gap: 8px; }
+  .ico-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.24);
+    color: #FFFFFF; display: grid; place-items: center; font-size: 13px; font-weight: 800;
+    backdrop-filter: blur(4px);
+  }
+  html[data-variant="batik-tegas"] .ico-btn,
+  html[data-variant="burung-tegas"] .ico-btn {
+    background: rgba(255,255,255,0.9);
+    border-color: rgba(15,23,42,0.12);
+    color: #0E3F86;
+    box-shadow: 0 2px 8px rgba(15,23,42,0.1);
+  }
+  .greet {
+    position: relative; z-index: 2;
+    margin: 12px 0 12px;
+    font-size: 11.8px; letter-spacing: 0.055em; text-transform: uppercase;
+    color: var(--ui-sub);
+  }
+  html[data-tab="short"] .greet {
+    position: absolute; opacity: 0; visibility: hidden; margin: 0;
+  }
+  .wallet-hero {
+    position: relative; z-index: 2;
+    background: #FFFFFF; color: #0F172A;
+    border-radius: 18px; padding: 16px 15px 14px;
+    box-shadow: 0 14px 28px -8px rgba(7,22,54,0.34);
+  }
+  html[data-tab="short"] .wallet-hero { display: none; }
+  .wk { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; font-weight: 700; }
+  .wb { font-family: ui-monospace, monospace; font-size: 24px; font-weight: 800; margin: 5px 0 12px; }
+  .io-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .io-box { background: #F4F6FA; border-radius: 12px; padding: 9px 11px; }
+  .io-l { font-size: 11px; color: #475569; font-weight: 600; }
+  .io-v { font-family: ui-monospace, monospace; font-size: 13px; font-weight: 800; margin-top: 2px; }
+
+  .mob-main { flex: 1; padding: 14px 12px; }
+  .card { background: #FFFFFF; border-radius: 18px; padding: 14px; font-size: 12.5px; color: #475569; line-height: 1.5; }
+  .card b { color: #0F172A; }
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <div class="btn-row">
+      <button type="button" class="v-btn" data-var="batik-tegas">1A. Batik Bunga — Tegas</button>
+      <button type="button" class="v-btn active" data-var="batik-halus">1B. Batik Bunga — Halus (Biru)</button>
+      <button type="button" class="v-btn" data-var="burung-tegas">2A. Burung Ornamen — Tegas</button>
+      <button type="button" class="v-btn" data-var="burung-halus">2B. Burung Ornamen — Halus (Biru)</button>
+    </div>
+    <div class="sliders">
+      <div class="btn-row">
+        <button type="button" class="v-btn active" data-tab-btn="rincian">Header Penuh (Rincian)</button>
+        <button type="button" class="v-btn" data-tab-btn="short">Header Pendek (Tab Lain)</button>
+      </div>
+      <label class="sl-item">Opacity <input type="range" id="s-op" min="0.25" max="1.6" step="0.05" value="1"><span class="sl-val" id="v-op">1.00</span></label>
+      <label class="sl-item">Ukuran <input type="range" id="s-sc" min="0.75" max="1.35" step="0.02" value="1"><span class="sl-val" id="v-sc">1.00x</span></label>
+      <label class="sl-item">Posisi X <input type="range" id="s-x" min="-60" max="60" step="2" value="0"><span class="sl-val" id="v-x">0px</span></label>
+    </div>
+  </div>
+
+  <div class="phone-390">
+    <div class="apk-header-block">
+      <svg class="hdr-motif" viewBox="0 0 390 276" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
+        <defs>
+          <!-- Mask agar area di belakang teks RenKeu + HALO MIX lebih lengang/halus pada varian halus -->
+          <radialGradient id="quiet-text-mask" cx="95" cy="72" r="145" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.35"/>
+            <stop offset="55%" stop-color="#FFFFFF" stop-opacity="0.72"/>
+            <stop offset="100%" stop-color="#FFFFFF" stop-opacity="1"/>
+          </radialGradient>
+          <mask id="m-quiet">
+            <rect x="0" y="0" width="390" height="276" fill="url(#quiet-text-mask)"/>
+          </mask>
+
+          <!-- Reusable Batik Bunga (orsinal vektor) -->
+          <g id="batik-flower-core">
+            <!-- 5 kelopak luar biru terang + tepi emas -->
+            <path d="M 0 -56 C 18 -58, 34 -44, 30 -24 C 46 -26, 62 -12, 54 8 C 48 24, 32 30, 22 24 C 34 40, 24 60, 4 56 C -12 54, -22 40, -18 24 C -36 32, -56 18, -54 -2 C -52 -20, -36 -28, -22 -24 C -32 -42, -18 -58, 0 -56 Z"
+                  fill="#4C7BF4" stroke="#B8923A" stroke-width="2.2" stroke-linejoin="round"/>
+            <!-- 5 kelopak dalam navy #0B0B5E + urat emas -->
+            <path d="M 0 -42 C 12 -44, 24 -32, 20 -16 C 34 -18, 44 -6, 38 8 C 34 18, 22 22, 14 16 C 22 28, 16 44, 2 42 C -10 40, -16 28, -12 16 C -26 22, -40 12, -38 -2 C -36 -14, -24 -20, -14 -16 C -22 -30, -12 -44, 0 -42 Z"
+                  fill="#0B0B5E" stroke="#B8923A" stroke-width="1.8" stroke-linejoin="round"/>
+            <!-- Pusat biru berlapis + garis emas -->
+            <circle cx="0" cy="0" r="18" fill="#3B5BDB" stroke="#B8923A" stroke-width="1.8"/>
+            <path d="M -8 -6 C -2 -14, 10 -12, 12 -2 C 14 8, 2 14, -6 10 C -14 6, -12 -4, -4 -6" fill="#4C7BF4" stroke="#B8923A" stroke-width="1.5"/>
+            <!-- Titik-titik putih tepi kelopak (hanya varian tegas) -->
+            <g class="batik-dots" fill="#FFFFFF">
+              <circle cx="-12" cy="-49" r="1.7"/><circle cx="0" cy="-51" r="1.7"/><circle cx="12" cy="-49" r="1.7"/>
+              <circle cx="43" cy="-16" r="1.7"/><circle cx="48" cy="-4" r="1.7"/><circle cx="44" cy="9" r="1.7"/>
+              <circle cx="22" cy="41" r="1.7"/><circle cx="11" cy="49" r="1.7"/><circle cx="-3" cy="49" r="1.7"/>
+              <circle cx="-42" cy="14" r="1.7"/><circle cx="-48" cy="2" r="1.7"/><circle cx="-43" cy="-12" r="1.7"/>
+            </g>
+          </g>
+
+          <!-- Batik Bunga versi halus (putih/biru muda/emas pucat, kontur tipis, tanpa titik ramai) -->
+          <g id="batik-flower-soft">
+            <path d="M 0 -56 C 18 -58, 34 -44, 30 -24 C 46 -26, 62 -12, 54 8 C 48 24, 32 30, 22 24 C 34 40, 24 60, 4 56 C -12 54, -22 40, -18 24 C -36 32, -56 18, -54 -2 C -52 -20, -36 -28, -22 -24 C -32 -42, -18 -58, 0 -56 Z"
+                  fill="#7FB2F0" fill-opacity="0.35" stroke="#F3E3B8" stroke-opacity="0.65" stroke-width="1.2" stroke-linejoin="round"/>
+            <path d="M 0 -42 C 12 -44, 24 -32, 20 -16 C 34 -18, 44 -6, 38 8 C 34 18, 22 22, 14 16 C 22 28, 16 44, 2 42 C -10 40, -16 28, -12 16 C -26 22, -40 12, -38 -2 C -36 -14, -24 -20, -14 -16 C -22 -30, -12 -44, 0 -42 Z"
+                  fill="#FFFFFF" fill-opacity="0.24" stroke="#F3E3B8" stroke-opacity="0.55" stroke-width="1" stroke-linejoin="round"/>
+            <circle cx="0" cy="0" r="16" fill="#7FB2F0" fill-opacity="0.32" stroke="#F3E3B8" stroke-opacity="0.6" stroke-width="1"/>
+          </g>
+
+          <!-- Ranting daun emas berbulir -->
+          <g id="batik-sprig">
+            <path d="M 0 0 C 35 -28, 78 -48, 128 -56" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M 24 -17 L 18 -34 M 44 -28 L 40 -46 M 66 -38 L 65 -56 M 90 -47 L 92 -63 M 34 -23 L 48 -10 M 58 -35 L 74 -23 M 84 -45 L 100 -34" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="18" cy="-35" r="2.6" fill="currentColor"/><circle cx="40" cy="-47" r="2.6" fill="currentColor"/>
+            <circle cx="65" cy="-57" r="2.6" fill="currentColor"/><circle cx="92" cy="-64" r="2.4" fill="currentColor"/>
+            <circle cx="49" cy="-9" r="2.6" fill="currentColor"/><circle cx="75" cy="-22" r="2.6" fill="currentColor"/><circle cx="101" cy="-33" r="2.4" fill="currentColor"/>
+          </g>
+
+          <!-- Burung Ornamen + Ekor Ulir (orsinal vektor) -->
+          <g id="bird-ornament">
+            <!-- Ekor ulir / spiral mengalir -->
+            <path d="M 18 14 C 52 24, 88 10, 108 -18 C 122 -36, 102 -56, 86 -42 C 74 -30, 88 -12, 100 -18" fill="none" stroke="var(--b-line)" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M 18 18 C 56 38, 106 38, 134 14 C 152 -2, 138 -24, 120 -14" fill="none" stroke="var(--b-line)" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M 16 22 C 44 58, 72 86, 114 84 C 138 82, 142 58, 124 54 C 110 52, 108 68, 118 72" fill="none" stroke="var(--b-line)" stroke-width="2.2" stroke-linecap="round"/>
+            <!-- Kelopak daun pada ekor -->
+            <path d="M 46 28 C 68 24, 92 34, 104 52 C 84 56, 60 46, 46 28 Z" fill="var(--b-purple)" stroke="var(--b-line)" stroke-width="1.6"/>
+            <path d="M 52 16 C 78 6, 104 12, 122 28 C 98 34, 72 28, 52 16 Z" fill="var(--b-blue)" stroke="var(--b-line)" stroke-width="1.6"/>
+            <path d="M 28 32 C 42 56, 62 74, 86 78 C 72 58, 52 40, 28 32 Z" fill="var(--b-light)" stroke="var(--b-line)" stroke-width="1.6"/>
+            <!-- Sayap kanan besar bersisik -->
+            <path d="M -4 -8 C 16 -44, 48 -78, 76 -92 C 82 -58, 66 -22, 34 0 Z" fill="var(--b-blue)" stroke="var(--b-line)" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M 10 -14 C 24 -38, 46 -60, 64 -70 C 64 -44, 50 -20, 28 -4 Z" fill="var(--b-light)" stroke="var(--b-line)" stroke-width="1.4"/>
+            <path d="M 26 -36 C 32 -30, 42 -32, 46 -40 M 18 -22 C 26 -16, 36 -18, 40 -26" fill="none" stroke="var(--b-line)" stroke-width="1.3"/>
+            <!-- Sayap kiri terbentang -->
+            <path d="M -22 -14 C -48 -32, -74 -52, -88 -74 C -84 -42, -62 -14, -30 4 Z" fill="var(--b-purple)" stroke="var(--b-line)" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M -26 -12 C -46 -26, -64 -42, -74 -56 C -68 -36, -52 -16, -30 -2 Z" fill="var(--b-light)" stroke="var(--b-line)" stroke-width="1.3"/>
+            <!-- Badan & kepala burung -->
+            <path d="M -26 -24 C -16 -38, 4 -34, 10 -16 C 16 2, 16 16, 8 22 C -10 24, -28 8, -26 -24 Z" fill="var(--b-light)" stroke="var(--b-line)" stroke-width="2"/>
+            <path d="M -24 -22 L -36 -26 L -24 -16 Z" fill="var(--b-blue)" stroke="var(--b-line)" stroke-width="1.6"/>
+            <circle cx="-14" cy="-22" r="3.4" fill="var(--b-line)"/>
+            <path d="M -8 -34 C -2 -46, 12 -48, 18 -40 M -2 -34 C 8 -42, 20 -38, 22 -30" fill="none" stroke="var(--b-line)" stroke-width="1.4" stroke-linecap="round"/>
+            <circle cx="19" cy="-40" r="2.2" fill="var(--b-line)"/><circle cx="23" cy="-30" r="2" fill="var(--b-line)"/>
+            <!-- Bunga kecil di sela ekor -->
+            <g transform="translate(66,-4)">
+              <circle cx="0" cy="-7" r="5" fill="var(--b-purple)" stroke="var(--b-line)" stroke-width="1.2"/>
+              <circle cx="7" cy="0" r="5" fill="var(--b-purple)" stroke="var(--b-line)" stroke-width="1.2"/>
+              <circle cx="0" cy="7" r="5" fill="var(--b-purple)" stroke="var(--b-line)" stroke-width="1.2"/>
+              <circle cx="-7" cy="0" r="5" fill="var(--b-purple)" stroke="var(--b-line)" stroke-width="1.2"/>
+              <circle cx="0" cy="0" r="3.5" fill="var(--b-light)" stroke="var(--b-line)" stroke-width="1.2"/>
+            </g>
+          </g>
+        </defs>
+
+        <!-- 1A. BATIK BUNGA — TEGAS (latar terang, warna penuh) -->
+        <g class="motif-layer motif-batik tegas">
+          <use href="#batik-flower-core" transform="translate(342,32) scale(1.18) rotate(18)"/>
+          <use href="#batik-flower-core" transform="translate(26,246) scale(1.08) rotate(-24)"/>
+          <use href="#batik-flower-core" transform="translate(352,216) scale(0.72) rotate(42)"/>
+          <g color="#B8923A">
+            <use href="#batik-sprig" transform="translate(158,64) rotate(-28) scale(0.95)"/>
+            <use href="#batik-sprig" transform="translate(96,258) rotate(-12) scale(0.88)"/>
+            <use href="#batik-sprig" transform="translate(230,276) rotate(-145) scale(0.8)"/>
+          </g>
+        </g>
+
+        <!-- 1B. BATIK BUNGA — HALUS (header biru, opacity 0.14-0.22, area teks lengang) -->
+        <g class="motif-layer motif-batik halus" mask="url(#m-quiet)" opacity="0.52">
+          <use href="#batik-flower-soft" transform="translate(348,30) scale(1.25) rotate(16)"/>
+          <use href="#batik-flower-soft" transform="translate(22,250) scale(1.12) rotate(-22)"/>
+          <use href="#batik-flower-soft" transform="translate(356,220) scale(0.76) rotate(44)"/>
+          <g color="#F3E3B8" opacity="0.45">
+            <use href="#batik-sprig" transform="translate(168,66) rotate(-26) scale(0.95)"/>
+            <use href="#batik-sprig" transform="translate(104,258) rotate(-10) scale(0.86)"/>
+          </g>
+        </g>
+
+        <!-- 2A. BURUNG ORNAMEN — TEGAS (latar terang, warna penuh) -->
+        <g class="motif-layer motif-burung tegas" style="--b-blue:#3F6FD8; --b-purple:#7E6BD6; --b-light:#7FB2F0; --b-line:#16213E;">
+          <use href="#bird-ornament" transform="translate(278,108) scale(1.05) rotate(-8)"/>
+          <use href="#bird-ornament" transform="translate(32,248) scale(0.78) rotate(32)"/>
+        </g>
+
+        <!-- 2B. BURUNG ORNAMEN — HALUS (header biru, opacity 0.13-0.22, area teks lengang) -->
+        <g class="motif-layer motif-burung halus" mask="url(#m-quiet)" opacity="0.28"
+           style="--b-blue:#7FB2F0; --b-purple:#B4A7F5; --b-light:#FFFFFF; --b-line:rgba(255,255,255,0.75);">
+          <use href="#bird-ornament" transform="translate(282,106) scale(1.08) rotate(-8)"/>
+          <use href="#bird-ornament" transform="translate(26,252) scale(0.8) rotate(32)"/>
+        </g>
+      </svg>
+
+      <div class="statusbar"><span>07.53</span><span>5G 84%</span></div>
+      <div class="topbar">
+        <div class="brand">RenKeu</div>
+        <div class="actions"><div class="ico-btn">M</div><div class="ico-btn">◉</div><div class="ico-btn">🔔</div></div>
+      </div>
+      <p class="greet">HALO, <b>MIX</b></p>
+      <div class="wallet-hero">
+        <div class="wk">Saldo Realtime · 2026 · November</div>
+        <div class="wb">Rp 1.206.725</div>
+        <div class="io-grid">
+          <div class="io-box"><div class="io-l">Pemasukan</div><div class="io-v">Rp 3.293.000</div></div>
+          <div class="io-box"><div class="io-l">Pengeluaran</div><div class="io-v">Rp 8.946.775</div></div>
+        </div>
+      </div>
+    </div>
+
+    <main class="mob-main">
+      <div class="card">
+        <b>Pratinjau Motif Header v3</b> — Bandingkan 4 varian di atas (Tegas vs Halus untuk Batik Bunga &amp; Burung Ornamen) serta mode Header Penuh vs Header Pendek.
+      </div>
+    </main>
+  </div>
+
+<script>
+  const root = document.documentElement;
+  document.querySelectorAll('[data-var]').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-var]').forEach((x) => x.classList.remove('active'));
+    b.classList.add('active');
+    root.setAttribute('data-variant', b.getAttribute('data-var'));
+  }));
+  document.querySelectorAll('[data-tab-btn]').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-tab-btn]').forEach((x) => x.classList.remove('active'));
+    b.classList.add('active');
+    root.setAttribute('data-tab', b.getAttribute('data-tab-btn'));
+  }));
+  document.getElementById('s-op').addEventListener('input', (e) => {
+    root.style.setProperty('--m-op', e.target.value);
+    document.getElementById('v-op').textContent = Number(e.target.value).toFixed(2);
+  });
+  document.getElementById('s-sc').addEventListener('input', (e) => {
+    root.style.setProperty('--m-scale', e.target.value);
+    document.getElementById('v-sc').textContent = Number(e.target.value).toFixed(2) + 'x';
+  });
+  document.getElementById('s-x').addEventListener('input', (e) => {
+    root.style.setProperty('--m-x', e.target.value + 'px');
+    document.getElementById('v-x').textContent = e.target.value + 'px';
+  });
+</script>
+</body>
+</html>
