@@ -588,6 +588,75 @@ body[data-shell="mobile-app"] #mobile-app-shell .ap-item:active { transform: sca
   body[data-shell="mobile-app"] #mobile-app-shell .ap-item:hover { opacity: 0.86; }
 }
 
+/* Pull-to-Refresh & Overscroll Guard (Khusus Mode APK) */
+body[data-shell="mobile-app"],
+body[data-shell="mobile-app"] #mobile-app-shell .mob-main {
+  overscroll-behavior-y: contain;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind {
+  position: absolute;
+  left: 50%;
+  top: var(--ptr-top, 78px);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  color: #0E3F86;
+  border: 1px solid rgba(14, 63, 134, 0.14);
+  box-shadow: 0 6px 18px -4px rgba(7, 22, 54, 0.28);
+  display: grid;
+  place-items: center;
+  z-index: 58;
+  pointer-events: none;
+  opacity: var(--ptr-op, 0);
+  transform: translate3d(-50%, var(--ptr-y, -48px), 0) scale(var(--ptr-sc, 0.8));
+  will-change: transform, opacity;
+}
+html[data-theme="dark"] body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind {
+  background: #132B54;
+  color: #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-snapping {
+  transition: transform 280ms var(--ease-spring), opacity 200ms var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-exiting {
+  transition: transform 200ms var(--ease-in), opacity 200ms var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ico {
+  width: 18px;
+  height: 18px;
+  display: block;
+  transform: rotate(var(--ptr-rot, 0deg));
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-spin {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  display: none;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-refreshing .m-ptr-ico { display: none; }
+body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-refreshing .m-ptr-spin {
+  display: block;
+  animation: rkPtrSpin 700ms linear infinite;
+}
+@keyframes rkPtrSpin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-snapping,
+  body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-exiting {
+    transition: none;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-refreshing .m-ptr-spin {
+    animation: none;
+    border-right-color: currentColor;
+    opacity: 0.72;
+  }
+}
+
 /* Main Scrollable Content Area */
 body[data-shell="mobile-app"] #mobile-app-shell .mob-main {
   flex: 1;

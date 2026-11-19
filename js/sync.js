@@ -264,6 +264,10 @@ function applyRemote(row, label) {
 function pull() {
   if (!sb || !sbUser) return Promise.resolve();
   if (typeof rkSetSyncLoading === 'function') rkSetSyncLoading(true);
+  if (typeof window !== 'undefined') {
+    window._rkLastPullOk = true;
+    window._rkLastPullErr = '';
+  }
   var finishSync = function (shouldAnimate) {
     if (typeof rkSetSyncLoading === 'function') rkSetSyncLoading(false, shouldAnimate);
   };
@@ -274,6 +278,10 @@ function pull() {
     .maybeSingle()
     .then(function (r) {
       if (r.error) {
+        if (typeof window !== 'undefined') {
+          window._rkLastPullOk = false;
+          window._rkLastPullErr = r.error.message || 'sinkronisasi gagal';
+        }
         finishSync(false);
         sbStat('Gagal sinkron: ' + r.error.message, 1);
         return;
@@ -315,6 +323,10 @@ function pull() {
       finishSync(!window._rkBootDataAnimated);
       return push();
     }, function (err) {
+      if (typeof window !== 'undefined') {
+        window._rkLastPullOk = false;
+        window._rkLastPullErr = (err && err.message) || 'koneksi';
+      }
       finishSync(!window._rkBootDataAnimated);
       sbStat('Gagal sinkron: ' + ((err && err.message) || 'koneksi'), 1);
     });

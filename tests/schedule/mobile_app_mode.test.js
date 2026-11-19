@@ -999,6 +999,95 @@ const { boot } = require('./ui.js');
   w.pull = origPull;
   w.Capacitor = origCap;
 
+  // 21. Pull-to-Refresh (hanya mode APK, di semua tab, hormati zona kecualian & cooldown)
+  assert(/overscroll-behavior-y:\s*contain/.test(cssMobSrc), 'CSS menyetel overscroll-behavior-y: contain di mode app agar tidak bentrok dengan PTR WebView');
+  const ptrInd = $('m-ptr-ind');
+  assert(ptrInd, 'elemen indikator #m-ptr-ind tersedia di shell APK');
+  const origSb21 = w.sb;
+  const origSbUser21 = w.sbUser;
+  const origPull21 = w.pull;
+  let ptrPullCount = 0;
+  w.sb = { from: () => ({ select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null }) }) }) }) };
+  w.sbUser = { id: 'u-ptr-1', email: 'ptr@example.com' };
+  w.pull = () => {
+    ptrPullCount += 1;
+    w._rkLastPullOk = true;
+    return Promise.resolve();
+  };
+  const doPtr = (target, dx, dy) => {
+    fireTouch(target, 'touchstart', 100, 120);
+    fireTouch(target, 'touchmove', 100 + dx, 120 + dy);
+    fireTouch(target, 'touchend', 100 + dx, 120 + dy);
+  };
+  w.switchMobileTab('rincian');
+  $('m-main').scrollTop = 0;
+  w._rkPtrReset();
+  // 21a. Tarik dari scrollTop 0 melewati ambang (dy=150 -> pullY=75 >= 64) memanggil pull() 1x
+  doPtr($('m-tab-rincian'), 0, 150);
+  await new Promise((r) => setTimeout(r, 30));
+  assert.strictEqual(ptrPullCount, 1, 'tarik dari scrollTop=0 melewati ambang memanggil pull() sekali');
+  assert($('m-toast-box').textContent.includes('Data tersinkron'), 'selesai pull() menampilkan toast Data tersinkron');
+  // 21b. Cooldown 1 detik: tarik langsung tanpa jeda tidak memicu ganda
+  doPtr($('m-tab-rincian'), 0, 150);
+  await new Promise((r) => setTimeout(r, 20));
+  assert.strictEqual(ptrPullCount, 1, 'tarik langsung dalam masa cooldown 1 detik tidak memicu pull() ganda');
+  // 21c. Tarik pendek (<64px): kembali tanpa refresh
+  w._rkPtrReset();
+  doPtr($('m-tab-rincian'), 0, 70);
+  assert(ptrInd.classList.contains('is-snapping'), 'tarik pendek (<64px) memberi kelas .is-snapping');
+  assert.strictEqual(ptrPullCount, 1, 'tarik pendek tidak memanggil pull()');
+  // 21d. scrollTop > 0: tidak aktif
+  w._rkPtrReset();
+  $('m-main').scrollTop = 120;
+  doPtr($('m-tab-rincian'), 0, 160);
+  assert.strictEqual(ptrPullCount, 1, 'scrollTop > 0 tidak mengaktifkan Pull-to-Refresh');
+  $('m-main').scrollTop = 0;
+  // 21e. Sentuhan dimulai di grafik, slider horizontal, atau gerakan horizontal: tidak aktif
+  w._rkPtrReset();
+  doPtr($('m-cf-wrap'), 0, 160);
+  doPtr($('m-kpi-slider'), 0, 160);
+  doPtr($('m-tab-rincian'), 80, 12);
+  assert.strictEqual(ptrPullCount, 1, 'tarik dari grafik, slider horizontal, atau arah horizontal tidak memicu Pull-to-Refresh');
+  // 21f. Sheet terbuka atau dialog konfirmasi terbuka: tidak aktif
+  w._rkPtrReset();
+  $('m-sheet-periode').classList.add('open');
+  doPtr($('m-tab-rincian'), 0, 160);
+  $('m-sheet-periode').classList.remove('open');
+  $('cf').hidden = false;
+  doPtr($('m-tab-rincian'), 0, 160);
+  $('cf').hidden = true;
+  assert.strictEqual(ptrPullCount, 1, 'sheet/modal terbuka memblokir Pull-to-Refresh');
+  // 21g. Berfungsi di tab lain (Transaksi, Jadwal, Menu)
+  for (const tabId of ['kas', 'jadwal', 'settings']) {
+    w.switchMobileTab(tabId);
+    w._rkPtrReset();
+    const beforeTab = ptrPullCount;
+    doPtr($('m-tab-' + tabId), 0, 150);
+    await new Promise((r) => setTimeout(r, 25));
+    assert.strictEqual(ptrPullCount, beforeTab + 1, 'Pull-to-Refresh aktif dan memanggil pull() di tab ' + tabId);
+  }
+  // 21h. Belum login (sbUser = null) + Mode Privasi aktif -> render lokal + toast "Data diperbarui", .pv tetap aman
+  w.switchMobileTab('rincian');
+  w._rkPtrReset();
+  w.sbUser = null;
+  doc.body.classList.add('privacy-mode');
+  doPtr($('m-tab-rincian'), 0, 150);
+  await new Promise((r) => setTimeout(r, 25));
+  assert($('m-toast-box').textContent.includes('Data diperbarui'), 'mode lokal tanpa login menampilkan toast Data diperbarui saat PTR');
+  assert(doc.body.classList.contains('privacy-mode'), 'Mode Privasi tetap terkunci saat render ulang PTR');
+  doc.body.classList.remove('privacy-mode');
+  // 21i. Tidak aktif di mode browser/desktop
+  w.setShellMode('browser');
+  w.sbUser = { id: 'u-ptr-1' };
+  const beforeBr = ptrPullCount;
+  doPtr(remountShell, 0, 160);
+  assert.strictEqual(ptrPullCount, beforeBr, 'Pull-to-Refresh tidak aktif di mode browser/desktop');
+  w.setShellMode('mobile-app');
+
+  w.sb = origSb21;
+  w.sbUser = origSbUser21;
+  w.pull = origPull21;
+
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('OK mobile_app_mode');
   process.exit(0);

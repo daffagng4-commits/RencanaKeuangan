@@ -305,6 +305,7 @@ function setMobPhoneFrame(mode) {
 }
 
 function unmountMobileShell() {
+  if (typeof window !== 'undefined' && typeof window._rkPtrReset === 'function') window._rkPtrReset();
   var root = $('mobile-app-shell');
   if (root) root.innerHTML = '';
   if (document.body) document.body.removeAttribute('data-phone-frame');
@@ -438,6 +439,10 @@ function mobShellTemplate() {
     '<span class="ap-item-lbl"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Pengaturan &amp; Alat</span>' +
     '<span class="ap-chev" aria-hidden="true">&rsaquo;</span>' +
     '</button>' +
+    '</div>' +
+    '<div class="m-ptr-ind" id="m-ptr-ind" aria-hidden="true">' +
+    '<svg class="m-ptr-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12l7 7 7-7"/></svg>' +
+    '<span class="m-ptr-spin"></span>' +
     '</div>' +
     '<main class="mob-main" id="m-main">' +
     // TAB 1: RINCIAN
@@ -2387,6 +2392,166 @@ function bindMobileShellEvents(root) {
         endSwipe(false);
       });
     }
+  })();
+  (function bindMobPullToRefresh() {
+    var PULL_MAX = 90;
+    var PULL_TRIG = 64;
+    var LOCK_PX = 8;
+    var ptr = null;
+    var refreshing = false;
+    var cooldownUntil = 0;
+    var exitTimer = null;
+
+    function getScrollY() {
+      var mm = $('m-main');
+      var mTop = mm ? mm.scrollTop : 0;
+      var wTop = (typeof window !== 'undefined' ? (window.scrollY || 0) : 0) ||
+        (typeof document !== 'undefined' && document.documentElement ? document.documentElement.scrollTop : 0);
+      return Math.max(mTop || 0, wTop || 0);
+    }
+
+    function hasOpenOverlay() {
+      return !!document.querySelector('#m-acct-popover.open, #m-notif-popover.open, #mobile-app-shell .modal-backdrop.open, #cf:not([hidden]), #lg:not([hidden]), .modal:not([hidden]), #m-os-notif.show, #mobile-app-shell .mcal-pop.open');
+    }
+
+    function isExcludedTarget(t) {
+      if (!t || !t.closest) return true;
+      if (!t.closest('#m-main')) return true;
+      return !!t.closest('.apk-header-block, .mob-bottom-nav, .chart-stage, svg, .card-slider, .pill-slider, input, textarea, select, [contenteditable], .modal-backdrop, .modal, .acct-popover, .notif-popover, .phone-os-notif, .mcal-pop');
+    }
+
+    function setPtrVars(ind, yPx, op, rotDeg, sc) {
+      if (!ind) return;
+      ind.style.setProperty('--ptr-y', yPx.toFixed(1) + 'px');
+      ind.style.setProperty('--ptr-op', String(op));
+      ind.style.setProperty('--ptr-rot', rotDeg.toFixed(0) + 'deg');
+      ind.style.setProperty('--ptr-sc', String(sc));
+    }
+
+    function positionUnderHeader(ind) {
+      var hdr = document.querySelector('#mobile-app-shell .apk-header-block');
+      var topPx = hdr && hdr.offsetHeight ? hdr.offsetHeight : (MOB_STATE.tab === 'rincian' ? 276 : 54);
+      if (ind) ind.style.setProperty('--ptr-top', topPx + 'px');
+    }
+
+    function resetVisual(cls) {
+      var ind = $('m-ptr-ind');
+      clearTimeout(exitTimer);
+      if (!ind) return;
+      ind.classList.remove('is-refreshing', 'is-snapping', 'is-exiting');
+      if (cls) ind.classList.add(cls);
+      setPtrVars(ind, -48, 0, 0, 0.8);
+      if (cls) {
+        exitTimer = setTimeout(function () {
+          if (ind && ind.isConnected) ind.classList.remove(cls);
+        }, cls === 'is-exiting' ? 210 : 290);
+      }
+    }
+
+    function finishRefresh(msg) {
+      refreshing = false;
+      cooldownUntil = Date.now() + 1000;
+      resetVisual('is-exiting');
+      if (msg) showMobToast(msg);
+    }
+
+    function runRefresh() {
+      refreshing = true;
+      var ind = $('m-ptr-ind');
+      clearTimeout(exitTimer);
+      if (ind) {
+        positionUnderHeader(ind);
+        ind.classList.remove('is-snapping', 'is-exiting');
+        ind.classList.add('is-refreshing');
+        setPtrVars(ind, 12, 1, 180, 1);
+      }
+      var hasCloud = typeof sb !== 'undefined' && sb && typeof sbUser !== 'undefined' && sbUser && typeof pull === 'function';
+      var isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
+      if (hasCloud && isOffline) {
+        if (typeof renderMobileApp === 'function') renderMobileApp();
+        finishRefresh('Offline — menampilkan data lokal');
+        return;
+      }
+      if (hasCloud) {
+        var beforeSig = typeof dsig === 'function' ? dsig() : '';
+        Promise.resolve(pull()).then(function () {
+          if (typeof window !== 'undefined' && window._rkLastPullOk === false) {
+            finishRefresh('Gagal sinkron: ' + (window._rkLastPullErr || 'koneksi'));
+            return;
+          }
+          if (typeof renderMobileApp === 'function') renderMobileApp();
+          var afterSig = typeof dsig === 'function' ? dsig() : '';
+          if (afterSig !== beforeSig && typeof renderMobCharts === 'function') renderMobCharts();
+          finishRefresh('Data tersinkron');
+        }).catch(function () {
+          finishRefresh('Gagal sinkron — cek koneksi');
+        });
+        return;
+      }
+      if (typeof renderMobileApp === 'function') renderMobileApp();
+      finishRefresh('Data diperbarui');
+    }
+
+    window._rkPtrReset = function () {
+      ptr = null;
+      refreshing = false;
+      cooldownUntil = 0;
+      resetVisual('');
+    };
+
+    root.addEventListener('touchstart', function (e) {
+      if (typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') return;
+      if (refreshing || Date.now() < cooldownUntil) return;
+      if (!e.touches || e.touches.length !== 1) return;
+      if (getScrollY() > 0 || hasOpenOverlay()) return;
+      if (isExcludedTarget(e.target)) return;
+      ptr = {
+        startX: e.touches[0].clientX,
+        startY: e.touches[0].clientY,
+        pullY: 0,
+        locked: false,
+      };
+    }, { passive: true });
+
+    root.addEventListener('touchmove', function (e) {
+      if (!ptr || !e.touches || !e.touches.length) return;
+      if (typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') { ptr = null; return; }
+      var dx = e.touches[0].clientX - ptr.startX;
+      var dy = e.touches[0].clientY - ptr.startY;
+      if (!ptr.locked) {
+        if (Math.hypot(dx, dy) < LOCK_PX) return;
+        if (dy <= 0 || Math.abs(dx) >= dy || getScrollY() > 0) {
+          ptr = null;
+          return;
+        }
+        ptr.locked = true;
+        var ind0 = $('m-ptr-ind');
+        if (ind0) {
+          positionUnderHeader(ind0);
+          ind0.classList.remove('is-snapping', 'is-exiting', 'is-refreshing');
+        }
+      }
+      if (e.cancelable) e.preventDefault();
+      var pullY = Math.min(PULL_MAX, Math.max(0, dy * 0.5));
+      ptr.pullY = pullY;
+      var ratio = Math.min(1, pullY / PULL_TRIG);
+      var ind = $('m-ptr-ind');
+      setPtrVars(ind, pullY - 46, Math.min(1, ratio * 1.15), ratio * 180, 0.8 + ratio * 0.2);
+    }, { passive: false });
+
+    function onTouchEnd(cancelled) {
+      if (!ptr) return;
+      var cur = ptr;
+      ptr = null;
+      if (!cur.locked) return;
+      if (!cancelled && cur.pullY >= PULL_TRIG) {
+        runRefresh();
+      } else {
+        resetVisual('is-snapping');
+      }
+    }
+    root.addEventListener('touchend', function () { onTouchEnd(false); }, { passive: true });
+    root.addEventListener('touchcancel', function () { onTouchEnd(true); }, { passive: true });
   })();
   if (typeof document !== 'undefined' && !document._rkMobDocNotifBound) {
     document._rkMobDocNotifBound = true;
