@@ -29,6 +29,16 @@ const { boot } = require('./ui.js');
   click(sheetTrip);
   assert.strictEqual(w.mode, 'trip', 'lembar Lainnya mengaktifkan Mode Perjalanan');
 
+  // Paritas fungsi murni goalCompute dengan aturan goalCalc desktop
+  assert.deepStrictEqual(
+    JSON.parse(JSON.stringify(w.goalCompute(6000000, 1500000, '2026-10', '2026-12', false))),
+    { link: false, t: 6000000, s0: 1500000, from: '2026-10', to: '2026-12', n: 3, per: 1500000 },
+    'goalCompute menghitung cicilan bulanan sesuai aturan desktop'
+  );
+  assert.strictEqual(w.goalCompute(6000000, 100000, '2026-10', '2026-12', true).per, 1967000, 'goalCompute membulatkan per ke atas kelipatan 1000');
+  assert.strictEqual(w.goalCompute(6000000, 0, '2026-12', '2026-10', true).n, 0, 'goalCompute mengembalikan n=0 bila to < from');
+  assert.strictEqual(w.goalCompute(6000000, 6000000, '2026-10', '2026-12', true).per, 0, 'goalCompute mengembalikan per=0 bila dana terkumpul >= target');
+
   assert.strictEqual(errs.length, 0, 'tidak ada galat JavaScript: ' + errs.slice(0, 2));
   console.log('Semua pengecekan tahap3_trip lulus');
   process.exit(0);

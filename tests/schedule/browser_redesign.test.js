@@ -598,6 +598,104 @@ const { boot } = require('./ui.js');
   // #17 Elemen default tetap terlihat tanpa Observer & Back-to-Top tersedia
   assert($('rk-btt-desk') && ![...shell.querySelectorAll('.card')].some((c) => c.classList.contains('rk-scroll-pending')), 'card default tetap terlihat tanpa JS/Observer & tombol back-to-top tersedia');
 
+  // Tahap 1b: Bug integritas data Mode Perjalanan di desktop aktif (browser-app.js)
+  w.setMode('trip');
+  const dTripId = 'p_desk_t1b';
+  w.ALL.kas.pr[dTripId] = {
+    id: dTripId, name: 'Desktop Integrity Trip', saldo: 0, link: false,
+    start: '2026-12-01', end: '2026-12-05', budget: 10000000, cur: 'JPY', rate: 110,
+    dt: {}, tx: [],
+    it: [{ id: 'd_it1', day: '2026-12-01', time: '09:00', time2: '', place: 'Narita Express', cat: 'Transport', est: 300000, fx: false, pay: 'cash', link: '', note: '', done: false, rec: '' }],
+    bk: [{ id: 'd_bk1', title: 'Hotel Tokyo', cat: 'Penginapan', amt: 5000000, fx: false, pay: 'on', link: '', a: '2026-12-01', b: '2026-12-05', paid: false, rec: '' }],
+    lk: [{ id: 'd_lk1', title: 'Peta Metro', url: 'https://tokyometro.jp' }],
+    ck: [{ id: 'd_ck1', text: 'Paspor', done: false }],
+    note: '', goal: null,
+  };
+  w.setTrip(dTripId);
+  w.BR_STATE.tripView = 'detail';
+  w.BR_STATE.tripSubTab = 'sv';
+  w.BR_STATE.tripGoalEdit = false;
+  w.renderAll();
+
+  // 1b-1. Submit #trip-goal-form menghitung & menyimpan `per`, lolos normKas, dan tervalidasi
+  $('tg-t').value = '6000000';
+  fire($('tg-t'), 'input');
+  $('tg-s0').value = '1500000';
+  fire($('tg-s0'), 'input');
+  $('tg-from').value = '2026-10';
+  $('tg-to').value = '2026-12';
+  $('tg-link').value = '1';
+  fire($('trip-goal-form'), 'submit');
+  const dGoalSaved = w.ALL.kas.pr[dTripId].goal;
+  assert(dGoalSaved && dGoalSaved.per === 1500000, 'Tahap 1b (Bug 1): submit #trip-goal-form menyimpan per=1500000 untuk (6jt-1.5jt)/3 bulan');
+  const dGoalNorm = w.normKas(JSON.parse(JSON.stringify(w.ALL.kas))).pr[dTripId].goal;
+  assert(dGoalNorm && dGoalNorm.per === 1500000, 'Tahap 1b (Bug 1): goal desktop tetap bertahan setelah normKas');
+  // Validasi menolak bulan terbalik & target <= s0 tanpa merusak goal yang tersimpan
+  click($('br-tg-edit'));
+  $('tg-to').value = '2026-09';
+  fire($('trip-goal-form'), 'submit');
+  assert(w.ALL.kas.pr[dTripId].goal.to === '2026-12' && $('tg-to').classList.contains('rk-input-error'), 'Tahap 1b (Bug 1): bulan selesai < bulan mulai ditolak & menggoyang #tg-to');
+  $('tg-to').value = '2026-12';
+  $('tg-t').value = '1000000';
+  fire($('tg-t'), 'input');
+  fire($('trip-goal-form'), 'submit');
+  assert(w.ALL.kas.pr[dTripId].goal.t === 6000000 && $('tg-t').classList.contains('rk-input-error'), 'Tahap 1b (Bug 1): target <= s0 ditolak & menggoyang #tg-t');
+  w.BR_STATE.tripGoalEdit = false;
+
+  // Dampak ke Rincian Bulanan (calc()) pada tahun cocok, tahun berbeda, & privacy-mode
+  w.setMode('rencana');
+  w.switchYear(2026);
+  const c2026WithGoal = w.calc();
+  w.ALL.kas.pr[dTripId].goal.link = false;
+  const c2026Unlinked = w.calc();
+  w.ALL.kas.pr[dTripId].goal.link = true;
+  assert.strictEqual(c2026Unlinked.end - c2026WithGoal.end, 3 * 1500000, 'Tahap 1b: target terhubung menghitung 3x1.500.000 di calc() 2026 tanpa NaN');
+  w.switchYear(2027);
+  assert(!Number.isNaN(w.calc().end), 'Tahap 1b: calc() pada tahun di luar bulan target tidak menghasilkan NaN');
+  w.switchYear(2026);
+  click($('btn-privacy'));
+  w.renderAll();
+  assert(w.document.body.classList.contains('privacy-mode') && !Number.isNaN(w.calc().end), 'Tahap 1b: mode privasi + goal tersimpan berjalan aman');
+  click($('btn-privacy'));
+
+  // 1b-2. Hapus item Perjalanan desktop memakai askConfirm + snap() + Undo (#ttu)
+  w.setMode('trip');
+  w.setTrip(dTripId);
+  const verifyDeskDel = (subTab, triggerFn, existsFn, label) => {
+    w.BR_STATE.tripSubTab = subTab;
+    w.renderTrip();
+    $('tt').hidden = true;
+    $('ttm').textContent = '';
+    triggerFn();
+    const cfm1 = w.document.querySelector('.modal.cfm');
+    assert(cfm1, 'Tahap 1b (Bug 2 - ' + label + '): dialog konfirmasi tampil');
+    assert(existsFn(), 'Tahap 1b (Bug 2 - ' + label + '): data belum terhapus sebelum konfirmasi');
+    assert(!/dihapus/i.test($('ttm').textContent), 'Tahap 1b (Bug 2 - ' + label + '): toast terhapus belum muncul sebelum konfirmasi');
+    click(cfm1.querySelector('[data-cf-n]'));
+    assert(existsFn() && !/dihapus/i.test($('ttm').textContent), 'Tahap 1b (Bug 2 - ' + label + '): Batal menjaga data & tanpa toast hapus');
+    triggerFn();
+    const cfm2 = w.document.querySelector('.modal.cfm');
+    click(cfm2.querySelector('[data-cf-y]'));
+    assert(!existsFn(), 'Tahap 1b (Bug 2 - ' + label + '): Ya hapus menghapus data');
+    assert(!$('ttu').hidden && /dihapus/i.test($('ttm').textContent), 'Tahap 1b (Bug 2 - ' + label + '): toast Urungkan tampil');
+    click($('ttu'));
+    assert(existsFn(), 'Tahap 1b (Bug 2 - ' + label + '): klik Urungkan memulihkan data');
+  };
+
+  w.BR_STATE.tripSubTab = 'itin';
+  w.renderTrip();
+  click(shell.querySelector('[data-trip-it-edit="d_it1"]'));
+  assert.strictEqual(w.BR_STATE.tripEditItId, 'd_it1', 'edit kegiatan disetel sebelum uji hapus');
+  verifyDeskDel('itin', () => click(shell.querySelector('[data-trip-it-del="d_it1"]')), () => w.ALL.kas.pr[dTripId].it.some((x) => x.id === 'd_it1'), 'kegiatan');
+  assert.strictEqual(w.BR_STATE.tripEditItId, null, 'hapus kegiatan yang sedang diedit mereset tripEditItId');
+
+  verifyDeskDel('book', () => click(shell.querySelector('[data-bk-del="d_bk1"]')), () => w.ALL.kas.pr[dTripId].bk.some((x) => x.id === 'd_bk1'), 'pemesanan');
+  verifyDeskDel('cek', () => click(shell.querySelector('[data-ck-del="d_ck1"]')), () => w.ALL.kas.pr[dTripId].ck.some((x) => x.id === 'd_ck1'), 'checklist');
+  verifyDeskDel('cat', () => click(shell.querySelector('[data-lk-del="d_lk1"]')), () => w.ALL.kas.pr[dTripId].lk.some((x) => x.id === 'd_lk1'), 'tautan');
+  verifyDeskDel('sv', () => click($('br-tg-del')), () => !!w.ALL.kas.pr[dTripId].goal, 'target tabungan');
+  verifyDeskDel('ring', () => click($('br-trip-del')), () => !!w.ALL.kas.pr[dTripId], 'hapus perjalanan');
+  w.setMode('rencana');
+
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('Semua pengujian browser_redesign lulus tanpa error!');
   process.exit(0);

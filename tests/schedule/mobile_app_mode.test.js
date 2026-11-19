@@ -1283,6 +1283,507 @@ const { boot } = require('./ui.js');
   w.sbUser = origSbUser21;
   w.pull = origPull21;
 
+  // 24. Paritas data Mode Perjalanan APK (Tahap 1/4): bug target tabungan, edit itin/book, hapus konfirmasi + Undo
+  w.setShellMode('mobile-app');
+  const curShell24 = remountShell.querySelector('.mob-shell');
+  click(curShell24.querySelector('[data-mgo="trip"]'));
+  click($('m-btn-trip-new-pill') || $('m-btn-trip-new'));
+  $('m-kp-name').value = 'Osaka Uji Paritas';
+  $('m-kp-start').value = '2026-12-01';
+  $('m-kp-end').value = '2026-12-06';
+  $('m-kp-cur').value = 'JPY';
+  $('m-kp-rate').value = '110';
+  fire($('m-trip-meta-form'), 'submit');
+  const parId = Object.keys(w.ALL.kas.pr).find((k) => w.ALL.kas.pr[k].name === 'Osaka Uji Paritas');
+  assert(parId, 'trip Osaka Uji Paritas dibuat untuk uji integritas data');
+  const parTr = () => w.ALL.kas.pr[parId];
+
+  // Bug 1a: Target tabungan APK menyimpan `per`, bertahan lewat normKas, dan tampil benar (bukan Rp 0/bln)
+  click(curShell24.querySelector('[data-mtripsub="sv"]'));
+  $('m-tg-t').value = '6000000';
+  fire($('m-tg-t'), 'input');
+  $('m-tg-from').value = '2026-10';
+  $('m-tg-to').value = '2026-12';
+  fire($('m-trip-goal-form'), 'submit');
+  assert(parTr().goal && parTr().goal.per === 2000000, 'Bug 1: target tabungan APK menyimpan per=2000000 untuk 3 bulan');
+  const reloadedGoal = w.normKas(JSON.parse(JSON.stringify(w.ALL.kas))).pr[parId].goal;
+  assert(reloadedGoal && reloadedGoal.per === 2000000, 'Bug 1: goal APK tidak hilang menjadi null setelah normKas');
+  assert(!/Rp\s*0\s*(?:\/bln|per bulan)/.test($('m-trip-root').textContent) && /2\.000\.000 per bulan/.test($('m-trip-root').textContent), 'Bug 1: UI target tabungan APK menampilkan g.per (2.000.000 per bulan), bukan Rp 0');
+
+  // Bug 1b: Edit target di APK mempertahankan s0 & link, dan validasi menolak bulan terbalik / s0 >= t
+  parTr().goal.s0 = 1500000;
+  parTr().goal.link = false;
+  w.renderMobTrip();
+  click($('m-tg-edit'));
+  $('m-tg-t').value = '9000000';
+  fire($('m-tg-t'), 'input');
+  $('m-tg-from').value = '2026-10';
+  $('m-tg-to').value = '2026-12';
+  fire($('m-trip-goal-form'), 'submit');
+  assert.strictEqual(parTr().goal.s0, 1500000, 'Bug 1: edit target di APK mempertahankan s0');
+  assert.strictEqual(parTr().goal.link, false, 'Bug 1: edit target di APK mempertahankan link=false');
+  assert.strictEqual(parTr().goal.per, 2500000, 'Bug 1: edit target menghitung ulang per=(9jt-1.5jt)/3 = 2500000');
+  click($('m-tg-edit'));
+  $('m-tg-to').value = '2026-09';
+  fire($('m-trip-goal-form'), 'submit');
+  assert.strictEqual(parTr().goal.to, '2026-12', 'Bug 1: validasi menolak bulan selesai < bulan mulai');
+  $('m-tg-to').value = '2026-12';
+  $('m-tg-t').value = '1000000';
+  fire($('m-tg-t'), 'input');
+  fire($('m-trip-goal-form'), 'submit');
+  assert.strictEqual(parTr().goal.t, 9000000, 'Bug 1: validasi menolak target <= s0');
+  w.MOB_STATE.tripGoalEdit = false;
+  w.renderMobTrip();
+
+  // Bug 2: Edit kegiatan di APK mempertahankan time2, fx, pay, link, note + default baru pay=''
+  parTr().it.push({
+    id: 'it-desk-1', day: '2026-12-02', time: '09:00', time2: '11:30',
+    place: 'Kiyomizu', cat: 'Tiket & Tour', est: 500, fx: true, pay: 'ic',
+    link: 'https://maps.app.goo.gl/abc', note: 'Datang pagi', done: true, rec: 'rk-keep-it',
+  });
+  click(curShell24.querySelector('[data-mtripsub="itin"]'));
+  click(curShell24.querySelector('[data-mit-edit="it-desk-1"]'));
+  $('m-it-place').value = 'Kiyomizu-dera';
+  fire($('m-trip-itin-form'), 'submit');
+  const editedIt = parTr().it.find((x) => x.id === 'it-desk-1');
+  assert.strictEqual(editedIt.place, 'Kiyomizu-dera', 'Bug 2: judul kegiatan berubah');
+  assert.strictEqual(editedIt.time2, '11:30', 'Bug 2: edit APK tidak menimpa time2');
+  assert.strictEqual(editedIt.fx, true, 'Bug 2: edit APK tidak menimpa fx');
+  assert.strictEqual(editedIt.pay, 'ic', 'Bug 2: edit APK tidak menimpa pay');
+  assert.strictEqual(editedIt.link, 'https://maps.app.goo.gl/abc', 'Bug 2: edit APK tidak menimpa link');
+  assert.strictEqual(editedIt.note, 'Datang pagi', 'Bug 2: edit APK tidak menimpa note');
+  assert.strictEqual(editedIt.done, true, 'Bug 2: edit APK mempertahankan done');
+  assert.strictEqual(editedIt.rec, 'rk-keep-it', 'Bug 2: edit APK mempertahankan rec');
+  $('m-it-place').value = 'Arashiyama';
+  $('m-it-est').value = '20000';
+  fire($('m-trip-itin-form'), 'submit');
+  const newItApk = parTr().it.find((x) => x.place === 'Arashiyama');
+  assert(newItApk && newItApk.pay === 'cash', 'Bug 2 / Tahap 2: kegiatan baru di APK memakai default desktop aktif pay="cash"');
+
+  // Bug 3: Edit pemesanan di APK mempertahankan a, b, pay, link, fx + default baru a='', b=''
+  parTr().bk.push({
+    id: 'bk-desk-1', title: 'Hotel Osaka', cat: 'Penginapan', amt: 15000,
+    fx: true, pay: 'cash', link: 'https://booking.com/osaka', a: '2026-12-02', b: '2026-12-04',
+    paid: true, rec: 'rk-keep-bk',
+  });
+  click(curShell24.querySelector('[data-mtripsub="book"]'));
+  click(curShell24.querySelector('[data-mbk-edit="bk-desk-1"]'));
+  $('m-bk-amt').value = '18000';
+  fire($('m-bk-amt'), 'input');
+  fire($('m-trip-book-form'), 'submit');
+  const editedBk = parTr().bk.find((x) => x.id === 'bk-desk-1');
+  assert.strictEqual(editedBk.amt, 18000, 'Bug 3: nominal pemesanan berubah');
+  assert.strictEqual(editedBk.a, '2026-12-02', 'Bug 3: edit APK tidak menimpa check-in a');
+  assert.strictEqual(editedBk.b, '2026-12-04', 'Bug 3: edit APK tidak menimpa check-out b');
+  assert.strictEqual(editedBk.pay, 'cash', 'Bug 3: edit APK tidak menimpa pay');
+  assert.strictEqual(editedBk.link, 'https://booking.com/osaka', 'Bug 3: edit APK tidak menimpa link');
+  assert.strictEqual(editedBk.fx, true, 'Bug 3: edit APK tidak menimpa fx');
+  assert.strictEqual(editedBk.paid, true, 'Bug 3: edit APK mempertahankan paid');
+  assert.strictEqual(editedBk.rec, 'rk-keep-bk', 'Bug 3: edit APK mempertahankan rec');
+  $('m-bk-title').value = 'JR Haruka';
+  $('m-bk-amt').value = '350000';
+  fire($('m-bk-amt'), 'input');
+  fire($('m-trip-book-form'), 'submit');
+  const newBkApk = parTr().bk.find((x) => x.title === 'JR Haruka');
+  assert(newBkApk && newBkApk.a === '2026-12-01' && newBkApk.b === '2026-12-06' && newBkApk.pay === 'on', 'Bug 3 / Tahap 3: pemesanan baru di APK memakai tanggal default trip & pay="on"');
+
+  // Bug 4: Hapus kegiatan, pemesanan, checklist, dan target tabungan di APK memakai askConfirm + snap + Undo
+  const verifyConfirmUndo = (triggerDelFn, checkExistsFn, label) => {
+    $('m-toast-box').textContent = '';
+    $('m-toast-box').classList.remove('show', 'has-undo');
+    triggerDelFn();
+    const cfm1 = doc.querySelector('.modal.cfm');
+    assert(cfm1, 'Bug 4 (' + label + '): dialog konfirmasi tampil');
+    assert(checkExistsFn(), 'Bug 4 (' + label + '): data belum terhapus sebelum konfirmasi');
+    assert(!$('m-toast-box').textContent.includes('dihapus'), 'Bug 4 (' + label + '): toast terhapus belum muncul sebelum konfirmasi');
+    click(cfm1.querySelector('[data-cf-n]'));
+    assert(checkExistsFn(), 'Bug 4 (' + label + '): Batal membiarkan data utuh');
+    assert(!$('m-toast-box').textContent.includes('dihapus'), 'Bug 4 (' + label + '): Batal tidak memunculkan toast terhapus');
+    triggerDelFn();
+    const cfm2 = doc.querySelector('.modal.cfm');
+    click(cfm2.querySelector('[data-cf-y]'));
+    assert(!checkExistsFn(), 'Bug 4 (' + label + '): Ya hapus menghapus data');
+    const undoBtn = $('m-toast-box').querySelector('.m-toast-undo');
+    assert(undoBtn, 'Bug 4 (' + label + '): toast Urungkan tampil');
+    click(undoBtn);
+    assert(checkExistsFn(), 'Bug 4 (' + label + '): Undo mengembalikan data');
+  };
+
+  click(curShell24.querySelector('[data-mtripsub="itin"]'));
+  verifyConfirmUndo(
+    () => click(curShell24.querySelector('[data-mit-del="it-desk-1"]')),
+    () => parTr().it.some((x) => x.id === 'it-desk-1'),
+    'kegiatan'
+  );
+  click(curShell24.querySelector('[data-mtripsub="book"]'));
+  verifyConfirmUndo(
+    () => click(curShell24.querySelector('[data-mbk-del="bk-desk-1"]')),
+    () => parTr().bk.some((x) => x.id === 'bk-desk-1'),
+    'pemesanan'
+  );
+  click(curShell24.querySelector('[data-mtripsub="cek"]'));
+  $('m-ck-inp').value = 'Adaptor Universal';
+  fire($('m-trip-ck-form'), 'submit');
+  const ckDelId = parTr().ck[0].id;
+  verifyConfirmUndo(
+    () => click(curShell24.querySelector('[data-mck-del="' + ckDelId + '"]')),
+    () => parTr().ck.some((x) => x.id === ckDelId),
+    'checklist'
+  );
+  click(curShell24.querySelector('[data-mtripsub="sv"]'));
+  verifyConfirmUndo(
+    () => click($('m-tg-del')),
+    () => !!parTr().goal,
+    'target tabungan'
+  );
+
+  // 25. Tahap 2/4: Daftar, Header Kurs, Sheet Profil, dan Itinerary APK = Desktop Aktif
+  w.switchMobileTab('trip');
+  const t2Id = parId;
+  const t2 = () => w.ALL.kas.pr[t2Id];
+  // Siapkan 2 trip untuk uji daftar (1 dalam anggaran, 1 overbudget, 1 tanpa anggaran & IDR default)
+  t2().budget = 1000000;
+  t2().it = [
+    { id: 'it-b', day: '2026-12-02', time: '14:00', time2: '16:30', place: 'Osaka Castle', cat: 'Tiket & Tour', est: 500000, fx: false, pay: 'cash', link: 'https://osaka.jp', note: 'Beli tiket', done: false, rec: '' },
+    { id: 'it-a', day: '2026-12-02', time: '09:00', time2: '', place: 'Kuromon', cat: 'Makan', est: 10000, fx: true, pay: 'ic', link: '', note: '', done: true, rec: 'r-rec' },
+    { id: 'it-on', day: '2026-12-02', time: '08:00', time2: '', place: 'JR Pass Online', cat: 'Transport', est: 900000, fx: false, pay: 'on', link: '', note: '', done: false, rec: '' },
+    { id: 'it-d1', day: '2026-12-01', time: '10:00', time2: '', place: 'Tiba Kansai', cat: 'Transport', est: 100000, fx: false, pay: 'cash', link: '', note: '', done: false, rec: '' },
+  ];
+  t2().bk = [];
+  t2().dt = { '2026-12-01': 'Hari Pertama di Osaka' };
+  const noBudId = 'p_nobud_t2';
+  w.ALL.kas.pr[noBudId] = {
+    id: noBudId, name: 'Trip Tanpa Budget', saldo: 0, link: false,
+    start: '2026-12-10', end: '2026-12-12', budget: 0, cur: '', rate: 0,
+    dt: {}, tx: [], it: [], bk: [], lk: [], ck: [], note: '', goal: null,
+  };
+  // 25a. Tampilan daftar: N hari, bar anggaran (.rank-track/.rank-fill merah saat overbudget), IDR bawaan, "anggaran belum ditentukan", .pv
+  w.MOB_STATE.tripView = 'list';
+  w.renderMobTrip();
+  const listRootHtml = $('m-trip-root').innerHTML;
+  const cardT2 = $('m-trip-root').querySelector('[data-mtrip-sel="' + t2Id + '"]');
+  const cardNoBud = $('m-trip-root').querySelector('[data-mtrip-sel="' + noBudId + '"]');
+  assert(cardT2 && /6 hari/.test(cardT2.textContent), 'Tahap 2a: kartu daftar menampilkan jumlah hari "6 hari"');
+  assert(cardT2.querySelector('.rank-track .rank-fill'), 'Tahap 2a: kartu beranggaran menampilkan bar .rank-track/.rank-fill');
+  assert(/var\(--crimson\)/i.test(cardT2.querySelector('.rank-fill').style.background), 'Tahap 2a: bar anggaran berwarna crimson saat rencana melebihi anggaran');
+  assert(/Rencana biaya/.test(cardT2.textContent) && /dari anggaran/.test(cardT2.textContent), 'Tahap 2a: teks Rencana biaya ... dari anggaran ... tampil');
+  assert(cardNoBud && /3 hari/.test(cardNoBud.textContent) && /IDR/.test(cardNoBud.textContent) && /anggaran belum ditentukan/i.test(cardNoBud.textContent), 'Tahap 2a: kartu tanpa anggaran menampilkan 3 hari, badge IDR, dan anggaran belum ditentukan');
+  assert(!cardNoBud.querySelector('.rank-track'), 'Tahap 2a: kartu tanpa anggaran tidak menampilkan bar anggaran');
+  assert(cardT2.querySelectorAll('.pv').length >= 2, 'Tahap 2a: nominal di kartu daftar memakai .pv');
+
+  // 25b. Header detail menampilkan kurs
+  click(cardT2);
+  assert(w.MOB_STATE.tripView === 'detail', 'Tahap 2b: klik kartu membuka tampilan detail');
+  assert(/Kurs 1 JPY = Rp 110/.test($('m-trip-root').textContent), 'Tahap 2b: header detail menampilkan Kurs 1 JPY = Rp 110');
+  assert($('m-trip-root').querySelector('.pv') && !/Bagikan/.test($('m-trip-root').textContent), 'Tahap 2b: kurs aman .pv & tombol Bagikan bukan cakupan Tahap 2');
+
+  // 25c. Sheet profil menyembunyikan baris nominal saat Belum ditentukan & profil baru punya goal: null
+  click($('m-btn-trip-new-pill'));
+  assert($('m-kp-use-budget').value === '1', 'Tahap 2c: sheet baru menyetel penggunaan anggaran default');
+  $('m-kp-use-budget').value = '0';
+  fire($('m-kp-use-budget'), 'change');
+  assert.strictEqual($('m-kp-budget-wrap').style.display, 'none', 'Tahap 2c: baris nominal #m-kp-budget-wrap tersembunyi saat Belum ditentukan');
+  $('m-kp-name').value = 'Bali Santai';
+  $('m-kp-cur').value = '';
+  $('m-kp-rate').value = '';
+  fire($('m-trip-meta-form'), 'submit');
+  const baliId = Object.keys(w.ALL.kas.pr).find((k) => w.ALL.kas.pr[k].name === 'Bali Santai');
+  assert(baliId && Object.prototype.hasOwnProperty.call(w.ALL.kas.pr[baliId], 'goal') && w.ALL.kas.pr[baliId].goal === null, 'Tahap 2c: profil baru menulis goal: null eksplisit');
+  assert.strictEqual(w.ALL.kas.pr[baliId].budget, 0, 'Tahap 2c: budget 0 saat Belum ditentukan');
+
+  // Empty state itinerary tanpa tanggal & tanpa kegiatan setara desktop aktif
+  click(curShell24.querySelector('[data-mtripsub="itin"]'));
+  assert(!$('m-it-cur').querySelector('option[value="fx"]'), 'Tahap 2d: opsi mata uang asing tidak tampil jika profil tidak punya cur');
+  // Pindahkan sementara tanggal kosong untuk cek empty state tanpa tanggal
+  w.ALL.kas.pr[baliId].start = '';
+  w.ALL.kas.pr[baliId].end = '';
+  w.renderMobTrip();
+  assert(/Atur tanggal mulai\/selesai atau tambahkan kegiatan pertama/.test($('m-trip-root').textContent), 'Tahap 2d: empty state itinerary setara desktop aktif');
+
+  // 25d. Kembali ke Osaka (punya JPY, multi-hari, judul hari) -> uji form 9 field + daftar bergrup
+  click(curShell24.querySelector('[data-mtrip-sel="' + t2Id + '"]'));
+  click(curShell24.querySelector('[data-mtripsub="itin"]'));
+  ['m-it-day', 'm-it-time', 'm-it-time2', 'm-it-place', 'm-it-est', 'm-it-cur', 'm-it-pay', 'm-it-cat', 'm-it-link', 'm-it-note'].forEach((id) => {
+    assert($(id), 'Tahap 2d: field form #' + id + ' tersedia');
+  });
+  assert($('m-it-cur').querySelector('option[value="fx"]'), 'Tahap 2d: opsi mata uang asing JPY tampil pada profil ber-mata-uang');
+  assert.strictEqual($('m-it-pay').value, 'cash', 'Tahap 2d: default pembayaran baru = cash sesuai desktop aktif');
+
+  // Validasi URL di m-it-link & submit lengkap
+  $('m-it-day').value = '2026-12-03';
+  $('m-it-time').value = '09.30';
+  $('m-it-time2').value = '11.45';
+  $('m-it-place').value = 'Fushimi Inari Lengkap';
+  $('m-it-est').value = '1200';
+  fire($('m-it-est'), 'input');
+  $('m-it-cur').value = 'fx';
+  $('m-it-pay').value = 'ic';
+  $('m-it-cat').value = 'Tiket & Tour';
+  $('m-it-link').value = 'ftp://salah';
+  $('m-it-note').value = 'Lewat gerbang torii';
+  fire($('m-trip-itin-form'), 'submit');
+  assert(!t2().it.some((x) => x.place === 'Fushimi Inari Lengkap'), 'Tahap 2d: tautan non-http/https ditolak okUrl');
+  $('m-it-link').value = 'https://maps.app.goo.gl/fushimi';
+  fire($('m-trip-itin-form'), 'submit');
+  const fullIt = t2().it.find((x) => x.place === 'Fushimi Inari Lengkap');
+  assert(fullIt && fullIt.time === '09:30' && fullIt.time2 === '11:45' && fullIt.fx === true && fullIt.pay === 'ic' && fullIt.cat === 'Tiket & Tour' && fullIt.link === 'https://maps.app.goo.gl/fushimi' && fullIt.note === 'Lewat gerbang torii', 'Tahap 2d: semua 9 field itinerary tersimpan benar');
+
+  // Edit tidak menimpa done & rec, & panggil scrollIntoView({block:'center'})
+  let scrollCenterCalls = 0;
+  const origScrollInto = w.HTMLElement.prototype.scrollIntoView;
+  w.HTMLElement.prototype.scrollIntoView = function (opts) { if (opts && opts.block === 'center') scrollCenterCalls += 1; };
+  click(curShell24.querySelector('[data-mit-edit="it-a"]'));
+  assert(scrollCenterCalls >= 1, 'Tahap 2d: klik Ubah memanggil scrollIntoView({block: "center"})');
+  w.HTMLElement.prototype.scrollIntoView = origScrollInto;
+  assert.strictEqual($('m-it-time').value, '09.00', 'Tahap 2d: edit mengisi m-it-time');
+  assert.strictEqual($('m-it-cur').value, 'fx', 'Tahap 2d: edit mengisi m-it-cur=fx');
+  assert.strictEqual($('m-it-pay').value, 'ic', 'Tahap 2d: edit mengisi m-it-pay=ic');
+  $('m-it-place').value = 'Kuromon Pagi';
+  fire($('m-trip-itin-form'), 'submit');
+  const edItA = t2().it.find((x) => x.id === 'it-a');
+  assert(edItA.place === 'Kuromon Pagi' && edItA.done === true && edItA.rec === 'r-rec', 'Tahap 2d: edit mempertahankan done & rec');
+
+  // 25e. Pengelompokan per hari, urut jam, estimasi harian mengabaikan pay:'on', FX tampil "JPY 10.000", tanpa render tautan eksternal
+  const dayCards = [...$('m-trip-root').querySelectorAll('.m-itin-day-card')];
+  assert(dayCards.length === 6, 'Tahap 2e: daftar itinerary dikelompokkan menjadi 6 kartu hari sesuai tripDays');
+  const day2Card = dayCards.find((el) => el.getAttribute('data-mday') === '2026-12-02');
+  assert(day2Card, 'Tahap 2e: kartu hari 2026-12-02 tersedia');
+  const day2Order = [...day2Card.querySelectorAll('.mob-sched-card')].map((el) => el.textContent);
+  assert(day2Order.length === 3 && /08\.00.*JR Pass Online/.test(day2Order[0]) && /09\.00.*Kuromon Pagi/.test(day2Order[1]) && /14\.00.*16\.30.*Osaka Castle/.test(day2Order[2]), 'Tahap 2e: kegiatan dalam satu hari terurut berdasarkan jam (08.00 -> 09.00 -> 14.00–16.30)');
+  // Estimasi hari 2026-12-02 = (10000*110 = 1.100.000) + 500.000 = Rp 1.600.000 (JR Pass 900.000 pay:'on' diabaikan!)
+  assert(/Estimasi:\s*Rp\s*1\.600\.000/.test(day2Card.textContent), 'Tahap 2e: estimasi harian mengabaikan item pay=on (1.600.000)');
+  assert(/JPY 10\.000/.test(day2Card.textContent), 'Tahap 2e: item FX menampilkan "JPY 10.000"');
+  assert(/Beli tiket/.test(day2Card.textContent) && !day2Card.querySelector('a[href^="http"]'), 'Tahap 2e: catatan item tampil dan tautan tidak dirender di kartu item seperti desktop aktif');
+
+  // 25f. Judul hari via change (tanpa re-render & tanpa hapus fokus), hapus bila kosong, tanpa listener ganda, Mode Privasi aman
+  const dtInput = $('m-trip-root').querySelector('[data-mdt-day="2026-12-02"]');
+  assert(dtInput, 'Tahap 2f: input judul hari [data-mdt-day] tersedia');
+  dtInput.value = 'Eksplor Kota Osaka';
+  fire(dtInput, 'change');
+  assert.strictEqual(t2().dt['2026-12-02'], 'Eksplor Kota Osaka', 'Tahap 2f: change menyimpan judul hari ke P.dt');
+  assert.strictEqual($('m-trip-root').querySelector('[data-mdt-day="2026-12-02"]'), dtInput, 'Tahap 2f: change judul hari tidak me-re-render DOM sehingga fokus tidak hilang');
+  dtInput.value = '   ';
+  fire(dtInput, 'change');
+  assert(!Object.prototype.hasOwnProperty.call(t2().dt, '2026-12-02'), 'Tahap 2f: judul hari kosong menghapus kunci dari P.dt');
+  // Render berulang tidak menggandakan listener & Mode Privasi aman
+  const origSave25 = w.save;
+  let saveCalls25 = 0;
+  w.save = function () { saveCalls25 += 1; return origSave25.apply(this, arguments); };
+  w.renderMobTrip();
+  w.renderMobTrip();
+  const dtAfterRerender = $('m-trip-root').querySelector('[data-mdt-day="2026-12-02"]');
+  dtAfterRerender.value = 'Hari 2 Final';
+  fire(dtAfterRerender, 'change');
+  assert.strictEqual(saveCalls25, 1, 'Tahap 2f: render berulang tidak menambah listener ganda');
+  w.save = origSave25;
+  doc.body.classList.add('privacy-mode', 'privacy-on');
+  w.renderMobTrip();
+  assert($('m-trip-root').querySelectorAll('.pv').length >= 3 && doc.body.classList.contains('privacy-on'), 'Tahap 2f: elemen nominal memakai .pv dan Mode Privasi tetap aman');
+  doc.body.classList.remove('privacy-mode', 'privacy-on');
+
+  // 26. Tahap 3 Mode Perjalanan APK = Desktop Aktif (Ikon Itinerary, Ringkasan, Pemesanan, Checklist, Catatan/Tautan, Tabungan)
+  w.ALL.kas.pr['p-t3'] = {
+    id: 'p-t3',
+    name: 'Tokyo Autumn',
+    saldo: 0,
+    link: false,
+    start: '2026-12-01',
+    end: '2026-12-04',
+    budget: 15000000,
+    cur: 'JPY',
+    rate: 110,
+    dt: {},
+    tx: [],
+    it: [
+      { id: 't3-i1', day: '2026-12-01', time: '09:00', time2: '10:30', place: 'Ramen Shinjuku', est: 10000, fx: true, pay: 'cash', cat: 'Makan', link: '', note: '', done: false, rec: '' },
+      { id: 't3-i2', day: '2026-12-02', time: '11:00', time2: '', place: 'Suica Topup', est: 500000, fx: false, pay: 'ic', cat: 'Transport', link: '', note: '', done: false, rec: '' },
+      { id: 't3-i3', day: '2026-12-02', time: '13:00', time2: '', place: 'TeamLab Online', est: 400000, fx: false, pay: 'on', cat: 'Tiket & Tour', link: '', note: '', done: false, rec: '' },
+    ],
+    bk: [
+      { id: 't3-b1', title: 'ANA Flight PP', amt: 50000, fx: true, a: '2026-12-01', b: '2026-12-04', cat: 'Transport', pay: 'ic', link: 'https://ana.example', paid: true, rec: 'rec-b1' },
+      { id: 't3-b2', title: 'Shinjuku Granbell', amt: 4000000, fx: false, a: '2026-12-01', b: '2026-12-03', cat: 'Penginapan', pay: 'on', link: '', paid: false, rec: '' },
+    ],
+    lk: [
+      { id: 't3-l1', title: 'Peta Metro Tokyo', url: 'https://maps.google.com/?q=tokyo' },
+      { id: 't3-lbad', title: 'Bahaya XSS', url: 'javascript:alert(1)' },
+    ],
+    ck: [
+      { id: 't3-c1', text: 'Paspor', done: true },
+      { id: 't3-c2', text: 'JR Pass', done: false },
+    ],
+    note: 'Hotel ref #ANA99',
+    goal: null,
+  };
+  w.MOB_STATE.tripId = 'p-t3';
+  w.MOB_STATE.tripView = 'detail';
+  w.MOB_STATE.tripEditIt = null;
+  w.MOB_STATE.tripEditBk = null;
+  w.MOB_STATE.tripGoalEdit = false;
+  const t3 = () => w.ALL.kas.pr['p-t3'];
+
+  // 26a. Sisa Tahap 2: Ikon kategori .cat-logo pada kartu Itinerary APK
+  w.MOB_STATE.tripSub = 'itin';
+  w.renderMobTrip();
+  const itCards3 = [...$('m-trip-root').querySelectorAll('.m-itin-day-card .mob-sched-card')];
+  assert(itCards3.length === 3 && itCards3.every((c) => !!c.querySelector('.cat-logo svg')), 'Tahap 3a: semua kartu itinerary memiliki ikon kategori .cat-logo');
+  assert(itCards3[0].querySelector('.cat-logo').getAttribute('title') === 'Makan & Minum' && /F97316|249,\s*115,\s*22/i.test(itCards3[0].querySelector('.cat-logo').getAttribute('style') || ''), 'Tahap 3a: kategori Makan terpetakan ke warna Makan & Minum');
+
+  // 26b. Subtab Ringkasan (ring) setara desktop aktif
+  // Bandingkan angka & label kunci langsung dengan renderTrip() desktop aktif
+  w.setMode('trip');
+  w.setTrip('p-t3');
+  w.BR_STATE.tripView = 'detail';
+  w.BR_STATE.tripSubTab = 'ring';
+  w.renderTrip();
+  const dtRingText = $('trip-root').textContent;
+  w.setShellMode('mobile-app');
+
+  w.MOB_STATE.tripSub = 'ring';
+  w.renderMobTrip();
+  const mobRingRoot = $('m-trip-root');
+  const mobRingText = mobRingRoot.textContent;
+  // pl: bk = 50000*110 (5.500.000) + 4.000.000 = 9.500.000; d = 10000*110 (1.100.000) + 500.000 = 1.600.000; t = 11.100.000; paid = 5.500.000; unpaid = 4.000.000; N = 4 -> per hari = 2.775.000
+  assert(/Total Rencana Biaya/.test(mobRingText) && /11\.100\.000/.test(mobRingText) && /Pemesanan\s*Rp\s*9\.500\.000\s*\+\s*Harian\s*Rp\s*1\.600\.000/.test(mobRingText), 'Tahap 3b: kartu Total Rencana Biaya & hint sama dengan desktop');
+  assert(/Sisa Anggaran/.test(mobRingText) && /3\.900\.000/.test(mobRingText) && /74%\s*dari\s*Rp\s*15\.000\.000/.test(mobRingText), 'Tahap 3b: kartu Sisa Anggaran & persentase sama dengan desktop');
+  assert(/Sudah Dibayar/.test(mobRingText) && /5\.500\.000/.test(mobRingText) && /Belum dibayar:\s*Rp\s*4\.000\.000/.test(mobRingText), 'Tahap 3b: kartu Sudah Dibayar & Belum dibayar sama dengan desktop');
+  assert(/Rencana per Hari/.test(mobRingText) && /2\.775\.000/.test(mobRingText) && /4 hari\s*·\s*1 JPY = Rp 110/.test(mobRingText), 'Tahap 3b: kartu Rencana per Hari & kurs sama dengan desktop');
+  assert(!/Checklist:\s*\d+\/\d+/.test(mobRingText), 'Tahap 3b: hint lama Checklist x/y dihapus');
+  assert(/Siapkan Tunai \/ Kartu/.test(mobRingText) && /JPY\s*10\.000/.test(mobRingText) && /1\.100\.000/.test(mobRingText), 'Tahap 3b: seksi Siapkan Tunai / Kartu tampil dengan FX & ekivalen Rp');
+  assert(/Estimasi per Hari/.test(mobRingText) && /Rencana Biaya per Kategori/.test(mobRingText), 'Tahap 3b: seksi Estimasi per Hari dan Rencana Biaya per Kategori tampil');
+  assert(/2\.775\.000/.test(dtRingText) && /3\.900\.000/.test(dtRingText) && mobRingRoot.querySelectorAll('.simple-row .cat-logo').length === 3, 'Tahap 3b: paritas numerik & 3 ikon kategori sejalan dengan desktop aktif');
+
+  // Edge case Ringkasan: overbudget -> Melebihi Anggaran, budget=0 -> Belum diatur, tanpa tanggal -> Tanggal belum diisi & empty sections
+  t3().budget = 9000000;
+  w.renderMobTrip();
+  assert(/Melebihi Anggaran/.test(mobRingRoot.textContent) && /2\.100\.000/.test(mobRingRoot.textContent), 'Tahap 3b: overbudget menampilkan Melebihi Anggaran');
+  t3().budget = 0; t3().start = ''; t3().end = '';
+  const origIt3 = t3().it; t3().it = [];
+  w.renderMobTrip();
+  assert(/Belum diatur/.test(mobRingRoot.textContent) && /Atur lewat tombol Ubah/.test(mobRingRoot.textContent) && /Tanggal belum diisi/.test(mobRingRoot.textContent) && /Belum ada pengeluaran tunai\/kartu harian di Itinerary\./.test(mobRingRoot.textContent), 'Tahap 3b: edge case tanpa anggaran & tanpa tanggal/itinerary sama dengan desktop');
+  t3().budget = 15000000; t3().start = '2026-12-01'; t3().end = '2026-12-04'; t3().it = origIt3;
+
+  // 26c. Subtab Pemesanan (book)
+  w.MOB_STATE.tripSub = 'book';
+  w.renderMobTrip();
+  const bkText0 = $('m-trip-root').textContent;
+  assert(/Total Pemesanan/.test(bkText0) && /Sudah Dibayar/.test(bkText0) && /Belum Dibayar/.test(bkText0), 'Tahap 3c: 3 kartu ringkasan atas Pemesanan tampil');
+  assert($('m-bk-cur') && [...$('m-bk-cur').options].some((o) => o.value === 'fx' && o.textContent.trim() === 'JPY'), 'Tahap 3c: selector mata uang JPY tampil saat tr.cur diset');
+  assert($('m-bk-start') && $('m-bk-start').value === '2026-12-01' && $('m-bk-end') && $('m-bk-end').value === '2026-12-04', 'Tahap 3c: tanggal default check-in/out mengikuti start/end trip');
+  assert(/1 Des – 4 Des/.test(bkText0) && /5\.500\.000/.test(bkText0) && $('m-trip-root').querySelector('.mob-sched-card .cat-logo'), 'Tahap 3c: item daftar menampilkan ikon kategori, rentang tanggal a–b, dan nominal terkonversi');
+
+  // Tambah pemesanan baru dalam FX + tanggal
+  $('m-bk-title').value = 'JR Kansai Pass';
+  $('m-bk-amt').value = '5000';
+  $('m-bk-cur').value = 'fx';
+  $('m-bk-start').value = '2026-12-02';
+  $('m-bk-end').value = '2026-12-04';
+  $('m-bk-cat').value = 'Tiket & Tour';
+  fire($('m-trip-book-form'), 'submit');
+  const addedBk = t3().bk.find((x) => x.title === 'JR Kansai Pass');
+  assert(addedBk && addedBk.amt === 5000 && addedBk.fx === true && addedBk.a === '2026-12-02' && addedBk.b === '2026-12-04' && addedBk.pay === 'on' && addedBk.paid === false, 'Tahap 3c: tambah pemesanan menyimpan fx, a, b, cat, default pay=on');
+
+  // Edit pemesanan mempertahankan pay, link, paid, rec & Batal tidak mengubah data
+  click($('m-trip-root').querySelector('[data-mbk-edit="t3-b1"]'));
+  assert($('m-bk-cur').value === 'fx' && $('m-bk-start').value === '2026-12-01' && $('m-bk-end').value === '2026-12-04' && $('m-bk-cancel'), 'Tahap 3c: edit memuat fx & tanggal a/b serta tombol Batal');
+  click($('m-bk-cancel'));
+  assert(w.MOB_STATE.tripEditBk === null, 'Tahap 3c: Batal keluar dari mode edit');
+  click($('m-trip-root').querySelector('[data-mbk-edit="t3-b1"]'));
+  $('m-bk-title').value = 'ANA Flight Revised';
+  $('m-bk-amt').value = '55000';
+  fire($('m-trip-book-form'), 'submit');
+  const edBk = t3().bk.find((x) => x.id === 't3-b1');
+  assert(edBk.title === 'ANA Flight Revised' && edBk.pay === 'ic' && edBk.link === 'https://ana.example' && edBk.paid === true && edBk.rec === 'rec-b1', 'Tahap 3c: edit me-merge field form dan mempertahankan pay, link, paid, rec');
+
+  // 26d. Subtab Checklist (cek) + progress bar + jaga scroll
+  w.MOB_STATE.tripSub = 'cek';
+  w.renderMobTrip();
+  assert(/1 dari 2 siap \(50%\)/.test($('m-trip-root').textContent), 'Tahap 3d: subjudul checklist menampilkan N dari M siap (P%)');
+  const ckBar = $('m-trip-root').querySelector('.rank-track .rank-fill');
+  assert(ckBar && ckBar.style.width === '50%', 'Tahap 3d: progress bar checklist menampilkan lebar 50%');
+  assert($('m-trip-ck-std') && /Isi Daftar Standar/.test($('m-trip-ck-std').textContent), 'Tahap 3d: tombol memakai teks Isi Daftar Standar');
+  assert($('m-ck-inp') && $('m-ck-inp').getAttribute('maxlength') === '60', 'Tahap 3d: input checklist punya maxlength=60');
+  const mmScroll = $('m-main');
+  if (mmScroll) mmScroll.scrollTop = 180;
+  const ckCb = $('m-trip-root').querySelector('[data-mck-tog="t3-c2"]');
+  ckCb.checked = true;
+  fire(ckCb, 'change');
+  assert(/2 dari 2 siap \(100%\)/.test($('m-trip-root').textContent), 'Tahap 3d: toggle checklist memperbarui hitungan jadi 2 dari 2 siap (100%)');
+  if (mmScroll) assert.strictEqual(mmScroll.scrollTop, 180, 'Tahap 3d: toggle checklist tidak mereset posisi scroll');
+
+  // 26e. Subtab Catatan & Tautan (cat) + keamananan XSS/javascript: + Capacitor Browser + Undo
+  w.MOB_STATE.tripSub = 'cat';
+  w.renderMobTrip();
+  const catHtml = $('m-trip-root').innerHTML;
+  assert(catHtml.indexOf('Tautan Berguna') !== -1 && catHtml.indexOf('Tautan Berguna') < catHtml.indexOf('Catatan Penting'), 'Tahap 3e: kartu Tautan Berguna muncul sebelum Catatan Penting');
+  assert(!catHtml.includes('href="javascript:'), 'Tahap 3e: URL javascript: tidak dirender sebagai tautan aktif');
+  // Tambah tautan tanpa https:// -> otomatis ditambah https://, serta escape karakter HTML
+  $('m-lk-title').value = '<img onerror=1> Panduan';
+  $('m-lk-url').value = 'tokyometro.jp/en';
+  fire($('m-trip-lk-form'), 'submit');
+  const addedLk = t3().lk.find((x) => x.title.includes('Panduan'));
+  assert(addedLk && addedLk.url === 'https://tokyometro.jp/en', 'Tahap 3e: URL tanpa skema otomatis dilengkapi https://');
+  assert(!$('m-trip-root').querySelector('#m-trip-root img[onerror]'), 'Tahap 3e: judul tautan di-escape agar aman dari XSS');
+  // Klik tautan di Capacitor memakai Browser.open dan tidak menavigasi WebView
+  let openedExtUrl = '';
+  const origCap26 = w.Capacitor;
+  w.Capacitor = {
+    isNativePlatform: () => true,
+    Plugins: { Browser: { open: (opts) => { openedExtUrl = opts && opts.url; return Promise.resolve(); } } },
+  };
+  const safeAnchor = $('m-trip-root').querySelector('a[data-m-ext-url="https://maps.google.com/?q=tokyo"]');
+  assert(safeAnchor, 'Tahap 3e: tautan aman memakai [data-m-ext-url]');
+  click(safeAnchor);
+  assert.strictEqual(openedExtUrl, 'https://maps.google.com/?q=tokyo', 'Tahap 3e: klik tautan di Capacitor memanggil Browser.open({url})');
+  w.Capacitor = origCap26;
+  // Hapus tautan pakai konfirmasi + snap + Undo
+  click($('m-trip-root').querySelector('[data-mlk-del="t3-l1"]'));
+  const cfmLk = doc.querySelector('.modal.cfm');
+  assert(cfmLk, 'Tahap 3e: hapus tautan membuka dialog konfirmasi');
+  click(cfmLk.querySelector('[data-cf-y]'));
+  assert(!t3().lk.some((x) => x.id === 't3-l1'), 'Tahap 3e: konfirmasi menghapus tautan');
+  const undoLk = $('m-toast-box').querySelector('.m-toast-undo');
+  assert(undoLk, 'Tahap 3e: toast Undo tampil setelah menghapus tautan');
+  click(undoLk);
+  assert(t3().lk.some((x) => x.id === 't3-l1'), 'Tahap 3e: Undo mengembalikan tautan yang dihapus');
+  // Auto-save catatan tetap jalan
+  const noteEl26 = $('m-trip-note');
+  noteEl26.value = 'Catatan baru';
+  fire(noteEl26, 'input');
+  assert.strictEqual(t3().note, 'Catatan baru', 'Tahap 3e: auto-save #m-trip-note tetap bekerja');
+
+  // 26f. Subtab Tabungan (sv) dengan s0, link, progress %, dan tombol Batal
+  w.MOB_STATE.tripSub = 'sv';
+  w.renderMobTrip();
+  assert($('m-tg-s0') && $('m-tg-link') && !$('m-tg-cancel'), 'Tahap 3f: form target baru memiliki m-tg-s0, m-tg-link, dan tanpa Batal');
+  $('m-tg-t').value = '12000000';
+  $('m-tg-s0').value = '2000000';
+  $('m-tg-link').value = '0';
+  $('m-tg-from').value = '2026-07';
+  $('m-tg-to').value = '2026-11'; // 5 bulan -> ceil((12jt - 2jt)/5 / 1000)*1000 = 2.000.000
+  fire($('m-trip-goal-form'), 'submit');
+  assert(t3().goal && t3().goal.s0 === 2000000 && t3().goal.link === false && t3().goal.per === 2000000, 'Tahap 3f: simpan target membaca s0 & link dari form');
+  const svViewText = $('m-trip-root').textContent;
+  assert(/Hanya Pencatat/.test(svViewText) && /Terkumpul\s*Rp\s*4\.000\.000\s*dari\s*Rp\s*12\.000\.000/.test(svViewText) && /33%/.test(svViewText) && /Sisihkan\s*Rp\s*2\.000\.000\s*per bulan\s*·\s*2026-07\s*–\s*2026-11/.test(svViewText), 'Tahap 3f: kartu tampilan target menampilkan badge, terkumpul/target, %, dan sisihkan bulanan');
+  assert($('m-tg-edit') && /Ubah Target/.test($('m-tg-edit').textContent) && $('m-tg-del') && /Hapus Target/.test($('m-tg-del').textContent), 'Tahap 3f: tombol Ubah Target & Hapus Target tampil');
+  click($('m-tg-edit'));
+  assert($('m-tg-cancel') && $('m-tg-s0').value === '2.000.000' && $('m-tg-link').value === '0', 'Tahap 3f: Ubah Target mengisi s0 & link serta menampilkan tombol Batal');
+  $('m-tg-t').value = '99000000';
+  click($('m-tg-cancel'));
+  assert(t3().goal.t === 12000000 && $('m-tg-edit'), 'Tahap 3f: Batal mengembalikan kartu tampilan tanpa mengubah tr.goal');
+  // Tidak ada listener ganda setelah renderMobTrip() berulang
+  const origSave26 = w.save;
+  let saveCalls26 = 0;
+  w.save = function () { saveCalls26 += 1; return origSave26.apply(this, arguments); };
+  w.renderMobTrip();
+  w.renderMobTrip();
+  w.MOB_STATE.tripSub = 'cek';
+  w.renderMobTrip();
+  const tog26 = $('m-trip-root').querySelector('[data-mck-tog="t3-c1"]');
+  tog26.checked = false;
+  fire(tog26, 'change');
+  assert.strictEqual(saveCalls26, 1, 'Tahap 3f: render berulang tidak menambah listener ganda pada aksi Tahap 3');
+  w.save = origSave26;
+
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('OK mobile_app_mode');
   process.exit(0);

@@ -3930,6 +3930,16 @@ function brBindEvents() {
     }
     var trAct = tp();
     if (trAct) {
+      var brTripConfirmDel = function (confirmMsg, snapLabel, fnMutate, toastMsg, fullRender) {
+        askConfirm(confirmMsg, function () {
+          var sn = snap(snapLabel);
+          fnMutate();
+          save();
+          if (fullRender) renderAll();
+          else renderTrip();
+          toast(toastMsg, function () { restoreSnap(sn.t); });
+        }, 'Ya, hapus');
+      };
       if (t.closest('[data-it-done]')) { var id1 = t.closest('[data-it-done]').dataset.itDone, x1 = trAct.it.filter(function (x) { return x.id === id1; })[0]; if (x1) { x1.done = !x1.done; save(); renderTrip(); } return; }
       if (t.closest('[data-trip-it-edit]')) {
         BR_STATE.tripEditItId = t.closest('[data-trip-it-edit]').dataset.tripItEdit;
@@ -3938,17 +3948,76 @@ function brBindEvents() {
         return;
       }
       if (t.closest('[data-it-cancel]')) { BR_STATE.tripEditItId = null; renderTrip(); return; }
-      if (t.closest('[data-trip-it-del]')) { var id2 = t.closest('[data-trip-it-del]').dataset.tripItDel; trAct.it = trAct.it.filter(function (x) { return x.id !== id2; }); if (BR_STATE.tripEditItId === id2) BR_STATE.tripEditItId = null; save(); renderTrip(); return; }
+      if (t.closest('[data-trip-it-del]')) {
+        var id2 = t.closest('[data-trip-it-del]').dataset.tripItDel,
+          x2 = (trAct.it || []).filter(function (x) { return x.id === id2; })[0];
+        if (x2) brTripConfirmDel(
+          'Hapus kegiatan <b>' + esc(x2.place || 'ini') + '</b>?',
+          'Sebelum menghapus kegiatan',
+          function () {
+            trAct.it = trAct.it.filter(function (x) { return x.id !== id2; });
+            if (BR_STATE.tripEditItId === id2) BR_STATE.tripEditItId = null;
+          },
+          'Kegiatan dihapus.',
+          false
+        );
+        return;
+      }
       if (t.closest('[data-bk-pay]')) { var id3 = t.closest('[data-bk-pay]').dataset.bkPay, x3 = trAct.bk.filter(function (x) { return x.id === id3; })[0]; if (x3) { x3.paid = !x3.paid; save(); renderTrip(); } return; }
       if (t.closest('[data-bk-edit]')) { BR_STATE.tripEditBkId = t.closest('[data-bk-edit]').dataset.bkEdit; renderTrip(); return; }
       if (t.closest('[data-bk-cancel]')) { BR_STATE.tripEditBkId = null; renderTrip(); return; }
-      if (t.closest('[data-bk-del]')) { var id4 = t.closest('[data-bk-del]').dataset.bkDel; trAct.bk = trAct.bk.filter(function (x) { return x.id !== id4; }); save(); renderTrip(); return; }
+      if (t.closest('[data-bk-del]')) {
+        var id4 = t.closest('[data-bk-del]').dataset.bkDel,
+          x4 = (trAct.bk || []).filter(function (x) { return x.id === id4; })[0];
+        if (x4) brTripConfirmDel(
+          'Hapus pemesanan <b>' + esc(x4.title || 'ini') + '</b>?',
+          'Sebelum menghapus pemesanan',
+          function () {
+            trAct.bk = trAct.bk.filter(function (x) { return x.id !== id4; });
+            if (BR_STATE.tripEditBkId === id4) BR_STATE.tripEditBkId = null;
+          },
+          'Pemesanan dihapus.',
+          false
+        );
+        return;
+      }
       if (t.closest('#br-trip-ck-std')) { CK_STD.forEach(function (txt) { if (!trAct.ck.some(function (x) { return x.text === txt; })) trAct.ck.push({ id: kid('c'), text: txt, done: false }); }); save(); renderTrip(); return; }
-      if (t.closest('[data-ck-del]')) { var id5 = t.closest('[data-ck-del]').dataset.ckDel; trAct.ck = trAct.ck.filter(function (x) { return x.id !== id5; }); save(); renderTrip(); return; }
-      if (t.closest('[data-lk-del]')) { var id6 = t.closest('[data-lk-del]').dataset.lkDel; trAct.lk = trAct.lk.filter(function (x) { return x.id !== id6; }); save(); renderTrip(); return; }
+      if (t.closest('[data-ck-del]')) {
+        var id5 = t.closest('[data-ck-del]').dataset.ckDel,
+          x5 = (trAct.ck || []).filter(function (x) { return x.id === id5; })[0];
+        if (x5) brTripConfirmDel(
+          'Hapus <b>' + esc(x5.text || 'barang ini') + '</b> dari checklist?',
+          'Sebelum menghapus checklist',
+          function () { trAct.ck = trAct.ck.filter(function (x) { return x.id !== id5; }); },
+          'Barang dihapus.',
+          false
+        );
+        return;
+      }
+      if (t.closest('[data-lk-del]')) {
+        var id6 = t.closest('[data-lk-del]').dataset.lkDel,
+          x6 = (trAct.lk || []).filter(function (x) { return x.id === id6; })[0];
+        if (x6) brTripConfirmDel(
+          'Hapus tautan <b>' + esc(x6.title || x6.url || 'ini') + '</b>?',
+          'Sebelum menghapus tautan',
+          function () { trAct.lk = trAct.lk.filter(function (x) { return x.id !== id6; }); },
+          'Tautan dihapus.',
+          false
+        );
+        return;
+      }
       if (t.closest('#br-tg-edit')) { BR_STATE.tripGoalEdit = true; renderTrip(); return; }
       if (t.closest('#br-tg-cancel')) { BR_STATE.tripGoalEdit = false; renderTrip(); return; }
-      if (t.closest('#br-tg-del')) { trAct.goal = null; BR_STATE.tripGoalEdit = false; save(); renderAll(); return; }
+      if (t.closest('#br-tg-del')) {
+        if (trAct.goal) brTripConfirmDel(
+          'Hapus target tabungan perjalanan ini?',
+          'Sebelum menghapus target tabungan',
+          function () { trAct.goal = null; BR_STATE.tripGoalEdit = false; },
+          'Target tabungan dihapus.',
+          true
+        );
+        return;
+      }
     }
 
     // 9. Alat & Mobile Sheet Navigation & External Tools
@@ -4158,9 +4227,18 @@ function brBindEvents() {
     } else if (f.id === 'trip-goal-form' && tp()) {
       e.preventDefault();
       var tVal = getRpVal('tg-t'), s0Val = getRpVal('tg-s0'), linkG = !$('tg-link') || $('tg-link').value !== '0',
-        fromG = ($('tg-from') && $('tg-from').value) || todayISO().slice(0, 7), toG = ($('tg-to') && $('tg-to').value) || (S.year + '-12');
-      if (!(tVal > 0)) { rkShakeInvalid($('tg-t')); return; }
-      tp().goal = { t: tVal, s0: s0Val, from: fromG, to: toG, link: linkG };
+        fromG = ($('tg-from') && $('tg-from').value) || todayISO().slice(0, 7), toG = ($('tg-to') && $('tg-to').value) || (S.year + '-12'),
+        gc = typeof goalCompute === 'function'
+          ? goalCompute(tVal, s0Val, fromG, toG, linkG)
+          : (function () {
+              var okM = /^\d{4}-\d{2}$/.test(fromG) && /^\d{4}-\d{2}$/.test(toG) && toG >= fromG;
+              var nM = okM && typeof monthList === 'function' ? monthList(fromG, toG).length : 0;
+              return { link: linkG, t: tVal, s0: s0Val, from: fromG, to: toG, n: nM, per: nM && tVal > s0Val ? Math.ceil((tVal - s0Val) / nM / 1000) * 1000 : 0 };
+            })();
+      if (!(gc.t > 0)) { rkShakeInvalid($('tg-t')); toast('Isi target tabungan.'); return; }
+      if (!gc.n) { rkShakeInvalid($('tg-to')); toast('Bulan terakhir tidak boleh sebelum bulan mulai.'); return; }
+      if (!gc.per) { rkShakeInvalid($('tg-t')); toast('Dana yang terkumpul sudah mencapai target.'); return; }
+      tp().goal = { t: gc.t, s0: gc.s0, from: gc.from, to: gc.to, per: gc.per, link: gc.link };
       BR_STATE.tripGoalEdit = false; save(); renderAll(); toast('Target tabungan disimpan');
     }
   });

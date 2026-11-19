@@ -706,9 +706,32 @@ function goalCard(P, pl) {
     '</div><div><label for="gz">Terakhir menabung</label>' + goalSel('gz', opts, g ? g.to : before) + '</div><div class="gcall"><label for="gl">Sambungkan ke Rencana Keuangan?</label><select id="gl"><option value="1"' + (lk ? ' selected' : '') + '>Ya, hitung sebagai pengeluaran bulanan di Rincian</option><option value="0"' + (lk ? '' : ' selected') + '>Tidak, hanya pencatat target</option></select></div></div><div class="sub" id="gprev" style="margin:8px 0"></div><div class="err" id="gerr"></div><div class="row2"><button class="p" data-gset="1">Simpan target</button>' + (g ? '<button data-gcancel="1">Batal</button>' : '') + '</div></div>'
   );
 }
+/** Hitung rencana tabungan perjalanan per bulan; dipakai desktop dan APK. */
+function goalCompute(t, s0, from, to, link) {
+  var tv = +t > 0 ? +t : 0,
+    sv = +s0 > 0 ? +s0 : 0,
+    a = String(from || ''),
+    b = String(to || ''),
+    ok = /^\d{4}-\d{2}$/.test(a) && /^\d{4}-\d{2}$/.test(b),
+    n = ok && b >= a ? monthList(a, b).length : 0;
+  return {
+    link: link !== false,
+    t: tv,
+    s0: sv,
+    from: a,
+    to: b,
+    n: n,
+    per: n && tv > sv ? Math.ceil((tv - sv) / n / 1000) * 1000 : 0,
+  };
+}
 function goalCalc() {
-  var t = parseRp($('gt').value) || 0, s0 = parseRp($('gs').value) || 0, a = $('gf').value, b = $('gz').value, n = a && b && b >= a ? monthList(a, b).length : 0;
-  return { link: !$('gl') || $('gl').value !== '0', t: t, s0: s0, from: a, to: b, n: n, per: n && t > s0 ? Math.ceil((t - s0) / n / 1000) * 1000 : 0 };
+  return goalCompute(
+    parseRp($('gt').value) || 0,
+    parseRp($('gs').value) || 0,
+    $('gf').value,
+    $('gz').value,
+    !$('gl') || $('gl').value !== '0'
+  );
 }
 function goalPrev() {
   var c = goalCalc();

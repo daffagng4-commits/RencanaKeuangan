@@ -2003,6 +2003,110 @@ body[data-shell="mobile-app"] #mobile-app-shell .rep-table th.r,
 body[data-shell="mobile-app"] #mobile-app-shell .rep-table td.r { text-align: right; font-family: var(--font-mono); white-space: nowrap; }
 body[data-shell="mobile-app"] #mobile-app-shell .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 11px; border-radius: 12px; background: var(--bg-muted-row); font-size: 0.79rem; }
 
+body[data-shell="mobile-app"] #mobile-app-shell .m-trip-kpis .m-tile-s { white-space: normal; line-height: 1.28; }
+body[data-shell="mobile-app"] #mobile-app-shell .bento-3 .m-tile { padding: 8px 9px; }
+body[data-shell="mobile-app"] #mobile-app-shell .bento-3 .m-tile-v { font-size: 0.78rem; overflow-wrap: anywhere; }
+
+/* Ringkasan Perjalanan, Checklist, & Tautan Eksternal (Tahap 3) */
+body[data-shell="mobile-app"] #mobile-app-shell .simple-row.m-ring-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg-muted-row);
+  min-width: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .simple-row-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .simple-row-bar {
+  width: 50px;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--border-subtle);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .simple-row-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  transition: width 260ms var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .simple-row-pct {
+  font-family: var(--font-mono);
+  font-size: 0.70rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  width: 36px;
+  text-align: right;
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .simple-row-amt {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  min-width: 72px;
+  text-align: right;
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-ring-fx {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-ck-label {
+  position: relative;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  cursor: pointer;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-ck-label::after {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-ext-link {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.81rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-ext-link::after {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-ext-link-invalid {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+@media (hover: hover) and (pointer: fine) {
+  body[data-shell="mobile-app"] #mobile-app-shell a.m-ext-link:hover {
+    text-decoration: underline;
+  }
+}
+
 body[data-shell="mobile-app"] #mobile-app-shell .sec-hidden { display: none !important; }
 
 body[data-shell="mobile-app"] #mobile-app-shell .chart-stage,

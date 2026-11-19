@@ -156,6 +156,47 @@ function mobCatLogo(cat, size) {
   );
 }
 
+function mobTripCatMapped(c) {
+  var m = { Makanan: 'Makan & Minum', Makan: 'Makan & Minum', Transport: 'Transportasi', 'Tiket & Tour': 'Hiburan', Penginapan: 'Tagihan rutin', Belanja: 'Belanja', Persiapan: 'Kesehatan', Lainnya: 'Tagihan rutin' };
+  return m[c] || 'Tagihan rutin';
+}
+
+function mobFmtShortCal(ds) {
+  if (!ds || ds.length < 10) return '—';
+  return +ds.slice(8, 10) + ' ' + MON[+ds.slice(5, 7) - 1];
+}
+
+function mobPreserveScroll(fn) {
+  var mm = $('m-main');
+  var sy = typeof window !== 'undefined' ? (window.scrollY || (document.documentElement && document.documentElement.scrollTop) || 0) : 0;
+  var mTop = mm ? mm.scrollTop : 0;
+  fn();
+  if (mm && mTop) mm.scrollTop = mTop;
+  if (sy > 0 && typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+    try { window.scrollTo(0, sy); } catch (e) {}
+  }
+}
+
+function mobOpenExternalUrl(rawUrl) {
+  var u = String(rawUrl || '').trim();
+  var ok = u && (typeof okUrl === 'function' ? okUrl(u) : /^https?:\/\/[^\s"'<>]+$/i.test(u));
+  if (!ok) {
+    showMobToast('Tautan tidak valid');
+    return false;
+  }
+  var br = typeof window !== 'undefined' && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
+  if (rkIsCapacitorNative() && br && typeof br.open === 'function') {
+    Promise.resolve(br.open({ url: u })).catch(function () {
+      try { window.open(u, '_blank', 'noopener,noreferrer'); } catch (e) {}
+    });
+    return true;
+  }
+  try {
+    window.open(u, '_blank', 'noopener,noreferrer');
+  } catch (e) {}
+  return true;
+}
+
 function mobItemShade(cat, idx) {
   var base = mobGetCatMeta(cat).hex || '#2563EB';
   if (!idx) return base;
@@ -1712,6 +1753,96 @@ function mobActiveTrip() {
   return list.find(function (p) { return p.id === MOB_STATE.tripId; }) || list[0];
 }
 
+function syncMobTripBudgetWrap() {
+  var sel = $('m-kp-use-budget'), wrap = $('m-kp-budget-wrap');
+  if (sel && wrap) wrap.style.display = sel.value === '1' ? 'flex' : 'none';
+}
+
+function renderMobTripListCard(t, activeId) {
+  var pl = tripPlan(t),
+    dCnt = t.start && t.end && t.end >= t.start ? daysBetweenISO(t.end, t.start) + 1 : 0,
+    pct = t.budget ? Math.min(100, Math.round((pl.t / t.budget) * 100)) : 0,
+    over = t.budget && pl.t > t.budget;
+  return '<button type="button" class="mob-sched-card" style="text-align:left;width:100%" data-mtrip-sel="' + esc(t.id) + '">' +
+    '<div class="msc-top"><div><div class="msc-name">' + esc(t.name) + '</div>' +
+    '<div class="msc-sub">' + (t.start && t.end ? fmtD(t.start) + ' – ' + fmtD(t.end) + (dCnt ? ' &middot; ' + dCnt + ' hari' : '') : 'Tanggal belum diisi') + '</div></div>' +
+    '<span class="badge ' + (t.id === activeId ? 'b-ac' : 'b-nt') + '">' + esc(t.cur || 'IDR') + '</span></div>' +
+    (t.budget ? '<div class="rank-track"><div class="rank-fill" style="width:' + pct + '%;background:' + (over ? 'var(--crimson)' : 'var(--accent)') + '"></div></div>' : '') +
+    '<div style="font-size:0.74rem;color:var(--text-secondary)">Rencana biaya <strong class="mono pv">' + rp(pl.t) + '</strong>' +
+    (t.budget ? ' dari anggaran <strong class="mono pv">' + rp(t.budget) + '</strong>' : ' &middot; anggaran belum ditentukan') + '</div></button>';
+}
+
+function renderMobTripItinCard(tr, x) {
+  var timeHtml = x.time
+    ? '<span class="mono" style="color:var(--accent-ink);margin-right:5px">' + esc(x.time.replace(':', '.')) + (x.time2 ? '–' + esc(x.time2.replace(':', '.')) : '') + '</span>'
+    : '';
+  var payTxt = x.pay ? ((typeof PAYL !== 'undefined' && PAYL[x.pay]) || x.pay) : '';
+  var amtTxtM = x.est ? (x.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(x.est).toLocaleString('id-ID') : rp(x.est)) : '';
+  return '<div class="mob-sched-card ' + (x.done ? 'done' : '') + '" style="padding:10px">' +
+    '<div class="msc-top"><div class="msc-left" style="flex:1">' + mobCatLogo(mobTripCatMapped(x.cat || 'Transport'), 30) +
+    '<div style="min-width:0;flex:1">' +
+    '<div style="font-weight:800;font-size:0.84rem;' + (x.done ? 'text-decoration:line-through;opacity:0.55;' : '') + '">' + timeHtml + esc(x.place) + '</div>' +
+    '<div class="msc-badges" style="margin-top:4px"><span class="badge b-nt">' + esc(x.cat || 'Transport') + '</span>' +
+    (payTxt ? '<span class="badge b-ac">' + esc(payTxt) + '</span>' : '') + '</div>' +
+    (x.note ? '<div class="msc-sub" style="margin-top:4px">' + esc(x.note) + '</div>' : '') +
+    '</div></div><strong class="mono pv msc-right" style="font-size:0.84rem">' + amtTxtM + '</strong></div>' +
+    '<div style="display:flex;gap:6px;justify-content:flex-end">' +
+    '<button type="button" class="btn btn-secondary btn-sm" data-mit-toggle="' + esc(x.id) + '">' + (x.done ? '✓ Selesai' : 'Tandai') + '</button>' +
+    '<button type="button" class="btn btn-secondary btn-sm" data-mit-edit="' + esc(x.id) + '">Ubah</button>' +
+    '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson)" data-mit-del="' + esc(x.id) + '">Hapus</button>' +
+    '</div></div>';
+}
+
+function renderMobTripItin(tr) {
+  var days = tripDays(tr),
+    EIt = MOB_STATE.tripEditIt ? (tr.it || []).find(function (x) { return x.id === MOB_STATE.tripEditIt; }) : null,
+    defDay = (EIt && EIt.day) || days[0] || tr.start || todayISO(),
+    defPay = EIt ? (EIt.pay || '') : 'cash',
+    itRpFn = typeof tripItRp === 'function' ? tripItRp : function (P, x) { return typeof val === 'function' ? val(P, x.est, x.fx) : (+x.est || 0); },
+    dayLblFn = typeof dayLabel === 'function' ? dayLabel : function (P, d) { return fmtD(d); };
+  var formHtml =
+    '<div class="card"><div class="card-hd"><h3 class="card-title">' + (EIt ? 'Ubah Kegiatan' : 'Tambah Kegiatan') + '</h3>' +
+    (EIt ? '<button type="button" class="btn btn-secondary btn-sm" id="m-it-cancel">Batal</button>' : '') + '</div>' +
+    '<form id="m-trip-itin-form" class="stack" style="gap:9px" novalidate>' +
+    '<div class="field"><span class="field-label">Tanggal</span>' + mobDateFieldHtml('m-it-day', defDay, false) + '</div>' +
+    '<div class="bento-2">' +
+    '<div class="field"><label class="field-label" for="m-it-time">Mulai</label><input class="input mono" id="m-it-time" inputmode="numeric" maxlength="5" placeholder="14.00" value="' + esc(EIt && EIt.time ? EIt.time.replace(':', '.') : '') + '" /></div>' +
+    '<div class="field"><label class="field-label" for="m-it-time2">Selesai</label><input class="input mono" id="m-it-time2" inputmode="numeric" maxlength="5" placeholder="16.30" value="' + esc(EIt && EIt.time2 ? EIt.time2.replace(':', '.') : '') + '" /></div></div>' +
+    '<div class="field"><label class="field-label" for="m-it-place">Kegiatan</label><input class="input" id="m-it-place" maxlength="120" placeholder="mis. Senso-ji Temple" value="' + esc(EIt ? EIt.place : '') + '" required /></div>' +
+    '<div class="field"><label class="field-label" for="m-it-est">Biaya &amp; Mata Uang</label>' +
+    '<div style="display:flex;gap:6px"><input class="input mono" id="m-it-est" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EIt && EIt.est ? (+EIt.est).toLocaleString('id-ID') : '') + '" style="flex:1;min-width:0" />' +
+    '<select class="input" id="m-it-cur" aria-label="Mata uang" style="width:88px;flex-shrink:0"><option value="idr"' + (!(EIt && EIt.fx) ? ' selected' : '') + '>Rp</option>' +
+    (tr.cur ? '<option value="fx"' + (EIt && EIt.fx ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : '') +
+    '</select></div></div>' +
+    '<div class="bento-2">' +
+    '<div class="field"><label class="field-label" for="m-it-pay">Pembayaran</label><select class="input" id="m-it-pay">' +
+    '<option value=""' + (defPay === '' ? ' selected' : '') + '>Belum ditentukan</option>' +
+    '<option value="ic"' + (defPay === 'ic' ? ' selected' : '') + '>Kartu IC</option>' +
+    '<option value="on"' + (defPay === 'on' ? ' selected' : '') + '>Online (Pemesanan)</option>' +
+    '<option value="cash"' + (defPay === 'cash' ? ' selected' : '') + '>Cash</option>' +
+    '</select></div>' +
+    '<div class="field"><label class="field-label" for="m-it-cat">Kategori</label><select class="input" id="m-it-cat">' +
+    ICAT.map(function (c) { return '<option value="' + esc(c) + '"' + ((EIt ? EIt.cat : 'Transport') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') +
+    '</select></div></div>' +
+    '<div class="field"><label class="field-label" for="m-it-link">Tautan Peta / Tiket (opsional)</label><input class="input" id="m-it-link" inputmode="url" placeholder="https://..." value="' + esc(EIt ? (EIt.link || '') : '') + '" /></div>' +
+    '<div class="field"><label class="field-label" for="m-it-note">Catatan (opsional)</label><input class="input" id="m-it-note" maxlength="200" placeholder="Catatan singkat" value="' + esc(EIt ? (EIt.note || '') : '') + '" /></div>' +
+    '<button type="submit" class="btn btn-primary">' + (EIt ? 'Simpan Perubahan' : 'Tambah Kegiatan') + '</button></form></div>';
+  var listHtml = days.length
+    ? days.map(function (d) {
+        var its = (tr.it || []).filter(function (x) { return x.day === d; }).sort(function (a, b) { return (a.time || '').localeCompare(b.time || ''); });
+        var dTot = its.reduce(function (s, x) { return s + (x.pay === 'on' || !x.est ? 0 : itRpFn(tr, x)); }, 0);
+        return '<div class="card m-itin-day-card" data-mday="' + esc(d) + '">' +
+          '<div class="card-hd" style="margin-bottom:8px"><h3 class="card-title">' + esc(dayLblFn(tr, d)) + '</h3>' +
+          (dTot ? '<span class="badge b-ac mono pv">Estimasi: ' + rp(dTot) + '</span>' : '') + '</div>' +
+          '<input class="input" maxlength="60" style="margin-bottom:9px" placeholder="Judul hari, mis. Jakarta – Tokyo" value="' + esc((tr.dt && tr.dt[d]) || '') + '" data-mdt-day="' + esc(d) + '" />' +
+          '<div class="stack" style="gap:7px">' +
+          (its.length ? its.map(function (x) { return renderMobTripItinCard(tr, x); }).join('') : '<div style="padding:8px 0;color:var(--text-muted);font-size:0.78rem">Belum ada kegiatan hari ini.</div>') +
+          '</div></div>';
+      }).join('')
+    : '<div class="card" style="text-align:center;color:var(--text-muted);font-size:0.78rem;padding:18px">Atur tanggal mulai/selesai atau tambahkan kegiatan pertama.</div>';
+  return formHtml + '<div class="stack" style="gap:9px">' + listHtml + '</div>';
+}
+
 function renderMobTrip() {
   var root = $('m-trip-root');
   if (!root) return;
@@ -1725,13 +1856,7 @@ function renderMobTrip() {
       '<button type="button" class="btn btn-primary btn-sm" id="m-btn-trip-new">+ Perjalanan baru</button></div>' +
       '<div class="stack" style="gap:9px">' +
       (list.length
-        ? list.map(function (t) {
-            var pl = tripPlan(t);
-            return '<button type="button" class="mob-sched-card" style="text-align:left;width:100%" data-mtrip-sel="' + esc(t.id) + '">' +
-              '<div class="msc-top"><div><div class="msc-name">' + esc(t.name) + '</div><div class="msc-sub">' + (t.start && t.end ? fmtDateRange(t.start, t.end) : 'Tanggal belum diatur') + '</div></div>' +
-              '<span class="badge b-ac">' + esc(t.cur || 'IDR') + '</span></div>' +
-              '<div style="display:flex;justify-content:space-between;font-size:0.74rem;color:var(--text-secondary)" class="pv"><span>Rencana: <strong class="mono">' + rp(pl.t) + '</strong></span><span>' + (t.budget ? 'Anggaran: ' + mobFmtShort(t.budget) : 'Tanpa anggaran') + '</span></div></button>';
-          }).join('')
+        ? list.map(function (t) { return renderMobTripListCard(t, tr ? tr.id : ''); }).join('')
         : '<div style="text-align:center;font-size:0.80rem;color:var(--text-muted);padding:16px">Belum ada rencana perjalanan. Klik + Perjalanan baru.</div>') +
       '</div></div>';
     return;
@@ -1741,74 +1866,140 @@ function renderMobTrip() {
     subTabs = [['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['cek', 'Checklist'], ['cat', 'Catatan'], ['sv', 'Tabungan']],
     body = '';
 
+  var itRpFn = typeof tripItRp === 'function' ? tripItRp : function (P, x) { return typeof val === 'function' ? val(P, x.est, x.fx) : (+x.est || 0); },
+    bkRpFn = typeof tripAmtRp === 'function' ? tripAmtRp : function (P, x) { return typeof val === 'function' ? val(P, x.amt, x.fx) : (+x.amt || 0); },
+    dayLblFn = typeof dayLabel === 'function' ? dayLabel : function (P, d) { return fmtD(d); };
   if (MOB_STATE.tripSub === 'ring') {
-    var leftB = tr.budget ? tr.budget - pl.t : 0, pctB = tr.budget ? Math.min(100, Math.round((pl.t / tr.budget) * 100)) : 0;
+    var N = tr.start && tr.end && tr.end >= tr.start ? dayNo(tr.end, tr.start) + 1 : 0,
+      leftB = tr.budget ? tr.budget - pl.t : 0,
+      pctB = tr.budget ? Math.min(100, Math.round((pl.t / tr.budget) * 100)) : 0,
+      byDay = {}, bcat = {};
+    (tr.bk || []).forEach(function (x) {
+      var c = x.cat || 'Lainnya';
+      bcat[c] = (bcat[c] || 0) + bkRpFn(tr, x);
+    });
+    (tr.it || []).forEach(function (x) {
+      if (x.pay === 'on' || !x.est) return;
+      var v = itRpFn(tr, x);
+      byDay[x.day] = (byDay[x.day] || 0) + v;
+      bcat[x.cat || 'Lainnya'] = (bcat[x.cat || 'Lainnya'] || 0) + v;
+    });
+    var dk = Object.keys(byDay).sort(),
+      dmax = dk.reduce(function (m, d) { return Math.max(m, byDay[d]); }, 0) || 1,
+      cl = Object.keys(bcat).sort(function (a, b) { return bcat[b] - bcat[a]; }),
+      ck = Object.keys(pl.cash).sort();
     body =
-      '<div class="bento-2">' +
-      '<div class="m-tile"><div class="m-tile-k">Rencana Total</div><div class="m-tile-v pv">' + rp(pl.t) + '</div><div class="m-tile-s">Pesan ' + mobFmtShort(pl.b) + ' + Harian ' + mobFmtShort(pl.d) + '</div></div>' +
-      '<div class="m-tile"><div class="m-tile-k">Sudah Dibayar</div><div class="m-tile-v pv" style="color:var(--emerald)">' + rp(pl.paid) + '</div><div class="m-tile-s">' + (tr.budget ? pctB + '% anggaran' : 'Checklist: ' + (tr.ck || []).filter(function (c) { return c.done; }).length + '/' + (tr.ck || []).length) + '</div></div></div>' +
-      (tr.budget ? '<div class="card"><div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:6px"><span>Sisa Anggaran</span><strong class="mono pv" style="color:' + (leftB >= 0 ? 'var(--emerald)' : 'var(--crimson)') + '">' + rp(Math.abs(leftB)) + '</strong></div><div class="rank-track"><div class="rank-fill" style="width:' + pctB + '%;background:' + (leftB >= 0 ? 'var(--accent)' : 'var(--crimson)') + '"></div></div></div>' : '');
+      '<div class="bento-2 m-trip-kpis">' +
+      '<div class="m-tile"><div class="m-tile-k">Total Rencana Biaya</div><div class="m-tile-v pv">' + rp(pl.t) + '</div><div class="m-tile-s pv">Pemesanan ' + rp(pl.b) + ' + Harian ' + rp(pl.d) + '</div></div>' +
+      '<div class="m-tile"><div class="m-tile-k">' + (tr.budget ? (leftB >= 0 ? 'Sisa Anggaran' : 'Melebihi Anggaran') : 'Anggaran') + '</div><div class="m-tile-v pv" style="color:' + (tr.budget ? (leftB >= 0 ? 'var(--emerald)' : 'var(--crimson)') : 'var(--text-primary)') + '">' + (tr.budget ? rp(Math.abs(leftB)) : 'Belum diatur') + '</div><div class="m-tile-s pv">' + (tr.budget ? pctB + '% dari ' + rp(tr.budget) : 'Atur lewat tombol Ubah') + '</div></div>' +
+      '<div class="m-tile"><div class="m-tile-k">Sudah Dibayar</div><div class="m-tile-v pv" style="color:var(--emerald)">' + rp(pl.paid) + '</div><div class="m-tile-s pv">Belum dibayar: ' + rp(pl.b - pl.paid) + '</div></div>' +
+      '<div class="m-tile"><div class="m-tile-k">Rencana per Hari</div><div class="m-tile-v pv">' + (N ? rp(Math.round(pl.t / N)) : '—') + '</div><div class="m-tile-s">' + (N ? N + ' hari' : 'Tanggal belum diisi') + (tr.cur && tr.rate ? ' · 1 ' + esc(tr.cur) + ' = Rp ' + tr.rate.toLocaleString('id-ID') : '') + '</div></div></div>' +
+      '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Siapkan Tunai / Kartu</h3><p class="msc-sub">Akumulasi kebutuhan bayar di tempat</p></div></div><div class="stack" style="gap:6px">' +
+      (ck.length ? ck.map(function (k) {
+        var cx = pl.cash[k], eqRp = cx.idr + (cx.fx && tr.rate ? Math.round(cx.fx * tr.rate) : 0);
+        return '<div class="simple-row m-ring-row"><span class="simple-row-name">' + esc(k) + '</span><span class="mono m-ring-fx">' + (cx.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(cx.fx).toLocaleString('id-ID') : rp(cx.fx || cx.idr)) + '</span><span class="simple-row-amt pv">' + (cx.fx && tr.rate ? '≈ ' + rp(eqRp) : rp(eqRp)) + '</span></div>';
+      }).join('') : '<div style="padding:10px 4px;color:var(--text-muted);font-size:0.78rem">Belum ada pengeluaran tunai/kartu harian di Itinerary.</div>') +
+      '</div></div>' +
+      '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Estimasi per Hari</h3><p class="msc-sub">Pengeluaran non-online dihitung dari jadwal kegiatan</p></div></div><div class="stack" style="gap:6px">' +
+      (dk.length ? dk.map(function (d) {
+        return '<div class="simple-row m-ring-row"><span class="simple-row-name">' + esc(dayLblFn(tr, d)) + '</span><span class="simple-row-bar"><i style="width:' + ((byDay[d] / dmax) * 100).toFixed(1) + '%;background:var(--accent)"></i></span><span class="simple-row-amt pv">' + rp(byDay[d]) + '</span></div>';
+      }).join('') : '<div style="padding:10px 4px;color:var(--text-muted);font-size:0.78rem">Belum ada estimasi harian.</div>') +
+      '</div></div>' +
+      '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Rencana Biaya per Kategori</h3><p class="msc-sub">Gabungan pemesanan + pengeluaran harian</p></div><span class="badge b-nt mono pv">' + rp(pl.t) + '</span></div><div class="stack" style="gap:6px">' +
+      (cl.length ? cl.map(function (k) {
+        var pct = pl.t ? (bcat[k] / pl.t) * 100 : 0, mCat = mobTripCatMapped(k), hex = mobGetCatMeta(mCat).hex;
+        return '<div class="simple-row m-ring-row">' + mobCatLogo(mCat, 24) + '<span class="simple-row-name">' + esc(k) + '</span><span class="simple-row-bar"><i style="width:' + pct.toFixed(1) + '%;background:' + hex + '"></i></span><span class="simple-row-pct">' + pct.toFixed(1) + '%</span><span class="simple-row-amt pv">' + rp(bcat[k]) + '</span></div>';
+      }).join('') : '<div style="padding:10px 4px;color:var(--text-muted);font-size:0.78rem">Belum ada data biaya.</div>') +
+      '</div></div>';
   } else if (MOB_STATE.tripSub === 'itin') {
-    var days = tripDays(tr), EIt = MOB_STATE.tripEditIt ? (tr.it || []).find(function (x) { return x.id === MOB_STATE.tripEditIt; }) : null;
-    body =
-      '<div class="card"><div class="card-hd"><h3 class="card-title">' + (EIt ? 'Ubah Kegiatan' : '+ Tambah Kegiatan') + '</h3>' +
-      (EIt ? '<button type="button" class="btn btn-secondary btn-sm" id="m-it-cancel">Batal</button>' : '') + '</div>' +
-      '<form id="m-trip-itin-form" class="stack" style="gap:9px" novalidate>' +
-      '<input class="input" id="m-it-place" placeholder="mis. Senso-ji Temple" value="' + esc(EIt ? EIt.place : '') + '" required />' +
-      '<div class="bento-2">' + mobDateFieldHtml('m-it-day', (EIt && EIt.day) || tr.start || todayISO(), false) + '<input class="input mono" id="m-it-time" placeholder="Jam (mis. 09:00)" value="' + esc(EIt ? (EIt.time || '') : '') + '" /></div>' +
-      '<div class="bento-2"><input class="input mono" id="m-it-est" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="Estimasi biaya (Rp)" value="' + (EIt && EIt.est ? (+EIt.est).toLocaleString('id-ID') : '') + '" />' +
-      '<select class="input" id="m-it-cat">' + ICAT.map(function (c) { return '<option value="' + esc(c) + '"' + ((EIt ? EIt.cat : 'Transport') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div>' +
-      '<button type="submit" class="btn btn-primary">' + (EIt ? 'Simpan Perubahan' : 'Tambah Kegiatan') + '</button></form></div>' +
-      '<div class="stack" style="gap:7px">' +
-      ((tr.it || []).map(function (x) {
-        var dlbl = typeof dayLabel === 'function' ? dayLabel(tr, x.day) : fmtD(x.day);
-        return '<div class="mob-sched-card ' + (x.done ? 'done' : '') + '" style="padding:10px"><div class="msc-top"><div><strong>' + (x.time ? '<span class="mono" style="color:var(--accent-ink);margin-right:5px">' + esc(x.time) + '</span>' : '') + esc(x.place) + '</strong><div class="msc-sub">' + esc(dlbl) + ' &middot; ' + esc(x.cat || 'Transport') + '</div></div><strong class="mono pv">' + (x.est ? rp(val(tr, x.est, x.fx)) : '') + '</strong></div>' +
-          '<div style="display:flex;gap:6px;justify-content:flex-end"><button type="button" class="btn btn-secondary btn-sm" data-mit-toggle="' + esc(x.id) + '">' + (x.done ? '✓ Selesai' : 'Tandai') + '</button>' +
-          '<button type="button" class="btn btn-secondary btn-sm" data-mit-edit="' + esc(x.id) + '">Ubah</button>' +
-          '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson)" data-mit-del="' + esc(x.id) + '">Hapus</button></div></div>';
-      }).join('') || '<div class="card" style="text-align:center;color:var(--text-muted);font-size:0.78rem">Belum ada kegiatan itinerary' + (days.length ? ' untuk ' + days.length + ' hari perjalanan.' : '.') + '</div>') + '</div>';
+    body = renderMobTripItin(tr);
   } else if (MOB_STATE.tripSub === 'book') {
-    var EBk = MOB_STATE.tripEditBk ? (tr.bk || []).find(function (x) { return x.id === MOB_STATE.tripEditBk; }) : null;
+    var EBk = MOB_STATE.tripEditBk ? (tr.bk || []).find(function (x) { return x.id === MOB_STATE.tripEditBk; }) : null,
+      defBkStart = EBk ? (EBk.a || tr.start || todayISO()) : (tr.start || todayISO()),
+      defBkEnd = EBk ? (EBk.b || tr.end || todayISO()) : (tr.end || todayISO());
     body =
-      '<div class="card"><div class="card-hd"><h3 class="card-title">' + (EBk ? 'Ubah Pemesanan' : '+ Tambah Pemesanan') + '</h3>' +
-      (EBk ? '<button type="button" class="btn btn-secondary btn-sm" id="m-bk-cancel">Batal</button>' : '') + '</div>' +
+      '<div class="bento-3">' +
+      '<div class="m-tile"><div class="m-tile-k">Total Pemesanan</div><div class="m-tile-v pv">' + rp(pl.b) + '</div></div>' +
+      '<div class="m-tile"><div class="m-tile-k">Sudah Dibayar</div><div class="m-tile-v pv" style="color:var(--emerald)">' + rp(pl.paid) + '</div></div>' +
+      '<div class="m-tile"><div class="m-tile-k">Belum Dibayar</div><div class="m-tile-v pv" style="color:var(--amber)">' + rp(pl.b - pl.paid) + '</div></div></div>' +
+      '<div class="card"><div class="card-hd"><div><h3 class="card-title">' + (EBk ? 'Ubah Pemesanan' : 'Tambah Pemesanan') + '</h3><p class="msc-sub">Tiket pesawat, hotel, kereta, dan tur prabayar</p></div></div>' +
       '<form id="m-trip-book-form" class="stack" style="gap:9px" novalidate>' +
-      '<input class="input" id="m-bk-title" placeholder="mis. Tiket Pesawat / Hotel" value="' + esc(EBk ? EBk.title : '') + '" required />' +
-      '<div class="bento-2"><input class="input mono" id="m-bk-amt" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="Nominal (Rp)" value="' + (EBk && EBk.amt ? (+EBk.amt).toLocaleString('id-ID') : '') + '" required />' +
-      '<select class="input" id="m-bk-cat">' + BCAT.map(function (c) { return '<option value="' + esc(c) + '"' + ((EBk ? EBk.cat : 'Transport') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div>' +
-      '<button type="submit" class="btn btn-primary">' + (EBk ? 'Simpan Perubahan' : 'Tambah Pemesanan') + '</button></form></div>' +
+      '<div class="field"><label class="field-label" for="m-bk-title">Nama</label><input class="input" id="m-bk-title" maxlength="120" placeholder="mis. Tiket Pesawat ANA PP" value="' + esc(EBk ? EBk.title : '') + '" required /></div>' +
+      '<div class="field"><label class="field-label" for="m-bk-amt">Jumlah</label><div style="display:flex;gap:6px"><input class="input mono" id="m-bk-amt" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EBk && EBk.amt ? (+EBk.amt).toLocaleString('id-ID') : '') + '" style="flex:1;min-width:0" required />' +
+      '<select class="input" id="m-bk-cur" aria-label="Mata uang" style="width:88px;flex-shrink:0"><option value="idr"' + (!(EBk && EBk.fx) ? ' selected' : '') + '>Rp</option>' +
+      (tr.cur ? '<option value="fx"' + (EBk && EBk.fx ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : '') +
+      '</select></div></div>' +
+      '<div class="bento-2">' +
+      '<div class="field"><span class="field-label">Mulai / Check-in</span>' + mobDateFieldHtml('m-bk-start', defBkStart, false) + '</div>' +
+      '<div class="field"><span class="field-label">Selesai / Check-out</span>' + mobDateFieldHtml('m-bk-end', defBkEnd, true) + '</div></div>' +
+      '<div class="field"><label class="field-label" for="m-bk-cat">Kategori</label><select class="input" id="m-bk-cat">' + BCAT.map(function (c) { return '<option value="' + esc(c) + '"' + ((EBk ? EBk.cat : 'Transport') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div>' +
+      '<div style="display:flex;justify-content:flex-end;gap:8px">' + (EBk ? '<button type="button" class="btn btn-secondary" id="m-bk-cancel">Batal</button>' : '') + '<button type="submit" class="btn btn-primary">' + (EBk ? 'Simpan Perubahan' : 'Tambah Pemesanan') + '</button></div></form></div>' +
       '<div class="stack" style="gap:7px">' +
       ((tr.bk || []).map(function (x) {
-        return '<div class="mob-sched-card ' + (x.paid ? 'done' : '') + '" style="padding:10px"><div class="msc-top"><div><strong>' + esc(x.title) + '</strong><div class="msc-sub">' + esc(x.cat || 'Transport') + '</div></div><strong class="mono pv">' + rp(val(tr, x.amt, x.fx)) + '</strong></div>' +
+        return '<div class="mob-sched-card ' + (x.paid ? 'done' : '') + '" style="padding:10px"><div class="msc-top"><div class="msc-left" style="flex:1">' + mobCatLogo(mobTripCatMapped(x.cat || 'Transport'), 30) +
+          '<div style="min-width:0;flex:1"><div style="font-weight:800;font-size:0.84rem">' + esc(x.title) + '</div><div class="msc-badges" style="margin-top:4px"><span class="badge b-nt">' + esc(x.cat || 'Transport') + '</span>' +
+          (x.a ? '<span class="badge b-nt">' + esc(mobFmtShortCal(x.a) + (x.b ? ' – ' + mobFmtShortCal(x.b) : '')) + '</span>' : '') +
+          '</div></div></div><strong class="mono pv msc-right" style="font-size:0.84rem">' + rp(bkRpFn(tr, x)) + '</strong></div>' +
           '<div style="display:flex;gap:6px;justify-content:flex-end"><button type="button" class="btn ' + (x.paid ? 'btn-emerald' : 'btn-secondary') + ' btn-sm" data-mbk-pay="' + esc(x.id) + '">' + (x.paid ? '✓ Lunas' : 'Tandai lunas') + '</button>' +
           '<button type="button" class="btn btn-secondary btn-sm" data-mbk-edit="' + esc(x.id) + '">Ubah</button>' +
           '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson)" data-mbk-del="' + esc(x.id) + '">Hapus</button></div></div>';
-      }).join('') || '<div class="card" style="text-align:center;color:var(--text-muted);font-size:0.78rem">Belum ada pemesanan.</div>') + '</div>';
+      }).join('') || '<div class="card" style="text-align:center;color:var(--text-muted);font-size:0.78rem;padding:16px">Belum ada pemesanan.</div>') + '</div>';
   } else if (MOB_STATE.tripSub === 'cek') {
+    var ck = tr.ck || [], doneCnt = ck.filter(function (c) { return c.done; }).length, pctCk = ck.length ? Math.round((doneCnt / ck.length) * 100) : 0;
     body =
-      '<div class="card"><div class="card-hd"><h3 class="card-title">Checklist Bawaan</h3><button type="button" class="btn btn-secondary btn-sm" id="m-trip-ck-std">Daftar Standar</button></div>' +
-      '<form id="m-trip-ck-form" style="display:flex;gap:6px;margin-bottom:10px" novalidate><input class="input" id="m-ck-inp" placeholder="Tambah barang..." style="flex:1" required /><button type="submit" class="btn btn-primary">＋</button></form>' +
+      '<div class="card"><div class="card-hd"><div><h3 class="card-title">Checklist Barang Bawaan</h3><p class="msc-sub">' + doneCnt + ' dari ' + ck.length + ' siap (' + pctCk + '%)</p></div>' +
+      '<button type="button" class="btn btn-secondary btn-sm" id="m-trip-ck-std">Isi Daftar Standar</button></div>' +
+      '<div class="rank-track" style="margin-bottom:12px"><div class="rank-fill" style="width:' + pctCk + '%;background:var(--emerald)"></div></div>' +
+      '<form id="m-trip-ck-form" style="display:flex;gap:6px;margin-bottom:10px" novalidate><input class="input" id="m-ck-inp" maxlength="60" placeholder="mis. Adaptor Universal" style="flex:1;min-width:0" required /><button type="submit" class="btn btn-primary">Tambah</button></form>' +
       '<div class="stack" style="gap:7px">' +
-      ((tr.ck || []).map(function (c) {
-        return '<div class="list-row"><label style="display:flex;gap:8px;align-items:center;flex:1;cursor:pointer"><input type="checkbox" data-mck-tog="' + esc(c.id) + '"' + (c.done ? ' checked' : '') + '><span style="' + (c.done ? 'text-decoration:line-through;color:var(--text-muted)' : 'font-weight:700') + '">' + esc(c.text || c.t || '') + '</span></label>' +
+      (ck.length ? ck.map(function (c) {
+        return '<div class="list-row"><label class="m-ck-label"><input type="checkbox" data-mck-tog="' + esc(c.id) + '"' + (c.done ? ' checked' : '') + '><span style="' + (c.done ? 'text-decoration:line-through;color:var(--text-muted)' : 'font-weight:700') + '">' + esc(c.text || c.t || '') + '</span></label>' +
           '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson)" data-mck-del="' + esc(c.id) + '">Hapus</button></div>';
-      }).join('') || '<div style="text-align:center;color:var(--text-muted);font-size:0.78rem">Belum ada checklist.</div>') + '</div></div>';
+      }).join('') : '<div style="padding:14px 4px;text-align:center;color:var(--text-muted);font-size:0.78rem">Belum ada barang. Klik "Isi Daftar Standar" atau tambah manual.</div>') + '</div></div>';
   } else if (MOB_STATE.tripSub === 'cat') {
+    var lk = tr.lk || [];
     body =
-      '<div class="card"><div class="card-hd"><h3 class="card-title">Catatan Perjalanan</h3><span class="badge b-em">Tersimpan</span></div>' +
-      '<textarea class="input" id="m-trip-note" rows="5" placeholder="Kode booking hotel, kontak darurat...">' + esc(tr.note || '') + '</textarea></div>';
+      '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Tautan Berguna</h3><p class="msc-sub">Video panduan, situs tiket, peta</p></div></div>' +
+      '<form id="m-trip-lk-form" class="stack" style="gap:8px;margin-bottom:10px" novalidate>' +
+      '<input class="input" id="m-lk-title" maxlength="80" placeholder="Judul tautan" required />' +
+      '<div style="display:flex;gap:6px"><input class="input" id="m-lk-url" inputmode="url" maxlength="400" placeholder="https://..." style="flex:1;min-width:0" required /><button type="submit" class="btn btn-primary">Tambah</button></div></form>' +
+      '<div class="stack" style="gap:7px">' +
+      (lk.length ? lk.map(function (x) {
+        var safeU = x.url && (typeof okUrl === 'function' ? okUrl(x.url) : /^https?:\/\/[^\s"'<>]+$/i.test(x.url));
+        var linkEl = safeU
+          ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener noreferrer" data-m-ext-url="' + esc(x.url) + '" class="m-ext-link">' + esc(x.title || x.url) + ' ↗</a>'
+          : '<span class="m-ext-link m-ext-link-invalid">' + esc(x.title || 'Tautan tidak valid') + '</span>';
+        return '<div class="list-row">' + linkEl +
+          '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);flex-shrink:0" data-mlk-del="' + esc(x.id) + '">Hapus</button></div>';
+      }).join('') : '<div style="padding:10px 4px;color:var(--text-muted);font-size:0.78rem">Belum ada tautan.</div>') +
+      '</div></div>' +
+      '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Catatan Penting</h3><p class="msc-sub">Kode booking hotel, alamat, kontak darurat (tersimpan otomatis)</p></div><span class="badge b-em">Tersimpan</span></div>' +
+      '<textarea class="input" id="m-trip-note" rows="5" placeholder="mis. Hotel: ...">' + esc(tr.note || '') + '</textarea></div>';
   } else {
     var g = tr.goal, defT = g ? g.t : Math.max(1000000, Math.ceil(pl.t / 1000) * 1000), curM = todayISO().slice(0, 7), toM = tr.start && tr.start.slice(0, 7) >= curM ? tr.start.slice(0, 7) : (S.year + '-12');
-    body = g && !MOB_STATE.tripGoalEdit
-      ? '<div class="card"><div class="card-hd"><h3 class="card-title">Target Tabungan</h3><span class="badge ' + (g.link ? 'b-em' : 'b-nt') + '">' + (g.link ? 'Terhubung Rincian' : 'Pencatat') + '</span></div>' +
-        '<div style="font-size:0.84rem;margin-bottom:8px">Target <strong class="mono pv">' + rp(g.t) + '</strong> &middot; Sisihkan <strong class="mono pv" style="color:var(--emerald)">' + rp(typeof goalPlan === 'function' ? goalPlan(g).per : 0) + '/bln</strong></div>' +
-        '<div style="display:flex;gap:6px"><button type="button" class="btn btn-secondary btn-sm" id="m-tg-edit">Ubah</button><button type="button" class="btn btn-crimson btn-sm" id="m-tg-del">Hapus</button></div></div>'
-      : '<div class="card"><div class="card-hd"><h3 class="card-title">Target Tabungan</h3></div>' +
+    if (g && !MOB_STATE.tripGoalEdit) {
+      var perG = typeof goalPlan === 'function' ? goalPlan(g).per : (g.per || 0);
+      // Rumus terkumpul disamakan persis dengan desktop aktif browser-app.js:2849 (kandidat perbaikan bersama)
+      var gotG = Math.min(g.t, (g.s0 || 0) + perG), pctG = g.t ? Math.min(100, Math.round((gotG / g.t) * 100)) : 0;
+      body =
+        '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Target Tabungan</h3><p class="msc-sub">Sisihan dana bulanan sebelum berangkat</p></div>' +
+        '<span class="badge ' + (g.link ? 'b-em' : 'b-nt') + '">' + (g.link ? 'Tersambung ke Rincian' : 'Hanya Pencatat') + '</span></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px;font-size:0.82rem"><span>Terkumpul <strong class="mono pv">' + rp(gotG) + '</strong> dari <strong class="mono pv">' + rp(g.t) + '</strong></span><strong class="mono" style="color:var(--emerald)">' + pctG + '%</strong></div>' +
+        '<div class="rank-track" style="height:8px;margin-bottom:10px"><div class="rank-fill" style="width:' + pctG + '%;background:var(--emerald)"></div></div>' +
+        '<p style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:10px">Sisihkan <strong class="mono pv">' + rp(perG) + '</strong> per bulan &middot; <span style="white-space:nowrap">' + esc(g.from) + ' – ' + esc(g.to) + '</span></p>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn btn-secondary btn-sm" id="m-tg-edit">Ubah Target</button><button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson)" id="m-tg-del">Hapus Target</button></div></div>';
+    } else {
+      body =
+        '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Target Tabungan</h3><p class="msc-sub">Hitung dana bulanan sebelum berangkat</p></div></div>' +
         '<form id="m-trip-goal-form" class="stack" style="gap:9px" novalidate>' +
-        '<div class="field"><label class="field-label" for="m-tg-t">Target Total (Rp)</label><input class="input mono" id="m-tg-t" type="text" inputmode="numeric" data-num-fmt="rp" value="' + (defT || 0).toLocaleString('id-ID') + '" /></div>' +
-        '<div class="bento-2"><div class="field"><label class="field-label" for="m-tg-from">Dari</label><input class="input mono" id="m-tg-from" type="month" value="' + esc(g ? g.from : curM) + '" /></div>' +
-        '<div class="field"><label class="field-label" for="m-tg-to">Sampai</label><input class="input mono" id="m-tg-to" type="month" value="' + esc(g ? g.to : toM) + '" /></div></div>' +
-        '<button type="submit" class="btn btn-primary">Simpan Target</button></form></div>';
+        '<div class="field"><label class="field-label" for="m-tg-t">Target Total (Rp)</label><input class="input mono" id="m-tg-t" type="text" inputmode="numeric" data-num-fmt="rp" value="' + (defT || 0).toLocaleString('id-ID') + '" required /></div>' +
+        '<div class="bento-2">' +
+        '<div class="field"><label class="field-label" for="m-tg-s0">Sudah Terkumpul (Rp)</label><input class="input mono" id="m-tg-s0" type="text" inputmode="numeric" data-num-fmt="rp" value="' + (g ? (g.s0 || 0) : 0).toLocaleString('id-ID') + '" /></div>' +
+        '<div class="field"><label class="field-label" for="m-tg-link">Hubungkan ke Rincian?</label><select class="input" id="m-tg-link"><option value="1"' + (!g || g.link ? ' selected' : '') + '>Ya, hitung di Rincian</option><option value="0"' + (g && !g.link ? ' selected' : '') + '>Tidak, hanya pencatat</option></select></div></div>' +
+        '<div class="bento-2"><div class="field"><label class="field-label" for="m-tg-from">Mulai Bulan</label><input class="input mono" id="m-tg-from" type="month" value="' + esc(g ? g.from : curM) + '" /></div>' +
+        '<div class="field"><label class="field-label" for="m-tg-to">Target Bulan</label><input class="input mono" id="m-tg-to" type="month" value="' + esc(g ? g.to : toM) + '" /></div></div>' +
+        '<div style="display:flex;justify-content:flex-end;gap:8px">' + (g ? '<button type="button" class="btn btn-secondary" id="m-tg-cancel">Batal</button>' : '') + '<button type="submit" class="btn btn-primary">Simpan Target</button></div></form></div>';
+    }
   }
 
   root.innerHTML =
@@ -1817,7 +2008,8 @@ function renderMobTrip() {
     list.map(function (t) { return '<button type="button" class="p-chip ' + (t.id === tr.id ? 'active' : '') + '" data-mtrip-sel="' + esc(t.id) + '">' + esc(t.name) + '</button>'; }).join('') +
     '<button type="button" class="p-chip" id="m-btn-trip-new-pill" style="border-style:dashed;color:var(--accent-ink)">＋ Perjalanan Baru</button></div>' +
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px"><div><strong style="font-size:0.96rem">' + esc(tr.name) + '</strong>' +
-    '<div style="font-size:0.71rem;color:var(--text-muted)">' + (tr.start && tr.end ? fmtDateRange(tr.start, tr.end) : 'Tanggal belum diatur') + '</div></div>' +
+    '<div style="font-size:0.71rem;color:var(--text-muted)">' + (tr.start && tr.end ? fmtD(tr.start) + ' – ' + fmtD(tr.end) : 'Tanggal belum diisi') +
+    (tr.cur && tr.rate ? ' &middot; Kurs 1 ' + esc(tr.cur) + ' = <span class="mono pv">Rp ' + (+tr.rate).toLocaleString('id-ID') + '</span>' : '') + '</div></div>' +
     '<div style="display:flex;gap:5px;flex-shrink:0"><button type="button" class="btn btn-secondary btn-sm" id="m-btn-trip-edit">Ubah</button><button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson)" data-mtrip-del="' + esc(tr.id) + '">Hapus</button></div></div>' +
     '<div class="pill-slider">' + subTabs.map(function (st) { return '<button type="button" class="p-chip ' + (MOB_STATE.tripSub === st[0] ? 'active' : '') + '" data-mtripsub="' + st[0] + '">' + st[1] + '</button>'; }).join('') + '</div></div>' + body;
 }
@@ -3432,7 +3624,11 @@ function bindMobileShellEvents(root) {
       if ($('m-kp-name')) $('m-kp-name').value = '';
       mobSetDateVal('m-kp-start', todayISO());
       mobSetDateVal('m-kp-end', addDaysISO(todayISO(), 4));
+      if ($('m-kp-use-budget')) $('m-kp-use-budget').value = '1';
       setRpVal('m-kp-budget', 10000000);
+      if ($('m-kp-cur')) $('m-kp-cur').value = '';
+      if ($('m-kp-rate')) $('m-kp-rate').value = '';
+      syncMobTripBudgetWrap();
       mobOpenSheet('m-sheet-trip');
       return;
     }
@@ -3448,11 +3644,20 @@ function bindMobileShellEvents(root) {
       setRpVal('m-kp-budget', trE.budget || 0);
       if ($('m-kp-cur')) $('m-kp-cur').value = trE.cur || '';
       if ($('m-kp-rate')) $('m-kp-rate').value = trE.rate || '';
+      syncMobTripBudgetWrap();
       mobOpenSheet('m-sheet-trip');
       return;
     }
     var mitE = e.target.closest('[data-mit-edit]');
-    if (mitE) { MOB_STATE.tripEditIt = mitE.getAttribute('data-mit-edit'); renderMobTrip(); return; }
+    if (mitE) {
+      MOB_STATE.tripEditIt = mitE.getAttribute('data-mit-edit');
+      renderMobTrip();
+      var itFormEl = $('m-trip-itin-form');
+      if (itFormEl && typeof itFormEl.scrollIntoView === 'function') {
+        try { itFormEl.scrollIntoView({ block: 'center', behavior: (typeof rkIsReducedMotion === 'function' && rkIsReducedMotion()) ? 'auto' : 'smooth' }); } catch (err) {}
+      }
+      return;
+    }
     if (e.target.closest('#m-it-cancel')) { MOB_STATE.tripEditIt = null; renderMobTrip(); return; }
     var mbkE = e.target.closest('[data-mbk-edit]');
     if (mbkE) { MOB_STATE.tripEditBk = mbkE.getAttribute('data-mbk-edit'); renderMobTrip(); return; }
@@ -3462,7 +3667,15 @@ function bindMobileShellEvents(root) {
     var tsel = e.target.closest('[data-mtrip-sel]');
     if (tsel) { MOB_STATE.tripId = tsel.getAttribute('data-mtrip-sel'); MOB_STATE.tripView = 'detail'; MOB_STATE.tripSub = 'ring'; renderMobTrip(); initMobDragSliders(); return; }
     var tsub = e.target.closest('[data-mtripsub]');
-    if (tsub) { MOB_STATE.tripSub = tsub.getAttribute('data-mtripsub'); renderMobTrip(); initMobDragSliders(); return; }
+    if (tsub) {
+      MOB_STATE.tripSub = tsub.getAttribute('data-mtripsub');
+      MOB_STATE.tripEditIt = null;
+      MOB_STATE.tripEditBk = null;
+      MOB_STATE.tripGoalEdit = false;
+      renderMobTrip();
+      initMobDragSliders();
+      return;
+    }
     var tdel = e.target.closest('[data-mtrip-del]');
     if (tdel) {
       var trId = tdel.getAttribute('data-mtrip-del');
@@ -3482,14 +3695,51 @@ function bindMobileShellEvents(root) {
       );
       return;
     }
+    function mobTripConfirmDel(confirmMsg, snapLabel, fnMutate, toastMsg) {
+      askConfirm(confirmMsg, function () {
+        var sn = snap(snapLabel);
+        fnMutate();
+        save();
+        mobPreserveScroll(function () { syncUI(); });
+        toast(toastMsg, function () { mobPreserveScroll(function () { restoreSnap(sn.t); }); });
+      }, 'Ya, hapus');
+    }
     var itt = e.target.closest('[data-mit-toggle]');
     if (itt) { var t0 = mobActiveTrip(), it0 = t0 && t0.it.find(function (x) { return x.id === itt.getAttribute('data-mit-toggle'); }); if (it0) { it0.done = !it0.done; save(); syncUI(); } return; }
     var itd = e.target.closest('[data-mit-del]');
-    if (itd) { var t1 = mobActiveTrip(); if (t1) { t1.it = t1.it.filter(function (x) { return x.id !== itd.getAttribute('data-mit-del'); }); save(); syncUI(); } return; }
+    if (itd) {
+      var t1 = mobActiveTrip(), idIt = itd.getAttribute('data-mit-del'), xIt = t1 && t1.it.find(function (x) { return x.id === idIt; });
+      if (t1 && xIt) {
+        mobTripConfirmDel(
+          'Hapus kegiatan <b>' + esc(xIt.place || 'ini') + '</b>?',
+          'Sebelum menghapus kegiatan perjalanan',
+          function () {
+            t1.it = t1.it.filter(function (x) { return x.id !== idIt; });
+            if (MOB_STATE.tripEditIt === idIt) MOB_STATE.tripEditIt = null;
+          },
+          'Kegiatan dihapus.'
+        );
+      }
+      return;
+    }
     var bkp = e.target.closest('[data-mbk-pay]');
     if (bkp) { var t2 = mobActiveTrip(), bk0 = t2 && t2.bk.find(function (x) { return x.id === bkp.getAttribute('data-mbk-pay'); }); if (bk0) { bk0.paid = !bk0.paid; save(); syncUI(); } return; }
     var bkd = e.target.closest('[data-mbk-del]');
-    if (bkd) { var t3 = mobActiveTrip(); if (t3) { t3.bk = t3.bk.filter(function (x) { return x.id !== bkd.getAttribute('data-mbk-del'); }); save(); syncUI(); } return; }
+    if (bkd) {
+      var t3 = mobActiveTrip(), idBk = bkd.getAttribute('data-mbk-del'), xBk = t3 && t3.bk.find(function (x) { return x.id === idBk; });
+      if (t3 && xBk) {
+        mobTripConfirmDel(
+          'Hapus pemesanan <b>' + esc(xBk.title || 'ini') + '</b>?',
+          'Sebelum menghapus pemesanan perjalanan',
+          function () {
+            t3.bk = t3.bk.filter(function (x) { return x.id !== idBk; });
+            if (MOB_STATE.tripEditBk === idBk) MOB_STATE.tripEditBk = null;
+          },
+          'Pemesanan dihapus.'
+        );
+      }
+      return;
+    }
     if (e.target.closest('#m-trip-ck-std')) {
       var trStd = mobActiveTrip();
       if (trStd && typeof CK_STD !== 'undefined') {
@@ -3499,9 +3749,56 @@ function bindMobileShellEvents(root) {
       return;
     }
     if (e.target.closest('#m-tg-edit')) { MOB_STATE.tripGoalEdit = true; renderMobTrip(); return; }
-    if (e.target.closest('#m-tg-del')) { var tgT = mobActiveTrip(); if (tgT) { tgT.goal = null; MOB_STATE.tripGoalEdit = false; save(); syncUI(); showMobToast('Target tabungan dihapus'); } return; }
+    if (e.target.closest('#m-tg-cancel')) { MOB_STATE.tripGoalEdit = false; renderMobTrip(); return; }
+    var extL = e.target.closest('[data-m-ext-url]');
+    if (extL) {
+      e.preventDefault();
+      mobOpenExternalUrl(extL.getAttribute('data-m-ext-url'));
+      return;
+    }
+    var lkd = e.target.closest('[data-mlk-del]');
+    if (lkd) {
+      var t5 = mobActiveTrip(), idLk = lkd.getAttribute('data-mlk-del'), xLk = t5 && (t5.lk || []).find(function (x) { return x.id === idLk; });
+      if (t5 && xLk) {
+        mobTripConfirmDel(
+          'Hapus tautan <b>' + esc(xLk.title || xLk.url || 'ini') + '</b>?',
+          'Sebelum menghapus tautan perjalanan',
+          function () { t5.lk = (t5.lk || []).filter(function (x) { return x.id !== idLk; }); },
+          'Tautan dihapus.'
+        );
+      }
+      return;
+    }
+    if (e.target.closest('#m-tg-del')) {
+      var tgT = mobActiveTrip();
+      if (tgT && tgT.goal) {
+        mobTripConfirmDel(
+          'Hapus target tabungan perjalanan ini?',
+          'Sebelum menghapus target tabungan',
+          function () {
+            tgT.goal = null;
+            MOB_STATE.tripGoalEdit = false;
+          },
+          'Target tabungan dihapus.'
+        );
+      }
+      return;
+    }
     var ckd = e.target.closest('[data-mck-del]');
-    if (ckd) { var t4 = mobActiveTrip(); if (t4) { t4.ck = t4.ck.filter(function (x) { return x.id !== ckd.getAttribute('data-mck-del'); }); save(); syncUI(); } return; }
+    if (ckd) {
+      var t4 = mobActiveTrip(), idCk = ckd.getAttribute('data-mck-del'), xCk = t4 && t4.ck.find(function (x) { return x.id === idCk; });
+      if (t4 && xCk) {
+        mobTripConfirmDel(
+          'Hapus <b>' + esc(xCk.text || xCk.t || 'barang ini') + '</b> dari checklist?',
+          'Sebelum menghapus checklist perjalanan',
+          function () {
+            t4.ck = t4.ck.filter(function (x) { return x.id !== idCk; });
+          },
+          'Barang dihapus.'
+        );
+      }
+      return;
+    }
     if (e.target.closest('#m-btn-mark-late')) {
       reminders(MOB_STATE.notifHorizon || 7).late.forEach(function (x) { S.paid[x.key] = 1; delete S.skip[x.key]; });
       save();
@@ -3577,7 +3874,18 @@ function bindMobileShellEvents(root) {
       renderMobNotifPopover();
     } else if (t.hasAttribute && t.hasAttribute('data-mck-tog')) {
       var trc = mobActiveTrip(), c0 = trc && trc.ck.find(function (x) { return x.id === t.getAttribute('data-mck-tog'); });
-      if (c0) { c0.done = t.checked; save(); syncUI(); }
+      if (c0) { c0.done = t.checked; save(); mobPreserveScroll(function () { syncUI(); }); }
+    } else if (t.id === 'm-kp-use-budget') {
+      syncMobTripBudgetWrap();
+    } else if (t.dataset && t.dataset.mdtDay != null) {
+      var trDt = mobActiveTrip(), dKey = t.dataset.mdtDay;
+      if (trDt && ISO_RE.test(dKey)) {
+        if (!trDt.dt || typeof trDt.dt !== 'object') trDt.dt = {};
+        var dtVal = String(t.value || '').trim().slice(0, 60);
+        if (dtVal) trDt.dt[dKey] = dtVal;
+        else delete trDt.dt[dKey];
+        save();
+      }
     }
   });
 
@@ -3664,7 +3972,7 @@ function bindMobileShellEvents(root) {
         ALL.kas.pr[pid] = {
           id: pid, name: tnm, saldo: 0, link: false,
           start: stD, end: enD, budget: budV, cur: cur, rate: cur ? rt : 0,
-          dt: {}, tx: [], it: [], bk: [], lk: [], ck: [], note: '',
+          dt: {}, tx: [], it: [], bk: [], lk: [], ck: [], note: '', goal: null,
         };
         MOB_STATE.tripId = pid;
         MOB_STATE.tripView = 'detail';
@@ -3677,18 +3985,44 @@ function bindMobileShellEvents(root) {
     } else if (f.id === 'm-trip-itin-form') {
       var trI = mobActiveTrip(), pl = ($('m-it-place') && $('m-it-place').value || '').trim();
       if (!trI || !pl) { if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-it-place')); return; }
-      var objItM = {
-        id: MOB_STATE.tripEditIt || ('i' + Date.now().toString(36)),
-        day: $('m-it-day').value || trI.start || todayISO(),
-        time: ($('m-it-time') && $('m-it-time').value || '').replace('.', ':'),
-        time2: '', place: pl.slice(0, 120),
+      var rawTm = ($('m-it-time') && $('m-it-time').value || '').trim(),
+        rawTm2 = ($('m-it-time2') && $('m-it-time2').value || '').trim(),
+        parsedTm = typeof tmParse === 'function' ? tmParse(rawTm) : rawTm.replace('.', ':'),
+        parsedTm2 = typeof tmParse === 'function' ? tmParse(rawTm2) : rawTm2.replace('.', ':');
+      if (parsedTm === null || parsedTm2 === null) {
+        if (typeof rkShakeInvalid === 'function') rkShakeInvalid(parsedTm === null ? $('m-it-time') : $('m-it-time2'));
+        showMobToast('Jam memakai format 24 jam, mis. 14.00 atau 09.30.');
+        return;
+      }
+      var rawLink = ($('m-it-link') && $('m-it-link').value || '').trim();
+      var validUrl = !rawLink || (typeof okUrl === 'function' ? okUrl(rawLink) : /^https?:\/\/[^\s"'<>]+$/i.test(rawLink));
+      if (!validUrl) {
+        if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-it-link'));
+        showMobToast('Tautan harus diawali http:// atau https://');
+        return;
+      }
+      var rawPay = $('m-it-pay') ? $('m-it-pay').value : 'cash';
+      var patchItM = {
+        day: ($('m-it-day') && $('m-it-day').value) || trI.start || todayISO(),
+        time: parsedTm,
+        time2: parsedTm2,
+        place: pl.slice(0, 120),
         cat: $('m-it-cat') ? $('m-it-cat').value : 'Transport',
-        est: getRpVal('m-it-est'), fx: false, pay: 'cash', link: '', note: '', done: false,
+        est: getRpVal('m-it-est'),
+        fx: !!(trI.cur && $('m-it-cur') && $('m-it-cur').value === 'fx'),
+        pay: /^(ic|on|cash)$/.test(rawPay) ? rawPay : '',
+        link: rawLink.slice(0, 400),
+        note: ($('m-it-note') && $('m-it-note').value || '').trim().slice(0, 200),
       };
       if (MOB_STATE.tripEditIt) {
-        trI.it = trI.it.map(function (x) { return x.id === MOB_STATE.tripEditIt ? Object.assign({}, x, objItM, { done: x.done }) : x; });
+        trI.it = trI.it.map(function (x) { return x.id === MOB_STATE.tripEditIt ? Object.assign({}, x, patchItM) : x; });
         MOB_STATE.tripEditIt = null;
-      } else trI.it.push(objItM);
+      } else {
+        trI.it.push(Object.assign({
+          id: typeof kid === 'function' ? kid('i') : ('i' + Date.now().toString(36)),
+          done: false, rec: '',
+        }, patchItM));
+      }
       save();
       syncUI();
       showMobToast('Kegiatan disimpan');
@@ -3696,30 +4030,86 @@ function bindMobileShellEvents(root) {
       var trB = mobActiveTrip(), bt = ($('m-bk-title') && $('m-bk-title').value || '').trim(), bAmt = getRpVal('m-bk-amt');
       if (!trB || !bt) { if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-bk-title')); return; }
       if (!(bAmt > 0)) { if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-bk-amt')); return; }
-      var objBkM = {
-        id: MOB_STATE.tripEditBk || ('b' + Date.now().toString(36)),
-        title: bt.slice(0, 120), cat: $('m-bk-cat') ? $('m-bk-cat').value : 'Transport',
-        amt: bAmt, fx: false, pay: 'on', link: '', a: trB.start || '', b: trB.end || '', paid: false,
+      var patchBkM = {
+        title: bt.slice(0, 120),
+        cat: $('m-bk-cat') ? $('m-bk-cat').value : 'Transport',
+        amt: bAmt,
+        fx: !!(trB.cur && $('m-bk-cur') && $('m-bk-cur').value === 'fx'),
+        a: ($('m-bk-start') && $('m-bk-start').value) || '',
+        b: ($('m-bk-end') && $('m-bk-end').value) || '',
       };
       if (MOB_STATE.tripEditBk) {
-        trB.bk = trB.bk.map(function (x) { return x.id === MOB_STATE.tripEditBk ? Object.assign({}, x, objBkM, { paid: x.paid }) : x; });
+        trB.bk = trB.bk.map(function (x) { return x.id === MOB_STATE.tripEditBk ? Object.assign({}, x, patchBkM) : x; });
         MOB_STATE.tripEditBk = null;
-      } else trB.bk.push(objBkM);
+      } else {
+        trB.bk.push(Object.assign({
+          id: typeof kid === 'function' ? kid('b') : ('b' + Date.now().toString(36)),
+          pay: 'on', link: '', paid: false, rec: '',
+        }, patchBkM));
+      }
       save();
       syncUI();
       showMobToast('Pemesanan disimpan');
     } else if (f.id === 'm-trip-ck-form') {
       var trC = mobActiveTrip(), txt = ($('m-ck-inp') && $('m-ck-inp').value || '').trim();
       if (!trC || !txt) { if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-ck-inp')); return; }
-      trC.ck.push({ id: 'c' + Date.now().toString(36), text: txt.slice(0, 60), done: false });
+      trC.ck.push({ id: typeof kid === 'function' ? kid('c') : ('c' + Date.now().toString(36)), text: txt.slice(0, 60), done: false });
+      f.reset();
+      save();
+      mobPreserveScroll(function () { syncUI(); });
+      showMobToast('Checklist ditambahkan');
+    } else if (f.id === 'm-trip-lk-form') {
+      var trL = mobActiveTrip(),
+        tl = ($('m-lk-title') && $('m-lk-title').value || '').trim(),
+        ul = ($('m-lk-url') && $('m-lk-url').value || '').trim();
+      if (!trL || !tl || !ul) {
+        if (typeof rkShakeInvalid === 'function') rkShakeInvalid(!tl ? $('m-lk-title') : $('m-lk-url'));
+        return;
+      }
+      var normU = /^https?:\/\//i.test(ul) ? ul : 'https://' + ul;
+      var validU = typeof okUrl === 'function' ? okUrl(normU) : /^https?:\/\/[^\s"'<>]+$/i.test(normU);
+      if (!validU) {
+        if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-lk-url'));
+        showMobToast('Tautan tidak valid');
+        return;
+      }
+      if (!Array.isArray(trL.lk)) trL.lk = [];
+      trL.lk.push({ id: typeof kid === 'function' ? kid('l') : ('l' + Date.now().toString(36)), title: tl.slice(0, 80), url: normU.slice(0, 400) });
       f.reset();
       save();
       syncUI();
-      showMobToast('Checklist ditambahkan');
+      showMobToast('Tautan ditambahkan');
     } else if (f.id === 'm-trip-goal-form') {
-      var trG = mobActiveTrip(), tv = getRpVal('m-tg-t');
-      if (!trG || !(tv > 0)) { if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-tg-t')); return; }
-      trG.goal = { t: tv, s0: 0, from: ($('m-tg-from') && $('m-tg-from').value) || todayISO().slice(0, 7), to: ($('m-tg-to') && $('m-tg-to').value) || (S.year + '-12'), link: true };
+      var trG = mobActiveTrip();
+      if (!trG) return;
+      var tv = getRpVal('m-tg-t'),
+        s0Val = getRpVal('m-tg-s0'),
+        linkVal = !$('m-tg-link') || $('m-tg-link').value !== '0',
+        fromVal = ($('m-tg-from') && $('m-tg-from').value) || todayISO().slice(0, 7),
+        toVal = ($('m-tg-to') && $('m-tg-to').value) || (S.year + '-12'),
+        gc = typeof goalCompute === 'function'
+          ? goalCompute(tv, s0Val, fromVal, toVal, linkVal)
+          : (function () {
+              var okM = /^\d{4}-\d{2}$/.test(fromVal) && /^\d{4}-\d{2}$/.test(toVal) && toVal >= fromVal;
+              var nM = okM && typeof monthList === 'function' ? monthList(fromVal, toVal).length : 0;
+              return { link: linkVal, t: tv, s0: s0Val, from: fromVal, to: toVal, n: nM, per: nM && tv > s0Val ? Math.ceil((tv - s0Val) / nM / 1000) * 1000 : 0 };
+            })();
+      if (!(gc.t > 0)) {
+        if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-tg-t'));
+        showMobToast('Isi target tabungan.');
+        return;
+      }
+      if (!gc.n) {
+        if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-tg-to'));
+        showMobToast('Bulan terakhir tidak boleh sebelum bulan mulai.');
+        return;
+      }
+      if (!gc.per) {
+        if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-tg-t'));
+        showMobToast('Dana yang terkumpul sudah mencapai target.');
+        return;
+      }
+      trG.goal = { t: gc.t, s0: gc.s0, from: gc.from, to: gc.to, per: gc.per, link: gc.link };
       MOB_STATE.tripGoalEdit = false;
       save(); syncUI(); showMobToast('Target tabungan disimpan');
     }
