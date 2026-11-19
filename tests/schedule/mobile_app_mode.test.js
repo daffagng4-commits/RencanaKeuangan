@@ -1475,7 +1475,7 @@ const { boot } = require('./ui.js');
   click(cardT2);
   assert(w.MOB_STATE.tripView === 'detail', 'Tahap 2b: klik kartu membuka tampilan detail');
   assert(/Kurs 1 JPY = Rp 110/.test($('m-trip-root').textContent), 'Tahap 2b: header detail menampilkan Kurs 1 JPY = Rp 110');
-  assert($('m-trip-root').querySelector('.pv') && !/Bagikan/.test($('m-trip-root').textContent), 'Tahap 2b: kurs aman .pv & tombol Bagikan bukan cakupan Tahap 2');
+  assert($('m-trip-root').querySelector('.pv') && $('m-btn-trip-share'), 'Tahap 2b/4a: kurs aman .pv & tombol Bagikan tersedia setelah Tahap 4');
 
   // 25c. Sheet profil menyembunyikan baris nominal saat Belum ditentukan & profil baru punya goal: null
   click($('m-btn-trip-new-pill'));
@@ -1763,7 +1763,8 @@ const { boot } = require('./ui.js');
   fire($('m-trip-goal-form'), 'submit');
   assert(t3().goal && t3().goal.s0 === 2000000 && t3().goal.link === false && t3().goal.per === 2000000, 'Tahap 3f: simpan target membaca s0 & link dari form');
   const svViewText = $('m-trip-root').textContent;
-  assert(/Hanya Pencatat/.test(svViewText) && /Terkumpul\s*Rp\s*4\.000\.000\s*dari\s*Rp\s*12\.000\.000/.test(svViewText) && /33%/.test(svViewText) && /Sisihkan\s*Rp\s*2\.000\.000\s*per bulan\s*·\s*2026-07\s*–\s*2026-11/.test(svViewText), 'Tahap 3f: kartu tampilan target menampilkan badge, terkumpul/target, %, dan sisihkan bulanan');
+  // Pada tanggal 2026-11-12, seluruh 5 bulan (2026-07..2026-11) sudah berjalan -> goalSavedNow = min(12jt, 2jt + 5*2jt) = 12.000.000 (100%)
+  assert(/Hanya Pencatat/.test(svViewText) && /Terkumpul\s*Rp\s*12\.000\.000\s*dari\s*Rp\s*12\.000\.000/.test(svViewText) && /100%/.test(svViewText) && /Sisihkan\s*Rp\s*2\.000\.000\s*per bulan\s*·\s*2026-07\s*–\s*2026-11/.test(svViewText), 'Tahap 3f / D2: kartu tampilan target menampilkan badge, akumulasi bulan berjalan terkumpul/target, %, dan sisihkan bulanan');
   assert($('m-tg-edit') && /Ubah Target/.test($('m-tg-edit').textContent) && $('m-tg-del') && /Hapus Target/.test($('m-tg-del').textContent), 'Tahap 3f: tombol Ubah Target & Hapus Target tampil');
   click($('m-tg-edit'));
   assert($('m-tg-cancel') && $('m-tg-s0').value === '2.000.000' && $('m-tg-link').value === '0', 'Tahap 3f: Ubah Target mengisi s0 & link serta menampilkan tombol Batal');
@@ -1783,6 +1784,452 @@ const { boot } = require('./ui.js');
   fire(tog26, 'change');
   assert.strictEqual(saveCalls26, 1, 'Tahap 3f: render berulang tidak menambah listener ganda pada aksi Tahap 3');
   w.save = origSave26;
+
+  // 27. Tahap 4/4: Bagikan Itinerary (WhatsApp, Salin, PDF) & Impor/Template Excel di APK
+  w.setShellMode('mobile-app');
+  w.MOB_STATE.tripId = 'p-t3';
+  w.MOB_STATE.tripView = 'detail';
+  w.MOB_STATE.tripSub = 'ring';
+  w.renderMobTrip();
+
+  // 27a. Tombol Bagikan di header detail membuka sheet Bagikan + Back Android menutup sheet
+  const shareBtn27 = $('m-btn-trip-share');
+  assert(shareBtn27 && /Bagikan/.test(shareBtn27.textContent), 'Tahap 4a: tombol Bagikan (#m-btn-trip-share) tampil di header detail');
+  assert($('m-btn-trip-edit') && $('m-trip-root').querySelector('[data-mtrip-del]'), 'Tahap 4a: tombol Ubah & Hapus tetap ada bersama Bagikan');
+  click(shareBtn27);
+  const shSheet = $('m-sheet-trip-share');
+  assert(shSheet && shSheet.classList.contains('open'), 'Tahap 4a: klik Bagikan membuka #m-sheet-trip-share');
+  assert($('m-sh-inc-cost') && $('m-sh-inc-cost').checked === true, 'Tahap 4a: checkbox Sertakan rincian biaya default tercentang');
+  assert(shSheet.querySelector('[data-msh="wa"]') && shSheet.querySelector('[data-msh="copy"]') && shSheet.querySelector('[data-msh="pdf"]'), 'Tahap 4a: tombol aksi Bagikan lengkap');
+
+  // Back Android menutup sheet Bagikan
+  const origCap27 = w.Capacitor;
+  w.Capacitor = { isNativePlatform: () => true, Plugins: {} };
+  assert.strictEqual(w.rkHandleAndroidBack(), 'sheet', 'Tahap 4a: rkHandleAndroidBack menutup #m-sheet-trip-share');
+  assert(!shSheet.classList.contains('open'), 'Tahap 4a: #m-sheet-trip-share tertutup setelah Back Android');
+  click(shareBtn27);
+
+  // 27b. Checkbox biaya mengubah tripText + Salin teks menyalin persis tripText(tr, cost)
+  let copied27 = '';
+  const origClip27 = w.navigator.clipboard;
+  Object.defineProperty(w.navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText: (txt) => { copied27 = txt; return Promise.resolve(); } },
+  });
+  click(shSheet.querySelector('[data-msh="copy"]'));
+  await new Promise((r) => setTimeout(r, 20));
+  assert.strictEqual(copied27, w.tripText(t3(), true), 'Tahap 4b: Salin teks (biaya aktif) sama persis dengan tripText(tr, true)');
+  assert.strictEqual($('m-sh-status').textContent, 'Teks disalin. Tinggal tempel di WhatsApp atau catatan.', 'Tahap 4b: status salin teks sama dengan desktop');
+  $('m-sh-inc-cost').checked = false;
+  click(shSheet.querySelector('[data-msh="copy"]'));
+  await new Promise((r) => setTimeout(r, 20));
+  assert.strictEqual(copied27, w.tripText(t3(), false), 'Tahap 4b: uncheck biaya mengubah teks menjadi tripText(tr, false)');
+  $('m-sh-inc-cost').checked = true;
+  Object.defineProperty(w.navigator, 'clipboard', { configurable: true, value: origClip27 });
+
+  // 27c. Kirim teks (WA): navigator.share bila ada, wa.me lewat Capacitor Browser bila tidak ada, tolak bila > 1800 char
+  let navShareArg = null;
+  const origShare27 = w.navigator.share;
+  Object.defineProperty(w.navigator, 'share', {
+    configurable: true,
+    value: (obj) => { navShareArg = obj; return Promise.resolve(); },
+  });
+  click(shSheet.querySelector('[data-msh="wa"]'));
+  await new Promise((r) => setTimeout(r, 20));
+  assert(navShareArg && navShareArg.text === w.tripText(t3(), true), 'Tahap 4c: Kirim teks memanggil navigator.share saat tersedia');
+
+  // Tanpa navigator.share -> wa.me lewat Capacitor Browser.open
+  Object.defineProperty(w.navigator, 'share', { configurable: true, value: undefined });
+  let waOpened = '';
+  w.Capacitor = {
+    isNativePlatform: () => true,
+    Plugins: { Browser: { open: (o) => { waOpened = o && o.url; return Promise.resolve(); } } },
+  };
+  const hrefBefore27 = w.location.href;
+  click(shSheet.querySelector('[data-msh="wa"]'));
+  await new Promise((r) => setTimeout(r, 20));
+  assert(waOpened.startsWith('https://wa.me/?text=') && w.location.href === hrefBefore27, 'Tahap 4c: fallback membuka wa.me lewat Browser.open tanpa mengubah WebView');
+
+  // Teks sangat panjang -> menolak URL terpotong & arahkan ke Salin teks
+  waOpened = '';
+  const origItLen = t3().it.slice();
+  t3().it = Array.from({ length: 18 }, (_, i) => ({
+    id: 'lg-' + i, day: '2026-12-01', time: '09:00', time2: '10:00',
+    place: 'Kunjungan Panjang Tokyo Station Museum #' + i + ' catatan detail ekstra panjang untuk menguji batas panjang URL WhatsApp',
+    est: 5000, fx: true, pay: 'cash', cat: 'Tiket & Tour', link: 'https://example.com/tokyotour/' + i, note: 'Bawa voucher cetak', done: false, rec: '',
+  }));
+  click(shSheet.querySelector('[data-msh="wa"]'));
+  assert(waOpened === '' && /Salin teks/i.test($('m-sh-status').textContent), 'Tahap 4c: itinerary terlalu panjang ditolak dengan arahan Salin teks');
+  t3().it = origItLen;
+  Object.defineProperty(w.navigator, 'share', { configurable: true, value: origShare27 });
+  w.Capacitor = origCap27;
+
+  // 27d. PDF Itinerary APK: tripPdfData + repPdf + rkDownloadBlob + non-Latin + repPdf Laporan Keuangan tidak berubah
+  const repFinancialBefore = w.repPdf(w.repData('m'));
+  const longPlace27 = 'Kunjungan ke Tokyo Skytree Tembo Galleria dan Museum Akuarium Sumida dengan pemandu wisata lokal serta makan siang bento bersama rombongan';
+  const pdfTrip = Object.assign({}, t3(), {
+    name: 'Tokyo \u6771\u4EAC Trip /:*?',
+    it: [
+      { id: 'p-1', day: '2026-12-01', time: '09:00', time2: '12:00', place: longPlace27, est: 3200, fx: true, pay: 'cash', cat: 'Tiket & Tour', link: '', note: 'Catatan \u65E5\u672C\u8A9E', done: false, rec: '' },
+    ],
+  });
+  const pdfDocCost = w.tripPdfData(pdfTrip, true);
+  const pdfDocNoCost = w.tripPdfData(pdfTrip, false);
+  assert(!/[\\/:*?"<>|]/.test(pdfDocCost.filename) && pdfDocCost.filename.endsWith('.pdf'), 'Tahap 4d: nama file PDF aman dari karakter terlarang');
+  const dayTableRows = pdfDocCost.tables[0].rows;
+  assert(dayTableRows.length >= 2 && dayTableRows.every((r) => !String(r[1]).endsWith('..')), 'Tahap 4d: teks panjang dipecah ke baris lanjutan, bukan dipotong ..');
+  assert(dayTableRows.some((r) => /JPY\s*3\.200/.test(String(r[2] || ''))), 'Tahap 4d: biaya FX terformat saat Sertakan rincian biaya aktif');
+  assert(pdfDocNoCost.tables[0].cols.length === 2 && !pdfDocNoCost.summary.some((s) => /Total Rencana/i.test(s[0])), 'Tahap 4d: tanpa biaya menyembunyikan kolom & ringkasan biaya');
+  const pdfBytes27 = w.repPdf(pdfDocCost);
+  const pdfLatin1 = Buffer.from(pdfBytes27).toString('latin1');
+  assert(pdfLatin1.startsWith('%PDF-'), 'Tahap 4d: byte PDF dimulai %PDF-');
+  assert(!pdfLatin1.includes('Tokyo Skytree..'), 'Tahap 4d: isi PDF tidak terpotong .. untuk judul kegiatan panjang');
+  assert.strictEqual(Buffer.compare(Buffer.from(repFinancialBefore), Buffer.from(w.repPdf(w.repData('m')))), 0, 'Tahap 4d: keluaran repPdf Laporan Keuangan identik tidak berubah');
+
+  // Klik tombol Simpan / bagikan PDF memanggil rkDownloadBlob + catatan non-WinAnsi + status metode jujur
+  const t3OrigName = t3().name;
+  t3().name = 'Trip \u6771\u4EAC';
+  const origDl27 = w.rkDownloadBlob;
+  let dlArgs27 = null;
+  w.rkDownloadBlob = function (name, data, mime) {
+    dlArgs27 = { name, data, mime };
+    return { ok: true, method: 'data-url' };
+  };
+  click(shSheet.querySelector('[data-msh="pdf"]'));
+  await new Promise((r) => setTimeout(r, 10));
+  assert(dlArgs27 && dlArgs27.mime === 'application/pdf' && Buffer.from(dlArgs27.data).toString('latin1').startsWith('%PDF-'), 'Tahap 4d: aksi PDF memanggil rkDownloadBlob dengan MIME application/pdf');
+  assert(/data-url/i.test($('m-sh-status').textContent) && /non-Latin|\?/i.test($('m-sh-status').textContent), 'Tahap 4d: status PDF menampilkan metode pengiriman jujur dan catatan karakter non-Latin');
+  w.rkDownloadBlob = origDl27;
+  t3().name = t3OrigName;
+  w.mobCloseSheet('m-sheet-trip-share');
+
+  // 27e. Excel: tombol di daftar, accept MIME+ekstensi, xlBuildProfile & validasi identik desktop, impor, template, & gagal muat offline
+  w.MOB_STATE.tripView = 'list';
+  w.renderMobTrip();
+  assert($('m-btn-trip-new') && $('m-btn-trip-xl') && $('m-btn-trip-tpl'), 'Tahap 4e: daftar perjalanan menampilkan + Perjalanan baru, Impor Excel, dan Template Excel');
+  const xlFileEl = $('m-xl-file');
+  const xlAcc = (xlFileEl && xlFileEl.getAttribute('accept')) || '';
+  assert(xlAcc.includes('.xlsx') && xlAcc.includes('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') && xlAcc.includes('text/csv'), 'Tahap 4e: input #m-xl-file menyertakan ekstensi dan MIME Android');
+
+  // Stub SheetJS minimal kompatibel dengan xlParse & xlBuildTemplateWb
+  const origXlsx = w.XLSX;
+  let writeCalled = null, writeFileCalled = null;
+  const fakeWb = {
+    SheetNames: ['Itinerary', 'Pemesanan'],
+    Sheets: { Itinerary: 'it', Pemesanan: 'bk' },
+  };
+  w.XLSX = {
+    read: () => fakeWb,
+    utils: {
+      sheet_to_json: (sh) => sh === 'it'
+        ? [
+            ['Tanggal', 'Jam', 'Kegiatan', 'Kategori', 'Biaya', 'Mata uang', 'Pembayaran'],
+            ['', '', 'DAY 1 Tiba Haneda', '', '', '', ''],
+            ['2026-12-10', '09.00-11.00', 'Naik Monorail', 'Transport', 500, 'JPY', 'Kartu IC'],
+          ]
+        : [
+            ['Nama', 'Kategori', 'Jumlah', 'Mata uang', 'Pembayaran', 'Lunas'],
+            ['ANA PP', 'Transport', 6500000, 'IDR', 'Online', 'Ya'],
+          ],
+      book_new: () => ({ SheetNames: [], Sheets: {} }),
+      aoa_to_sheet: (aoa) => ({ aoa }),
+      book_append_sheet: (wb, ws, nm) => { wb.SheetNames.push(nm); wb.Sheets[nm] = ws; },
+    },
+    write: (wb, opts) => { writeCalled = { wb, opts }; return new Uint8Array([80, 75, 3, 4]); },
+    writeFile: (wb, fn) => { writeFileCalled = { wb, fn }; },
+  };
+  const parsed27 = w.xlParse(fakeWb);
+  assert.strictEqual(parsed27.it.length, 1);
+  assert.strictEqual(parsed27.bk.length, 1);
+
+  // Uji validasi xlValidateMeta sama persis dengan xlCommit
+  assert.strictEqual(w.xlValidateMeta(parsed27, '', 'JPY', '110').error, 'Nama perjalanan belum diisi.');
+  assert.strictEqual(w.xlValidateMeta(parsed27, 'Tokyo Baru', '', '').error, 'Ada biaya mata uang asing (mis. yen). Isi kodenya, misalnya JPY.');
+  assert.strictEqual(w.xlValidateMeta(parsed27, 'Tokyo Baru', 'JP', '110').error, 'Mata uang terdiri dari 3 huruf, mis. JPY.');
+  assert.strictEqual(w.xlValidateMeta(parsed27, 'Tokyo Baru', 'JPY', '0').error, 'Isi kurs: berapa rupiah untuk 1 JPY.');
+
+  // Uji Template: APK pakai rkDownloadBlob + MIME xlsx, Desktop pakai X.writeFile
+  const origDlTpl = w.rkDownloadBlob;
+  let tplDl = null;
+  w.rkDownloadBlob = function (name, data, mime) { tplDl = { name, data, mime }; return { ok: true, method: 'data-url' }; };
+  click($('m-btn-trip-tpl'));
+  await new Promise((r) => setTimeout(r, 20));
+  assert(writeCalled && writeCalled.opts && writeCalled.opts.bookType === 'xlsx' && writeCalled.opts.type === 'array', 'Tahap 4e: Template APK menulis workbook ke array byte xlsx');
+  assert(tplDl && tplDl.name === 'template-itinerary.xlsx' && tplDl.mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Tahap 4e: Template APK memanggil rkDownloadBlob dengan MIME xlsx');
+  w.rkDownloadBlob = origDlTpl;
+  w.xlTemplate();
+  await new Promise((r) => setTimeout(r, 20));
+  assert(writeFileCalled && writeFileCalled.fn === 'template-itinerary.xlsx', 'Tahap 4e: Template desktop tetap memakai X.writeFile');
+
+  // Uji alur gagal muat pustaka (offline) -> pesan jelas & tidak menumpuk listener saat dicoba ulang
+  const origLoadXlsx27 = w.loadXlsx;
+  w.loadXlsx = () => Promise.reject(new Error('Pustaka Excel gagal dimuat. Periksa koneksi internet.'));
+  click($('m-btn-trip-tpl'));
+  click($('m-btn-trip-tpl'));
+  await new Promise((r) => setTimeout(r, 20));
+  assert(/Pustaka Excel gagal dimuat/i.test($('m-toast-box').textContent) && !$('m-btn-trip-tpl').disabled, 'Tahap 4e: offline gagal muat menampilkan pesan jelas & tombol tidak macet disabled');
+  w.loadXlsx = origLoadXlsx27;
+  let retryDlCnt = 0;
+  w.rkDownloadBlob = function () { retryDlCnt += 1; return { ok: true, method: 'data-url' }; };
+  click($('m-btn-trip-tpl'));
+  await new Promise((r) => setTimeout(r, 20));
+  assert.strictEqual(retryDlCnt, 1, 'Tahap 4e: coba ulang setelah offline tidak menumpuk listener ganda');
+  w.rkDownloadBlob = origDlTpl;
+
+  // Uji sheet Impor Excel APK: pilih file -> validasi error identik -> submit sukses (termasuk nama unik "Tokyo Autumn (2)") -> pindah ke detail ring
+  const fakeFile = new w.File([new Uint8Array([1, 2, 3])], 'Tokyo_Autumn.xlsx', {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  Object.defineProperty(xlFileEl, 'files', { configurable: true, get: () => [fakeFile] });
+  fire(xlFileEl, 'change');
+  await new Promise((r) => setTimeout(r, 30));
+  const xlSheet = $('m-sheet-trip-xl');
+  assert(xlSheet && xlSheet.classList.contains('open'), 'Tahap 4e: memilih file Excel membuka #m-sheet-trip-xl');
+  assert.strictEqual($('m-xl-summary').textContent, w.xlSummaryText(parsed27), 'Tahap 4e: ringkasan sheet impor sama persis dengan xlSummaryText desktop');
+  assert.strictEqual($('m-xl-name').value, 'Tokyo Autumn', 'Tahap 4e: nama default diambil dari nama file');
+  // Error kurs wajib diisi
+  $('m-xl-cur').value = 'JPY';
+  $('m-xl-rate').value = '';
+  fire($('m-trip-xl-form'), 'submit');
+  assert.strictEqual($('m-xl-err').textContent, 'Isi kurs: berapa rupiah untuk 1 JPY.', 'Tahap 4e: pesan error kurs identik dengan xlCommit desktop');
+  assert(xlSheet.classList.contains('open'), 'Tahap 4e: error validasi tidak menutup sheet impor');
+  // Back Android menutup sheet Impor
+  w.Capacitor = { isNativePlatform: () => true, Plugins: {} };
+  assert.strictEqual(w.rkHandleAndroidBack(), 'sheet', 'Tahap 4e: Back Android menutup #m-sheet-trip-xl');
+  w.Capacitor = origCap27;
+  // Buka lagi & submit valid -> duplikat nama menjadi Tokyo Autumn (2)
+  fire(xlFileEl, 'change');
+  await new Promise((r) => setTimeout(r, 30));
+  $('m-xl-cur').value = 'JPY';
+  $('m-xl-rate').value = '112';
+  fire($('m-trip-xl-form'), 'submit');
+  const impTrip = Object.values(w.ALL.kas.pr).find((p) => p.name === 'Tokyo Autumn (2)');
+  assert(impTrip && impTrip.cur === 'JPY' && impTrip.rate === 112 && impTrip.it.length === 1 && impTrip.bk.length === 1 && impTrip.goal === null, 'Tahap 4e: impor membuat profil identik dengan nama unik (2)');
+  assert.strictEqual(w.MOB_STATE.tripView, 'detail', 'Tahap 4e: setelah impor pindah ke detail perjalanan baru');
+  assert.strictEqual(w.MOB_STATE.tripSub, 'ring', 'Tahap 4e: subtab setelah impor berada di Ringkasan');
+  assert.strictEqual(w.MOB_STATE.tripId, impTrip.id, 'Tahap 4e: tripId mengarah ke profil baru hasil impor');
+  assert($('m-toast-box').textContent.includes('Perjalanan diimpor: 1 kegiatan, 1 pemesanan.'), 'Tahap 4e: toast konfirmasi impor tampil');
+
+  // Paritas xlBuildProfile vs struktur profil desktop (sama bentuk tanpa field ekstra liar)
+  const bp = w.xlBuildProfile(parsed27, 'Uji Paritas XL', 'SGD', '12000');
+  assert.deepStrictEqual(Object.keys(bp.profile).sort(), ['bk', 'budget', 'ck', 'cur', 'dt', 'end', 'goal', 'id', 'it', 'link', 'lk', 'name', 'note', 'rate', 'saldo', 'start', 'tx'], 'Tahap 4e: xlBuildProfile menghasilkan key profil identik desktop');
+
+  w.XLSX = origXlsx;
+
+  // 28. Tahap 5: A1-A5 (Build ID, Status Share Jujur, Timeout Excel, PDF Beranotasi Tautan) + Blok D1-D5 (Bug Desktop & Paritas)
+  const fs5 = require('fs');
+  const path5 = require('path');
+  const { PDFDocument: PDFDoc5, PDFName: PDFName5, PDFArray: PDFArray5, PDFDict: PDFDict5, PDFString: PDFString5 } = require('pdf-lib');
+
+  // A1: Markup & kelas Tahap 4 hadir di index.html, dist/index.html, android assets
+  for (const rel of ['index.html', 'dist/index.html', 'android/app/src/main/assets/public/index.html']) {
+    const rawH = fs5.readFileSync(path5.join(__dirname, '..', '..', rel), 'utf8');
+    assert(rawH.includes('m-btn-trip-share') && rawH.includes('m-sheet-trip-share') && rawH.includes('m-btn-trip-xl') && rawH.includes('m-btn-trip-tpl'), 'A1: aset ' + rel + ' memuat seluruh tombol/sheet Tahap 4');
+  }
+
+  // A2: window.RK_BUILD & tampilan Versi build di Pengaturan APK
+  assert(w.RK_BUILD && typeof w.RK_BUILD.id === 'string' && w.RK_BUILD.id.length > 0, 'A2: window.RK_BUILD.id tersedia di bundel');
+  w.RK_BUILD.id = '77-abc1234';
+  w.renderMobSettings();
+  assert($('m-set-build-ver') && $('m-set-build-ver').textContent.includes('Versi build: 77-abc1234'), 'A2: Pengaturan APK menampilkan Versi build = window.RK_BUILD.id');
+
+  // A3: Status Bagikan PDF & Template Excel jujur mengikuti rkDownloadBlob().done
+  w.MOB_STATE.tripId = 'p-t3';
+  w.MOB_STATE.tripView = 'detail';
+  w.renderMobTrip();
+  click($('m-btn-trip-share'));
+  const origDl28 = w.rkDownloadBlob;
+  w.rkDownloadBlob = () => ({ ok: true, method: 'share', done: Promise.resolve({ ok: false, method: 'share', cancelled: true }) });
+  click($('m-sheet-trip-share').querySelector('[data-msh="pdf"]'));
+  await new Promise((r) => setTimeout(r, 20));
+  assert(/dibatalkan/i.test($('m-sh-status').textContent) && !/disiapkan/i.test($('m-sh-status').textContent), 'A3: status share dibatalkan tidak menulis disiapkan');
+  w.rkDownloadBlob = () => ({ ok: true, method: 'share', done: Promise.resolve({ ok: false, method: 'share', cancelled: false, error: 'Share rejected' }) });
+  click($('m-sheet-trip-share').querySelector('[data-msh="pdf"]'));
+  await new Promise((r) => setTimeout(r, 20));
+  assert(/Gagal/i.test($('m-sh-status').textContent) && /Salin teks/i.test($('m-sh-status').textContent), 'A3: status share gagal mengarahkan ke Salin teks');
+  w.rkDownloadBlob = origDl28;
+  w.mobCloseSheet('m-sheet-trip-share');
+
+  // A4: Timeout muat pustaka Excel mereset MOB_XL_BUSY dan menampilkan toast error
+  const origTimeout28 = w.MOB_XL_LOAD_TIMEOUT_MS;
+  const origLoad28 = w.loadXlsx;
+  w.MOB_XL_LOAD_TIMEOUT_MS = 30;
+  w.loadXlsx = () => new Promise(() => {}); // hang selamanya
+  w.MOB_STATE.tripView = 'list';
+  w.renderMobTrip();
+  click($('m-btn-trip-tpl'));
+  await new Promise((r) => setTimeout(r, 70));
+  assert(!w.MOB_XL_BUSY && !$('m-btn-trip-tpl').disabled, 'A4: timeout mereset MOB_XL_BUSY dan tombol Excel kembali aktif');
+  assert(/Waktu muat|gagal dimuat/i.test($('m-toast-box').textContent), 'A4: timeout menampilkan pesan error yang jelas');
+  w.MOB_XL_LOAD_TIMEOUT_MS = origTimeout28;
+  w.loadXlsx = origLoad28;
+
+  // A5.vii: tripPdfData mengisi sel tautan {t, href} untuk x.link dan l.url (baik cost=true/false) + memblokir javascript:
+  const tripA5 = {
+    id: 'p-a5', name: 'Tokyo PDF Link', start: '2026-12-01', end: '2026-12-02', cur: 'JPY', rate: 110,
+    dt: { '2026-12-01': 'Hari Pertama' },
+    it: [
+      { id: 'i1', day: '2026-12-01', time: '09:00', time2: '10:30', place: 'Haneda', est: 1000, fx: true, link: 'https://haneda-airport.jp/en/transport/very-long-path/' + 'sub/'.repeat(12), note: '' },
+      { id: 'i2', day: '2026-12-01', time: '12:00', time2: '', place: 'XSS Trap', est: 0, fx: false, link: 'javascript:alert(1)', note: '' },
+    ],
+    bk: [{ id: 'b1', title: 'Hotel', amt: 2000000, fx: false, link: 'https://tidakboleh-di-pemesanan.id', paid: false }],
+    lk: [{ id: 'l1', title: 'Peta Tokyo', url: 'https://tokyometro.jp/en/' }, { id: 'l2', title: 'Link Buruk', url: 'data:text/html,hi' }],
+  };
+  for (const withCost of [true, false]) {
+    const pdfRepA5 = w.tripPdfData(tripA5, withCost);
+    const bytesA5 = w.repPdf(pdfRepA5);
+    const docA5 = await PDFDoc5.load(new Uint8Array(bytesA5));
+    const annots0 = docA5.getPage(0).node.lookupMaybe(PDFName5.of('Annots'), PDFArray5);
+    assert(annots0 && annots0.size() >= 3, 'A5.vii (cost=' + withCost + '): PDF perjalanan memuat >= 3 anotasi tautan (termasuk pecahan baris)');
+    const uris = [];
+    for (let i = 0; i < annots0.size(); i++) {
+      const aDict = annots0.lookup(i, PDFDict5);
+      const uVal = aDict.lookup(PDFName5.of('A'), PDFDict5).lookup(PDFName5.of('URI'));
+      uris.push(uVal instanceof PDFString5 ? uVal.decodeText() : String(uVal));
+    }
+    assert(uris.every((u) => u.startsWith('https://')), 'A5.vii: hanya URI https yang menjadi anotasi');
+    assert(uris.includes('https://tokyometro.jp/en/') && uris.some((u) => u.includes('haneda-airport.jp')), 'A5.vii: x.link & l.url hadir di anotasi PDF');
+    assert(!uris.some((u) => u.includes('tidakboleh-di-pemesanan')), 'A5.vii: pemesanan tidak menambah anotasi tautan');
+  }
+
+  // D1: Desktop impor Excel berisi yen (fixture sintetis fx:true, cur:'') memunculkan dialog & menghitung dengan kurs
+  const fxFixture = JSON.parse(fs5.readFileSync(path5.join(__dirname, '..', 'fixtures', 'xl-sample-fx.json'), 'utf8'));
+  const origXlsx28 = w.XLSX;
+  w.XLSX = {
+    read: () => ({ SheetNames: fxFixture.SheetNames, Sheets: { Itinerary: 'it' } }),
+    utils: { sheet_to_json: () => fxFixture.rowsBySheet.Itinerary },
+  };
+  const dFix = w.xlParse(w.XLSX.read());
+  assert(dFix.fx === true && dFix.cur === '', 'D1 fixture: xlParse menghasilkan fx=true dan cur=""');
+  // Sebelum fix: yen dianggap rupiah -> 2500000 + 1200 + 1800 = 2503000; dengan JPY rate=110 -> 2500000 + (1200+1800)*110 = 2830000
+  const countTripsBefore = Object.keys(w.ALL.kas.pr).length;
+  w.setShellMode('browser');
+  w.setMode('trip');
+  const xlfDesk = $('xlf');
+  const fakeFxFile = new w.File([new Uint8Array([1, 2])], 'Tokyo_Sample_Real.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  Object.defineProperty(xlfDesk, 'files', { configurable: true, get: () => [fakeFxFile] });
+  fire(xlfDesk, 'change');
+  await new Promise((r) => setTimeout(r, 30));
+  const deskXlModal = $('modal-trip-xl');
+  assert(deskXlModal && !deskXlModal.hidden && deskXlModal.classList.contains('open'), 'D1: file Excel berisi yen membuka modal #modal-trip-xl di desktop');
+  assert.strictEqual(Object.keys(w.ALL.kas.pr).length, countTripsBefore, 'D1: profil TIDAK dibuat sebelum kode mata uang & kurs valid');
+  assert.strictEqual($('br-xl-cur').value, 'JPY', 'D1: default kode mata uang JPY');
+  $('br-xl-rate').value = '0';
+  fire($('trip-xl-form'), 'submit');
+  assert($('br-xl-err').textContent === 'Isi kurs: berapa rupiah untuk 1 JPY.' && !deskXlModal.hidden, 'D1: kurs 0 ditolak dengan pesan error identik APK');
+  $('br-xl-rate').value = '110';
+  fire($('trip-xl-form'), 'submit');
+  const d1Trip = Object.values(w.ALL.kas.pr).find((p) => p.name === 'Tokyo Sample Real');
+  assert(d1Trip && d1Trip.cur === 'JPY' && d1Trip.rate === 110, 'D1: profil dibuat setelah kurs valid');
+  assert.strictEqual(w.tripPlan(d1Trip).t, 2830000, 'D1: total rencana biaya menghitung yen x 110 (2.830.000, bukan 2.503.000)');
+
+  // D1 tanpa fx tetap impor langsung tanpa membuka dialog
+  const noFxFile = new w.File([new Uint8Array([1, 2])], 'Bandung_Lokal.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  w.XLSX.utils.sheet_to_json = () => [['Tanggal', 'Jam', 'Keterangan', 'Biaya'], ['2026-06-01', '09.00', 'Kereta Argo', 250000]];
+  Object.defineProperty(xlfDesk, 'files', { configurable: true, get: () => [noFxFile] });
+  fire(xlfDesk, 'change');
+  await new Promise((r) => setTimeout(r, 30));
+  assert(deskXlModal.hidden && Object.values(w.ALL.kas.pr).some((p) => p.name === 'Bandung Lokal'), 'D1: Excel tanpa FX tetap impor langsung di desktop');
+  w.XLSX = origXlsx28;
+
+  // D2: goalSavedNow batas sebelum bulan pertama, di tengah, setelah bulan terakhir, dan paritas Desktop = APK
+  const gD2 = { t: 12000000, s0: 2000000, from: '2026-07', to: '2026-11', per: 2000000, link: true };
+  assert.strictEqual(w.goalSavedNow(gD2, '2026-06-15').got, 2000000, 'D2: sebelum bulan pertama -> s0');
+  assert.strictEqual(w.goalSavedNow(gD2, '2026-08-20').got, 6000000, 'D2: bulan ke-2 -> s0 + 2*per');
+  assert.strictEqual(w.goalSavedNow(gD2, '2027-02-01').got, 12000000, 'D2: lewat bulan akhir -> cap di target t');
+  assert.strictEqual(w.goalSavedNow({ t: 5000000, s0: undefined, per: '', from: '2026-07', to: '2026-10' }, '2026-09-01').got, 0, 'D2: s0/per kosong bebas NaN');
+  d1Trip.goal = { t: 10000000, s0: 1000000, from: '2026-09', to: '2026-12', per: 2000000, link: true };
+  w.__today = '2026-10-15'; // bulan ke-2 -> 1jt + 2*2jt = 5.000.000
+  w.setTrip(d1Trip.id);
+  w.BR_STATE.tripSubTab = 'sv';
+  w.renderTrip();
+  w.setShellMode('mobile-app');
+  w.MOB_STATE.tripId = d1Trip.id;
+  w.MOB_STATE.tripView = 'detail';
+  w.MOB_STATE.tripSub = 'sv';
+  w.renderMobTrip();
+  assert(/5\.000\.000/.test($('trip-root').textContent) && /5\.000\.000/.test($('m-trip-root').textContent), 'D2: Terkumpul desktop & APK sama-sama menghitung akumulasi bulan berjalan (5.000.000)');
+  w.__today = '2026-11-12';
+
+  // D3: Tautan berbahaya javascript:/data:/schemeless tidak jadi <a href> di desktop maupun tripPrintHtml
+  d1Trip.lk = [
+    { id: 'l-ok', title: 'Link Aman', url: 'https://maps.google.com/?q=shibuya' },
+    { id: 'l-js', title: 'Evil JS', url: 'javascript:alert(1)' },
+    { id: 'l-dt', title: 'Evil Data', url: 'data:text/html,<script>' },
+  ];
+  w.setShellMode('browser');
+  w.BR_STATE.tripSubTab = 'cat';
+  w.renderTrip();
+  const deskCatH = $('trip-root').innerHTML;
+  assert(deskCatH.includes('href="https://maps.google.com/?q=shibuya"') && !deskCatH.includes('href="javascript:') && !deskCatH.includes('href="data:'), 'D3: desktop Tab Catatan hanya merender <a href> untuk http(s)');
+  const printH = w.tripPrintHtml({ name: 'Print Test', start: '2026-12-01', end: '2026-12-01', dt: {}, it: [{ day: '2026-12-01', time: '09:00', time2: '', place: 'P', est: 0, link: 'javascript:evil()' }], bk: [], lk: d1Trip.lk }, true);
+  assert(printH.includes('<a href="https://maps.google.com/?q=shibuya">') && !printH.includes('href="javascript:') && !printH.includes('href="data:'), 'D3: tripPrintHtml menolak javascript:/data: dari <a href>');
+
+  // D4: Edit pemesanan di desktop mempertahankan pay, link, paid, rec
+  d1Trip.bk = [{ id: 'dbk-1', title: 'Hotel Uji', amt: 3000000, fx: false, a: '2026-12-01', b: '2026-12-03', cat: 'Penginapan', pay: 'ic', link: 'https://hotel.example', paid: true, rec: 'rec-desk' }];
+  w.BR_STATE.tripSubTab = 'book';
+  w.renderTrip();
+  click($('trip-root').querySelector('[data-bk-edit="dbk-1"]'));
+  $('bk-title').value = 'Hotel Uji Edit';
+  $('bk-amt').value = '3500000';
+  fire($('trip-book-form'), 'submit');
+  const edDeskBk = d1Trip.bk.find((x) => x.id === 'dbk-1');
+  assert(edDeskBk.title === 'Hotel Uji Edit' && edDeskBk.pay === 'ic' && edDeskBk.link === 'https://hotel.example' && edDeskBk.paid === true && edDeskBk.rec === 'rec-desk', 'D4: edit pemesanan di desktop mempertahankan pay, link, paid, rec');
+
+  // D5: Validasi b < a (Pemesanan) & end < start / cur invalid / kurs <= 0 (Profil) di desktop dan APK
+  // D5(a) Desktop book b < a ditolak
+  const bkBeforeD5 = d1Trip.bk.length;
+  $('bk-title').value = 'Flight Mundur';
+  $('bk-amt').value = '1000000';
+  w.BR_STATE.inlineDates.bkStart = '2026-12-05';
+  w.BR_STATE.inlineDates.bkEnd = '2026-12-02';
+  fire($('trip-book-form'), 'submit');
+  assert.strictEqual(d1Trip.bk.length, bkBeforeD5, 'D5a: desktop menolak pemesanan dengan b < a');
+  // D5(b) Desktop profil end < start, cur invalid, rate <= 0 ditolak
+  const trBeforeD5 = Object.keys(w.ALL.kas.pr).length;
+  click($('br-trip-back-list'));
+  click($('br-trip-new'));
+  $('kp-name').value = 'Trip Invalid';
+  w.BR_STATE.inlineDates.kpStart = '2026-12-10';
+  w.BR_STATE.inlineDates.kpEnd = '2026-12-05';
+  fire($('trip-meta-form'), 'submit');
+  assert.strictEqual(Object.keys(w.ALL.kas.pr).length, trBeforeD5, 'D5b: desktop menolak profil end < start');
+  w.BR_STATE.inlineDates.kpEnd = '2026-12-15';
+  $('kp-cur').value = 'JP';
+  fire($('trip-meta-form'), 'submit');
+  assert.strictEqual(Object.keys(w.ALL.kas.pr).length, trBeforeD5, 'D5b: desktop menolak kode mata uang bukan 3 huruf');
+  $('kp-cur').value = 'JPY';
+  $('kp-rate').value = '0';
+  fire($('trip-meta-form'), 'submit');
+  assert.strictEqual(Object.keys(w.ALL.kas.pr).length, trBeforeD5, 'D5b: desktop menolak kurs <= 0 saat mata uang diisi');
+  click($('kpf-cancel'));
+
+  // D5 APK parity (book b < a & profil end < start / cur invalid / rate <= 0)
+  w.setShellMode('mobile-app');
+  w.MOB_STATE.tripId = d1Trip.id;
+  w.MOB_STATE.tripSub = 'book';
+  w.renderMobTrip();
+  $('m-bk-title').value = 'Flight Mundur APK';
+  $('m-bk-amt').value = '1000000';
+  $('m-bk-start').value = '2026-12-05';
+  $('m-bk-end').value = '2026-12-02';
+  fire($('m-trip-book-form'), 'submit');
+  assert.strictEqual(d1Trip.bk.length, bkBeforeD5, 'D5a: APK menolak pemesanan dengan b < a');
+  click($('m-btn-trip-new-pill'));
+  $('m-kp-name').value = 'Trip Invalid APK';
+  $('m-kp-start').value = '2026-12-10';
+  $('m-kp-end').value = '2026-12-05';
+  fire($('m-trip-meta-form'), 'submit');
+  assert.strictEqual(Object.keys(w.ALL.kas.pr).length, trBeforeD5, 'D5b: APK menolak profil end < start');
+  $('m-kp-end').value = '2026-12-15';
+  $('m-kp-cur').value = 'JP';
+  fire($('m-trip-meta-form'), 'submit');
+  assert.strictEqual(Object.keys(w.ALL.kas.pr).length, trBeforeD5, 'D5b: APK menolak kode mata uang bukan 3 huruf');
+  $('m-kp-cur').value = 'JPY';
+  $('m-kp-rate').value = '';
+  fire($('m-trip-meta-form'), 'submit');
+  assert.strictEqual(Object.keys(w.ALL.kas.pr).length, trBeforeD5, 'D5b: APK menolak kurs kosong/<=0 saat mata uang diisi');
+  w.mobCloseSheet('m-sheet-trip');
 
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('OK mobile_app_mode');

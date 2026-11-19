@@ -43,24 +43,40 @@ function rkDownloadBlob(name, data, mime) {
       try {
         var f = new File([blob], name, { type: type });
         if (navigator.canShare({ files: [f] })) {
-          navigator.share({ files: [f], title: name }).catch(function () {});
-          return { ok: true, method: 'share' };
+          var shareDone = Promise.resolve(navigator.share({ files: [f], title: name })).then(
+            function () { return { ok: true, method: 'share' }; },
+            function (err) {
+              var cancelled = !!(err && err.name === 'AbortError');
+              return { ok: false, method: 'share', cancelled: cancelled, error: (err && err.message) || String(err || 'Gagal membagikan file') };
+            }
+          );
+          return { ok: true, method: 'share', done: shareDone };
         }
       } catch (e) {}
     }
     try {
       var fr = new FileReader();
-      fr.onload = function () {
-        if (typeof fr.result === 'string') triggerHref(fr.result, false);
-      };
-      fr.readAsDataURL(blob);
-      return { ok: true, method: 'data-url' };
+      var dataDone = new Promise(function (resolve) {
+        fr.onload = function () {
+          if (typeof fr.result === 'string') {
+            triggerHref(fr.result, false);
+            resolve({ ok: true, method: 'data-url' });
+          } else {
+            resolve({ ok: false, method: 'data-url', error: 'Hasil unduhan tidak valid.' });
+          }
+        };
+        fr.onerror = function () {
+          resolve({ ok: false, method: 'data-url', error: 'Gagal membaca data file.' });
+        };
+        fr.readAsDataURL(blob);
+      });
+      return { ok: true, method: 'data-url', done: dataDone };
     } catch (e) {}
   }
 
   var url = URL.createObjectURL(blob);
   triggerHref(url, true);
-  return { ok: true, method: 'blob' };
+  return { ok: true, method: 'blob', done: Promise.resolve({ ok: true, method: 'blob' }) };
 }
 
 /** Unduh file; bila tidak bisa, isinya ditaruh di kolom teks agar bisa disalin. */

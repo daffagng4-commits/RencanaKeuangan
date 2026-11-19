@@ -208,3 +208,36 @@ test('sync.js mengizinkan origin capacitor:/ionic: untuk OAuth redirect Android/
   const syncSrc = fs.readFileSync(path.join(ROOT, 'js', 'sync.js'), 'utf8');
   assert.ok(syncSrc.includes('capacitor|ionic'), 'authGoogle mendukung skema origin Capacitor/Ionic');
 });
+
+test('A3: rkDownloadBlob mengekspos done Promise jujur (share ok/cancelled/error) tanpa memutus pemanggil lama', async () => {
+  const mkNative = (shareFn) => {
+    const c = loadShellModeCtx({
+      ua: 'Mozilla/5.0 (Linux; Android 13; wv) AppleWebKit/537.36',
+      document: { body: { appendChild() {}, removeChild() {} }, getElementById: () => null, createElement: () => ({ style: {}, click() {}, remove() {} }) },
+    });
+    c.Blob = class { constructor(parts, opts) { this.parts = parts; this.type = opts && opts.type; } };
+    c.File = class { constructor(parts, name, opts) { this.parts = parts; this.name = name; this.type = opts && opts.type; } };
+    c.FileReader = class {};
+    c.navigator.canShare = () => true;
+    c.navigator.share = shareFn;
+    c.$ = () => null;
+    c.toast = () => {};
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', 'ui', 'io.js'), 'utf8'), c, { filename: 'io.js' });
+    return c;
+  };
+  const cOk = mkNative(() => Promise.resolve());
+  const rOk = cOk.rkDownloadBlob('a.pdf', new Uint8Array([37, 80]), 'application/pdf');
+  assert.equal(rOk.method, 'share');
+  assert.equal((await rOk.done).ok, true);
+
+  const cAbort = mkNative(() => { const e = new Error('cancelled'); e.name = 'AbortError'; return Promise.reject(e); });
+  const dAbort = await cAbort.rkDownloadBlob('a.pdf', new Uint8Array([37, 80]), 'application/pdf').done;
+  assert.equal(dAbort.ok, false);
+  assert.equal(dAbort.cancelled, true);
+
+  const cErr = mkNative(() => Promise.reject(new Error('not supported')));
+  const dErr = await cErr.rkDownloadBlob('a.pdf', new Uint8Array([37, 80]), 'application/pdf').done;
+  assert.equal(dErr.ok, false);
+  assert.equal(dErr.cancelled, false);
+  assert.match(dErr.error, /not supported/);
+});

@@ -100,8 +100,9 @@ function amtTxt(P, v, fx) {
   return fx && P.cur ? fxs(P, v) + (P.rate ? ' <span class="sub">&asymp; ' + rp(val(P, v, fx)) + '</span>' : '') : rp(v);
 }
 function lnk(u) {
-  if (!okUrl(u)) return '';
-  return '<a class="lnk" href="' + esc(u) + '" target="_blank" rel="noopener noreferrer">' + (/maps|goo\.gl/i.test(u) ? 'Peta' : /youtu/i.test(u) ? 'Video' : 'Buka') + ' &#8599;</a>';
+  var su = typeof safeHref === 'function' ? safeHref(u) : '';
+  if (!su) return '';
+  return '<a class="lnk" href="' + esc(su) + '" target="_blank" rel="noopener noreferrer">' + (/maps|goo\.gl/i.test(su) ? 'Peta' : /youtu/i.test(su) ? 'Video' : 'Buka') + ' &#8599;</a>';
 }
 function pchip(p) {
   return p ? '<span class="chp ' + p + '">' + PAYL[p] + '</span>' : '';
@@ -723,6 +724,35 @@ function goalCompute(t, s0, from, to, link) {
     n: n,
     per: n && tv > sv ? Math.ceil((tv - sv) / n / 1000) * 1000 : 0,
   };
+}
+/** Hitung akumulasi dana terkumpul target tabungan sampai bulan refIso ('YYYY-MM-DD' / 'YYYY-MM'); dipakai desktop & APK. */
+function goalSavedNow(g, refIso) {
+  if (!g || typeof g !== 'object') return { got: 0, el: 0, totalMonths: 0, pct: 0 };
+  var t = +g.t > 0 ? +g.t : 0,
+    s0 = +g.s0 > 0 ? +g.s0 : 0,
+    per = +g.per > 0 ? +g.per : 0,
+    cm = String(refIso || (typeof todayISO === 'function' ? todayISO() : '')).slice(0, 7),
+    ms = g.from && g.to && /^\d{4}-\d{2}$/.test(g.from) && /^\d{4}-\d{2}$/.test(g.to) && g.to >= g.from ? monthList(g.from, g.to) : [],
+    el = cm ? ms.filter(function (k) { return k <= cm; }).length : 0,
+    got = Math.min(t, s0 + per * el),
+    pct = t > 0 ? Math.min(100, Math.round((got / t) * 100)) : 0;
+  return { got: got, el: el, totalMonths: ms.length, pct: pct };
+}
+/** Validasi rentang tanggal (bila keduanya diisi dan b < a). */
+function tripValidateDates(a, b) {
+  var sa = String(a || '').trim(), sb = String(b || '').trim();
+  if (sa && sb && sb < sa) return { field: 'end', error: 'Tanggal selesai tidak boleh sebelum tanggal mulai.' };
+  return null;
+}
+/** Validasi minimal profil perjalanan untuk desktop dan APK. */
+function tripValidateMetaInput(start, end, curRaw, rateRaw) {
+  var dtErr = tripValidateDates(start, end);
+  if (dtErr) return dtErr;
+  var cu = String(curRaw == null ? '' : curRaw).trim().toUpperCase();
+  if (cu && !/^[A-Z]{3}$/.test(cu)) return { field: 'cur', error: 'Mata uang terdiri dari 3 huruf, mis. JPY.' };
+  var rt = parseFloat(String(rateRaw == null ? '' : rateRaw).replace(',', '.')) || 0;
+  if (cu && !(rt > 0)) return { field: 'rate', error: 'Isi kurs: berapa rupiah untuk 1 ' + cu + '.' };
+  return null;
 }
 function goalCalc() {
   return goalCompute(
@@ -1421,6 +1451,66 @@ function xlParse(wb) {
   out.end = ds[ds.length - 1] || '';
   return out;
 }
+/** Ringkasan data Excel hasil xlParse untuk dialog pratinjau impor. */
+function xlSummaryText(d) {
+  var a = 0, b = 0;
+  (d.bk || []).forEach(function (x) { if (x.fx) b += x.amt; else a += x.amt; });
+  (d.it || []).forEach(function (x) { if (x.pay === 'on') return; if (x.fx) b += x.est; else a += x.est; });
+  return d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan, ' + Object.keys(d.dt || {}).length + ' judul hari' +
+    (d.start ? ' · ' + fmtD(d.start) + ' – ' + fmtD(d.end) : '') + '.' +
+    ' Perkiraan biaya: ' + rp(a) + (b ? ' + ' + b.toLocaleString('id-ID') + ' dalam mata uang asing' : '') + '.' +
+    (d.fx ? ' Isi kode dan kurs mata uang asing.' : '');
+}
+/** Validasi metadata profil sebelum membuat profil perjalanan dari Excel. */
+function xlValidateMeta(d, nama, curRaw, kursRaw) {
+  var n = String(nama == null ? '' : nama).trim().slice(0, 30),
+    cu = String(curRaw == null ? '' : curRaw).trim().toUpperCase(),
+    rt = parseFloat(String(kursRaw == null ? '' : kursRaw).replace(',', '.')) || 0;
+  if (!d) return { error: '' };
+  if (!n) return { error: 'Nama perjalanan belum diisi.' };
+  if (d.fx && !cu) return { error: 'Ada biaya mata uang asing (mis. yen). Isi kodenya, misalnya JPY.' };
+  if (cu && !/^[A-Z]{3}$/.test(cu)) return { error: 'Mata uang terdiri dari 3 huruf, mis. JPY.' };
+  if (cu && !(rt > 0)) return { error: 'Isi kurs: berapa rupiah untuk 1 ' + cu + '.' };
+  return { error: '', name: n, cur: cu, rate: cu ? rt : 0 };
+}
+/** Bentuk profil perjalanan unik dari hasil xlParse + metadata. */
+function xlBuildProfile(d, nama, cur, kurs) {
+  var base = String(nama == null ? '' : nama).trim().slice(0, 30) || 'Perjalanan Impor',
+    nm = base, k = 2;
+  while (trips().some(function (x) { return x.name.toLowerCase() === nm.toLowerCase(); })) nm = base.slice(0, 26) + ' (' + k++ + ')';
+  var id = 'p' + Date.now().toString(36);
+  if (ALL && ALL.kas && ALL.kas.pr && ALL.kas.pr[id]) id = kid('p');
+  var re = function (a, p) { return (a || []).map(function (x) { return Object.assign({}, x, { id: kid(p) }); }); },
+    cu = String(cur == null ? '' : cur).trim().toUpperCase(),
+    rt = parseFloat(String(kurs == null ? '' : kurs).replace(',', '.')) || 0;
+  return {
+    id: id,
+    profile: {
+      id: id, name: nm, saldo: 0, link: false,
+      start: d.start, end: d.end, budget: 0,
+      cur: cu, rate: cu ? rt : 0,
+      dt: d.dt, tx: [],
+      it: re(d.it, 'i'), bk: re(d.bk, 'b'), lk: re(d.lk, 'l'),
+      ck: [], note: '', goal: null,
+    },
+  };
+}
+/** Bentuk workbook template Excel standar (dipakai desktop writeFile & APK rkDownloadBlob). */
+function xlBuildTemplateWb(X) {
+  var wb = X.utils.book_new();
+  X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([
+    ['Tanggal', 'Jam', 'Kegiatan', 'Kategori', 'Biaya', 'Mata uang', 'Pembayaran', 'Tautan', 'Catatan'],
+    ['', '', 'DAY 1 Jakarta - Tokyo', '', '', '', '', '', 'Baris "DAY n judul" menjadi judul hari'],
+    ['2026-01-27', '07.30-09.00', 'Sarapan di konbini', 'Makan', 500, 'JPY', 'Kartu IC', '', ''],
+    ['', '10.00-12.00', 'Tokyo Tower', 'Tiket & Tour', 1200, 'JPY', 'Cash', 'https://maps.app.goo.gl/contoh', 'Tanggal kosong = ikut baris di atasnya'],
+  ]), 'Itinerary');
+  X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([
+    ['Nama', 'Kategori', 'Jumlah', 'Mata uang', 'Pembayaran', 'Lunas', 'Tautan', 'Catatan'],
+    ['Tiket pesawat PP', 'Transport', 6500000, 'IDR', 'Online', 'Ya', '', ''],
+    ['Hotel 4 malam', 'Penginapan', 1800000, 'IDR', 'Online', 'Belum', '', ''],
+  ]), 'Pemesanan');
+  return wb;
+}
 function xlPick(e) {
   var f = e.target.files[0];
   e.target.value = '';
@@ -1432,12 +1522,7 @@ function xlPick(e) {
         var d = xlParse(X.read(fr.result, { type: 'array', cellDates: true }));
         if (!d.it.length && !d.bk.length) return toast('Format tidak dikenali. Unduh Template Excel lalu isi sesuai kolomnya.');
         xlData = d;
-        $('xls').textContent = d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan, ' + Object.keys(d.dt).length + ' judul hari' + (d.start ? ' · ' + fmtD(d.start) + ' – ' + fmtD(d.end) : '') + '.' + (function () {
-          var a = 0, b = 0;
-          d.bk.forEach(function (x) { if (x.fx) b += x.amt; else a += x.amt; });
-          d.it.forEach(function (x) { if (x.pay === 'on') return; if (x.fx) b += x.est; else a += x.est; });
-          return ' Perkiraan biaya: ' + rp(a) + (b ? ' + ' + b.toLocaleString('id-ID') + ' dalam mata uang asing' : '') + '.' + (d.fx ? ' Isi kode dan kurs mata uang asing.' : '');
-        })();
+        $('xls').textContent = xlSummaryText(d);
         $('xln').value = f.name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').slice(0, 30);
         $('xlu').value = d.cur || (d.fx ? 'JPY' : '');
         $('xlk').value = '';
@@ -1451,39 +1536,22 @@ function xlPick(e) {
   }).catch(function (x) { toast(x.message); });
 }
 function xlCommit() {
-  var d = xlData, n = $('xln').value.trim().slice(0, 30), cu = $('xlu').value.trim().toUpperCase(), rt = parseFloat(String($('xlk').value).replace(',', '.')) || 0, er = function (t) { $('xle').textContent = t; };
+  var d = xlData, v = xlValidateMeta(d, $('xln').value, $('xlu').value, $('xlk').value);
   if (!d) return;
-  if (!n) return er('Nama perjalanan belum diisi.');
-  if (d.fx && !cu) return er('Ada biaya mata uang asing (mis. yen). Isi kodenya, misalnya JPY.');
-  if (cu && !/^[A-Z]{3}$/.test(cu)) return er('Mata uang terdiri dari 3 huruf, mis. JPY.');
-  if (cu && !(rt > 0)) return er('Isi kurs: berapa rupiah untuk 1 ' + cu + '.');
-  var nm = n, k = 2;
-  while (trips().some(function (x) { return x.name.toLowerCase() === nm.toLowerCase(); })) nm = n.slice(0, 26) + ' (' + k++ + ')';
-  var id = 'p' + Date.now().toString(36), re = function (a, p) { return a.map(function (x) { return Object.assign({}, x, { id: kid(p) }); }); };
-  ALL.kas.pr[id] = { id: id, name: nm, saldo: 0, link: false, start: d.start, end: d.end, budget: 0, cur: cu, rate: cu ? rt : 0, dt: d.dt, tx: [], it: re(d.it, 'i'), bk: re(d.bk, 'b'), lk: re(d.lk, 'l'), ck: [], note: '', goal: null };
+  if (v.error) { $('xle').textContent = v.error; return; }
+  var built = xlBuildProfile(d, v.name, v.cur, v.rate);
+  ALL.kas.pr[built.id] = built.profile;
   xlData = null;
   $('xlm').hidden = true;
   save();
   setMode('trip');
-  setTrip(id);
+  setTrip(built.id);
   toast('Perjalanan diimpor: ' + d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan.');
 }
 /** Unduh template Excel yang bisa langsung diisi lalu diimpor. */
 function xlTemplate() {
   loadXlsx().then(function (X) {
-    var wb = X.utils.book_new();
-    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([
-      ['Tanggal', 'Jam', 'Kegiatan', 'Kategori', 'Biaya', 'Mata uang', 'Pembayaran', 'Tautan', 'Catatan'],
-      ['', '', 'DAY 1 Jakarta - Tokyo', '', '', '', '', '', 'Baris "DAY n judul" menjadi judul hari'],
-      ['2026-01-27', '07.30-09.00', 'Sarapan di konbini', 'Makan', 500, 'JPY', 'Kartu IC', '', ''],
-      ['', '10.00-12.00', 'Tokyo Tower', 'Tiket & Tour', 1200, 'JPY', 'Cash', 'https://maps.app.goo.gl/contoh', 'Tanggal kosong = ikut baris di atasnya'],
-    ]), 'Itinerary');
-    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([
-      ['Nama', 'Kategori', 'Jumlah', 'Mata uang', 'Pembayaran', 'Lunas', 'Tautan', 'Catatan'],
-      ['Tiket pesawat PP', 'Transport', 6500000, 'IDR', 'Online', 'Ya', '', ''],
-      ['Hotel 4 malam', 'Penginapan', 1800000, 'IDR', 'Online', 'Belum', '', ''],
-    ]), 'Pemesanan');
-    X.writeFile(wb, 'template-itinerary.xlsx');
+    X.writeFile(xlBuildTemplateWb(X), 'template-itinerary.xlsx');
   }).catch(function (x) { toast(x.message); });
 }
 
@@ -1524,11 +1592,12 @@ function tripPrintHtml(P, cost) {
     var its = P.it.filter(function (x) { return x.day === d; }).sort(byTime);
     if (!its.length && !P.dt[d]) return;
     b += '<h2>' + esc(dayLabel(P, d)) + (P.dt[d] ? ' — ' + esc(P.dt[d]) : '') + '</h2><table>' + its.map(function (x) {
-      return '<tr><td class="t">' + esc(tmShow(x.time) + (x.time2 ? '–' + tmShow(x.time2) : '')) + '</td><td>' + esc(x.place) + (x.link ? '<br><a href="' + esc(x.link) + '">' + esc(x.link) + '</a>' : '') + (x.note ? '<br><small>' + esc(x.note) + '</small>' : '') + '</td>' + (cost ? '<td class="c">' + (x.est ? esc(amtPlain(P, x.est, x.fx)) : '') + '</td>' : '') + '</tr>';
+      var sl = x.link && typeof safeHref === 'function' ? safeHref(x.link) : '';
+      return '<tr><td class="t">' + esc(tmShow(x.time) + (x.time2 ? '–' + tmShow(x.time2) : '')) + '</td><td>' + esc(x.place) + (sl ? '<br><a href="' + esc(sl) + '">' + esc(x.link) + '</a>' : (x.link ? '<br><small>' + esc(x.link) + '</small>' : '')) + (x.note ? '<br><small>' + esc(x.note) + '</small>' : '') + '</td>' + (cost ? '<td class="c">' + (x.est ? esc(amtPlain(P, x.est, x.fx)) : '') + '</td>' : '') + '</tr>';
     }).join('') + '</table>';
   });
   if (P.bk.length) b += '<h2>Pemesanan</h2><table>' + P.bk.map(function (x) { return '<tr><td>' + esc(x.title) + (x.paid ? ' <small>(lunas)</small>' : '') + '</td>' + (cost ? '<td class="c">' + esc(amtPlain(P, x.amt, x.fx)) + '</td>' : '') + '</tr>'; }).join('') + '</table>';
-  if (P.lk.length) b += '<h2>Tautan penting</h2>' + P.lk.map(function (l) { return '<div>' + esc(l.title) + ': <a href="' + esc(l.url) + '">' + esc(l.url) + '</a></div>'; }).join('');
+  if (P.lk.length) b += '<h2>Tautan penting</h2>' + P.lk.map(function (l) { var lu = typeof safeHref === 'function' ? safeHref(l.url) : ''; return '<div>' + esc(l.title) + ': ' + (lu ? '<a href="' + esc(lu) + '">' + esc(l.url) + '</a>' : esc(l.url)) + '</div>'; }).join('');
   return '<!doctype html><html lang="id"><head><meta charset="utf-8"><title>' + esc(P.name) + '</title><style>' + css + '</style></head><body>' + b + '</body></html>';
 }
 function printHtml(h) {

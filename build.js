@@ -8,8 +8,16 @@
 const fs = require('fs'), path = require('path');
 const root = __dirname;
 
-function build() {
+function build(opts) {
   let html = fs.readFileSync(path.join(root, 'index.dev.html'), 'utf8');
+  const rawId = String((opts && opts.buildId) || process.env.RK_BUILD_ID || '').trim() || 'dev';
+  const mBuild = /^([^-]+)-([^-]+)$/.exec(rawId);
+  const buildInfo = {
+    id: rawId,
+    run: mBuild ? mBuild[1] : '',
+    sha: mBuild ? mBuild[2] : '',
+    time: rawId === 'dev' ? 'dev' : String((opts && opts.time) || process.env.RK_BUILD_TIME || new Date().toISOString()),
+  };
   // Catatan: pakai fungsi (bukan string) sebagai pengganti, supaya "$&", "$'" dsb. di dalam kode JS tidak ditafsirkan.
   html = html.replace(/<link rel="stylesheet" href="(css\/[^"]+)">/g, (_, f) => {
     // url(fonts/xx.woff2) di CSS disematkan sebagai data URI, supaya index.html tetap SATU file dan jalan offline
@@ -19,11 +27,12 @@ function build() {
   });
   const files = [];
   html = html.replace(/<script src="(js\/[^"]+)"><\/script>\r?\n?/g, (_, f) => { files.push(f); return ''; });
-  const js = files
+  const buildBanner = 'window.RK_BUILD = ' + JSON.stringify(buildInfo) + ';\n';
+  const js = buildBanner + files
     .map((f) => '/* ===== ' + f + ' ===== */\n' + fs.readFileSync(path.join(root, f), 'utf8').trim())
     .join('\n\n');
   html = html.replace(/<\/body>\s*<\/html>\s*$/, () => (js ? '<script>\n' + js + '\n</script>\n' : '') + '</body>\n</html>\n');
-  return { html, files };
+  return { html, files, buildInfo };
 }
 
 function copyDir(src, dst) {

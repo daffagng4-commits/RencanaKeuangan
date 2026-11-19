@@ -145,18 +145,29 @@ function repWidth(b, bold, size) {
   return (w * size) / 1000;
 }
 
+function repPdfUri(u) {
+  var out = '';
+  Array.from(String(u || '').trim()).forEach(function (ch) {
+    var c = ch.charCodeAt(0);
+    if (c <= 0x20 || c >= 0x7f) out += encodeURIComponent(ch);
+    else if (ch === '\\' || ch === '(' || ch === ')') out += '\\' + ch;
+    else out += ch;
+  });
+  return out;
+}
+
 /** Laporan -> byte PDF A4 dengan font standar Helvetica (tanpa pustaka; ukuran & posisi = bot/pdf.mjs). */
 function repPdf(rep) {
   var M = 38, W = 595.28, H = 841.89,
-    INK = '0.11 0.13 0.16', MUT = '0.42 0.45 0.5', LINE = '0.85 0.87 0.9', HEADBG = '0.95 0.96 0.97',
-    pages = [], ops, y;
+    INK = '0.11 0.13 0.16', MUT = '0.42 0.45 0.5', LINE = '0.85 0.87 0.9', HEADBG = '0.95 0.96 0.97', LINK_INK = '0.07 0.35 0.68',
+    pages = [], annotsPerPage = [], ops, curAnnots, y;
   var f = function (n) { return +n.toFixed(2); };
   var put = function (s, x, py, size, bold, color, right) {
     var b = repEnc(s);
     ops.push('BT /F' + (bold ? 2 : 1) + ' ' + size + ' Tf ' + (color || INK) + ' rg ' + f(right ? x - repWidth(b, bold, size) : x) + ' ' + f(py) + ' Td (' + b.replace(/[\\()]/g, '\\$&') + ') Tj ET');
   };
   var hline = function (py, th, color) { ops.push((color || LINE) + ' RG ' + th + ' w ' + M + ' ' + f(py) + ' m ' + f(W - M) + ' ' + f(py) + ' l S'); };
-  var page = function () { ops = []; pages.push(ops); y = H - M; };
+  var page = function () { ops = []; curAnnots = []; pages.push(ops); annotsPerPage.push(curAnnots); y = H - M; };
   var cont = function () { page(); put(rep.title, M, y - 12, 11, true, MUT); y -= 26; };
   var fit = function (cell, bold, w) {
     var s = repEnc(cell);
@@ -194,7 +205,27 @@ function repPdf(rep) {
     head();
     t.rows.forEach(function (r) {
       if (y - 16 < M + 30) { hline(y + 4, 0.5); cont(); head(); }
-      t.cols.forEach(function (c, i) { put(fit(r[i], c.bold, ws[i]), cx(i), y - 9, 9, c.bold, INK, c.align === 'r'); });
+      t.cols.forEach(function (c, i) {
+        var rawCell = r[i], isObj = rawCell && typeof rawCell === 'object',
+          txt = isObj ? rawCell.t : rawCell,
+          rawHref = isObj ? rawCell.href : '',
+          uri = rawHref ? (typeof safeHref === 'function' ? safeHref(rawHref) : (/^https?:\/\/[^/\s"'<>]+/i.test(String(rawHref).trim()) && !/[\u0000-\u001f\u007f"'<>]/.test(String(rawHref).trim()) ? String(rawHref).trim() : '')) : '';
+        if (uri) {
+          var fitted = fit(txt, c.bold, ws[i]),
+            lCol = rawCell.color || LINK_INK,
+            tw = repWidth(fitted, c.bold, 9),
+            ax = cx(i),
+            x1 = c.align === 'r' ? ax - tw : ax,
+            x2 = c.align === 'r' ? ax : ax + tw;
+          put(fitted, ax, y - 9, 9, c.bold, lCol, c.align === 'r');
+          if (tw > 0) {
+            ops.push(lCol + ' RG 0.5 w ' + f(x1) + ' ' + f(y - 10.5) + ' m ' + f(x2) + ' ' + f(y - 10.5) + ' l S');
+            curAnnots.push({ rect: [x1, y - 11.5, Math.max(x2, x1 + 6), y], uri: repPdfUri(uri) });
+          }
+        } else {
+          put(fit(txt, c.bold, ws[i]), cx(i), y - 9, 9, c.bold, (isObj && rawCell.color) || INK, c.align === 'r');
+        }
+      });
       y -= 15;
       hline(y + 4, 0.4);
     });
@@ -216,10 +247,17 @@ function repPdf(rep) {
   var font = function (n) { return '<< /Type /Font /Subtype /Type1 /BaseFont /' + n + ' /Encoding /WinAnsiEncoding >>'; },
     objs = ['<< /Type /Catalog /Pages 2 0 R >>', '', font('Helvetica'), font('Helvetica-Bold')],
     kids = [];
-  pages.forEach(function (o) {
-    var c = o.join('\n');
+  pages.forEach(function (o, i) {
+    var c = o.join('\n'), pa = annotsPerPage[i], annotRefs = [];
     objs.push('<< /Length ' + c.length + ' >>\nstream\n' + c + '\nendstream');
-    objs.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' + objs.length + ' 0 R >>');
+    var cObjIdx = objs.length;
+    if (pa && pa.length) {
+      pa.forEach(function (a) {
+        objs.push('<< /Type /Annot /Subtype /Link /Rect [' + a.rect.map(f).join(' ') + '] /Border [0 0 0] /A << /S /URI /URI (' + a.uri + ') >> >>');
+        annotRefs.push(objs.length + ' 0 R');
+      });
+    }
+    objs.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' + cObjIdx + ' 0 R' + (annotRefs.length ? ' /Annots [' + annotRefs.join(' ') + ']' : '') + ' >>');
     kids.push(objs.length + ' 0 R');
   });
   objs[1] = '<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + kids.length + ' >>';

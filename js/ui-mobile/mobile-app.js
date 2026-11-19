@@ -178,9 +178,8 @@ function mobPreserveScroll(fn) {
 }
 
 function mobOpenExternalUrl(rawUrl) {
-  var u = String(rawUrl || '').trim();
-  var ok = u && (typeof okUrl === 'function' ? okUrl(u) : /^https?:\/\/[^\s"'<>]+$/i.test(u));
-  if (!ok) {
+  var u = typeof safeHref === 'function' ? safeHref(rawUrl) : '';
+  if (!u) {
     showMobToast('Tautan tidak valid');
     return false;
   }
@@ -195,6 +194,174 @@ function mobOpenExternalUrl(rawUrl) {
     window.open(u, '_blank', 'noopener,noreferrer');
   } catch (e) {}
   return true;
+}
+
+var MOB_WA_URL_MAX = 1800;
+var MOB_XL_LOAD_TIMEOUT_MS = 15000;
+var MOB_XL_DATA = null;
+var MOB_XL_BUSY = false;
+
+function mobLoadXlsxWithTimeout() {
+  if (typeof loadXlsx !== 'function') return Promise.reject(new Error('Pustaka Excel tidak tersedia.'));
+  var ms = (typeof MOB_XL_LOAD_TIMEOUT_MS === 'number' && MOB_XL_LOAD_TIMEOUT_MS > 0) ? MOB_XL_LOAD_TIMEOUT_MS : 15000;
+  var tid;
+  var tout = new Promise(function (_, reject) {
+    tid = setTimeout(function () {
+      reject(new Error('Waktu muat pustaka Excel habis (' + Math.round(ms / 1000) + ' dtk). Periksa koneksi internet.'));
+    }, ms);
+  });
+  return Promise.race([Promise.resolve(loadXlsx()), tout]).then(
+    function (X) { clearTimeout(tid); return X; },
+    function (err) { clearTimeout(tid); throw err; }
+  );
+}
+
+function mobHasNonWinAnsi(s) {
+  var arr = Array.from(String(s == null ? '' : s));
+  for (var i = 0; i < arr.length; i++) {
+    var ch = arr[i], c = ch.charCodeAt(0);
+    if (c < 32 || (c >= 32 && c < 127) || (c >= 160 && c < 256)) continue;
+    if (typeof REP_HI !== 'undefined' && REP_HI.indexOf(ch) >= 0) continue;
+    return true;
+  }
+  return false;
+}
+
+function mobTripHasNonWinAnsi(P) {
+  if (!P) return false;
+  if (mobHasNonWinAnsi(P.name)) return true;
+  var dks = Object.keys(P.dt || {});
+  for (var i = 0; i < dks.length; i++) if (mobHasNonWinAnsi(P.dt[dks[i]])) return true;
+  if ((P.it || []).some(function (x) { return mobHasNonWinAnsi(x.place) || mobHasNonWinAnsi(x.link) || mobHasNonWinAnsi(x.note); })) return true;
+  if ((P.bk || []).some(function (x) { return mobHasNonWinAnsi(x.title); })) return true;
+  if ((P.lk || []).some(function (x) { return mobHasNonWinAnsi(x.title) || mobHasNonWinAnsi(x.url); })) return true;
+  return false;
+}
+
+function mobWrapPdfText(str, maxW, bold) {
+  var s = String(str == null ? '' : str).trim();
+  if (!s) return [''];
+  var measure = function (txt) {
+    var enc = typeof repEnc === 'function' ? repEnc(txt) : txt;
+    return typeof repWidth === 'function' ? repWidth(enc, !!bold, 9) : enc.length * 5;
+  };
+  var lines = [];
+  s.split(/\r?\n/).forEach(function (para) {
+    var words = para.split(/\s+/).filter(Boolean);
+    if (!words.length) return;
+    var cur = '';
+    words.forEach(function (w) {
+      var cand = cur ? cur + ' ' + w : w;
+      if (measure(cand) <= maxW) {
+        cur = cand;
+      } else {
+        if (cur) { lines.push(cur); cur = ''; }
+        if (measure(w) <= maxW) {
+          cur = w;
+        } else {
+          var chars = Array.from(w), chunk = '';
+          chars.forEach(function (ch) {
+            if (measure(chunk + ch) <= maxW) chunk += ch;
+            else {
+              if (chunk) lines.push(chunk);
+              chunk = ch;
+            }
+          });
+          cur = chunk;
+        }
+      }
+    });
+    if (cur) lines.push(cur);
+  });
+  return lines.length ? lines : [''];
+}
+
+function mobSafePdfFilename(name) {
+  var slug = String(name || 'perjalanan').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'perjalanan';
+  return 'itinerary-' + slug + '.pdf';
+}
+
+function tripPdfData(P, cost) {
+  var W = 595.28, M = 38, innerW = W - 2 * M,
+    pl = typeof tripPlan === 'function' ? tripPlan(P) : { b: 0, d: 0, t: 0, paid: 0 },
+    amtFn = typeof amtPlain === 'function' ? amtPlain : function (tr0, v, fx) { return fx && tr0.cur ? tr0.cur + ' ' + Math.round(v).toLocaleString('id-ID') : rp(v); },
+    tmFn = typeof tmShow === 'function' ? tmShow : function (v) { return v ? String(v).replace(':', '.') : ''; },
+    dayFn = typeof dayLabel === 'function' ? dayLabel : function (tr0, d) { return fmtD(d); },
+    sortFn = typeof byTime === 'function' ? byTime : function (a, b) { return (a.time || '').localeCompare(b.time || ''); },
+    colsIt = cost ? [{ t: 'JAM', w: 18 }, { t: 'KEGIATAN', w: 60 }, { t: 'BIAYA', w: 22, align: 'r' }] : [{ t: 'JAM', w: 20 }, { t: 'KEGIATAN', w: 80 }],
+    itMaxW = ((cost ? 60 : 80) * innerW) / 100 - 8,
+    tables = [];
+
+  (typeof tripDays === 'function' ? tripDays(P) : []).forEach(function (d) {
+    var its = (P.it || []).filter(function (x) { return x.day === d; }).sort(sortFn),
+      dayTitle = (P.dt && P.dt[d]) || '';
+    if (!its.length && !dayTitle) return;
+    var rows = [];
+    its.forEach(function (x) {
+      var jam = tmFn(x.time) + (x.time2 ? '–' + tmFn(x.time2) : ''),
+        biaya = cost && x.est ? amtFn(P, x.est, x.fx) : '',
+        safeLnk = x.link && typeof safeHref === 'function' ? safeHref(x.link) : '',
+        cells = mobWrapPdfText(x.place || '-', itMaxW, false);
+      if (x.link) {
+        mobWrapPdfText(x.link, itMaxW, false).forEach(function (ln) {
+          cells.push(safeLnk ? { t: ln, href: safeLnk } : ln);
+        });
+      }
+      if (x.note) cells = cells.concat(mobWrapPdfText(x.note, itMaxW, false));
+      cells.forEach(function (cellVal, idx) {
+        rows.push(cost ? [idx === 0 ? jam : '', cellVal, idx === 0 ? biaya : ''] : [idx === 0 ? jam : '', cellVal]);
+      });
+    });
+    if (!rows.length) rows.push(cost ? ['', '(Belum ada kegiatan)', ''] : ['', '(Belum ada kegiatan)']);
+    tables.push({ head: dayFn(P, d) + (dayTitle ? ' — ' + dayTitle : ''), cols: colsIt, rows: rows });
+  });
+
+  if (P.bk && P.bk.length) {
+    var colsBk = cost ? [{ t: 'PEMESANAN', w: 58 }, { t: 'STATUS', w: 18 }, { t: 'BIAYA', w: 24, align: 'r' }] : [{ t: 'PEMESANAN', w: 78 }, { t: 'STATUS', w: 22 }],
+      bkMaxW = ((cost ? 58 : 78) * innerW) / 100 - 8,
+      bkRows = [];
+    P.bk.forEach(function (x) {
+      var tLines = mobWrapPdfText(x.title || '-', bkMaxW, false),
+        stTxt = x.paid ? 'Lunas' : 'Belum',
+        bTxt = cost ? amtFn(P, x.amt, x.fx) : '';
+      tLines.forEach(function (ln, idx) {
+        bkRows.push(cost ? [ln, idx === 0 ? stTxt : '', idx === 0 ? bTxt : ''] : [ln, idx === 0 ? stTxt : '']);
+      });
+    });
+    tables.push({ head: 'Pemesanan', cols: colsBk, rows: bkRows });
+  }
+
+  if (P.lk && P.lk.length) {
+    var lkTitleW = (35 * innerW) / 100 - 8,
+      lkUrlW = (65 * innerW) / 100 - 8,
+      lkRows = [];
+    P.lk.forEach(function (l) {
+      var tLines = mobWrapPdfText(l.title || '-', lkTitleW, false),
+        uLines = mobWrapPdfText(l.url || '', lkUrlW, false),
+        safeLk = l.url && typeof safeHref === 'function' ? safeHref(l.url) : '',
+        cnt = Math.max(tLines.length, uLines.length);
+      for (var k = 0; k < cnt; k++) {
+        var uTxt = uLines[k] || '';
+        lkRows.push([tLines[k] || '', (uTxt && safeLk) ? { t: uTxt, href: safeLk } : uTxt]);
+      }
+    });
+    tables.push({ head: 'Tautan penting', cols: [{ t: 'JUDUL', w: 35 }, { t: 'TAUTAN', w: 65 }], rows: lkRows });
+  }
+
+  var nDays = P.start && P.end && P.end >= P.start ? dayNo(P.end, P.start) + 1 : 0,
+    subParts = [];
+  if (P.start && P.end) subParts.push(fmtD(P.start) + ' – ' + fmtD(P.end) + ' · ' + nDays + ' hari');
+  else subParts.push('Itinerary Perjalanan');
+  if (cost && P.cur && P.rate) subParts.push('Kurs 1 ' + P.cur + ' = ' + rp(P.rate));
+  var summary = [['Kegiatan', String((P.it || []).length) + ' jadwal'], ['Pemesanan', String((P.bk || []).length) + ' item']];
+  if (cost) summary = summary.concat([['Total Rencana Biaya', rp(pl.t)], ['Sudah Dibayar', rp(pl.paid)]]);
+  return { filename: mobSafePdfFilename(P.name), title: P.name || 'Itinerary Perjalanan', subtitle: subParts.join(' · '), summary: summary, tables: tables };
+}
+
+function mobSetXlBusy(busy) {
+  MOB_XL_BUSY = !!busy;
+  if ($('m-btn-trip-xl')) $('m-btn-trip-xl').disabled = MOB_XL_BUSY;
+  if ($('m-btn-trip-tpl')) $('m-btn-trip-tpl').disabled = MOB_XL_BUSY;
 }
 
 function mobItemShade(cat, idx) {
@@ -306,6 +473,7 @@ function mobOpenSheet(id) {
 function mobCloseSheet(id) {
   var el = $(id);
   if (!el) return;
+  if (id === 'm-sheet-trip-xl') MOB_XL_DATA = null;
   var red = typeof rkIsReducedMotion === 'function' && rkIsReducedMotion();
   var wasOpen = el.classList.contains('open') && el.offsetWidth > 0 && !red;
   el.classList.remove('open', 'is-dragging');
@@ -637,6 +805,7 @@ function mobShellTemplate() {
     '<div class="pill-slider" id="m-rep-period-slider" style="margin-bottom:10px">' +
     '<button type="button" class="p-chip" data-mrep="d">Hari ini</button><button type="button" class="p-chip" data-mrep="w">Minggu ini</button><button type="button" class="p-chip active" data-mrep="m">Bulan ini</button><button type="button" class="p-chip" data-mrep="y">Tahun ini</button></div>' +
     '<div id="m-report-preview" class="stack" style="gap:10px"></div></div>' +
+    '<div class="m-set-build-ver" id="m-set-build-ver">Versi build: ' + esc((typeof window !== 'undefined' && window.RK_BUILD && window.RK_BUILD.id) ? window.RK_BUILD.id : 'dev') + '</div>' +
     '</div></section>' +
     '</main>' +
     '<button type="button" class="rk-btt-btn" id="m-btt-btn" aria-label="Kembali ke atas" title="Kembali ke atas">↑ Atas</button>' +
@@ -727,6 +896,26 @@ function mobShellTemplate() {
     '<div class="modal-backdrop" id="m-sheet-acct"><div class="modal-sheet"><div class="ms-handle"></div>' +
     '<div class="ms-head"><div style="display:flex;align-items:center;gap:10px"><span class="rk-brand-tile" style="width:32px;height:32px" aria-hidden="true"><svg viewBox="0 0 64 64"><use href="#rk-brand-symbol"/></svg></span><strong class="card-title">Akun &amp; Sinkron Cloud</strong></div><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-acct">✕</button></div>' +
     '<div class="ms-body" id="m-acct-body"></div></div></div>' +
+    '<div class="modal-backdrop" id="m-sheet-trip-share"><div class="modal-sheet"><div class="ms-handle"></div>' +
+    '<div class="ms-head"><strong class="card-title">Bagikan Itinerary</strong><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-trip-share" aria-label="Tutup">✕</button></div>' +
+    '<div class="ms-body">' +
+    '<label class="m-sh-check"><input type="checkbox" id="m-sh-inc-cost" checked /><span>Sertakan rincian biaya</span></label>' +
+    '<div class="stack" style="gap:8px">' +
+    '<button type="button" class="btn btn-primary" data-msh="wa">Kirim teks (WhatsApp)</button>' +
+    '<button type="button" class="btn btn-secondary" data-msh="copy">Salin teks</button>' +
+    '<button type="button" class="btn btn-secondary" data-msh="pdf">Simpan / bagikan PDF</button></div>' +
+    '<div class="m-sh-status" id="m-sh-status" role="status" aria-live="polite"></div></div>' +
+    '<div class="ms-foot"><button type="button" class="btn btn-secondary" data-mclose="m-sheet-trip-share">Tutup</button></div></div></div>' +
+    '<div class="modal-backdrop" id="m-sheet-trip-xl"><div class="modal-sheet"><div class="ms-handle"></div>' +
+    '<div class="ms-head"><strong class="card-title">Impor dari Excel</strong><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-trip-xl" aria-label="Tutup">✕</button></div>' +
+    '<form id="m-trip-xl-form" style="display:flex;flex-direction:column;min-height:0;flex:1" novalidate><div class="ms-body">' +
+    '<div class="m-xl-summary pv" id="m-xl-summary"></div>' +
+    '<div class="field"><label class="field-label" for="m-xl-name">Nama perjalanan</label><input class="input" id="m-xl-name" maxlength="30" placeholder="mis. Tokyo - Osaka" required /></div>' +
+    '<div class="bento-2"><div class="field"><label class="field-label" for="m-xl-cur">Mata uang</label><input class="input" id="m-xl-cur" maxlength="3" placeholder="JPY" style="text-transform:uppercase" /></div>' +
+    '<div class="field"><label class="field-label" for="m-xl-rate">Kurs (Rp / 1 unit)</label><input class="input mono" id="m-xl-rate" type="number" step="0.01" placeholder="110" /></div></div>' +
+    '<div class="m-xl-err" id="m-xl-err" role="alert"></div></div>' +
+    '<div class="ms-foot"><button type="button" class="btn btn-secondary" data-mclose="m-sheet-trip-xl">Batal</button><button type="submit" class="btn btn-primary" id="m-xl-submit">Impor</button></div></form></div></div>' +
+    '<input type="file" id="m-xl-file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden />' +
     '<div class="notif-popover" id="m-notif-popover"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:800;font-size:0.82rem">Pengingat Jatuh Tempo</span>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="m-pop-to-set">Atur Notif &rarr;</button></div><div id="m-pop-os-cta"></div><div class="stack" style="gap:7px" id="m-notif-pop-list"></div>' +
     '<button type="button" class="btn btn-primary btn-sm" style="width:100%;margin-top:8px" id="m-pop-preview">🔔 Preview Notif di Bar HP</button></div>' +
@@ -1852,8 +2041,11 @@ function renderMobTrip() {
 
   if (!tr || MOB_STATE.tripView === 'list') {
     root.innerHTML =
-      '<div class="card"><div class="card-hd"><div><h2 class="card-title">Semua Perjalanan</h2><div style="font-size:0.71rem;color:var(--text-muted)">' + list.length + ' profil perjalanan</div></div>' +
-      '<button type="button" class="btn btn-primary btn-sm" id="m-btn-trip-new">+ Perjalanan baru</button></div>' +
+      '<div class="card"><div class="m-trip-list-hd"><div><h2 class="card-title">Semua Perjalanan</h2><div style="font-size:0.71rem;color:var(--text-muted)">' + list.length + ' profil perjalanan</div></div>' +
+      '<div class="m-trip-list-actions">' +
+      '<button type="button" class="btn btn-primary btn-sm" id="m-btn-trip-new">+ Perjalanan baru</button>' +
+      '<button type="button" class="btn btn-secondary btn-sm" id="m-btn-trip-xl"' + (MOB_XL_BUSY ? ' disabled' : '') + '>Impor Excel</button>' +
+      '<button type="button" class="btn btn-secondary btn-sm" id="m-btn-trip-tpl"' + (MOB_XL_BUSY ? ' disabled' : '') + '>Template Excel</button></div></div>' +
       '<div class="stack" style="gap:9px">' +
       (list.length
         ? list.map(function (t) { return renderMobTripListCard(t, tr ? tr.id : ''); }).join('')
@@ -1965,9 +2157,9 @@ function renderMobTrip() {
       '<div style="display:flex;gap:6px"><input class="input" id="m-lk-url" inputmode="url" maxlength="400" placeholder="https://..." style="flex:1;min-width:0" required /><button type="submit" class="btn btn-primary">Tambah</button></div></form>' +
       '<div class="stack" style="gap:7px">' +
       (lk.length ? lk.map(function (x) {
-        var safeU = x.url && (typeof okUrl === 'function' ? okUrl(x.url) : /^https?:\/\/[^\s"'<>]+$/i.test(x.url));
+        var safeU = x.url && (typeof safeHref === 'function' ? safeHref(x.url) : '');
         var linkEl = safeU
-          ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener noreferrer" data-m-ext-url="' + esc(x.url) + '" class="m-ext-link">' + esc(x.title || x.url) + ' ↗</a>'
+          ? '<a href="' + esc(safeU) + '" target="_blank" rel="noopener noreferrer" data-m-ext-url="' + esc(safeU) + '" class="m-ext-link">' + esc(x.title || x.url) + ' ↗</a>'
           : '<span class="m-ext-link m-ext-link-invalid">' + esc(x.title || 'Tautan tidak valid') + '</span>';
         return '<div class="list-row">' + linkEl +
           '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);flex-shrink:0" data-mlk-del="' + esc(x.id) + '">Hapus</button></div>';
@@ -1978,9 +2170,11 @@ function renderMobTrip() {
   } else {
     var g = tr.goal, defT = g ? g.t : Math.max(1000000, Math.ceil(pl.t / 1000) * 1000), curM = todayISO().slice(0, 7), toM = tr.start && tr.start.slice(0, 7) >= curM ? tr.start.slice(0, 7) : (S.year + '-12');
     if (g && !MOB_STATE.tripGoalEdit) {
-      var perG = typeof goalPlan === 'function' ? goalPlan(g).per : (g.per || 0);
-      // Rumus terkumpul disamakan persis dengan desktop aktif browser-app.js:2849 (kandidat perbaikan bersama)
-      var gotG = Math.min(g.t, (g.s0 || 0) + perG), pctG = g.t ? Math.min(100, Math.round((gotG / g.t) * 100)) : 0;
+      var perG = typeof goalPlan === 'function' ? goalPlan(g).per : (g.per || 0),
+        gsG = typeof goalSavedNow === 'function'
+          ? goalSavedNow({ t: g.t, s0: g.s0, from: g.from, to: g.to, per: perG }, todayISO())
+          : { got: Math.min(g.t, (g.s0 || 0) + perG), pct: g.t ? Math.min(100, Math.round((Math.min(g.t, (g.s0 || 0) + perG) / g.t) * 100)) : 0 },
+        gotG = gsG.got, pctG = gsG.pct;
       body =
         '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Target Tabungan</h3><p class="msc-sub">Sisihan dana bulanan sebelum berangkat</p></div>' +
         '<span class="badge ' + (g.link ? 'b-em' : 'b-nt') + '">' + (g.link ? 'Tersambung ke Rincian' : 'Hanya Pencatat') + '</span></div>' +
@@ -2007,10 +2201,10 @@ function renderMobTrip() {
     '<button type="button" class="p-chip" data-mtrip-list="1">&larr; Semua (' + list.length + ')</button>' +
     list.map(function (t) { return '<button type="button" class="p-chip ' + (t.id === tr.id ? 'active' : '') + '" data-mtrip-sel="' + esc(t.id) + '">' + esc(t.name) + '</button>'; }).join('') +
     '<button type="button" class="p-chip" id="m-btn-trip-new-pill" style="border-style:dashed;color:var(--accent-ink)">＋ Perjalanan Baru</button></div>' +
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px"><div><strong style="font-size:0.96rem">' + esc(tr.name) + '</strong>' +
+    '<div class="m-trip-det-hd"><div class="m-trip-title-wrap"><strong style="font-size:0.96rem">' + esc(tr.name) + '</strong>' +
     '<div style="font-size:0.71rem;color:var(--text-muted)">' + (tr.start && tr.end ? fmtD(tr.start) + ' – ' + fmtD(tr.end) : 'Tanggal belum diisi') +
     (tr.cur && tr.rate ? ' &middot; Kurs 1 ' + esc(tr.cur) + ' = <span class="mono pv">Rp ' + (+tr.rate).toLocaleString('id-ID') + '</span>' : '') + '</div></div>' +
-    '<div style="display:flex;gap:5px;flex-shrink:0"><button type="button" class="btn btn-secondary btn-sm" id="m-btn-trip-edit">Ubah</button><button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson)" data-mtrip-del="' + esc(tr.id) + '">Hapus</button></div></div>' +
+    '<div class="m-trip-hd-actions"><button type="button" class="btn btn-secondary btn-sm" id="m-btn-trip-share">Bagikan</button><button type="button" class="btn btn-secondary btn-sm" id="m-btn-trip-edit">Ubah</button><button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson)" data-mtrip-del="' + esc(tr.id) + '">Hapus</button></div></div>' +
     '<div class="pill-slider">' + subTabs.map(function (st) { return '<button type="button" class="p-chip ' + (MOB_STATE.tripSub === st[0] ? 'active' : '') + '" data-mtripsub="' + st[0] + '">' + st[1] + '</button>'; }).join('') + '</div></div>' + body;
 }
 
@@ -2233,6 +2427,7 @@ function renderMobSettings() {
       : '<div style="font-size:0.78rem;color:var(--text-muted);text-align:center;padding:8px">Semua tagihan terdekat aman!</div>';
   }
   if ($('m-btn-mark-late')) $('m-btn-mark-late').style.display = due.some(function (x) { return x.diff < 0; }) ? 'block' : 'none';
+  if ($('m-set-build-ver')) $('m-set-build-ver').textContent = 'Versi build: ' + ((typeof window !== 'undefined' && window.RK_BUILD && window.RK_BUILD.id) ? window.RK_BUILD.id : 'dev');
   renderMobReportPreview(MOB_STATE.repKind);
 }
 
@@ -3632,6 +3827,97 @@ function bindMobileShellEvents(root) {
       mobOpenSheet('m-sheet-trip');
       return;
     }
+    if (e.target.closest('#m-btn-trip-share')) {
+      if ($('m-sh-inc-cost')) $('m-sh-inc-cost').checked = true;
+      if ($('m-sh-status')) $('m-sh-status').textContent = '';
+      mobOpenSheet('m-sheet-trip-share');
+      return;
+    }
+    var mShAct = e.target.closest('#m-sheet-trip-share [data-msh]');
+    if (mShAct) {
+      var trSh = mobActiveTrip();
+      if (!trSh) return;
+      var incCostM = $('m-sh-inc-cost') ? !!$('m-sh-inc-cost').checked : true,
+        sKindM = mShAct.getAttribute('data-msh'),
+        setShSt = function (msg) { if ($('m-sh-status')) $('m-sh-status').textContent = msg; };
+      if (sKindM === 'pdf') {
+        if (typeof tripPdfData !== 'function' || typeof repPdf !== 'function' || typeof rkDownloadBlob !== 'function') {
+          setShSt('Pembuat PDF tidak tersedia.');
+          return;
+        }
+        var repT = tripPdfData(trSh, incCostM),
+          bytesT = repPdf(repT),
+          dlResT = rkDownloadBlob(repT.filename, bytesT, 'application/pdf'),
+          nonLatinT = mobTripHasNonWinAnsi(trSh),
+          nonLatinNote = nonLatinT ? ' Catatan: karakter non-Latin tampil \'?\' di PDF; gunakan Kirim/Salin teks untuk teks lengkap.' : '';
+        setShSt('Membuka dialog berbagi / menyimpan PDF (' + repT.filename + ')...');
+        Promise.resolve((dlResT && dlResT.done) ? dlResT.done : dlResT).then(function (resD) {
+          var okD = resD && resD.ok !== false, mD = (resD && resD.method) || (dlResT && dlResT.method) || 'blob';
+          if (okD) {
+            setShSt('PDF berhasil dikirim lewat ' + mD + ' (' + repT.filename + ').' + nonLatinNote);
+          } else if (resD && resD.cancelled) {
+            setShSt('Pengiriman PDF dibatalkan.' + nonLatinNote);
+          } else {
+            var errS = (resD && resD.error) ? ' (' + resD.error + ')' : '';
+            setShSt('Gagal mengirim PDF' + errS + '. Gunakan "Salin teks" untuk teks lengkap.' + nonLatinNote);
+          }
+        });
+        return;
+      }
+      var txtShM = typeof tripText === 'function' ? tripText(trSh, incCostM) : trSh.name;
+      if (sKindM === 'wa') {
+        if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+          Promise.resolve(navigator.share({ title: trSh.name, text: txtShM }))
+            .then(function () { setShSt('Dialog berbagi dibuka.'); })
+            .catch(function (err) {
+              if (!err || err.name !== 'AbortError') setShSt('Berbagi gagal. Gunakan "Salin teks" lalu tempel di WhatsApp.');
+            });
+          return;
+        }
+        var waUrl = 'https://wa.me/?text=' + encodeURIComponent(txtShM);
+        if (waUrl.length > MOB_WA_URL_MAX) {
+          setShSt('Teks terlalu panjang untuk tautan WhatsApp (' + waUrl.length + ' karakter). Gunakan "Salin teks" lalu tempel di WhatsApp.');
+          return;
+        }
+        mobOpenExternalUrl(waUrl);
+        setShSt('Membuka WhatsApp...');
+      } else if (typeof copyText === 'function') {
+        copyText(txtShM).then(function () {
+          setShSt('Teks disalin. Tinggal tempel di WhatsApp atau catatan.');
+          showMobToast('Itinerary disalin');
+        });
+      }
+      return;
+    }
+    if (e.target.closest('#m-btn-trip-xl')) {
+      if (!MOB_XL_BUSY && $('m-xl-file')) $('m-xl-file').click();
+      return;
+    }
+    if (e.target.closest('#m-btn-trip-tpl')) {
+      if (MOB_XL_BUSY || typeof loadXlsx !== 'function') return;
+      mobSetXlBusy(true);
+      mobLoadXlsxWithTimeout().then(function (X) {
+        var wb = typeof xlBuildTemplateWb === 'function' ? xlBuildTemplateWb(X) : null;
+        if (!wb || typeof X.write !== 'function') throw new Error('Pustaka Excel gagal dimuat. Periksa koneksi internet.');
+        var arr = X.write(wb, { bookType: 'xlsx', type: 'array' });
+        var bytes = arr instanceof Uint8Array ? arr : new Uint8Array(arr);
+        var dlTplRes = typeof rkDownloadBlob === 'function'
+          ? rkDownloadBlob('template-itinerary.xlsx', bytes, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+          : { ok: false, method: 'none' };
+        mobSetXlBusy(false);
+        return Promise.resolve((dlTplRes && dlTplRes.done) ? dlTplRes.done : dlTplRes).then(function (resT) {
+          if (resT && resT.ok === false) {
+            showMobToast(resT.cancelled ? 'Pengiriman template dibatalkan.' : 'Gagal mengirim template Excel.');
+          } else {
+            showMobToast('Template Excel dikirim (' + ((resT && resT.method) || (dlTplRes && dlTplRes.method) || 'blob') + ').');
+          }
+        });
+      }).catch(function (err) {
+        mobSetXlBusy(false);
+        showMobToast((err && err.message) || 'Pustaka Excel gagal dimuat. Periksa koneksi internet.');
+      });
+      return;
+    }
     if (e.target.closest('#m-btn-trip-edit')) {
       var trE = mobActiveTrip();
       if (!trE) return;
@@ -3875,6 +4161,44 @@ function bindMobileShellEvents(root) {
     } else if (t.hasAttribute && t.hasAttribute('data-mck-tog')) {
       var trc = mobActiveTrip(), c0 = trc && trc.ck.find(function (x) { return x.id === t.getAttribute('data-mck-tog'); });
       if (c0) { c0.done = t.checked; save(); mobPreserveScroll(function () { syncUI(); }); }
+    } else if (t.id === 'm-xl-file') {
+      var fXl = t.files && t.files[0];
+      try { t.value = ''; } catch (err) {}
+      if (!fXl || MOB_XL_BUSY || typeof loadXlsx !== 'function' || typeof xlParse !== 'function') return;
+      mobSetXlBusy(true);
+      mobLoadXlsxWithTimeout().then(function (X) {
+        var fr = new FileReader();
+        fr.onload = function () {
+          mobSetXlBusy(false);
+          try {
+            var dXl = xlParse(X.read(fr.result, { type: 'array', cellDates: true }));
+            if (!dXl.it.length && !dXl.bk.length) {
+              showMobToast('Format tidak dikenali. Unduh Template Excel lalu isi sesuai kolomnya.');
+              return;
+            }
+            MOB_XL_DATA = dXl;
+            if ($('m-xl-summary')) $('m-xl-summary').textContent = typeof xlSummaryText === 'function' ? xlSummaryText(dXl) : (dXl.it.length + ' kegiatan, ' + dXl.bk.length + ' pemesanan.');
+            if ($('m-xl-name')) $('m-xl-name').value = (fXl.name || 'Perjalanan').replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim().slice(0, 30);
+            if ($('m-xl-cur')) $('m-xl-cur').value = dXl.cur || (dXl.fx ? 'JPY' : '');
+            if ($('m-xl-rate')) $('m-xl-rate').value = '';
+            if ($('m-xl-err')) $('m-xl-err').textContent = '';
+            mobOpenSheet('m-sheet-trip-xl');
+          } catch (err) {
+            MOB_XL_DATA = null;
+            showMobToast('File tidak bisa dibaca. Coba simpan ulang sebagai .xlsx.');
+          }
+        };
+        fr.onerror = function () {
+          mobSetXlBusy(false);
+          MOB_XL_DATA = null;
+          showMobToast('File tidak dapat dibaca.');
+        };
+        fr.readAsArrayBuffer(fXl);
+      }).catch(function (err) {
+        mobSetXlBusy(false);
+        MOB_XL_DATA = null;
+        showMobToast((err && err.message) || 'Pustaka Excel gagal dimuat. Periksa koneksi internet.');
+      });
     } else if (t.id === 'm-kp-use-budget') {
       syncMobTripBudgetWrap();
     } else if (t.dataset && t.dataset.mdtDay != null) {
@@ -3963,8 +4287,18 @@ function bindMobileShellEvents(root) {
       }
       var useB = $('m-kp-use-budget') && $('m-kp-use-budget').value === '1',
         cur = ($('m-kp-cur') && $('m-kp-cur').value.trim().toUpperCase()) || '',
-        rt = parseFloat($('m-kp-rate') && $('m-kp-rate').value) || 0,
+        rtRaw = $('m-kp-rate') && $('m-kp-rate').value,
+        rt = parseFloat(String(rtRaw || '').replace(',', '.')) || 0,
         stD = $('m-kp-start').value || '', enD = $('m-kp-end').value || '', budV = useB ? getRpVal('m-kp-budget') : 0;
+      var metaErrM = typeof tripValidateMetaInput === 'function' ? tripValidateMetaInput(stD, enD, cur, rtRaw) : null;
+      if (metaErrM) {
+        if (typeof rkShakeInvalid === 'function') {
+          var badM = metaErrM.field === 'end' ? ($('m-kp-end-trig') || $('m-kp-name')) : metaErrM.field === 'cur' ? $('m-kp-cur') : $('m-kp-rate');
+          rkShakeInvalid(badM);
+        }
+        showMobToast(metaErrM.error);
+        return;
+      }
       if (MOB_STATE.tripModalMode === 'edit' && mobActiveTrip()) {
         Object.assign(mobActiveTrip(), { name: tnm, start: stD, end: enD, budget: budV, cur: cur, rate: cur ? rt : 0 });
       } else {
@@ -4038,6 +4372,12 @@ function bindMobileShellEvents(root) {
         a: ($('m-bk-start') && $('m-bk-start').value) || '',
         b: ($('m-bk-end') && $('m-bk-end').value) || '',
       };
+      var bkDtErrM = typeof tripValidateDates === 'function' ? tripValidateDates(patchBkM.a, patchBkM.b) : null;
+      if (bkDtErrM) {
+        if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-bk-end-trig') || $('m-bk-title'));
+        showMobToast(bkDtErrM.error);
+        return;
+      }
       if (MOB_STATE.tripEditBk) {
         trB.bk = trB.bk.map(function (x) { return x.id === MOB_STATE.tripEditBk ? Object.assign({}, x, patchBkM) : x; });
         MOB_STATE.tripEditBk = null;
@@ -4112,6 +4452,32 @@ function bindMobileShellEvents(root) {
       trG.goal = { t: gc.t, s0: gc.s0, from: gc.from, to: gc.to, per: gc.per, link: gc.link };
       MOB_STATE.tripGoalEdit = false;
       save(); syncUI(); showMobToast('Target tabungan disimpan');
+    } else if (f.id === 'm-trip-xl-form') {
+      if (!MOB_XL_DATA || typeof xlValidateMeta !== 'function' || typeof xlBuildProfile !== 'function') return;
+      var valXl = xlValidateMeta(MOB_XL_DATA, $('m-xl-name') && $('m-xl-name').value, $('m-xl-cur') && $('m-xl-cur').value, $('m-xl-rate') && $('m-xl-rate').value);
+      if (valXl.error) {
+        if ($('m-xl-err')) $('m-xl-err').textContent = valXl.error;
+        if (typeof rkShakeInvalid === 'function') {
+          var badEl = !$('m-xl-name').value.trim() ? $('m-xl-name') : (/kurs/i.test(valXl.error) ? $('m-xl-rate') : $('m-xl-cur'));
+          rkShakeInvalid(badEl);
+        }
+        return;
+      }
+      var dXlOk = MOB_XL_DATA,
+        builtXl = xlBuildProfile(dXlOk, valXl.name, valXl.cur, valXl.rate);
+      MOB_XL_DATA = null;
+      ALL.kas.pr[builtXl.id] = builtXl.profile;
+      MOB_STATE.tripId = builtXl.id;
+      MOB_STATE.tripView = 'detail';
+      MOB_STATE.tripSub = 'ring';
+      MOB_STATE.tripEditIt = null;
+      MOB_STATE.tripEditBk = null;
+      MOB_STATE.tripGoalEdit = false;
+      mobCloseSheet('m-sheet-trip-xl');
+      save();
+      if (MOB_STATE.tab !== 'trip') switchMobileTab('trip');
+      else syncUI();
+      showMobToast('Perjalanan diimpor: ' + dXlOk.it.length + ' kegiatan, ' + dXlOk.bk.length + ' pemesanan.');
     }
   });
 }

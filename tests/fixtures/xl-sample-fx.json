@@ -1,0 +1,17 @@
+{
+  "SheetNames": ["Itinerary"],
+  "rowsBySheet": {
+    "Itinerary": [
+      ["Catatan kurs: harga lokal dalam yen"],
+      ["Tanggal", "Jam", "Keterangan", "Biaya"],
+      ["2026-01-26", "", "DAY 1 Tiba di Bandara Haneda", ""],
+      ["", "", "Selasa", ""],
+      ["2026-01-26", "20.00-21.50", "Bandara Haneda https://maps.google.com/?q=haneda", 1200],
+      ["2026-01-27", "", "DAY 2 Jelajah Asakusa", ""],
+      ["2026-01-27", "09.00-11.00", "Senso-ji & camilan", "¥ 1.800"],
+      ["", "", "TOTAL", ""],
+      ["", "", "Pengeluaran", ""],
+      ["", "", "Hotel Shinjuku", 2500000]
+    ]
+  }
+}

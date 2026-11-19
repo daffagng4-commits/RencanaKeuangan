@@ -1127,7 +1127,7 @@
           <span class="badge badge-neutral">IMPOR</span>
         </button>
         <input type="file" id="fi" accept=".json,.csv,text/csv,application/json" hidden />
-        <input type="file" id="xlf" accept=".xlsx,.xls,.csv" hidden />
+        <input type="file" id="xlf" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden />
         <div class="err" id="xm"></div>
       </div>
     </div>
@@ -1224,6 +1224,40 @@
       <div class="modal-foot">
         <button type="button" class="btn btn-secondary" data-close-modal="modal-trip-share">Tutup</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 8b. Modal Impor Excel Perjalanan (mata uang asing) (#modal-trip-xl) -->
+  <div class="modal-backdrop" id="modal-trip-xl" role="dialog" aria-modal="true" aria-labelledby="br-xl-title" hidden>
+    <div class="modal-box" style="max-width: 460px;">
+      <div class="modal-head">
+        <h3 class="card-title" id="br-xl-title">Impor dari Excel</h3>
+        <button type="button" class="topbar-btn" style="width:32px; padding:0;" data-close-modal="modal-trip-xl" aria-label="Tutup">✕</button>
+      </div>
+      <form id="trip-xl-form" novalidate>
+        <div class="modal-body">
+          <div class="sub pv" id="br-xl-summary" style="padding:10px 12px;border-radius:10px;background:var(--bg-muted-row);line-height:1.45;"></div>
+          <div class="field">
+            <label class="field-label" for="br-xl-name">Nama perjalanan</label>
+            <input class="input" id="br-xl-name" maxlength="30" required />
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label class="field-label" for="br-xl-cur">Mata uang</label>
+              <input class="input" id="br-xl-cur" maxlength="3" placeholder="JPY" style="text-transform:uppercase;" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="br-xl-rate">Kurs (Rp / 1 unit)</label>
+              <input class="input mono" id="br-xl-rate" type="number" step="0.01" placeholder="110" />
+            </div>
+          </div>
+          <div id="br-xl-err" role="alert" style="color:var(--crimson);font-size:0.82rem;font-weight:600;min-height:1.1em;"></div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-secondary" data-close-modal="modal-trip-xl">Batal</button>
+          <button type="submit" class="btn btn-primary" id="br-xl-submit">Impor</button>
+        </div>
+      </form>
     </div>
   </div>
 

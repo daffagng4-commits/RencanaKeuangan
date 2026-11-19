@@ -155,6 +155,14 @@ function okUrl(u) {
   return /^https?:\/\/[^\s"'<>]+$/i.test(u || '');
 }
 
+/** Kembalikan URL http(s) yang aman dipakai pada atribut href atau anotasi URI PDF; selain itu ''. */
+function safeHref(u) {
+  var s = String(u == null ? '' : u).trim();
+  if (!/^https?:\/\/[^/\s"'<>]+/i.test(s)) return '';
+  if (/[\u0000-\u001f\u007f"'<>]/.test(s)) return '';
+  return s;
+}
+
 /** Catatan Kas: {pr:{[id]:{id,name,saldo,tx:[{id,d,t,amt,cat,note}]}}}. Selalu ada minimal satu profil. */
 function normKas(k) {
   var pr = {};

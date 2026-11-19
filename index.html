@@ -6415,6 +6415,90 @@ body[data-shell="mobile-app"] #mobile-app-shell .m-ext-link-invalid {
   }
 }
 
+/* Mode Perjalanan Tahap 4: Header Daftar/Detail, Sheet Bagikan, Sheet Impor Excel */
+body[data-shell="mobile-app"] #mobile-app-shell .m-trip-list-hd {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-trip-list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-trip-det-hd {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-trip-title-wrap {
+  flex: 1 1 170px;
+  min-width: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-trip-hd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-trip-hd-actions .btn-sm::before,
+body[data-shell="mobile-app"] #mobile-app-shell .m-trip-list-actions .btn-sm::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-sh-check {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--bg-muted-row);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-sh-check::before {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-sh-status {
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  min-height: 1.2em;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-xl-summary {
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--bg-muted-row);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-xl-err {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--crimson);
+  min-height: 1.1em;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-set-build-ver {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.70rem;
+  color: var(--text-muted);
+  padding: 2px 0 8px;
+}
+
 body[data-shell="mobile-app"] #mobile-app-shell .sec-hidden { display: none !important; }
 
 body[data-shell="mobile-app"] #mobile-app-shell .chart-stage,
@@ -7523,7 +7607,7 @@ body[data-shell="mobile-app"] #mobile-app-shell #m-svg-sim-chart {
           <span class="badge badge-neutral">IMPOR</span>
         </button>
         <input type="file" id="fi" accept=".json,.csv,text/csv,application/json" hidden />
-        <input type="file" id="xlf" accept=".xlsx,.xls,.csv" hidden />
+        <input type="file" id="xlf" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden />
         <div class="err" id="xm"></div>
       </div>
     </div>
@@ -7623,6 +7707,40 @@ body[data-shell="mobile-app"] #mobile-app-shell #m-svg-sim-chart {
     </div>
   </div>
 
+  <!-- 8b. Modal Impor Excel Perjalanan (mata uang asing) (#modal-trip-xl) -->
+  <div class="modal-backdrop" id="modal-trip-xl" role="dialog" aria-modal="true" aria-labelledby="br-xl-title" hidden>
+    <div class="modal-box" style="max-width: 460px;">
+      <div class="modal-head">
+        <h3 class="card-title" id="br-xl-title">Impor dari Excel</h3>
+        <button type="button" class="topbar-btn" style="width:32px; padding:0;" data-close-modal="modal-trip-xl" aria-label="Tutup">✕</button>
+      </div>
+      <form id="trip-xl-form" novalidate>
+        <div class="modal-body">
+          <div class="sub pv" id="br-xl-summary" style="padding:10px 12px;border-radius:10px;background:var(--bg-muted-row);line-height:1.45;"></div>
+          <div class="field">
+            <label class="field-label" for="br-xl-name">Nama perjalanan</label>
+            <input class="input" id="br-xl-name" maxlength="30" required />
+          </div>
+          <div class="grid-2">
+            <div class="field">
+              <label class="field-label" for="br-xl-cur">Mata uang</label>
+              <input class="input" id="br-xl-cur" maxlength="3" placeholder="JPY" style="text-transform:uppercase;" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="br-xl-rate">Kurs (Rp / 1 unit)</label>
+              <input class="input mono" id="br-xl-rate" type="number" step="0.01" placeholder="110" />
+            </div>
+          </div>
+          <div id="br-xl-err" role="alert" style="color:var(--crimson);font-size:0.82rem;font-weight:600;min-height:1.1em;"></div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-secondary" data-close-modal="modal-trip-xl">Batal</button>
+          <button type="submit" class="btn btn-primary" id="br-xl-submit">Impor</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- 9. Modal Laporan Keuangan (#modal-report) -->
   <div class="modal-backdrop" id="modal-report" role="dialog" aria-modal="true" aria-labelledby="rep-m-title" hidden>
     <div class="modal-box" style="max-width: 720px;">
@@ -7658,6 +7776,7 @@ body[data-shell="mobile-app"] #mobile-app-shell #m-svg-sim-chart {
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js" integrity="sha384-GFr3yTh5lJznCbZfpTtXnwboFsxqtTQoeTZCRHhE0579KrRmlCzen5AA8ohaB5ug" crossorigin="anonymous"></script>
 <script>
+window.RK_BUILD = {"id":"dev","run":"","sha":"","time":"dev"};
 /* ===== js/config.js ===== */
 /**
  * Konfigurasi Supabase. HANYA file ini yang perlu Anda edit. Isi SB_URL (hanya https://xxxx.supabase.co) dan SB_KEY (Publishable key). Jangan pernah memakai kunci secret.
@@ -8231,6 +8350,14 @@ function norm(a) {
 /** URL http(s) yang aman dipakai sebagai tautan. */
 function okUrl(u) {
   return /^https?:\/\/[^\s"'<>]+$/i.test(u || '');
+}
+
+/** Kembalikan URL http(s) yang aman dipakai pada atribut href atau anotasi URI PDF; selain itu ''. */
+function safeHref(u) {
+  var s = String(u == null ? '' : u).trim();
+  if (!/^https?:\/\/[^/\s"'<>]+/i.test(s)) return '';
+  if (/[\u0000-\u001f\u007f"'<>]/.test(s)) return '';
+  return s;
 }
 
 /** Catatan Kas: {pr:{[id]:{id,name,saldo,tx:[{id,d,t,amt,cat,note}]}}}. Selalu ada minimal satu profil. */
@@ -15163,24 +15290,40 @@ function rkDownloadBlob(name, data, mime) {
       try {
         var f = new File([blob], name, { type: type });
         if (navigator.canShare({ files: [f] })) {
-          navigator.share({ files: [f], title: name }).catch(function () {});
-          return { ok: true, method: 'share' };
+          var shareDone = Promise.resolve(navigator.share({ files: [f], title: name })).then(
+            function () { return { ok: true, method: 'share' }; },
+            function (err) {
+              var cancelled = !!(err && err.name === 'AbortError');
+              return { ok: false, method: 'share', cancelled: cancelled, error: (err && err.message) || String(err || 'Gagal membagikan file') };
+            }
+          );
+          return { ok: true, method: 'share', done: shareDone };
         }
       } catch (e) {}
     }
     try {
       var fr = new FileReader();
-      fr.onload = function () {
-        if (typeof fr.result === 'string') triggerHref(fr.result, false);
-      };
-      fr.readAsDataURL(blob);
-      return { ok: true, method: 'data-url' };
+      var dataDone = new Promise(function (resolve) {
+        fr.onload = function () {
+          if (typeof fr.result === 'string') {
+            triggerHref(fr.result, false);
+            resolve({ ok: true, method: 'data-url' });
+          } else {
+            resolve({ ok: false, method: 'data-url', error: 'Hasil unduhan tidak valid.' });
+          }
+        };
+        fr.onerror = function () {
+          resolve({ ok: false, method: 'data-url', error: 'Gagal membaca data file.' });
+        };
+        fr.readAsDataURL(blob);
+      });
+      return { ok: true, method: 'data-url', done: dataDone };
     } catch (e) {}
   }
 
   var url = URL.createObjectURL(blob);
   triggerHref(url, true);
-  return { ok: true, method: 'blob' };
+  return { ok: true, method: 'blob', done: Promise.resolve({ ok: true, method: 'blob' }) };
 }
 
 /** Unduh file; bila tidak bisa, isinya ditaruh di kolom teks agar bisa disalin. */
@@ -17543,8 +17686,9 @@ function amtTxt(P, v, fx) {
   return fx && P.cur ? fxs(P, v) + (P.rate ? ' <span class="sub">&asymp; ' + rp(val(P, v, fx)) + '</span>' : '') : rp(v);
 }
 function lnk(u) {
-  if (!okUrl(u)) return '';
-  return '<a class="lnk" href="' + esc(u) + '" target="_blank" rel="noopener noreferrer">' + (/maps|goo\.gl/i.test(u) ? 'Peta' : /youtu/i.test(u) ? 'Video' : 'Buka') + ' &#8599;</a>';
+  var su = typeof safeHref === 'function' ? safeHref(u) : '';
+  if (!su) return '';
+  return '<a class="lnk" href="' + esc(su) + '" target="_blank" rel="noopener noreferrer">' + (/maps|goo\.gl/i.test(su) ? 'Peta' : /youtu/i.test(su) ? 'Video' : 'Buka') + ' &#8599;</a>';
 }
 function pchip(p) {
   return p ? '<span class="chp ' + p + '">' + PAYL[p] + '</span>' : '';
@@ -18166,6 +18310,35 @@ function goalCompute(t, s0, from, to, link) {
     n: n,
     per: n && tv > sv ? Math.ceil((tv - sv) / n / 1000) * 1000 : 0,
   };
+}
+/** Hitung akumulasi dana terkumpul target tabungan sampai bulan refIso ('YYYY-MM-DD' / 'YYYY-MM'); dipakai desktop & APK. */
+function goalSavedNow(g, refIso) {
+  if (!g || typeof g !== 'object') return { got: 0, el: 0, totalMonths: 0, pct: 0 };
+  var t = +g.t > 0 ? +g.t : 0,
+    s0 = +g.s0 > 0 ? +g.s0 : 0,
+    per = +g.per > 0 ? +g.per : 0,
+    cm = String(refIso || (typeof todayISO === 'function' ? todayISO() : '')).slice(0, 7),
+    ms = g.from && g.to && /^\d{4}-\d{2}$/.test(g.from) && /^\d{4}-\d{2}$/.test(g.to) && g.to >= g.from ? monthList(g.from, g.to) : [],
+    el = cm ? ms.filter(function (k) { return k <= cm; }).length : 0,
+    got = Math.min(t, s0 + per * el),
+    pct = t > 0 ? Math.min(100, Math.round((got / t) * 100)) : 0;
+  return { got: got, el: el, totalMonths: ms.length, pct: pct };
+}
+/** Validasi rentang tanggal (bila keduanya diisi dan b < a). */
+function tripValidateDates(a, b) {
+  var sa = String(a || '').trim(), sb = String(b || '').trim();
+  if (sa && sb && sb < sa) return { field: 'end', error: 'Tanggal selesai tidak boleh sebelum tanggal mulai.' };
+  return null;
+}
+/** Validasi minimal profil perjalanan untuk desktop dan APK. */
+function tripValidateMetaInput(start, end, curRaw, rateRaw) {
+  var dtErr = tripValidateDates(start, end);
+  if (dtErr) return dtErr;
+  var cu = String(curRaw == null ? '' : curRaw).trim().toUpperCase();
+  if (cu && !/^[A-Z]{3}$/.test(cu)) return { field: 'cur', error: 'Mata uang terdiri dari 3 huruf, mis. JPY.' };
+  var rt = parseFloat(String(rateRaw == null ? '' : rateRaw).replace(',', '.')) || 0;
+  if (cu && !(rt > 0)) return { field: 'rate', error: 'Isi kurs: berapa rupiah untuk 1 ' + cu + '.' };
+  return null;
 }
 function goalCalc() {
   return goalCompute(
@@ -18864,6 +19037,66 @@ function xlParse(wb) {
   out.end = ds[ds.length - 1] || '';
   return out;
 }
+/** Ringkasan data Excel hasil xlParse untuk dialog pratinjau impor. */
+function xlSummaryText(d) {
+  var a = 0, b = 0;
+  (d.bk || []).forEach(function (x) { if (x.fx) b += x.amt; else a += x.amt; });
+  (d.it || []).forEach(function (x) { if (x.pay === 'on') return; if (x.fx) b += x.est; else a += x.est; });
+  return d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan, ' + Object.keys(d.dt || {}).length + ' judul hari' +
+    (d.start ? ' · ' + fmtD(d.start) + ' – ' + fmtD(d.end) : '') + '.' +
+    ' Perkiraan biaya: ' + rp(a) + (b ? ' + ' + b.toLocaleString('id-ID') + ' dalam mata uang asing' : '') + '.' +
+    (d.fx ? ' Isi kode dan kurs mata uang asing.' : '');
+}
+/** Validasi metadata profil sebelum membuat profil perjalanan dari Excel. */
+function xlValidateMeta(d, nama, curRaw, kursRaw) {
+  var n = String(nama == null ? '' : nama).trim().slice(0, 30),
+    cu = String(curRaw == null ? '' : curRaw).trim().toUpperCase(),
+    rt = parseFloat(String(kursRaw == null ? '' : kursRaw).replace(',', '.')) || 0;
+  if (!d) return { error: '' };
+  if (!n) return { error: 'Nama perjalanan belum diisi.' };
+  if (d.fx && !cu) return { error: 'Ada biaya mata uang asing (mis. yen). Isi kodenya, misalnya JPY.' };
+  if (cu && !/^[A-Z]{3}$/.test(cu)) return { error: 'Mata uang terdiri dari 3 huruf, mis. JPY.' };
+  if (cu && !(rt > 0)) return { error: 'Isi kurs: berapa rupiah untuk 1 ' + cu + '.' };
+  return { error: '', name: n, cur: cu, rate: cu ? rt : 0 };
+}
+/** Bentuk profil perjalanan unik dari hasil xlParse + metadata. */
+function xlBuildProfile(d, nama, cur, kurs) {
+  var base = String(nama == null ? '' : nama).trim().slice(0, 30) || 'Perjalanan Impor',
+    nm = base, k = 2;
+  while (trips().some(function (x) { return x.name.toLowerCase() === nm.toLowerCase(); })) nm = base.slice(0, 26) + ' (' + k++ + ')';
+  var id = 'p' + Date.now().toString(36);
+  if (ALL && ALL.kas && ALL.kas.pr && ALL.kas.pr[id]) id = kid('p');
+  var re = function (a, p) { return (a || []).map(function (x) { return Object.assign({}, x, { id: kid(p) }); }); },
+    cu = String(cur == null ? '' : cur).trim().toUpperCase(),
+    rt = parseFloat(String(kurs == null ? '' : kurs).replace(',', '.')) || 0;
+  return {
+    id: id,
+    profile: {
+      id: id, name: nm, saldo: 0, link: false,
+      start: d.start, end: d.end, budget: 0,
+      cur: cu, rate: cu ? rt : 0,
+      dt: d.dt, tx: [],
+      it: re(d.it, 'i'), bk: re(d.bk, 'b'), lk: re(d.lk, 'l'),
+      ck: [], note: '', goal: null,
+    },
+  };
+}
+/** Bentuk workbook template Excel standar (dipakai desktop writeFile & APK rkDownloadBlob). */
+function xlBuildTemplateWb(X) {
+  var wb = X.utils.book_new();
+  X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([
+    ['Tanggal', 'Jam', 'Kegiatan', 'Kategori', 'Biaya', 'Mata uang', 'Pembayaran', 'Tautan', 'Catatan'],
+    ['', '', 'DAY 1 Jakarta - Tokyo', '', '', '', '', '', 'Baris "DAY n judul" menjadi judul hari'],
+    ['2026-01-27', '07.30-09.00', 'Sarapan di konbini', 'Makan', 500, 'JPY', 'Kartu IC', '', ''],
+    ['', '10.00-12.00', 'Tokyo Tower', 'Tiket & Tour', 1200, 'JPY', 'Cash', 'https://maps.app.goo.gl/contoh', 'Tanggal kosong = ikut baris di atasnya'],
+  ]), 'Itinerary');
+  X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([
+    ['Nama', 'Kategori', 'Jumlah', 'Mata uang', 'Pembayaran', 'Lunas', 'Tautan', 'Catatan'],
+    ['Tiket pesawat PP', 'Transport', 6500000, 'IDR', 'Online', 'Ya', '', ''],
+    ['Hotel 4 malam', 'Penginapan', 1800000, 'IDR', 'Online', 'Belum', '', ''],
+  ]), 'Pemesanan');
+  return wb;
+}
 function xlPick(e) {
   var f = e.target.files[0];
   e.target.value = '';
@@ -18875,12 +19108,7 @@ function xlPick(e) {
         var d = xlParse(X.read(fr.result, { type: 'array', cellDates: true }));
         if (!d.it.length && !d.bk.length) return toast('Format tidak dikenali. Unduh Template Excel lalu isi sesuai kolomnya.');
         xlData = d;
-        $('xls').textContent = d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan, ' + Object.keys(d.dt).length + ' judul hari' + (d.start ? ' · ' + fmtD(d.start) + ' – ' + fmtD(d.end) : '') + '.' + (function () {
-          var a = 0, b = 0;
-          d.bk.forEach(function (x) { if (x.fx) b += x.amt; else a += x.amt; });
-          d.it.forEach(function (x) { if (x.pay === 'on') return; if (x.fx) b += x.est; else a += x.est; });
-          return ' Perkiraan biaya: ' + rp(a) + (b ? ' + ' + b.toLocaleString('id-ID') + ' dalam mata uang asing' : '') + '.' + (d.fx ? ' Isi kode dan kurs mata uang asing.' : '');
-        })();
+        $('xls').textContent = xlSummaryText(d);
         $('xln').value = f.name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').slice(0, 30);
         $('xlu').value = d.cur || (d.fx ? 'JPY' : '');
         $('xlk').value = '';
@@ -18894,39 +19122,22 @@ function xlPick(e) {
   }).catch(function (x) { toast(x.message); });
 }
 function xlCommit() {
-  var d = xlData, n = $('xln').value.trim().slice(0, 30), cu = $('xlu').value.trim().toUpperCase(), rt = parseFloat(String($('xlk').value).replace(',', '.')) || 0, er = function (t) { $('xle').textContent = t; };
+  var d = xlData, v = xlValidateMeta(d, $('xln').value, $('xlu').value, $('xlk').value);
   if (!d) return;
-  if (!n) return er('Nama perjalanan belum diisi.');
-  if (d.fx && !cu) return er('Ada biaya mata uang asing (mis. yen). Isi kodenya, misalnya JPY.');
-  if (cu && !/^[A-Z]{3}$/.test(cu)) return er('Mata uang terdiri dari 3 huruf, mis. JPY.');
-  if (cu && !(rt > 0)) return er('Isi kurs: berapa rupiah untuk 1 ' + cu + '.');
-  var nm = n, k = 2;
-  while (trips().some(function (x) { return x.name.toLowerCase() === nm.toLowerCase(); })) nm = n.slice(0, 26) + ' (' + k++ + ')';
-  var id = 'p' + Date.now().toString(36), re = function (a, p) { return a.map(function (x) { return Object.assign({}, x, { id: kid(p) }); }); };
-  ALL.kas.pr[id] = { id: id, name: nm, saldo: 0, link: false, start: d.start, end: d.end, budget: 0, cur: cu, rate: cu ? rt : 0, dt: d.dt, tx: [], it: re(d.it, 'i'), bk: re(d.bk, 'b'), lk: re(d.lk, 'l'), ck: [], note: '', goal: null };
+  if (v.error) { $('xle').textContent = v.error; return; }
+  var built = xlBuildProfile(d, v.name, v.cur, v.rate);
+  ALL.kas.pr[built.id] = built.profile;
   xlData = null;
   $('xlm').hidden = true;
   save();
   setMode('trip');
-  setTrip(id);
+  setTrip(built.id);
   toast('Perjalanan diimpor: ' + d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan.');
 }
 /** Unduh template Excel yang bisa langsung diisi lalu diimpor. */
 function xlTemplate() {
   loadXlsx().then(function (X) {
-    var wb = X.utils.book_new();
-    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([
-      ['Tanggal', 'Jam', 'Kegiatan', 'Kategori', 'Biaya', 'Mata uang', 'Pembayaran', 'Tautan', 'Catatan'],
-      ['', '', 'DAY 1 Jakarta - Tokyo', '', '', '', '', '', 'Baris "DAY n judul" menjadi judul hari'],
-      ['2026-01-27', '07.30-09.00', 'Sarapan di konbini', 'Makan', 500, 'JPY', 'Kartu IC', '', ''],
-      ['', '10.00-12.00', 'Tokyo Tower', 'Tiket & Tour', 1200, 'JPY', 'Cash', 'https://maps.app.goo.gl/contoh', 'Tanggal kosong = ikut baris di atasnya'],
-    ]), 'Itinerary');
-    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet([
-      ['Nama', 'Kategori', 'Jumlah', 'Mata uang', 'Pembayaran', 'Lunas', 'Tautan', 'Catatan'],
-      ['Tiket pesawat PP', 'Transport', 6500000, 'IDR', 'Online', 'Ya', '', ''],
-      ['Hotel 4 malam', 'Penginapan', 1800000, 'IDR', 'Online', 'Belum', '', ''],
-    ]), 'Pemesanan');
-    X.writeFile(wb, 'template-itinerary.xlsx');
+    X.writeFile(xlBuildTemplateWb(X), 'template-itinerary.xlsx');
   }).catch(function (x) { toast(x.message); });
 }
 
@@ -18967,11 +19178,12 @@ function tripPrintHtml(P, cost) {
     var its = P.it.filter(function (x) { return x.day === d; }).sort(byTime);
     if (!its.length && !P.dt[d]) return;
     b += '<h2>' + esc(dayLabel(P, d)) + (P.dt[d] ? ' — ' + esc(P.dt[d]) : '') + '</h2><table>' + its.map(function (x) {
-      return '<tr><td class="t">' + esc(tmShow(x.time) + (x.time2 ? '–' + tmShow(x.time2) : '')) + '</td><td>' + esc(x.place) + (x.link ? '<br><a href="' + esc(x.link) + '">' + esc(x.link) + '</a>' : '') + (x.note ? '<br><small>' + esc(x.note) + '</small>' : '') + '</td>' + (cost ? '<td class="c">' + (x.est ? esc(amtPlain(P, x.est, x.fx)) : '') + '</td>' : '') + '</tr>';
+      var sl = x.link && typeof safeHref === 'function' ? safeHref(x.link) : '';
+      return '<tr><td class="t">' + esc(tmShow(x.time) + (x.time2 ? '–' + tmShow(x.time2) : '')) + '</td><td>' + esc(x.place) + (sl ? '<br><a href="' + esc(sl) + '">' + esc(x.link) + '</a>' : (x.link ? '<br><small>' + esc(x.link) + '</small>' : '')) + (x.note ? '<br><small>' + esc(x.note) + '</small>' : '') + '</td>' + (cost ? '<td class="c">' + (x.est ? esc(amtPlain(P, x.est, x.fx)) : '') + '</td>' : '') + '</tr>';
     }).join('') + '</table>';
   });
   if (P.bk.length) b += '<h2>Pemesanan</h2><table>' + P.bk.map(function (x) { return '<tr><td>' + esc(x.title) + (x.paid ? ' <small>(lunas)</small>' : '') + '</td>' + (cost ? '<td class="c">' + esc(amtPlain(P, x.amt, x.fx)) + '</td>' : '') + '</tr>'; }).join('') + '</table>';
-  if (P.lk.length) b += '<h2>Tautan penting</h2>' + P.lk.map(function (l) { return '<div>' + esc(l.title) + ': <a href="' + esc(l.url) + '">' + esc(l.url) + '</a></div>'; }).join('');
+  if (P.lk.length) b += '<h2>Tautan penting</h2>' + P.lk.map(function (l) { var lu = typeof safeHref === 'function' ? safeHref(l.url) : ''; return '<div>' + esc(l.title) + ': ' + (lu ? '<a href="' + esc(lu) + '">' + esc(l.url) + '</a>' : esc(l.url)) + '</div>'; }).join('');
   return '<!doctype html><html lang="id"><head><meta charset="utf-8"><title>' + esc(P.name) + '</title><style>' + css + '</style></head><body>' + b + '</body></html>';
 }
 function printHtml(h) {
@@ -19648,18 +19860,29 @@ function repWidth(b, bold, size) {
   return (w * size) / 1000;
 }
 
+function repPdfUri(u) {
+  var out = '';
+  Array.from(String(u || '').trim()).forEach(function (ch) {
+    var c = ch.charCodeAt(0);
+    if (c <= 0x20 || c >= 0x7f) out += encodeURIComponent(ch);
+    else if (ch === '\\' || ch === '(' || ch === ')') out += '\\' + ch;
+    else out += ch;
+  });
+  return out;
+}
+
 /** Laporan -> byte PDF A4 dengan font standar Helvetica (tanpa pustaka; ukuran & posisi = bot/pdf.mjs). */
 function repPdf(rep) {
   var M = 38, W = 595.28, H = 841.89,
-    INK = '0.11 0.13 0.16', MUT = '0.42 0.45 0.5', LINE = '0.85 0.87 0.9', HEADBG = '0.95 0.96 0.97',
-    pages = [], ops, y;
+    INK = '0.11 0.13 0.16', MUT = '0.42 0.45 0.5', LINE = '0.85 0.87 0.9', HEADBG = '0.95 0.96 0.97', LINK_INK = '0.07 0.35 0.68',
+    pages = [], annotsPerPage = [], ops, curAnnots, y;
   var f = function (n) { return +n.toFixed(2); };
   var put = function (s, x, py, size, bold, color, right) {
     var b = repEnc(s);
     ops.push('BT /F' + (bold ? 2 : 1) + ' ' + size + ' Tf ' + (color || INK) + ' rg ' + f(right ? x - repWidth(b, bold, size) : x) + ' ' + f(py) + ' Td (' + b.replace(/[\\()]/g, '\\$&') + ') Tj ET');
   };
   var hline = function (py, th, color) { ops.push((color || LINE) + ' RG ' + th + ' w ' + M + ' ' + f(py) + ' m ' + f(W - M) + ' ' + f(py) + ' l S'); };
-  var page = function () { ops = []; pages.push(ops); y = H - M; };
+  var page = function () { ops = []; curAnnots = []; pages.push(ops); annotsPerPage.push(curAnnots); y = H - M; };
   var cont = function () { page(); put(rep.title, M, y - 12, 11, true, MUT); y -= 26; };
   var fit = function (cell, bold, w) {
     var s = repEnc(cell);
@@ -19697,7 +19920,27 @@ function repPdf(rep) {
     head();
     t.rows.forEach(function (r) {
       if (y - 16 < M + 30) { hline(y + 4, 0.5); cont(); head(); }
-      t.cols.forEach(function (c, i) { put(fit(r[i], c.bold, ws[i]), cx(i), y - 9, 9, c.bold, INK, c.align === 'r'); });
+      t.cols.forEach(function (c, i) {
+        var rawCell = r[i], isObj = rawCell && typeof rawCell === 'object',
+          txt = isObj ? rawCell.t : rawCell,
+          rawHref = isObj ? rawCell.href : '',
+          uri = rawHref ? (typeof safeHref === 'function' ? safeHref(rawHref) : (/^https?:\/\/[^/\s"'<>]+/i.test(String(rawHref).trim()) && !/[\u0000-\u001f\u007f"'<>]/.test(String(rawHref).trim()) ? String(rawHref).trim() : '')) : '';
+        if (uri) {
+          var fitted = fit(txt, c.bold, ws[i]),
+            lCol = rawCell.color || LINK_INK,
+            tw = repWidth(fitted, c.bold, 9),
+            ax = cx(i),
+            x1 = c.align === 'r' ? ax - tw : ax,
+            x2 = c.align === 'r' ? ax : ax + tw;
+          put(fitted, ax, y - 9, 9, c.bold, lCol, c.align === 'r');
+          if (tw > 0) {
+            ops.push(lCol + ' RG 0.5 w ' + f(x1) + ' ' + f(y - 10.5) + ' m ' + f(x2) + ' ' + f(y - 10.5) + ' l S');
+            curAnnots.push({ rect: [x1, y - 11.5, Math.max(x2, x1 + 6), y], uri: repPdfUri(uri) });
+          }
+        } else {
+          put(fit(txt, c.bold, ws[i]), cx(i), y - 9, 9, c.bold, (isObj && rawCell.color) || INK, c.align === 'r');
+        }
+      });
       y -= 15;
       hline(y + 4, 0.4);
     });
@@ -19719,10 +19962,17 @@ function repPdf(rep) {
   var font = function (n) { return '<< /Type /Font /Subtype /Type1 /BaseFont /' + n + ' /Encoding /WinAnsiEncoding >>'; },
     objs = ['<< /Type /Catalog /Pages 2 0 R >>', '', font('Helvetica'), font('Helvetica-Bold')],
     kids = [];
-  pages.forEach(function (o) {
-    var c = o.join('\n');
+  pages.forEach(function (o, i) {
+    var c = o.join('\n'), pa = annotsPerPage[i], annotRefs = [];
     objs.push('<< /Length ' + c.length + ' >>\nstream\n' + c + '\nendstream');
-    objs.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' + objs.length + ' 0 R >>');
+    var cObjIdx = objs.length;
+    if (pa && pa.length) {
+      pa.forEach(function (a) {
+        objs.push('<< /Type /Annot /Subtype /Link /Rect [' + a.rect.map(f).join(' ') + '] /Border [0 0 0] /A << /S /URI /URI (' + a.uri + ') >> >>');
+        annotRefs.push(objs.length + ' 0 R');
+      });
+    }
+    objs.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + W + ' ' + H + '] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' + cObjIdx + ' 0 R' + (annotRefs.length ? ' /Annots [' + annotRefs.join(' ') + ']' : '') + ' >>');
     kids.push(objs.length + ' 0 R');
   });
   objs[1] = '<< /Type /Pages /Kids [' + kids.join(' ') + '] /Count ' + kids.length + ' >>';
@@ -21906,6 +22156,7 @@ function brOpenModal(id) {
 function brCloseModal(id) {
   var el = $(id);
   if (!el) return;
+  if (id === 'modal-trip-xl') BR_STATE.xlPending = null;
   var wasOpen = el.classList.contains('open') && el.offsetWidth > 0 && !rkIsReducedMotion();
   el.classList.remove('open');
   el.hidden = true;
@@ -23857,7 +24108,11 @@ function renderTrip() {
       '<div class="grid-2"><div class="card"><div class="card-header"><div><h2 class="card-title">Tautan Berguna</h2><p class="card-sub">Video panduan, situs tiket, peta</p></div></div>' +
       '<form id="trip-lk-form" class="stack" style="gap:8px;margin-bottom:12px;" novalidate><input class="input" id="trip-lk-title" placeholder="Judul tautan" required/><div style="display:flex;gap:8px;"><input class="input" id="trip-lk-url" placeholder="https://..." style="flex:1;" required/><button type="submit" class="btn btn-primary">Tambah</button></div></form>' +
       '<div class="stack" style="gap:8px;">' + ((tr.lk || []).length ? tr.lk.map(function (x) {
-        return '<div class="upcoming-item"><a href="' + esc(x.url) + '" target="_blank" rel="noopener" style="font-weight:600;color:var(--accent-ink);">' + esc(x.title) + ' ↗</a><button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);" data-lk-del="' + esc(x.id) + '">Hapus</button></div>';
+        var su = typeof safeHref === 'function' ? safeHref(x.url) : '';
+        var elL = su
+          ? '<a href="' + esc(su) + '" target="_blank" rel="noopener noreferrer" style="font-weight:600;color:var(--accent-ink);">' + esc(x.title) + ' ↗</a>'
+          : '<span style="font-weight:600;color:var(--text-muted);text-decoration:line-through;" title="Tautan tidak valid">' + esc(x.title || 'Tautan tidak valid') + '</span>';
+        return '<div class="upcoming-item">' + elL + '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);" data-lk-del="' + esc(x.id) + '">Hapus</button></div>';
       }).join('') : '<div style="padding:14px;color:var(--text-muted);font-size:0.82rem;">Belum ada tautan.</div>') + '</div></div>' +
       '<div class="card"><div class="card-header"><div><h2 class="card-title">Catatan Penting</h2><p class="card-sub">Kode booking hotel, alamat, kontak darurat (tersimpan otomatis)</p></div></div>' +
       '<textarea class="input" id="trip-note-box" rows="7" style="resize:vertical;line-height:1.55;" placeholder="mis. Hotel: ...">' + esc(tr.note || '') + '</textarea></div></div>';
@@ -23865,7 +24120,10 @@ function renderTrip() {
     var g = tr.goal;
     if (g && !BR_STATE.tripGoalEdit) {
       var per = typeof goalPlan === 'function' ? goalPlan(g).per : (g.per || 0),
-        got = Math.min(g.t, (g.s0 || 0) + per), pctG = g.t ? Math.min(100, Math.round((got / g.t) * 100)) : 0;
+        gs = typeof goalSavedNow === 'function'
+          ? goalSavedNow({ t: g.t, s0: g.s0, from: g.from, to: g.to, per: per }, todayISO())
+          : { got: Math.min(g.t, (g.s0 || 0) + per), pct: g.t ? Math.min(100, Math.round((Math.min(g.t, (g.s0 || 0) + per) / g.t) * 100)) : 0 },
+        got = gs.got, pctG = gs.pct;
       bodyHtml =
         '<div class="card"><div class="card-header"><div><h2 class="card-title">Target Tabungan</h2><p class="card-sub">Sisihan dana bulanan sebelum berangkat</p></div>' +
         '<span class="badge ' + (g.link ? 'badge-emerald' : 'badge-neutral') + '">' + (g.link ? 'Tersambung ke Rincian' : 'Hanya Pencatat') + '</span></div>' +
@@ -24284,10 +24542,27 @@ function brBindEvents() {
             var d = xlParse(X.read(fr.result, { type: 'array', cellDates: true }));
             if (!d.it.length && !d.bk.length) return toast('Format Excel tidak dikenali. Unduh Template Excel terlebih dahulu.');
             var base = (f.name || 'Perjalanan').replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim().slice(0, 30) || 'Perjalanan Impor';
-            var nm = base, k = 2;
-            while (trips().some(function (x) { return x.name.toLowerCase() === nm.toLowerCase(); })) nm = base.slice(0, 26) + ' (' + k++ + ')';
-            var id = 'p' + Date.now().toString(36), re = function (a, p) { return a.map(function (x) { return Object.assign({}, x, { id: kid(p) }); }); };
-            ALL.kas.pr[id] = { id: id, name: nm, saldo: 0, link: false, start: d.start, end: d.end, budget: 0, cur: d.cur || '', rate: d.cur ? 100 : 0, dt: d.dt, tx: [], it: re(d.it, 'i'), bk: re(d.bk, 'b'), lk: re(d.lk, 'l'), ck: [], note: '', goal: null };
+            if (d.fx || d.cur) {
+              BR_STATE.xlPending = d;
+              if ($('br-xl-summary')) $('br-xl-summary').textContent = typeof xlSummaryText === 'function' ? xlSummaryText(d) : (d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan.');
+              if ($('br-xl-name')) $('br-xl-name').value = base;
+              if ($('br-xl-cur')) $('br-xl-cur').value = d.cur || (d.fx ? 'JPY' : '');
+              if ($('br-xl-rate')) $('br-xl-rate').value = '';
+              if ($('br-xl-err')) $('br-xl-err').textContent = '';
+              brOpenModal('modal-trip-xl');
+              if ($('br-xl-rate')) { try { $('br-xl-rate').focus(); } catch (err) {} }
+              return;
+            }
+            var built = typeof xlBuildProfile === 'function'
+              ? xlBuildProfile(d, base, '', 0)
+              : (function () {
+                  var nm = base, k = 2;
+                  while (trips().some(function (x) { return x.name.toLowerCase() === nm.toLowerCase(); })) nm = base.slice(0, 26) + ' (' + k++ + ')';
+                  var id0 = 'p' + Date.now().toString(36), re = function (a, p) { return a.map(function (x) { return Object.assign({}, x, { id: kid(p) }); }); };
+                  return { id: id0, profile: { id: id0, name: nm, saldo: 0, link: false, start: d.start, end: d.end, budget: 0, cur: '', rate: 0, dt: d.dt, tx: [], it: re(d.it, 'i'), bk: re(d.bk, 'b'), lk: re(d.lk, 'l'), ck: [], note: '', goal: null } };
+                })();
+            var id = built.id, nm = built.profile.name;
+            ALL.kas.pr[id] = built.profile;
             save(); setMode('trip'); setTrip(id); BR_STATE.tripView = 'detail'; renderAll();
             toast('Perjalanan "' + nm + '" diimpor (' + d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan)');
           } catch (err) { toast('File Excel tidak dapat dibaca.'); }
@@ -25182,8 +25457,17 @@ function brBindEvents() {
       var nmT = ($('kp-name') && $('kp-name').value || '').trim();
       if (!nmT) { rkShakeInvalid($('kp-name')); return; }
       var budT = ($('kp-use-budget') && $('kp-use-budget').value === '1') ? getRpVal('kp-budget') : 0,
-        curT = ($('kp-cur') && $('kp-cur').value || '').trim().toUpperCase(), rateT = parseFloat($('kp-rate') && $('kp-rate').value) || 0,
+        curT = ($('kp-cur') && $('kp-cur').value || '').trim().toUpperCase(),
+        rateRawT = $('kp-rate') && $('kp-rate').value,
+        rateT = parseFloat(String(rateRawT || '').replace(',', '.')) || 0,
         stT = BR_STATE.inlineDates.kpStart || '', enT = BR_STATE.inlineDates.kpEnd || '';
+      var metaErrT = typeof tripValidateMetaInput === 'function' ? tripValidateMetaInput(stT, enT, curT, rateRawT) : null;
+      if (metaErrT) {
+        var shakeT = metaErrT.field === 'end' ? ($('kp-end-btn') || $('kp-name')) : metaErrT.field === 'cur' ? $('kp-cur') : $('kp-rate');
+        rkShakeInvalid(shakeT);
+        toast(metaErrT.error);
+        return;
+      }
       if (BR_STATE.tripModalMode === 'edit' && tp()) {
         Object.assign(tp(), { name: nmT, start: stT, end: enT, budget: budT, cur: curT, rate: curT ? rateT : 0 });
       } else {
@@ -25192,6 +25476,23 @@ function brBindEvents() {
         tripAct = idNew; BR_STATE.tripView = 'detail'; BR_STATE.tripSubTab = 'ring';
       }
       brCloseModal('modal-trip-form'); save(); renderAll(); toast('Perjalanan disimpan');
+    } else if (f.id === 'trip-xl-form') {
+      e.preventDefault();
+      var dXlB = BR_STATE.xlPending;
+      if (!dXlB || typeof xlValidateMeta !== 'function' || typeof xlBuildProfile !== 'function') return;
+      var vXlB = xlValidateMeta(dXlB, $('br-xl-name') && $('br-xl-name').value, $('br-xl-cur') && $('br-xl-cur').value, $('br-xl-rate') && $('br-xl-rate').value);
+      if (vXlB.error) {
+        if ($('br-xl-err')) $('br-xl-err').textContent = vXlB.error;
+        var badXlB = !$('br-xl-name').value.trim() ? $('br-xl-name') : (/kurs/i.test(vXlB.error) ? $('br-xl-rate') : $('br-xl-cur'));
+        rkShakeInvalid(badXlB);
+        return;
+      }
+      var builtXlB = xlBuildProfile(dXlB, vXlB.name, vXlB.cur, vXlB.rate);
+      BR_STATE.xlPending = null;
+      ALL.kas.pr[builtXlB.id] = builtXlB.profile;
+      brCloseModal('modal-trip-xl');
+      save(); setMode('trip'); setTrip(builtXlB.id); BR_STATE.tripView = 'detail'; BR_STATE.tripSubTab = 'ring'; renderAll();
+      toast('Perjalanan diimpor: ' + dXlB.it.length + ' kegiatan, ' + dXlB.bk.length + ' pemesanan.');
     } else if (f.id === 'trip-itin-form' && tp()) {
       e.preventDefault();
       var trI = tp(), objIt = {
@@ -25216,22 +25517,28 @@ function brBindEvents() {
       save(); renderTrip();
     } else if (f.id === 'trip-book-form' && tp()) {
       e.preventDefault();
-      var trB = tp(), objBk = {
-        id: BR_STATE.tripEditBkId || kid('bk'),
+      var trB = tp(), patchBk = {
         title: ($('bk-title') && $('bk-title').value || '').trim(),
         amt: getRpVal('bk-amt'),
         fx: $('bk-cur') && $('bk-cur').value === 'fx',
         a: BR_STATE.inlineDates.bkStart || '',
         b: BR_STATE.inlineDates.bkEnd || '',
         cat: $('bk-cat') ? $('bk-cat').value : 'Transport',
-        pay: 'on', link: '', paid: false,
       };
-      if (!objBk.title) { rkShakeInvalid($('bk-title')); return; }
-      if (!(objBk.amt > 0)) { rkShakeInvalid($('bk-amt')); return; }
+      if (!patchBk.title) { rkShakeInvalid($('bk-title')); return; }
+      if (!(patchBk.amt > 0)) { rkShakeInvalid($('bk-amt')); return; }
+      var bkDtErr = typeof tripValidateDates === 'function' ? tripValidateDates(patchBk.a, patchBk.b) : null;
+      if (bkDtErr) {
+        rkShakeInvalid($('bk-end-cal') ? $('bk-end-cal').previousElementSibling : $('bk-title'));
+        toast(bkDtErr.error);
+        return;
+      }
       if (BR_STATE.tripEditBkId) {
-        trB.bk = trB.bk.map(function (x) { return x.id === BR_STATE.tripEditBkId ? Object.assign({}, x, objBk, { paid: x.paid }) : x; });
+        trB.bk = trB.bk.map(function (x) { return x.id === BR_STATE.tripEditBkId ? Object.assign({}, x, patchBk) : x; });
         BR_STATE.tripEditBkId = null;
-      } else trB.bk.push(objBk);
+      } else {
+        trB.bk.push(Object.assign({ id: kid('bk'), pay: 'on', link: '', paid: false, rec: '' }, patchBk));
+      }
       save(); renderTrip();
     } else if (f.id === 'trip-ck-form' && tp()) {
       e.preventDefault();
@@ -25285,7 +25592,7 @@ function brBindEvents() {
       if (alatMenu) alatMenu.classList.remove('open');
       if ($('mobile-more-sheet')) $('mobile-more-sheet').classList.remove('open');
       closeAllPickersAndMenus(null);
-      ['yr-panel', 'modal-scenario', 'modal-quick-tx', 'modal-backup', 'modal-trip-form', 'modal-trip-share', 'modal-report', 'lg', 'cf'].forEach(brCloseModal);
+      ['yr-panel', 'modal-scenario', 'modal-quick-tx', 'modal-backup', 'modal-trip-form', 'modal-trip-share', 'modal-trip-xl', 'modal-report', 'lg', 'cf'].forEach(brCloseModal);
     } else if (e.key.toLowerCase() === 'n' && !['input', 'textarea', 'select'].includes(tag) && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
       brOpenModal('modal-quick-tx');
@@ -25684,9 +25991,8 @@ function mobPreserveScroll(fn) {
 }
 
 function mobOpenExternalUrl(rawUrl) {
-  var u = String(rawUrl || '').trim();
-  var ok = u && (typeof okUrl === 'function' ? okUrl(u) : /^https?:\/\/[^\s"'<>]+$/i.test(u));
-  if (!ok) {
+  var u = typeof safeHref === 'function' ? safeHref(rawUrl) : '';
+  if (!u) {
     showMobToast('Tautan tidak valid');
     return false;
   }
@@ -25701,6 +26007,174 @@ function mobOpenExternalUrl(rawUrl) {
     window.open(u, '_blank', 'noopener,noreferrer');
   } catch (e) {}
   return true;
+}
+
+var MOB_WA_URL_MAX = 1800;
+var MOB_XL_LOAD_TIMEOUT_MS = 15000;
+var MOB_XL_DATA = null;
+var MOB_XL_BUSY = false;
+
+function mobLoadXlsxWithTimeout() {
+  if (typeof loadXlsx !== 'function') return Promise.reject(new Error('Pustaka Excel tidak tersedia.'));
+  var ms = (typeof MOB_XL_LOAD_TIMEOUT_MS === 'number' && MOB_XL_LOAD_TIMEOUT_MS > 0) ? MOB_XL_LOAD_TIMEOUT_MS : 15000;
+  var tid;
+  var tout = new Promise(function (_, reject) {
+    tid = setTimeout(function () {
+      reject(new Error('Waktu muat pustaka Excel habis (' + Math.round(ms / 1000) + ' dtk). Periksa koneksi internet.'));
+    }, ms);
+  });
+  return Promise.race([Promise.resolve(loadXlsx()), tout]).then(
+    function (X) { clearTimeout(tid); return X; },
+    function (err) { clearTimeout(tid); throw err; }
+  );
+}
+
+function mobHasNonWinAnsi(s) {
+  var arr = Array.from(String(s == null ? '' : s));
+  for (var i = 0; i < arr.length; i++) {
+    var ch = arr[i], c = ch.charCodeAt(0);
+    if (c < 32 || (c >= 32 && c < 127) || (c >= 160 && c < 256)) continue;
+    if (typeof REP_HI !== 'undefined' && REP_HI.indexOf(ch) >= 0) continue;
+    return true;
+  }
+  return false;
+}
+
+function mobTripHasNonWinAnsi(P) {
+  if (!P) return false;
+  if (mobHasNonWinAnsi(P.name)) return true;
+  var dks = Object.keys(P.dt || {});
+  for (var i = 0; i < dks.length; i++) if (mobHasNonWinAnsi(P.dt[dks[i]])) return true;
+  if ((P.it || []).some(function (x) { return mobHasNonWinAnsi(x.place) || mobHasNonWinAnsi(x.link) || mobHasNonWinAnsi(x.note); })) return true;
+  if ((P.bk || []).some(function (x) { return mobHasNonWinAnsi(x.title); })) return true;
+  if ((P.lk || []).some(function (x) { return mobHasNonWinAnsi(x.title) || mobHasNonWinAnsi(x.url); })) return true;
+  return false;
+}
+
+function mobWrapPdfText(str, maxW, bold) {
+  var s = String(str == null ? '' : str).trim();
+  if (!s) return [''];
+  var measure = function (txt) {
+    var enc = typeof repEnc === 'function' ? repEnc(txt) : txt;
+    return typeof repWidth === 'function' ? repWidth(enc, !!bold, 9) : enc.length * 5;
+  };
+  var lines = [];
+  s.split(/\r?\n/).forEach(function (para) {
+    var words = para.split(/\s+/).filter(Boolean);
+    if (!words.length) return;
+    var cur = '';
+    words.forEach(function (w) {
+      var cand = cur ? cur + ' ' + w : w;
+      if (measure(cand) <= maxW) {
+        cur = cand;
+      } else {
+        if (cur) { lines.push(cur); cur = ''; }
+        if (measure(w) <= maxW) {
+          cur = w;
+        } else {
+          var chars = Array.from(w), chunk = '';
+          chars.forEach(function (ch) {
+            if (measure(chunk + ch) <= maxW) chunk += ch;
+            else {
+              if (chunk) lines.push(chunk);
+              chunk = ch;
+            }
+          });
+          cur = chunk;
+        }
+      }
+    });
+    if (cur) lines.push(cur);
+  });
+  return lines.length ? lines : [''];
+}
+
+function mobSafePdfFilename(name) {
+  var slug = String(name || 'perjalanan').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'perjalanan';
+  return 'itinerary-' + slug + '.pdf';
+}
+
+function tripPdfData(P, cost) {
+  var W = 595.28, M = 38, innerW = W - 2 * M,
+    pl = typeof tripPlan === 'function' ? tripPlan(P) : { b: 0, d: 0, t: 0, paid: 0 },
+    amtFn = typeof amtPlain === 'function' ? amtPlain : function (tr0, v, fx) { return fx && tr0.cur ? tr0.cur + ' ' + Math.round(v).toLocaleString('id-ID') : rp(v); },
+    tmFn = typeof tmShow === 'function' ? tmShow : function (v) { return v ? String(v).replace(':', '.') : ''; },
+    dayFn = typeof dayLabel === 'function' ? dayLabel : function (tr0, d) { return fmtD(d); },
+    sortFn = typeof byTime === 'function' ? byTime : function (a, b) { return (a.time || '').localeCompare(b.time || ''); },
+    colsIt = cost ? [{ t: 'JAM', w: 18 }, { t: 'KEGIATAN', w: 60 }, { t: 'BIAYA', w: 22, align: 'r' }] : [{ t: 'JAM', w: 20 }, { t: 'KEGIATAN', w: 80 }],
+    itMaxW = ((cost ? 60 : 80) * innerW) / 100 - 8,
+    tables = [];
+
+  (typeof tripDays === 'function' ? tripDays(P) : []).forEach(function (d) {
+    var its = (P.it || []).filter(function (x) { return x.day === d; }).sort(sortFn),
+      dayTitle = (P.dt && P.dt[d]) || '';
+    if (!its.length && !dayTitle) return;
+    var rows = [];
+    its.forEach(function (x) {
+      var jam = tmFn(x.time) + (x.time2 ? '–' + tmFn(x.time2) : ''),
+        biaya = cost && x.est ? amtFn(P, x.est, x.fx) : '',
+        safeLnk = x.link && typeof safeHref === 'function' ? safeHref(x.link) : '',
+        cells = mobWrapPdfText(x.place || '-', itMaxW, false);
+      if (x.link) {
+        mobWrapPdfText(x.link, itMaxW, false).forEach(function (ln) {
+          cells.push(safeLnk ? { t: ln, href: safeLnk } : ln);
+        });
+      }
+      if (x.note) cells = cells.concat(mobWrapPdfText(x.note, itMaxW, false));
+      cells.forEach(function (cellVal, idx) {
+        rows.push(cost ? [idx === 0 ? jam : '', cellVal, idx === 0 ? biaya : ''] : [idx === 0 ? jam : '', cellVal]);
+      });
+    });
+    if (!rows.length) rows.push(cost ? ['', '(Belum ada kegiatan)', ''] : ['', '(Belum ada kegiatan)']);
+    tables.push({ head: dayFn(P, d) + (dayTitle ? ' — ' + dayTitle : ''), cols: colsIt, rows: rows });
+  });
+
+  if (P.bk && P.bk.length) {
+    var colsBk = cost ? [{ t: 'PEMESANAN', w: 58 }, { t: 'STATUS', w: 18 }, { t: 'BIAYA', w: 24, align: 'r' }] : [{ t: 'PEMESANAN', w: 78 }, { t: 'STATUS', w: 22 }],
+      bkMaxW = ((cost ? 58 : 78) * innerW) / 100 - 8,
+      bkRows = [];
+    P.bk.forEach(function (x) {
+      var tLines = mobWrapPdfText(x.title || '-', bkMaxW, false),
+        stTxt = x.paid ? 'Lunas' : 'Belum',
+        bTxt = cost ? amtFn(P, x.amt, x.fx) : '';
+      tLines.forEach(function (ln, idx) {
+        bkRows.push(cost ? [ln, idx === 0 ? stTxt : '', idx === 0 ? bTxt : ''] : [ln, idx === 0 ? stTxt : '']);
+      });
+    });
+    tables.push({ head: 'Pemesanan', cols: colsBk, rows: bkRows });
+  }
+
+  if (P.lk && P.lk.length) {
+    var lkTitleW = (35 * innerW) / 100 - 8,
+      lkUrlW = (65 * innerW) / 100 - 8,
+      lkRows = [];
+    P.lk.forEach(function (l) {
+      var tLines = mobWrapPdfText(l.title || '-', lkTitleW, false),
+        uLines = mobWrapPdfText(l.url || '', lkUrlW, false),
+        safeLk = l.url && typeof safeHref === 'function' ? safeHref(l.url) : '',
+        cnt = Math.max(tLines.length, uLines.length);
+      for (var k = 0; k < cnt; k++) {
+        var uTxt = uLines[k] || '';
+        lkRows.push([tLines[k] || '', (uTxt && safeLk) ? { t: uTxt, href: safeLk } : uTxt]);
+      }
+    });
+    tables.push({ head: 'Tautan penting', cols: [{ t: 'JUDUL', w: 35 }, { t: 'TAUTAN', w: 65 }], rows: lkRows });
+  }
+
+  var nDays = P.start && P.end && P.end >= P.start ? dayNo(P.end, P.start) + 1 : 0,
+    subParts = [];
+  if (P.start && P.end) subParts.push(fmtD(P.start) + ' – ' + fmtD(P.end) + ' · ' + nDays + ' hari');
+  else subParts.push('Itinerary Perjalanan');
+  if (cost && P.cur && P.rate) subParts.push('Kurs 1 ' + P.cur + ' = ' + rp(P.rate));
+  var summary = [['Kegiatan', String((P.it || []).length) + ' jadwal'], ['Pemesanan', String((P.bk || []).length) + ' item']];
+  if (cost) summary = summary.concat([['Total Rencana Biaya', rp(pl.t)], ['Sudah Dibayar', rp(pl.paid)]]);
+  return { filename: mobSafePdfFilename(P.name), title: P.name || 'Itinerary Perjalanan', subtitle: subParts.join(' · '), summary: summary, tables: tables };
+}
+
+function mobSetXlBusy(busy) {
+  MOB_XL_BUSY = !!busy;
+  if ($('m-btn-trip-xl')) $('m-btn-trip-xl').disabled = MOB_XL_BUSY;
+  if ($('m-btn-trip-tpl')) $('m-btn-trip-tpl').disabled = MOB_XL_BUSY;
 }
 
 function mobItemShade(cat, idx) {
@@ -25812,6 +26286,7 @@ function mobOpenSheet(id) {
 function mobCloseSheet(id) {
   var el = $(id);
   if (!el) return;
+  if (id === 'm-sheet-trip-xl') MOB_XL_DATA = null;
   var red = typeof rkIsReducedMotion === 'function' && rkIsReducedMotion();
   var wasOpen = el.classList.contains('open') && el.offsetWidth > 0 && !red;
   el.classList.remove('open', 'is-dragging');
@@ -26143,6 +26618,7 @@ function mobShellTemplate() {
     '<div class="pill-slider" id="m-rep-period-slider" style="margin-bottom:10px">' +
     '<button type="button" class="p-chip" data-mrep="d">Hari ini</button><button type="button" class="p-chip" data-mrep="w">Minggu ini</button><button type="button" class="p-chip active" data-mrep="m">Bulan ini</button><button type="button" class="p-chip" data-mrep="y">Tahun ini</button></div>' +
     '<div id="m-report-preview" class="stack" style="gap:10px"></div></div>' +
+    '<div class="m-set-build-ver" id="m-set-build-ver">Versi build: ' + esc((typeof window !== 'undefined' && window.RK_BUILD && window.RK_BUILD.id) ? window.RK_BUILD.id : 'dev') + '</div>' +
     '</div></section>' +
     '</main>' +
     '<button type="button" class="rk-btt-btn" id="m-btt-btn" aria-label="Kembali ke atas" title="Kembali ke atas">↑ Atas</button>' +
@@ -26233,6 +26709,26 @@ function mobShellTemplate() {
     '<div class="modal-backdrop" id="m-sheet-acct"><div class="modal-sheet"><div class="ms-handle"></div>' +
     '<div class="ms-head"><div style="display:flex;align-items:center;gap:10px"><span class="rk-brand-tile" style="width:32px;height:32px" aria-hidden="true"><svg viewBox="0 0 64 64"><use href="#rk-brand-symbol"/></svg></span><strong class="card-title">Akun &amp; Sinkron Cloud</strong></div><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-acct">✕</button></div>' +
     '<div class="ms-body" id="m-acct-body"></div></div></div>' +
+    '<div class="modal-backdrop" id="m-sheet-trip-share"><div class="modal-sheet"><div class="ms-handle"></div>' +
+    '<div class="ms-head"><strong class="card-title">Bagikan Itinerary</strong><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-trip-share" aria-label="Tutup">✕</button></div>' +
+    '<div class="ms-body">' +
+    '<label class="m-sh-check"><input type="checkbox" id="m-sh-inc-cost" checked /><span>Sertakan rincian biaya</span></label>' +
+    '<div class="stack" style="gap:8px">' +
+    '<button type="button" class="btn btn-primary" data-msh="wa">Kirim teks (WhatsApp)</button>' +
+    '<button type="button" class="btn btn-secondary" data-msh="copy">Salin teks</button>' +
+    '<button type="button" class="btn btn-secondary" data-msh="pdf">Simpan / bagikan PDF</button></div>' +
+    '<div class="m-sh-status" id="m-sh-status" role="status" aria-live="polite"></div></div>' +
+    '<div class="ms-foot"><button type="button" class="btn btn-secondary" data-mclose="m-sheet-trip-share">Tutup</button></div></div></div>' +
+    '<div class="modal-backdrop" id="m-sheet-trip-xl"><div class="modal-sheet"><div class="ms-handle"></div>' +
+    '<div class="ms-head"><strong class="card-title">Impor dari Excel</strong><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-trip-xl" aria-label="Tutup">✕</button></div>' +
+    '<form id="m-trip-xl-form" style="display:flex;flex-direction:column;min-height:0;flex:1" novalidate><div class="ms-body">' +
+    '<div class="m-xl-summary pv" id="m-xl-summary"></div>' +
+    '<div class="field"><label class="field-label" for="m-xl-name">Nama perjalanan</label><input class="input" id="m-xl-name" maxlength="30" placeholder="mis. Tokyo - Osaka" required /></div>' +
+    '<div class="bento-2"><div class="field"><label class="field-label" for="m-xl-cur">Mata uang</label><input class="input" id="m-xl-cur" maxlength="3" placeholder="JPY" style="text-transform:uppercase" /></div>' +
+    '<div class="field"><label class="field-label" for="m-xl-rate">Kurs (Rp / 1 unit)</label><input class="input mono" id="m-xl-rate" type="number" step="0.01" placeholder="110" /></div></div>' +
+    '<div class="m-xl-err" id="m-xl-err" role="alert"></div></div>' +
+    '<div class="ms-foot"><button type="button" class="btn btn-secondary" data-mclose="m-sheet-trip-xl">Batal</button><button type="submit" class="btn btn-primary" id="m-xl-submit">Impor</button></div></form></div></div>' +
+    '<input type="file" id="m-xl-file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden />' +
     '<div class="notif-popover" id="m-notif-popover"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:800;font-size:0.82rem">Pengingat Jatuh Tempo</span>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="m-pop-to-set">Atur Notif &rarr;</button></div><div id="m-pop-os-cta"></div><div class="stack" style="gap:7px" id="m-notif-pop-list"></div>' +
     '<button type="button" class="btn btn-primary btn-sm" style="width:100%;margin-top:8px" id="m-pop-preview">🔔 Preview Notif di Bar HP</button></div>' +
@@ -27358,8 +27854,11 @@ function renderMobTrip() {
 
   if (!tr || MOB_STATE.tripView === 'list') {
     root.innerHTML =
-      '<div class="card"><div class="card-hd"><div><h2 class="card-title">Semua Perjalanan</h2><div style="font-size:0.71rem;color:var(--text-muted)">' + list.length + ' profil perjalanan</div></div>' +
-      '<button type="button" class="btn btn-primary btn-sm" id="m-btn-trip-new">+ Perjalanan baru</button></div>' +
+      '<div class="card"><div class="m-trip-list-hd"><div><h2 class="card-title">Semua Perjalanan</h2><div style="font-size:0.71rem;color:var(--text-muted)">' + list.length + ' profil perjalanan</div></div>' +
+      '<div class="m-trip-list-actions">' +
+      '<button type="button" class="btn btn-primary btn-sm" id="m-btn-trip-new">+ Perjalanan baru</button>' +
+      '<button type="button" class="btn btn-secondary btn-sm" id="m-btn-trip-xl"' + (MOB_XL_BUSY ? ' disabled' : '') + '>Impor Excel</button>' +
+      '<button type="button" class="btn btn-secondary btn-sm" id="m-btn-trip-tpl"' + (MOB_XL_BUSY ? ' disabled' : '') + '>Template Excel</button></div></div>' +
       '<div class="stack" style="gap:9px">' +
       (list.length
         ? list.map(function (t) { return renderMobTripListCard(t, tr ? tr.id : ''); }).join('')
@@ -27471,9 +27970,9 @@ function renderMobTrip() {
       '<div style="display:flex;gap:6px"><input class="input" id="m-lk-url" inputmode="url" maxlength="400" placeholder="https://..." style="flex:1;min-width:0" required /><button type="submit" class="btn btn-primary">Tambah</button></div></form>' +
       '<div class="stack" style="gap:7px">' +
       (lk.length ? lk.map(function (x) {
-        var safeU = x.url && (typeof okUrl === 'function' ? okUrl(x.url) : /^https?:\/\/[^\s"'<>]+$/i.test(x.url));
+        var safeU = x.url && (typeof safeHref === 'function' ? safeHref(x.url) : '');
         var linkEl = safeU
-          ? '<a href="' + esc(x.url) + '" target="_blank" rel="noopener noreferrer" data-m-ext-url="' + esc(x.url) + '" class="m-ext-link">' + esc(x.title || x.url) + ' ↗</a>'
+          ? '<a href="' + esc(safeU) + '" target="_blank" rel="noopener noreferrer" data-m-ext-url="' + esc(safeU) + '" class="m-ext-link">' + esc(x.title || x.url) + ' ↗</a>'
           : '<span class="m-ext-link m-ext-link-invalid">' + esc(x.title || 'Tautan tidak valid') + '</span>';
         return '<div class="list-row">' + linkEl +
           '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);flex-shrink:0" data-mlk-del="' + esc(x.id) + '">Hapus</button></div>';
@@ -27484,9 +27983,11 @@ function renderMobTrip() {
   } else {
     var g = tr.goal, defT = g ? g.t : Math.max(1000000, Math.ceil(pl.t / 1000) * 1000), curM = todayISO().slice(0, 7), toM = tr.start && tr.start.slice(0, 7) >= curM ? tr.start.slice(0, 7) : (S.year + '-12');
     if (g && !MOB_STATE.tripGoalEdit) {
-      var perG = typeof goalPlan === 'function' ? goalPlan(g).per : (g.per || 0);
-      // Rumus terkumpul disamakan persis dengan desktop aktif browser-app.js:2849 (kandidat perbaikan bersama)
-      var gotG = Math.min(g.t, (g.s0 || 0) + perG), pctG = g.t ? Math.min(100, Math.round((gotG / g.t) * 100)) : 0;
+      var perG = typeof goalPlan === 'function' ? goalPlan(g).per : (g.per || 0),
+        gsG = typeof goalSavedNow === 'function'
+          ? goalSavedNow({ t: g.t, s0: g.s0, from: g.from, to: g.to, per: perG }, todayISO())
+          : { got: Math.min(g.t, (g.s0 || 0) + perG), pct: g.t ? Math.min(100, Math.round((Math.min(g.t, (g.s0 || 0) + perG) / g.t) * 100)) : 0 },
+        gotG = gsG.got, pctG = gsG.pct;
       body =
         '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Target Tabungan</h3><p class="msc-sub">Sisihan dana bulanan sebelum berangkat</p></div>' +
         '<span class="badge ' + (g.link ? 'b-em' : 'b-nt') + '">' + (g.link ? 'Tersambung ke Rincian' : 'Hanya Pencatat') + '</span></div>' +
@@ -27513,10 +28014,10 @@ function renderMobTrip() {
     '<button type="button" class="p-chip" data-mtrip-list="1">&larr; Semua (' + list.length + ')</button>' +
     list.map(function (t) { return '<button type="button" class="p-chip ' + (t.id === tr.id ? 'active' : '') + '" data-mtrip-sel="' + esc(t.id) + '">' + esc(t.name) + '</button>'; }).join('') +
     '<button type="button" class="p-chip" id="m-btn-trip-new-pill" style="border-style:dashed;color:var(--accent-ink)">＋ Perjalanan Baru</button></div>' +
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px"><div><strong style="font-size:0.96rem">' + esc(tr.name) + '</strong>' +
+    '<div class="m-trip-det-hd"><div class="m-trip-title-wrap"><strong style="font-size:0.96rem">' + esc(tr.name) + '</strong>' +
     '<div style="font-size:0.71rem;color:var(--text-muted)">' + (tr.start && tr.end ? fmtD(tr.start) + ' – ' + fmtD(tr.end) : 'Tanggal belum diisi') +
     (tr.cur && tr.rate ? ' &middot; Kurs 1 ' + esc(tr.cur) + ' = <span class="mono pv">Rp ' + (+tr.rate).toLocaleString('id-ID') + '</span>' : '') + '</div></div>' +
-    '<div style="display:flex;gap:5px;flex-shrink:0"><button type="button" class="btn btn-secondary btn-sm" id="m-btn-trip-edit">Ubah</button><button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson)" data-mtrip-del="' + esc(tr.id) + '">Hapus</button></div></div>' +
+    '<div class="m-trip-hd-actions"><button type="button" class="btn btn-secondary btn-sm" id="m-btn-trip-share">Bagikan</button><button type="button" class="btn btn-secondary btn-sm" id="m-btn-trip-edit">Ubah</button><button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson)" data-mtrip-del="' + esc(tr.id) + '">Hapus</button></div></div>' +
     '<div class="pill-slider">' + subTabs.map(function (st) { return '<button type="button" class="p-chip ' + (MOB_STATE.tripSub === st[0] ? 'active' : '') + '" data-mtripsub="' + st[0] + '">' + st[1] + '</button>'; }).join('') + '</div></div>' + body;
 }
 
@@ -27739,6 +28240,7 @@ function renderMobSettings() {
       : '<div style="font-size:0.78rem;color:var(--text-muted);text-align:center;padding:8px">Semua tagihan terdekat aman!</div>';
   }
   if ($('m-btn-mark-late')) $('m-btn-mark-late').style.display = due.some(function (x) { return x.diff < 0; }) ? 'block' : 'none';
+  if ($('m-set-build-ver')) $('m-set-build-ver').textContent = 'Versi build: ' + ((typeof window !== 'undefined' && window.RK_BUILD && window.RK_BUILD.id) ? window.RK_BUILD.id : 'dev');
   renderMobReportPreview(MOB_STATE.repKind);
 }
 
@@ -29138,6 +29640,97 @@ function bindMobileShellEvents(root) {
       mobOpenSheet('m-sheet-trip');
       return;
     }
+    if (e.target.closest('#m-btn-trip-share')) {
+      if ($('m-sh-inc-cost')) $('m-sh-inc-cost').checked = true;
+      if ($('m-sh-status')) $('m-sh-status').textContent = '';
+      mobOpenSheet('m-sheet-trip-share');
+      return;
+    }
+    var mShAct = e.target.closest('#m-sheet-trip-share [data-msh]');
+    if (mShAct) {
+      var trSh = mobActiveTrip();
+      if (!trSh) return;
+      var incCostM = $('m-sh-inc-cost') ? !!$('m-sh-inc-cost').checked : true,
+        sKindM = mShAct.getAttribute('data-msh'),
+        setShSt = function (msg) { if ($('m-sh-status')) $('m-sh-status').textContent = msg; };
+      if (sKindM === 'pdf') {
+        if (typeof tripPdfData !== 'function' || typeof repPdf !== 'function' || typeof rkDownloadBlob !== 'function') {
+          setShSt('Pembuat PDF tidak tersedia.');
+          return;
+        }
+        var repT = tripPdfData(trSh, incCostM),
+          bytesT = repPdf(repT),
+          dlResT = rkDownloadBlob(repT.filename, bytesT, 'application/pdf'),
+          nonLatinT = mobTripHasNonWinAnsi(trSh),
+          nonLatinNote = nonLatinT ? ' Catatan: karakter non-Latin tampil \'?\' di PDF; gunakan Kirim/Salin teks untuk teks lengkap.' : '';
+        setShSt('Membuka dialog berbagi / menyimpan PDF (' + repT.filename + ')...');
+        Promise.resolve((dlResT && dlResT.done) ? dlResT.done : dlResT).then(function (resD) {
+          var okD = resD && resD.ok !== false, mD = (resD && resD.method) || (dlResT && dlResT.method) || 'blob';
+          if (okD) {
+            setShSt('PDF berhasil dikirim lewat ' + mD + ' (' + repT.filename + ').' + nonLatinNote);
+          } else if (resD && resD.cancelled) {
+            setShSt('Pengiriman PDF dibatalkan.' + nonLatinNote);
+          } else {
+            var errS = (resD && resD.error) ? ' (' + resD.error + ')' : '';
+            setShSt('Gagal mengirim PDF' + errS + '. Gunakan "Salin teks" untuk teks lengkap.' + nonLatinNote);
+          }
+        });
+        return;
+      }
+      var txtShM = typeof tripText === 'function' ? tripText(trSh, incCostM) : trSh.name;
+      if (sKindM === 'wa') {
+        if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+          Promise.resolve(navigator.share({ title: trSh.name, text: txtShM }))
+            .then(function () { setShSt('Dialog berbagi dibuka.'); })
+            .catch(function (err) {
+              if (!err || err.name !== 'AbortError') setShSt('Berbagi gagal. Gunakan "Salin teks" lalu tempel di WhatsApp.');
+            });
+          return;
+        }
+        var waUrl = 'https://wa.me/?text=' + encodeURIComponent(txtShM);
+        if (waUrl.length > MOB_WA_URL_MAX) {
+          setShSt('Teks terlalu panjang untuk tautan WhatsApp (' + waUrl.length + ' karakter). Gunakan "Salin teks" lalu tempel di WhatsApp.');
+          return;
+        }
+        mobOpenExternalUrl(waUrl);
+        setShSt('Membuka WhatsApp...');
+      } else if (typeof copyText === 'function') {
+        copyText(txtShM).then(function () {
+          setShSt('Teks disalin. Tinggal tempel di WhatsApp atau catatan.');
+          showMobToast('Itinerary disalin');
+        });
+      }
+      return;
+    }
+    if (e.target.closest('#m-btn-trip-xl')) {
+      if (!MOB_XL_BUSY && $('m-xl-file')) $('m-xl-file').click();
+      return;
+    }
+    if (e.target.closest('#m-btn-trip-tpl')) {
+      if (MOB_XL_BUSY || typeof loadXlsx !== 'function') return;
+      mobSetXlBusy(true);
+      mobLoadXlsxWithTimeout().then(function (X) {
+        var wb = typeof xlBuildTemplateWb === 'function' ? xlBuildTemplateWb(X) : null;
+        if (!wb || typeof X.write !== 'function') throw new Error('Pustaka Excel gagal dimuat. Periksa koneksi internet.');
+        var arr = X.write(wb, { bookType: 'xlsx', type: 'array' });
+        var bytes = arr instanceof Uint8Array ? arr : new Uint8Array(arr);
+        var dlTplRes = typeof rkDownloadBlob === 'function'
+          ? rkDownloadBlob('template-itinerary.xlsx', bytes, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+          : { ok: false, method: 'none' };
+        mobSetXlBusy(false);
+        return Promise.resolve((dlTplRes && dlTplRes.done) ? dlTplRes.done : dlTplRes).then(function (resT) {
+          if (resT && resT.ok === false) {
+            showMobToast(resT.cancelled ? 'Pengiriman template dibatalkan.' : 'Gagal mengirim template Excel.');
+          } else {
+            showMobToast('Template Excel dikirim (' + ((resT && resT.method) || (dlTplRes && dlTplRes.method) || 'blob') + ').');
+          }
+        });
+      }).catch(function (err) {
+        mobSetXlBusy(false);
+        showMobToast((err && err.message) || 'Pustaka Excel gagal dimuat. Periksa koneksi internet.');
+      });
+      return;
+    }
     if (e.target.closest('#m-btn-trip-edit')) {
       var trE = mobActiveTrip();
       if (!trE) return;
@@ -29381,6 +29974,44 @@ function bindMobileShellEvents(root) {
     } else if (t.hasAttribute && t.hasAttribute('data-mck-tog')) {
       var trc = mobActiveTrip(), c0 = trc && trc.ck.find(function (x) { return x.id === t.getAttribute('data-mck-tog'); });
       if (c0) { c0.done = t.checked; save(); mobPreserveScroll(function () { syncUI(); }); }
+    } else if (t.id === 'm-xl-file') {
+      var fXl = t.files && t.files[0];
+      try { t.value = ''; } catch (err) {}
+      if (!fXl || MOB_XL_BUSY || typeof loadXlsx !== 'function' || typeof xlParse !== 'function') return;
+      mobSetXlBusy(true);
+      mobLoadXlsxWithTimeout().then(function (X) {
+        var fr = new FileReader();
+        fr.onload = function () {
+          mobSetXlBusy(false);
+          try {
+            var dXl = xlParse(X.read(fr.result, { type: 'array', cellDates: true }));
+            if (!dXl.it.length && !dXl.bk.length) {
+              showMobToast('Format tidak dikenali. Unduh Template Excel lalu isi sesuai kolomnya.');
+              return;
+            }
+            MOB_XL_DATA = dXl;
+            if ($('m-xl-summary')) $('m-xl-summary').textContent = typeof xlSummaryText === 'function' ? xlSummaryText(dXl) : (dXl.it.length + ' kegiatan, ' + dXl.bk.length + ' pemesanan.');
+            if ($('m-xl-name')) $('m-xl-name').value = (fXl.name || 'Perjalanan').replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim().slice(0, 30);
+            if ($('m-xl-cur')) $('m-xl-cur').value = dXl.cur || (dXl.fx ? 'JPY' : '');
+            if ($('m-xl-rate')) $('m-xl-rate').value = '';
+            if ($('m-xl-err')) $('m-xl-err').textContent = '';
+            mobOpenSheet('m-sheet-trip-xl');
+          } catch (err) {
+            MOB_XL_DATA = null;
+            showMobToast('File tidak bisa dibaca. Coba simpan ulang sebagai .xlsx.');
+          }
+        };
+        fr.onerror = function () {
+          mobSetXlBusy(false);
+          MOB_XL_DATA = null;
+          showMobToast('File tidak dapat dibaca.');
+        };
+        fr.readAsArrayBuffer(fXl);
+      }).catch(function (err) {
+        mobSetXlBusy(false);
+        MOB_XL_DATA = null;
+        showMobToast((err && err.message) || 'Pustaka Excel gagal dimuat. Periksa koneksi internet.');
+      });
     } else if (t.id === 'm-kp-use-budget') {
       syncMobTripBudgetWrap();
     } else if (t.dataset && t.dataset.mdtDay != null) {
@@ -29469,8 +30100,18 @@ function bindMobileShellEvents(root) {
       }
       var useB = $('m-kp-use-budget') && $('m-kp-use-budget').value === '1',
         cur = ($('m-kp-cur') && $('m-kp-cur').value.trim().toUpperCase()) || '',
-        rt = parseFloat($('m-kp-rate') && $('m-kp-rate').value) || 0,
+        rtRaw = $('m-kp-rate') && $('m-kp-rate').value,
+        rt = parseFloat(String(rtRaw || '').replace(',', '.')) || 0,
         stD = $('m-kp-start').value || '', enD = $('m-kp-end').value || '', budV = useB ? getRpVal('m-kp-budget') : 0;
+      var metaErrM = typeof tripValidateMetaInput === 'function' ? tripValidateMetaInput(stD, enD, cur, rtRaw) : null;
+      if (metaErrM) {
+        if (typeof rkShakeInvalid === 'function') {
+          var badM = metaErrM.field === 'end' ? ($('m-kp-end-trig') || $('m-kp-name')) : metaErrM.field === 'cur' ? $('m-kp-cur') : $('m-kp-rate');
+          rkShakeInvalid(badM);
+        }
+        showMobToast(metaErrM.error);
+        return;
+      }
       if (MOB_STATE.tripModalMode === 'edit' && mobActiveTrip()) {
         Object.assign(mobActiveTrip(), { name: tnm, start: stD, end: enD, budget: budV, cur: cur, rate: cur ? rt : 0 });
       } else {
@@ -29544,6 +30185,12 @@ function bindMobileShellEvents(root) {
         a: ($('m-bk-start') && $('m-bk-start').value) || '',
         b: ($('m-bk-end') && $('m-bk-end').value) || '',
       };
+      var bkDtErrM = typeof tripValidateDates === 'function' ? tripValidateDates(patchBkM.a, patchBkM.b) : null;
+      if (bkDtErrM) {
+        if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-bk-end-trig') || $('m-bk-title'));
+        showMobToast(bkDtErrM.error);
+        return;
+      }
       if (MOB_STATE.tripEditBk) {
         trB.bk = trB.bk.map(function (x) { return x.id === MOB_STATE.tripEditBk ? Object.assign({}, x, patchBkM) : x; });
         MOB_STATE.tripEditBk = null;
@@ -29618,6 +30265,32 @@ function bindMobileShellEvents(root) {
       trG.goal = { t: gc.t, s0: gc.s0, from: gc.from, to: gc.to, per: gc.per, link: gc.link };
       MOB_STATE.tripGoalEdit = false;
       save(); syncUI(); showMobToast('Target tabungan disimpan');
+    } else if (f.id === 'm-trip-xl-form') {
+      if (!MOB_XL_DATA || typeof xlValidateMeta !== 'function' || typeof xlBuildProfile !== 'function') return;
+      var valXl = xlValidateMeta(MOB_XL_DATA, $('m-xl-name') && $('m-xl-name').value, $('m-xl-cur') && $('m-xl-cur').value, $('m-xl-rate') && $('m-xl-rate').value);
+      if (valXl.error) {
+        if ($('m-xl-err')) $('m-xl-err').textContent = valXl.error;
+        if (typeof rkShakeInvalid === 'function') {
+          var badEl = !$('m-xl-name').value.trim() ? $('m-xl-name') : (/kurs/i.test(valXl.error) ? $('m-xl-rate') : $('m-xl-cur'));
+          rkShakeInvalid(badEl);
+        }
+        return;
+      }
+      var dXlOk = MOB_XL_DATA,
+        builtXl = xlBuildProfile(dXlOk, valXl.name, valXl.cur, valXl.rate);
+      MOB_XL_DATA = null;
+      ALL.kas.pr[builtXl.id] = builtXl.profile;
+      MOB_STATE.tripId = builtXl.id;
+      MOB_STATE.tripView = 'detail';
+      MOB_STATE.tripSub = 'ring';
+      MOB_STATE.tripEditIt = null;
+      MOB_STATE.tripEditBk = null;
+      MOB_STATE.tripGoalEdit = false;
+      mobCloseSheet('m-sheet-trip-xl');
+      save();
+      if (MOB_STATE.tab !== 'trip') switchMobileTab('trip');
+      else syncUI();
+      showMobToast('Perjalanan diimpor: ' + dXlOk.it.length + ' kegiatan, ' + dXlOk.bk.length + ' pemesanan.');
     }
   });
 }
