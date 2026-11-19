@@ -226,7 +226,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .apk-header-block {
   flex-shrink: 0;
   background: linear-gradient(180deg, var(--mob-hdr-top) 0%, var(--mob-hdr-bot) 100%);
   color: #FFFFFF;
-  padding: env(safe-area-inset-top, 0px) 14px 18px;
+  padding: max(env(safe-area-inset-top, 0px), var(--rk-safe-top, 0px)) 14px 18px;
   border-bottom-left-radius: 26px;
   border-bottom-right-radius: 26px;
   box-shadow: 0 8px 24px -10px rgba(7, 22, 54, 0.34);

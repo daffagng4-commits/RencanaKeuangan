@@ -2,3 +2,10 @@ node_modules/
 bot/state.local.json
 bot/secrets.json
 .dev.vars
+*.jks
+*.keystore
+keystore.properties
+android/local.properties
+android/.gradle/
+android/build/
+android/app/build/

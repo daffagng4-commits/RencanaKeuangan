@@ -795,10 +795,64 @@ const { boot } = require('./ui.js');
   const svg2 = w.rkRenderHeaderMotifSvg(false);
   assert(svg2.indexOf(mId1) === -1, 'setiap render SVG motif menghasilkan ID mask/filter/gradient yang unik');
   assert(/\.hdr-motif\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0[^}]*width:\s*100%[^}]*height:\s*100%[^}]*z-index:\s*0/s.test(cssMobSrc), 'CSS .hdr-motif mengisi penuh .apk-header-block (inset:0; width:100%; height:100%; z-index:0)');
-  assert(/\.apk-header-block\s*\{[^}]*padding:\s*env\(safe-area-inset-top,\s*0px\)/s.test(cssMobSrc), 'CSS .apk-header-block memberi padding-top safe-area hanya untuk konten sementara latar & .hdr-motif dimulai dari top:0');
+  assert(/\.apk-header-block\s*\{[^}]*padding:\s*(?:max\()?env\(safe-area-inset-top,\s*0px\)/s.test(cssMobSrc), 'CSS .apk-header-block memberi padding-top safe-area hanya untuk konten sementara latar & .hdr-motif dimulai dari top:0');
   assert(/viewport-fit=cover/i.test(doc.querySelector('meta[name="viewport"]').getAttribute('content') || ''), 'meta viewport menyertakan viewport-fit=cover untuk edge-to-edge');
   assert(/\.apk-hero-well\s*\{[^}]*z-index:\s*1[^}]*background:\s*transparent[^}]*overflow:\s*visible/s.test(cssMobSrc), 'CSS .apk-hero-well punya z-index:1 (> .hdr-motif), background:transparent, dan overflow:visible agar tidak memotong/menutupi motif');
   assert(/\.wallet-hero\s*\{[^}]*z-index:\s*1/s.test(cssMobSrc), 'CSS .wallet-hero punya z-index:1 (> .hdr-motif)');
+
+  // 19. Tombol Back Android (@capacitor/app) sesuai urutan prioritas & hanya aktif di native Capacitor
+  const origCap = w.Capacitor;
+  w.Capacitor = { isNativePlatform: () => false, Plugins: { App: { addListener() { throw new Error('tidak boleh daftar di browser'); } } } };
+  w.rkInitCapacitorBackButton();
+  assert.strictEqual(w.rkHandleAndroidBack(), false, 'handler tombol Back tidak aktif saat bukan native Capacitor');
+
+  let backCb = null;
+  let addCount = 0;
+  let exitCount = 0;
+  w._rkCapBackBound = false;
+  w.Capacitor = {
+    isNativePlatform: () => true,
+    Plugins: {
+      App: {
+        addListener(ev, fn) { if (ev === 'backButton') { addCount += 1; backCb = fn; } },
+        exitApp() { exitCount += 1; },
+      },
+    },
+  };
+  w.rkInitCapacitorBackButton();
+  w.rkInitCapacitorBackButton();
+  assert.strictEqual(addCount, 1, 'listener backButton Capacitor hanya didaftarkan satu kali (tanpa listener ganda)');
+  assert(typeof backCb === 'function', 'callback backButton terdaftar');
+
+  // Siapkan semua lapisan terbuka sekaligus untuk menguji prioritas 1 -> 2 -> 3 -> 4 -> 5
+  w.switchMobileTab('jadwal');
+  $('m-sheet-periode').classList.add('open');
+  const cfEl = $('cf');
+  cfEl.hidden = false;
+  $('m-acct-popover').classList.add('open');
+  // Prioritas 1a: tutup popover Akun dulu
+  assert.strictEqual(w.rkHandleAndroidBack(), 'popover-acct', 'Back prioritas 1 menutup #m-acct-popover');
+  assert(!$('m-acct-popover').classList.contains('open') && !cfEl.hidden && $('m-sheet-periode').classList.contains('open'), 'popover Akun tertutup sementara modal & sheet masih terbuka');
+  // Prioritas 1b: tutup popover Notifikasi
+  $('m-notif-popover').classList.add('open');
+  assert.strictEqual(w.rkHandleAndroidBack(), 'popover-notif', 'Back prioritas 1 menutup #m-notif-popover');
+  assert(!$('m-notif-popover').classList.contains('open'), 'popover Notifikasi tertutup');
+  // Prioritas 2: tutup dialog konfirmasi (#cf)
+  assert.strictEqual(w.rkHandleAndroidBack(), 'modal', 'Back prioritas 2 menutup dialog konfirmasi #cf');
+  assert(cfEl.hidden && $('m-sheet-periode').classList.contains('open'), 'dialog #cf tertutup sementara bottom sheet masih terbuka');
+  // Prioritas 3: tutup bottom sheet (#m-sheet-periode) via mobCloseSheet
+  assert.strictEqual(w.rkHandleAndroidBack(), 'sheet', 'Back prioritas 3 menutup bottom sheet terbuka');
+  assert(!$('m-sheet-periode').classList.contains('open'), 'bottom sheet #m-sheet-periode tertutup');
+  // Prioritas 4: dari tab selain Rincian kembali ke tab Rincian
+  assert.strictEqual(w.rkHandleAndroidBack(), 'tab-rincian', 'Back prioritas 4 dari tab Jadwal kembali ke tab Rincian');
+  assert.strictEqual(remountShell.querySelector('.mob-shell').getAttribute('data-mtab-active'), 'rincian', 'tab aktif kembali ke rincian');
+  // Prioritas 5: di Rincian tanpa overlay, tekan 1x tampilkan toast tanpa keluar; tekan 2x dalam 2 detik -> App.exitApp()
+  backCb();
+  assert.strictEqual(exitCount, 0, 'Back pertama di Rincian tidak langsung memanggil App.exitApp()');
+  assert($('m-toast-box').textContent.includes('Tekan lagi untuk keluar'), 'Back pertama di Rincian menampilkan toast "Tekan lagi untuk keluar"');
+  backCb();
+  assert.strictEqual(exitCount, 1, 'Back kedua dalam 2 detik memanggil App.exitApp()');
+  w.Capacitor = origCap;
 
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('OK mobile_app_mode');

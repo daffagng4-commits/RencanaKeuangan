@@ -700,12 +700,139 @@ function rkSyncMobScrollUi() {
   if (btt) btt.classList.toggle('is-visible', sy > 280);
 }
 
+function rkInitCapacitorStatusBar() {
+  if (typeof window === 'undefined' || !window.Capacitor) return;
+  if (typeof window.Capacitor.isNativePlatform === 'function' && !window.Capacitor.isNativePlatform()) return;
+  if (window._rkCapSbInit) return;
+  window._rkCapSbInit = true;
+  try {
+    var sb = window.Capacitor.Plugins && window.Capacitor.Plugins.StatusBar;
+    if (sb) {
+      if (typeof sb.setOverlaysWebView === 'function') sb.setOverlaysWebView({ overlay: true }).catch(function () {});
+      if (typeof sb.setStyle === 'function') sb.setStyle({ style: 'DARK' }).catch(function () {});
+      if (typeof sb.setBackgroundColor === 'function') sb.setBackgroundColor({ color: '#00000000' }).catch(function () {});
+    }
+    if (typeof document !== 'undefined' && document.body && typeof getComputedStyle === 'function') {
+      var probe = document.createElement('div');
+      probe.style.cssText = 'position:fixed;top:0;height:env(safe-area-inset-top, 0px);pointer-events:none;visibility:hidden;';
+      document.body.appendChild(probe);
+      var sat = parseFloat(getComputedStyle(probe).height) || 0;
+      probe.remove();
+      if (sat <= 0) {
+        if (sb && typeof sb.getInfo === 'function') {
+          sb.getInfo().then(function (info) {
+            var h = info && Number(info.height);
+            document.documentElement.style.setProperty('--rk-safe-top', (h > 0 ? h : 28) + 'px');
+            if (typeof rkSyncHeaderMotif === 'function') rkSyncHeaderMotif();
+          }).catch(function () {
+            document.documentElement.style.setProperty('--rk-safe-top', '28px');
+          });
+        } else {
+          document.documentElement.style.setProperty('--rk-safe-top', '28px');
+        }
+      }
+    }
+  } catch (e) {}
+}
+
+var _rkLastBackAt = 0;
+
+function rkIsCapacitorNative() {
+  if (typeof window === 'undefined' || !window.Capacitor) return false;
+  if (typeof window.Capacitor.isNativePlatform === 'function') {
+    return !!window.Capacitor.isNativePlatform();
+  }
+  return true;
+}
+
+function rkHandleAndroidBack() {
+  if (!rkIsCapacitorNative()) return false;
+  if (typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') return false;
+
+  // 1. Tutup popover / dropdown yang terbuka (Akun, notifikasi, kalender/dropdown)
+  var ap = $('m-acct-popover');
+  if (ap && ap.classList.contains('open')) {
+    ap.classList.remove('open');
+    if (typeof rkSyncAcctOpenUI === 'function') rkSyncAcctOpenUI();
+    return 'popover-acct';
+  }
+  var np = $('m-notif-popover');
+  if (np && np.classList.contains('open')) {
+    np.classList.remove('open');
+    if (typeof rkSyncNotifOpenUI === 'function') rkSyncNotifOpenUI();
+    return 'popover-notif';
+  }
+  var dd = document.querySelector('#mobile-app-shell .mcal-pop.open, #mobile-app-shell .open[id$="-cal"], #mobile-app-shell .cat-drop.open');
+  if (dd) {
+    dd.classList.remove('open');
+    return 'dropdown';
+  }
+
+  // 2. Tutup dialog konfirmasi / modal yang terbuka
+  var dlg = document.querySelector('#cf:not([hidden]), #lg:not([hidden]), .modal:not([hidden])');
+  if (dlg) {
+    var closeBtn = dlg.querySelector('#lgc, #yr-close, #qtx-close, #kpf-close, #rep-m-cl, [data-cf="later"], [data-close-modal]');
+    if (closeBtn) closeBtn.click();
+    if (!dlg.hidden) {
+      if (typeof brCloseModal === 'function' && dlg.id) brCloseModal(dlg.id);
+      else {
+        dlg.classList.remove('open');
+        dlg.hidden = true;
+      }
+    }
+    return 'modal';
+  }
+
+  // 3. Tutup bottom sheet yang terbuka (pakai mobCloseSheet agar animasi Fase 2 & reduced-motion terjaga)
+  var sheet = document.querySelector('#mobile-app-shell .modal-backdrop.open');
+  if (sheet && sheet.id) {
+    mobCloseSheet(sheet.id);
+    return 'sheet';
+  }
+
+  // 4. Jika di tab selain Rincian: kembali ke tab Rincian
+  if ((MOB_STATE.tab || 'rincian') !== 'rincian') {
+    switchMobileTab('rincian');
+    return 'tab-rincian';
+  }
+
+  // 5. Di Rincian tanpa overlay: tekan dua kali dalam 2 detik untuk keluar
+  var now = Date.now();
+  if (now - _rkLastBackAt < 2000) {
+    _rkLastBackAt = 0;
+    var appPlugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+    if (appPlugin && typeof appPlugin.exitApp === 'function') appPlugin.exitApp();
+    return 'exit';
+  }
+  _rkLastBackAt = now;
+  showMobToast('Tekan lagi untuk keluar');
+  return 'toast-exit';
+}
+
+function rkInitCapacitorBackButton() {
+  if (!rkIsCapacitorNative()) return;
+  if (window._rkCapBackBound) return;
+  var appPlugin = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (!appPlugin || typeof appPlugin.addListener !== 'function') return;
+  window._rkCapBackBound = true;
+  appPlugin.addListener('backButton', function () {
+    rkHandleAndroidBack();
+  });
+}
+
+if (typeof window !== 'undefined') {
+  window.rkHandleAndroidBack = rkHandleAndroidBack;
+  window.rkInitCapacitorBackButton = rkInitCapacitorBackButton;
+}
+
 function ensureMobileShell() {
   var root = $('mobile-app-shell');
   if (!root) return null;
   if (!root.querySelector('.mob-shell')) {
     root.innerHTML = mobShellTemplate();
     setMobPhoneFrame(mobDefaultFrame());
+    rkInitCapacitorStatusBar();
+    rkInitCapacitorBackButton();
     bindMobileShellEvents(root);
     var mm = $('m-main');
     if (mm && !mm._mobScrollBound) {

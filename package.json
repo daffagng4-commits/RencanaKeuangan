@@ -16,12 +16,19 @@
     "test:browser": "node build.js && node tests/browser/smoke.js",
     "test:rebalance": "node tests/rebalance/features.test.js",
     "test:schedule": "node tests/run-schedule.js",
-    "check": "node tests/check-bundle.js"
+    "check": "node tests/check-bundle.js",
+    "cap:sync": "node build.js && npx cap sync android",
+    "android:debug": "npm run cap:sync && node -e \"require('child_process').execSync(process.platform==='win32'?'gradlew.bat assembleDebug':'./gradlew assembleDebug',{cwd:'android',stdio:'inherit'})\""
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.6.2",
     "jsdom": "^24.0.0"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/status-bar": "^8.0.4",
     "pdf-lib": "^1.17.1"
   }
 }

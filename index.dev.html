@@ -35,7 +35,8 @@
     var mt = document.getElementById('rk-meta-theme');
     if (mt) mt.setAttribute('content', isApp ? (isDark ? '#092B60' : '#0E3F86') : (isDark ? '#0A0E14' : '#F3F5F2'));
   } catch (e) {}
-  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  var inCap = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+  if (!inCap && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     window.__rkSwReg = navigator.serviceWorker.register('./sw.js', { scope: './' }).catch(function () {});
   }
 })();
