@@ -1,9 +1,9 @@
 # Panduan Build APK Android (Capacitor) — RenKeu
 
 ## Prasyarat
-- **Node.js** 20+ (`npm install`)
-- **JDK 17** (atau JDK 21) dengan `JAVA_HOME` terpasang
-- **Android Studio / Android SDK** (Platform Android API 35/36 & Build-Tools) dengan `ANDROID_HOME` terpasang
+- **Node.js** 22+ (`@capacitor/cli` v8 membutuhkan `>=22.0.0`, lalu jalankan `npm install`)
+- **JDK 21** (`capacitor.build.gradle` menargetkan `JavaVersion.VERSION_21`) dengan `JAVA_HOME` terpasang
+- **Android Studio / Android SDK** (Platform Android API 36 sesuai `compileSdkVersion = 36` di `android/variables.gradle` & Build-Tools `36.0.0`) dengan `ANDROID_HOME` terpasang
 
 ## Build APK Debug (Lokal)
 1. Sinkronkan bundle web (`dist/`) ke proyek Android:
