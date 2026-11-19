@@ -1045,12 +1045,19 @@ const { boot } = require('./ui.js');
   doPtr($('m-tab-rincian'), 0, 160);
   assert.strictEqual(ptrPullCount, 1, 'scrollTop > 0 tidak mengaktifkan Pull-to-Refresh');
   $('m-main').scrollTop = 0;
-  // 21e. Sentuhan dimulai di grafik, slider horizontal, atau gerakan horizontal: tidak aktif
+  // 21e. Gestur horizontal di grafik/slider/konten & ketuk tombol header tanpa geser: tidak mengaktifkan PTR
   w._rkPtrReset();
-  doPtr($('m-cf-wrap'), 0, 160);
-  doPtr($('m-kpi-slider'), 0, 160);
+  doPtr($('m-cf-wrap'), 80, 10);
+  doPtr($('m-kpi-slider'), 80, 10);
   doPtr($('m-tab-rincian'), 80, 12);
-  assert.strictEqual(ptrPullCount, 1, 'tarik dari grafik, slider horizontal, atau arah horizontal tidak memicu Pull-to-Refresh');
+  assert.strictEqual(ptrPullCount, 1, 'gestur horizontal di grafik, slider horizontal, atau konten tidak memicu Pull-to-Refresh');
+  // Ketuk tombol header (#m-btn-notif) tanpa geser tetap membuka popover & tidak memicu PTR
+  fireTouch($('m-btn-notif'), 'touchstart', 350, 30);
+  fireTouch($('m-btn-notif'), 'touchend', 350, 30);
+  click($('m-btn-notif'));
+  assert($('m-notif-popover').classList.contains('open'), 'ketuk #m-btn-notif tanpa geser tetap membuka popover notifikasi');
+  click($('m-btn-notif'));
+  assert.strictEqual(ptrPullCount, 1, 'ketuk tombol header tanpa geser tidak memicu PTR');
   // 21f. Sheet terbuka atau dialog konfirmasi terbuka: tidak aktif
   w._rkPtrReset();
   $('m-sheet-periode').classList.add('open');
@@ -1122,6 +1129,155 @@ const { boot } = require('./ui.js');
   doPtr(remountShell, 0, 160);
   assert.strictEqual(ptrPullCount, beforeBr, 'Pull-to-Refresh tidak aktif di mode browser/desktop');
   w.setShellMode('mobile-app');
+
+  // 22. Matriks zona PTR konsisten: header, ikon SVG, kartu, slider, grafik (vertikal ya, horizontal tidak)
+  w.switchMobileTab('rincian');
+  $('m-main').scrollTop = 0;
+  w.sbUser = { id: 'u-ptr-1', email: 'ptr@example.com' };
+  const curShell22 = remountShell.querySelector('.mob-shell');
+  const bnav22 = curShell22.querySelector('.mob-bottom-nav');
+  const ptrHdrBlock = curShell22.querySelector('.apk-header-block');
+  const ioSvg = curShell22.querySelector('.wallet-io-ico svg');
+  const rincianCard = $('m-tab-rincian').querySelector('.card');
+  const cfHit = $('m-cf-hit') || $('m-svg-cashflow');
+  const cfWrap = $('m-cf-wrap');
+  const kpiSlider = $('m-kpi-slider');
+  assert(ptrHdrBlock && ioSvg && rincianCard && cfWrap && kpiSlider, 'elemen zona PTR Rincian lengkap');
+
+  const triggerZoneTargets = [
+    ['header (.apk-header-block)', () => curShell22.querySelector('.apk-header-block')],
+    ['judul sapaan (#m-user-name)', () => $('m-user-name')],
+    ['kartu saldo (.wallet-hero)', () => curShell22.querySelector('.wallet-hero')],
+    ['ikon SVG (.wallet-io-ico svg)', () => curShell22.querySelector('.wallet-io-ico svg')],
+    ['kartu Rincian (.card)', () => $('m-tab-rincian').querySelector('.card')],
+    ['kartu slider KPI (.card-slider)', () => $('m-kpi-slider')],
+    ['grafik Arus Kas (.chart-stage)', () => $('m-cf-wrap')],
+    ['area hit grafik (#m-cf-hit)', () => curShell22.querySelector('#m-cf-hit') || $('m-svg-cashflow')],
+  ];
+  for (const [label, getEl] of triggerZoneTargets) {
+    w._rkPtrReset();
+    const prevCount = ptrPullCount;
+    doPtr(getEl(), 0, 120);
+    await new Promise((r) => setTimeout(r, 25));
+    assert.strictEqual(ptrPullCount, prevCount + 1, 'tarik vertikal 120px dari ' + label + ' harus memicu PTR');
+  }
+  // Subpixel scroll <= 1px (mis. 0.5px di Android WebView) tetap dihitung di atas
+  w._rkPtrReset();
+  const prevSubPx = ptrPullCount;
+  w.scrollY = 0.5;
+  doPtr(ptrHdrBlock, 0, 120);
+  w.scrollY = 0;
+  await new Promise((r) => setTimeout(r, 25));
+  assert.strictEqual(ptrPullCount, prevSubPx + 1, 'nilai pecahan scrollY <= 1px tetap dapat memicu PTR');
+
+  // Zona yang TIDAK boleh memicu PTR: horizontal di pill/card slider/chart, input/select/textarea, overlay terbuka, scrollY > 1
+  w.switchMobileTab('kas');
+  $('m-main').scrollTop = 0;
+  const kasPillSlider = $('m-kas-subnav');
+  const kasInput = $('m-kas-search');
+  const kasSelect = $('m-kas-debt-kind');
+  const kasNote = $('m-kas-note');
+  w._rkPtrReset();
+  const beforeNoPtr = ptrPullCount;
+  doPtr(kasPillSlider, 90, 8);
+  doPtr(kasInput, 0, 150);
+  doPtr(kasSelect, 0, 150);
+  doPtr(kasNote, 0, 150);
+  doPtr($('m-kas-slider'), 0, 150);
+  doPtr(bnav22, 0, 150);
+  // Overlay terbuka: popover, mselect, modal-backdrop, notif bar HP
+  $('m-acct-popover').classList.add('open');
+  doPtr($('m-tab-kas'), 0, 150);
+  $('m-acct-popover').classList.remove('open');
+  $('m-kas-cat-ms').classList.add('open');
+  doPtr($('m-tab-kas'), 0, 150);
+  $('m-kas-cat-ms').classList.remove('open');
+  $('m-os-notif').classList.add('show');
+  doPtr($('m-os-notif'), 0, 150);
+  $('m-os-notif').classList.remove('show');
+  $('m-main').scrollTop = 50;
+  doPtr(ptrHdrBlock, 0, 150);
+  $('m-main').scrollTop = 0;
+  await new Promise((r) => setTimeout(r, 25));
+  assert.strictEqual(ptrPullCount, beforeNoPtr, 'gestur horizontal slider, input/select/range, bottom-nav, overlay terbuka, dan scroll > 1 tidak memicu PTR');
+
+  // 23. Re-tap tab Rincian memicu refresh tunggal bersama PTR
+  assert.strictEqual(typeof w.rkMobRefresh, 'function', 'fungsi refresh tunggal window.rkMobRefresh diekspos');
+  const origRenderMobRincian = w.renderMobRincian;
+  let rincianRenderCount = 0;
+  w.renderMobRincian = function () {
+    rincianRenderCount += 1;
+    return origRenderMobRincian.apply(this, arguments);
+  };
+  w.switchMobileTab('rincian');
+  $('m-main').scrollTop = 0;
+  w._rkPtrReset();
+  rincianRenderCount = 0;
+  const beforeRetap = ptrPullCount;
+  const navRincianBtn = bnav22.querySelector('[data-mtab="rincian"]');
+  const navKasBtn = bnav22.querySelector('[data-mtab="kas"]');
+  // 23a. Re-tap saat di Rincian (posisi atas) -> refresh tepat 1x tanpa double render switchMobileTab
+  click(navRincianBtn);
+  assert($('m-ptr-ind').classList.contains('is-refreshing'), 'indikator PTR aktif dengan kelas .is-refreshing saat refresh berjalan');
+  await new Promise((r) => setTimeout(r, 30));
+  assert.strictEqual(ptrPullCount, beforeRetap + 1, 'tap ulang tombol Rincian di bottom nav memicu refresh 1x');
+  assert.strictEqual(rincianRenderCount, 1, 're-tap Rincian tidak menyebabkan render ulang ganda dari switchMobileTab + PTR');
+  // 23b. Tap beruntun dalam masa cooldown tidak memicu ganda
+  click(navRincianBtn);
+  click(navRincianBtn);
+  await new Promise((r) => setTimeout(r, 25));
+  assert.strictEqual(ptrPullCount, beforeRetap + 1, 'tap beruntun dalam masa cooldown tidak memicu refresh ganda');
+  // 23c. Overlay terbuka memblokir re-tap refresh
+  w._rkPtrReset();
+  $('m-sheet-periode').classList.add('open');
+  click(navRincianBtn);
+  $('m-sheet-periode').classList.remove('open');
+  await new Promise((r) => setTimeout(r, 25));
+  assert.strictEqual(ptrPullCount, beforeRetap + 1, 'overlay terbuka memblokir refresh saat re-tap Rincian');
+  // 23d. Mode Privasi tetap aman selama refresh re-tap
+  w._rkPtrReset();
+  doc.body.classList.add('privacy-mode');
+  doc.body.classList.add('privacy-on');
+  click(navRincianBtn);
+  await new Promise((r) => setTimeout(r, 25));
+  assert.strictEqual(ptrPullCount, beforeRetap + 2, 're-tap Rincian tetap berfungsi saat Mode Privasi aktif');
+  assert(doc.body.classList.contains('privacy-mode') && doc.body.classList.contains('privacy-on'), 'Mode Privasi tidak bocor selama refresh re-tap');
+  doc.body.classList.remove('privacy-mode', 'privacy-on');
+  // 23e. Re-tap saat tergulir: scroll halus ke atas lalu jalankan refresh 1x
+  w._rkPtrReset();
+  const origWinScrollTo = w.scrollTo;
+  const scrollCalls = [];
+  w.scrollTo = (opts) => {
+    scrollCalls.push(opts);
+    w.scrollY = 0;
+  };
+  $('m-main').scrollTop = 180;
+  click(navRincianBtn);
+  // Tap beruntun sementara masih menunggu ke atas tidak boleh memicu ganda
+  click(navRincianBtn);
+  await new Promise((r) => setTimeout(r, 380));
+  assert(scrollCalls.length >= 1, 're-tap Rincian saat halaman tergulir memanggil scrollTo ke atas');
+  assert.strictEqual(ptrPullCount, beforeRetap + 3, 're-tap Rincian saat tergulir menjalankan refresh tepat 1x');
+  w.scrollTo = origWinScrollTo;
+  $('m-main').scrollTop = 0;
+  // 23f. Tab selain Rincian tidak refresh saat ditap ulang; pindah dari tab lain ke Rincian tidak memicu refresh
+  w._rkPtrReset();
+  const beforeOtherTab = ptrPullCount;
+  click(navKasBtn);
+  click(navKasBtn);
+  await new Promise((r) => setTimeout(r, 25));
+  assert.strictEqual(ptrPullCount, beforeOtherTab, 'tap ulang tab selain Rincian (Kas) tidak memicu refresh');
+  click(navRincianBtn);
+  await new Promise((r) => setTimeout(r, 25));
+  assert.strictEqual(ptrPullCount, beforeOtherTab, 'pindah dari tab Kas ke Rincian tidak dihitung re-tap dan tidak memicu refresh');
+  // 23g. Mode browser tidak terpengaruh
+  w.setShellMode('browser');
+  const beforeBrowserRetap = ptrPullCount;
+  assert.strictEqual(w.rkMobRefresh(), false, 'window.rkMobRefresh nonaktif di mode browser');
+  await new Promise((r) => setTimeout(r, 25));
+  assert.strictEqual(ptrPullCount, beforeBrowserRetap, 'mode browser tidak terpengaruh oleh rkMobRefresh');
+  w.setShellMode('mobile-app');
+  w.renderMobRincian = origRenderMobRincian;
 
   w.sb = origSb21;
   w.sbUser = origSbUser21;
