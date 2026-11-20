@@ -887,6 +887,7 @@ function brOpenModal(id) {
 function brCloseModal(id) {
   var el = $(id);
   if (!el) return;
+  if (typeof closeAllPickersAndMenus === 'function') closeAllPickersAndMenus(null);
   if (id === 'modal-trip-xl') BR_STATE.xlPending = null;
   var wasOpen = el.classList.contains('open') && el.offsetWidth > 0 && !rkIsReducedMotion();
   el.classList.remove('open');
@@ -982,9 +983,13 @@ function syncModernSelect(selOrId, forceDisplay) {
       e.stopPropagation();
       sel.value = btn.dataset.val;
       wrap.classList.remove('open');
-      wrap.querySelector('.mselect-trigger').setAttribute('aria-expanded', 'false');
+      var trBtn = wrap.querySelector('.mselect-trigger');
+      if (trBtn) trBtn.setAttribute('aria-expanded', 'false');
+      menu.style.position = ''; menu.style.top = ''; menu.style.left = ''; menu.style.right = '';
+      menu.style.width = ''; menu.style.minWidth = ''; menu.style.maxWidth = ''; menu.style.maxHeight = ''; menu.style.zIndex = '';
       syncModernSelect(sel);
       sel.dispatchEvent(new Event('change', { bubbles: true }));
+      if (trBtn && typeof trBtn.focus === 'function') { try { trBtn.focus({ preventScroll: true }); } catch (err) {} }
     };
   });
 }
@@ -1022,14 +1027,15 @@ function enhanceSelect(sel) {
     mn.style.maxHeight = '';
     mn.style.zIndex = '';
   }
-  trig.onclick = function (e) {
-    e.stopPropagation();
-    var willOpen = !wrap.classList.contains('open');
+  function setMsOpen(willOpen, restoreFocus) {
     closeAllPickersAndMenus(willOpen ? wrap : null);
-    wrap.classList.toggle('open', willOpen);
-    trig.setAttribute('aria-expanded', String(willOpen));
+    wrap.classList.toggle('open', !!willOpen);
+    trig.setAttribute('aria-expanded', String(!!willOpen));
     if (!willOpen) {
       resetMselectMenuStyle(menu);
+      if (restoreFocus && typeof trig.focus === 'function') {
+        try { trig.focus({ preventScroll: true }); } catch (err) {}
+      }
       return;
     }
     if (typeof window !== 'undefined') {
@@ -1058,7 +1064,48 @@ function enhanceSelect(sel) {
         menu.classList.toggle('align-right', r.left + 235 > window.innerWidth - 14);
       }
     }
+  }
+  trig.onclick = function (e) {
+    e.stopPropagation();
+    setMsOpen(!wrap.classList.contains('open'), false);
   };
+  wrap.addEventListener('keydown', function (e) {
+    var k = e.key, isOpen = wrap.classList.contains('open'),
+      optBtns = [].slice.call(menu.querySelectorAll('.mselect-opt'));
+    if (k === 'Escape' && isOpen) {
+      e.preventDefault();
+      e.stopPropagation();
+      setMsOpen(false, true);
+      return;
+    }
+    if (k === 'Tab' && isOpen) {
+      setMsOpen(false, false);
+      return;
+    }
+    if (k === 'ArrowDown' || k === 'ArrowUp') {
+      e.preventDefault();
+      if (!isOpen) {
+        setMsOpen(true, false);
+        var actBtn = menu.querySelector('.mselect-opt.active') || optBtns[0];
+        if (actBtn && typeof actBtn.focus === 'function') { try { actBtn.focus({ preventScroll: true }); } catch (err) {} }
+      } else if (optBtns.length) {
+        var curIdx = optBtns.indexOf(document.activeElement);
+        var nextIdx = curIdx < 0 ? 0 : (k === 'ArrowDown' ? (curIdx + 1) % optBtns.length : (curIdx - 1 + optBtns.length) % optBtns.length);
+        try { optBtns[nextIdx].focus({ preventScroll: true }); } catch (err) {}
+      }
+      return;
+    }
+    if ((k === 'Enter' || k === ' ') && document.activeElement === trig) {
+      e.preventDefault();
+      setMsOpen(!isOpen, !isOpen ? false : true);
+      return;
+    }
+    if ((k === 'Enter' || k === ' ') && document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('mselect-opt')) {
+      e.preventDefault();
+      e.stopPropagation();
+      document.activeElement.click();
+    }
+  });
   sel.addEventListener('change', function () { syncModernSelect(sel); });
   syncModernSelect(sel);
 }
@@ -2698,20 +2745,24 @@ function brDrawInlineCal(popId, stateKey, lblId) {
 function tripAmtRp(P, x) {
   return typeof tripBkRp === 'function' ? tripBkRp(P, x) : (typeof val === 'function' ? val(P, x.amt, x.fx) : (+x.amt || 0));
 }
-function tripItRp(P, x) {
-  return typeof val === 'function' ? val(P, x.est, x.fx) : (+x.est || 0);
-}
+var tripItRp = typeof tripItRp === 'function' ? tripItRp : function tripItRp(P, x) {
+  if (!x) return 0;
+  return (+x.est || 0) * (typeof tripItemRate === 'function' ? tripItemRate(P, x) : (typeof val === 'function' ? (x.fx ? (x.rt > 0 ? x.rt : (+(P && P.rate) || 0)) : 1) : 1));
+};
 function tripDayLabel(P, d) {
   return typeof dayLabel === 'function' ? dayLabel(P, d) : fmtD(d);
 }
 function brSyncTripEqPrev() {
   var tr = tp();
-  if (typeof tripSyncEqPairs === 'function') {
+  var eIt = tr && BR_STATE.tripEditItId ? (tr.it || []).filter(function (x) { return x.id === BR_STATE.tripEditItId; })[0] : null;
+  if (typeof tripSyncItemRateField === 'function') {
+    tripSyncItemRateField(tr, eIt, 'it-est', 'it-cur', 'it-est-eq', 'it-rt-wrap', 'it-rt', false);
+  } else if (typeof tripSyncEqPairs === 'function') {
     tripSyncEqPairs(tr, [['it-est', 'it-cur', 'it-est-eq']]);
   }
   var eBk = tr && BR_STATE.tripEditBkId ? (tr.bk || []).filter(function (x) { return x.id === BR_STATE.tripEditBkId; })[0] : null;
-  if (typeof tripSyncBkRateField === 'function') {
-    tripSyncBkRateField(tr, eBk, 'bk-amt', 'bk-cur', 'bk-amt-eq', 'bk-rt-wrap', 'bk-rt');
+  if (typeof tripSyncItemRateField === 'function') {
+    tripSyncItemRateField(tr, eBk, 'bk-amt', 'bk-cur', 'bk-amt-eq', 'bk-rt-wrap', 'bk-rt', true);
   } else if (typeof tripSyncEqPairs === 'function') {
     tripSyncEqPairs(tr, [['bk-amt', 'bk-cur', 'bk-amt-eq']]);
   }
@@ -2775,10 +2826,12 @@ function renderTrip() {
       '<div class="metric-tile"><div class="metric-tile-label">Rencana per Hari</div><div class="metric-tile-val pv">' + (N ? rp(Math.round(pl.t / N)) : '—') + '</div><div class="metric-tile-hint">' + (N ? N + ' hari' : 'Tanggal belum diisi') + (tr.cur && tr.rate ? ' · 1 ' + esc(tr.cur) + ' = Rp ' + tr.rate.toLocaleString('id-ID') : '') + '</div></div></div>' +
       '<div class="grid-2"><div class="stack"><div class="card"><div class="card-header"><div><h2 class="card-title">Siapkan Tunai / Kartu</h2><p class="card-sub">Akumulasi kebutuhan bayar di tempat</p></div></div><div class="simple-list">' +
       (ck.length ? ck.map(function (k) {
-        var cx = pl.cash[k], eqRp = cx.idr + (cx.fx && tr.rate ? Math.round(cx.fx * tr.rate) : 0);
-        return '<div class="simple-row" style="cursor:default;"><span class="simple-row-name">' + esc(k) + '</span><span class="mono pv" style="font-size:0.8rem;font-weight:700;">' + (cx.fx ? esc(tr.cur) + ' ' + Math.round(cx.fx).toLocaleString('id-ID') : rp(cx.idr)) + '</span><span class="simple-row-amt pv">' + (cx.fx ? (tr.rate ? '≈ ' + rp(eqRp) : (cx.idr ? rp(cx.idr) : '—')) : rp(eqRp)) + '</span></div>';
+        var cx = pl.cash[k];
+        if (typeof tripCashRowHtml === 'function') return tripCashRowHtml(tr, k, cx, false);
+        var eqRp = Math.round(cx.idr + (cx.fxRp != null ? cx.fxRp : (cx.fx && tr.rate ? cx.fx * tr.rate : 0)));
+        return '<div class="simple-row" style="cursor:default;"><span class="simple-row-name">' + esc(k) + '</span><span class="mono pv" style="font-size:0.8rem;font-weight:700;">' + (cx.fx ? esc(tr.cur) + ' ' + Math.round(cx.fx).toLocaleString('id-ID') : rp(cx.idr)) + '</span><span class="simple-row-amt pv">' + (cx.fx ? (cx.fxRp > 0 ? '≈ ' + rp(eqRp) : (cx.idr ? rp(cx.idr) : '—')) : rp(eqRp)) + '</span></div>';
       }).join('') : '<div style="padding:14px;color:var(--text-muted);font-size:0.82rem;">Belum ada pengeluaran tunai/kartu harian di Itinerary.</div>') +
-      '</div></div><div class="card"><div class="card-header"><div><h2 class="card-title">Estimasi per Hari</h2><p class="card-sub">Pengeluaran non-online dihitung dari jadwal kegiatan</p></div></div><div class="simple-list">' +
+      '</div></div>' + (typeof tripFxDetailCardHtml === 'function' ? tripFxDetailCardHtml(tr, false) : '') + '<div class="card"><div class="card-header"><div><h2 class="card-title">Estimasi per Hari</h2><p class="card-sub">Pengeluaran non-online dihitung dari jadwal kegiatan</p></div></div><div class="simple-list">' +
       (dk.length ? dk.map(function (d) { return '<div class="simple-row" style="cursor:default;"><span class="simple-row-name">' + esc(tripDayLabel(tr, d)) + '</span><span class="simple-row-bar"><i style="width:' + ((byDay[d] / dmax) * 100).toFixed(1) + '%;background:var(--accent);"></i></span><span class="simple-row-amt pv">' + rp(byDay[d]) + '</span></div>'; }).join('') : '<div style="padding:14px;color:var(--text-muted);font-size:0.82rem;">Belum ada estimasi harian.</div>') +
       '</div></div></div><div class="card"><div class="card-header"><div><h2 class="card-title">Rencana Biaya per Kategori</h2><p class="card-sub">Gabungan pemesanan + pengeluaran harian</p></div><span class="badge badge-neutral mono pv">' + rp(pl.t) + '</span></div><div class="simple-list">' +
       (cl.length ? cl.map(function (k) {
@@ -2796,9 +2849,10 @@ function renderTrip() {
       '<div class="field"><span class="field-label">Tanggal</span><div class="custom-picker-wrap"><button type="button" class="cal-trigger-btn" style="width:100%;justify-content:space-between;" data-ical-trig="it-day-cal|itDay|it-day-lbl"><span id="it-day-lbl">' + brFmtShortIndo(BR_STATE.inlineDates.itDay) + ' ' + BR_STATE.inlineDates.itDay.slice(0, 4) + '</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button><div class="picker-popover" id="it-day-cal"></div></div></div>' +
       '<div class="grid-2" style="gap:8px;"><div class="field"><label class="field-label" for="it-t1">Mulai</label><input class="input mono" id="it-t1" placeholder="14.00" value="' + esc(EIt ? (EIt.time || '').replace(':', '.') : '') + '"/></div><div class="field"><label class="field-label" for="it-t2">Selesai</label><input class="input mono" id="it-t2" placeholder="16.30" value="' + esc(EIt ? (EIt.time2 || '').replace(':', '.') : '') + '"/></div></div>' +
       '<div class="field"><label class="field-label" for="it-place">Kegiatan</label><input class="input" id="it-place" placeholder="mis. Senso-ji Temple" value="' + esc(EIt ? EIt.place : '') + '" required/></div></div>' +
-      '<div class="grid-3"><div class="field"><label class="field-label" for="it-est">Biaya &amp; Mata Uang</label><div style="display:flex;gap:6px;"><input class="input mono" id="it-est" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EIt && EIt.est ? fmtRpInputStr(String(EIt.est)) : '') + '" style="flex:1;min-width:0;"/><div style="width:94px;flex-shrink:0;"><select class="input" id="it-cur"><option value="idr"' + (!(EIt && EIt.fx) ? ' selected' : '') + '>Rp</option>' + (tr.cur ? '<option value="fx"' + ((EIt && EIt.fx) ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : '') + '</select></div></div><div class="trip-eq-hint mono" id="it-est-eq"></div></div>' +
+      '<div class="grid-3"><div class="field"><label class="field-label" for="it-est">Biaya &amp; Mata Uang</label><div style="display:flex;gap:6px;"><input class="input mono" id="it-est" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EIt && EIt.est ? fmtRpInputStr(String(EIt.est)) : '') + '" style="flex:1;min-width:0;"/><div style="width:94px;flex-shrink:0;"><select class="input" id="it-cur">' + (typeof tripCurSelectOptsHtml === 'function' ? tripCurSelectOptsHtml(tr, EIt) : ('<option value="idr"' + (!(EIt && EIt.fx) ? ' selected' : '') + '>Rp</option>' + (tr.cur ? '<option value="fx"' + ((EIt && EIt.fx) ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : ''))) + '</select></div></div><div class="trip-eq-hint mono" id="it-est-eq"></div></div>' +
       '<div class="field"><label class="field-label" for="it-pay">Pembayaran</label><select class="input" id="it-pay"><option value=""' + (EIt && !EIt.pay ? ' selected' : '') + '>Belum ditentukan</option><option value="ic"' + (EIt && EIt.pay === 'ic' ? ' selected' : '') + '>Kartu IC</option><option value="on"' + (EIt && EIt.pay === 'on' ? ' selected' : '') + '>Online (Pemesanan)</option><option value="cash"' + (!EIt || EIt.pay === 'cash' ? ' selected' : '') + '>Cash</option></select></div>' +
       '<div class="field"><label class="field-label" for="it-cat">Kategori</label><select class="input" id="it-cat">' + ICAT.map(function (c) { return '<option value="' + esc(c) + '"' + ((EIt ? EIt.cat : 'Transport') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div></div>' +
+      '<div class="field" id="it-rt-wrap" style="display:' + (EIt && EIt.fx && (typeof tripItemCur === 'function' ? tripItemCur(tr, EIt) : tr.cur) ? '' : 'none') + ';"><label class="field-label" for="it-rt">Kurs (Rp per 1 ' + esc((EIt && typeof tripItemCur === 'function' ? tripItemCur(tr, EIt) : tr.cur) || 'asing') + ')</label><input class="input mono" id="it-rt" type="text" inputmode="decimal" placeholder="' + (tr.rate > 0 ? 'Ikut kurs perjalanan: ' + esc(tr.rate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + (EIt && typeof tripHasValidRt === 'function' && tripHasValidRt(EIt) ? esc(String(EIt.rt)) : '') + '"/><div class="card-sub">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div>' +
       '<div class="grid-2"><div class="field"><label class="field-label" for="it-link">Tautan Peta / Tiket (opsional)</label><input class="input" id="it-link" placeholder="https://..." value="' + esc(EIt ? (EIt.link || '') : '') + '"/></div><div class="field"><label class="field-label" for="it-note">Catatan (opsional)</label><input class="input" id="it-note" placeholder="Catatan singkat" value="' + esc(EIt ? (EIt.note || '') : '') + '"/></div></div>' +
       '<div style="display:flex;justify-content:flex-end;gap:8px;">' + (EIt ? '<button type="button" class="btn btn-secondary" data-it-cancel="1">Batal</button>' : '') + '<button type="submit" class="btn btn-primary">' + (EIt ? 'Simpan Perubahan' : 'Tambah Kegiatan') + '</button></div></form></div>' +
       '<div class="stack">' + (days.length ? days.map(function (d) {
@@ -2807,10 +2861,10 @@ function renderTrip() {
         return '<div class="card"><div class="card-header" style="margin-bottom:10px;"><div><h3 class="card-title">' + esc(tripDayLabel(tr, d)) + '</h3></div>' + (dTot ? '<span class="badge badge-accent mono pv">Estimasi: ' + rp(dTot) + '</span>' : '') + '</div>' +
           '<input class="input" style="margin-bottom:10px;" value="' + esc((tr.dt && tr.dt[d]) || '') + '" placeholder="Judul hari, mis. Jakarta – Tokyo" data-dt-day="' + d + '"/>' +
           '<div class="stack" style="gap:8px;">' + (its.length ? its.map(function (x) {
-            return '<div class="upcoming-item"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) +
+            return '<div class="upcoming-item" data-it-row="' + esc(x.id) + '"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) +
               '<div style="min-width:0;"><div class="upcoming-name" style="' + (x.done ? 'text-decoration:line-through;opacity:0.55;' : '') + '">' + (x.time ? '<span class="mono" style="color:var(--accent-ink);margin-right:6px;">' + esc(x.time.replace(':', '.')) + (x.time2 ? '–' + esc(x.time2.replace(':', '.')) : '') + '</span>' : '') + esc(x.place) + '</div>' +
               '<div class="upcoming-meta"><span class="badge badge-neutral">' + esc(x.cat) + '</span>' + (x.pay ? '<span class="badge badge-accent">' + esc(PAYL[x.pay] || x.pay) + '</span>' : '') + (x.note ? '<span>' + esc(x.note) + '</span>' : '') + '</div></div></div>' +
-              '<div class="upcoming-right">' + (typeof tripItemAmtHtml === 'function' ? tripItemAmtHtml(tr, x.est, x.fx) : ('<strong class="mono pv">' + (x.est ? (x.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(x.est).toLocaleString('id-ID') : rp(x.est)) : '') + '</strong>')) +
+              '<div class="upcoming-right">' + (typeof tripItemAmtHtml === 'function' ? tripItemAmtHtml(tr, x) : ('<strong class="mono pv">' + (x.est ? (x.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(x.est).toLocaleString('id-ID') : rp(x.est)) : '') + '</strong>')) +
               '<button type="button" class="btn btn-secondary btn-sm" data-it-done="' + esc(x.id) + '">' + (x.done ? '✓ Selesai' : 'Tandai') + '</button>' +
               '<button type="button" class="btn btn-secondary btn-sm" data-trip-it-edit="' + esc(x.id) + '">Ubah</button>' +
               '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);" data-trip-it-del="' + esc(x.id) + '">Hapus</button></div></div>';
@@ -2824,15 +2878,15 @@ function renderTrip() {
       '<div class="grid-3"><div class="metric-tile"><div class="metric-tile-label">Total Pemesanan</div><div class="metric-tile-val pv">' + rp(pl.b) + '</div></div><div class="metric-tile"><div class="metric-tile-label">Sudah Dibayar</div><div class="metric-tile-val pv" style="color:var(--emerald);">' + rp(pl.paid) + '</div></div><div class="metric-tile"><div class="metric-tile-label">Belum Dibayar</div><div class="metric-tile-val pv" style="color:var(--amber);">' + rp(pl.b - pl.paid) + '</div></div></div>' +
       '<div class="card"><div class="card-header"><div><h2 class="card-title">' + (EBk ? 'Ubah Pemesanan' : 'Tambah Pemesanan') + '</h2><p class="card-sub">Tiket pesawat, hotel, kereta, dan tur prabayar</p></div></div>' +
       '<form id="trip-book-form" class="stack" style="gap:12px;" novalidate><div class="grid-2"><div class="field"><label class="field-label" for="bk-title">Nama</label><input class="input" id="bk-title" placeholder="mis. Tiket Pesawat ANA PP" value="' + esc(EBk ? EBk.title : '') + '" required/></div>' +
-      '<div class="field"><label class="field-label" for="bk-amt">Jumlah</label><div style="display:flex;gap:6px;"><input class="input mono" id="bk-amt" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EBk && EBk.amt ? fmtRpInputStr(String(EBk.amt)) : '') + '" style="flex:1;min-width:0;" required/><div style="width:94px;flex-shrink:0;"><select class="input" id="bk-cur"><option value="idr"' + (!(EBk && EBk.fx) ? ' selected' : '') + '>Rp</option>' + (tr.cur ? '<option value="fx"' + ((EBk && EBk.fx) ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : '') + '</select></div></div><div class="trip-eq-hint mono" id="bk-amt-eq"></div></div></div>' +
-      '<div class="field" id="bk-rt-wrap" style="display:' + (EBk && EBk.paid && EBk.fx && tr.cur ? '' : 'none') + ';"><label class="field-label" for="bk-rt">Kurs saat dibayar (Rp per 1 ' + esc(tr.cur || 'asing') + ')</label><input class="input mono" id="bk-rt" type="text" inputmode="decimal" placeholder="Kosong = ikut kurs perjalanan" value="' + (EBk && typeof tripBkHasLock === 'function' && tripBkHasLock(EBk) ? esc(String(EBk.rt)) : '') + '"/><div class="trip-eq-hint">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div>' +
+      '<div class="field"><label class="field-label" for="bk-amt">Jumlah</label><div style="display:flex;gap:6px;"><input class="input mono" id="bk-amt" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EBk && EBk.amt ? fmtRpInputStr(String(EBk.amt)) : '') + '" style="flex:1;min-width:0;" required/><div style="width:94px;flex-shrink:0;"><select class="input" id="bk-cur">' + (typeof tripCurSelectOptsHtml === 'function' ? tripCurSelectOptsHtml(tr, EBk) : ('<option value="idr"' + (!(EBk && EBk.fx) ? ' selected' : '') + '>Rp</option>' + (tr.cur ? '<option value="fx"' + ((EBk && EBk.fx) ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : ''))) + '</select></div></div><div class="trip-eq-hint mono" id="bk-amt-eq"></div></div></div>' +
+      '<div class="field" id="bk-rt-wrap" style="display:' + (EBk && EBk.fx && (typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) ? '' : 'none') + ';"><label class="field-label" for="bk-rt">Kurs' + (EBk && EBk.paid ? ' saat dibayar' : '') + ' (Rp per 1 ' + esc((EBk && typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) || 'asing') + ')</label><input class="input mono" id="bk-rt" type="text" inputmode="decimal" placeholder="' + (tr.rate > 0 ? 'Ikut kurs perjalanan: ' + esc(tr.rate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + (EBk && typeof tripHasValidRt === 'function' && tripHasValidRt(EBk) ? esc(String(EBk.rt)) : '') + '"/><div class="card-sub">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div>' +
       '<div class="grid-3"><div class="field"><span class="field-label">Mulai / Check-in</span><div class="custom-picker-wrap"><button type="button" class="cal-trigger-btn" style="width:100%;justify-content:space-between;" data-ical-trig="bk-start-cal|bkStart|bk-start-lbl"><span id="bk-start-lbl">' + brFmtShortIndo(BR_STATE.inlineDates.bkStart) + ' ' + BR_STATE.inlineDates.bkStart.slice(0, 4) + '</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button><div class="picker-popover" id="bk-start-cal"></div></div></div>' +
       '<div class="field"><span class="field-label">Selesai / Check-out</span><div class="custom-picker-wrap"><button type="button" class="cal-trigger-btn" style="width:100%;justify-content:space-between;" data-ical-trig="bk-end-cal|bkEnd|bk-end-lbl"><span id="bk-end-lbl">' + brFmtShortIndo(BR_STATE.inlineDates.bkEnd) + ' ' + BR_STATE.inlineDates.bkEnd.slice(0, 4) + '</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button><div class="picker-popover" id="bk-end-cal"></div></div></div>' +
       '<div class="field"><label class="field-label" for="bk-cat">Kategori</label><select class="input" id="bk-cat">' + BCAT.map(function (c) { return '<option value="' + esc(c) + '"' + ((EBk ? EBk.cat : 'Transport') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div></div>' +
       '<div style="display:flex;justify-content:flex-end;gap:8px;">' + (EBk ? '<button type="button" class="btn btn-secondary" data-bk-cancel="1">Batal</button>' : '') + '<button type="submit" class="btn btn-primary">' + (EBk ? 'Simpan Perubahan' : 'Tambah Pemesanan') + '</button></div></form></div>' +
       '<div class="card"><div class="stack" style="gap:8px;">' + ((tr.bk || []).length ? tr.bk.map(function (x) {
-        return '<div class="upcoming-item"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) + '<div><div class="upcoming-name">' + esc(x.title) + '</div><div class="upcoming-meta"><span class="badge badge-neutral">' + esc(x.cat) + '</span>' + (x.a ? '<span class="badge badge-neutral">' + brFmtShortIndo(x.a) + (x.b ? ' – ' + brFmtShortIndo(x.b) : '') + '</span>' : '') + '</div></div></div>' +
-          '<div class="upcoming-right">' + (typeof tripItemAmtHtml === 'function' ? tripItemAmtHtml(tr, x.amt, x.fx, '', '', typeof tripBkHasLock === 'function' && tripBkHasLock(x) ? x.rt : 0) : ('<strong class="mono pv">' + rp(tripAmtRp(tr, x)) + '</strong>')) +
+        return '<div class="upcoming-item" data-bk-row="' + esc(x.id) + '"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) + '<div><div class="upcoming-name">' + esc(x.title) + '</div><div class="upcoming-meta"><span class="badge badge-neutral">' + esc(x.cat) + '</span>' + (x.a ? '<span class="badge badge-neutral">' + brFmtShortIndo(x.a) + (x.b ? ' – ' + brFmtShortIndo(x.b) : '') + '</span>' : '') + '</div></div></div>' +
+          '<div class="upcoming-right">' + (typeof tripItemAmtHtml === 'function' ? tripItemAmtHtml(tr, x) : ('<strong class="mono pv">' + rp(tripAmtRp(tr, x)) + '</strong>')) +
           '<button type="button" class="btn ' + (x.paid ? 'btn-emerald' : 'btn-secondary') + ' btn-sm" data-bk-pay="' + esc(x.id) + '">' + (x.paid ? '✓ Lunas' : 'Tandai lunas') + '</button>' +
           '<button type="button" class="btn btn-secondary btn-sm" data-bk-edit="' + esc(x.id) + '">Ubah</button>' +
           '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);" data-bk-del="' + esc(x.id) + '">Hapus</button></div></div>';
@@ -2870,7 +2924,7 @@ function renderTrip() {
           : { got: Math.min(g.t, (g.s0 || 0) + per), pct: g.t ? Math.min(100, Math.round((Math.min(g.t, (g.s0 || 0) + per) / g.t) * 100)) : 0 },
         got = gs.got, pctG = gs.pct;
       bodyHtml =
-        '<div class="card"><div class="card-header"><div><h2 class="card-title">Target Tabungan</h2><p class="card-sub">Sisihan dana bulanan sebelum berangkat</p></div>' +
+        '<div class="card" id="br-tg-card"><div class="card-header"><div><h2 class="card-title">Target Tabungan</h2><p class="card-sub">Sisihan dana bulanan sebelum berangkat</p></div>' +
         '<span class="badge ' + (g.link ? 'badge-emerald' : 'badge-neutral') + '">' + (g.link ? 'Tersambung ke Rincian' : 'Hanya Pencatat') + '</span></div>' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;"><span>Terkumpul <strong class="mono pv">' + rp(got) + '</strong> dari <strong class="mono pv">' + rp(g.t) + '</strong></span><strong class="mono" style="color:var(--emerald);">' + pctG + '%</strong></div>' +
         '<div class="rank-track" style="height:9px;margin-bottom:12px;"><div class="rank-fill" style="width:' + pctG + '%;background:var(--emerald);"></div></div>' +
@@ -3143,6 +3197,21 @@ function brRenderLgModal() {
   }
 }
 
+function syncDeskTripBudgetWrap() {
+  var sel = $('kp-use-budget'), wrap = $('kp-budget-wrap');
+  if (!sel || !wrap) return;
+  var isUse = sel.value === '1';
+  wrap.style.display = isUse ? 'flex' : 'none';
+  var fld = sel.closest ? sel.closest('.field') : null;
+  if (fld) fld.style.gridColumn = isUse ? '' : '1 / -1';
+}
+
+function brRenderTripFxsEditor() {
+  if (typeof tripRenderFxsEditorUi === 'function') {
+    tripRenderFxsEditorUi($('kp-multi-cur'), $('kp-fxs-wrap'), $('kp-fxs-list'), $('kp-fxs-add'), !!BR_STATE.tripFxsEnabled, BR_STATE.tripFxsDraft || []);
+  }
+}
+
 function brOpenTripMetaModal(isEdit) {
   var tr = isEdit ? tp() : null;
   BR_STATE.tripModalMode = tr ? 'edit' : 'new';
@@ -3154,10 +3223,16 @@ function brOpenTripMetaModal(isEdit) {
   if ($('kp-start-lbl')) $('kp-start-lbl').textContent = brFmtShortIndo(BR_STATE.inlineDates.kpStart) + ' ' + BR_STATE.inlineDates.kpStart.slice(0, 4);
   if ($('kp-end-lbl')) $('kp-end-lbl').textContent = brFmtShortIndo(BR_STATE.inlineDates.kpEnd) + ' ' + BR_STATE.inlineDates.kpEnd.slice(0, 4);
   if ($('kp-use-budget')) { $('kp-use-budget').value = tr && tr.budget ? '1' : '0'; syncModernSelect('kp-use-budget'); }
-  if ($('kp-budget-wrap')) $('kp-budget-wrap').style.display = ($('kp-use-budget') && $('kp-use-budget').value === '1') ? 'flex' : 'none';
+  syncDeskTripBudgetWrap();
   if ($('kp-budget')) setRpVal('kp-budget', tr && tr.budget ? tr.budget : '');
   if ($('kp-cur')) $('kp-cur').value = tr ? (tr.cur || '') : '';
   if ($('kp-rate')) $('kp-rate').value = tr && tr.rate ? tr.rate : '';
+  BR_STATE.tripFxsEnabled = !!(tr && typeof tripMultiCurOn === 'function' && tripMultiCurOn(tr));
+  BR_STATE.tripFxsDraft = (tr && Array.isArray(tr.fxs))
+    ? tr.fxs.map(function (f) { return { c: f.c || '', r: f.r || 0, origC: f.c || '' }; })
+    : [];
+  if ($('kp-fxs-err')) $('kp-fxs-err').textContent = '';
+  brRenderTripFxsEditor();
   brOpenModal('modal-trip-form');
 }
 
@@ -3295,6 +3370,7 @@ function brBindEvents() {
         fr.onload = function () {
           try {
             var d = xlParse(X.read(fr.result, { type: 'array', cellDates: true }));
+            if (d.error) return toast(d.error);
             if (!d.it.length && !d.bk.length) return toast('Format Excel tidak dikenali. Unduh Template Excel terlebih dahulu.');
             var base = (f.name || 'Perjalanan').replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim().slice(0, 30) || 'Perjalanan Impor';
             if (d.fx || d.cur) {
@@ -3852,15 +3928,17 @@ function brBindEvents() {
             nonLatinNoteDesk = nonLatinDesk ? ' Catatan: karakter non-Latin tampil \'?\' di PDF.' : '';
           Promise.resolve((dlDesk && dlDesk.done) ? dlDesk.done : dlDesk).then(function (resD) {
             if (resD && resD.ok !== false) {
-              if ($('sh-status')) $('sh-status').textContent = 'PDF diunduh: ' + repDesk.filename + '.' + nonLatinNoteDesk;
-              toast('PDF diunduh: ' + repDesk.filename);
+              if ($('sh-status')) $('sh-status').textContent = 'PDF disimpan: ' + repDesk.filename + '.' + nonLatinNoteDesk;
+              toast('PDF disimpan');
             } else {
               if ($('sh-status')) $('sh-status').textContent = 'Gagal menyimpan PDF. Gunakan "Salin teks" atau coba lagi.';
+              toast('Gagal menyimpan PDF');
             }
           });
         } catch (pdfErr) {
           brCloseModal('modal-trip-share');
-          if (typeof printHtml === 'function') printHtml(tripPrintHtml(Psh, incCost));
+          if (typeof printHtml === 'function') { printHtml(tripPrintHtml(Psh, incCost)); toast('PDF disimpan'); }
+          else toast('Gagal menyimpan PDF');
         }
         return;
       }
@@ -3869,10 +3947,11 @@ function brBindEvents() {
         if (navigator.share) navigator.share({ title: Psh.name, text: txtSh }).catch(function () {});
         else window.open('https://wa.me/?text=' + encodeURIComponent(txtSh), '_blank', 'noopener');
         brCloseModal('modal-trip-share');
+        toast('Membuka berbagi teks');
       } else if (typeof copyText === 'function') {
         copyText(txtSh).then(function () {
           if ($('sh-status')) $('sh-status').textContent = 'Teks disalin. Tinggal tempel di WhatsApp atau catatan.';
-          toast('Itinerary disalin');
+          toast('Teks disalin');
         });
       }
       return;
@@ -3974,6 +4053,17 @@ function brBindEvents() {
       return;
     }
     if (t.closest('#kpf-close') || t.closest('#kpf-cancel')) { brCloseModal('modal-trip-form'); return; }
+    if (t.closest('#kp-fxs-add') && typeof tripHandleFxsAddRow === 'function') {
+      BR_STATE.tripFxsDraft = BR_STATE.tripFxsDraft || [];
+      tripHandleFxsAddRow($('kp-multi-cur'), $('kp-fxs-wrap'), $('kp-fxs-list'), $('kp-fxs-add'), $('kp-fxs-err'), !!BR_STATE.tripFxsEnabled, BR_STATE.tripFxsDraft, toast);
+      return;
+    }
+    var fxDelD = t.closest('#kp-fxs-list [data-fx-del]');
+    if (fxDelD && typeof tripHandleFxsDelRow === 'function') {
+      var trEditDelD = BR_STATE.tripModalMode === 'edit' && BR_STATE.tripEditId ? ALL.kas.pr[BR_STATE.tripEditId] : null;
+      tripHandleFxsDelRow($('kp-multi-cur'), $('kp-fxs-wrap'), $('kp-fxs-list'), $('kp-fxs-add'), $('kp-fxs-err'), !!BR_STATE.tripFxsEnabled, BR_STATE.tripFxsDraft || [], +fxDelD.dataset.fxDel, trEditDelD, toast);
+      return;
+    }
     var icalTrig = t.closest('[data-ical-trig], #kp-start-btn, #kp-end-btn');
     if (icalTrig) {
       e.stopPropagation();
@@ -4012,14 +4102,21 @@ function brBindEvents() {
           toast(toastMsg, function () { restoreSnap(sn.t); });
         }, 'Ya, hapus');
       };
-      if (t.closest('[data-it-done]')) { var id1 = t.closest('[data-it-done]').dataset.itDone, x1 = trAct.it.filter(function (x) { return x.id === id1; })[0]; if (x1) { x1.done = !x1.done; save(); renderTrip(); } return; }
+      if (t.closest('[data-it-done]')) { var id1 = t.closest('[data-it-done]').dataset.itDone, x1 = trAct.it.filter(function (x) { return x.id === id1; })[0]; if (x1) { x1.done = !x1.done; save(); renderTrip(); toast(x1.done ? 'Kegiatan ditandai selesai' : 'Status selesai dibatalkan'); } return; }
       if (t.closest('[data-trip-it-edit]')) {
         BR_STATE.tripEditItId = t.closest('[data-trip-it-edit]').dataset.tripItEdit;
         renderTrip();
-        if ($('trip-itin-form') && $('trip-itin-form').scrollIntoView) { try { $('trip-itin-form').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} }
+        if (typeof tripScrollToEditForm === 'function') tripScrollToEditForm($('trip-itin-form'), 'it-place', false);
+        else if ($('trip-itin-form') && $('trip-itin-form').scrollIntoView) { try { $('trip-itin-form').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} }
         return;
       }
-      if (t.closest('[data-it-cancel]')) { BR_STATE.tripEditItId = null; renderTrip(); return; }
+      if (t.closest('[data-it-cancel]')) {
+        var prevItId = BR_STATE.tripEditItId;
+        BR_STATE.tripEditItId = null;
+        renderTrip();
+        if (prevItId && typeof tripScrollBackToEditedRow === 'function') tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-it-row="' + prevItId + '"]'), false);
+        return;
+      }
       if (t.closest('[data-trip-it-del]')) {
         var id2 = t.closest('[data-trip-it-del]').dataset.tripItDel,
           x2 = (trAct.it || []).filter(function (x) { return x.id === id2; })[0];
@@ -4035,9 +4132,20 @@ function brBindEvents() {
         );
         return;
       }
-      if (t.closest('[data-bk-pay]')) { var id3 = t.closest('[data-bk-pay]').dataset.bkPay, x3 = trAct.bk.filter(function (x) { return x.id === id3; })[0]; if (x3) { var lockMsg = typeof tripToggleBkPaid === 'function' ? tripToggleBkPaid(trAct, x3) : (x3.paid = !x3.paid, ''); save(); renderTrip(); if (lockMsg) toast(lockMsg); } return; }
-      if (t.closest('[data-bk-edit]')) { BR_STATE.tripEditBkId = t.closest('[data-bk-edit]').dataset.bkEdit; renderTrip(); return; }
-      if (t.closest('[data-bk-cancel]')) { BR_STATE.tripEditBkId = null; renderTrip(); return; }
+      if (t.closest('[data-bk-pay]')) { var id3 = t.closest('[data-bk-pay]').dataset.bkPay, x3 = trAct.bk.filter(function (x) { return x.id === id3; })[0]; if (x3) { var lockMsg = typeof tripToggleBkPaid === 'function' ? tripToggleBkPaid(trAct, x3) : (x3.paid = !x3.paid, x3.paid ? 'Ditandai lunas' : 'Lunas dibatalkan'); save(); renderTrip(); if (lockMsg) toast(lockMsg); } return; }
+      if (t.closest('[data-bk-edit]')) {
+        BR_STATE.tripEditBkId = t.closest('[data-bk-edit]').dataset.bkEdit;
+        renderTrip();
+        if (typeof tripScrollToEditForm === 'function') tripScrollToEditForm($('trip-book-form'), 'bk-title', false);
+        return;
+      }
+      if (t.closest('[data-bk-cancel]')) {
+        var prevBkId = BR_STATE.tripEditBkId;
+        BR_STATE.tripEditBkId = null;
+        renderTrip();
+        if (prevBkId && typeof tripScrollBackToEditedRow === 'function') tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-bk-row="' + prevBkId + '"]'), false);
+        return;
+      }
       if (t.closest('[data-bk-del]')) {
         var id4 = t.closest('[data-bk-del]').dataset.bkDel,
           x4 = (trAct.bk || []).filter(function (x) { return x.id === id4; })[0];
@@ -4053,7 +4161,7 @@ function brBindEvents() {
         );
         return;
       }
-      if (t.closest('#br-trip-ck-std')) { CK_STD.forEach(function (txt) { if (!trAct.ck.some(function (x) { return x.text === txt; })) trAct.ck.push({ id: kid('c'), text: txt, done: false }); }); save(); renderTrip(); return; }
+      if (t.closest('#br-trip-ck-std')) { CK_STD.forEach(function (txt) { if (!trAct.ck.some(function (x) { return x.text === txt; })) trAct.ck.push({ id: kid('c'), text: txt, done: false }); }); save(); renderTrip(); toast('Daftar standar ditambahkan'); return; }
       if (t.closest('[data-ck-del]')) {
         var id5 = t.closest('[data-ck-del]').dataset.ckDel,
           x5 = (trAct.ck || []).filter(function (x) { return x.id === id5; })[0];
@@ -4078,8 +4186,18 @@ function brBindEvents() {
         );
         return;
       }
-      if (t.closest('#br-tg-edit')) { BR_STATE.tripGoalEdit = true; renderTrip(); return; }
-      if (t.closest('#br-tg-cancel')) { BR_STATE.tripGoalEdit = false; renderTrip(); return; }
+      if (t.closest('#br-tg-edit')) {
+        BR_STATE.tripGoalEdit = true;
+        renderTrip();
+        if (typeof tripScrollToEditForm === 'function') tripScrollToEditForm($('trip-goal-form'), 'tg-t', false);
+        return;
+      }
+      if (t.closest('#br-tg-cancel')) {
+        BR_STATE.tripGoalEdit = false;
+        renderTrip();
+        if (typeof tripScrollBackToEditedRow === 'function') tripScrollBackToEditedRow($('br-tg-card'), false);
+        return;
+      }
       if (t.closest('#br-tg-del')) {
         if (trAct.goal) brTripConfirmDel(
           'Hapus target tabungan perjalanan ini?',
@@ -4130,8 +4248,18 @@ function brBindEvents() {
       var sIdx = +t.dataset.brSmtog;
       if (SIM[sIdx]) { SIM[sIdx].off = !t.checked; renderSim(); }
     }
-    else if (t.id === 'kp-use-budget' && $('kp-budget-wrap')) $('kp-budget-wrap').style.display = t.value === '1' ? 'flex' : 'none';
-    else if (t.id === 'it-cur' || t.id === 'bk-cur') brSyncTripEqPrev();
+    else if (t.id === 'kp-use-budget') syncDeskTripBudgetWrap();
+    else if (t.id === 'kp-multi-cur' && typeof tripHandleFxsToggleChange === 'function') {
+      var trEditTogD = BR_STATE.tripModalMode === 'edit' && BR_STATE.tripEditId ? ALL.kas.pr[BR_STATE.tripEditId] : null;
+      tripHandleFxsToggleChange($('kp-multi-cur'), $('kp-fxs-wrap'), $('kp-fxs-list'), $('kp-fxs-add'), $('kp-fxs-err'), trEditTogD, function () { return BR_STATE.tripFxsDraft || []; }, function (v) { BR_STATE.tripFxsEnabled = !!v; }, toast);
+    }
+    else if (t.id === 'trip-note-box' && tp()) { clearTimeout(window._brNoteT); tp().note = t.value; save(); toast('Catatan disimpan'); }
+    else if (t.dataset && t.dataset.dtDay && tp()) { clearTimeout(window._brDtT); tp().dt[t.dataset.dtDay] = t.value; save(); toast('Judul hari disimpan'); }
+    else if (t.id === 'it-cur' || t.id === 'bk-cur') {
+      var rtElCurD = $(t.id === 'it-cur' ? 'it-rt' : 'bk-rt');
+      if (rtElCurD && !(rtElCurD.dataset && rtElCurD.dataset.userEdited === '1')) rtElCurD.value = '';
+      brSyncTripEqPrev();
+    }
     else if (t.dataset && t.dataset.ckTog) {
       var trC = tp(), c0 = trC && trC.ck.filter(function (x) { return x.id === t.dataset.ckTog; })[0];
       if (c0) { c0.done = t.checked; save(); renderTrip(); }
@@ -4142,11 +4270,19 @@ function brBindEvents() {
     var t = e.target;
     if (t.id === 'kas-search') renderKas();
     else if (t.id === 'qp-input') brUpdateQuickParsePreview();
-    else if (t.id === 'it-est' || t.id === 'bk-amt' || t.id === 'bk-rt') brSyncTripEqPrev();
+    else if (t.id === 'it-est' || t.id === 'bk-amt') brSyncTripEqPrev();
+    else if (t.id === 'it-rt' || t.id === 'bk-rt') { if (t.dataset) t.dataset.userEdited = '1'; brSyncTripEqPrev(); }
+    else if (t.closest && t.closest('#kp-fxs-list') && BR_STATE.tripFxsDraft) {
+      var idxFxD = t.dataset.fxCode != null ? +t.dataset.fxCode : (t.dataset.fxRate != null ? +t.dataset.fxRate : -1);
+      if (idxFxD >= 0 && BR_STATE.tripFxsDraft[idxFxD]) {
+        if (t.dataset.fxCode != null) BR_STATE.tripFxsDraft[idxFxD].c = t.value.toUpperCase();
+        if (t.dataset.fxRate != null) BR_STATE.tripFxsDraft[idxFxD].rRaw = t.value;
+      }
+    }
     else if (t.id === 'trip-note-box' && tp()) {
-      tp().note = t.value; clearTimeout(window._brNoteT); window._brNoteT = setTimeout(save, 350);
+      tp().note = t.value; clearTimeout(window._brNoteT); window._brNoteT = setTimeout(function () { save(); toast('Catatan disimpan'); }, 350);
     } else if (t.dataset && t.dataset.dtDay && tp()) {
-      tp().dt[t.dataset.dtDay] = t.value; clearTimeout(window._brDtT); window._brDtT = setTimeout(save, 350);
+      tp().dt[t.dataset.dtDay] = t.value; clearTimeout(window._brDtT); window._brDtT = setTimeout(function () { save(); toast('Judul hari disimpan'); }, 350);
     }
   });
 
@@ -4248,14 +4384,41 @@ function brBindEvents() {
         toast(metaErrT.error);
         return;
       }
-      if (BR_STATE.tripModalMode === 'edit' && tp()) {
-        Object.assign(tp(), { name: nmT, start: stT, end: enT, budget: budT, cur: curT, rate: curT ? rateT : 0 });
+      var isEditMetaD = (BR_STATE.tripModalMode === 'edit' && tp());
+      var fxResD = { error: '', fxs: [], renames: [] };
+      if (BR_STATE.tripFxsEnabled && typeof tripValidateFxsRows === 'function') {
+        fxResD = tripValidateFxsRows(curT, BR_STATE.tripFxsDraft || []);
+        if (fxResD.error) {
+          if ($('kp-fxs-err')) $('kp-fxs-err').textContent = fxResD.error;
+          toast(fxResD.error);
+          return;
+        }
+      } else if (isEditMetaD && typeof tripCountAllExtraCurUsage === 'function') {
+        var uOffD = tripCountAllExtraCurUsage(tp());
+        if (uOffD.total > 0) {
+          var offMsgD = tripFormatCurUsageMsg(uOffD);
+          if ($('kp-fxs-err')) $('kp-fxs-err').textContent = offMsgD;
+          toast(offMsgD);
+          return;
+        }
+      }
+      if (isEditMetaD) {
+        var trMetaD = tp();
+        Object.assign(trMetaD, { name: nmT, start: stT, end: enT, budget: budT, cur: curT, rate: curT ? rateT : 0 });
+        if (BR_STATE.tripFxsEnabled) {
+          if (typeof tripApplyFxsRenames === 'function') tripApplyFxsRenames(trMetaD, fxResD.renames);
+          trMetaD.fxs = fxResD.fxs;
+        } else {
+          delete trMetaD.fxs;
+        }
       } else {
         var idNew = kid('p');
-        ALL.kas.pr[idNew] = { id: idNew, name: nmT, link: false, saldo: 0, tx: [], start: stT, end: enT, budget: budT, cur: curT, rate: curT ? rateT : 0, dt: {}, it: [], bk: [], lk: [], ck: [], note: '', goal: null };
+        var newProfD = { id: idNew, name: nmT, link: false, saldo: 0, tx: [], start: stT, end: enT, budget: budT, cur: curT, rate: curT ? rateT : 0, dt: {}, it: [], bk: [], lk: [], ck: [], note: '', goal: null };
+        if (BR_STATE.tripFxsEnabled) newProfD.fxs = fxResD.fxs;
+        ALL.kas.pr[idNew] = newProfD;
         tripAct = idNew; BR_STATE.tripView = 'detail'; BR_STATE.tripSubTab = 'ring';
       }
-      brCloseModal('modal-trip-form'); save(); renderAll(); toast('Perjalanan disimpan');
+      brCloseModal('modal-trip-form'); save(); renderAll(); toast(isEditMetaD ? 'Perjalanan diperbarui' : 'Perjalanan dibuat');
     } else if (f.id === 'trip-xl-form') {
       e.preventDefault();
       var dXlB = BR_STATE.xlPending;
@@ -4275,36 +4438,50 @@ function brBindEvents() {
       toast('Perjalanan diimpor: ' + dXlB.it.length + ' kegiatan, ' + dXlB.bk.length + ' pemesanan.' + (typeof tripImportOfflineNote === 'function' ? tripImportOfflineNote() : ''));
     } else if (f.id === 'trip-itin-form' && tp()) {
       e.preventDefault();
-      var trI = tp(), objIt = {
+      var trI = tp();
+      var itCurSpecD = typeof tripParseCurSelectVal === 'function' ? tripParseCurSelectVal(trI, $('it-cur') && $('it-cur').value) : { fx: $('it-cur') && $('it-cur').value === 'fx', c: '' };
+      var objIt = {
         id: BR_STATE.tripEditItId || kid('it'),
         day: BR_STATE.inlineDates.itDay || trI.start || todayISO(),
         time: ($('it-t1') && $('it-t1').value || '').replace('.', ':'),
         time2: ($('it-t2') && $('it-t2').value || '').replace('.', ':'),
         place: ($('it-place') && $('it-place').value || '').trim(),
         est: getRpVal('it-est'),
-        fx: $('it-cur') && $('it-cur').value === 'fx',
+        fx: !!(trI.cur && itCurSpecD.fx),
         pay: $('it-pay') ? $('it-pay').value : 'cash',
         cat: $('it-cat') ? $('it-cat').value : 'Lainnya',
         link: ($('it-link') && $('it-link').value || '').trim(),
         note: ($('it-note') && $('it-note').value || '').trim(),
         done: false,
       };
+      if (objIt.fx && itCurSpecD.c) objIt.c = itCurSpecD.c;
       if (!objIt.place) { rkShakeInvalid($('it-place')); return; }
-      if (BR_STATE.tripEditItId) {
-        trI.it = trI.it.map(function (x) { return x.id === BR_STATE.tripEditItId ? Object.assign({}, x, objIt, { done: x.done }) : x; });
+      var editItIdD = BR_STATE.tripEditItId;
+      if (editItIdD) {
+        trI.it = trI.it.map(function (x) {
+          if (x.id !== editItIdD) return x;
+          var patchItD = Object.assign({}, objIt, { done: x.done });
+          return typeof tripMergeItemEdit === 'function' ? tripMergeItemEdit(x, patchItD, $('it-rt'), false) : Object.assign({}, x, patchItD);
+        });
         BR_STATE.tripEditItId = null;
       } else trI.it.push(objIt);
-      save(); renderTrip();
+      save(); renderTrip(); toast(editItIdD ? 'Kegiatan diperbarui' : 'Kegiatan disimpan');
+      if (editItIdD && typeof tripScrollBackToEditedRow === 'function') {
+        tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-it-row="' + editItIdD + '"]'), false);
+      }
     } else if (f.id === 'trip-book-form' && tp()) {
       e.preventDefault();
-      var trB = tp(), patchBk = {
+      var trB = tp();
+      var bkCurSpecD = typeof tripParseCurSelectVal === 'function' ? tripParseCurSelectVal(trB, $('bk-cur') && $('bk-cur').value) : { fx: $('bk-cur') && $('bk-cur').value === 'fx', c: '' };
+      var patchBk = {
         title: ($('bk-title') && $('bk-title').value || '').trim(),
         amt: getRpVal('bk-amt'),
-        fx: $('bk-cur') && $('bk-cur').value === 'fx',
+        fx: !!(trB.cur && bkCurSpecD.fx),
         a: BR_STATE.inlineDates.bkStart || '',
         b: BR_STATE.inlineDates.bkEnd || '',
         cat: $('bk-cat') ? $('bk-cat').value : 'Transport',
       };
+      if (patchBk.fx && bkCurSpecD.c) patchBk.c = bkCurSpecD.c;
       if (!patchBk.title) { rkShakeInvalid($('bk-title')); return; }
       if (!(patchBk.amt > 0)) { rkShakeInvalid($('bk-amt')); return; }
       var bkDtErr = typeof tripValidateDates === 'function' ? tripValidateDates(patchBk.a, patchBk.b) : null;
@@ -4313,9 +4490,10 @@ function brBindEvents() {
         toast(bkDtErr.error);
         return;
       }
-      if (BR_STATE.tripEditBkId) {
+      var editBkIdD = BR_STATE.tripEditBkId;
+      if (editBkIdD) {
         trB.bk = trB.bk.map(function (x) {
-          return x.id === BR_STATE.tripEditBkId
+          return x.id === editBkIdD
             ? (typeof tripMergeBkEdit === 'function' ? tripMergeBkEdit(x, patchBk, $('bk-rt')) : Object.assign({}, x, patchBk))
             : x;
         });
@@ -4323,17 +4501,23 @@ function brBindEvents() {
       } else {
         trB.bk.push(Object.assign({ id: kid('bk'), pay: 'on', link: '', paid: false, rec: '' }, patchBk));
       }
-      save(); renderTrip();
+      save(); renderTrip(); toast(editBkIdD ? 'Pemesanan diperbarui' : 'Pemesanan disimpan');
+      if (editBkIdD && typeof tripScrollBackToEditedRow === 'function') {
+        tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-bk-row="' + editBkIdD + '"]'), false);
+      }
     } else if (f.id === 'trip-ck-form' && tp()) {
       e.preventDefault();
       var txtC = ($('trip-ck-input') && $('trip-ck-input').value || '').trim();
       if (!txtC) { rkShakeInvalid($('trip-ck-input')); return; }
-      tp().ck.push({ id: kid('c'), text: txtC, done: false }); save(); renderTrip();
+      tp().ck.push({ id: kid('c'), text: txtC, done: false }); save(); renderTrip(); toast('Checklist ditambahkan');
     } else if (f.id === 'trip-lk-form' && tp()) {
       e.preventDefault();
       var tl = ($('trip-lk-title') && $('trip-lk-title').value || '').trim(), ul = ($('trip-lk-url') && $('trip-lk-url').value || '').trim();
       if (!tl || !ul) { rkShakeInvalid(!tl ? $('trip-lk-title') : $('trip-lk-url')); return; }
-      tp().lk.push({ id: kid('l'), title: tl, url: /^https?:\/\//i.test(ul) ? ul : 'https://' + ul }); save(); renderTrip();
+      var normLkD = /^https?:\/\//i.test(ul) ? ul : (/^[a-z]+:/i.test(ul) ? ul : 'https://' + ul);
+      var validLkD = typeof okUrl === 'function' ? okUrl(normLkD) : /^https?:\/\/[^\s"'<>]+$/i.test(normLkD);
+      if (!validLkD) { rkShakeInvalid($('trip-lk-url')); toast('Tautan tidak valid'); return; }
+      tp().lk.push({ id: kid('l'), title: tl, url: normLkD }); save(); renderTrip(); toast('Tautan ditambahkan');
     } else if (f.id === 'trip-goal-form' && tp()) {
       e.preventDefault();
       var tVal = getRpVal('tg-t'), s0Val = getRpVal('tg-s0'), linkG = !$('tg-link') || $('tg-link').value !== '0',
@@ -4348,8 +4532,12 @@ function brBindEvents() {
       if (!(gc.t > 0)) { rkShakeInvalid($('tg-t')); toast('Isi target tabungan.'); return; }
       if (!gc.n) { rkShakeInvalid($('tg-to')); toast('Bulan terakhir tidak boleh sebelum bulan mulai.'); return; }
       if (!gc.per) { rkShakeInvalid($('tg-t')); toast('Dana yang terkumpul sudah mencapai target.'); return; }
+      var wasGoalEditD = !!BR_STATE.tripGoalEdit;
       tp().goal = { t: gc.t, s0: gc.s0, from: gc.from, to: gc.to, per: gc.per, link: gc.link };
       BR_STATE.tripGoalEdit = false; save(); renderAll(); toast('Target tabungan disimpan');
+      if (wasGoalEditD && typeof tripScrollBackToEditedRow === 'function') {
+        tripScrollBackToEditedRow($('br-tg-card'), false);
+      }
     }
   });
 
@@ -4368,6 +4556,14 @@ function brBindEvents() {
     if (typeof getShellMode === 'function' && getShellMode() === 'mobile-app') return;
     var tag = ((e.target && e.target.tagName) || '').toLowerCase();
     if (e.key === 'Escape') {
+      var openMs = document.querySelector('#browser-shell .mselect.open'),
+        openPop = document.querySelector('#browser-shell .picker-popover.open');
+      if (openMs || openPop) {
+        var restoreBtn = openMs ? openMs.querySelector('.mselect-trigger') : null;
+        closeAllPickersAndMenus(null);
+        if (restoreBtn && typeof restoreBtn.focus === 'function') { try { restoreBtn.focus({ preventScroll: true }); } catch (err) {} }
+        return;
+      }
       if ($('chip-popover')) $('chip-popover').classList.remove('open');
       if ($('notif-popover')) {
         $('notif-popover').classList.remove('open');

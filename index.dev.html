@@ -1174,8 +1174,8 @@
             <div class="field">
               <label class="field-label" for="kp-use-budget">Anggaran</label>
               <select class="input" id="kp-use-budget">
-                <option value="0">Belum menentukan anggaran</option>
-                <option value="1" selected>Tetapkan anggaran</option>
+                <option value="0" selected>Belum ditentukan</option>
+                <option value="1">Tetapkan anggaran</option>
               </select>
             </div>
             <div class="field" id="kp-budget-wrap">
@@ -1191,6 +1191,19 @@
             <div class="field">
               <label class="field-label" for="kp-rate">Kurs: Rp per 1 mata uang</label>
               <input class="input mono" id="kp-rate" type="number" step="0.01" placeholder="108.5" />
+            </div>
+          </div>
+          <div class="trip-multi-cur-box">
+            <label class="trip-switch-row" for="kp-multi-cur">
+              <input type="checkbox" id="kp-multi-cur" />
+              <span>Gunakan beberapa mata uang</span>
+            </label>
+            <div id="kp-fxs-wrap" class="stack" style="display:none; gap:8px; margin-top:8px;">
+              <div id="kp-fxs-list" class="stack" style="gap:6px;"></div>
+              <div id="kp-fxs-err" role="alert" style="color:var(--crimson); font-size:0.78rem; font-weight:600;"></div>
+              <div>
+                <button type="button" class="btn btn-secondary btn-sm" id="kp-fxs-add">+ Tambah mata uang</button>
+              </div>
             </div>
           </div>
         </div>
@@ -1288,7 +1301,7 @@
   </div>
 
   <button type="button" class="rk-btt-btn" id="rk-btt-desk" aria-label="Kembali ke atas" title="Kembali ke atas">↑ Atas</button>
-  <div class="tt" id="tt" hidden><span id="ttm"></span><button id="ttu" type="button">Urungkan</button></div>
+  <div class="tt" id="tt" role="status" aria-live="polite" hidden><span id="ttm"></span><button id="ttu" type="button">Urungkan</button></div>
   <div class="toast-box" id="toast-box" role="status" aria-live="polite"></div>
 </div><!-- /#browser-shell -->
 

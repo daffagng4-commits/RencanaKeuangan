@@ -353,7 +353,7 @@ function showMobToast(msg, undo) {
     clearTimeout(mobToastTimer);
     mobToastTimer = setTimeout(function () {
       box.classList.remove('show', 'has-undo');
-    }, typeof undo === 'function' ? 8000 : 2400);
+    }, typeof undo === 'function' ? 8000 : 2000);
   } else if (typeof toast === 'function') {
     toast(msg, undo);
   }
@@ -786,10 +786,17 @@ function mobShellTemplate() {
     '<div class="field"><label class="field-label" for="m-kp-name">Nama perjalanan</label><input class="input" id="m-kp-name" maxlength="30" placeholder="mis. Tokyo - Osaka 9D8N" required /></div>' +
     '<div class="bento-2"><div class="field"><span class="field-label">Mulai</span>' + mobDateFieldHtml('m-kp-start', '', false) + '</div>' +
     '<div class="field"><span class="field-label">Selesai</span>' + mobDateFieldHtml('m-kp-end', '', true) + '</div></div>' +
-    '<div class="bento-2"><div class="field"><label class="field-label" for="m-kp-use-budget">Anggaran</label><select class="input" id="m-kp-use-budget"><option value="0">Belum ditentukan</option><option value="1" selected>Tetapkan anggaran</option></select></div>' +
-    '<div class="field" id="m-kp-budget-wrap"><label class="field-label" for="m-kp-budget">Anggaran (Rp)</label><input class="input mono" id="m-kp-budget" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="10.000.000" /></div></div>' +
+    '<div class="bento-2"><div class="field"><label class="field-label" for="m-kp-use-budget">Anggaran</label><select class="input" id="m-kp-use-budget"><option value="0" selected>Belum ditentukan</option><option value="1">Tetapkan anggaran</option></select></div>' +
+    '<div class="field" id="m-kp-budget-wrap"><label class="field-label" for="m-kp-budget">Anggaran (Rp)</label><input class="input mono" id="m-kp-budget" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="mis. 10.000.000" /></div></div>' +
     '<div class="bento-2"><div class="field"><label class="field-label" for="m-kp-cur">Mata uang asing</label><input class="input" id="m-kp-cur" maxlength="3" placeholder="JPY" style="text-transform:uppercase" /></div>' +
-    '<div class="field"><label class="field-label" for="m-kp-rate">Kurs (Rp / 1 unit)</label><input class="input mono" id="m-kp-rate" type="number" step="0.01" placeholder="108.5" /></div></div></div>' +
+    '<div class="field"><label class="field-label" for="m-kp-rate">Kurs (Rp / 1 unit)</label><input class="input mono" id="m-kp-rate" type="number" step="0.01" placeholder="108.5" /></div></div>' +
+    '<div class="trip-multi-cur-box">' +
+    '<label class="trip-switch-row" for="m-kp-multi-cur"><input type="checkbox" id="m-kp-multi-cur" /><span>Gunakan beberapa mata uang</span></label>' +
+    '<div id="m-kp-fxs-wrap" class="stack" style="display:none;gap:8px;margin-top:8px">' +
+    '<div id="m-kp-fxs-list" class="stack" style="gap:6px"></div>' +
+    '<div id="m-kp-fxs-err" role="alert" style="color:var(--crimson);font-size:0.74rem;font-weight:600"></div>' +
+    '<div><button type="button" class="btn btn-secondary btn-sm" id="m-kp-fxs-add">+ Tambah mata uang</button></div>' +
+    '</div></div></div>' +
     '<div class="ms-foot"><button type="button" class="btn btn-secondary" data-mclose="m-sheet-trip">Batal</button><button type="submit" class="btn btn-primary">Simpan</button></div></form></div></div>' +
     '<div class="modal-backdrop" id="m-sheet-backup"><div class="modal-sheet"><div class="ms-handle"></div>' +
     '<div class="ms-head"><strong class="card-title">Cadangan &amp; Ekspor</strong><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-backup">✕</button></div>' +
@@ -1859,14 +1866,23 @@ function mobActiveTrip() {
   return list.find(function (p) { return p.id === MOB_STATE.tripId; }) || list[0];
 }
 
+function mobRenderTripFxsEditor() {
+  if (typeof tripRenderFxsEditorUi === 'function') {
+    tripRenderFxsEditorUi($('m-kp-multi-cur'), $('m-kp-fxs-wrap'), $('m-kp-fxs-list'), $('m-kp-fxs-add'), !!MOB_STATE.tripFxsEnabled, MOB_STATE.tripFxsDraft || []);
+  }
+}
+
 function mobSyncTripEqPrev() {
   var tr = mobActiveTrip();
-  if (typeof tripSyncEqPairs === 'function') {
+  var eItM = tr && MOB_STATE.tripEditIt ? (tr.it || []).find(function (x) { return x.id === MOB_STATE.tripEditIt; }) : null;
+  if (typeof tripSyncItemRateField === 'function') {
+    tripSyncItemRateField(tr, eItM, 'm-it-est', 'm-it-cur', 'm-it-est-eq', 'm-it-rt-wrap', 'm-it-rt', false);
+  } else if (typeof tripSyncEqPairs === 'function') {
     tripSyncEqPairs(tr, [['m-it-est', 'm-it-cur', 'm-it-est-eq']]);
   }
   var eBkM = tr && MOB_STATE.tripEditBk ? (tr.bk || []).find(function (x) { return x.id === MOB_STATE.tripEditBk; }) : null;
-  if (typeof tripSyncBkRateField === 'function') {
-    tripSyncBkRateField(tr, eBkM, 'm-bk-amt', 'm-bk-cur', 'm-bk-amt-eq', 'm-bk-rt-wrap', 'm-bk-rt');
+  if (typeof tripSyncItemRateField === 'function') {
+    tripSyncItemRateField(tr, eBkM, 'm-bk-amt', 'm-bk-cur', 'm-bk-amt-eq', 'm-bk-rt-wrap', 'm-bk-rt', true);
   } else if (typeof tripSyncEqPairs === 'function') {
     tripSyncEqPairs(tr, [['m-bk-amt', 'm-bk-cur', 'm-bk-amt-eq']]);
   }
@@ -1874,7 +1890,11 @@ function mobSyncTripEqPrev() {
 
 function syncMobTripBudgetWrap() {
   var sel = $('m-kp-use-budget'), wrap = $('m-kp-budget-wrap');
-  if (sel && wrap) wrap.style.display = sel.value === '1' ? 'flex' : 'none';
+  if (!sel || !wrap) return;
+  var isUse = sel.value === '1';
+  wrap.style.display = isUse ? 'flex' : 'none';
+  var fld = sel.closest ? sel.closest('.field') : null;
+  if (fld) fld.style.gridColumn = isUse ? '' : '1 / -1';
 }
 
 function renderMobTripListCard(t, activeId) {
@@ -1897,9 +1917,9 @@ function renderMobTripItinCard(tr, x) {
     : '';
   var payTxt = x.pay ? ((typeof PAYL !== 'undefined' && PAYL[x.pay]) || x.pay) : '';
   var amtBlock = typeof tripItemAmtHtml === 'function'
-    ? tripItemAmtHtml(tr, x.est, x.fx, 'msc-right', 'font-size:0.84rem')
+    ? tripItemAmtHtml(tr, x, null, 'msc-right', 'font-size:0.84rem')
     : '<strong class="mono pv msc-right" style="font-size:0.84rem">' + (x.est ? (x.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(x.est).toLocaleString('id-ID') : rp(x.est)) : '') + '</strong>';
-  return '<div class="mob-sched-card ' + (x.done ? 'done' : '') + '" style="padding:10px">' +
+  return '<div class="mob-sched-card ' + (x.done ? 'done' : '') + '" data-it-row="' + esc(x.id) + '" style="padding:10px">' +
     '<div class="msc-top"><div class="msc-left" style="flex:1">' + mobCatLogo(mobTripCatMapped(x.cat || 'Transport'), 30) +
     '<div style="min-width:0;flex:1">' +
     '<div style="font-weight:800;font-size:0.84rem;' + (x.done ? 'text-decoration:line-through;opacity:0.55;' : '') + '">' + timeHtml + esc(x.place) + '</div>' +
@@ -1919,7 +1939,10 @@ function renderMobTripItin(tr) {
     EIt = MOB_STATE.tripEditIt ? (tr.it || []).find(function (x) { return x.id === MOB_STATE.tripEditIt; }) : null,
     defDay = (EIt && EIt.day) || days[0] || tr.start || todayISO(),
     defPay = EIt ? (EIt.pay || '') : 'cash',
-    itRpFn = typeof tripItRp === 'function' ? tripItRp : function (P, x) { return typeof val === 'function' ? val(P, x.est, x.fx) : (+x.est || 0); },
+    itRpFn = typeof tripItRp === 'function' ? tripItRp : function (P, x) {
+      if (!x) return 0;
+      return (+x.est || 0) * (typeof tripItemRate === 'function' ? tripItemRate(P, x) : (typeof val === 'function' ? (x.fx ? (x.rt > 0 ? x.rt : (+(P && P.rate) || 0)) : 1) : 1));
+    },
     dayLblFn = typeof dayLabel === 'function' ? dayLabel : function (P, d) { return fmtD(d); };
   var formHtml =
     '<div class="card"><div class="card-hd"><h3 class="card-title">' + (EIt ? 'Ubah Kegiatan' : 'Tambah Kegiatan') + '</h3>' +
@@ -1932,9 +1955,9 @@ function renderMobTripItin(tr) {
     '<div class="field"><label class="field-label" for="m-it-place">Kegiatan</label><input class="input" id="m-it-place" maxlength="120" placeholder="mis. Senso-ji Temple" value="' + esc(EIt ? EIt.place : '') + '" required /></div>' +
     '<div class="field"><label class="field-label" for="m-it-est">Biaya &amp; Mata Uang</label>' +
     '<div style="display:flex;gap:6px"><input class="input mono" id="m-it-est" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EIt && EIt.est ? (+EIt.est).toLocaleString('id-ID') : '') + '" style="flex:1;min-width:0" />' +
-    '<select class="input" id="m-it-cur" aria-label="Mata uang" style="width:88px;flex-shrink:0"><option value="idr"' + (!(EIt && EIt.fx) ? ' selected' : '') + '>Rp</option>' +
-    (tr.cur ? '<option value="fx"' + (EIt && EIt.fx ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : '') +
+    '<select class="input" id="m-it-cur" aria-label="Mata uang" style="width:88px;flex-shrink:0">' + (typeof tripCurSelectOptsHtml === 'function' ? tripCurSelectOptsHtml(tr, EIt) : ('<option value="idr"' + (!(EIt && EIt.fx) ? ' selected' : '') + '>Rp</option>' + (tr.cur ? '<option value="fx"' + (EIt && EIt.fx ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : ''))) +
     '</select></div><div class="trip-eq-hint mono" id="m-it-est-eq"></div></div>' +
+    '<div class="field" id="m-it-rt-wrap" style="display:' + (EIt && EIt.fx && (typeof tripItemCur === 'function' ? tripItemCur(tr, EIt) : tr.cur) ? '' : 'none') + '"><label class="field-label" for="m-it-rt">Kurs (Rp per 1 ' + esc((EIt && typeof tripItemCur === 'function' ? tripItemCur(tr, EIt) : tr.cur) || 'asing') + ')</label><input class="input mono" id="m-it-rt" type="text" inputmode="decimal" placeholder="' + (tr.rate > 0 ? 'Ikut kurs perjalanan: ' + esc(tr.rate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + (EIt && typeof tripHasValidRt === 'function' && tripHasValidRt(EIt) ? esc(String(EIt.rt)) : '') + '" /><div class="msc-sub">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div>' +
     '<div class="bento-2">' +
     '<div class="field"><label class="field-label" for="m-it-pay">Pembayaran</label><select class="input" id="m-it-pay">' +
     '<option value=""' + (defPay === '' ? ' selected' : '') + '>Belum ditentukan</option>' +
@@ -1990,7 +2013,10 @@ function renderMobTrip() {
     subTabs = [['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['cek', 'Checklist'], ['cat', 'Catatan'], ['sv', 'Tabungan']],
     body = '';
 
-  var itRpFn = typeof tripItRp === 'function' ? tripItRp : function (P, x) { return typeof val === 'function' ? val(P, x.est, x.fx) : (+x.est || 0); },
+  var itRpFn = typeof tripItRp === 'function' ? tripItRp : function (P, x) {
+      if (!x) return 0;
+      return (+x.est || 0) * (typeof tripItemRate === 'function' ? tripItemRate(P, x) : (typeof val === 'function' ? (x.fx ? (x.rt > 0 ? x.rt : (+(P && P.rate) || 0)) : 1) : 1));
+    },
     bkRpFn = typeof tripBkRp === 'function' ? tripBkRp : (typeof tripAmtRp === 'function' ? tripAmtRp : function (P, x) { return typeof val === 'function' ? val(P, x.amt, x.fx) : (+x.amt || 0); }),
     dayLblFn = typeof dayLabel === 'function' ? dayLabel : function (P, d) { return fmtD(d); };
   if (MOB_STATE.tripSub === 'ring') {
@@ -2020,11 +2046,14 @@ function renderMobTrip() {
       '<div class="m-tile"><div class="m-tile-k">Sudah Dibayar</div><div class="m-tile-v pv" style="color:var(--emerald)">' + rp(pl.paid) + '</div><div class="m-tile-s pv">Belum dibayar: ' + rp(pl.b - pl.paid) + '</div></div>' +
       '<div class="m-tile"><div class="m-tile-k">Rencana per Hari</div><div class="m-tile-v pv">' + (N ? rp(Math.round(pl.t / N)) : '—') + '</div><div class="m-tile-s">' + (N ? N + ' hari' : 'Tanggal belum diisi') + (tr.cur && tr.rate ? ' · 1 ' + esc(tr.cur) + ' = Rp ' + tr.rate.toLocaleString('id-ID') : '') + '</div></div></div>' +
       '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Siapkan Tunai / Kartu</h3><p class="msc-sub">Akumulasi kebutuhan bayar di tempat</p></div></div><div class="stack" style="gap:6px">' +
-      (ck.length ? ck.map(function (k) {
-        var cx = pl.cash[k], eqRp = cx.idr + (cx.fx && tr.rate ? Math.round(cx.fx * tr.rate) : 0);
-        return '<div class="simple-row m-ring-row"><span class="simple-row-name">' + esc(k) + '</span><span class="mono pv m-ring-fx">' + (cx.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(cx.fx).toLocaleString('id-ID') : rp(cx.fx || cx.idr)) + '</span><span class="simple-row-amt pv">' + (cx.fx ? (tr.rate ? '≈ ' + rp(eqRp) : (cx.idr ? rp(cx.idr) : '—')) : rp(eqRp)) + '</span></div>';
+      (ck.length ? ck.map(function (c) {
+        var cx = pl.cash[c];
+        if (typeof tripCashRowHtml === 'function') return tripCashRowHtml(tr, c, cx, true);
+        var eqRp = Math.round(cx.idr + (cx.fxRp != null ? cx.fxRp : (cx.fx && tr.rate ? cx.fx * tr.rate : 0)));
+        return '<div class="simple-row m-ring-row"><span class="simple-row-name">' + esc(c) + '</span><span class="mono pv m-ring-fx">' + (cx.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(cx.fx).toLocaleString('id-ID') : rp(cx.fx || cx.idr)) + '</span><span class="simple-row-amt pv">' + (cx.fx ? (cx.fxRp > 0 ? '≈ ' + rp(eqRp) : (cx.idr ? rp(cx.idr) : '—')) : rp(eqRp)) + '</span></div>';
       }).join('') : '<div style="padding:10px 4px;color:var(--text-muted);font-size:0.78rem">Belum ada pengeluaran tunai/kartu harian di Itinerary.</div>') +
       '</div></div>' +
+      (typeof tripFxDetailCardHtml === 'function' ? tripFxDetailCardHtml(tr, true) : '') +
       '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Estimasi per Hari</h3><p class="msc-sub">Pengeluaran non-online dihitung dari jadwal kegiatan</p></div></div><div class="stack" style="gap:6px">' +
       (dk.length ? dk.map(function (d) {
         return '<div class="simple-row m-ring-row"><span class="simple-row-name">' + esc(dayLblFn(tr, d)) + '</span><span class="simple-row-bar"><i style="width:' + ((byDay[d] / dmax) * 100).toFixed(1) + '%;background:var(--accent)"></i></span><span class="simple-row-amt pv">' + rp(byDay[d]) + '</span></div>';
@@ -2051,10 +2080,9 @@ function renderMobTrip() {
       '<form id="m-trip-book-form" class="stack" style="gap:9px" novalidate>' +
       '<div class="field"><label class="field-label" for="m-bk-title">Nama</label><input class="input" id="m-bk-title" maxlength="120" placeholder="mis. Tiket Pesawat ANA PP" value="' + esc(EBk ? EBk.title : '') + '" required /></div>' +
       '<div class="field"><label class="field-label" for="m-bk-amt">Jumlah</label><div style="display:flex;gap:6px"><input class="input mono" id="m-bk-amt" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EBk && EBk.amt ? (+EBk.amt).toLocaleString('id-ID') : '') + '" style="flex:1;min-width:0" required />' +
-      '<select class="input" id="m-bk-cur" aria-label="Mata uang" style="width:88px;flex-shrink:0"><option value="idr"' + (!(EBk && EBk.fx) ? ' selected' : '') + '>Rp</option>' +
-      (tr.cur ? '<option value="fx"' + (EBk && EBk.fx ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : '') +
+      '<select class="input" id="m-bk-cur" aria-label="Mata uang" style="width:88px;flex-shrink:0">' + (typeof tripCurSelectOptsHtml === 'function' ? tripCurSelectOptsHtml(tr, EBk) : ('<option value="idr"' + (!(EBk && EBk.fx) ? ' selected' : '') + '>Rp</option>' + (tr.cur ? '<option value="fx"' + (EBk && EBk.fx ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : ''))) +
       '</select></div><div class="trip-eq-hint mono" id="m-bk-amt-eq"></div></div>' +
-      '<div class="field" id="m-bk-rt-wrap" style="display:' + (EBk && EBk.paid && EBk.fx && tr.cur ? '' : 'none') + '"><label class="field-label" for="m-bk-rt">Kurs saat dibayar (Rp per 1 ' + esc(tr.cur || 'asing') + ')</label><input class="input mono" id="m-bk-rt" type="text" inputmode="decimal" placeholder="Kosong = ikut kurs perjalanan" value="' + (EBk && typeof tripBkHasLock === 'function' && tripBkHasLock(EBk) ? esc(String(EBk.rt)) : '') + '" /><div class="trip-eq-hint">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div>' +
+      '<div class="field" id="m-bk-rt-wrap" style="display:' + (EBk && EBk.fx && (typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) ? '' : 'none') + '"><label class="field-label" for="m-bk-rt">Kurs' + (EBk && EBk.paid ? ' saat dibayar' : '') + ' (Rp per 1 ' + esc((EBk && typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) || 'asing') + ')</label><input class="input mono" id="m-bk-rt" type="text" inputmode="decimal" placeholder="' + (tr.rate > 0 ? 'Ikut kurs perjalanan: ' + esc(tr.rate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + (EBk && typeof tripHasValidRt === 'function' && tripHasValidRt(EBk) ? esc(String(EBk.rt)) : '') + '" /><div class="msc-sub">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div>' +
       '<div class="bento-2">' +
       '<div class="field"><span class="field-label">Mulai / Check-in</span>' + mobDateFieldHtml('m-bk-start', defBkStart, false) + '</div>' +
       '<div class="field"><span class="field-label">Selesai / Check-out</span>' + mobDateFieldHtml('m-bk-end', defBkEnd, true) + '</div></div>' +
@@ -2063,9 +2091,9 @@ function renderMobTrip() {
       '<div class="stack" style="gap:7px">' +
       ((tr.bk || []).map(function (x) {
         var bkAmtHtml = typeof tripItemAmtHtml === 'function'
-          ? tripItemAmtHtml(tr, x.amt, x.fx, 'msc-right', 'font-size:0.84rem', typeof tripBkHasLock === 'function' && tripBkHasLock(x) ? x.rt : 0)
+          ? tripItemAmtHtml(tr, x, null, 'msc-right', 'font-size:0.84rem')
           : '<strong class="mono pv msc-right" style="font-size:0.84rem">' + rp(bkRpFn(tr, x)) + '</strong>';
-        return '<div class="mob-sched-card ' + (x.paid ? 'done' : '') + '" style="padding:10px"><div class="msc-top"><div class="msc-left" style="flex:1">' + mobCatLogo(mobTripCatMapped(x.cat || 'Transport'), 30) +
+        return '<div class="mob-sched-card ' + (x.paid ? 'done' : '') + '" data-bk-row="' + esc(x.id) + '" style="padding:10px"><div class="msc-top"><div class="msc-left" style="flex:1">' + mobCatLogo(mobTripCatMapped(x.cat || 'Transport'), 30) +
           '<div style="min-width:0;flex:1"><div style="font-weight:800;font-size:0.84rem">' + esc(x.title) + '</div><div class="msc-badges" style="margin-top:4px"><span class="badge b-nt">' + esc(x.cat || 'Transport') + '</span>' +
           (x.a ? '<span class="badge b-nt">' + esc(mobFmtShortCal(x.a) + (x.b ? ' – ' + mobFmtShortCal(x.b) : '')) + '</span>' : '') +
           '</div></div></div>' + bkAmtHtml + '</div>' +
@@ -2113,7 +2141,7 @@ function renderMobTrip() {
           : { got: Math.min(g.t, (g.s0 || 0) + perG), pct: g.t ? Math.min(100, Math.round((Math.min(g.t, (g.s0 || 0) + perG) / g.t) * 100)) : 0 },
         gotG = gsG.got, pctG = gsG.pct;
       body =
-        '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Target Tabungan</h3><p class="msc-sub">Sisihan dana bulanan sebelum berangkat</p></div>' +
+        '<div class="card" id="m-tg-card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Target Tabungan</h3><p class="msc-sub">Sisihan dana bulanan sebelum berangkat</p></div>' +
         '<span class="badge ' + (g.link ? 'b-em' : 'b-nt') + '">' + (g.link ? 'Tersambung ke Rincian' : 'Hanya Pencatat') + '</span></div>' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px;font-size:0.82rem"><span>Terkumpul <strong class="mono pv">' + rp(gotG) + '</strong> dari <strong class="mono pv">' + rp(g.t) + '</strong></span><strong class="mono" style="color:var(--emerald)">' + pctG + '%</strong></div>' +
         '<div class="rank-track" style="height:8px;margin-bottom:10px"><div class="rank-fill" style="width:' + pctG + '%;background:var(--emerald)"></div></div>' +
@@ -4523,10 +4551,14 @@ function bindMobileShellEvents(root) {
       if ($('m-kp-name')) $('m-kp-name').value = '';
       mobSetDateVal('m-kp-start', todayISO());
       mobSetDateVal('m-kp-end', addDaysISO(todayISO(), 4));
-      if ($('m-kp-use-budget')) $('m-kp-use-budget').value = '1';
-      setRpVal('m-kp-budget', 10000000);
+      if ($('m-kp-use-budget')) $('m-kp-use-budget').value = '0';
+      setRpVal('m-kp-budget', '');
       if ($('m-kp-cur')) $('m-kp-cur').value = '';
       if ($('m-kp-rate')) $('m-kp-rate').value = '';
+      MOB_STATE.tripFxsEnabled = false;
+      MOB_STATE.tripFxsDraft = [];
+      if ($('m-kp-fxs-err')) $('m-kp-fxs-err').textContent = '';
+      mobRenderTripFxsEditor();
       syncMobTripBudgetWrap();
       mobOpenSheet('m-sheet-trip');
       return;
@@ -4547,6 +4579,7 @@ function bindMobileShellEvents(root) {
       if (sKindM === 'pdf') {
         if (typeof tripPdfData !== 'function' || typeof repPdf !== 'function' || typeof rkDownloadBlob !== 'function') {
           setShSt('Pembuat PDF tidak tersedia.');
+          showMobToast('Pembuat PDF tidak tersedia.');
           return;
         }
         var repT = tripPdfData(trSh, incCostM),
@@ -4560,11 +4593,14 @@ function bindMobileShellEvents(root) {
           var mD = (resD && resD.method) || (dlResT && dlResT.method) || '';
           if (okD) {
             setShSt('PDF siap dibagikan / disimpan (' + repT.filename + (mD ? ' · ' + mD : '') + ').' + nonLatinNote);
+            showMobToast('PDF disimpan');
           } else if (resD && resD.cancelled) {
             setShSt('Pengiriman PDF dibatalkan.' + nonLatinNote);
+            showMobToast('Pengiriman PDF dibatalkan.');
           } else {
             var errS = (resD && resD.error) ? ' (' + resD.error + ')' : '';
             setShSt('Gagal mengirim PDF' + errS + '. Gunakan "Salin teks" atau coba lagi.' + nonLatinNote);
+            showMobToast('Gagal mengirim PDF');
           }
         });
         return;
@@ -4573,23 +4609,25 @@ function bindMobileShellEvents(root) {
       if (sKindM === 'wa') {
         if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
           Promise.resolve(navigator.share({ title: trSh.name, text: txtShM }))
-            .then(function () { setShSt('Dialog berbagi dibuka.'); })
+            .then(function () { setShSt('Dialog berbagi dibuka.'); showMobToast('Membuka berbagi teks'); })
             .catch(function (err) {
-              if (!err || err.name !== 'AbortError') setShSt('Berbagi gagal. Gunakan "Salin teks" lalu tempel di WhatsApp.');
+              if (!err || err.name !== 'AbortError') { setShSt('Berbagi gagal. Gunakan "Salin teks" lalu tempel di WhatsApp.'); showMobToast('Berbagi teks gagal'); }
             });
           return;
         }
         var waUrl = 'https://wa.me/?text=' + encodeURIComponent(txtShM);
         if (waUrl.length > MOB_WA_URL_MAX) {
           setShSt('Teks terlalu panjang untuk tautan WhatsApp (' + waUrl.length + ' karakter). Gunakan "Salin teks" lalu tempel di WhatsApp.');
+          showMobToast('Teks terlalu panjang untuk tautan WhatsApp');
           return;
         }
         mobOpenExternalUrl(waUrl);
         setShSt('Membuka WhatsApp...');
+        showMobToast('Membuka berbagi teks');
       } else if (typeof copyText === 'function') {
         copyText(txtShM).then(function () {
           setShSt('Teks disalin. Tinggal tempel di WhatsApp atau catatan.');
-          showMobToast('Itinerary disalin');
+          showMobToast('Teks disalin');
         });
       }
       return;
@@ -4633,27 +4671,61 @@ function bindMobileShellEvents(root) {
       mobSetDateVal('m-kp-start', trE.start || todayISO());
       mobSetDateVal('m-kp-end', trE.end || addDaysISO(todayISO(), 4));
       if ($('m-kp-use-budget')) $('m-kp-use-budget').value = trE.budget ? '1' : '0';
-      setRpVal('m-kp-budget', trE.budget || 0);
+      setRpVal('m-kp-budget', trE.budget ? trE.budget : '');
       if ($('m-kp-cur')) $('m-kp-cur').value = trE.cur || '';
       if ($('m-kp-rate')) $('m-kp-rate').value = trE.rate || '';
+      MOB_STATE.tripFxsEnabled = !!(typeof tripMultiCurOn === 'function' && tripMultiCurOn(trE));
+      MOB_STATE.tripFxsDraft = Array.isArray(trE.fxs)
+        ? trE.fxs.map(function (f) { return { c: f.c || '', r: f.r || 0, origC: f.c || '' }; })
+        : [];
+      if ($('m-kp-fxs-err')) $('m-kp-fxs-err').textContent = '';
+      mobRenderTripFxsEditor();
       syncMobTripBudgetWrap();
       mobOpenSheet('m-sheet-trip');
+      return;
+    }
+    if (e.target.closest('#m-kp-fxs-add') && typeof tripHandleFxsAddRow === 'function') {
+      MOB_STATE.tripFxsDraft = MOB_STATE.tripFxsDraft || [];
+      tripHandleFxsAddRow($('m-kp-multi-cur'), $('m-kp-fxs-wrap'), $('m-kp-fxs-list'), $('m-kp-fxs-add'), $('m-kp-fxs-err'), !!MOB_STATE.tripFxsEnabled, MOB_STATE.tripFxsDraft, showMobToast);
+      return;
+    }
+    var mFxDel = e.target.closest('#m-kp-fxs-list [data-fx-del]');
+    if (mFxDel && typeof tripHandleFxsDelRow === 'function') {
+      var trEditDelM = MOB_STATE.tripModalMode === 'edit' ? mobActiveTrip() : null;
+      tripHandleFxsDelRow($('m-kp-multi-cur'), $('m-kp-fxs-wrap'), $('m-kp-fxs-list'), $('m-kp-fxs-add'), $('m-kp-fxs-err'), !!MOB_STATE.tripFxsEnabled, MOB_STATE.tripFxsDraft || [], +mFxDel.getAttribute('data-fx-del'), trEditDelM, showMobToast);
       return;
     }
     var mitE = e.target.closest('[data-mit-edit]');
     if (mitE) {
       MOB_STATE.tripEditIt = mitE.getAttribute('data-mit-edit');
       renderMobTrip();
-      var itFormEl = $('m-trip-itin-form');
-      if (itFormEl && typeof itFormEl.scrollIntoView === 'function') {
-        try { itFormEl.scrollIntoView({ block: 'center', behavior: (typeof rkIsReducedMotion === 'function' && rkIsReducedMotion()) ? 'auto' : 'smooth' }); } catch (err) {}
+      if (typeof tripScrollToEditForm === 'function') tripScrollToEditForm($('m-trip-itin-form'), null, true);
+      else if ($('m-trip-itin-form') && typeof $('m-trip-itin-form').scrollIntoView === 'function') {
+        try { $('m-trip-itin-form').scrollIntoView({ block: 'center', behavior: (typeof rkIsReducedMotion === 'function' && rkIsReducedMotion()) ? 'auto' : 'smooth' }); } catch (err) {}
       }
       return;
     }
-    if (e.target.closest('#m-it-cancel')) { MOB_STATE.tripEditIt = null; renderMobTrip(); return; }
+    if (e.target.closest('#m-it-cancel')) {
+      var prevItM = MOB_STATE.tripEditIt;
+      MOB_STATE.tripEditIt = null;
+      renderMobTrip();
+      if (prevItM && typeof tripScrollBackToEditedRow === 'function') tripScrollBackToEditedRow($('m-trip-root') && $('m-trip-root').querySelector('[data-it-row="' + prevItM + '"]'), true);
+      return;
+    }
     var mbkE = e.target.closest('[data-mbk-edit]');
-    if (mbkE) { MOB_STATE.tripEditBk = mbkE.getAttribute('data-mbk-edit'); renderMobTrip(); return; }
-    if (e.target.closest('#m-bk-cancel')) { MOB_STATE.tripEditBk = null; renderMobTrip(); return; }
+    if (mbkE) {
+      MOB_STATE.tripEditBk = mbkE.getAttribute('data-mbk-edit');
+      renderMobTrip();
+      if (typeof tripScrollToEditForm === 'function') tripScrollToEditForm($('m-trip-book-form'), null, true);
+      return;
+    }
+    if (e.target.closest('#m-bk-cancel')) {
+      var prevBkM = MOB_STATE.tripEditBk;
+      MOB_STATE.tripEditBk = null;
+      renderMobTrip();
+      if (prevBkM && typeof tripScrollBackToEditedRow === 'function') tripScrollBackToEditedRow($('m-trip-root') && $('m-trip-root').querySelector('[data-bk-row="' + prevBkM + '"]'), true);
+      return;
+    }
     var tlist = e.target.closest('[data-mtrip-list]');
     if (tlist) { MOB_STATE.tripView = 'list'; renderMobTrip(); return; }
     var tsel = e.target.closest('[data-mtrip-sel]');
@@ -4697,7 +4769,7 @@ function bindMobileShellEvents(root) {
       }, 'Ya, hapus');
     }
     var itt = e.target.closest('[data-mit-toggle]');
-    if (itt) { var t0 = mobActiveTrip(), it0 = t0 && t0.it.find(function (x) { return x.id === itt.getAttribute('data-mit-toggle'); }); if (it0) { it0.done = !it0.done; save(); syncUI(); } return; }
+    if (itt) { var t0 = mobActiveTrip(), it0 = t0 && t0.it.find(function (x) { return x.id === itt.getAttribute('data-mit-toggle'); }); if (it0) { it0.done = !it0.done; save(); mobPreserveScroll(function () { syncUI(); }); showMobToast(it0.done ? 'Kegiatan ditandai selesai' : 'Status selesai dibatalkan'); } return; }
     var itd = e.target.closest('[data-mit-del]');
     if (itd) {
       var t1 = mobActiveTrip(), idIt = itd.getAttribute('data-mit-del'), xIt = t1 && t1.it.find(function (x) { return x.id === idIt; });
@@ -4715,7 +4787,7 @@ function bindMobileShellEvents(root) {
       return;
     }
     var bkp = e.target.closest('[data-mbk-pay]');
-    if (bkp) { var t2 = mobActiveTrip(), bk0 = t2 && t2.bk.find(function (x) { return x.id === bkp.getAttribute('data-mbk-pay'); }); if (bk0) { var lockMsgM = typeof tripToggleBkPaid === 'function' ? tripToggleBkPaid(t2, bk0) : (bk0.paid = !bk0.paid, ''); save(); syncUI(); if (lockMsgM) showMobToast(lockMsgM); } return; }
+    if (bkp) { var t2 = mobActiveTrip(), bk0 = t2 && t2.bk.find(function (x) { return x.id === bkp.getAttribute('data-mbk-pay'); }); if (bk0) { var lockMsgM = typeof tripToggleBkPaid === 'function' ? tripToggleBkPaid(t2, bk0) : (bk0.paid = !bk0.paid, bk0.paid ? 'Ditandai lunas' : 'Lunas dibatalkan'); save(); mobPreserveScroll(function () { syncUI(); }); if (lockMsgM) showMobToast(lockMsgM); } return; }
     var bkd = e.target.closest('[data-mbk-del]');
     if (bkd) {
       var t3 = mobActiveTrip(), idBk = bkd.getAttribute('data-mbk-del'), xBk = t3 && t3.bk.find(function (x) { return x.id === idBk; });
@@ -4740,8 +4812,8 @@ function bindMobileShellEvents(root) {
       }
       return;
     }
-    if (e.target.closest('#m-tg-edit')) { MOB_STATE.tripGoalEdit = true; renderMobTrip(); return; }
-    if (e.target.closest('#m-tg-cancel')) { MOB_STATE.tripGoalEdit = false; renderMobTrip(); return; }
+    if (e.target.closest('#m-tg-edit')) { MOB_STATE.tripGoalEdit = true; renderMobTrip(); if (typeof tripScrollToEditForm === 'function') tripScrollToEditForm($('m-trip-goal-form'), null, true); return; }
+    if (e.target.closest('#m-tg-cancel')) { MOB_STATE.tripGoalEdit = false; renderMobTrip(); if (typeof tripScrollBackToEditedRow === 'function') tripScrollBackToEditedRow($('m-tg-card'), true); return; }
     var extL = e.target.closest('[data-m-ext-url]');
     if (extL) {
       e.preventDefault();
@@ -4830,11 +4902,39 @@ function bindMobileShellEvents(root) {
           ? '<span class="badge b-ac">' + esc(res.name) + '</span> <span class="badge b-em mono">' + rp(res.price) + '</span> <span class="badge b-nt">' + esc(every({ n: res.n || 1, unit: res.unit || 'bulan' })) + '</span> <span class="badge b-nt mono">' + fmtD(res.start) + '</span>'
           : '<span class="badge b-am">' + esc((res && res.error) || 'Format belum dikenali') + '</span>');
       }
+    } else if (t.id === 'm-kp-budget') {
+      if (getRpVal('m-kp-budget') > 0 && $('m-kp-use-budget') && $('m-kp-use-budget').value === '0') {
+        $('m-kp-use-budget').value = '1';
+        syncMobTripBudgetWrap();
+      }
     } else if (t.id === 'm-trip-note') {
       var tr = mobActiveTrip();
-      if (tr) { tr.note = t.value; save(); }
-    } else if (t.id === 'm-it-est' || t.id === 'm-bk-amt' || t.id === 'm-bk-rt') {
+      if (tr) {
+        tr.note = t.value;
+        clearTimeout(window._mobNoteT);
+        window._mobNoteT = setTimeout(function () { save(); showMobToast('Catatan disimpan'); }, 350);
+      }
+    } else if (t.dataset && t.dataset.mdtDay != null) {
+      var trDtIn = mobActiveTrip(), dKeyIn = t.dataset.mdtDay;
+      if (trDtIn && ISO_RE.test(dKeyIn)) {
+        if (!trDtIn.dt || typeof trDtIn.dt !== 'object') trDtIn.dt = {};
+        var dtValIn = String(t.value || '').trim().slice(0, 60);
+        if (dtValIn) trDtIn.dt[dKeyIn] = dtValIn;
+        else delete trDtIn.dt[dKeyIn];
+        clearTimeout(window._mobDtT);
+        window._mobDtT = setTimeout(function () { save(); showMobToast('Judul hari disimpan'); }, 350);
+      }
+    } else if (t.id === 'm-it-est' || t.id === 'm-bk-amt') {
       mobSyncTripEqPrev();
+    } else if (t.id === 'm-it-rt' || t.id === 'm-bk-rt') {
+      if (t.dataset) t.dataset.userEdited = '1';
+      mobSyncTripEqPrev();
+    } else if (t.closest && t.closest('#m-kp-fxs-list') && MOB_STATE.tripFxsDraft) {
+      var idxFxM = t.dataset.fxCode != null ? +t.dataset.fxCode : (t.dataset.fxRate != null ? +t.dataset.fxRate : -1);
+      if (idxFxM >= 0 && MOB_STATE.tripFxsDraft[idxFxM]) {
+        if (t.dataset.fxCode != null) MOB_STATE.tripFxsDraft[idxFxM].c = t.value.toUpperCase();
+        if (t.dataset.fxRate != null) MOB_STATE.tripFxsDraft[idxFxM].rRaw = t.value;
+      }
     }
   });
 
@@ -4845,7 +4945,12 @@ function bindMobileShellEvents(root) {
       $('m-kas-debt-box').style.display = t.checked ? 'grid' : 'none';
     } else if (t.id === 'm-kas-flt-cat') {
       renderMobKas();
+    } else if (t.id === 'm-kp-multi-cur' && typeof tripHandleFxsToggleChange === 'function') {
+      var trEditTogM = MOB_STATE.tripModalMode === 'edit' ? mobActiveTrip() : null;
+      tripHandleFxsToggleChange($('m-kp-multi-cur'), $('m-kp-fxs-wrap'), $('m-kp-fxs-list'), $('m-kp-fxs-add'), $('m-kp-fxs-err'), trEditTogM, function () { return MOB_STATE.tripFxsDraft || []; }, function (v) { MOB_STATE.tripFxsEnabled = !!v; }, showMobToast);
     } else if (t.id === 'm-it-cur' || t.id === 'm-bk-cur') {
+      var rtElCurM = $(t.id === 'm-it-cur' ? 'm-it-rt' : 'm-bk-rt');
+      if (rtElCurM && !(rtElCurM.dataset && rtElCurM.dataset.userEdited === '1')) rtElCurM.value = '';
       mobSyncTripEqPrev();
     } else if (t.dataset && t.dataset.msimtog != null) {
       var ix = +t.dataset.msimtog;
@@ -4882,6 +4987,11 @@ function bindMobileShellEvents(root) {
           mobSetXlBusy(false);
           try {
             var dXl = xlParse(X.read(fr.result, { type: 'array', cellDates: true }));
+            if (dXl.error) {
+              MOB_XL_DATA = null;
+              showMobToast(dXl.error);
+              return;
+            }
             if (!dXl.it.length && !dXl.bk.length) {
               showMobToast('Format tidak dikenali. Unduh Template Excel lalu isi sesuai kolomnya.');
               return;
@@ -4911,7 +5021,12 @@ function bindMobileShellEvents(root) {
       });
     } else if (t.id === 'm-kp-use-budget') {
       syncMobTripBudgetWrap();
+    } else if (t.id === 'm-trip-note') {
+      clearTimeout(window._mobNoteT);
+      var trCh = mobActiveTrip();
+      if (trCh) { trCh.note = t.value; save(); showMobToast('Catatan disimpan'); }
     } else if (t.dataset && t.dataset.mdtDay != null) {
+      clearTimeout(window._mobDtT);
       var trDt = mobActiveTrip(), dKey = t.dataset.mdtDay;
       if (trDt && ISO_RE.test(dKey)) {
         if (!trDt.dt || typeof trDt.dt !== 'object') trDt.dt = {};
@@ -4919,6 +5034,7 @@ function bindMobileShellEvents(root) {
         if (dtVal) trDt.dt[dKey] = dtVal;
         else delete trDt.dt[dKey];
         save();
+        showMobToast('Judul hari disimpan');
       }
     }
   });
@@ -5009,15 +5125,42 @@ function bindMobileShellEvents(root) {
         showMobToast(metaErrM.error);
         return;
       }
-      if (MOB_STATE.tripModalMode === 'edit' && mobActiveTrip()) {
-        Object.assign(mobActiveTrip(), { name: tnm, start: stD, end: enD, budget: budV, cur: cur, rate: cur ? rt : 0 });
+      var isEditMetaM = (MOB_STATE.tripModalMode === 'edit' && mobActiveTrip());
+      var fxResM = { error: '', fxs: [], renames: [] };
+      if (MOB_STATE.tripFxsEnabled && typeof tripValidateFxsRows === 'function') {
+        fxResM = tripValidateFxsRows(cur, MOB_STATE.tripFxsDraft || []);
+        if (fxResM.error) {
+          if ($('m-kp-fxs-err')) $('m-kp-fxs-err').textContent = fxResM.error;
+          showMobToast(fxResM.error);
+          return;
+        }
+      } else if (isEditMetaM && typeof tripCountAllExtraCurUsage === 'function') {
+        var uOffM = tripCountAllExtraCurUsage(mobActiveTrip());
+        if (uOffM.total > 0) {
+          var offMsgM = tripFormatCurUsageMsg(uOffM);
+          if ($('m-kp-fxs-err')) $('m-kp-fxs-err').textContent = offMsgM;
+          showMobToast(offMsgM);
+          return;
+        }
+      }
+      if (isEditMetaM) {
+        var trMetaM = mobActiveTrip();
+        Object.assign(trMetaM, { name: tnm, start: stD, end: enD, budget: budV, cur: cur, rate: cur ? rt : 0 });
+        if (MOB_STATE.tripFxsEnabled) {
+          if (typeof tripApplyFxsRenames === 'function') tripApplyFxsRenames(trMetaM, fxResM.renames);
+          trMetaM.fxs = fxResM.fxs;
+        } else {
+          delete trMetaM.fxs;
+        }
       } else {
         var pid = 'p' + Date.now().toString(36);
-        ALL.kas.pr[pid] = {
+        var newProfM = {
           id: pid, name: tnm, saldo: 0, link: false,
           start: stD, end: enD, budget: budV, cur: cur, rate: cur ? rt : 0,
           dt: {}, tx: [], it: [], bk: [], lk: [], ck: [], note: '', goal: null,
         };
+        if (MOB_STATE.tripFxsEnabled) newProfM.fxs = fxResM.fxs;
+        ALL.kas.pr[pid] = newProfM;
         MOB_STATE.tripId = pid;
         MOB_STATE.tripView = 'detail';
         MOB_STATE.tripSub = 'ring';
@@ -5025,7 +5168,7 @@ function bindMobileShellEvents(root) {
       mobCloseSheet('m-sheet-trip');
       save();
       syncUI();
-      showMobToast(MOB_STATE.tripModalMode === 'edit' ? 'Perjalanan diperbarui' : 'Perjalanan baru dibuat');
+      showMobToast(isEditMetaM ? 'Perjalanan diperbarui' : 'Perjalanan dibuat');
     } else if (f.id === 'm-trip-itin-form') {
       var trI = mobActiveTrip(), pl = ($('m-it-place') && $('m-it-place').value || '').trim();
       if (!trI || !pl) { if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-it-place')); return; }
@@ -5046,6 +5189,7 @@ function bindMobileShellEvents(root) {
         return;
       }
       var rawPay = $('m-it-pay') ? $('m-it-pay').value : 'cash';
+      var itCurSpecM = typeof tripParseCurSelectVal === 'function' ? tripParseCurSelectVal(trI, $('m-it-cur') && $('m-it-cur').value) : { fx: $('m-it-cur') && $('m-it-cur').value === 'fx', c: '' };
       var patchItM = {
         day: ($('m-it-day') && $('m-it-day').value) || trI.start || todayISO(),
         time: parsedTm,
@@ -5053,13 +5197,19 @@ function bindMobileShellEvents(root) {
         place: pl.slice(0, 120),
         cat: $('m-it-cat') ? $('m-it-cat').value : 'Transport',
         est: getRpVal('m-it-est'),
-        fx: !!(trI.cur && $('m-it-cur') && $('m-it-cur').value === 'fx'),
+        fx: !!(trI.cur && itCurSpecM.fx),
         pay: /^(ic|on|cash)$/.test(rawPay) ? rawPay : '',
         link: rawLink.slice(0, 400),
         note: ($('m-it-note') && $('m-it-note').value || '').trim().slice(0, 200),
       };
-      if (MOB_STATE.tripEditIt) {
-        trI.it = trI.it.map(function (x) { return x.id === MOB_STATE.tripEditIt ? Object.assign({}, x, patchItM) : x; });
+      if (patchItM.fx && itCurSpecM.c) patchItM.c = itCurSpecM.c;
+      var editItIdM = MOB_STATE.tripEditIt;
+      if (editItIdM) {
+        trI.it = trI.it.map(function (x) {
+          return x.id === editItIdM
+            ? (typeof tripMergeItemEdit === 'function' ? tripMergeItemEdit(x, patchItM, $('m-it-rt'), false) : Object.assign({}, x, patchItM))
+            : x;
+        });
         MOB_STATE.tripEditIt = null;
       } else {
         trI.it.push(Object.assign({
@@ -5069,28 +5219,34 @@ function bindMobileShellEvents(root) {
       }
       save();
       syncUI();
-      showMobToast('Kegiatan disimpan');
+      showMobToast(editItIdM ? 'Kegiatan diperbarui' : 'Kegiatan disimpan');
+      if (editItIdM && typeof tripScrollBackToEditedRow === 'function') {
+        tripScrollBackToEditedRow($('m-trip-root') && $('m-trip-root').querySelector('[data-it-row="' + editItIdM + '"]'), true);
+      }
     } else if (f.id === 'm-trip-book-form') {
       var trB = mobActiveTrip(), bt = ($('m-bk-title') && $('m-bk-title').value || '').trim(), bAmt = getRpVal('m-bk-amt');
       if (!trB || !bt) { if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-bk-title')); return; }
       if (!(bAmt > 0)) { if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-bk-amt')); return; }
+      var bkCurSpecM = typeof tripParseCurSelectVal === 'function' ? tripParseCurSelectVal(trB, $('m-bk-cur') && $('m-bk-cur').value) : { fx: $('m-bk-cur') && $('m-bk-cur').value === 'fx', c: '' };
       var patchBkM = {
         title: bt.slice(0, 120),
         cat: $('m-bk-cat') ? $('m-bk-cat').value : 'Transport',
         amt: bAmt,
-        fx: !!(trB.cur && $('m-bk-cur') && $('m-bk-cur').value === 'fx'),
+        fx: !!(trB.cur && bkCurSpecM.fx),
         a: ($('m-bk-start') && $('m-bk-start').value) || '',
         b: ($('m-bk-end') && $('m-bk-end').value) || '',
       };
+      if (patchBkM.fx && bkCurSpecM.c) patchBkM.c = bkCurSpecM.c;
       var bkDtErrM = typeof tripValidateDates === 'function' ? tripValidateDates(patchBkM.a, patchBkM.b) : null;
       if (bkDtErrM) {
         if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-bk-end-trig') || $('m-bk-title'));
         showMobToast(bkDtErrM.error);
         return;
       }
-      if (MOB_STATE.tripEditBk) {
+      var editBkIdM = MOB_STATE.tripEditBk;
+      if (editBkIdM) {
         trB.bk = trB.bk.map(function (x) {
-          return x.id === MOB_STATE.tripEditBk
+          return x.id === editBkIdM
             ? (typeof tripMergeBkEdit === 'function' ? tripMergeBkEdit(x, patchBkM, $('m-bk-rt')) : Object.assign({}, x, patchBkM))
             : x;
         });
@@ -5103,7 +5259,10 @@ function bindMobileShellEvents(root) {
       }
       save();
       syncUI();
-      showMobToast('Pemesanan disimpan');
+      showMobToast(editBkIdM ? 'Pemesanan diperbarui' : 'Pemesanan disimpan');
+      if (editBkIdM && typeof tripScrollBackToEditedRow === 'function') {
+        tripScrollBackToEditedRow($('m-trip-root') && $('m-trip-root').querySelector('[data-bk-row="' + editBkIdM + '"]'), true);
+      }
     } else if (f.id === 'm-trip-ck-form') {
       var trC = mobActiveTrip(), txt = ($('m-ck-inp') && $('m-ck-inp').value || '').trim();
       if (!trC || !txt) { if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-ck-inp')); return; }
@@ -5163,9 +5322,13 @@ function bindMobileShellEvents(root) {
         showMobToast('Dana yang terkumpul sudah mencapai target.');
         return;
       }
+      var wasGoalEditM = !!MOB_STATE.tripGoalEdit;
       trG.goal = { t: gc.t, s0: gc.s0, from: gc.from, to: gc.to, per: gc.per, link: gc.link };
       MOB_STATE.tripGoalEdit = false;
       save(); syncUI(); showMobToast('Target tabungan disimpan');
+      if (wasGoalEditM && typeof tripScrollBackToEditedRow === 'function') {
+        tripScrollBackToEditedRow($('m-tg-card'), true);
+      }
     } else if (f.id === 'm-trip-xl-form') {
       if (!MOB_XL_DATA || typeof xlValidateMeta !== 'function' || typeof xlBuildProfile !== 'function') return;
       var valXl = xlValidateMeta(MOB_XL_DATA, $('m-xl-name') && $('m-xl-name').value, $('m-xl-cur') && $('m-xl-cur').value, $('m-xl-rate') && $('m-xl-rate').value);

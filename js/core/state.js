@@ -169,7 +169,20 @@ function normKas(k) {
   if (k && k.pr && typeof k.pr === 'object')
     Object.keys(k.pr).forEach(function (id) {
       var p = k.pr[id] || {};
-      pr[id] = {
+      var mainCurUp = /^[A-Za-z]{3}$/.test(p.cur || '') ? String(p.cur).toUpperCase() : '';
+      var cleanFxs = null, validExtraSet = {};
+      if (Array.isArray(p.fxs)) {
+        cleanFxs = [];
+        p.fxs.forEach(function (f) {
+          if (cleanFxs.length >= 6 || !f || typeof f !== 'object') return;
+          var fc = typeof f.c === 'string' ? f.c.trim().toUpperCase() : '';
+          if (!/^[A-Z]{3}$/.test(fc) || fc === mainCurUp || fc === 'IDR' || fc === 'RP' || validExtraSet[fc]) return;
+          var fr = (typeof f.r === 'number' && Number.isFinite(f.r) && f.r > 0 && f.r <= 1e9) ? f.r : 0;
+          validExtraSet[fc] = 1;
+          cleanFxs.push({ c: fc, r: fr });
+        });
+      }
+      var profObj = {
         id: id,
         name: String(p.name || 'Profil').slice(0, 30),
         saldo: +p.saldo || 0,
@@ -177,7 +190,7 @@ function normKas(k) {
         start: ISO_RE.test(p.start) ? p.start : '',
         end: ISO_RE.test(p.end) ? p.end : '',
         budget: +p.budget > 0 ? +p.budget : 0,
-        cur: /^[A-Za-z]{3}$/.test(p.cur || '') ? String(p.cur).toUpperCase() : '',
+        cur: mainCurUp,
         rate: +p.rate > 0 ? +p.rate : 0,
         dt: (function () {
           var o = {};
@@ -192,7 +205,10 @@ function normKas(k) {
             return x && ISO_RE.test(x.day) && x.place;
           })
           .map(function (x, i) {
-            return {
+            var isFxIt = !!x.fx;
+            var okRtIt = isFxIt && typeof x.rt === 'number' && Number.isFinite(x.rt) && x.rt > 0 && x.rt <= 1e9;
+            var xcIt = (isFxIt && cleanFxs && typeof x.c === 'string') ? x.c.trim().toUpperCase() : '';
+            var rowIt = {
               id: String(x.id || 'i' + i),
               day: x.day,
               time: /^\d{2}:\d{2}$/.test(x.time) ? x.time : '',
@@ -200,13 +216,16 @@ function normKas(k) {
               place: String(x.place).slice(0, 120),
               cat: String(x.cat || '').slice(0, 20),
               est: +x.est > 0 ? +x.est : 0,
-              fx: !!x.fx,
+              fx: isFxIt,
               pay: /^(ic|on|cash)$/.test(x.pay) ? x.pay : '',
               link: okUrl(x.link) ? String(x.link).slice(0, 400) : '',
               note: String(x.note || '').slice(0, 200),
               done: !!x.done,
               rec: String(x.rec || ''),
             };
+            if (xcIt && validExtraSet[xcIt]) rowIt.c = xcIt;
+            if (okRtIt) rowIt.rt = x.rt;
+            return rowIt;
           }),
         bk: (Array.isArray(p.bk) ? p.bk : [])
           .filter(function (x) {
@@ -214,7 +233,8 @@ function normKas(k) {
           })
           .map(function (x, i) {
             var isFx = !!x.fx, isPaid = !!x.paid;
-            var okRt = isPaid && isFx && typeof x.rt === 'number' && Number.isFinite(x.rt) && x.rt > 0 && x.rt <= 1e9;
+            var okRt = isFx && typeof x.rt === 'number' && Number.isFinite(x.rt) && x.rt > 0 && x.rt <= 1e9;
+            var xcBk = (isFx && cleanFxs && typeof x.c === 'string') ? x.c.trim().toUpperCase() : '';
             var row = {
               id: String(x.id || 'b' + i),
               title: String(x.title).slice(0, 120),
@@ -228,7 +248,9 @@ function normKas(k) {
               paid: isPaid,
               rec: String(x.rec || ''),
             };
+            if (xcBk && validExtraSet[xcBk]) row.c = xcBk;
             if (okRt) row.rt = x.rt;
+            if (okRt && isPaid && x.ra === true) row.ra = true;
             return row;
           }),
         lk: (Array.isArray(p.lk) ? p.lk : [])
@@ -260,6 +282,8 @@ function normKas(k) {
             return { id: String(x.id || 't' + i), d: x.d, t: x.t, amt: +x.amt, cat: String(x.cat || '').slice(0, 30), note: String(x.note || '').slice(0, 80), debt: x.debt === true, debtName: String(x.debtName || '').slice(0, 40), debtKind: /^(piutang|bayar-utang|utang|bayar-piutang)$/.test(x.debtKind) ? x.debtKind : '', debtDone: x.debtDone === true };
           }),
       };
+      if (cleanFxs !== null) profObj.fxs = cleanFxs;
+      pr[id] = profObj;
     });
   if (!Object.keys(pr).length) pr.utama = { id: 'utama', name: 'Utama', saldo: 0, tx: [], link: true };
   var ids = Object.keys(pr),

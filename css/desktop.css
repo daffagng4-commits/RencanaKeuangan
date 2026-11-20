@@ -2599,7 +2599,7 @@
 
     #browser-shell .modal-backdrop.open .modal-box {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: none;
       transition:
         opacity var(--dur-dialog-open) var(--ease-out),
         transform var(--dur-dialog-open) var(--ease-out);
@@ -2628,6 +2628,13 @@
       display: flex;
       flex-direction: column;
       gap: 15px;
+    }
+    #browser-shell #modal-trip-form .modal-body {
+      overflow-x: hidden;
+    }
+    #browser-shell #modal-trip-form #kp-end-cal {
+      left: auto;
+      right: 0;
     }
 
     #browser-shell .modal-foot {
@@ -2700,6 +2707,7 @@
       #browser-shell .quick-parse-input-row { flex-direction: column; }
       #browser-shell .btn-lbl-sm { display: none; }
       #browser-shell .toast-box { bottom: calc(var(--mobile-nav-h) + 14px); }
+      #browser-shell .tt { bottom: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom, 0px) + 14px); max-width: calc(100vw - 24px); }
 
       #browser-shell .mobile-bottom-nav {
         position: fixed;
@@ -2836,3 +2844,44 @@ body.privacy-on #browser-shell .pv {
 #browser-shell .st.due { background: var(--accent-soft); color: var(--accent-ink); }
 #browser-shell .st.late { background: var(--crimson-soft); color: var(--crimson); }
 #browser-shell .err { color: var(--crimson); font-size: 0.8rem; font-weight: 600; }
+
+/* Mode Perjalanan: Beberapa mata uang (Tahap 10B B2) */
+#browser-shell .trip-multi-cur-box {
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+#browser-shell .trip-switch-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+#browser-shell .trip-fx-edit-row {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+#browser-shell .trip-fx-detail-row {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#browser-shell .trip-fx-detail-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+#browser-shell .trip-fx-detail-mid {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+#browser-shell .trip-fx-detail-rate {
+  color: var(--text-muted);
+}

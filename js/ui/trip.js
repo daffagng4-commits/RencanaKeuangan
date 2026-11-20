@@ -92,28 +92,88 @@ function dayLabel(P, d) {
 function val(P, v, fx) {
   return fx && P.rate ? v * P.rate : v;
 }
-function fxs(P, n) {
-  return P.cur + ' ' + Math.round(n).toLocaleString('id-ID');
+function fxs(P, n, curOpt) {
+  var c = curOpt != null ? String(curOpt) : ((P && P.cur) || '');
+  return c + ' ' + Math.round(n).toLocaleString('id-ID');
 }
-/** Teks jumlah: "Rp ..." dan, bila asing, "JPY ... " di belakangnya. */
-function amtTxt(P, v, fx, lockedRt) {
-  if (fx && P.cur) {
-    var lk = typeof lockedRt === 'number' && Number.isFinite(lockedRt) && lockedRt > 0 && lockedRt <= 1e9 ? lockedRt : 0;
-    var eqRp = lk ? (+v || 0) * lk : val(P, v, fx);
-    return fxs(P, v) + (lk || P.rate ? ' <span class="sub">&asymp; ' + rp(eqRp) + (lk ? ' &middot; kurs terkunci ' + lk.toLocaleString('id-ID') : '') + '</span>' : '');
+/** Cek apakah item bermata uang asing memiliki kurs khusus (rt) yang valid (> 0 dan <= 1e9). */
+function tripHasValidRt(x) {
+  return !!(x && x.fx && typeof x.rt === 'number' && Number.isFinite(x.rt) && x.rt > 0 && x.rt <= 1e9);
+}
+/** Kode mata uang item bermata uang asing (mendukung B2 P.fxs[] atau B1 P.cur); kosong bila bukan item asing / belum ada cur. */
+function tripItemCur(P, x) {
+  if (!x || !x.fx || !P) return '';
+  var main = String(P.cur || '').trim();
+  if (x.c && Array.isArray(P.fxs)) {
+    var xc = String(x.c).trim().toUpperCase();
+    for (var i = 0; i < P.fxs.length; i++) {
+      var f = P.fxs[i];
+      if (f && String(f.c || '').trim().toUpperCase() === xc) return String(f.c).trim().toUpperCase();
+    }
   }
-  return rp(v);
+  return main;
+}
+/** Kurs berjalan profil untuk kode mata uang tertentu (utama P.rate atau tambahan P.fxs[].r). */
+function tripCurRate(P, code) {
+  if (!P) return 0;
+  var mainRaw = String(P.cur || '').trim();
+  var reqRaw = code == null ? mainRaw : String(code).trim();
+  if (!reqRaw) return 0;
+  var cUp = reqRaw.toUpperCase(), mainUp = mainRaw.toUpperCase();
+  if (cUp === mainUp) {
+    var rm = +P.rate || 0;
+    return (Number.isFinite(rm) && rm > 0 && rm <= 1e9) ? rm : 0;
+  }
+  if (Array.isArray(P.fxs)) {
+    for (var i = 0; i < P.fxs.length; i++) {
+      var f = P.fxs[i];
+      if (f && String(f.c || '').trim().toUpperCase() === cUp) {
+        var rx = +f.r || 0;
+        return (Number.isFinite(rx) && rx > 0 && rx <= 1e9) ? rx : 0;
+      }
+    }
+  }
+  return 0;
+}
+/** Kurs efektif tunggal untuk item (pemesanan / itinerary): rt khusus bila ada -> kurs mata uang item -> 1 bila Rupiah. */
+function tripItemRate(P, x) {
+  if (!x || !x.fx) return 1;
+  var curCode = tripItemCur(P, x);
+  if (!curCode) return 1;
+  if (tripHasValidRt(x)) return x.rt;
+  return tripCurRate(P, curCode);
 }
 /** Cek apakah pemesanan asing lunas memiliki kurs terkunci (rt) yang valid. */
 function tripBkHasLock(x) {
-  return !!(x && x.fx && x.paid && typeof x.rt === 'number' && Number.isFinite(x.rt) && x.rt > 0 && x.rt <= 1e9);
+  return !!(x && x.paid && tripHasValidRt(x));
 }
-/** Nilai rupiah pemesanan: memakai kurs terkunci bila ada, selainnya mengikuti kurs berjalan. */
+/** Nilai rupiah pemesanan: memakai tripItemRate(P, x). */
 function tripBkRp(P, x) {
   if (!x) return 0;
-  var amt = +x.amt || 0;
-  if (tripBkHasLock(x)) return amt * x.rt;
-  return val(P, amt, x.fx);
+  return (+x.amt || 0) * tripItemRate(P, x);
+}
+/** Nilai rupiah item itinerary: memakai tripItemRate(P, x). */
+function tripItRp(P, x) {
+  if (!x) return 0;
+  return (+x.est || 0) * tripItemRate(P, x);
+}
+/** Teks jumlah: "Rp ..." dan, bila asing, "CUR ... ≈ Rp ..." di belakangnya. */
+function amtTxt(P, v, fx, lockedRt, isPaidOpt, curOpt) {
+  var isObj = v && typeof v === 'object';
+  var num = isObj ? (+(v.amt != null ? v.amt : v.est) || 0) : (+v || 0);
+  var isFx = isObj ? !!v.fx : !!fx;
+  var cCode = isObj ? tripItemCur(P, v) : (curOpt || ((P && String(P.cur || '').trim()) || ''));
+  var lk = isObj
+    ? (tripHasValidRt(v) ? v.rt : 0)
+    : (typeof lockedRt === 'number' && Number.isFinite(lockedRt) && lockedRt > 0 && lockedRt <= 1e9 ? lockedRt : 0);
+  var isPaidFlag = isObj ? !!v.paid : (isPaidOpt === undefined ? true : !!isPaidOpt);
+  if (isFx && cCode) {
+    var effRate = lk || tripCurRate(P, cCode);
+    var eqRp = num * effRate;
+    var lockTag = lk ? (isPaidFlag ? ' &middot; kurs terkunci ' : ' &middot; kurs ') + lk.toLocaleString('id-ID') : '';
+    return fxs(P, num, cCode) + (effRate > 0 ? ' <span class="sub">&asymp; ' + rp(eqRp) + lockTag + '</span>' : '');
+  }
+  return rp(num);
 }
 /** Urai teks input kurs menjadi angka positif valid (> 0 dan <= 1e9), atau 0 bila kosong/tidak sah. */
 function tripParseRateVal(raw) {
@@ -122,105 +182,442 @@ function tripParseRateVal(raw) {
   var n = parseFloat(s);
   return (Number.isFinite(n) && n > 0 && n <= 1e9) ? n : 0;
 }
-/** Balik status lunas pemesanan dan kunci/hapus kursnya; mengembalikan pesan toast bila baru dikunci. */
+/** Balik status lunas pemesanan: pertahankan rt manual, kunci otomatis dgn ra=true, lepas hanya yg ra; kembalikan pesan toast gabungan. */
 function tripToggleBkPaid(P, x) {
   if (!x) return '';
   x.paid = !x.paid;
   if (x.paid) {
-    var cur = String((P && P.cur) || '').trim();
-    var rate = +(P && P.rate) || 0;
-    if (x.fx && cur && Number.isFinite(rate) && rate > 0 && rate <= 1e9) {
-      x.rt = rate;
-      return 'Kurs terkunci: 1 ' + cur + ' = Rp ' + rate.toLocaleString('id-ID');
+    if (x.fx) {
+      if (tripHasValidRt(x)) {
+        var curMan = tripItemCur(P, x) || String((P && P.cur) || '').trim();
+        if (x.ra !== true) delete x.ra;
+        return curMan
+          ? 'Ditandai lunas · Kurs terkunci: 1 ' + curMan + ' = Rp ' + x.rt.toLocaleString('id-ID')
+          : 'Ditandai lunas';
+      }
+      var cur = tripItemCur(P, x) || String((P && P.cur) || '').trim();
+      var rate = tripCurRate(P, cur);
+      if (cur && rate > 0 && rate <= 1e9) {
+        x.rt = rate;
+        x.ra = true;
+        return 'Ditandai lunas · Kurs terkunci: 1 ' + cur + ' = Rp ' + rate.toLocaleString('id-ID');
+      }
     }
     delete x.rt;
-    return '';
+    delete x.ra;
+    return 'Ditandai lunas';
   }
-  delete x.rt;
-  return '';
+  if (x.ra) delete x.rt;
+  delete x.ra;
+  return 'Lunas dibatalkan';
 }
-/** Gabungkan hasil edit form pemesanan sambil menjaga, mengubah, atau menghapus rt sesuai aturan. */
-function tripMergeBkEdit(oldBk, patchBk, rtInputEl) {
-  var merged = Object.assign({}, oldBk, patchBk);
-  if (!merged.paid || !merged.fx) {
+/** Gulir layar/kontainer ke form edit dan (di desktop saja) fokus ke kolom pertama tanpa memicu lonjakan scroll. */
+function tripScrollToEditForm(formEl, firstInputId, isMobile) {
+  if (!formEl) return;
+  var beh = (typeof rkIsReducedMotion === 'function' && rkIsReducedMotion()) ? 'auto' : 'smooth';
+  var card = formEl.closest ? (formEl.closest('.card') || formEl) : formEl;
+  var mm = isMobile && typeof $ === 'function' ? $('m-main') : null;
+  if (mm && mm.scrollHeight > mm.clientHeight + 2 && typeof card.getBoundingClientRect === 'function') {
+    var cr = card.getBoundingClientRect(), mr = mm.getBoundingClientRect();
+    var targetTop = mm.scrollTop + (cr.top - mr.top) - 10;
+    if (typeof mm.scrollTo === 'function') {
+      try { mm.scrollTo({ top: Math.max(0, targetTop), behavior: beh }); } catch (e) { mm.scrollTop = Math.max(0, targetTop); }
+    } else {
+      mm.scrollTop = Math.max(0, targetTop);
+    }
+  } else if (typeof card.scrollIntoView === 'function') {
+    try { card.scrollIntoView({ behavior: beh, block: 'center' }); } catch (e) {}
+  }
+  if (!isMobile && firstInputId && typeof $ === 'function') {
+    var firstInp = $(firstInputId);
+    if (firstInp && typeof firstInp.focus === 'function') {
+      try { firstInp.focus({ preventScroll: true }); } catch (e) { try { firstInp.focus(); } catch (e2) {} }
+    }
+  }
+}
+/** Gulir kembali ke baris item yang baru selesai diedit apabila berada di luar area pandang. */
+function tripScrollBackToEditedRow(rowEl, isMobile) {
+  if (!rowEl || typeof rowEl.getBoundingClientRect !== 'function') return;
+  var beh = (typeof rkIsReducedMotion === 'function' && rkIsReducedMotion()) ? 'auto' : 'smooth';
+  var r = rowEl.getBoundingClientRect();
+  var mm = isMobile && typeof $ === 'function' ? $('m-main') : null;
+  var minY = 72, maxY = (typeof window !== 'undefined' && window.innerHeight) ? window.innerHeight - 24 : 600;
+  if (mm && mm.scrollHeight > mm.clientHeight + 2) {
+    var mr = mm.getBoundingClientRect();
+    minY = mr.top + 8;
+    maxY = mr.bottom - 80;
+  }
+  var isVisible = r.top >= minY && r.bottom <= maxY;
+  if (!isVisible && typeof rowEl.scrollIntoView === 'function') {
+    try { rowEl.scrollIntoView({ behavior: beh, block: 'nearest' }); } catch (e) {}
+  }
+}
+/** Urai nilai dropdown mata uang item ('idr' | 'fx' | 'fx:KODE') menjadi { fx, c }. */
+function tripParseCurSelectVal(P, rawVal) {
+  var s = String(rawVal == null ? '' : rawVal).trim();
+  if (s === 'fx') return { fx: true, c: '' };
+  if (s.indexOf('fx:') === 0) {
+    var code = s.slice(3).trim().toUpperCase();
+    if (code && P && Array.isArray(P.fxs) && P.fxs.some(function (f) { return f && String(f.c || '').toUpperCase() === code; })) {
+      return { fx: true, c: code };
+    }
+    return { fx: true, c: '' };
+  }
+  return { fx: false, c: '' };
+}
+/** Gabungkan hasil edit form item (pemesanan / itinerary) sambil menjaga, mengubah, atau menghapus rt & ra sesuai aturan 10B. */
+function tripMergeItemEdit(oldItem, patchItem, rtInputEl, isBooking) {
+  var merged = Object.assign({}, oldItem, patchItem);
+  if (!merged.fx) {
     delete merged.rt;
+    delete merged.ra;
+    delete merged.c;
     return merged;
   }
+  if (!merged.c) delete merged.c;
   if (rtInputEl) {
     var parsedRt = tripParseRateVal(rtInputEl.value);
-    if (parsedRt > 0) merged.rt = parsedRt;
-    else delete merged.rt;
-  } else if (!tripBkHasLock(merged)) {
+    var userEdited = !!(rtInputEl.dataset && rtInputEl.dataset.userEdited === '1');
+    if (parsedRt > 0) {
+      var sameAuto = !!(!userEdited && isBooking && merged.paid && oldItem && oldItem.ra && oldItem.rt === parsedRt && (oldItem.c || '') === (merged.c || ''));
+      merged.rt = parsedRt;
+      if (sameAuto) merged.ra = true;
+      else delete merged.ra;
+    } else {
+      delete merged.rt;
+      delete merged.ra;
+    }
+  } else if (!tripHasValidRt(merged)) {
     delete merged.rt;
+    delete merged.ra;
   }
+  if (!isBooking || !merged.paid) delete merged.ra;
   return merged;
 }
-/** Sinkronkan visibilitas input kurs terkunci & pratinjau ekuivalen Rp pada form pemesanan. */
-function tripSyncBkRateField(P, editBk, amtId, curId, eqId, rtWrapId, rtId) {
+/** Wrapper kompatibilitas Tahap 9 untuk hasil edit form pemesanan. */
+function tripMergeBkEdit(oldBk, patchBk, rtInputEl) {
+  return tripMergeItemEdit(oldBk, patchBk, rtInputEl, true);
+}
+/** Sinkronkan visibilitas input kurs per item (form Ubah) & pratinjau ekuivalen Rp pada form pemesanan/itinerary. */
+function tripSyncItemRateField(P, editItem, amtId, curId, eqId, rtWrapId, rtId, isBooking) {
   var inp = $(amtId), sel = $(curId), eqEl = $(eqId), rtWrap = $(rtWrapId), rtInp = $(rtId);
-  var isFx = !!(sel && sel.value === 'fx' && P && String(P.cur || '').trim());
-  var isPaidEdit = !!(editBk && editBk.paid);
-  if (rtWrap) rtWrap.style.display = (isFx && isPaidEdit) ? '' : 'none';
+  var selSpec = sel ? tripParseCurSelectVal(P, sel.value) : { fx: false, c: '' };
+  var itemCur = selSpec.fx ? (selSpec.c || ((P && String(P.cur || '').trim()) || '')) : '';
+  var isFx = !!(selSpec.fx && itemCur);
+  var isEditMode = !!editItem;
+  var isPaidEdit = !!(isBooking && editItem && editItem.paid);
+  if (rtWrap) {
+    rtWrap.style.display = (isEditMode && isFx) ? '' : 'none';
+    if (isEditMode && isFx && rtWrap.querySelector) {
+      var lblEl = rtWrap.querySelector('label');
+      if (lblEl) lblEl.textContent = 'Kurs' + (isPaidEdit ? ' saat dibayar' : '') + ' (Rp per 1 ' + (itemCur || 'asing') + ')';
+    }
+  }
+  if (rtInp) {
+    var curRate = isFx ? tripCurRate(P, itemCur) : 0;
+    rtInp.placeholder = curRate > 0 ? ('Ikut kurs perjalanan: ' + curRate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan';
+  }
   if (!inp || !sel || !eqEl) return;
   var valNum = typeof getRpVal === 'function' ? getRpVal(amtId) : (+String(inp.value || '').replace(/\D/g, '') || 0);
-  var lkRt = (isFx && isPaidEdit && rtInp) ? tripParseRateVal(rtInp.value) : 0;
-  var prev = tripFormEqPreview(P, valNum, sel.value === 'fx', lkRt);
+  var lkRt = (isEditMode && isFx && rtInp) ? tripParseRateVal(rtInp.value) : 0;
+  var prev = tripFormEqPreview(P, valNum, isFx, lkRt, isPaidEdit, itemCur);
   eqEl.textContent = prev.text;
   eqEl.classList.toggle('is-warn', !!prev.warn);
   eqEl.classList.toggle('pv', !!(prev.text && !prev.warn));
 }
-/** Rincian pecahan rupiah vs mata uang asing, aturan inklusi persis sama dgn tripPlan(). */
-function tripFxSplit(P) {
-  var cur = String((P && P.cur) || '').trim();
-  var rate = +(P && P.rate) || 0;
-  var idrRaw = 0, fxAmt = 0, unlockedFxAmt = 0;
-  if (P) {
-    (P.bk || []).forEach(function (x) {
-      var a = +x.amt || 0;
-      if (cur && x.fx) {
-        fxAmt += a;
-        if (!tripBkHasLock(x) && a > 0) unlockedFxAmt += a;
-      } else idrRaw += a;
-    });
-    (P.it || []).forEach(function (x) {
-      if (x.pay === 'on' || !x.est) return;
-      var e = +x.est || 0;
-      if (cur && x.fx) {
-        fxAmt += e;
-        if (e > 0) unlockedFxAmt += e;
-      } else idrRaw += e;
+/** Wrapper kompatibilitas Tahap 9 untuk form pemesanan. */
+function tripSyncBkRateField(P, editBk, amtId, curId, eqId, rtWrapId, rtId) {
+  return tripSyncItemRateField(P, editBk, amtId, curId, eqId, rtWrapId, rtId, true);
+}
+/** Cek apakah saklar beberapa mata uang sedang aktif pada profil perjalanan. */
+function tripMultiCurOn(P) {
+  return !!(P && Array.isArray(P.fxs));
+}
+/** Daftar seluruh kode mata uang asing pada profil (utama dulu, lalu tambahan fxs tanpa duplikat). */
+function tripAllCurList(P) {
+  var list = [], seen = {};
+  if (!P) return list;
+  var main = String(P.cur || '').trim();
+  if (main) {
+    seen[main.toUpperCase()] = 1;
+    list.push({ c: main, r: tripCurRate(P, main), isMain: true });
+  }
+  if (Array.isArray(P.fxs)) {
+    P.fxs.forEach(function (f) {
+      if (!f || !f.c) return;
+      var cu = String(f.c).trim().toUpperCase();
+      if (!cu || seen[cu]) return;
+      seen[cu] = 1;
+      var rr = +f.r || 0;
+      list.push({ c: cu, r: (Number.isFinite(rr) && rr > 0 && rr <= 1e9) ? rr : 0, isMain: false });
     });
   }
-  var hasFx = !!(cur && fxAmt > 0);
-  var noRate = !!(hasFx && unlockedFxAmt > 0 && !(rate > 0));
+  return list;
+}
+/** Hitung pemakaian kode mata uang tertentu di pemesanan & itinerary. */
+function tripCountCurUsage(P, code) {
+  var cUp = String(code || '').trim().toUpperCase();
+  if (!P || !cUp) return { total: 0, bk: 0, it: 0 };
+  var bkCnt = 0, itCnt = 0;
+  (P.bk || []).forEach(function (x) {
+    if (x && x.fx && tripItemCur(P, x).toUpperCase() === cUp) bkCnt++;
+  });
+  (P.it || []).forEach(function (x) {
+    if (x && x.fx && tripItemCur(P, x).toUpperCase() === cUp) itCnt++;
+  });
+  return { total: bkCnt + itCnt, bk: bkCnt, it: itCnt };
+}
+/** Hitung total item (pemesanan & itinerary) yang memakai mata uang tambahan mana pun. */
+function tripCountAllExtraCurUsage(P) {
+  if (!P) return { total: 0, bk: 0, it: 0 };
+  var mainUp = String(P.cur || '').trim().toUpperCase();
+  var bkCnt = 0, itCnt = 0;
+  (P.bk || []).forEach(function (x) {
+    var ic = x && x.fx ? tripItemCur(P, x).toUpperCase() : '';
+    if (ic && ic !== mainUp) bkCnt++;
+  });
+  (P.it || []).forEach(function (x) {
+    var ic = x && x.fx ? tripItemCur(P, x).toUpperCase() : '';
+    if (ic && ic !== mainUp) itCnt++;
+  });
+  return { total: bkCnt + itCnt, bk: bkCnt, it: itCnt };
+}
+/** Pesan standar penolakan hapus/matikan mata uang yang masih dipakai item. */
+function tripFormatCurUsageMsg(u) {
+  var o = u || { total: 0, bk: 0, it: 0 };
+  return 'Dipakai ' + o.total + ' item (' + o.bk + ' pemesanan, ' + o.it + ' itinerary)';
+}
+/** HTML <option> pilihan mata uang pada form item (Rp, utama, dan tambahan bila saklar menyala). */
+function tripCurSelectOptsHtml(P, editItem) {
+  var main = (P && String(P.cur || '').trim()) || '';
+  var curSelC = editItem && editItem.fx && editItem.c ? String(editItem.c).trim().toUpperCase() : '';
+  var extraMatch = false;
+  if (curSelC && P && Array.isArray(P.fxs)) {
+    extraMatch = P.fxs.some(function (f) { return f && String(f.c || '').trim().toUpperCase() === curSelC; });
+  }
+  var html = '<option value="idr"' + (!(editItem && editItem.fx) ? ' selected' : '') + '>Rp</option>';
+  if (main) {
+    html += '<option value="fx"' + (editItem && editItem.fx && !extraMatch ? ' selected' : '') + '>' + esc(main) + '</option>';
+  }
+  if (P && Array.isArray(P.fxs)) {
+    P.fxs.forEach(function (f) {
+      if (!f || !f.c) return;
+      var cu = String(f.c).trim().toUpperCase();
+      if (!cu) return;
+      html += '<option value="fx:' + esc(cu) + '"' + (editItem && editItem.fx && extraMatch && curSelC === cu ? ' selected' : '') + '>' + esc(cu) + '</option>';
+    });
+  }
+  return html;
+}
+/** Sinkronkan UI editor beberapa mata uang (checkbox, kontainer, daftar baris, tombol tambah). */
+function tripRenderFxsEditorUi(chkEl, wrapEl, listEl, addBtnEl, enabled, rows) {
+  if (chkEl) chkEl.checked = !!enabled;
+  if (wrapEl) wrapEl.style.display = enabled ? 'flex' : 'none';
+  if (listEl) listEl.innerHTML = tripRenderFxsRowsHtml(rows);
+  if (addBtnEl) addBtnEl.disabled = (rows && rows.length >= 6);
+}
+/** Tangani perubahan saklar "Gunakan beberapa mata uang"; menolak mematikan bila ada item memakai mata uang tambahan. */
+function tripHandleFxsToggleChange(chkEl, wrapEl, listEl, addBtnEl, errEl, trEdit, getDraft, setEnabled, toastFn) {
+  if (!chkEl) return;
+  if (!chkEl.checked && trEdit) {
+    var uAll = tripCountAllExtraCurUsage(trEdit);
+    if (uAll.total > 0) {
+      var msg = tripFormatCurUsageMsg(uAll);
+      chkEl.checked = true;
+      setEnabled(true);
+      if (errEl) errEl.textContent = msg;
+      tripRenderFxsEditorUi(chkEl, wrapEl, listEl, addBtnEl, true, getDraft());
+      if (typeof toastFn === 'function') toastFn(msg);
+      return;
+    }
+  }
+  setEnabled(!!chkEl.checked);
+  if (errEl) errEl.textContent = '';
+  tripRenderFxsEditorUi(chkEl, wrapEl, listEl, addBtnEl, !!chkEl.checked, getDraft());
+}
+/** Tambah baris mata uang tambahan baru (maks 6). */
+function tripHandleFxsAddRow(chkEl, wrapEl, listEl, addBtnEl, errEl, enabled, draft, toastFn) {
+  if (draft.length >= 6) {
+    if (addBtnEl) addBtnEl.disabled = true;
+    var msgMax = 'Maksimal 6 mata uang tambahan.';
+    if (errEl) errEl.textContent = msgMax;
+    if (typeof toastFn === 'function') toastFn(msgMax);
+    return;
+  }
+  draft.push({ c: '', r: 0, origC: '' });
+  if (errEl) errEl.textContent = '';
+  tripRenderFxsEditorUi(chkEl, wrapEl, listEl, addBtnEl, enabled, draft);
+}
+/** Hapus baris mata uang tambahan ke-idx; diblokir bila masih dipakai item. */
+function tripHandleFxsDelRow(chkEl, wrapEl, listEl, addBtnEl, errEl, enabled, draft, idx, trEdit, toastFn) {
+  if (!(idx >= 0 && idx < draft.length)) return;
+  var row = draft[idx];
+  var codeToCheck = String((row && (row.origC || row.c)) || '').trim().toUpperCase();
+  if (trEdit && codeToCheck) {
+    var u = tripCountCurUsage(trEdit, codeToCheck);
+    if (u.total > 0) {
+      var msg = tripFormatCurUsageMsg(u);
+      if (errEl) errEl.textContent = msg;
+      if (typeof toastFn === 'function') toastFn(msg);
+      return;
+    }
+  }
+  draft.splice(idx, 1);
+  if (errEl) errEl.textContent = '';
+  tripRenderFxsEditorUi(chkEl, wrapEl, listEl, addBtnEl, enabled, draft);
+}
+/** Sinkronkan daftar baris mata uang tambahan [kode][kurs][hapus] untuk modal Desktop & sheet APK. */
+function tripRenderFxsRowsHtml(rows) {
+  if (!rows || !rows.length) {
+    return '<div style="font-size:0.76rem;color:var(--text-muted);padding:6px 2px">Belum ada mata uang tambahan. Klik &ldquo;+ Tambah mata uang&rdquo; (maks. 6).</div>';
+  }
+  return rows.map(function (r, idx) {
+    var rStr = r.rRaw != null ? String(r.rRaw) : (r.r > 0 ? String(r.r) : '');
+    return (
+      '<div class="trip-fx-edit-row" data-fx-row="' + idx + '">' +
+      '<input type="text" class="input mono trip-fx-code-inp" data-fx-code="' + idx + '" maxlength="3" placeholder="NOK" value="' + esc(r.c || '') + '" style="text-transform:uppercase" aria-label="Kode mata uang tambahan ' + (idx + 1) + '" />' +
+      '<input type="text" class="input mono trip-fx-rate-inp" data-fx-rate="' + idx + '" inputmode="decimal" placeholder="Kurs Rp (opsional)" value="' + esc(rStr) + '" aria-label="Kurs Rupiah untuk mata uang ' + esc(r.c || String(idx + 1)) + '" />' +
+      '<button type="button" class="btn btn-secondary btn-sm trip-fx-del-btn" data-fx-del="' + idx + '" aria-label="Hapus mata uang tambahan">Hapus</button>' +
+      '</div>'
+    );
+  }).join('');
+}
+/** Validasi baris mata uang tambahan saat simpan modal/sheet Ubah Perjalanan. */
+function tripValidateFxsRows(mainCurRaw, rows) {
+  var mainCur = String(mainCurRaw || '').trim().toUpperCase();
+  var arr = Array.isArray(rows) ? rows : [];
+  if (arr.length > 6) return { error: 'Maksimal 6 mata uang tambahan.' };
+  if (arr.length > 0 && !mainCur) return { error: 'Isi mata uang utama terlebih dahulu sebelum memakai beberapa mata uang.' };
+  var clean = [], seen = {}, renames = [];
+  for (var i = 0; i < arr.length; i++) {
+    var row = arr[i] || {};
+    var code = String(row.c || '').trim().toUpperCase();
+    if (!code || !/^[A-Z]{3}$/.test(code)) return { error: 'Kode mata uang tambahan ke-' + (i + 1) + ' harus 3 huruf A-Z.' };
+    if (code === 'IDR' || code === 'RP') return { error: code + ' sudah menjadi mata uang dasar.' };
+    if (mainCur && code === mainCur) return { error: 'Kode ' + code + ' sudah dipakai sebagai mata uang utama.' };
+    if (seen[code]) return { error: 'Kode mata uang ' + code + ' duplikat.' };
+    seen[code] = 1;
+    var rRaw = row.rRaw != null ? String(row.rRaw).trim() : (row.r > 0 ? String(row.r) : '');
+    var rVal = 0;
+    if (rRaw) {
+      rVal = tripParseRateVal(rRaw);
+      if (!(rVal > 0)) return { error: 'Kurs ' + code + ' tidak valid.' };
+    }
+    if (row.origC && String(row.origC).trim().toUpperCase() !== code) {
+      renames.push({ from: String(row.origC).trim().toUpperCase(), to: code });
+    }
+    clean.push({ c: code, r: rVal });
+  }
+  return { error: '', fxs: clean, renames: renames };
+}
+/** Terapkan perubahan kode mata uang (rename) ke item pemesanan & itinerary yang memakai kode lama. */
+function tripApplyFxsRenames(P, renames) {
+  if (!P || !Array.isArray(renames) || !renames.length) return;
+  var mapR = {};
+  renames.forEach(function (rn) { if (rn && rn.from && rn.to) mapR[rn.from] = rn.to; });
+  (P.bk || []).forEach(function (x) {
+    if (x && x.fx && x.c && mapR[String(x.c).toUpperCase()]) x.c = mapR[String(x.c).toUpperCase()];
+  });
+  (P.it || []).forEach(function (x) {
+    if (x && x.fx && x.c && mapR[String(x.c).toUpperCase()]) x.c = mapR[String(x.c).toUpperCase()];
+  });
+}
+/** Rincian pecahan rupiah vs mata uang asing, aturan inklusi persis sama dgn tripPlan() plus by[] per mata uang. */
+function tripFxSplit(P) {
+  var idrRaw = 0, fxAmt = 0, unlockedNoRate = false;
+  var byMap = {}, order = [];
+  var addItem = function (x, amtNum, rpVal) {
+    var curC = x && x.fx ? tripItemCur(P, x) : '';
+    if (x && x.fx && curC) {
+      fxAmt += amtNum;
+      var missing = amtNum > 0 && !(tripItemRate(P, x) > 0);
+      if (missing) unlockedNoRate = true;
+      if (!byMap[curC]) {
+        byMap[curC] = { c: curC, amt: 0, rawRp: 0, noRate: false };
+        order.push(curC);
+      }
+      byMap[curC].amt += amtNum;
+      byMap[curC].rawRp += rpVal;
+      if (missing) byMap[curC].noRate = true;
+    } else {
+      idrRaw += amtNum;
+    }
+  };
+  if (P) {
+    (P.bk || []).forEach(function (x) { addItem(x, +x.amt || 0, tripBkRp(P, x)); });
+    (P.it || []).forEach(function (x) {
+      if (x.pay === 'on' || !x.est) return;
+      addItem(x, +x.est || 0, tripItRp(P, x));
+    });
+  }
+  var hasFx = fxAmt > 0;
+  var noRate = !!(hasFx && unlockedNoRate);
   var idr = Math.round(idrRaw);
   var fxIdr = 0;
-  if (hasFx && !noRate) {
+  if (hasFx) {
     var pl = tripPlan(P);
     fxIdr = Math.round(pl.t) - idr;
   }
-  return { hasFx: hasFx, idr: idr, fxIdr: fxIdr, fxAmt: fxAmt, noRate: noRate };
+  var orderedKeys = [];
+  if (P) {
+    tripAllCurList(P).forEach(function (entry) {
+      for (var j = 0; j < order.length; j++) {
+        if (order[j].toUpperCase() === String(entry.c || '').toUpperCase() && orderedKeys.indexOf(order[j]) < 0) {
+          orderedKeys.push(order[j]);
+        }
+      }
+    });
+  }
+  order.forEach(function (k) {
+    if (orderedKeys.indexOf(k) < 0) orderedKeys.push(k);
+  });
+  var lastPosIdx = -1;
+  for (var i0 = 0; i0 < orderedKeys.length; i0++) {
+    if (byMap[orderedKeys[i0]].rawRp > 0) lastPosIdx = i0;
+  }
+  if (lastPosIdx < 0 && orderedKeys.length > 0) lastPosIdx = orderedKeys.length - 1;
+  var sumRoundedOthers = 0;
+  for (var i1 = 0; i1 < orderedKeys.length; i1++) {
+    if (i1 !== lastPosIdx) sumRoundedOthers += Math.round(byMap[orderedKeys[i1]].rawRp);
+  }
+  var byList = [];
+  for (var i2 = 0; i2 < orderedKeys.length; i2++) {
+    var ent = byMap[orderedKeys[i2]];
+    var partIdr = i2 === lastPosIdx ? (fxIdr - sumRoundedOthers) : Math.round(ent.rawRp);
+    byList.push({ c: ent.c, amt: ent.amt, idr: partIdr, noRate: ent.noRate });
+  }
+  var res = { hasFx: hasFx, idr: idr, fxIdr: fxIdr, fxAmt: fxAmt, noRate: noRate };
+  Object.defineProperty(res, 'by', { value: byList, enumerable: false, writable: true, configurable: true });
+  return res;
 }
-/** Keterangan ekuivalen rupiah kecil bila nominal dalam mata uang asing (kurs terkunci atau kurs berjalan). */
-function tripEqHint(P, v, fx, lockedRt) {
+/** Keterangan ekuivalen rupiah kecil bila nominal dalam mata uang asing (kurs terkunci / kurs manual / kurs berjalan). */
+function tripEqHint(P, v, fx, lockedRt, isPaidOpt, curOpt) {
   var isObj = v && typeof v === 'object';
-  var num = isObj ? (+v.amt || 0) : (+v || 0);
+  var num = isObj ? (+(v.amt != null ? v.amt : v.est) || 0) : (+v || 0);
   var isFx = isObj ? !!v.fx : !!fx;
   var lk = isObj
-    ? (tripBkHasLock(v) ? v.rt : 0)
+    ? (tripHasValidRt(v) ? v.rt : 0)
     : (typeof lockedRt === 'number' && Number.isFinite(lockedRt) && lockedRt > 0 && lockedRt <= 1e9 ? lockedRt : 0);
-  if (!isFx || !P || !String(P.cur || '').trim() || !(num > 0)) return '';
-  if (lk > 0) return '≈ ' + rp(num * lk) + ' · kurs terkunci ' + lk.toLocaleString('id-ID');
-  if (!(+(P.rate) > 0)) return '';
-  return '≈ ' + rp(val(P, num, true));
+  var isPaidFlag = isObj ? !!v.paid : (isPaidOpt === undefined ? true : !!isPaidOpt);
+  var cCode = isObj ? tripItemCur(P, v) : (curOpt || ((P && String(P.cur || '').trim()) || ''));
+  if (!isFx || !P || !cCode || !(num > 0)) return '';
+  if (lk > 0) return '≈ ' + rp(num * lk) + (isPaidFlag ? ' · kurs terkunci ' : ' · kurs ') + lk.toLocaleString('id-ID');
+  var r = tripCurRate(P, cCode);
+  if (!(r > 0)) return '';
+  return '≈ ' + rp(num * r);
 }
-/** Status pratinjau form (teks ekuivalen Rp atau peringatan kurs belum diatur). */
-function tripFormEqPreview(P, v, isFx, lockedRt) {
-  if (!isFx || !P || !String(P.cur || '').trim()) return { text: '', warn: false };
+/** Status pratinjau form (teks ekuivalen Rp atau peringatan kurs belum diatur per mata uang). */
+function tripFormEqPreview(P, v, isFx, lockedRt, isPaidOpt, curOpt) {
+  var cCode = curOpt || ((P && String(P.cur || '').trim()) || '');
+  if (!isFx || !P || !cCode) return { text: '', warn: false };
   var lk = typeof lockedRt === 'number' && Number.isFinite(lockedRt) && lockedRt > 0 && lockedRt <= 1e9 ? lockedRt : 0;
-  if (lk > 0) return { text: tripEqHint(P, v, true, lk), warn: false };
-  if (!(+(P.rate) > 0)) return { text: 'Kurs belum diatur', warn: true };
-  return { text: tripEqHint(P, v, true, 0), warn: false };
+  if (lk > 0) return { text: tripEqHint(P, v, true, lk, isPaidOpt, cCode), warn: false };
+  if (!(tripCurRate(P, cCode) > 0)) {
+    var mainUp = String(P.cur || '').trim().toUpperCase();
+    var multiWarn = tripMultiCurOn(P) || (mainUp && cCode.toUpperCase() !== mainUp);
+    return { text: multiWarn ? ('Kurs ' + cCode + ' belum diatur') : 'Kurs belum diatur', warn: true };
+  }
+  return { text: tripEqHint(P, v, true, 0, false, cCode), warn: false };
 }
 /** Sinkronkan daftar pasangan [idInput, idSelectCur, idEqEl] pada form itinerary/pemesanan. */
 function tripSyncEqPairs(P, pairs) {
@@ -228,46 +625,131 @@ function tripSyncEqPairs(P, pairs) {
     var inp = $(pair[0]), sel = $(pair[1]), eqEl = $(pair[2]);
     if (!inp || !sel || !eqEl) return;
     var valNum = typeof getRpVal === 'function' ? getRpVal(pair[0]) : (+String(inp.value || '').replace(/\D/g, '') || 0);
-    var prev = tripFormEqPreview(P, valNum, sel.value === 'fx');
+    var spec = tripParseCurSelectVal(P, sel.value);
+    var cCode = spec.fx ? (spec.c || ((P && String(P.cur || '').trim()) || '')) : '';
+    var prev = tripFormEqPreview(P, valNum, spec.fx, 0, false, cCode);
     eqEl.textContent = prev.text;
     eqEl.classList.toggle('is-warn', !!prev.warn);
     eqEl.classList.toggle('pv', !!(prev.text && !prev.warn));
   });
 }
-/** HTML hint tile "Total Rencana Biaya": identik dgn teks lama bila !hasFx. */
+/** HTML hint tile "Total Rencana Biaya": identik dgn teks lama bila !hasFx & saklar mati. */
 function tripTotalHintHtml(P, pl) {
   var p0 = pl || tripPlan(P);
   var sp = tripFxSplit(P);
   if (!sp.hasFx) return 'Pemesanan ' + rp(p0.b) + ' + Harian ' + rp(p0.d);
-  if (sp.noRate) {
+  if (!tripMultiCurOn(P) && sp.by.length <= 1) {
+    if (sp.noRate) {
+      return (
+        '<span class="trip-fx-line">Rupiah <span class="mono pv">' + rp(sp.idr) + '</span></span>\n' +
+        '<span class="trip-fx-line">Asing <span class="mono pv">' + esc(fxs(P, sp.fxAmt)) + '</span> &middot; kurs belum diatur</span>\n' +
+        '<span class="trip-fx-warn">Kurs belum diatur: total belum akurat</span>'
+      );
+    }
     return (
       '<span class="trip-fx-line">Rupiah <span class="mono pv">' + rp(sp.idr) + '</span></span>\n' +
-      '<span class="trip-fx-line">Asing <span class="mono pv">' + esc(fxs(P, sp.fxAmt)) + '</span> &middot; kurs belum diatur</span>\n' +
-      '<span class="trip-fx-warn">Kurs belum diatur: total belum akurat</span>'
+      '<span class="trip-fx-line">Asing <span class="mono pv">' + rp(sp.fxIdr) + '</span> <span class="trip-fx-eq mono pv">(≈ ' + esc(fxs(P, sp.fxAmt)) + ')</span></span>\n' +
+      '<span class="trip-fx-sub pv">Pemesanan ' + rp(p0.b) + ' + Harian ' + rp(p0.d) + '</span>'
+    );
+  }
+  var fxParts = sp.by.slice(0, 2).map(function (b) { return esc(fxs(P, b.amt, b.c)); });
+  if (sp.by.length > 2) fxParts.push('+' + (sp.by.length - 2));
+  var warnCors = sp.by.filter(function (b) { return b.noRate; }).map(function (b) { return 'Kurs ' + esc(b.c) + ' belum diatur'; });
+  return (
+    '<span class="trip-fx-line">Rupiah <span class="mono pv">' + rp(sp.idr) + '</span></span>\n' +
+    '<span class="trip-fx-line">Asing <span class="mono pv">' + rp(sp.fxIdr) + '</span> <span class="trip-fx-eq mono pv">(≈ ' + fxParts.join(' &middot; ') + ')</span></span>' +
+    (warnCors.length ? '\n<span class="trip-fx-warn">' + warnCors.join(' &middot; ') + '</span>' : '') +
+    '\n<span class="trip-fx-sub pv">Pemesanan ' + rp(p0.b) + ' + Harian ' + rp(p0.d) + '</span>'
+  );
+}
+/** Kartu baru "Rincian mata uang" di Ringkasan (Desktop & APK); tampil bila saklar menyala atau >1 mata uang terpakai. */
+function tripFxDetailCardHtml(P, isMobile) {
+  if (!P) return '';
+  var sp = tripFxSplit(P);
+  if (!tripMultiCurOn(P) && sp.by.length <= 1) return '';
+  var allCors = tripAllCurList(P), seen = {};
+  allCors.forEach(function (entry) { seen[String(entry.c || '').toUpperCase()] = entry; });
+  sp.by.forEach(function (b) {
+    var k = String(b.c || '').toUpperCase();
+    if (!seen[k]) {
+      var ent = { c: b.c, r: tripCurRate(P, b.c), isMain: k === String(P.cur || '').toUpperCase() };
+      seen[k] = ent;
+      allCors.push(ent);
+    }
+  });
+  var byByCode = {};
+  sp.by.forEach(function (b) { byByCode[String(b.c || '').toUpperCase()] = b; });
+  var rowsHtml = allCors.length ? allCors.map(function (curObj) {
+    var cu = String(curObj.c || '').toUpperCase();
+    var bEnt = byByCode[cu];
+    var amt = bEnt ? bEnt.amt : 0;
+    var idr = bEnt ? bEnt.idr : 0;
+    var rateVal = curObj.r || 0;
+    var hasMissing = bEnt ? bEnt.noRate : !(rateVal > 0);
+    var badgeCls = isMobile ? ('badge ' + (curObj.isMain ? 'b-ac' : 'b-nt')) : ('badge ' + (curObj.isMain ? 'badge-accent' : 'badge-neutral'));
+    var rowCls = isMobile ? 'simple-row m-ring-row trip-fx-detail-row' : 'simple-row trip-fx-detail-row';
+    var ratePart = rateVal > 0
+      ? '<span class="trip-fx-detail-rate">kurs ' + esc(rateVal.toLocaleString('id-ID')) + '</span>'
+      : '<span class="trip-eq-hint is-warn" style="display:inline;margin:0">Kurs ' + esc(curObj.c) + ' belum diatur</span>';
+    var rpPart = (bEnt && bEnt.noRate)
+      ? '<span class="trip-eq-hint is-warn" style="margin:0">Kurs ' + esc(curObj.c) + ' belum diatur</span>'
+      : '<span class="simple-row-amt pv">≈ ' + rp(idr) + '</span>';
+    return (
+      '<div class="' + rowCls + '" style="cursor:default">' +
+      '<div class="trip-fx-detail-left"><span class="' + badgeCls + '">' + esc(curObj.c) + '</span>' +
+      '<span class="trip-fx-detail-mid"><strong class="mono pv">' + esc(fxs(P, amt, curObj.c)) + '</strong> &middot; ' + ratePart + '</span></div>' +
+      rpPart + '</div>'
+    );
+  }).join('') : '<div style="padding:10px;color:var(--text-muted);font-size:0.8rem">Belum ada mata uang asing diatur.</div>';
+  if (isMobile) {
+    return (
+      '<div class="card trip-fx-detail-card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Rincian mata uang</h3><p class="msc-sub">Nominal &amp; ekuivalen rupiah per mata uang asing</p></div></div>' +
+      '<div class="stack" style="gap:6px">' + rowsHtml + '</div></div>'
     );
   }
   return (
-    '<span class="trip-fx-line">Rupiah <span class="mono pv">' + rp(sp.idr) + '</span></span>\n' +
-    '<span class="trip-fx-line">Asing <span class="mono pv">' + rp(sp.fxIdr) + '</span> <span class="trip-fx-eq mono pv">(≈ ' + esc(fxs(P, sp.fxAmt)) + ')</span></span>\n' +
-    '<span class="trip-fx-sub pv">Pemesanan ' + rp(p0.b) + ' + Harian ' + rp(p0.d) + '</span>'
+    '<div class="card trip-fx-detail-card"><div class="card-header"><div><h2 class="card-title">Rincian mata uang</h2><p class="card-sub">Nominal &amp; ekuivalen rupiah per mata uang asing</p></div></div>' +
+    '<div class="simple-list">' + rowsHtml + '</div></div>'
   );
 }
+/** Baris kartu "Siapkan Tunai / Kartu" untuk mode satu maupun beberapa mata uang. */
+function tripCashRowHtml(P, k, cx, isMobile) {
+  if (!cx) return '';
+  var byKeys = cx.by ? Object.keys(cx.by) : [];
+  var isMulti = (tripMultiCurOn(P) || byKeys.length > 1);
+  var eqRp = Math.round(cx.idr + (cx.fxRp != null ? cx.fxRp : (cx.fx && P && P.rate ? cx.fx * P.rate : 0)));
+  var nomHtml = '';
+  if (isMulti && byKeys.length) {
+    var parts = byKeys.map(function (cKey) { return esc(fxs(P, cx.by[cKey], cKey)); });
+    if (cx.idr > 0) parts.push(rp(cx.idr));
+    nomHtml = parts.join(' &middot; ');
+  } else {
+    nomHtml = cx.fx && P && P.cur ? esc(P.cur) + ' ' + Math.round(cx.fx).toLocaleString('id-ID') : rp(cx.idr);
+  }
+  var rpTxt = (cx.fx || byKeys.length) ? (cx.fxRp > 0 ? '≈ ' + rp(eqRp) : (cx.idr ? rp(cx.idr) : '—')) : rp(eqRp);
+  if (isMobile) {
+    return '<div class="simple-row m-ring-row"><span class="simple-row-name">' + esc(k) + '</span><span class="mono pv m-ring-fx">' + nomHtml + '</span><span class="simple-row-amt pv">' + rpTxt + '</span></div>';
+  }
+  return '<div class="simple-row" style="cursor:default;"><span class="simple-row-name">' + esc(k) + '</span><span class="mono pv" style="font-size:0.8rem;font-weight:700;">' + nomHtml + '</span><span class="simple-row-amt pv">' + rpTxt + '</span></div>';
+}
 /** HTML nominal baris daftar (itinerary / pemesanan): tambah ekuivalen kecil hanya untuk item fx. */
-function tripItemAmtHtml(P, amt, fx, strongCls, strongStyle, lockedRt) {
+function tripItemAmtHtml(P, amt, fx, strongCls, strongStyle, lockedRt, isPaidOpt, curOpt) {
   var isObj = amt && typeof amt === 'object';
-  var num = isObj ? (+amt.amt || 0) : (+amt || 0);
+  var num = isObj ? (+(amt.amt != null ? amt.amt : amt.est) || 0) : (+amt || 0);
   var isFx = isObj ? !!amt.fx : !!fx;
   var lk = isObj
-    ? (tripBkHasLock(amt) ? amt.rt : 0)
+    ? (tripHasValidRt(amt) ? amt.rt : 0)
     : (typeof lockedRt === 'number' && Number.isFinite(lockedRt) && lockedRt > 0 && lockedRt <= 1e9 ? lockedRt : 0);
+  var isPaidFlag = isObj ? !!amt.paid : (isPaidOpt === undefined ? true : !!isPaidOpt);
+  var cCode = isObj ? tripItemCur(P, amt) : (curOpt || ((P && String(P.cur || '').trim()) || ''));
   var cls = 'mono pv' + (strongCls ? ' ' + strongCls : '');
   var st = strongStyle ? ' style="' + strongStyle + '"' : '';
   if (!(num > 0)) return '<strong class="' + cls + '"' + st + '></strong>';
-  if (isFx && P && String(P.cur || '').trim()) {
-    var eq = tripEqHint(P, num, true, lk);
+  if (isFx && P && cCode) {
+    var eq = tripEqHint(P, num, true, lk, isPaidFlag, cCode);
     var stackSt = lk > 0 && strongCls === 'msc-right' ? ' style="max-width:54%;flex-shrink:1"' : '';
     return (
-      '<div class="trip-amt-stack"' + stackSt + '><strong class="' + cls + '"' + st + '>' + esc(fxs(P, num)) + '</strong>' +
+      '<div class="trip-amt-stack"' + stackSt + '><strong class="' + cls + '"' + st + '>' + esc(fxs(P, num, cCode)) + '</strong>' +
       (eq ? '\n<span class="trip-eq-hint mono pv">' + esc(eq) + '</span>' : '') +
       '</div>'
     );
@@ -302,11 +784,18 @@ function tripPlan(P) {
   });
   P.it.forEach(function (x) {
     if (x.pay === 'on' || !x.est) return;
-    r.d += val(P, x.est, x.fx);
+    var est = +x.est || 0;
+    var v = tripItRp(P, x);
+    r.d += v;
     var k = (x.pay ? PAYL[x.pay] : 'Lainnya') + ' · ' + (x.cat || 'Lainnya'),
-      c = r.cash[k] || (r.cash[k] = { fx: 0, idr: 0 });
-    if (x.fx) c.fx += x.est;
-    else c.idr += x.est;
+      c = r.cash[k] || (r.cash[k] = { fx: 0, idr: 0, fxRp: 0, noRate: false, by: {} });
+    var itemCur = x.fx ? tripItemCur(P, x) : '';
+    if (x.fx && itemCur) {
+      c.fx += est;
+      c.fxRp += v;
+      if (est > 0 && !(tripItemRate(P, x) > 0)) c.noRate = true;
+      c.by[itemCur] = (c.by[itemCur] || 0) + est;
+    } else c.idr += est;
   });
   r.t = r.b + r.d;
   return r;
@@ -343,7 +832,7 @@ function tripRing(P) {
   });
   P.it.forEach(function (x) {
     if (x.pay === 'on' || !x.est) return;
-    var v = val(P, x.est, x.fx), c = x.cat || 'Lainnya';
+    var v = tripItRp(P, x), c = x.cat || 'Lainnya';
     byDay[x.day] = (byDay[x.day] || 0) + v;
     bcat[c] = (bcat[c] || 0) + v;
   });
@@ -375,7 +864,8 @@ function tripRing(P) {
     (ck.length
       ? '<div class="card"><h2>Siapkan tunai / kartu</h2>' + ck.map(function (k) {
           var c = pl.cash[k];
-          return '<div class="it2"><div>' + esc(k) + '</div><div><b>' + (c.fx ? fxs(P, c.fx) + (c.idr ? ' + ' + rp(c.idr) : '') : rp(c.idr)) + '</b>' + (c.fx && P.rate ? ' <span class="sub">&asymp; ' + rp(c.idr + c.fx * P.rate) + '</span>' : '') + '</div></div>';
+          var eqCash = Math.round(c.idr + (c.fxRp || 0));
+          return '<div class="it2"><div>' + esc(k) + '</div><div><b>' + (c.fx ? fxs(P, c.fx) + (c.idr ? ' + ' + rp(c.idr) : '') : rp(c.idr)) + '</b>' + (c.fx && c.fxRp > 0 ? ' <span class="sub">&asymp; ' + rp(eqCash) + '</span>' : '') + '</div></div>';
         }).join('') + '</div>'
       : '') +
     (dk.length ? '<div class="card"><h2>Estimasi per hari</h2>' + dk.map(function (d) { return catRow(esc(dayLabel(P, d)), byDay[d], dmax, '', rp(byDay[d])); }).join('') + '</div>' : '') +
@@ -430,27 +920,31 @@ function tripItin(P) {
       '<div class="err" id="iter"></div><div class="row2"><button class="p" data-its="1">' + (E ? 'Simpan perubahan' : 'Tambah') + '</button>' + (E ? '<button data-itx="1">Batal</button>' : '') + '</div></div>';
   return (
     form +
-    (days.map(function (d) {
+  (days.map(function (d) {
       var L = P.it.filter(function (x) { return x.day === d; }).sort(function (a, b) { return a.time < b.time ? -1 : a.time > b.time ? 1 : 0; }),
         tot = 0, fxm = {},
         stay = P.bk.filter(function (b) { return b.cat === 'Penginapan' && b.a && b.b && d >= b.a && d < b.b; });
       L.forEach(function (x) {
         if (x.pay === 'on' || !x.est) return;
-        tot += val(P, x.est, x.fx);
-        if (x.fx) fxm[x.cat || 'Lainnya'] = (fxm[x.cat || 'Lainnya'] || 0) + x.est;
+        tot += tripItRp(P, x);
+        if (x.fx) {
+          var icIt = tripItemCur(P, x) || P.cur || '';
+          var lblK = (x.cat || 'Lainnya') + (icIt ? ' (' + icIt + ')' : '');
+          fxm[lblK] = { amt: (fxm[lblK] ? fxm[lblK].amt : 0) + x.est, c: icIt };
+        }
       });
       return (
         '<div class="card"><div class="dh"><h2>' + esc(dayLabel(P, d)) + '</h2>' + (d === td ? '<span class="chp ic">Hari ini</span>' : '') + '</div>' +
         '<input class="dti" data-dt="' + d + '" maxlength="60" placeholder="Judul hari, mis. Jakarta – Tokyo" value="' + esc(P.dt[d] || '') + '">' +
         (stay.length ? '<div class="sub mb6">&#127976; Menginap: ' + stay.map(function (b) { return esc(b.title); }).join(', ') + '</div>' : '') +
-        (tot ? '<div class="sub mb4">Estimasi hari ini <b>' + rp(tot) + '</b>' + (Object.keys(fxm).length ? ' · ' + Object.keys(fxm).map(function (k) { return k + ' ' + fxs(P, fxm[k]); }).join(' · ') : '') + '</div>' : '') +
+        (tot ? '<div class="sub mb4">Estimasi hari ini <b>' + rp(tot) + '</b>' + (Object.keys(fxm).length ? ' · ' + Object.keys(fxm).map(function (k) { return esc(k.replace(/\s*\([A-Z]+\)$/, '')) + ' ' + esc(fxs(P, fxm[k].amt, fxm[k].c)); }).join(' · ') : '') + '</div>' : '') +
         (L.map(function (x) {
           return (
             '<div class="itm"><div class="tm">' + tmShow(x.time) + (x.time2 ? '<br>' + tmShow(x.time2) : '') + '</div><div><div class="ttl"' + (x.done ? ' style="text-decoration:line-through;opacity:.6"' : '') + '>' + esc(x.place) + '</div><div>' +
             (x.cat ? '<span class="chp" style="background:transparent;border:1px solid var(--ln)">' + esc(x.cat) + '</span>' : '') + pchip(x.pay) + lnk(x.link) + '</div>' + (x.note ? '<div class="sub">' + esc(x.note) + '</div>' : '') +
             '<div class="ac"><button class="g" data-itdone="' + x.id + '" aria-label="Tandai selesai">' + (x.done ? '&#9745; Selesai' : '&#9744; Selesai') + '</button>' +
             '<button class="g" data-ited="' + x.id + '">Ubah</button><button class="g d" data-itdel="' + x.id + '">Hapus</button></div></div>' +
-            '<div class="co">' + (x.est ? amtTxt(P, x.est, x.fx) : '') + '</div></div>'
+            '<div class="co">' + (x.est ? amtTxt(P, x) : '') + '</div></div>'
           );
         }).join('') || '<div class="sub">Belum ada kegiatan.</div>') + '</div>'
       );
@@ -484,7 +978,7 @@ function tripBook(P) {
           return (
             '<div class="itm" style="grid-template-columns:1fr auto"><div><div class="ttl">' + esc(x.title) + '</div><div>' + pchip(x.pay) + (x.a ? '<span class="sub">' + dShort(x.a) + (x.b ? ' – ' + dShort(x.b) : '') + '</span> ' : '') + lnk(x.link) +
             '</div><div class="ac jcfs"><button class="g" data-bkpay="' + x.id + '">' + (x.paid ? '&#9745; Lunas' : '&#9744; Tandai lunas') + '</button><button class="g" data-bked="' + x.id + '">Ubah</button><button class="g d" data-bkdel="' + x.id + '">Hapus</button></div></div>' +
-            '<div class="co">' + amtTxt(P, x.amt, x.fx, tripBkHasLock(x) ? x.rt : 0) + '</div></div>'
+            '<div class="co">' + amtTxt(P, x) + '</div></div>'
           );
         }).join('') + '</div>'
       );
@@ -1538,6 +2032,7 @@ function xlHeader(rows, name) {
 }
 function xlItin(rows, h, out) {
   var day = '', n = out.it.length;
+  out.curs = out.curs || [];
   for (var r = h.row + 1; r < rows.length; r++) {
     var row = rows[r] || [], dv = h.dateC != null ? xlDate(row[h.dateC]) : '', txt = String(row[h.textC] == null ? '' : row[h.textC]).trim(),
       tm = h.timeC != null ? xlTime(row[h.timeC]) : { a: '', b: '' }, cost = h.costC != null ? row[h.costC] : row[h.textC + 1], dm = /^day\s*\d+\s*[:\-–]?\s*(.*)$/i.exec(txt);
@@ -1554,10 +2049,15 @@ function xlItin(rows, h, out) {
       break;
     }
     if (!txt || !day || /^(sub)?total\b/i.test(txt)) continue;
-    var urls = txt.match(/https?:\/\/\S+/g) || [], place = txt.replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim(), payRaw = h.payC != null ? row[h.payC] : row[h.textC + 2], pay = xlPay(payRaw), amt = xlNum(cost), fx = false;
+    var urls = txt.match(/https?:\/\/\S+/g) || [], place = txt.replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim(), payRaw = h.payC != null ? row[h.payC] : row[h.textC + 2], pay = xlPay(payRaw), amt = xlNum(cost), fx = false, cuCode = '';
     if (h.curC != null) {
-      var cu = String(row[h.curC] || '').trim().toUpperCase();
-      if (cu && !/^(IDR|RP)$/.test(cu)) { fx = true; out.cur = out.cur || cu.slice(0, 3); }
+      var cu = String(row[h.curC] || '').trim().toUpperCase().slice(0, 3);
+      if (cu && !/^(IDR|RP)$/.test(cu)) {
+        fx = true;
+        cuCode = cu;
+        out.cur = out.cur || cu;
+        if (/^[A-Z]{3}$/.test(cu) && out.curs.indexOf(cu) < 0) out.curs.push(cu);
+      }
     } else if (amt) fx = amt >= 100000 && !/yen|¥|jpy/i.test(String(cost) + String(payRaw)) ? false : pay === 'ic' || pay === 'cash' || /yen|¥|jpy/i.test(String(cost) + String(payRaw)) ? true : pay === 'on' ? false : !!out.hintFx && amt < 100000;
     if (!fx && amt >= 100000 && h.curC == null && (!pay || pay === 'ic')) pay = 'on';
     if (fx && amt) out.fx = true;
@@ -1568,7 +2068,9 @@ function xlItin(rows, h, out) {
     }
     if (!place) place = urls[0] ? 'Lokasi (peta)' : txt.slice(0, 60);
     var ct = h.catC != null ? xlBcat(row[h.catC]) : '';
-    out.it.push({ id: 'i' + ++n, day: day, time: tm.a, time2: tm.b, place: place, cat: ct === 'Persiapan' || ct === 'Penginapan' || !ct ? (h.catC != null && /makan/i.test(row[h.catC]) ? 'Makan' : xlCat(txt)) : ct, est: Math.round(amt), fx: fx && amt > 0, pay: pay, link: h.linkC != null && /^https?:/.test(row[h.linkC]) ? String(row[h.linkC]).trim() : urls[0] || '', note: note, done: false, rec: '' });
+    var itRow = { id: 'i' + ++n, day: day, time: tm.a, time2: tm.b, place: place, cat: ct === 'Persiapan' || ct === 'Penginapan' || !ct ? (h.catC != null && /makan/i.test(row[h.catC]) ? 'Makan' : xlCat(txt)) : ct, est: Math.round(amt), fx: fx && amt > 0, pay: pay, link: h.linkC != null && /^https?:/.test(row[h.linkC]) ? String(row[h.linkC]).trim() : urls[0] || '', note: note, done: false, rec: '' };
+    if (fx && amt > 0 && cuCode) itRow._cu = cuCode;
+    out.it.push(itRow);
   }
 }
 /** Tabel "Pengeluaran" di bawah baris TOTAL pada sheet itinerary -> pemesanan (top-up Suica dilewati: sudah ada di biaya harian). */
@@ -1585,8 +2087,13 @@ function xlBlock(rows, h, from, out) {
   }
 }
 function xlBook(rows, h, out) {
-  var cat = 'Lainnya', n = out.bk.length, add = function (title, c, amt, fx, pay, paid, link) {
-    if (amt > 0) out.bk.push({ id: 'b' + ++n, title: title.slice(0, 120), cat: c, amt: Math.round(amt), fx: fx, pay: pay, link: link || '', a: '', b: '', paid: !!paid, rec: '' });
+  out.curs = out.curs || [];
+  var cat = 'Lainnya', n = out.bk.length, add = function (title, c, amt, fx, pay, paid, link, cuCode) {
+    if (amt > 0) {
+      var bkRow = { id: 'b' + ++n, title: title.slice(0, 120), cat: c, amt: Math.round(amt), fx: fx, pay: pay, link: link || '', a: '', b: '', paid: !!paid, rec: '' };
+      if (fx && cuCode) bkRow._cu = cuCode;
+      out.bk.push(bkRow);
+    }
     if (fx && amt > 0) out.fx = true;
   };
   for (var r = h.row + 1; r < rows.length; r++) {
@@ -1597,15 +2104,18 @@ function xlBook(rows, h, out) {
       if (cv && cv !== '&') cat = xlBcat(cv);
       add(title, cat, xlNum(row[h.idrC]), false, 'on', false);
     } else {
-      var cu = h.curC != null ? String(row[h.curC] || '').trim().toUpperCase() : '', fx = !!cu && !/^(IDR|RP)$/.test(cu);
-      if (fx) out.cur = out.cur || cu.slice(0, 3);
-      add(title, h.catC != null ? xlBcat(row[h.catC]) : 'Lainnya', xlNum(row[h.amtC]), fx, h.payC != null ? xlPay(row[h.payC]) : '', h.paidC != null && /^(ya|y|lunas|paid|1|true|sudah)/i.test(String(row[h.paidC]).trim()), h.linkC != null && /^https?:/.test(row[h.linkC]) ? String(row[h.linkC]).trim() : '');
+      var cu = h.curC != null ? String(row[h.curC] || '').trim().toUpperCase().slice(0, 3) : '', fx = !!cu && !/^(IDR|RP)$/.test(cu);
+      if (fx) {
+        out.cur = out.cur || cu;
+        if (/^[A-Z]{3}$/.test(cu) && out.curs.indexOf(cu) < 0) out.curs.push(cu);
+      }
+      add(title, h.catC != null ? xlBcat(row[h.catC]) : 'Lainnya', xlNum(row[h.amtC]), fx, h.payC != null ? xlPay(row[h.payC]) : '', h.paidC != null && /^(ya|y|lunas|paid|1|true|sudah)/i.test(String(row[h.paidC]).trim()), h.linkC != null && /^https?:/.test(row[h.linkC]) ? String(row[h.linkC]).trim() : '', fx ? cu : '');
     }
   }
 }
-/** Baca seluruh workbook menjadi data perjalanan. Mengembalikan {it, bk, dt, lk, start, end, cur, fx}. */
+/** Baca seluruh workbook menjadi data perjalanan. Mengembalikan {it, bk, dt, lk, start, end, cur, fx, curs, extras, error}. */
 function xlParse(wb) {
-  var out = { it: [], bk: [], dt: {}, lk: [], cur: '', fx: false, hintFx: false }, used = {}, seen = {};
+  var out = { it: [], bk: [], dt: {}, lk: [], cur: '', curs: [], extras: [], fx: false, hintFx: false, error: '' }, seen = {};
   wb.SheetNames.forEach(function (nm) {
     var rows = XLSX.utils.sheet_to_json(wb.Sheets[nm], { header: 1, raw: true, defval: '' });
     rows.forEach(function (row) { row.forEach(function (c) { if (/yen|suica|¥|jpy/i.test(String(c))) out.hintFx = true; }); });
@@ -1623,6 +2133,24 @@ function xlParse(wb) {
       });
     });
   });
+  var codes = (out.curs || []).slice();
+  out.cur = codes[0] || out.cur || '';
+  if (codes.length > 7) {
+    out.error = 'Terlalu banyak mata uang asing (maksimal 7 mata uang asing: 1 utama + 6 tambahan; ditemukan ' + codes.length + ').';
+  } else if (codes.length >= 2) {
+    out.extras = codes.slice(1);
+    out.it.forEach(function (x) {
+      if (x._cu && x._cu !== out.cur) x.c = x._cu;
+      delete x._cu;
+    });
+    out.bk.forEach(function (x) {
+      if (x._cu && x._cu !== out.cur) x.c = x._cu;
+      delete x._cu;
+    });
+  } else {
+    out.it.forEach(function (x) { delete x._cu; });
+    out.bk.forEach(function (x) { delete x._cu; });
+  }
   var ds = out.it.map(function (x) { return x.day; }).sort();
   out.start = ds[0] || '';
   out.end = ds[ds.length - 1] || '';
@@ -1633,10 +2161,11 @@ function xlSummaryText(d) {
   var a = 0, b = 0;
   (d.bk || []).forEach(function (x) { if (x.fx) b += x.amt; else a += x.amt; });
   (d.it || []).forEach(function (x) { if (x.pay === 'on') return; if (x.fx) b += x.est; else a += x.est; });
+  var curListTxt = (d.curs && d.curs.length > 1) ? (' Mata uang asing terdeteksi: ' + d.curs.join(', ') + ' (kurs mata uang tambahan dapat diisi di Ubah Perjalanan).') : '';
   return d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan, ' + Object.keys(d.dt || {}).length + ' judul hari' +
     (d.start ? ' · ' + fmtD(d.start) + ' – ' + fmtD(d.end) : '') + '.' +
     ' Perkiraan biaya: ' + rp(a) + (b ? ' + ' + b.toLocaleString('id-ID') + ' dalam mata uang asing' : '') + '.' +
-    (d.fx ? ' Isi kode dan kurs mata uang asing.' : '');
+    (d.fx ? ' Isi kode dan kurs mata uang asing utama.' : '') + curListTxt;
 }
 /** Validasi metadata profil sebelum membuat profil perjalanan dari Excel. */
 function xlValidateMeta(d, nama, curRaw, kursRaw) {
@@ -1644,6 +2173,8 @@ function xlValidateMeta(d, nama, curRaw, kursRaw) {
     cu = String(curRaw == null ? '' : curRaw).trim().toUpperCase(),
     rt = parseFloat(String(kursRaw == null ? '' : kursRaw).replace(',', '.')) || 0;
   if (!d) return { error: '' };
+  if (d.error) return { error: d.error };
+  if (d.curs && d.curs.length > 7) return { error: 'Maksimal 6 mata uang tambahan (total 7 kode asing).' };
   if (!n) return { error: 'Nama perjalanan belum diisi.' };
   if (d.fx && !cu) return { error: 'Ada biaya mata uang asing (mis. yen). Isi kodenya, misalnya JPY.' };
   if (cu && !/^[A-Z]{3}$/.test(cu)) return { error: 'Mata uang terdiri dari 3 huruf, mis. JPY.' };
@@ -1657,20 +2188,32 @@ function xlBuildProfile(d, nama, cur, kurs) {
   while (trips().some(function (x) { return x.name.toLowerCase() === nm.toLowerCase(); })) nm = base.slice(0, 26) + ' (' + k++ + ')';
   var id = 'p' + Date.now().toString(36);
   if (ALL && ALL.kas && ALL.kas.pr && ALL.kas.pr[id]) id = kid('p');
-  var re = function (a, p) { return (a || []).map(function (x) { return Object.assign({}, x, { id: kid(p) }); }); },
-    cu = String(cur == null ? '' : cur).trim().toUpperCase(),
+  var cu = String(cur == null ? '' : cur).trim().toUpperCase(),
     rt = parseFloat(String(kurs == null ? '' : kurs).replace(',', '.')) || 0;
-  return {
-    id: id,
-    profile: {
-      id: id, name: nm, saldo: 0, link: false,
-      start: d.start, end: d.end, budget: 0,
-      cur: cu, rate: cu ? rt : 0,
-      dt: d.dt, tx: [],
-      it: re(d.it, 'i'), bk: re(d.bk, 'b'), lk: re(d.lk, 'l'),
-      ck: [], note: '', goal: null,
-    },
+  var extrasClean = (Array.isArray(d.extras) ? d.extras : []).filter(function (ec) {
+    return ec && /^[A-Z]{3}$/.test(ec) && ec !== cu && ec !== 'IDR' && ec !== 'RP';
+  }).slice(0, 6);
+  var extraSet = {};
+  extrasClean.forEach(function (ec) { extraSet[ec] = 1; });
+  var re = function (a, p) {
+    return (a || []).map(function (x) {
+      var o = Object.assign({}, x, { id: kid(p) });
+      if (o.c && !extraSet[o.c]) delete o.c;
+      return o;
+    });
   };
+  var prof = {
+    id: id, name: nm, saldo: 0, link: false,
+    start: d.start, end: d.end, budget: 0,
+    cur: cu, rate: cu ? rt : 0,
+    dt: d.dt, tx: [],
+    it: re(d.it, 'i'), bk: re(d.bk, 'b'), lk: re(d.lk, 'l'),
+    ck: [], note: '', goal: null,
+  };
+  if (extrasClean.length) {
+    prof.fxs = extrasClean.map(function (ec) { return { c: ec, r: 0 }; });
+  }
+  return { id: id, profile: prof };
 }
 /** Bentuk workbook template Excel standar (dipakai desktop writeFile & APK rkDownloadBlob). */
 function xlBuildTemplateWb(X) {
@@ -1697,6 +2240,7 @@ function xlPick(e) {
     fr.onload = function () {
       try {
         var d = xlParse(X.read(fr.result, { type: 'array', cellDates: true }));
+        if (d.error) return toast(d.error);
         if (!d.it.length && !d.bk.length) return toast('Format tidak dikenali. Unduh Template Excel lalu isi sesuai kolomnya.');
         xlData = d;
         $('xls').textContent = xlSummaryText(d);
@@ -1736,6 +2280,7 @@ function xlCommit() {
 function xlTemplate() {
   loadXlsx().then(function (X) {
     X.writeFile(xlBuildTemplateWb(X), 'template-itinerary.xlsx');
+    toast('Template Excel diunduh');
   }).catch(function (x) { toast(x.message); });
 }
 
@@ -1823,7 +2368,7 @@ function tripPdfData(P, cost) {
     var rows = [];
     its.forEach(function (x) {
       var jam = tmFn(x.time) + (x.time2 ? '–' + tmFn(x.time2) : ''),
-        biaya = cost && x.est ? amtFn(P, x.est, x.fx) : '',
+        biaya = cost && x.est ? amtFn(P, x) : '',
         safeLnk = x.link && typeof safeHref === 'function' ? safeHref(x.link) : '',
         cells = tripWrapPdfText(x.place || '-', itMaxW, false);
       if (x.link) {
@@ -1847,7 +2392,7 @@ function tripPdfData(P, cost) {
     P.bk.forEach(function (x) {
       var tLines = tripWrapPdfText(x.title || '-', bkMaxW, false),
         stTxt = x.paid ? 'Lunas' : 'Belum',
-        bTxt = cost ? amtFn(P, x.amt, x.fx) : '';
+        bTxt = cost ? amtFn(P, x) : '';
       tLines.forEach(function (ln, idx) {
         bkRows.push(cost ? [ln, idx === 0 ? stTxt : '', idx === 0 ? bTxt : ''] : [ln, idx === 0 ? stTxt : '']);
       });
@@ -1881,19 +2426,37 @@ function tripPdfData(P, cost) {
   if (cost) {
     summary = summary.concat([['Total Rencana Biaya', rp(pl.t)], ['Sudah Dibayar', rp(pl.paid)]]);
     var spPdf = tripFxSplit(P);
-    if (spPdf.hasFx && !spPdf.noRate) {
-      summary = summary.concat([
-        ['Rupiah', rp(spPdf.idr)],
-        ['Mata uang asing', rp(spPdf.fxIdr) + ' (' + fxs(P, spPdf.fxAmt) + ')'],
-      ]);
+    if (spPdf.hasFx) {
+      if (!tripMultiCurOn(P) && spPdf.by.length <= 1) {
+        if (!spPdf.noRate) {
+          summary = summary.concat([
+            ['Rupiah', rp(spPdf.idr)],
+            ['Mata uang asing', rp(spPdf.fxIdr) + ' (' + fxs(P, spPdf.fxAmt) + ')'],
+          ]);
+        }
+      } else {
+        summary.push(['Rupiah', rp(spPdf.idr)]);
+        spPdf.by.forEach(function (b) {
+          summary.push([
+            'Mata uang asing ' + b.c,
+            b.noRate ? (fxs(P, b.amt, b.c) + ' (kurs belum diatur)') : (rp(b.idr) + ' (' + fxs(P, b.amt, b.c) + ')'),
+          ]);
+        });
+      }
     }
   }
   return { filename: tripSafePdfFilename(P.name), title: P.name || 'Itinerary Perjalanan', subtitle: subParts.join(' · '), summary: summary, tables: tables };
 }
 
 /* ===== Bagikan itinerary ===== */
-function amtPlain(P, v, fx) {
-  return fx && P.cur ? P.cur + ' ' + Math.round(v).toLocaleString('id-ID') : rp(v);
+function amtPlain(P, v, fx, curOpt) {
+  if (v && typeof v === 'object') {
+    var num = +(v.amt != null ? v.amt : v.est) || 0;
+    var cObj = v.fx ? tripItemCur(P, v) : '';
+    return cObj ? cObj + ' ' + Math.round(num).toLocaleString('id-ID') : rp(num);
+  }
+  var c = curOpt || ((P && P.cur) || '');
+  return fx && c ? c + ' ' + Math.round(v).toLocaleString('id-ID') : rp(v);
 }
 /** Teks itinerary siap kirim (format tebal ala WhatsApp). */
 function tripText(P, cost) {
@@ -1905,24 +2468,39 @@ function tripText(P, cost) {
     if (!its.length && !P.dt[d]) return;
     L.push('*' + dayLabel(P, d) + '*' + (P.dt[d] ? ' — ' + P.dt[d] : ''));
     its.forEach(function (x) {
-      L.push('• ' + (x.time ? tmShow(x.time) + (x.time2 ? '–' + tmShow(x.time2) : '') + ' ' : '') + x.place + (cost && x.est ? ' (' + amtPlain(P, x.est, x.fx) + ')' : '') + (x.link ? '\n   ' + x.link : '') + (x.note ? '\n   ' + x.note : ''));
+      L.push('• ' + (x.time ? tmShow(x.time) + (x.time2 ? '–' + tmShow(x.time2) : '') + ' ' : '') + x.place + (cost && x.est ? ' (' + amtPlain(P, x) + ')' : '') + (x.link ? '\n   ' + x.link : '') + (x.note ? '\n   ' + x.note : ''));
     });
     L.push('');
   });
   if (P.bk.length) {
     L.push('*Pemesanan*');
-    P.bk.forEach(function (b) { L.push('• ' + b.title + (cost ? ' (' + amtPlain(P, b.amt, b.fx) + ')' : '') + (b.paid ? ' ✓' : '')); });
+    P.bk.forEach(function (b) { L.push('• ' + b.title + (cost ? ' (' + amtPlain(P, b) + ')' : '') + (b.paid ? ' ✓' : '')); });
     L.push('');
   }
   if (cost) {
     var spTxt = tripFxSplit(P);
-    if (spTxt.hasFx && !spTxt.noRate) {
+    if (spTxt.hasFx) {
       var plTxt = tripPlan(P);
-      L.push('*Rencana Biaya*');
-      L.push('• Total: ' + rp(plTxt.t));
-      L.push('• Rupiah: ' + rp(spTxt.idr));
-      L.push('• Asing: ' + rp(spTxt.fxIdr) + ' (≈ ' + fxs(P, spTxt.fxAmt) + ')');
-      L.push('');
+      if (!tripMultiCurOn(P) && spTxt.by.length <= 1) {
+        if (!spTxt.noRate) {
+          L.push('*Rencana Biaya*');
+          L.push('• Total: ' + rp(plTxt.t));
+          L.push('• Rupiah: ' + rp(spTxt.idr));
+          L.push('• Asing: ' + rp(spTxt.fxIdr) + ' (≈ ' + fxs(P, spTxt.fxAmt) + ')');
+          L.push('');
+        }
+      } else {
+        L.push('*Rencana Biaya*');
+        L.push('• Total: ' + rp(plTxt.t));
+        L.push('• Rupiah: ' + rp(spTxt.idr));
+        spTxt.by.forEach(function (b) {
+          L.push(
+            '• Asing ' + b.c + ': ' +
+            (b.noRate ? (fxs(P, b.amt, b.c) + ' (Kurs ' + b.c + ' belum diatur)') : (rp(b.idr) + ' (≈ ' + fxs(P, b.amt, b.c) + ')'))
+          );
+        });
+        L.push('');
+      }
     }
   }
   if (P.lk.length) {
@@ -1940,10 +2518,10 @@ function tripPrintHtml(P, cost) {
     if (!its.length && !P.dt[d]) return;
     b += '<h2>' + esc(dayLabel(P, d)) + (P.dt[d] ? ' — ' + esc(P.dt[d]) : '') + '</h2><table>' + its.map(function (x) {
       var sl = x.link && typeof safeHref === 'function' ? safeHref(x.link) : '';
-      return '<tr><td class="t">' + esc(tmShow(x.time) + (x.time2 ? '–' + tmShow(x.time2) : '')) + '</td><td>' + esc(x.place) + (sl ? '<br><a href="' + esc(sl) + '">' + esc(x.link) + '</a>' : (x.link ? '<br><small>' + esc(x.link) + '</small>' : '')) + (x.note ? '<br><small>' + esc(x.note) + '</small>' : '') + '</td>' + (cost ? '<td class="c">' + (x.est ? esc(amtPlain(P, x.est, x.fx)) : '') + '</td>' : '') + '</tr>';
+      return '<tr><td class="t">' + esc(tmShow(x.time) + (x.time2 ? '–' + tmShow(x.time2) : '')) + '</td><td>' + esc(x.place) + (sl ? '<br><a href="' + esc(sl) + '">' + esc(x.link) + '</a>' : (x.link ? '<br><small>' + esc(x.link) + '</small>' : '')) + (x.note ? '<br><small>' + esc(x.note) + '</small>' : '') + '</td>' + (cost ? '<td class="c">' + (x.est ? esc(amtPlain(P, x)) : '') + '</td>' : '') + '</tr>';
     }).join('') + '</table>';
   });
-  if (P.bk.length) b += '<h2>Pemesanan</h2><table>' + P.bk.map(function (x) { return '<tr><td>' + esc(x.title) + (x.paid ? ' <small>(lunas)</small>' : '') + '</td>' + (cost ? '<td class="c">' + esc(amtPlain(P, x.amt, x.fx)) + '</td>' : '') + '</tr>'; }).join('') + '</table>';
+  if (P.bk.length) b += '<h2>Pemesanan</h2><table>' + P.bk.map(function (x) { return '<tr><td>' + esc(x.title) + (x.paid ? ' <small>(lunas)</small>' : '') + '</td>' + (cost ? '<td class="c">' + esc(amtPlain(P, x)) + '</td>' : '') + '</tr>'; }).join('') + '</table>';
   if (P.lk.length) b += '<h2>Tautan penting</h2>' + P.lk.map(function (l) { var lu = typeof safeHref === 'function' ? safeHref(l.url) : ''; return '<div>' + esc(l.title) + ': ' + (lu ? '<a href="' + esc(lu) + '">' + esc(l.url) + '</a>' : esc(l.url)) + '</div>'; }).join('');
   return '<!doctype html><html lang="id"><head><meta charset="utf-8"><title>' + esc(P.name) + '</title><style>' + css + '</style></head><body>' + b + '</body></html>';
 }

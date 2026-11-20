@@ -55,7 +55,7 @@ const { boot } = require('./ui.js');
   click($('trip-root').querySelector('[data-bk-pay="t9-b1"]'));
   assert.strictEqual(pCore().bk[0].paid, true, '1. ketuk lunas desktop mengubah paid=true');
   assert.strictEqual(pCore().bk[0].rt, 100, '1. ketuk lunas mengunci rt=100');
-  assert.ok(!$('tt').hidden && $('ttm').textContent === 'Kurs terkunci: 1 JPY = Rp 100', '1. toast konfirmasi kurs terkunci muncul');
+  assert.ok(!$('tt').hidden && $('ttm').textContent === 'Ditandai lunas · Kurs terkunci: 1 JPY = Rp 100', '1. toast konfirmasi kurs terkunci muncul');
 
   // Ubah kurs perjalanan ke 110 -> bk1 tetap Rp 1.000.000, bk2 naik ke Rp 1.100.000
   pCore().rate = 110;
@@ -136,10 +136,13 @@ const { boot } = require('./ui.js');
   pCore().bk[0] = { id: 't9-b1', title: 'Hotel Shinjuku', amt: 10000, fx: true, paid: true, rt: 100, cat: 'Hotel', a: '2026-12-01', b: '2026-12-02', pay: 'on', link: '', rec: '' };
   pCore().rate = 110;
 
-  // Pemesanan belum lunas: #bk-rt-wrap tersembunyi saat edit
+  // Form Tambah pemesanan: #bk-rt-wrap tetap tersembunyi; Pemesanan belum lunas saat Ubah: #bk-rt-wrap TAMPIL (Tahap 10B B1)
   w.renderTrip();
+  $('bk-cur').value = 'fx';
+  fire($('bk-cur'), 'change');
+  assert.strictEqual($('bk-rt-wrap').style.display, 'none', '3. form Tambah pemesanan tidak menampilkan #bk-rt-wrap');
   click($('trip-root').querySelector('[data-bk-edit="t9-b2"]'));
-  assert.strictEqual($('bk-rt-wrap').style.display, 'none', '3. pemesanan belum lunas tidak menampilkan #bk-rt-wrap');
+  assert.ok($('bk-rt-wrap').style.display !== 'none', '3. form Ubah pemesanan belum lunas menampilkan #bk-rt-wrap (Tahap 10B B1)');
   click($('trip-root').querySelector('[data-bk-cancel="1"]'));
 
   // Uji parser koma pada tripParseRateVal
@@ -164,16 +167,18 @@ const { boot } = require('./ui.js');
           { id: 'n7', title: 'StringNum', amt: 100, fx: true, paid: true, rt: '100' },
           { id: 'n8', title: 'StringAlpha', amt: 100, fx: true, paid: true, rt: 'abc' },
           { id: 'n9', title: 'NotFx', amt: 100, fx: false, paid: true, rt: 100 },
-          { id: 'n10', title: 'NotPaid', amt: 100, fx: true, paid: false, rt: 100 },
+          { id: 'n10', title: 'NotPaid', amt: 100, fx: true, paid: false, rt: 100, ra: true },
         ],
       },
     },
   });
   const nbk = normOut.pr.pnorm.bk;
   assert.strictEqual(nbk[0].rt, 105.5, '4. normKas mempertahankan rt angka positif valid pada paid+fx');
-  for (let i = 1; i < nbk.length; i++) {
-    assert.strictEqual(Object.prototype.hasOwnProperty.call(nbk[i], 'rt'), false, '4. normKas membuang rt tidak valid / tidak memenuhi syarat: ' + nbk[i].id);
+  for (let i = 1; i < nbk.length - 1; i++) {
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(nbk[i], 'rt'), false, '4. normKas membuang rt tidak valid / bukan fx: ' + nbk[i].id);
   }
+  assert.strictEqual(nbk[9].rt, 100, '4. normKas mempertahankan n10.rt=100 walau paid=false (Tahap 10B B1)');
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(nbk[9], 'ra'), false, '4. normKas membuang n10.ra saat paid=false (Tahap 10B B1)');
 
   // --- 5. Semua konsumen nilai pemesanan ---
   w.BR_STATE.tripSubTab = 'book';

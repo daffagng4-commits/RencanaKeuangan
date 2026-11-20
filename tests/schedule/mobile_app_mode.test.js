@@ -1479,7 +1479,10 @@ const { boot } = require('./ui.js');
 
   // 25c. Sheet profil menyembunyikan baris nominal saat Belum ditentukan & profil baru punya goal: null
   click($('m-btn-trip-new-pill'));
-  assert($('m-kp-use-budget').value === '1', 'Tahap 2c: sheet baru menyetel penggunaan anggaran default');
+  assert.strictEqual($('m-kp-use-budget').value, '0', 'Tahap 2c: sheet baru default Belum ditentukan (0)');
+  $('m-kp-use-budget').value = '1';
+  fire($('m-kp-use-budget'), 'change');
+  assert.strictEqual($('m-kp-budget-wrap').style.display, 'flex', 'Tahap 2c: baris nominal #m-kp-budget-wrap tampil saat Tetapkan anggaran');
   $('m-kp-use-budget').value = '0';
   fire($('m-kp-use-budget'), 'change');
   assert.strictEqual($('m-kp-budget-wrap').style.display, 'none', 'Tahap 2c: baris nominal #m-kp-budget-wrap tersembunyi saat Belum ditentukan');
@@ -3487,6 +3490,286 @@ const { boot } = require('./ui.js');
   assert.strictEqual(p9m().bk[0].rt, undefined, '34. APK batal lunas menghapus rt');
 
   delete w.ALL.kas.pr['p-t9m-jpy'];
+  w.MOB_STATE.tripId = null;
+
+  // 35. Tahap 10A (APK): Dropdown Anggaran (A1), Toast semua aksi + Guard (A2), Scroll Ubah tanpa auto-focus (A3)
+  w.ALL.kas.pr['p-t10m'] = {
+    id: 'p-t10m',
+    name: 'Osaka UX 10A',
+    link: false,
+    saldo: 0,
+    tx: [],
+    start: '2026-12-01',
+    end: '2026-12-03',
+    budget: 0,
+    cur: 'JPY',
+    rate: 100,
+    dt: {},
+    it: [
+      { id: '10m-i1', day: '2026-12-01', time: '09:00', time2: '', place: 'Kansai', est: 1000, fx: true, pay: 'cash', cat: 'Transport', link: '', note: '', done: false },
+    ],
+    bk: [
+      { id: '10m-b1', title: 'Nankai', amt: 10000, fx: true, paid: false, cat: 'Transport', a: '2026-12-01', b: '2026-12-01', pay: 'on', link: '', rec: '' },
+    ],
+    lk: [{ id: '10m-l1', title: 'Peta', url: 'https://maps.google.com' }],
+    ck: [{ id: '10m-c1', text: 'Kartu IC', done: false }],
+    note: '',
+    goal: null,
+  };
+  w.setShellMode('mobile-app');
+  w.switchMobileTab('trip');
+  w.MOB_STATE.tripView = 'list';
+  w.renderMobTrip();
+  // 35.A1 default modal baru APK
+  click($('m-btn-trip-new'));
+  assert.strictEqual($('m-kp-use-budget').value, '0', '35.A1: default m-kp-use-budget adalah 0');
+  assert.strictEqual($('m-kp-budget').value, '', '35.A1: m-kp-budget kosong tanpa angka karangan');
+  w.mobCloseSheet('m-sheet-trip');
+
+  // 35.A2 toast seluruh aksi APK Mode Perjalanan
+  w.MOB_STATE.tripId = 'p-t10m';
+  w.MOB_STATE.tripView = 'detail';
+  w.MOB_STATE.tripSub = 'itin';
+  w.renderMobTrip();
+  $('m-it-place').value = 'Dotonbori';
+  fire($('m-trip-itin-form'), 'submit');
+  assert.strictEqual($('m-toast-box').textContent, 'Kegiatan disimpan', '35.A2: APK Kegiatan disimpan');
+  click($('m-trip-root').querySelector('[data-mit-edit="10m-i1"]'));
+  fire($('m-trip-itin-form'), 'submit');
+  assert.strictEqual($('m-toast-box').textContent, 'Kegiatan diperbarui', '35.A2: APK Kegiatan diperbarui');
+  click($('m-trip-root').querySelector('[data-mit-toggle="10m-i1"]'));
+  assert.strictEqual($('m-toast-box').textContent, 'Kegiatan ditandai selesai', '35.A2: APK Kegiatan ditandai selesai');
+  click($('m-trip-root').querySelector('[data-mit-toggle="10m-i1"]'));
+  assert.strictEqual($('m-toast-box').textContent, 'Status selesai dibatalkan', '35.A2: APK Status selesai dibatalkan');
+  const mDtInp = $('m-trip-root').querySelector('[data-mdt-day="2026-12-01"]');
+  mDtInp.value = 'Hari 1 Osaka';
+  fire(mDtInp, 'change');
+  assert.strictEqual($('m-toast-box').textContent, 'Judul hari disimpan', '35.A2: APK Judul hari disimpan');
+
+  w.MOB_STATE.tripSub = 'book';
+  w.renderMobTrip();
+  $('m-bk-title').value = 'Hotel Osaka';
+  $('m-bk-amt').value = '500000';
+  fire($('m-trip-book-form'), 'submit');
+  assert.strictEqual($('m-toast-box').textContent, 'Pemesanan disimpan', '35.A2: APK Pemesanan disimpan');
+  click($('m-trip-root').querySelector('[data-mbk-edit="10m-b1"]'));
+  fire($('m-trip-book-form'), 'submit');
+  assert.strictEqual($('m-toast-box').textContent, 'Pemesanan diperbarui', '35.A2: APK Pemesanan diperbarui');
+  click($('m-trip-root').querySelector('[data-mbk-pay="10m-b1"]'));
+  assert.strictEqual($('m-toast-box').textContent, 'Ditandai lunas · Kurs terkunci: 1 JPY = Rp 100', '35.A2: APK gabungan lunas + kurs terkunci');
+  click($('m-trip-root').querySelector('[data-mbk-pay="10m-b1"]'));
+  assert.strictEqual($('m-toast-box').textContent, 'Lunas dibatalkan', '35.A2: APK Lunas dibatalkan');
+
+  w.MOB_STATE.tripSub = 'cat';
+  w.renderMobTrip();
+  const mNoteEl = $('m-trip-note');
+  mNoteEl.value = 'Catatan Osaka';
+  fire(mNoteEl, 'change');
+  assert.strictEqual($('m-toast-box').textContent, 'Catatan disimpan', '35.A2: APK Catatan disimpan');
+
+  w.MOB_STATE.tripSub = 'sv';
+  w.renderMobTrip();
+  $('m-tg-t').value = '6000000';
+  $('m-tg-from').value = '2026-07';
+  $('m-tg-to').value = '2026-12';
+  fire($('m-trip-goal-form'), 'submit');
+  assert.strictEqual($('m-toast-box').textContent, 'Target tabungan disimpan', '35.A2: APK Target tabungan disimpan');
+
+  // Guard APK: semua aksi di #m-trip-root terdaftar di inventaris atau pengecualian
+  const APK_ACTION_INVENTORY = new Set([
+    'attr:data-mtrip-del', 'id:m-btn-trip-tpl', 'id:m-trip-ck-std', 'id:m-tg-del',
+    'form:m-trip-itin-form', 'form:m-trip-book-form', 'form:m-trip-ck-form', 'form:m-trip-lk-form', 'form:m-trip-goal-form',
+    'attr:data-mit-toggle', 'attr:data-mit-del', 'attr:data-mbk-pay', 'attr:data-mbk-del',
+    'attr:data-mck-del', 'attr:data-mlk-del', 'attr:data-mdt-day', 'id:m-trip-note',
+    // Dikecualikan
+    'id:m-btn-trip-new', 'id:m-btn-trip-new-pill', 'id:m-btn-trip-xl', 'id:m-btn-trip-share', 'id:m-btn-trip-edit',
+    'id:m-tg-edit', 'id:m-tg-cancel', 'id:m-it-cancel', 'id:m-bk-cancel',
+    'attr:data-mtrip-list', 'attr:data-mtrip-sel', 'attr:data-mtripsub',
+    'attr:data-mit-edit', 'attr:data-mbk-edit', 'attr:data-mck-tog', 'attr:data-m-ext-url',
+    'id:m-it-day-trig', 'id:m-bk-start-trig', 'id:m-bk-end-trig',
+    'attr:data-mcal-trig', 'attr:data-mcal-mv', 'attr:data-mcal-pick',
+  ]);
+  const collectMobControls = () => {
+    const found = [];
+    $('m-trip-root').querySelectorAll('button, form, input[type="checkbox"], [data-mdt-day], textarea#m-trip-note, [data-m-ext-url]').forEach((el) => {
+      if (el.tagName === 'FORM' && el.id) found.push('form:' + el.id);
+      else if (el.id) found.push('id:' + el.id);
+      else if (el.dataset) {
+        for (const k of Object.keys(el.dataset)) {
+          if (/^(mtripDel|mtripList|mtripSel|mtripsub|mitToggle|mitEdit|mitDel|mbkPay|mbkEdit|mbkDel|mckTog|mckDel|mlkDel|mdtDay|mExtUrl|mcalTrig)$/.test(k)) {
+            const attrName = 'data-' + k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
+            found.push('attr:' + attrName);
+          }
+        }
+      }
+    });
+    return found;
+  };
+  w.MOB_STATE.tripView = 'list';
+  w.renderMobTrip();
+  const mobKeys = new Set(collectMobControls());
+  w.MOB_STATE.tripView = 'detail';
+  for (const sub of ['ring', 'itin', 'book', 'cek', 'cat', 'sv']) {
+    w.MOB_STATE.tripSub = sub;
+    if (sub === 'sv') w.MOB_STATE.tripGoalEdit = false;
+    w.renderMobTrip();
+    collectMobControls().forEach((k) => mobKeys.add(k));
+    if (sub === 'sv') {
+      w.MOB_STATE.tripGoalEdit = true;
+      w.renderMobTrip();
+      collectMobControls().forEach((k) => mobKeys.add(k));
+      w.MOB_STATE.tripGoalEdit = false;
+    }
+  }
+  const unlistedMob = [...mobKeys].filter((k) => !APK_ACTION_INVENTORY.has(k));
+  assert.deepStrictEqual(unlistedMob, [], '35.A2 Guard APK: semua aksi #m-trip-root terdaftar di inventaris atau pengecualian');
+
+  // 35.A3 Scroll Ubah di APK tanpa auto-focus
+  const mScrolls = [];
+  let mFocused = false;
+  const origMobSIV = w.HTMLElement.prototype.scrollIntoView;
+  w.HTMLElement.prototype.scrollIntoView = function (arg) {
+    mScrolls.push({ id: this.id || this.getAttribute('data-it-row') || this.getAttribute('data-bk-row') || this.tagName, arg });
+  };
+  const origMobFocus = w.HTMLElement.prototype.focus;
+  w.HTMLElement.prototype.focus = function () { mFocused = true; return origMobFocus.apply(this, arguments); };
+
+  w.MOB_STATE.tripSub = 'book';
+  w.renderMobTrip();
+  mScrolls.length = 0;
+  mFocused = false;
+  click($('m-trip-root').querySelector('[data-mbk-edit="10m-b1"]'));
+  assert.strictEqual(mScrolls.length, 1, '35.A3 APK Ubah pemesanan: menggulir ke form');
+  assert.strictEqual(mFocused, false, '35.A3 APK: TIDAK memfokuskan otomatis input form edit');
+  mScrolls.length = 0;
+  click($('m-bk-cancel'));
+  assert.ok(mScrolls.some((c) => c.id === '10m-b1'), '35.A3 APK Batal pemesanan: menggulir kembali ke baris 10m-b1');
+
+  w.MOB_STATE.tripSub = 'itin';
+  w.renderMobTrip();
+  mScrolls.length = 0;
+  click($('m-trip-root').querySelector('[data-mit-toggle="10m-i1"]'));
+  assert.strictEqual(mScrolls.length, 0, '35.A3 APK tandai selesai tidak menggulir');
+
+  w.HTMLElement.prototype.scrollIntoView = origMobSIV;
+  w.HTMLElement.prototype.focus = origMobFocus;
+  delete w.ALL.kas.pr['p-t10m'];
+  w.MOB_STATE.tripId = null;
+
+  // 36. Tahap 10B Bagian B1 (APK Mode Perjalanan: kurs per item di Ubah untuk Itinerary & Pemesanan, ra auto vs manual)
+  w.setShellMode('mobile-app');
+  w.ALL.kas.pr['p-10bm-b1'] = {
+    id: 'p-10bm-b1',
+    name: 'Seoul B1 APK',
+    link: false,
+    saldo: 0,
+    tx: [],
+    start: '2026-12-01',
+    end: '2026-12-02',
+    budget: 8000000,
+    cur: 'KRW',
+    rate: 12,
+    dt: {},
+    it: [
+      { id: '10bm-i1', day: '2026-12-01', time: '10:00', time2: '', place: 'AREX Express', est: 10000, fx: true, rt: 15, pay: 'cash', cat: 'Transport', link: '', note: '', done: false },
+      { id: '10bm-i2', day: '2026-12-01', time: '13:00', time2: '', place: 'Bibimbap', est: 10000, fx: true, pay: 'cash', cat: 'Makan', link: '', note: '', done: false },
+    ],
+    bk: [
+      { id: '10bm-b1', title: 'Hotel Myeongdong', amt: 100000, fx: true, paid: false, rt: 14, cat: 'Penginapan', a: '2026-12-01', b: '2026-12-02', pay: 'on', link: '', rec: '' },
+      { id: '10bm-b2', title: 'Asiana Ticket', amt: 100000, fx: true, paid: false, cat: 'Transport', a: '2026-12-01', b: '2026-12-01', pay: 'on', link: '', rec: '' },
+    ],
+    lk: [],
+    ck: [],
+    note: '',
+    goal: null,
+  };
+  w.MOB_STATE.tripId = 'p-10bm-b1';
+  w.MOB_STATE.tripView = 'detail';
+  w.MOB_STATE.tripSub = 'ring';
+  w.MOB_STATE.tripEditIt = null;
+  w.MOB_STATE.tripEditBk = null;
+  w.renderMobTrip();
+  // Cash it1: 10.000 * 15 = 150.000; it2: 10.000 * 12 = 120.000; bk1: 100.000 * 14 = 1.400.000; bk2: 100.000 * 12 = 1.200.000 -> 2.870.000
+  const m10bRingTxt = $('m-trip-root').textContent;
+  assert.ok(m10bRingTxt.includes('Rp 2.870.000'), '36.B1 APK Ring: total biaya Rp 2.870.000 mengikuti rt it & bk');
+  assert.ok(m10bRingTxt.includes('≈ Rp 150.000'), '36.B1 APK Cash: Cash · Transport mengikuti it.rt=15 -> Rp 150.000');
+
+  // Edit-only field Kurs di APK Itinerary & Pemesanan + auto ra vs manual rt
+  w.MOB_STATE.tripSub = 'itin';
+  w.renderMobTrip();
+  assert.strictEqual($('m-it-rt-wrap').style.display, 'none', '36.B1 APK Itin Tambah: #m-it-rt-wrap tersembunyi');
+  click($('m-trip-root').querySelector('[data-mit-edit="10bm-i2"]'));
+  assert.ok($('m-it-rt-wrap').style.display !== 'none', '36.B1 APK Itin Ubah: #m-it-rt-wrap tampil');
+  $('m-it-rt').value = '13';
+  fire($('m-it-rt'), 'input');
+  assert.strictEqual($('m-it-est-eq').textContent, '≈ Rp 130.000 · kurs 13', '36.B1 APK Itin pratinjau live');
+  fire($('m-trip-itin-form'), 'submit');
+  assert.strictEqual(w.ALL.kas.pr['p-10bm-b1'].it[1].rt, 13, '36.B1 APK Itin Ubah menyimpan rt=13');
+
+  w.MOB_STATE.tripSub = 'book';
+  w.renderMobTrip();
+  assert.strictEqual($('m-bk-rt-wrap').style.display, 'none', '36.B1 APK Book Tambah: #m-bk-rt-wrap tersembunyi');
+  click($('m-trip-root').querySelector('[data-mbk-edit="10bm-b1"]'));
+  assert.ok($('m-bk-rt-wrap').style.display !== 'none', '36.B1 APK Book Ubah unpaid: #m-bk-rt-wrap tampil');
+  click($('m-bk-cancel'));
+  click($('m-trip-root').querySelector('[data-mbk-pay="10bm-b1"]'));
+  assert.strictEqual(w.ALL.kas.pr['p-10bm-b1'].bk[0].rt, 14, '36.B1 APK Lunas: rt manual 14 tidak ditimpa P.rate 12');
+  click($('m-trip-root').querySelector('[data-mbk-pay="10bm-b1"]'));
+  assert.strictEqual(w.ALL.kas.pr['p-10bm-b1'].bk[0].rt, 14, '36.B1 APK Batal lunas: rt manual 14 dipertahankan');
+  click($('m-trip-root').querySelector('[data-mbk-pay="10bm-b2"]'));
+  assert.strictEqual(w.ALL.kas.pr['p-10bm-b1'].bk[1].rt, 12, '36.B1 APK Lunas auto: mengunci rt=12');
+  assert.strictEqual(w.ALL.kas.pr['p-10bm-b1'].bk[1].ra, true, '36.B1 APK Lunas auto: ra=true');
+  click($('m-trip-root').querySelector('[data-mbk-pay="10bm-b2"]'));
+  assert.strictEqual(w.ALL.kas.pr['p-10bm-b1'].bk[1].rt, undefined, '36.B1 APK Batal lunas auto: menghapus rt');
+
+  // 36.B2 Beberapa mata uang (saklar, maks 6, blokir hapus/matikan, Rincian mata uang, Cash multi-cur, dropdown item)
+  click($('m-btn-trip-edit'));
+  assert.strictEqual($('m-kp-multi-cur').checked, false, '36.B2 APK: saklar #m-kp-multi-cur bawaan MATI');
+  $('m-kp-multi-cur').checked = true;
+  fire($('m-kp-multi-cur'), 'change');
+  click($('m-kp-fxs-add'));
+  const mRow0Code = $('m-kp-fxs-list').querySelector('[data-fx-code="0"]');
+  const mRow0Rate = $('m-kp-fxs-list').querySelector('[data-fx-rate="0"]');
+  mRow0Code.value = 'EUR';
+  mRow0Rate.value = '17500';
+  fire(mRow0Code, 'input');
+  fire(mRow0Rate, 'input');
+  fire($('m-trip-meta-form'), 'submit');
+
+  const pB2Mob = w.ALL.kas.pr['p-10bm-b1'];
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(pB2Mob.fxs)), [{ c: 'EUR', r: 17500 }], '36.B2 APK: menyimpan fxs=[{c:EUR,r:17500}]');
+
+  // Dropdown item di APK kini memuat Rp, KRW, EUR
+  w.MOB_STATE.tripSub = 'itin';
+  w.renderMobTrip();
+  assert.deepStrictEqual([...$('m-it-cur').options].map((o) => o.value), ['idr', 'fx', 'fx:EUR'], '36.B2 APK: #m-it-cur memuat fx:EUR');
+  $('m-it-place').value = 'Flight Lounge EUR';
+  $('m-it-est').value = '50';
+  $('m-it-cur').value = 'fx:EUR';
+  $('m-it-pay').value = 'cash';
+  $('m-it-cat').value = 'Makan';
+  fire($('m-trip-itin-form'), 'submit');
+  assert.ok(pB2Mob.it.some((x) => x.place === 'Flight Lounge EUR' && x.c === 'EUR'), '36.B2 APK: item itinerary baru menyimpan c=EUR');
+
+  w.MOB_STATE.tripSub = 'ring';
+  w.renderMobTrip();
+  assert.ok($('m-trip-root').querySelector('.trip-fx-detail-card'), '36.B2 APK Ring: kartu Rincian mata uang tampil');
+  assert.ok($('m-trip-root').textContent.includes('KRW 10.000 · EUR 50') || $('m-trip-root').textContent.includes('EUR 50 · KRW 10.000'), '36.B2 APK Cash: tampil KRW & EUR per metode');
+
+  // Coba hapus EUR & matikan saklar saat EUR dipakai 1 itinerary -> diblokir dengan pesan pasti
+  click($('m-btn-trip-edit'));
+  click($('m-kp-fxs-list').querySelector('[data-fx-del="0"]'));
+  assert.strictEqual($('m-kp-fxs-err').textContent, 'Dipakai 1 item (0 pemesanan, 1 itinerary)', '36.B2 APK: blokir hapus EUR dengan pesan persis');
+  $('m-kp-multi-cur').checked = false;
+  fire($('m-kp-multi-cur'), 'change');
+  assert.strictEqual($('m-kp-multi-cur').checked, true, '36.B2 APK: blokir matikan saklar');
+  assert.strictEqual($('m-kp-fxs-err').textContent, 'Dipakai 1 item (0 pemesanan, 1 itinerary)', '36.B2 APK: pesan blokir matikan saklar persis');
+  for (let i = 0; i < 5; i++) click($('m-kp-fxs-add'));
+  assert.strictEqual($('m-kp-fxs-list').querySelectorAll('[data-fx-row]').length, 6, '36.B2 APK: maksimal 6 mata uang tambahan');
+  assert.strictEqual($('m-kp-fxs-add').disabled, true, '36.B2 APK: #m-kp-fxs-add disabled di 6');
+  w.mobCloseSheet('m-sheet-trip');
+
+  delete w.ALL.kas.pr['p-10bm-b1'];
   w.MOB_STATE.tripId = null;
 
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));

@@ -4120,7 +4120,7 @@ html.rk-theme-fallback .input {
 
     #browser-shell .modal-backdrop.open .modal-box {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: none;
       transition:
         opacity var(--dur-dialog-open) var(--ease-out),
         transform var(--dur-dialog-open) var(--ease-out);
@@ -4149,6 +4149,13 @@ html.rk-theme-fallback .input {
       display: flex;
       flex-direction: column;
       gap: 15px;
+    }
+    #browser-shell #modal-trip-form .modal-body {
+      overflow-x: hidden;
+    }
+    #browser-shell #modal-trip-form #kp-end-cal {
+      left: auto;
+      right: 0;
     }
 
     #browser-shell .modal-foot {
@@ -4221,6 +4228,7 @@ html.rk-theme-fallback .input {
       #browser-shell .quick-parse-input-row { flex-direction: column; }
       #browser-shell .btn-lbl-sm { display: none; }
       #browser-shell .toast-box { bottom: calc(var(--mobile-nav-h) + 14px); }
+      #browser-shell .tt { bottom: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom, 0px) + 14px); max-width: calc(100vw - 24px); }
 
       #browser-shell .mobile-bottom-nav {
         position: fixed;
@@ -4357,6 +4365,47 @@ body.privacy-on #browser-shell .pv {
 #browser-shell .st.due { background: var(--accent-soft); color: var(--accent-ink); }
 #browser-shell .st.late { background: var(--crimson-soft); color: var(--crimson); }
 #browser-shell .err { color: var(--crimson); font-size: 0.8rem; font-weight: 600; }
+
+/* Mode Perjalanan: Beberapa mata uang (Tahap 10B B2) */
+#browser-shell .trip-multi-cur-box {
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+#browser-shell .trip-switch-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+#browser-shell .trip-fx-edit-row {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+#browser-shell .trip-fx-detail-row {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#browser-shell .trip-fx-detail-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+#browser-shell .trip-fx-detail-mid {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+#browser-shell .trip-fx-detail-rate {
+  color: var(--text-muted);
+}
 </style>
 <style>
 /* ============================================================
@@ -6748,6 +6797,47 @@ body[data-shell="mobile-app"] #mobile-app-shell #m-svg-sim-chart {
     animation: none !important;
   }
 }
+
+/* Mode Perjalanan APK: Beberapa mata uang & kartu Rincian (Tahap 10B B2) */
+body[data-shell="mobile-app"] #mobile-app-shell .trip-multi-cur-box {
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-switch-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-fx-edit-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-fx-detail-row {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-fx-detail-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-fx-detail-mid {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-fx-detail-rate {
+  color: var(--text-muted);
+}
 </style>
 </head>
 <body>
@@ -7879,8 +7969,8 @@ body[data-shell="mobile-app"] #mobile-app-shell #m-svg-sim-chart {
             <div class="field">
               <label class="field-label" for="kp-use-budget">Anggaran</label>
               <select class="input" id="kp-use-budget">
-                <option value="0">Belum menentukan anggaran</option>
-                <option value="1" selected>Tetapkan anggaran</option>
+                <option value="0" selected>Belum ditentukan</option>
+                <option value="1">Tetapkan anggaran</option>
               </select>
             </div>
             <div class="field" id="kp-budget-wrap">
@@ -7896,6 +7986,19 @@ body[data-shell="mobile-app"] #mobile-app-shell #m-svg-sim-chart {
             <div class="field">
               <label class="field-label" for="kp-rate">Kurs: Rp per 1 mata uang</label>
               <input class="input mono" id="kp-rate" type="number" step="0.01" placeholder="108.5" />
+            </div>
+          </div>
+          <div class="trip-multi-cur-box">
+            <label class="trip-switch-row" for="kp-multi-cur">
+              <input type="checkbox" id="kp-multi-cur" />
+              <span>Gunakan beberapa mata uang</span>
+            </label>
+            <div id="kp-fxs-wrap" class="stack" style="display:none; gap:8px; margin-top:8px;">
+              <div id="kp-fxs-list" class="stack" style="gap:6px;"></div>
+              <div id="kp-fxs-err" role="alert" style="color:var(--crimson); font-size:0.78rem; font-weight:600;"></div>
+              <div>
+                <button type="button" class="btn btn-secondary btn-sm" id="kp-fxs-add">+ Tambah mata uang</button>
+              </div>
             </div>
           </div>
         </div>
@@ -7993,7 +8096,7 @@ body[data-shell="mobile-app"] #mobile-app-shell #m-svg-sim-chart {
   </div>
 
   <button type="button" class="rk-btt-btn" id="rk-btt-desk" aria-label="Kembali ke atas" title="Kembali ke atas">↑ Atas</button>
-  <div class="tt" id="tt" hidden><span id="ttm"></span><button id="ttu" type="button">Urungkan</button></div>
+  <div class="tt" id="tt" role="status" aria-live="polite" hidden><span id="ttm"></span><button id="ttu" type="button">Urungkan</button></div>
   <div class="toast-box" id="toast-box" role="status" aria-live="polite"></div>
 </div><!-- /#browser-shell -->
 
@@ -8591,7 +8694,20 @@ function normKas(k) {
   if (k && k.pr && typeof k.pr === 'object')
     Object.keys(k.pr).forEach(function (id) {
       var p = k.pr[id] || {};
-      pr[id] = {
+      var mainCurUp = /^[A-Za-z]{3}$/.test(p.cur || '') ? String(p.cur).toUpperCase() : '';
+      var cleanFxs = null, validExtraSet = {};
+      if (Array.isArray(p.fxs)) {
+        cleanFxs = [];
+        p.fxs.forEach(function (f) {
+          if (cleanFxs.length >= 6 || !f || typeof f !== 'object') return;
+          var fc = typeof f.c === 'string' ? f.c.trim().toUpperCase() : '';
+          if (!/^[A-Z]{3}$/.test(fc) || fc === mainCurUp || fc === 'IDR' || fc === 'RP' || validExtraSet[fc]) return;
+          var fr = (typeof f.r === 'number' && Number.isFinite(f.r) && f.r > 0 && f.r <= 1e9) ? f.r : 0;
+          validExtraSet[fc] = 1;
+          cleanFxs.push({ c: fc, r: fr });
+        });
+      }
+      var profObj = {
         id: id,
         name: String(p.name || 'Profil').slice(0, 30),
         saldo: +p.saldo || 0,
@@ -8599,7 +8715,7 @@ function normKas(k) {
         start: ISO_RE.test(p.start) ? p.start : '',
         end: ISO_RE.test(p.end) ? p.end : '',
         budget: +p.budget > 0 ? +p.budget : 0,
-        cur: /^[A-Za-z]{3}$/.test(p.cur || '') ? String(p.cur).toUpperCase() : '',
+        cur: mainCurUp,
         rate: +p.rate > 0 ? +p.rate : 0,
         dt: (function () {
           var o = {};
@@ -8614,7 +8730,10 @@ function normKas(k) {
             return x && ISO_RE.test(x.day) && x.place;
           })
           .map(function (x, i) {
-            return {
+            var isFxIt = !!x.fx;
+            var okRtIt = isFxIt && typeof x.rt === 'number' && Number.isFinite(x.rt) && x.rt > 0 && x.rt <= 1e9;
+            var xcIt = (isFxIt && cleanFxs && typeof x.c === 'string') ? x.c.trim().toUpperCase() : '';
+            var rowIt = {
               id: String(x.id || 'i' + i),
               day: x.day,
               time: /^\d{2}:\d{2}$/.test(x.time) ? x.time : '',
@@ -8622,13 +8741,16 @@ function normKas(k) {
               place: String(x.place).slice(0, 120),
               cat: String(x.cat || '').slice(0, 20),
               est: +x.est > 0 ? +x.est : 0,
-              fx: !!x.fx,
+              fx: isFxIt,
               pay: /^(ic|on|cash)$/.test(x.pay) ? x.pay : '',
               link: okUrl(x.link) ? String(x.link).slice(0, 400) : '',
               note: String(x.note || '').slice(0, 200),
               done: !!x.done,
               rec: String(x.rec || ''),
             };
+            if (xcIt && validExtraSet[xcIt]) rowIt.c = xcIt;
+            if (okRtIt) rowIt.rt = x.rt;
+            return rowIt;
           }),
         bk: (Array.isArray(p.bk) ? p.bk : [])
           .filter(function (x) {
@@ -8636,7 +8758,8 @@ function normKas(k) {
           })
           .map(function (x, i) {
             var isFx = !!x.fx, isPaid = !!x.paid;
-            var okRt = isPaid && isFx && typeof x.rt === 'number' && Number.isFinite(x.rt) && x.rt > 0 && x.rt <= 1e9;
+            var okRt = isFx && typeof x.rt === 'number' && Number.isFinite(x.rt) && x.rt > 0 && x.rt <= 1e9;
+            var xcBk = (isFx && cleanFxs && typeof x.c === 'string') ? x.c.trim().toUpperCase() : '';
             var row = {
               id: String(x.id || 'b' + i),
               title: String(x.title).slice(0, 120),
@@ -8650,7 +8773,9 @@ function normKas(k) {
               paid: isPaid,
               rec: String(x.rec || ''),
             };
+            if (xcBk && validExtraSet[xcBk]) row.c = xcBk;
             if (okRt) row.rt = x.rt;
+            if (okRt && isPaid && x.ra === true) row.ra = true;
             return row;
           }),
         lk: (Array.isArray(p.lk) ? p.lk : [])
@@ -8682,6 +8807,8 @@ function normKas(k) {
             return { id: String(x.id || 't' + i), d: x.d, t: x.t, amt: +x.amt, cat: String(x.cat || '').slice(0, 30), note: String(x.note || '').slice(0, 80), debt: x.debt === true, debtName: String(x.debtName || '').slice(0, 40), debtKind: /^(piutang|bayar-utang|utang|bayar-piutang)$/.test(x.debtKind) ? x.debtKind : '', debtDone: x.debtDone === true };
           }),
       };
+      if (cleanFxs !== null) profObj.fxs = cleanFxs;
+      pr[id] = profObj;
     });
   if (!Object.keys(pr).length) pr.utama = { id: 'utama', name: 'Utama', saldo: 0, tx: [], link: true };
   var ids = Object.keys(pr),
@@ -9867,6 +9994,8 @@ function toast(msg, undo) {
   if (typeof getShellMode === 'function' && getShellMode() === 'mobile-app' && typeof showMobToast === 'function') {
     showMobToast(msg, undo);
   }
+  var tb = $('toast-box');
+  if (tb) tb.classList.remove('show');
   var t = $('tt');
   if (!t || !$('ttm') || !$('ttu')) return;
   $('ttm').textContent = msg;
@@ -9878,7 +10007,7 @@ function toast(msg, undo) {
     function () {
       t.hidden = true;
     },
-    undo ? 10000 : 4000,
+    undo ? 10000 : 2000,
   );
 }
 
@@ -18032,28 +18161,88 @@ function dayLabel(P, d) {
 function val(P, v, fx) {
   return fx && P.rate ? v * P.rate : v;
 }
-function fxs(P, n) {
-  return P.cur + ' ' + Math.round(n).toLocaleString('id-ID');
+function fxs(P, n, curOpt) {
+  var c = curOpt != null ? String(curOpt) : ((P && P.cur) || '');
+  return c + ' ' + Math.round(n).toLocaleString('id-ID');
 }
-/** Teks jumlah: "Rp ..." dan, bila asing, "JPY ... " di belakangnya. */
-function amtTxt(P, v, fx, lockedRt) {
-  if (fx && P.cur) {
-    var lk = typeof lockedRt === 'number' && Number.isFinite(lockedRt) && lockedRt > 0 && lockedRt <= 1e9 ? lockedRt : 0;
-    var eqRp = lk ? (+v || 0) * lk : val(P, v, fx);
-    return fxs(P, v) + (lk || P.rate ? ' <span class="sub">&asymp; ' + rp(eqRp) + (lk ? ' &middot; kurs terkunci ' + lk.toLocaleString('id-ID') : '') + '</span>' : '');
+/** Cek apakah item bermata uang asing memiliki kurs khusus (rt) yang valid (> 0 dan <= 1e9). */
+function tripHasValidRt(x) {
+  return !!(x && x.fx && typeof x.rt === 'number' && Number.isFinite(x.rt) && x.rt > 0 && x.rt <= 1e9);
+}
+/** Kode mata uang item bermata uang asing (mendukung B2 P.fxs[] atau B1 P.cur); kosong bila bukan item asing / belum ada cur. */
+function tripItemCur(P, x) {
+  if (!x || !x.fx || !P) return '';
+  var main = String(P.cur || '').trim();
+  if (x.c && Array.isArray(P.fxs)) {
+    var xc = String(x.c).trim().toUpperCase();
+    for (var i = 0; i < P.fxs.length; i++) {
+      var f = P.fxs[i];
+      if (f && String(f.c || '').trim().toUpperCase() === xc) return String(f.c).trim().toUpperCase();
+    }
   }
-  return rp(v);
+  return main;
+}
+/** Kurs berjalan profil untuk kode mata uang tertentu (utama P.rate atau tambahan P.fxs[].r). */
+function tripCurRate(P, code) {
+  if (!P) return 0;
+  var mainRaw = String(P.cur || '').trim();
+  var reqRaw = code == null ? mainRaw : String(code).trim();
+  if (!reqRaw) return 0;
+  var cUp = reqRaw.toUpperCase(), mainUp = mainRaw.toUpperCase();
+  if (cUp === mainUp) {
+    var rm = +P.rate || 0;
+    return (Number.isFinite(rm) && rm > 0 && rm <= 1e9) ? rm : 0;
+  }
+  if (Array.isArray(P.fxs)) {
+    for (var i = 0; i < P.fxs.length; i++) {
+      var f = P.fxs[i];
+      if (f && String(f.c || '').trim().toUpperCase() === cUp) {
+        var rx = +f.r || 0;
+        return (Number.isFinite(rx) && rx > 0 && rx <= 1e9) ? rx : 0;
+      }
+    }
+  }
+  return 0;
+}
+/** Kurs efektif tunggal untuk item (pemesanan / itinerary): rt khusus bila ada -> kurs mata uang item -> 1 bila Rupiah. */
+function tripItemRate(P, x) {
+  if (!x || !x.fx) return 1;
+  var curCode = tripItemCur(P, x);
+  if (!curCode) return 1;
+  if (tripHasValidRt(x)) return x.rt;
+  return tripCurRate(P, curCode);
 }
 /** Cek apakah pemesanan asing lunas memiliki kurs terkunci (rt) yang valid. */
 function tripBkHasLock(x) {
-  return !!(x && x.fx && x.paid && typeof x.rt === 'number' && Number.isFinite(x.rt) && x.rt > 0 && x.rt <= 1e9);
+  return !!(x && x.paid && tripHasValidRt(x));
 }
-/** Nilai rupiah pemesanan: memakai kurs terkunci bila ada, selainnya mengikuti kurs berjalan. */
+/** Nilai rupiah pemesanan: memakai tripItemRate(P, x). */
 function tripBkRp(P, x) {
   if (!x) return 0;
-  var amt = +x.amt || 0;
-  if (tripBkHasLock(x)) return amt * x.rt;
-  return val(P, amt, x.fx);
+  return (+x.amt || 0) * tripItemRate(P, x);
+}
+/** Nilai rupiah item itinerary: memakai tripItemRate(P, x). */
+function tripItRp(P, x) {
+  if (!x) return 0;
+  return (+x.est || 0) * tripItemRate(P, x);
+}
+/** Teks jumlah: "Rp ..." dan, bila asing, "CUR ... ≈ Rp ..." di belakangnya. */
+function amtTxt(P, v, fx, lockedRt, isPaidOpt, curOpt) {
+  var isObj = v && typeof v === 'object';
+  var num = isObj ? (+(v.amt != null ? v.amt : v.est) || 0) : (+v || 0);
+  var isFx = isObj ? !!v.fx : !!fx;
+  var cCode = isObj ? tripItemCur(P, v) : (curOpt || ((P && String(P.cur || '').trim()) || ''));
+  var lk = isObj
+    ? (tripHasValidRt(v) ? v.rt : 0)
+    : (typeof lockedRt === 'number' && Number.isFinite(lockedRt) && lockedRt > 0 && lockedRt <= 1e9 ? lockedRt : 0);
+  var isPaidFlag = isObj ? !!v.paid : (isPaidOpt === undefined ? true : !!isPaidOpt);
+  if (isFx && cCode) {
+    var effRate = lk || tripCurRate(P, cCode);
+    var eqRp = num * effRate;
+    var lockTag = lk ? (isPaidFlag ? ' &middot; kurs terkunci ' : ' &middot; kurs ') + lk.toLocaleString('id-ID') : '';
+    return fxs(P, num, cCode) + (effRate > 0 ? ' <span class="sub">&asymp; ' + rp(eqRp) + lockTag + '</span>' : '');
+  }
+  return rp(num);
 }
 /** Urai teks input kurs menjadi angka positif valid (> 0 dan <= 1e9), atau 0 bila kosong/tidak sah. */
 function tripParseRateVal(raw) {
@@ -18062,105 +18251,442 @@ function tripParseRateVal(raw) {
   var n = parseFloat(s);
   return (Number.isFinite(n) && n > 0 && n <= 1e9) ? n : 0;
 }
-/** Balik status lunas pemesanan dan kunci/hapus kursnya; mengembalikan pesan toast bila baru dikunci. */
+/** Balik status lunas pemesanan: pertahankan rt manual, kunci otomatis dgn ra=true, lepas hanya yg ra; kembalikan pesan toast gabungan. */
 function tripToggleBkPaid(P, x) {
   if (!x) return '';
   x.paid = !x.paid;
   if (x.paid) {
-    var cur = String((P && P.cur) || '').trim();
-    var rate = +(P && P.rate) || 0;
-    if (x.fx && cur && Number.isFinite(rate) && rate > 0 && rate <= 1e9) {
-      x.rt = rate;
-      return 'Kurs terkunci: 1 ' + cur + ' = Rp ' + rate.toLocaleString('id-ID');
+    if (x.fx) {
+      if (tripHasValidRt(x)) {
+        var curMan = tripItemCur(P, x) || String((P && P.cur) || '').trim();
+        if (x.ra !== true) delete x.ra;
+        return curMan
+          ? 'Ditandai lunas · Kurs terkunci: 1 ' + curMan + ' = Rp ' + x.rt.toLocaleString('id-ID')
+          : 'Ditandai lunas';
+      }
+      var cur = tripItemCur(P, x) || String((P && P.cur) || '').trim();
+      var rate = tripCurRate(P, cur);
+      if (cur && rate > 0 && rate <= 1e9) {
+        x.rt = rate;
+        x.ra = true;
+        return 'Ditandai lunas · Kurs terkunci: 1 ' + cur + ' = Rp ' + rate.toLocaleString('id-ID');
+      }
     }
     delete x.rt;
-    return '';
+    delete x.ra;
+    return 'Ditandai lunas';
   }
-  delete x.rt;
-  return '';
+  if (x.ra) delete x.rt;
+  delete x.ra;
+  return 'Lunas dibatalkan';
 }
-/** Gabungkan hasil edit form pemesanan sambil menjaga, mengubah, atau menghapus rt sesuai aturan. */
-function tripMergeBkEdit(oldBk, patchBk, rtInputEl) {
-  var merged = Object.assign({}, oldBk, patchBk);
-  if (!merged.paid || !merged.fx) {
+/** Gulir layar/kontainer ke form edit dan (di desktop saja) fokus ke kolom pertama tanpa memicu lonjakan scroll. */
+function tripScrollToEditForm(formEl, firstInputId, isMobile) {
+  if (!formEl) return;
+  var beh = (typeof rkIsReducedMotion === 'function' && rkIsReducedMotion()) ? 'auto' : 'smooth';
+  var card = formEl.closest ? (formEl.closest('.card') || formEl) : formEl;
+  var mm = isMobile && typeof $ === 'function' ? $('m-main') : null;
+  if (mm && mm.scrollHeight > mm.clientHeight + 2 && typeof card.getBoundingClientRect === 'function') {
+    var cr = card.getBoundingClientRect(), mr = mm.getBoundingClientRect();
+    var targetTop = mm.scrollTop + (cr.top - mr.top) - 10;
+    if (typeof mm.scrollTo === 'function') {
+      try { mm.scrollTo({ top: Math.max(0, targetTop), behavior: beh }); } catch (e) { mm.scrollTop = Math.max(0, targetTop); }
+    } else {
+      mm.scrollTop = Math.max(0, targetTop);
+    }
+  } else if (typeof card.scrollIntoView === 'function') {
+    try { card.scrollIntoView({ behavior: beh, block: 'center' }); } catch (e) {}
+  }
+  if (!isMobile && firstInputId && typeof $ === 'function') {
+    var firstInp = $(firstInputId);
+    if (firstInp && typeof firstInp.focus === 'function') {
+      try { firstInp.focus({ preventScroll: true }); } catch (e) { try { firstInp.focus(); } catch (e2) {} }
+    }
+  }
+}
+/** Gulir kembali ke baris item yang baru selesai diedit apabila berada di luar area pandang. */
+function tripScrollBackToEditedRow(rowEl, isMobile) {
+  if (!rowEl || typeof rowEl.getBoundingClientRect !== 'function') return;
+  var beh = (typeof rkIsReducedMotion === 'function' && rkIsReducedMotion()) ? 'auto' : 'smooth';
+  var r = rowEl.getBoundingClientRect();
+  var mm = isMobile && typeof $ === 'function' ? $('m-main') : null;
+  var minY = 72, maxY = (typeof window !== 'undefined' && window.innerHeight) ? window.innerHeight - 24 : 600;
+  if (mm && mm.scrollHeight > mm.clientHeight + 2) {
+    var mr = mm.getBoundingClientRect();
+    minY = mr.top + 8;
+    maxY = mr.bottom - 80;
+  }
+  var isVisible = r.top >= minY && r.bottom <= maxY;
+  if (!isVisible && typeof rowEl.scrollIntoView === 'function') {
+    try { rowEl.scrollIntoView({ behavior: beh, block: 'nearest' }); } catch (e) {}
+  }
+}
+/** Urai nilai dropdown mata uang item ('idr' | 'fx' | 'fx:KODE') menjadi { fx, c }. */
+function tripParseCurSelectVal(P, rawVal) {
+  var s = String(rawVal == null ? '' : rawVal).trim();
+  if (s === 'fx') return { fx: true, c: '' };
+  if (s.indexOf('fx:') === 0) {
+    var code = s.slice(3).trim().toUpperCase();
+    if (code && P && Array.isArray(P.fxs) && P.fxs.some(function (f) { return f && String(f.c || '').toUpperCase() === code; })) {
+      return { fx: true, c: code };
+    }
+    return { fx: true, c: '' };
+  }
+  return { fx: false, c: '' };
+}
+/** Gabungkan hasil edit form item (pemesanan / itinerary) sambil menjaga, mengubah, atau menghapus rt & ra sesuai aturan 10B. */
+function tripMergeItemEdit(oldItem, patchItem, rtInputEl, isBooking) {
+  var merged = Object.assign({}, oldItem, patchItem);
+  if (!merged.fx) {
     delete merged.rt;
+    delete merged.ra;
+    delete merged.c;
     return merged;
   }
+  if (!merged.c) delete merged.c;
   if (rtInputEl) {
     var parsedRt = tripParseRateVal(rtInputEl.value);
-    if (parsedRt > 0) merged.rt = parsedRt;
-    else delete merged.rt;
-  } else if (!tripBkHasLock(merged)) {
+    var userEdited = !!(rtInputEl.dataset && rtInputEl.dataset.userEdited === '1');
+    if (parsedRt > 0) {
+      var sameAuto = !!(!userEdited && isBooking && merged.paid && oldItem && oldItem.ra && oldItem.rt === parsedRt && (oldItem.c || '') === (merged.c || ''));
+      merged.rt = parsedRt;
+      if (sameAuto) merged.ra = true;
+      else delete merged.ra;
+    } else {
+      delete merged.rt;
+      delete merged.ra;
+    }
+  } else if (!tripHasValidRt(merged)) {
     delete merged.rt;
+    delete merged.ra;
   }
+  if (!isBooking || !merged.paid) delete merged.ra;
   return merged;
 }
-/** Sinkronkan visibilitas input kurs terkunci & pratinjau ekuivalen Rp pada form pemesanan. */
-function tripSyncBkRateField(P, editBk, amtId, curId, eqId, rtWrapId, rtId) {
+/** Wrapper kompatibilitas Tahap 9 untuk hasil edit form pemesanan. */
+function tripMergeBkEdit(oldBk, patchBk, rtInputEl) {
+  return tripMergeItemEdit(oldBk, patchBk, rtInputEl, true);
+}
+/** Sinkronkan visibilitas input kurs per item (form Ubah) & pratinjau ekuivalen Rp pada form pemesanan/itinerary. */
+function tripSyncItemRateField(P, editItem, amtId, curId, eqId, rtWrapId, rtId, isBooking) {
   var inp = $(amtId), sel = $(curId), eqEl = $(eqId), rtWrap = $(rtWrapId), rtInp = $(rtId);
-  var isFx = !!(sel && sel.value === 'fx' && P && String(P.cur || '').trim());
-  var isPaidEdit = !!(editBk && editBk.paid);
-  if (rtWrap) rtWrap.style.display = (isFx && isPaidEdit) ? '' : 'none';
+  var selSpec = sel ? tripParseCurSelectVal(P, sel.value) : { fx: false, c: '' };
+  var itemCur = selSpec.fx ? (selSpec.c || ((P && String(P.cur || '').trim()) || '')) : '';
+  var isFx = !!(selSpec.fx && itemCur);
+  var isEditMode = !!editItem;
+  var isPaidEdit = !!(isBooking && editItem && editItem.paid);
+  if (rtWrap) {
+    rtWrap.style.display = (isEditMode && isFx) ? '' : 'none';
+    if (isEditMode && isFx && rtWrap.querySelector) {
+      var lblEl = rtWrap.querySelector('label');
+      if (lblEl) lblEl.textContent = 'Kurs' + (isPaidEdit ? ' saat dibayar' : '') + ' (Rp per 1 ' + (itemCur || 'asing') + ')';
+    }
+  }
+  if (rtInp) {
+    var curRate = isFx ? tripCurRate(P, itemCur) : 0;
+    rtInp.placeholder = curRate > 0 ? ('Ikut kurs perjalanan: ' + curRate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan';
+  }
   if (!inp || !sel || !eqEl) return;
   var valNum = typeof getRpVal === 'function' ? getRpVal(amtId) : (+String(inp.value || '').replace(/\D/g, '') || 0);
-  var lkRt = (isFx && isPaidEdit && rtInp) ? tripParseRateVal(rtInp.value) : 0;
-  var prev = tripFormEqPreview(P, valNum, sel.value === 'fx', lkRt);
+  var lkRt = (isEditMode && isFx && rtInp) ? tripParseRateVal(rtInp.value) : 0;
+  var prev = tripFormEqPreview(P, valNum, isFx, lkRt, isPaidEdit, itemCur);
   eqEl.textContent = prev.text;
   eqEl.classList.toggle('is-warn', !!prev.warn);
   eqEl.classList.toggle('pv', !!(prev.text && !prev.warn));
 }
-/** Rincian pecahan rupiah vs mata uang asing, aturan inklusi persis sama dgn tripPlan(). */
-function tripFxSplit(P) {
-  var cur = String((P && P.cur) || '').trim();
-  var rate = +(P && P.rate) || 0;
-  var idrRaw = 0, fxAmt = 0, unlockedFxAmt = 0;
-  if (P) {
-    (P.bk || []).forEach(function (x) {
-      var a = +x.amt || 0;
-      if (cur && x.fx) {
-        fxAmt += a;
-        if (!tripBkHasLock(x) && a > 0) unlockedFxAmt += a;
-      } else idrRaw += a;
-    });
-    (P.it || []).forEach(function (x) {
-      if (x.pay === 'on' || !x.est) return;
-      var e = +x.est || 0;
-      if (cur && x.fx) {
-        fxAmt += e;
-        if (e > 0) unlockedFxAmt += e;
-      } else idrRaw += e;
+/** Wrapper kompatibilitas Tahap 9 untuk form pemesanan. */
+function tripSyncBkRateField(P, editBk, amtId, curId, eqId, rtWrapId, rtId) {
+  return tripSyncItemRateField(P, editBk, amtId, curId, eqId, rtWrapId, rtId, true);
+}
+/** Cek apakah saklar beberapa mata uang sedang aktif pada profil perjalanan. */
+function tripMultiCurOn(P) {
+  return !!(P && Array.isArray(P.fxs));
+}
+/** Daftar seluruh kode mata uang asing pada profil (utama dulu, lalu tambahan fxs tanpa duplikat). */
+function tripAllCurList(P) {
+  var list = [], seen = {};
+  if (!P) return list;
+  var main = String(P.cur || '').trim();
+  if (main) {
+    seen[main.toUpperCase()] = 1;
+    list.push({ c: main, r: tripCurRate(P, main), isMain: true });
+  }
+  if (Array.isArray(P.fxs)) {
+    P.fxs.forEach(function (f) {
+      if (!f || !f.c) return;
+      var cu = String(f.c).trim().toUpperCase();
+      if (!cu || seen[cu]) return;
+      seen[cu] = 1;
+      var rr = +f.r || 0;
+      list.push({ c: cu, r: (Number.isFinite(rr) && rr > 0 && rr <= 1e9) ? rr : 0, isMain: false });
     });
   }
-  var hasFx = !!(cur && fxAmt > 0);
-  var noRate = !!(hasFx && unlockedFxAmt > 0 && !(rate > 0));
+  return list;
+}
+/** Hitung pemakaian kode mata uang tertentu di pemesanan & itinerary. */
+function tripCountCurUsage(P, code) {
+  var cUp = String(code || '').trim().toUpperCase();
+  if (!P || !cUp) return { total: 0, bk: 0, it: 0 };
+  var bkCnt = 0, itCnt = 0;
+  (P.bk || []).forEach(function (x) {
+    if (x && x.fx && tripItemCur(P, x).toUpperCase() === cUp) bkCnt++;
+  });
+  (P.it || []).forEach(function (x) {
+    if (x && x.fx && tripItemCur(P, x).toUpperCase() === cUp) itCnt++;
+  });
+  return { total: bkCnt + itCnt, bk: bkCnt, it: itCnt };
+}
+/** Hitung total item (pemesanan & itinerary) yang memakai mata uang tambahan mana pun. */
+function tripCountAllExtraCurUsage(P) {
+  if (!P) return { total: 0, bk: 0, it: 0 };
+  var mainUp = String(P.cur || '').trim().toUpperCase();
+  var bkCnt = 0, itCnt = 0;
+  (P.bk || []).forEach(function (x) {
+    var ic = x && x.fx ? tripItemCur(P, x).toUpperCase() : '';
+    if (ic && ic !== mainUp) bkCnt++;
+  });
+  (P.it || []).forEach(function (x) {
+    var ic = x && x.fx ? tripItemCur(P, x).toUpperCase() : '';
+    if (ic && ic !== mainUp) itCnt++;
+  });
+  return { total: bkCnt + itCnt, bk: bkCnt, it: itCnt };
+}
+/** Pesan standar penolakan hapus/matikan mata uang yang masih dipakai item. */
+function tripFormatCurUsageMsg(u) {
+  var o = u || { total: 0, bk: 0, it: 0 };
+  return 'Dipakai ' + o.total + ' item (' + o.bk + ' pemesanan, ' + o.it + ' itinerary)';
+}
+/** HTML <option> pilihan mata uang pada form item (Rp, utama, dan tambahan bila saklar menyala). */
+function tripCurSelectOptsHtml(P, editItem) {
+  var main = (P && String(P.cur || '').trim()) || '';
+  var curSelC = editItem && editItem.fx && editItem.c ? String(editItem.c).trim().toUpperCase() : '';
+  var extraMatch = false;
+  if (curSelC && P && Array.isArray(P.fxs)) {
+    extraMatch = P.fxs.some(function (f) { return f && String(f.c || '').trim().toUpperCase() === curSelC; });
+  }
+  var html = '<option value="idr"' + (!(editItem && editItem.fx) ? ' selected' : '') + '>Rp</option>';
+  if (main) {
+    html += '<option value="fx"' + (editItem && editItem.fx && !extraMatch ? ' selected' : '') + '>' + esc(main) + '</option>';
+  }
+  if (P && Array.isArray(P.fxs)) {
+    P.fxs.forEach(function (f) {
+      if (!f || !f.c) return;
+      var cu = String(f.c).trim().toUpperCase();
+      if (!cu) return;
+      html += '<option value="fx:' + esc(cu) + '"' + (editItem && editItem.fx && extraMatch && curSelC === cu ? ' selected' : '') + '>' + esc(cu) + '</option>';
+    });
+  }
+  return html;
+}
+/** Sinkronkan UI editor beberapa mata uang (checkbox, kontainer, daftar baris, tombol tambah). */
+function tripRenderFxsEditorUi(chkEl, wrapEl, listEl, addBtnEl, enabled, rows) {
+  if (chkEl) chkEl.checked = !!enabled;
+  if (wrapEl) wrapEl.style.display = enabled ? 'flex' : 'none';
+  if (listEl) listEl.innerHTML = tripRenderFxsRowsHtml(rows);
+  if (addBtnEl) addBtnEl.disabled = (rows && rows.length >= 6);
+}
+/** Tangani perubahan saklar "Gunakan beberapa mata uang"; menolak mematikan bila ada item memakai mata uang tambahan. */
+function tripHandleFxsToggleChange(chkEl, wrapEl, listEl, addBtnEl, errEl, trEdit, getDraft, setEnabled, toastFn) {
+  if (!chkEl) return;
+  if (!chkEl.checked && trEdit) {
+    var uAll = tripCountAllExtraCurUsage(trEdit);
+    if (uAll.total > 0) {
+      var msg = tripFormatCurUsageMsg(uAll);
+      chkEl.checked = true;
+      setEnabled(true);
+      if (errEl) errEl.textContent = msg;
+      tripRenderFxsEditorUi(chkEl, wrapEl, listEl, addBtnEl, true, getDraft());
+      if (typeof toastFn === 'function') toastFn(msg);
+      return;
+    }
+  }
+  setEnabled(!!chkEl.checked);
+  if (errEl) errEl.textContent = '';
+  tripRenderFxsEditorUi(chkEl, wrapEl, listEl, addBtnEl, !!chkEl.checked, getDraft());
+}
+/** Tambah baris mata uang tambahan baru (maks 6). */
+function tripHandleFxsAddRow(chkEl, wrapEl, listEl, addBtnEl, errEl, enabled, draft, toastFn) {
+  if (draft.length >= 6) {
+    if (addBtnEl) addBtnEl.disabled = true;
+    var msgMax = 'Maksimal 6 mata uang tambahan.';
+    if (errEl) errEl.textContent = msgMax;
+    if (typeof toastFn === 'function') toastFn(msgMax);
+    return;
+  }
+  draft.push({ c: '', r: 0, origC: '' });
+  if (errEl) errEl.textContent = '';
+  tripRenderFxsEditorUi(chkEl, wrapEl, listEl, addBtnEl, enabled, draft);
+}
+/** Hapus baris mata uang tambahan ke-idx; diblokir bila masih dipakai item. */
+function tripHandleFxsDelRow(chkEl, wrapEl, listEl, addBtnEl, errEl, enabled, draft, idx, trEdit, toastFn) {
+  if (!(idx >= 0 && idx < draft.length)) return;
+  var row = draft[idx];
+  var codeToCheck = String((row && (row.origC || row.c)) || '').trim().toUpperCase();
+  if (trEdit && codeToCheck) {
+    var u = tripCountCurUsage(trEdit, codeToCheck);
+    if (u.total > 0) {
+      var msg = tripFormatCurUsageMsg(u);
+      if (errEl) errEl.textContent = msg;
+      if (typeof toastFn === 'function') toastFn(msg);
+      return;
+    }
+  }
+  draft.splice(idx, 1);
+  if (errEl) errEl.textContent = '';
+  tripRenderFxsEditorUi(chkEl, wrapEl, listEl, addBtnEl, enabled, draft);
+}
+/** Sinkronkan daftar baris mata uang tambahan [kode][kurs][hapus] untuk modal Desktop & sheet APK. */
+function tripRenderFxsRowsHtml(rows) {
+  if (!rows || !rows.length) {
+    return '<div style="font-size:0.76rem;color:var(--text-muted);padding:6px 2px">Belum ada mata uang tambahan. Klik &ldquo;+ Tambah mata uang&rdquo; (maks. 6).</div>';
+  }
+  return rows.map(function (r, idx) {
+    var rStr = r.rRaw != null ? String(r.rRaw) : (r.r > 0 ? String(r.r) : '');
+    return (
+      '<div class="trip-fx-edit-row" data-fx-row="' + idx + '">' +
+      '<input type="text" class="input mono trip-fx-code-inp" data-fx-code="' + idx + '" maxlength="3" placeholder="NOK" value="' + esc(r.c || '') + '" style="text-transform:uppercase" aria-label="Kode mata uang tambahan ' + (idx + 1) + '" />' +
+      '<input type="text" class="input mono trip-fx-rate-inp" data-fx-rate="' + idx + '" inputmode="decimal" placeholder="Kurs Rp (opsional)" value="' + esc(rStr) + '" aria-label="Kurs Rupiah untuk mata uang ' + esc(r.c || String(idx + 1)) + '" />' +
+      '<button type="button" class="btn btn-secondary btn-sm trip-fx-del-btn" data-fx-del="' + idx + '" aria-label="Hapus mata uang tambahan">Hapus</button>' +
+      '</div>'
+    );
+  }).join('');
+}
+/** Validasi baris mata uang tambahan saat simpan modal/sheet Ubah Perjalanan. */
+function tripValidateFxsRows(mainCurRaw, rows) {
+  var mainCur = String(mainCurRaw || '').trim().toUpperCase();
+  var arr = Array.isArray(rows) ? rows : [];
+  if (arr.length > 6) return { error: 'Maksimal 6 mata uang tambahan.' };
+  if (arr.length > 0 && !mainCur) return { error: 'Isi mata uang utama terlebih dahulu sebelum memakai beberapa mata uang.' };
+  var clean = [], seen = {}, renames = [];
+  for (var i = 0; i < arr.length; i++) {
+    var row = arr[i] || {};
+    var code = String(row.c || '').trim().toUpperCase();
+    if (!code || !/^[A-Z]{3}$/.test(code)) return { error: 'Kode mata uang tambahan ke-' + (i + 1) + ' harus 3 huruf A-Z.' };
+    if (code === 'IDR' || code === 'RP') return { error: code + ' sudah menjadi mata uang dasar.' };
+    if (mainCur && code === mainCur) return { error: 'Kode ' + code + ' sudah dipakai sebagai mata uang utama.' };
+    if (seen[code]) return { error: 'Kode mata uang ' + code + ' duplikat.' };
+    seen[code] = 1;
+    var rRaw = row.rRaw != null ? String(row.rRaw).trim() : (row.r > 0 ? String(row.r) : '');
+    var rVal = 0;
+    if (rRaw) {
+      rVal = tripParseRateVal(rRaw);
+      if (!(rVal > 0)) return { error: 'Kurs ' + code + ' tidak valid.' };
+    }
+    if (row.origC && String(row.origC).trim().toUpperCase() !== code) {
+      renames.push({ from: String(row.origC).trim().toUpperCase(), to: code });
+    }
+    clean.push({ c: code, r: rVal });
+  }
+  return { error: '', fxs: clean, renames: renames };
+}
+/** Terapkan perubahan kode mata uang (rename) ke item pemesanan & itinerary yang memakai kode lama. */
+function tripApplyFxsRenames(P, renames) {
+  if (!P || !Array.isArray(renames) || !renames.length) return;
+  var mapR = {};
+  renames.forEach(function (rn) { if (rn && rn.from && rn.to) mapR[rn.from] = rn.to; });
+  (P.bk || []).forEach(function (x) {
+    if (x && x.fx && x.c && mapR[String(x.c).toUpperCase()]) x.c = mapR[String(x.c).toUpperCase()];
+  });
+  (P.it || []).forEach(function (x) {
+    if (x && x.fx && x.c && mapR[String(x.c).toUpperCase()]) x.c = mapR[String(x.c).toUpperCase()];
+  });
+}
+/** Rincian pecahan rupiah vs mata uang asing, aturan inklusi persis sama dgn tripPlan() plus by[] per mata uang. */
+function tripFxSplit(P) {
+  var idrRaw = 0, fxAmt = 0, unlockedNoRate = false;
+  var byMap = {}, order = [];
+  var addItem = function (x, amtNum, rpVal) {
+    var curC = x && x.fx ? tripItemCur(P, x) : '';
+    if (x && x.fx && curC) {
+      fxAmt += amtNum;
+      var missing = amtNum > 0 && !(tripItemRate(P, x) > 0);
+      if (missing) unlockedNoRate = true;
+      if (!byMap[curC]) {
+        byMap[curC] = { c: curC, amt: 0, rawRp: 0, noRate: false };
+        order.push(curC);
+      }
+      byMap[curC].amt += amtNum;
+      byMap[curC].rawRp += rpVal;
+      if (missing) byMap[curC].noRate = true;
+    } else {
+      idrRaw += amtNum;
+    }
+  };
+  if (P) {
+    (P.bk || []).forEach(function (x) { addItem(x, +x.amt || 0, tripBkRp(P, x)); });
+    (P.it || []).forEach(function (x) {
+      if (x.pay === 'on' || !x.est) return;
+      addItem(x, +x.est || 0, tripItRp(P, x));
+    });
+  }
+  var hasFx = fxAmt > 0;
+  var noRate = !!(hasFx && unlockedNoRate);
   var idr = Math.round(idrRaw);
   var fxIdr = 0;
-  if (hasFx && !noRate) {
+  if (hasFx) {
     var pl = tripPlan(P);
     fxIdr = Math.round(pl.t) - idr;
   }
-  return { hasFx: hasFx, idr: idr, fxIdr: fxIdr, fxAmt: fxAmt, noRate: noRate };
+  var orderedKeys = [];
+  if (P) {
+    tripAllCurList(P).forEach(function (entry) {
+      for (var j = 0; j < order.length; j++) {
+        if (order[j].toUpperCase() === String(entry.c || '').toUpperCase() && orderedKeys.indexOf(order[j]) < 0) {
+          orderedKeys.push(order[j]);
+        }
+      }
+    });
+  }
+  order.forEach(function (k) {
+    if (orderedKeys.indexOf(k) < 0) orderedKeys.push(k);
+  });
+  var lastPosIdx = -1;
+  for (var i0 = 0; i0 < orderedKeys.length; i0++) {
+    if (byMap[orderedKeys[i0]].rawRp > 0) lastPosIdx = i0;
+  }
+  if (lastPosIdx < 0 && orderedKeys.length > 0) lastPosIdx = orderedKeys.length - 1;
+  var sumRoundedOthers = 0;
+  for (var i1 = 0; i1 < orderedKeys.length; i1++) {
+    if (i1 !== lastPosIdx) sumRoundedOthers += Math.round(byMap[orderedKeys[i1]].rawRp);
+  }
+  var byList = [];
+  for (var i2 = 0; i2 < orderedKeys.length; i2++) {
+    var ent = byMap[orderedKeys[i2]];
+    var partIdr = i2 === lastPosIdx ? (fxIdr - sumRoundedOthers) : Math.round(ent.rawRp);
+    byList.push({ c: ent.c, amt: ent.amt, idr: partIdr, noRate: ent.noRate });
+  }
+  var res = { hasFx: hasFx, idr: idr, fxIdr: fxIdr, fxAmt: fxAmt, noRate: noRate };
+  Object.defineProperty(res, 'by', { value: byList, enumerable: false, writable: true, configurable: true });
+  return res;
 }
-/** Keterangan ekuivalen rupiah kecil bila nominal dalam mata uang asing (kurs terkunci atau kurs berjalan). */
-function tripEqHint(P, v, fx, lockedRt) {
+/** Keterangan ekuivalen rupiah kecil bila nominal dalam mata uang asing (kurs terkunci / kurs manual / kurs berjalan). */
+function tripEqHint(P, v, fx, lockedRt, isPaidOpt, curOpt) {
   var isObj = v && typeof v === 'object';
-  var num = isObj ? (+v.amt || 0) : (+v || 0);
+  var num = isObj ? (+(v.amt != null ? v.amt : v.est) || 0) : (+v || 0);
   var isFx = isObj ? !!v.fx : !!fx;
   var lk = isObj
-    ? (tripBkHasLock(v) ? v.rt : 0)
+    ? (tripHasValidRt(v) ? v.rt : 0)
     : (typeof lockedRt === 'number' && Number.isFinite(lockedRt) && lockedRt > 0 && lockedRt <= 1e9 ? lockedRt : 0);
-  if (!isFx || !P || !String(P.cur || '').trim() || !(num > 0)) return '';
-  if (lk > 0) return '≈ ' + rp(num * lk) + ' · kurs terkunci ' + lk.toLocaleString('id-ID');
-  if (!(+(P.rate) > 0)) return '';
-  return '≈ ' + rp(val(P, num, true));
+  var isPaidFlag = isObj ? !!v.paid : (isPaidOpt === undefined ? true : !!isPaidOpt);
+  var cCode = isObj ? tripItemCur(P, v) : (curOpt || ((P && String(P.cur || '').trim()) || ''));
+  if (!isFx || !P || !cCode || !(num > 0)) return '';
+  if (lk > 0) return '≈ ' + rp(num * lk) + (isPaidFlag ? ' · kurs terkunci ' : ' · kurs ') + lk.toLocaleString('id-ID');
+  var r = tripCurRate(P, cCode);
+  if (!(r > 0)) return '';
+  return '≈ ' + rp(num * r);
 }
-/** Status pratinjau form (teks ekuivalen Rp atau peringatan kurs belum diatur). */
-function tripFormEqPreview(P, v, isFx, lockedRt) {
-  if (!isFx || !P || !String(P.cur || '').trim()) return { text: '', warn: false };
+/** Status pratinjau form (teks ekuivalen Rp atau peringatan kurs belum diatur per mata uang). */
+function tripFormEqPreview(P, v, isFx, lockedRt, isPaidOpt, curOpt) {
+  var cCode = curOpt || ((P && String(P.cur || '').trim()) || '');
+  if (!isFx || !P || !cCode) return { text: '', warn: false };
   var lk = typeof lockedRt === 'number' && Number.isFinite(lockedRt) && lockedRt > 0 && lockedRt <= 1e9 ? lockedRt : 0;
-  if (lk > 0) return { text: tripEqHint(P, v, true, lk), warn: false };
-  if (!(+(P.rate) > 0)) return { text: 'Kurs belum diatur', warn: true };
-  return { text: tripEqHint(P, v, true, 0), warn: false };
+  if (lk > 0) return { text: tripEqHint(P, v, true, lk, isPaidOpt, cCode), warn: false };
+  if (!(tripCurRate(P, cCode) > 0)) {
+    var mainUp = String(P.cur || '').trim().toUpperCase();
+    var multiWarn = tripMultiCurOn(P) || (mainUp && cCode.toUpperCase() !== mainUp);
+    return { text: multiWarn ? ('Kurs ' + cCode + ' belum diatur') : 'Kurs belum diatur', warn: true };
+  }
+  return { text: tripEqHint(P, v, true, 0, false, cCode), warn: false };
 }
 /** Sinkronkan daftar pasangan [idInput, idSelectCur, idEqEl] pada form itinerary/pemesanan. */
 function tripSyncEqPairs(P, pairs) {
@@ -18168,46 +18694,131 @@ function tripSyncEqPairs(P, pairs) {
     var inp = $(pair[0]), sel = $(pair[1]), eqEl = $(pair[2]);
     if (!inp || !sel || !eqEl) return;
     var valNum = typeof getRpVal === 'function' ? getRpVal(pair[0]) : (+String(inp.value || '').replace(/\D/g, '') || 0);
-    var prev = tripFormEqPreview(P, valNum, sel.value === 'fx');
+    var spec = tripParseCurSelectVal(P, sel.value);
+    var cCode = spec.fx ? (spec.c || ((P && String(P.cur || '').trim()) || '')) : '';
+    var prev = tripFormEqPreview(P, valNum, spec.fx, 0, false, cCode);
     eqEl.textContent = prev.text;
     eqEl.classList.toggle('is-warn', !!prev.warn);
     eqEl.classList.toggle('pv', !!(prev.text && !prev.warn));
   });
 }
-/** HTML hint tile "Total Rencana Biaya": identik dgn teks lama bila !hasFx. */
+/** HTML hint tile "Total Rencana Biaya": identik dgn teks lama bila !hasFx & saklar mati. */
 function tripTotalHintHtml(P, pl) {
   var p0 = pl || tripPlan(P);
   var sp = tripFxSplit(P);
   if (!sp.hasFx) return 'Pemesanan ' + rp(p0.b) + ' + Harian ' + rp(p0.d);
-  if (sp.noRate) {
+  if (!tripMultiCurOn(P) && sp.by.length <= 1) {
+    if (sp.noRate) {
+      return (
+        '<span class="trip-fx-line">Rupiah <span class="mono pv">' + rp(sp.idr) + '</span></span>\n' +
+        '<span class="trip-fx-line">Asing <span class="mono pv">' + esc(fxs(P, sp.fxAmt)) + '</span> &middot; kurs belum diatur</span>\n' +
+        '<span class="trip-fx-warn">Kurs belum diatur: total belum akurat</span>'
+      );
+    }
     return (
       '<span class="trip-fx-line">Rupiah <span class="mono pv">' + rp(sp.idr) + '</span></span>\n' +
-      '<span class="trip-fx-line">Asing <span class="mono pv">' + esc(fxs(P, sp.fxAmt)) + '</span> &middot; kurs belum diatur</span>\n' +
-      '<span class="trip-fx-warn">Kurs belum diatur: total belum akurat</span>'
+      '<span class="trip-fx-line">Asing <span class="mono pv">' + rp(sp.fxIdr) + '</span> <span class="trip-fx-eq mono pv">(≈ ' + esc(fxs(P, sp.fxAmt)) + ')</span></span>\n' +
+      '<span class="trip-fx-sub pv">Pemesanan ' + rp(p0.b) + ' + Harian ' + rp(p0.d) + '</span>'
+    );
+  }
+  var fxParts = sp.by.slice(0, 2).map(function (b) { return esc(fxs(P, b.amt, b.c)); });
+  if (sp.by.length > 2) fxParts.push('+' + (sp.by.length - 2));
+  var warnCors = sp.by.filter(function (b) { return b.noRate; }).map(function (b) { return 'Kurs ' + esc(b.c) + ' belum diatur'; });
+  return (
+    '<span class="trip-fx-line">Rupiah <span class="mono pv">' + rp(sp.idr) + '</span></span>\n' +
+    '<span class="trip-fx-line">Asing <span class="mono pv">' + rp(sp.fxIdr) + '</span> <span class="trip-fx-eq mono pv">(≈ ' + fxParts.join(' &middot; ') + ')</span></span>' +
+    (warnCors.length ? '\n<span class="trip-fx-warn">' + warnCors.join(' &middot; ') + '</span>' : '') +
+    '\n<span class="trip-fx-sub pv">Pemesanan ' + rp(p0.b) + ' + Harian ' + rp(p0.d) + '</span>'
+  );
+}
+/** Kartu baru "Rincian mata uang" di Ringkasan (Desktop & APK); tampil bila saklar menyala atau >1 mata uang terpakai. */
+function tripFxDetailCardHtml(P, isMobile) {
+  if (!P) return '';
+  var sp = tripFxSplit(P);
+  if (!tripMultiCurOn(P) && sp.by.length <= 1) return '';
+  var allCors = tripAllCurList(P), seen = {};
+  allCors.forEach(function (entry) { seen[String(entry.c || '').toUpperCase()] = entry; });
+  sp.by.forEach(function (b) {
+    var k = String(b.c || '').toUpperCase();
+    if (!seen[k]) {
+      var ent = { c: b.c, r: tripCurRate(P, b.c), isMain: k === String(P.cur || '').toUpperCase() };
+      seen[k] = ent;
+      allCors.push(ent);
+    }
+  });
+  var byByCode = {};
+  sp.by.forEach(function (b) { byByCode[String(b.c || '').toUpperCase()] = b; });
+  var rowsHtml = allCors.length ? allCors.map(function (curObj) {
+    var cu = String(curObj.c || '').toUpperCase();
+    var bEnt = byByCode[cu];
+    var amt = bEnt ? bEnt.amt : 0;
+    var idr = bEnt ? bEnt.idr : 0;
+    var rateVal = curObj.r || 0;
+    var hasMissing = bEnt ? bEnt.noRate : !(rateVal > 0);
+    var badgeCls = isMobile ? ('badge ' + (curObj.isMain ? 'b-ac' : 'b-nt')) : ('badge ' + (curObj.isMain ? 'badge-accent' : 'badge-neutral'));
+    var rowCls = isMobile ? 'simple-row m-ring-row trip-fx-detail-row' : 'simple-row trip-fx-detail-row';
+    var ratePart = rateVal > 0
+      ? '<span class="trip-fx-detail-rate">kurs ' + esc(rateVal.toLocaleString('id-ID')) + '</span>'
+      : '<span class="trip-eq-hint is-warn" style="display:inline;margin:0">Kurs ' + esc(curObj.c) + ' belum diatur</span>';
+    var rpPart = (bEnt && bEnt.noRate)
+      ? '<span class="trip-eq-hint is-warn" style="margin:0">Kurs ' + esc(curObj.c) + ' belum diatur</span>'
+      : '<span class="simple-row-amt pv">≈ ' + rp(idr) + '</span>';
+    return (
+      '<div class="' + rowCls + '" style="cursor:default">' +
+      '<div class="trip-fx-detail-left"><span class="' + badgeCls + '">' + esc(curObj.c) + '</span>' +
+      '<span class="trip-fx-detail-mid"><strong class="mono pv">' + esc(fxs(P, amt, curObj.c)) + '</strong> &middot; ' + ratePart + '</span></div>' +
+      rpPart + '</div>'
+    );
+  }).join('') : '<div style="padding:10px;color:var(--text-muted);font-size:0.8rem">Belum ada mata uang asing diatur.</div>';
+  if (isMobile) {
+    return (
+      '<div class="card trip-fx-detail-card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Rincian mata uang</h3><p class="msc-sub">Nominal &amp; ekuivalen rupiah per mata uang asing</p></div></div>' +
+      '<div class="stack" style="gap:6px">' + rowsHtml + '</div></div>'
     );
   }
   return (
-    '<span class="trip-fx-line">Rupiah <span class="mono pv">' + rp(sp.idr) + '</span></span>\n' +
-    '<span class="trip-fx-line">Asing <span class="mono pv">' + rp(sp.fxIdr) + '</span> <span class="trip-fx-eq mono pv">(≈ ' + esc(fxs(P, sp.fxAmt)) + ')</span></span>\n' +
-    '<span class="trip-fx-sub pv">Pemesanan ' + rp(p0.b) + ' + Harian ' + rp(p0.d) + '</span>'
+    '<div class="card trip-fx-detail-card"><div class="card-header"><div><h2 class="card-title">Rincian mata uang</h2><p class="card-sub">Nominal &amp; ekuivalen rupiah per mata uang asing</p></div></div>' +
+    '<div class="simple-list">' + rowsHtml + '</div></div>'
   );
 }
+/** Baris kartu "Siapkan Tunai / Kartu" untuk mode satu maupun beberapa mata uang. */
+function tripCashRowHtml(P, k, cx, isMobile) {
+  if (!cx) return '';
+  var byKeys = cx.by ? Object.keys(cx.by) : [];
+  var isMulti = (tripMultiCurOn(P) || byKeys.length > 1);
+  var eqRp = Math.round(cx.idr + (cx.fxRp != null ? cx.fxRp : (cx.fx && P && P.rate ? cx.fx * P.rate : 0)));
+  var nomHtml = '';
+  if (isMulti && byKeys.length) {
+    var parts = byKeys.map(function (cKey) { return esc(fxs(P, cx.by[cKey], cKey)); });
+    if (cx.idr > 0) parts.push(rp(cx.idr));
+    nomHtml = parts.join(' &middot; ');
+  } else {
+    nomHtml = cx.fx && P && P.cur ? esc(P.cur) + ' ' + Math.round(cx.fx).toLocaleString('id-ID') : rp(cx.idr);
+  }
+  var rpTxt = (cx.fx || byKeys.length) ? (cx.fxRp > 0 ? '≈ ' + rp(eqRp) : (cx.idr ? rp(cx.idr) : '—')) : rp(eqRp);
+  if (isMobile) {
+    return '<div class="simple-row m-ring-row"><span class="simple-row-name">' + esc(k) + '</span><span class="mono pv m-ring-fx">' + nomHtml + '</span><span class="simple-row-amt pv">' + rpTxt + '</span></div>';
+  }
+  return '<div class="simple-row" style="cursor:default;"><span class="simple-row-name">' + esc(k) + '</span><span class="mono pv" style="font-size:0.8rem;font-weight:700;">' + nomHtml + '</span><span class="simple-row-amt pv">' + rpTxt + '</span></div>';
+}
 /** HTML nominal baris daftar (itinerary / pemesanan): tambah ekuivalen kecil hanya untuk item fx. */
-function tripItemAmtHtml(P, amt, fx, strongCls, strongStyle, lockedRt) {
+function tripItemAmtHtml(P, amt, fx, strongCls, strongStyle, lockedRt, isPaidOpt, curOpt) {
   var isObj = amt && typeof amt === 'object';
-  var num = isObj ? (+amt.amt || 0) : (+amt || 0);
+  var num = isObj ? (+(amt.amt != null ? amt.amt : amt.est) || 0) : (+amt || 0);
   var isFx = isObj ? !!amt.fx : !!fx;
   var lk = isObj
-    ? (tripBkHasLock(amt) ? amt.rt : 0)
+    ? (tripHasValidRt(amt) ? amt.rt : 0)
     : (typeof lockedRt === 'number' && Number.isFinite(lockedRt) && lockedRt > 0 && lockedRt <= 1e9 ? lockedRt : 0);
+  var isPaidFlag = isObj ? !!amt.paid : (isPaidOpt === undefined ? true : !!isPaidOpt);
+  var cCode = isObj ? tripItemCur(P, amt) : (curOpt || ((P && String(P.cur || '').trim()) || ''));
   var cls = 'mono pv' + (strongCls ? ' ' + strongCls : '');
   var st = strongStyle ? ' style="' + strongStyle + '"' : '';
   if (!(num > 0)) return '<strong class="' + cls + '"' + st + '></strong>';
-  if (isFx && P && String(P.cur || '').trim()) {
-    var eq = tripEqHint(P, num, true, lk);
+  if (isFx && P && cCode) {
+    var eq = tripEqHint(P, num, true, lk, isPaidFlag, cCode);
     var stackSt = lk > 0 && strongCls === 'msc-right' ? ' style="max-width:54%;flex-shrink:1"' : '';
     return (
-      '<div class="trip-amt-stack"' + stackSt + '><strong class="' + cls + '"' + st + '>' + esc(fxs(P, num)) + '</strong>' +
+      '<div class="trip-amt-stack"' + stackSt + '><strong class="' + cls + '"' + st + '>' + esc(fxs(P, num, cCode)) + '</strong>' +
       (eq ? '\n<span class="trip-eq-hint mono pv">' + esc(eq) + '</span>' : '') +
       '</div>'
     );
@@ -18242,11 +18853,18 @@ function tripPlan(P) {
   });
   P.it.forEach(function (x) {
     if (x.pay === 'on' || !x.est) return;
-    r.d += val(P, x.est, x.fx);
+    var est = +x.est || 0;
+    var v = tripItRp(P, x);
+    r.d += v;
     var k = (x.pay ? PAYL[x.pay] : 'Lainnya') + ' · ' + (x.cat || 'Lainnya'),
-      c = r.cash[k] || (r.cash[k] = { fx: 0, idr: 0 });
-    if (x.fx) c.fx += x.est;
-    else c.idr += x.est;
+      c = r.cash[k] || (r.cash[k] = { fx: 0, idr: 0, fxRp: 0, noRate: false, by: {} });
+    var itemCur = x.fx ? tripItemCur(P, x) : '';
+    if (x.fx && itemCur) {
+      c.fx += est;
+      c.fxRp += v;
+      if (est > 0 && !(tripItemRate(P, x) > 0)) c.noRate = true;
+      c.by[itemCur] = (c.by[itemCur] || 0) + est;
+    } else c.idr += est;
   });
   r.t = r.b + r.d;
   return r;
@@ -18283,7 +18901,7 @@ function tripRing(P) {
   });
   P.it.forEach(function (x) {
     if (x.pay === 'on' || !x.est) return;
-    var v = val(P, x.est, x.fx), c = x.cat || 'Lainnya';
+    var v = tripItRp(P, x), c = x.cat || 'Lainnya';
     byDay[x.day] = (byDay[x.day] || 0) + v;
     bcat[c] = (bcat[c] || 0) + v;
   });
@@ -18315,7 +18933,8 @@ function tripRing(P) {
     (ck.length
       ? '<div class="card"><h2>Siapkan tunai / kartu</h2>' + ck.map(function (k) {
           var c = pl.cash[k];
-          return '<div class="it2"><div>' + esc(k) + '</div><div><b>' + (c.fx ? fxs(P, c.fx) + (c.idr ? ' + ' + rp(c.idr) : '') : rp(c.idr)) + '</b>' + (c.fx && P.rate ? ' <span class="sub">&asymp; ' + rp(c.idr + c.fx * P.rate) + '</span>' : '') + '</div></div>';
+          var eqCash = Math.round(c.idr + (c.fxRp || 0));
+          return '<div class="it2"><div>' + esc(k) + '</div><div><b>' + (c.fx ? fxs(P, c.fx) + (c.idr ? ' + ' + rp(c.idr) : '') : rp(c.idr)) + '</b>' + (c.fx && c.fxRp > 0 ? ' <span class="sub">&asymp; ' + rp(eqCash) + '</span>' : '') + '</div></div>';
         }).join('') + '</div>'
       : '') +
     (dk.length ? '<div class="card"><h2>Estimasi per hari</h2>' + dk.map(function (d) { return catRow(esc(dayLabel(P, d)), byDay[d], dmax, '', rp(byDay[d])); }).join('') + '</div>' : '') +
@@ -18370,27 +18989,31 @@ function tripItin(P) {
       '<div class="err" id="iter"></div><div class="row2"><button class="p" data-its="1">' + (E ? 'Simpan perubahan' : 'Tambah') + '</button>' + (E ? '<button data-itx="1">Batal</button>' : '') + '</div></div>';
   return (
     form +
-    (days.map(function (d) {
+  (days.map(function (d) {
       var L = P.it.filter(function (x) { return x.day === d; }).sort(function (a, b) { return a.time < b.time ? -1 : a.time > b.time ? 1 : 0; }),
         tot = 0, fxm = {},
         stay = P.bk.filter(function (b) { return b.cat === 'Penginapan' && b.a && b.b && d >= b.a && d < b.b; });
       L.forEach(function (x) {
         if (x.pay === 'on' || !x.est) return;
-        tot += val(P, x.est, x.fx);
-        if (x.fx) fxm[x.cat || 'Lainnya'] = (fxm[x.cat || 'Lainnya'] || 0) + x.est;
+        tot += tripItRp(P, x);
+        if (x.fx) {
+          var icIt = tripItemCur(P, x) || P.cur || '';
+          var lblK = (x.cat || 'Lainnya') + (icIt ? ' (' + icIt + ')' : '');
+          fxm[lblK] = { amt: (fxm[lblK] ? fxm[lblK].amt : 0) + x.est, c: icIt };
+        }
       });
       return (
         '<div class="card"><div class="dh"><h2>' + esc(dayLabel(P, d)) + '</h2>' + (d === td ? '<span class="chp ic">Hari ini</span>' : '') + '</div>' +
         '<input class="dti" data-dt="' + d + '" maxlength="60" placeholder="Judul hari, mis. Jakarta – Tokyo" value="' + esc(P.dt[d] || '') + '">' +
         (stay.length ? '<div class="sub mb6">&#127976; Menginap: ' + stay.map(function (b) { return esc(b.title); }).join(', ') + '</div>' : '') +
-        (tot ? '<div class="sub mb4">Estimasi hari ini <b>' + rp(tot) + '</b>' + (Object.keys(fxm).length ? ' · ' + Object.keys(fxm).map(function (k) { return k + ' ' + fxs(P, fxm[k]); }).join(' · ') : '') + '</div>' : '') +
+        (tot ? '<div class="sub mb4">Estimasi hari ini <b>' + rp(tot) + '</b>' + (Object.keys(fxm).length ? ' · ' + Object.keys(fxm).map(function (k) { return esc(k.replace(/\s*\([A-Z]+\)$/, '')) + ' ' + esc(fxs(P, fxm[k].amt, fxm[k].c)); }).join(' · ') : '') + '</div>' : '') +
         (L.map(function (x) {
           return (
             '<div class="itm"><div class="tm">' + tmShow(x.time) + (x.time2 ? '<br>' + tmShow(x.time2) : '') + '</div><div><div class="ttl"' + (x.done ? ' style="text-decoration:line-through;opacity:.6"' : '') + '>' + esc(x.place) + '</div><div>' +
             (x.cat ? '<span class="chp" style="background:transparent;border:1px solid var(--ln)">' + esc(x.cat) + '</span>' : '') + pchip(x.pay) + lnk(x.link) + '</div>' + (x.note ? '<div class="sub">' + esc(x.note) + '</div>' : '') +
             '<div class="ac"><button class="g" data-itdone="' + x.id + '" aria-label="Tandai selesai">' + (x.done ? '&#9745; Selesai' : '&#9744; Selesai') + '</button>' +
             '<button class="g" data-ited="' + x.id + '">Ubah</button><button class="g d" data-itdel="' + x.id + '">Hapus</button></div></div>' +
-            '<div class="co">' + (x.est ? amtTxt(P, x.est, x.fx) : '') + '</div></div>'
+            '<div class="co">' + (x.est ? amtTxt(P, x) : '') + '</div></div>'
           );
         }).join('') || '<div class="sub">Belum ada kegiatan.</div>') + '</div>'
       );
@@ -18424,7 +19047,7 @@ function tripBook(P) {
           return (
             '<div class="itm" style="grid-template-columns:1fr auto"><div><div class="ttl">' + esc(x.title) + '</div><div>' + pchip(x.pay) + (x.a ? '<span class="sub">' + dShort(x.a) + (x.b ? ' – ' + dShort(x.b) : '') + '</span> ' : '') + lnk(x.link) +
             '</div><div class="ac jcfs"><button class="g" data-bkpay="' + x.id + '">' + (x.paid ? '&#9745; Lunas' : '&#9744; Tandai lunas') + '</button><button class="g" data-bked="' + x.id + '">Ubah</button><button class="g d" data-bkdel="' + x.id + '">Hapus</button></div></div>' +
-            '<div class="co">' + amtTxt(P, x.amt, x.fx, tripBkHasLock(x) ? x.rt : 0) + '</div></div>'
+            '<div class="co">' + amtTxt(P, x) + '</div></div>'
           );
         }).join('') + '</div>'
       );
@@ -19478,6 +20101,7 @@ function xlHeader(rows, name) {
 }
 function xlItin(rows, h, out) {
   var day = '', n = out.it.length;
+  out.curs = out.curs || [];
   for (var r = h.row + 1; r < rows.length; r++) {
     var row = rows[r] || [], dv = h.dateC != null ? xlDate(row[h.dateC]) : '', txt = String(row[h.textC] == null ? '' : row[h.textC]).trim(),
       tm = h.timeC != null ? xlTime(row[h.timeC]) : { a: '', b: '' }, cost = h.costC != null ? row[h.costC] : row[h.textC + 1], dm = /^day\s*\d+\s*[:\-–]?\s*(.*)$/i.exec(txt);
@@ -19494,10 +20118,15 @@ function xlItin(rows, h, out) {
       break;
     }
     if (!txt || !day || /^(sub)?total\b/i.test(txt)) continue;
-    var urls = txt.match(/https?:\/\/\S+/g) || [], place = txt.replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim(), payRaw = h.payC != null ? row[h.payC] : row[h.textC + 2], pay = xlPay(payRaw), amt = xlNum(cost), fx = false;
+    var urls = txt.match(/https?:\/\/\S+/g) || [], place = txt.replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim(), payRaw = h.payC != null ? row[h.payC] : row[h.textC + 2], pay = xlPay(payRaw), amt = xlNum(cost), fx = false, cuCode = '';
     if (h.curC != null) {
-      var cu = String(row[h.curC] || '').trim().toUpperCase();
-      if (cu && !/^(IDR|RP)$/.test(cu)) { fx = true; out.cur = out.cur || cu.slice(0, 3); }
+      var cu = String(row[h.curC] || '').trim().toUpperCase().slice(0, 3);
+      if (cu && !/^(IDR|RP)$/.test(cu)) {
+        fx = true;
+        cuCode = cu;
+        out.cur = out.cur || cu;
+        if (/^[A-Z]{3}$/.test(cu) && out.curs.indexOf(cu) < 0) out.curs.push(cu);
+      }
     } else if (amt) fx = amt >= 100000 && !/yen|¥|jpy/i.test(String(cost) + String(payRaw)) ? false : pay === 'ic' || pay === 'cash' || /yen|¥|jpy/i.test(String(cost) + String(payRaw)) ? true : pay === 'on' ? false : !!out.hintFx && amt < 100000;
     if (!fx && amt >= 100000 && h.curC == null && (!pay || pay === 'ic')) pay = 'on';
     if (fx && amt) out.fx = true;
@@ -19508,7 +20137,9 @@ function xlItin(rows, h, out) {
     }
     if (!place) place = urls[0] ? 'Lokasi (peta)' : txt.slice(0, 60);
     var ct = h.catC != null ? xlBcat(row[h.catC]) : '';
-    out.it.push({ id: 'i' + ++n, day: day, time: tm.a, time2: tm.b, place: place, cat: ct === 'Persiapan' || ct === 'Penginapan' || !ct ? (h.catC != null && /makan/i.test(row[h.catC]) ? 'Makan' : xlCat(txt)) : ct, est: Math.round(amt), fx: fx && amt > 0, pay: pay, link: h.linkC != null && /^https?:/.test(row[h.linkC]) ? String(row[h.linkC]).trim() : urls[0] || '', note: note, done: false, rec: '' });
+    var itRow = { id: 'i' + ++n, day: day, time: tm.a, time2: tm.b, place: place, cat: ct === 'Persiapan' || ct === 'Penginapan' || !ct ? (h.catC != null && /makan/i.test(row[h.catC]) ? 'Makan' : xlCat(txt)) : ct, est: Math.round(amt), fx: fx && amt > 0, pay: pay, link: h.linkC != null && /^https?:/.test(row[h.linkC]) ? String(row[h.linkC]).trim() : urls[0] || '', note: note, done: false, rec: '' };
+    if (fx && amt > 0 && cuCode) itRow._cu = cuCode;
+    out.it.push(itRow);
   }
 }
 /** Tabel "Pengeluaran" di bawah baris TOTAL pada sheet itinerary -> pemesanan (top-up Suica dilewati: sudah ada di biaya harian). */
@@ -19525,8 +20156,13 @@ function xlBlock(rows, h, from, out) {
   }
 }
 function xlBook(rows, h, out) {
-  var cat = 'Lainnya', n = out.bk.length, add = function (title, c, amt, fx, pay, paid, link) {
-    if (amt > 0) out.bk.push({ id: 'b' + ++n, title: title.slice(0, 120), cat: c, amt: Math.round(amt), fx: fx, pay: pay, link: link || '', a: '', b: '', paid: !!paid, rec: '' });
+  out.curs = out.curs || [];
+  var cat = 'Lainnya', n = out.bk.length, add = function (title, c, amt, fx, pay, paid, link, cuCode) {
+    if (amt > 0) {
+      var bkRow = { id: 'b' + ++n, title: title.slice(0, 120), cat: c, amt: Math.round(amt), fx: fx, pay: pay, link: link || '', a: '', b: '', paid: !!paid, rec: '' };
+      if (fx && cuCode) bkRow._cu = cuCode;
+      out.bk.push(bkRow);
+    }
     if (fx && amt > 0) out.fx = true;
   };
   for (var r = h.row + 1; r < rows.length; r++) {
@@ -19537,15 +20173,18 @@ function xlBook(rows, h, out) {
       if (cv && cv !== '&') cat = xlBcat(cv);
       add(title, cat, xlNum(row[h.idrC]), false, 'on', false);
     } else {
-      var cu = h.curC != null ? String(row[h.curC] || '').trim().toUpperCase() : '', fx = !!cu && !/^(IDR|RP)$/.test(cu);
-      if (fx) out.cur = out.cur || cu.slice(0, 3);
-      add(title, h.catC != null ? xlBcat(row[h.catC]) : 'Lainnya', xlNum(row[h.amtC]), fx, h.payC != null ? xlPay(row[h.payC]) : '', h.paidC != null && /^(ya|y|lunas|paid|1|true|sudah)/i.test(String(row[h.paidC]).trim()), h.linkC != null && /^https?:/.test(row[h.linkC]) ? String(row[h.linkC]).trim() : '');
+      var cu = h.curC != null ? String(row[h.curC] || '').trim().toUpperCase().slice(0, 3) : '', fx = !!cu && !/^(IDR|RP)$/.test(cu);
+      if (fx) {
+        out.cur = out.cur || cu;
+        if (/^[A-Z]{3}$/.test(cu) && out.curs.indexOf(cu) < 0) out.curs.push(cu);
+      }
+      add(title, h.catC != null ? xlBcat(row[h.catC]) : 'Lainnya', xlNum(row[h.amtC]), fx, h.payC != null ? xlPay(row[h.payC]) : '', h.paidC != null && /^(ya|y|lunas|paid|1|true|sudah)/i.test(String(row[h.paidC]).trim()), h.linkC != null && /^https?:/.test(row[h.linkC]) ? String(row[h.linkC]).trim() : '', fx ? cu : '');
     }
   }
 }
-/** Baca seluruh workbook menjadi data perjalanan. Mengembalikan {it, bk, dt, lk, start, end, cur, fx}. */
+/** Baca seluruh workbook menjadi data perjalanan. Mengembalikan {it, bk, dt, lk, start, end, cur, fx, curs, extras, error}. */
 function xlParse(wb) {
-  var out = { it: [], bk: [], dt: {}, lk: [], cur: '', fx: false, hintFx: false }, used = {}, seen = {};
+  var out = { it: [], bk: [], dt: {}, lk: [], cur: '', curs: [], extras: [], fx: false, hintFx: false, error: '' }, seen = {};
   wb.SheetNames.forEach(function (nm) {
     var rows = XLSX.utils.sheet_to_json(wb.Sheets[nm], { header: 1, raw: true, defval: '' });
     rows.forEach(function (row) { row.forEach(function (c) { if (/yen|suica|¥|jpy/i.test(String(c))) out.hintFx = true; }); });
@@ -19563,6 +20202,24 @@ function xlParse(wb) {
       });
     });
   });
+  var codes = (out.curs || []).slice();
+  out.cur = codes[0] || out.cur || '';
+  if (codes.length > 7) {
+    out.error = 'Terlalu banyak mata uang asing (maksimal 7 mata uang asing: 1 utama + 6 tambahan; ditemukan ' + codes.length + ').';
+  } else if (codes.length >= 2) {
+    out.extras = codes.slice(1);
+    out.it.forEach(function (x) {
+      if (x._cu && x._cu !== out.cur) x.c = x._cu;
+      delete x._cu;
+    });
+    out.bk.forEach(function (x) {
+      if (x._cu && x._cu !== out.cur) x.c = x._cu;
+      delete x._cu;
+    });
+  } else {
+    out.it.forEach(function (x) { delete x._cu; });
+    out.bk.forEach(function (x) { delete x._cu; });
+  }
   var ds = out.it.map(function (x) { return x.day; }).sort();
   out.start = ds[0] || '';
   out.end = ds[ds.length - 1] || '';
@@ -19573,10 +20230,11 @@ function xlSummaryText(d) {
   var a = 0, b = 0;
   (d.bk || []).forEach(function (x) { if (x.fx) b += x.amt; else a += x.amt; });
   (d.it || []).forEach(function (x) { if (x.pay === 'on') return; if (x.fx) b += x.est; else a += x.est; });
+  var curListTxt = (d.curs && d.curs.length > 1) ? (' Mata uang asing terdeteksi: ' + d.curs.join(', ') + ' (kurs mata uang tambahan dapat diisi di Ubah Perjalanan).') : '';
   return d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan, ' + Object.keys(d.dt || {}).length + ' judul hari' +
     (d.start ? ' · ' + fmtD(d.start) + ' – ' + fmtD(d.end) : '') + '.' +
     ' Perkiraan biaya: ' + rp(a) + (b ? ' + ' + b.toLocaleString('id-ID') + ' dalam mata uang asing' : '') + '.' +
-    (d.fx ? ' Isi kode dan kurs mata uang asing.' : '');
+    (d.fx ? ' Isi kode dan kurs mata uang asing utama.' : '') + curListTxt;
 }
 /** Validasi metadata profil sebelum membuat profil perjalanan dari Excel. */
 function xlValidateMeta(d, nama, curRaw, kursRaw) {
@@ -19584,6 +20242,8 @@ function xlValidateMeta(d, nama, curRaw, kursRaw) {
     cu = String(curRaw == null ? '' : curRaw).trim().toUpperCase(),
     rt = parseFloat(String(kursRaw == null ? '' : kursRaw).replace(',', '.')) || 0;
   if (!d) return { error: '' };
+  if (d.error) return { error: d.error };
+  if (d.curs && d.curs.length > 7) return { error: 'Maksimal 6 mata uang tambahan (total 7 kode asing).' };
   if (!n) return { error: 'Nama perjalanan belum diisi.' };
   if (d.fx && !cu) return { error: 'Ada biaya mata uang asing (mis. yen). Isi kodenya, misalnya JPY.' };
   if (cu && !/^[A-Z]{3}$/.test(cu)) return { error: 'Mata uang terdiri dari 3 huruf, mis. JPY.' };
@@ -19597,20 +20257,32 @@ function xlBuildProfile(d, nama, cur, kurs) {
   while (trips().some(function (x) { return x.name.toLowerCase() === nm.toLowerCase(); })) nm = base.slice(0, 26) + ' (' + k++ + ')';
   var id = 'p' + Date.now().toString(36);
   if (ALL && ALL.kas && ALL.kas.pr && ALL.kas.pr[id]) id = kid('p');
-  var re = function (a, p) { return (a || []).map(function (x) { return Object.assign({}, x, { id: kid(p) }); }); },
-    cu = String(cur == null ? '' : cur).trim().toUpperCase(),
+  var cu = String(cur == null ? '' : cur).trim().toUpperCase(),
     rt = parseFloat(String(kurs == null ? '' : kurs).replace(',', '.')) || 0;
-  return {
-    id: id,
-    profile: {
-      id: id, name: nm, saldo: 0, link: false,
-      start: d.start, end: d.end, budget: 0,
-      cur: cu, rate: cu ? rt : 0,
-      dt: d.dt, tx: [],
-      it: re(d.it, 'i'), bk: re(d.bk, 'b'), lk: re(d.lk, 'l'),
-      ck: [], note: '', goal: null,
-    },
+  var extrasClean = (Array.isArray(d.extras) ? d.extras : []).filter(function (ec) {
+    return ec && /^[A-Z]{3}$/.test(ec) && ec !== cu && ec !== 'IDR' && ec !== 'RP';
+  }).slice(0, 6);
+  var extraSet = {};
+  extrasClean.forEach(function (ec) { extraSet[ec] = 1; });
+  var re = function (a, p) {
+    return (a || []).map(function (x) {
+      var o = Object.assign({}, x, { id: kid(p) });
+      if (o.c && !extraSet[o.c]) delete o.c;
+      return o;
+    });
   };
+  var prof = {
+    id: id, name: nm, saldo: 0, link: false,
+    start: d.start, end: d.end, budget: 0,
+    cur: cu, rate: cu ? rt : 0,
+    dt: d.dt, tx: [],
+    it: re(d.it, 'i'), bk: re(d.bk, 'b'), lk: re(d.lk, 'l'),
+    ck: [], note: '', goal: null,
+  };
+  if (extrasClean.length) {
+    prof.fxs = extrasClean.map(function (ec) { return { c: ec, r: 0 }; });
+  }
+  return { id: id, profile: prof };
 }
 /** Bentuk workbook template Excel standar (dipakai desktop writeFile & APK rkDownloadBlob). */
 function xlBuildTemplateWb(X) {
@@ -19637,6 +20309,7 @@ function xlPick(e) {
     fr.onload = function () {
       try {
         var d = xlParse(X.read(fr.result, { type: 'array', cellDates: true }));
+        if (d.error) return toast(d.error);
         if (!d.it.length && !d.bk.length) return toast('Format tidak dikenali. Unduh Template Excel lalu isi sesuai kolomnya.');
         xlData = d;
         $('xls').textContent = xlSummaryText(d);
@@ -19676,6 +20349,7 @@ function xlCommit() {
 function xlTemplate() {
   loadXlsx().then(function (X) {
     X.writeFile(xlBuildTemplateWb(X), 'template-itinerary.xlsx');
+    toast('Template Excel diunduh');
   }).catch(function (x) { toast(x.message); });
 }
 
@@ -19763,7 +20437,7 @@ function tripPdfData(P, cost) {
     var rows = [];
     its.forEach(function (x) {
       var jam = tmFn(x.time) + (x.time2 ? '–' + tmFn(x.time2) : ''),
-        biaya = cost && x.est ? amtFn(P, x.est, x.fx) : '',
+        biaya = cost && x.est ? amtFn(P, x) : '',
         safeLnk = x.link && typeof safeHref === 'function' ? safeHref(x.link) : '',
         cells = tripWrapPdfText(x.place || '-', itMaxW, false);
       if (x.link) {
@@ -19787,7 +20461,7 @@ function tripPdfData(P, cost) {
     P.bk.forEach(function (x) {
       var tLines = tripWrapPdfText(x.title || '-', bkMaxW, false),
         stTxt = x.paid ? 'Lunas' : 'Belum',
-        bTxt = cost ? amtFn(P, x.amt, x.fx) : '';
+        bTxt = cost ? amtFn(P, x) : '';
       tLines.forEach(function (ln, idx) {
         bkRows.push(cost ? [ln, idx === 0 ? stTxt : '', idx === 0 ? bTxt : ''] : [ln, idx === 0 ? stTxt : '']);
       });
@@ -19821,19 +20495,37 @@ function tripPdfData(P, cost) {
   if (cost) {
     summary = summary.concat([['Total Rencana Biaya', rp(pl.t)], ['Sudah Dibayar', rp(pl.paid)]]);
     var spPdf = tripFxSplit(P);
-    if (spPdf.hasFx && !spPdf.noRate) {
-      summary = summary.concat([
-        ['Rupiah', rp(spPdf.idr)],
-        ['Mata uang asing', rp(spPdf.fxIdr) + ' (' + fxs(P, spPdf.fxAmt) + ')'],
-      ]);
+    if (spPdf.hasFx) {
+      if (!tripMultiCurOn(P) && spPdf.by.length <= 1) {
+        if (!spPdf.noRate) {
+          summary = summary.concat([
+            ['Rupiah', rp(spPdf.idr)],
+            ['Mata uang asing', rp(spPdf.fxIdr) + ' (' + fxs(P, spPdf.fxAmt) + ')'],
+          ]);
+        }
+      } else {
+        summary.push(['Rupiah', rp(spPdf.idr)]);
+        spPdf.by.forEach(function (b) {
+          summary.push([
+            'Mata uang asing ' + b.c,
+            b.noRate ? (fxs(P, b.amt, b.c) + ' (kurs belum diatur)') : (rp(b.idr) + ' (' + fxs(P, b.amt, b.c) + ')'),
+          ]);
+        });
+      }
     }
   }
   return { filename: tripSafePdfFilename(P.name), title: P.name || 'Itinerary Perjalanan', subtitle: subParts.join(' · '), summary: summary, tables: tables };
 }
 
 /* ===== Bagikan itinerary ===== */
-function amtPlain(P, v, fx) {
-  return fx && P.cur ? P.cur + ' ' + Math.round(v).toLocaleString('id-ID') : rp(v);
+function amtPlain(P, v, fx, curOpt) {
+  if (v && typeof v === 'object') {
+    var num = +(v.amt != null ? v.amt : v.est) || 0;
+    var cObj = v.fx ? tripItemCur(P, v) : '';
+    return cObj ? cObj + ' ' + Math.round(num).toLocaleString('id-ID') : rp(num);
+  }
+  var c = curOpt || ((P && P.cur) || '');
+  return fx && c ? c + ' ' + Math.round(v).toLocaleString('id-ID') : rp(v);
 }
 /** Teks itinerary siap kirim (format tebal ala WhatsApp). */
 function tripText(P, cost) {
@@ -19845,24 +20537,39 @@ function tripText(P, cost) {
     if (!its.length && !P.dt[d]) return;
     L.push('*' + dayLabel(P, d) + '*' + (P.dt[d] ? ' — ' + P.dt[d] : ''));
     its.forEach(function (x) {
-      L.push('• ' + (x.time ? tmShow(x.time) + (x.time2 ? '–' + tmShow(x.time2) : '') + ' ' : '') + x.place + (cost && x.est ? ' (' + amtPlain(P, x.est, x.fx) + ')' : '') + (x.link ? '\n   ' + x.link : '') + (x.note ? '\n   ' + x.note : ''));
+      L.push('• ' + (x.time ? tmShow(x.time) + (x.time2 ? '–' + tmShow(x.time2) : '') + ' ' : '') + x.place + (cost && x.est ? ' (' + amtPlain(P, x) + ')' : '') + (x.link ? '\n   ' + x.link : '') + (x.note ? '\n   ' + x.note : ''));
     });
     L.push('');
   });
   if (P.bk.length) {
     L.push('*Pemesanan*');
-    P.bk.forEach(function (b) { L.push('• ' + b.title + (cost ? ' (' + amtPlain(P, b.amt, b.fx) + ')' : '') + (b.paid ? ' ✓' : '')); });
+    P.bk.forEach(function (b) { L.push('• ' + b.title + (cost ? ' (' + amtPlain(P, b) + ')' : '') + (b.paid ? ' ✓' : '')); });
     L.push('');
   }
   if (cost) {
     var spTxt = tripFxSplit(P);
-    if (spTxt.hasFx && !spTxt.noRate) {
+    if (spTxt.hasFx) {
       var plTxt = tripPlan(P);
-      L.push('*Rencana Biaya*');
-      L.push('• Total: ' + rp(plTxt.t));
-      L.push('• Rupiah: ' + rp(spTxt.idr));
-      L.push('• Asing: ' + rp(spTxt.fxIdr) + ' (≈ ' + fxs(P, spTxt.fxAmt) + ')');
-      L.push('');
+      if (!tripMultiCurOn(P) && spTxt.by.length <= 1) {
+        if (!spTxt.noRate) {
+          L.push('*Rencana Biaya*');
+          L.push('• Total: ' + rp(plTxt.t));
+          L.push('• Rupiah: ' + rp(spTxt.idr));
+          L.push('• Asing: ' + rp(spTxt.fxIdr) + ' (≈ ' + fxs(P, spTxt.fxAmt) + ')');
+          L.push('');
+        }
+      } else {
+        L.push('*Rencana Biaya*');
+        L.push('• Total: ' + rp(plTxt.t));
+        L.push('• Rupiah: ' + rp(spTxt.idr));
+        spTxt.by.forEach(function (b) {
+          L.push(
+            '• Asing ' + b.c + ': ' +
+            (b.noRate ? (fxs(P, b.amt, b.c) + ' (Kurs ' + b.c + ' belum diatur)') : (rp(b.idr) + ' (≈ ' + fxs(P, b.amt, b.c) + ')'))
+          );
+        });
+        L.push('');
+      }
     }
   }
   if (P.lk.length) {
@@ -19880,10 +20587,10 @@ function tripPrintHtml(P, cost) {
     if (!its.length && !P.dt[d]) return;
     b += '<h2>' + esc(dayLabel(P, d)) + (P.dt[d] ? ' — ' + esc(P.dt[d]) : '') + '</h2><table>' + its.map(function (x) {
       var sl = x.link && typeof safeHref === 'function' ? safeHref(x.link) : '';
-      return '<tr><td class="t">' + esc(tmShow(x.time) + (x.time2 ? '–' + tmShow(x.time2) : '')) + '</td><td>' + esc(x.place) + (sl ? '<br><a href="' + esc(sl) + '">' + esc(x.link) + '</a>' : (x.link ? '<br><small>' + esc(x.link) + '</small>' : '')) + (x.note ? '<br><small>' + esc(x.note) + '</small>' : '') + '</td>' + (cost ? '<td class="c">' + (x.est ? esc(amtPlain(P, x.est, x.fx)) : '') + '</td>' : '') + '</tr>';
+      return '<tr><td class="t">' + esc(tmShow(x.time) + (x.time2 ? '–' + tmShow(x.time2) : '')) + '</td><td>' + esc(x.place) + (sl ? '<br><a href="' + esc(sl) + '">' + esc(x.link) + '</a>' : (x.link ? '<br><small>' + esc(x.link) + '</small>' : '')) + (x.note ? '<br><small>' + esc(x.note) + '</small>' : '') + '</td>' + (cost ? '<td class="c">' + (x.est ? esc(amtPlain(P, x)) : '') + '</td>' : '') + '</tr>';
     }).join('') + '</table>';
   });
-  if (P.bk.length) b += '<h2>Pemesanan</h2><table>' + P.bk.map(function (x) { return '<tr><td>' + esc(x.title) + (x.paid ? ' <small>(lunas)</small>' : '') + '</td>' + (cost ? '<td class="c">' + esc(amtPlain(P, x.amt, x.fx)) + '</td>' : '') + '</tr>'; }).join('') + '</table>';
+  if (P.bk.length) b += '<h2>Pemesanan</h2><table>' + P.bk.map(function (x) { return '<tr><td>' + esc(x.title) + (x.paid ? ' <small>(lunas)</small>' : '') + '</td>' + (cost ? '<td class="c">' + esc(amtPlain(P, x)) + '</td>' : '') + '</tr>'; }).join('') + '</table>';
   if (P.lk.length) b += '<h2>Tautan penting</h2>' + P.lk.map(function (l) { var lu = typeof safeHref === 'function' ? safeHref(l.url) : ''; return '<div>' + esc(l.title) + ': ' + (lu ? '<a href="' + esc(lu) + '">' + esc(l.url) + '</a>' : esc(l.url)) + '</div>'; }).join('');
   return '<!doctype html><html lang="id"><head><meta charset="utf-8"><title>' + esc(P.name) + '</title><style>' + css + '</style></head><body>' + b + '</body></html>';
 }
@@ -22883,6 +23590,7 @@ function brOpenModal(id) {
 function brCloseModal(id) {
   var el = $(id);
   if (!el) return;
+  if (typeof closeAllPickersAndMenus === 'function') closeAllPickersAndMenus(null);
   if (id === 'modal-trip-xl') BR_STATE.xlPending = null;
   var wasOpen = el.classList.contains('open') && el.offsetWidth > 0 && !rkIsReducedMotion();
   el.classList.remove('open');
@@ -22978,9 +23686,13 @@ function syncModernSelect(selOrId, forceDisplay) {
       e.stopPropagation();
       sel.value = btn.dataset.val;
       wrap.classList.remove('open');
-      wrap.querySelector('.mselect-trigger').setAttribute('aria-expanded', 'false');
+      var trBtn = wrap.querySelector('.mselect-trigger');
+      if (trBtn) trBtn.setAttribute('aria-expanded', 'false');
+      menu.style.position = ''; menu.style.top = ''; menu.style.left = ''; menu.style.right = '';
+      menu.style.width = ''; menu.style.minWidth = ''; menu.style.maxWidth = ''; menu.style.maxHeight = ''; menu.style.zIndex = '';
       syncModernSelect(sel);
       sel.dispatchEvent(new Event('change', { bubbles: true }));
+      if (trBtn && typeof trBtn.focus === 'function') { try { trBtn.focus({ preventScroll: true }); } catch (err) {} }
     };
   });
 }
@@ -23018,14 +23730,15 @@ function enhanceSelect(sel) {
     mn.style.maxHeight = '';
     mn.style.zIndex = '';
   }
-  trig.onclick = function (e) {
-    e.stopPropagation();
-    var willOpen = !wrap.classList.contains('open');
+  function setMsOpen(willOpen, restoreFocus) {
     closeAllPickersAndMenus(willOpen ? wrap : null);
-    wrap.classList.toggle('open', willOpen);
-    trig.setAttribute('aria-expanded', String(willOpen));
+    wrap.classList.toggle('open', !!willOpen);
+    trig.setAttribute('aria-expanded', String(!!willOpen));
     if (!willOpen) {
       resetMselectMenuStyle(menu);
+      if (restoreFocus && typeof trig.focus === 'function') {
+        try { trig.focus({ preventScroll: true }); } catch (err) {}
+      }
       return;
     }
     if (typeof window !== 'undefined') {
@@ -23054,7 +23767,48 @@ function enhanceSelect(sel) {
         menu.classList.toggle('align-right', r.left + 235 > window.innerWidth - 14);
       }
     }
+  }
+  trig.onclick = function (e) {
+    e.stopPropagation();
+    setMsOpen(!wrap.classList.contains('open'), false);
   };
+  wrap.addEventListener('keydown', function (e) {
+    var k = e.key, isOpen = wrap.classList.contains('open'),
+      optBtns = [].slice.call(menu.querySelectorAll('.mselect-opt'));
+    if (k === 'Escape' && isOpen) {
+      e.preventDefault();
+      e.stopPropagation();
+      setMsOpen(false, true);
+      return;
+    }
+    if (k === 'Tab' && isOpen) {
+      setMsOpen(false, false);
+      return;
+    }
+    if (k === 'ArrowDown' || k === 'ArrowUp') {
+      e.preventDefault();
+      if (!isOpen) {
+        setMsOpen(true, false);
+        var actBtn = menu.querySelector('.mselect-opt.active') || optBtns[0];
+        if (actBtn && typeof actBtn.focus === 'function') { try { actBtn.focus({ preventScroll: true }); } catch (err) {} }
+      } else if (optBtns.length) {
+        var curIdx = optBtns.indexOf(document.activeElement);
+        var nextIdx = curIdx < 0 ? 0 : (k === 'ArrowDown' ? (curIdx + 1) % optBtns.length : (curIdx - 1 + optBtns.length) % optBtns.length);
+        try { optBtns[nextIdx].focus({ preventScroll: true }); } catch (err) {}
+      }
+      return;
+    }
+    if ((k === 'Enter' || k === ' ') && document.activeElement === trig) {
+      e.preventDefault();
+      setMsOpen(!isOpen, !isOpen ? false : true);
+      return;
+    }
+    if ((k === 'Enter' || k === ' ') && document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('mselect-opt')) {
+      e.preventDefault();
+      e.stopPropagation();
+      document.activeElement.click();
+    }
+  });
   sel.addEventListener('change', function () { syncModernSelect(sel); });
   syncModernSelect(sel);
 }
@@ -24694,20 +25448,24 @@ function brDrawInlineCal(popId, stateKey, lblId) {
 function tripAmtRp(P, x) {
   return typeof tripBkRp === 'function' ? tripBkRp(P, x) : (typeof val === 'function' ? val(P, x.amt, x.fx) : (+x.amt || 0));
 }
-function tripItRp(P, x) {
-  return typeof val === 'function' ? val(P, x.est, x.fx) : (+x.est || 0);
-}
+var tripItRp = typeof tripItRp === 'function' ? tripItRp : function tripItRp(P, x) {
+  if (!x) return 0;
+  return (+x.est || 0) * (typeof tripItemRate === 'function' ? tripItemRate(P, x) : (typeof val === 'function' ? (x.fx ? (x.rt > 0 ? x.rt : (+(P && P.rate) || 0)) : 1) : 1));
+};
 function tripDayLabel(P, d) {
   return typeof dayLabel === 'function' ? dayLabel(P, d) : fmtD(d);
 }
 function brSyncTripEqPrev() {
   var tr = tp();
-  if (typeof tripSyncEqPairs === 'function') {
+  var eIt = tr && BR_STATE.tripEditItId ? (tr.it || []).filter(function (x) { return x.id === BR_STATE.tripEditItId; })[0] : null;
+  if (typeof tripSyncItemRateField === 'function') {
+    tripSyncItemRateField(tr, eIt, 'it-est', 'it-cur', 'it-est-eq', 'it-rt-wrap', 'it-rt', false);
+  } else if (typeof tripSyncEqPairs === 'function') {
     tripSyncEqPairs(tr, [['it-est', 'it-cur', 'it-est-eq']]);
   }
   var eBk = tr && BR_STATE.tripEditBkId ? (tr.bk || []).filter(function (x) { return x.id === BR_STATE.tripEditBkId; })[0] : null;
-  if (typeof tripSyncBkRateField === 'function') {
-    tripSyncBkRateField(tr, eBk, 'bk-amt', 'bk-cur', 'bk-amt-eq', 'bk-rt-wrap', 'bk-rt');
+  if (typeof tripSyncItemRateField === 'function') {
+    tripSyncItemRateField(tr, eBk, 'bk-amt', 'bk-cur', 'bk-amt-eq', 'bk-rt-wrap', 'bk-rt', true);
   } else if (typeof tripSyncEqPairs === 'function') {
     tripSyncEqPairs(tr, [['bk-amt', 'bk-cur', 'bk-amt-eq']]);
   }
@@ -24771,10 +25529,12 @@ function renderTrip() {
       '<div class="metric-tile"><div class="metric-tile-label">Rencana per Hari</div><div class="metric-tile-val pv">' + (N ? rp(Math.round(pl.t / N)) : '—') + '</div><div class="metric-tile-hint">' + (N ? N + ' hari' : 'Tanggal belum diisi') + (tr.cur && tr.rate ? ' · 1 ' + esc(tr.cur) + ' = Rp ' + tr.rate.toLocaleString('id-ID') : '') + '</div></div></div>' +
       '<div class="grid-2"><div class="stack"><div class="card"><div class="card-header"><div><h2 class="card-title">Siapkan Tunai / Kartu</h2><p class="card-sub">Akumulasi kebutuhan bayar di tempat</p></div></div><div class="simple-list">' +
       (ck.length ? ck.map(function (k) {
-        var cx = pl.cash[k], eqRp = cx.idr + (cx.fx && tr.rate ? Math.round(cx.fx * tr.rate) : 0);
-        return '<div class="simple-row" style="cursor:default;"><span class="simple-row-name">' + esc(k) + '</span><span class="mono pv" style="font-size:0.8rem;font-weight:700;">' + (cx.fx ? esc(tr.cur) + ' ' + Math.round(cx.fx).toLocaleString('id-ID') : rp(cx.idr)) + '</span><span class="simple-row-amt pv">' + (cx.fx ? (tr.rate ? '≈ ' + rp(eqRp) : (cx.idr ? rp(cx.idr) : '—')) : rp(eqRp)) + '</span></div>';
+        var cx = pl.cash[k];
+        if (typeof tripCashRowHtml === 'function') return tripCashRowHtml(tr, k, cx, false);
+        var eqRp = Math.round(cx.idr + (cx.fxRp != null ? cx.fxRp : (cx.fx && tr.rate ? cx.fx * tr.rate : 0)));
+        return '<div class="simple-row" style="cursor:default;"><span class="simple-row-name">' + esc(k) + '</span><span class="mono pv" style="font-size:0.8rem;font-weight:700;">' + (cx.fx ? esc(tr.cur) + ' ' + Math.round(cx.fx).toLocaleString('id-ID') : rp(cx.idr)) + '</span><span class="simple-row-amt pv">' + (cx.fx ? (cx.fxRp > 0 ? '≈ ' + rp(eqRp) : (cx.idr ? rp(cx.idr) : '—')) : rp(eqRp)) + '</span></div>';
       }).join('') : '<div style="padding:14px;color:var(--text-muted);font-size:0.82rem;">Belum ada pengeluaran tunai/kartu harian di Itinerary.</div>') +
-      '</div></div><div class="card"><div class="card-header"><div><h2 class="card-title">Estimasi per Hari</h2><p class="card-sub">Pengeluaran non-online dihitung dari jadwal kegiatan</p></div></div><div class="simple-list">' +
+      '</div></div>' + (typeof tripFxDetailCardHtml === 'function' ? tripFxDetailCardHtml(tr, false) : '') + '<div class="card"><div class="card-header"><div><h2 class="card-title">Estimasi per Hari</h2><p class="card-sub">Pengeluaran non-online dihitung dari jadwal kegiatan</p></div></div><div class="simple-list">' +
       (dk.length ? dk.map(function (d) { return '<div class="simple-row" style="cursor:default;"><span class="simple-row-name">' + esc(tripDayLabel(tr, d)) + '</span><span class="simple-row-bar"><i style="width:' + ((byDay[d] / dmax) * 100).toFixed(1) + '%;background:var(--accent);"></i></span><span class="simple-row-amt pv">' + rp(byDay[d]) + '</span></div>'; }).join('') : '<div style="padding:14px;color:var(--text-muted);font-size:0.82rem;">Belum ada estimasi harian.</div>') +
       '</div></div></div><div class="card"><div class="card-header"><div><h2 class="card-title">Rencana Biaya per Kategori</h2><p class="card-sub">Gabungan pemesanan + pengeluaran harian</p></div><span class="badge badge-neutral mono pv">' + rp(pl.t) + '</span></div><div class="simple-list">' +
       (cl.length ? cl.map(function (k) {
@@ -24792,9 +25552,10 @@ function renderTrip() {
       '<div class="field"><span class="field-label">Tanggal</span><div class="custom-picker-wrap"><button type="button" class="cal-trigger-btn" style="width:100%;justify-content:space-between;" data-ical-trig="it-day-cal|itDay|it-day-lbl"><span id="it-day-lbl">' + brFmtShortIndo(BR_STATE.inlineDates.itDay) + ' ' + BR_STATE.inlineDates.itDay.slice(0, 4) + '</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button><div class="picker-popover" id="it-day-cal"></div></div></div>' +
       '<div class="grid-2" style="gap:8px;"><div class="field"><label class="field-label" for="it-t1">Mulai</label><input class="input mono" id="it-t1" placeholder="14.00" value="' + esc(EIt ? (EIt.time || '').replace(':', '.') : '') + '"/></div><div class="field"><label class="field-label" for="it-t2">Selesai</label><input class="input mono" id="it-t2" placeholder="16.30" value="' + esc(EIt ? (EIt.time2 || '').replace(':', '.') : '') + '"/></div></div>' +
       '<div class="field"><label class="field-label" for="it-place">Kegiatan</label><input class="input" id="it-place" placeholder="mis. Senso-ji Temple" value="' + esc(EIt ? EIt.place : '') + '" required/></div></div>' +
-      '<div class="grid-3"><div class="field"><label class="field-label" for="it-est">Biaya &amp; Mata Uang</label><div style="display:flex;gap:6px;"><input class="input mono" id="it-est" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EIt && EIt.est ? fmtRpInputStr(String(EIt.est)) : '') + '" style="flex:1;min-width:0;"/><div style="width:94px;flex-shrink:0;"><select class="input" id="it-cur"><option value="idr"' + (!(EIt && EIt.fx) ? ' selected' : '') + '>Rp</option>' + (tr.cur ? '<option value="fx"' + ((EIt && EIt.fx) ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : '') + '</select></div></div><div class="trip-eq-hint mono" id="it-est-eq"></div></div>' +
+      '<div class="grid-3"><div class="field"><label class="field-label" for="it-est">Biaya &amp; Mata Uang</label><div style="display:flex;gap:6px;"><input class="input mono" id="it-est" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EIt && EIt.est ? fmtRpInputStr(String(EIt.est)) : '') + '" style="flex:1;min-width:0;"/><div style="width:94px;flex-shrink:0;"><select class="input" id="it-cur">' + (typeof tripCurSelectOptsHtml === 'function' ? tripCurSelectOptsHtml(tr, EIt) : ('<option value="idr"' + (!(EIt && EIt.fx) ? ' selected' : '') + '>Rp</option>' + (tr.cur ? '<option value="fx"' + ((EIt && EIt.fx) ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : ''))) + '</select></div></div><div class="trip-eq-hint mono" id="it-est-eq"></div></div>' +
       '<div class="field"><label class="field-label" for="it-pay">Pembayaran</label><select class="input" id="it-pay"><option value=""' + (EIt && !EIt.pay ? ' selected' : '') + '>Belum ditentukan</option><option value="ic"' + (EIt && EIt.pay === 'ic' ? ' selected' : '') + '>Kartu IC</option><option value="on"' + (EIt && EIt.pay === 'on' ? ' selected' : '') + '>Online (Pemesanan)</option><option value="cash"' + (!EIt || EIt.pay === 'cash' ? ' selected' : '') + '>Cash</option></select></div>' +
       '<div class="field"><label class="field-label" for="it-cat">Kategori</label><select class="input" id="it-cat">' + ICAT.map(function (c) { return '<option value="' + esc(c) + '"' + ((EIt ? EIt.cat : 'Transport') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div></div>' +
+      '<div class="field" id="it-rt-wrap" style="display:' + (EIt && EIt.fx && (typeof tripItemCur === 'function' ? tripItemCur(tr, EIt) : tr.cur) ? '' : 'none') + ';"><label class="field-label" for="it-rt">Kurs (Rp per 1 ' + esc((EIt && typeof tripItemCur === 'function' ? tripItemCur(tr, EIt) : tr.cur) || 'asing') + ')</label><input class="input mono" id="it-rt" type="text" inputmode="decimal" placeholder="' + (tr.rate > 0 ? 'Ikut kurs perjalanan: ' + esc(tr.rate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + (EIt && typeof tripHasValidRt === 'function' && tripHasValidRt(EIt) ? esc(String(EIt.rt)) : '') + '"/><div class="card-sub">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div>' +
       '<div class="grid-2"><div class="field"><label class="field-label" for="it-link">Tautan Peta / Tiket (opsional)</label><input class="input" id="it-link" placeholder="https://..." value="' + esc(EIt ? (EIt.link || '') : '') + '"/></div><div class="field"><label class="field-label" for="it-note">Catatan (opsional)</label><input class="input" id="it-note" placeholder="Catatan singkat" value="' + esc(EIt ? (EIt.note || '') : '') + '"/></div></div>' +
       '<div style="display:flex;justify-content:flex-end;gap:8px;">' + (EIt ? '<button type="button" class="btn btn-secondary" data-it-cancel="1">Batal</button>' : '') + '<button type="submit" class="btn btn-primary">' + (EIt ? 'Simpan Perubahan' : 'Tambah Kegiatan') + '</button></div></form></div>' +
       '<div class="stack">' + (days.length ? days.map(function (d) {
@@ -24803,10 +25564,10 @@ function renderTrip() {
         return '<div class="card"><div class="card-header" style="margin-bottom:10px;"><div><h3 class="card-title">' + esc(tripDayLabel(tr, d)) + '</h3></div>' + (dTot ? '<span class="badge badge-accent mono pv">Estimasi: ' + rp(dTot) + '</span>' : '') + '</div>' +
           '<input class="input" style="margin-bottom:10px;" value="' + esc((tr.dt && tr.dt[d]) || '') + '" placeholder="Judul hari, mis. Jakarta – Tokyo" data-dt-day="' + d + '"/>' +
           '<div class="stack" style="gap:8px;">' + (its.length ? its.map(function (x) {
-            return '<div class="upcoming-item"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) +
+            return '<div class="upcoming-item" data-it-row="' + esc(x.id) + '"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) +
               '<div style="min-width:0;"><div class="upcoming-name" style="' + (x.done ? 'text-decoration:line-through;opacity:0.55;' : '') + '">' + (x.time ? '<span class="mono" style="color:var(--accent-ink);margin-right:6px;">' + esc(x.time.replace(':', '.')) + (x.time2 ? '–' + esc(x.time2.replace(':', '.')) : '') + '</span>' : '') + esc(x.place) + '</div>' +
               '<div class="upcoming-meta"><span class="badge badge-neutral">' + esc(x.cat) + '</span>' + (x.pay ? '<span class="badge badge-accent">' + esc(PAYL[x.pay] || x.pay) + '</span>' : '') + (x.note ? '<span>' + esc(x.note) + '</span>' : '') + '</div></div></div>' +
-              '<div class="upcoming-right">' + (typeof tripItemAmtHtml === 'function' ? tripItemAmtHtml(tr, x.est, x.fx) : ('<strong class="mono pv">' + (x.est ? (x.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(x.est).toLocaleString('id-ID') : rp(x.est)) : '') + '</strong>')) +
+              '<div class="upcoming-right">' + (typeof tripItemAmtHtml === 'function' ? tripItemAmtHtml(tr, x) : ('<strong class="mono pv">' + (x.est ? (x.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(x.est).toLocaleString('id-ID') : rp(x.est)) : '') + '</strong>')) +
               '<button type="button" class="btn btn-secondary btn-sm" data-it-done="' + esc(x.id) + '">' + (x.done ? '✓ Selesai' : 'Tandai') + '</button>' +
               '<button type="button" class="btn btn-secondary btn-sm" data-trip-it-edit="' + esc(x.id) + '">Ubah</button>' +
               '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);" data-trip-it-del="' + esc(x.id) + '">Hapus</button></div></div>';
@@ -24820,15 +25581,15 @@ function renderTrip() {
       '<div class="grid-3"><div class="metric-tile"><div class="metric-tile-label">Total Pemesanan</div><div class="metric-tile-val pv">' + rp(pl.b) + '</div></div><div class="metric-tile"><div class="metric-tile-label">Sudah Dibayar</div><div class="metric-tile-val pv" style="color:var(--emerald);">' + rp(pl.paid) + '</div></div><div class="metric-tile"><div class="metric-tile-label">Belum Dibayar</div><div class="metric-tile-val pv" style="color:var(--amber);">' + rp(pl.b - pl.paid) + '</div></div></div>' +
       '<div class="card"><div class="card-header"><div><h2 class="card-title">' + (EBk ? 'Ubah Pemesanan' : 'Tambah Pemesanan') + '</h2><p class="card-sub">Tiket pesawat, hotel, kereta, dan tur prabayar</p></div></div>' +
       '<form id="trip-book-form" class="stack" style="gap:12px;" novalidate><div class="grid-2"><div class="field"><label class="field-label" for="bk-title">Nama</label><input class="input" id="bk-title" placeholder="mis. Tiket Pesawat ANA PP" value="' + esc(EBk ? EBk.title : '') + '" required/></div>' +
-      '<div class="field"><label class="field-label" for="bk-amt">Jumlah</label><div style="display:flex;gap:6px;"><input class="input mono" id="bk-amt" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EBk && EBk.amt ? fmtRpInputStr(String(EBk.amt)) : '') + '" style="flex:1;min-width:0;" required/><div style="width:94px;flex-shrink:0;"><select class="input" id="bk-cur"><option value="idr"' + (!(EBk && EBk.fx) ? ' selected' : '') + '>Rp</option>' + (tr.cur ? '<option value="fx"' + ((EBk && EBk.fx) ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : '') + '</select></div></div><div class="trip-eq-hint mono" id="bk-amt-eq"></div></div></div>' +
-      '<div class="field" id="bk-rt-wrap" style="display:' + (EBk && EBk.paid && EBk.fx && tr.cur ? '' : 'none') + ';"><label class="field-label" for="bk-rt">Kurs saat dibayar (Rp per 1 ' + esc(tr.cur || 'asing') + ')</label><input class="input mono" id="bk-rt" type="text" inputmode="decimal" placeholder="Kosong = ikut kurs perjalanan" value="' + (EBk && typeof tripBkHasLock === 'function' && tripBkHasLock(EBk) ? esc(String(EBk.rt)) : '') + '"/><div class="trip-eq-hint">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div>' +
+      '<div class="field"><label class="field-label" for="bk-amt">Jumlah</label><div style="display:flex;gap:6px;"><input class="input mono" id="bk-amt" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EBk && EBk.amt ? fmtRpInputStr(String(EBk.amt)) : '') + '" style="flex:1;min-width:0;" required/><div style="width:94px;flex-shrink:0;"><select class="input" id="bk-cur">' + (typeof tripCurSelectOptsHtml === 'function' ? tripCurSelectOptsHtml(tr, EBk) : ('<option value="idr"' + (!(EBk && EBk.fx) ? ' selected' : '') + '>Rp</option>' + (tr.cur ? '<option value="fx"' + ((EBk && EBk.fx) ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : ''))) + '</select></div></div><div class="trip-eq-hint mono" id="bk-amt-eq"></div></div></div>' +
+      '<div class="field" id="bk-rt-wrap" style="display:' + (EBk && EBk.fx && (typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) ? '' : 'none') + ';"><label class="field-label" for="bk-rt">Kurs' + (EBk && EBk.paid ? ' saat dibayar' : '') + ' (Rp per 1 ' + esc((EBk && typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) || 'asing') + ')</label><input class="input mono" id="bk-rt" type="text" inputmode="decimal" placeholder="' + (tr.rate > 0 ? 'Ikut kurs perjalanan: ' + esc(tr.rate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + (EBk && typeof tripHasValidRt === 'function' && tripHasValidRt(EBk) ? esc(String(EBk.rt)) : '') + '"/><div class="card-sub">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div>' +
       '<div class="grid-3"><div class="field"><span class="field-label">Mulai / Check-in</span><div class="custom-picker-wrap"><button type="button" class="cal-trigger-btn" style="width:100%;justify-content:space-between;" data-ical-trig="bk-start-cal|bkStart|bk-start-lbl"><span id="bk-start-lbl">' + brFmtShortIndo(BR_STATE.inlineDates.bkStart) + ' ' + BR_STATE.inlineDates.bkStart.slice(0, 4) + '</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button><div class="picker-popover" id="bk-start-cal"></div></div></div>' +
       '<div class="field"><span class="field-label">Selesai / Check-out</span><div class="custom-picker-wrap"><button type="button" class="cal-trigger-btn" style="width:100%;justify-content:space-between;" data-ical-trig="bk-end-cal|bkEnd|bk-end-lbl"><span id="bk-end-lbl">' + brFmtShortIndo(BR_STATE.inlineDates.bkEnd) + ' ' + BR_STATE.inlineDates.bkEnd.slice(0, 4) + '</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button><div class="picker-popover" id="bk-end-cal"></div></div></div>' +
       '<div class="field"><label class="field-label" for="bk-cat">Kategori</label><select class="input" id="bk-cat">' + BCAT.map(function (c) { return '<option value="' + esc(c) + '"' + ((EBk ? EBk.cat : 'Transport') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div></div>' +
       '<div style="display:flex;justify-content:flex-end;gap:8px;">' + (EBk ? '<button type="button" class="btn btn-secondary" data-bk-cancel="1">Batal</button>' : '') + '<button type="submit" class="btn btn-primary">' + (EBk ? 'Simpan Perubahan' : 'Tambah Pemesanan') + '</button></div></form></div>' +
       '<div class="card"><div class="stack" style="gap:8px;">' + ((tr.bk || []).length ? tr.bk.map(function (x) {
-        return '<div class="upcoming-item"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) + '<div><div class="upcoming-name">' + esc(x.title) + '</div><div class="upcoming-meta"><span class="badge badge-neutral">' + esc(x.cat) + '</span>' + (x.a ? '<span class="badge badge-neutral">' + brFmtShortIndo(x.a) + (x.b ? ' – ' + brFmtShortIndo(x.b) : '') + '</span>' : '') + '</div></div></div>' +
-          '<div class="upcoming-right">' + (typeof tripItemAmtHtml === 'function' ? tripItemAmtHtml(tr, x.amt, x.fx, '', '', typeof tripBkHasLock === 'function' && tripBkHasLock(x) ? x.rt : 0) : ('<strong class="mono pv">' + rp(tripAmtRp(tr, x)) + '</strong>')) +
+        return '<div class="upcoming-item" data-bk-row="' + esc(x.id) + '"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) + '<div><div class="upcoming-name">' + esc(x.title) + '</div><div class="upcoming-meta"><span class="badge badge-neutral">' + esc(x.cat) + '</span>' + (x.a ? '<span class="badge badge-neutral">' + brFmtShortIndo(x.a) + (x.b ? ' – ' + brFmtShortIndo(x.b) : '') + '</span>' : '') + '</div></div></div>' +
+          '<div class="upcoming-right">' + (typeof tripItemAmtHtml === 'function' ? tripItemAmtHtml(tr, x) : ('<strong class="mono pv">' + rp(tripAmtRp(tr, x)) + '</strong>')) +
           '<button type="button" class="btn ' + (x.paid ? 'btn-emerald' : 'btn-secondary') + ' btn-sm" data-bk-pay="' + esc(x.id) + '">' + (x.paid ? '✓ Lunas' : 'Tandai lunas') + '</button>' +
           '<button type="button" class="btn btn-secondary btn-sm" data-bk-edit="' + esc(x.id) + '">Ubah</button>' +
           '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);" data-bk-del="' + esc(x.id) + '">Hapus</button></div></div>';
@@ -24866,7 +25627,7 @@ function renderTrip() {
           : { got: Math.min(g.t, (g.s0 || 0) + per), pct: g.t ? Math.min(100, Math.round((Math.min(g.t, (g.s0 || 0) + per) / g.t) * 100)) : 0 },
         got = gs.got, pctG = gs.pct;
       bodyHtml =
-        '<div class="card"><div class="card-header"><div><h2 class="card-title">Target Tabungan</h2><p class="card-sub">Sisihan dana bulanan sebelum berangkat</p></div>' +
+        '<div class="card" id="br-tg-card"><div class="card-header"><div><h2 class="card-title">Target Tabungan</h2><p class="card-sub">Sisihan dana bulanan sebelum berangkat</p></div>' +
         '<span class="badge ' + (g.link ? 'badge-emerald' : 'badge-neutral') + '">' + (g.link ? 'Tersambung ke Rincian' : 'Hanya Pencatat') + '</span></div>' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;"><span>Terkumpul <strong class="mono pv">' + rp(got) + '</strong> dari <strong class="mono pv">' + rp(g.t) + '</strong></span><strong class="mono" style="color:var(--emerald);">' + pctG + '%</strong></div>' +
         '<div class="rank-track" style="height:9px;margin-bottom:12px;"><div class="rank-fill" style="width:' + pctG + '%;background:var(--emerald);"></div></div>' +
@@ -25139,6 +25900,21 @@ function brRenderLgModal() {
   }
 }
 
+function syncDeskTripBudgetWrap() {
+  var sel = $('kp-use-budget'), wrap = $('kp-budget-wrap');
+  if (!sel || !wrap) return;
+  var isUse = sel.value === '1';
+  wrap.style.display = isUse ? 'flex' : 'none';
+  var fld = sel.closest ? sel.closest('.field') : null;
+  if (fld) fld.style.gridColumn = isUse ? '' : '1 / -1';
+}
+
+function brRenderTripFxsEditor() {
+  if (typeof tripRenderFxsEditorUi === 'function') {
+    tripRenderFxsEditorUi($('kp-multi-cur'), $('kp-fxs-wrap'), $('kp-fxs-list'), $('kp-fxs-add'), !!BR_STATE.tripFxsEnabled, BR_STATE.tripFxsDraft || []);
+  }
+}
+
 function brOpenTripMetaModal(isEdit) {
   var tr = isEdit ? tp() : null;
   BR_STATE.tripModalMode = tr ? 'edit' : 'new';
@@ -25150,10 +25926,16 @@ function brOpenTripMetaModal(isEdit) {
   if ($('kp-start-lbl')) $('kp-start-lbl').textContent = brFmtShortIndo(BR_STATE.inlineDates.kpStart) + ' ' + BR_STATE.inlineDates.kpStart.slice(0, 4);
   if ($('kp-end-lbl')) $('kp-end-lbl').textContent = brFmtShortIndo(BR_STATE.inlineDates.kpEnd) + ' ' + BR_STATE.inlineDates.kpEnd.slice(0, 4);
   if ($('kp-use-budget')) { $('kp-use-budget').value = tr && tr.budget ? '1' : '0'; syncModernSelect('kp-use-budget'); }
-  if ($('kp-budget-wrap')) $('kp-budget-wrap').style.display = ($('kp-use-budget') && $('kp-use-budget').value === '1') ? 'flex' : 'none';
+  syncDeskTripBudgetWrap();
   if ($('kp-budget')) setRpVal('kp-budget', tr && tr.budget ? tr.budget : '');
   if ($('kp-cur')) $('kp-cur').value = tr ? (tr.cur || '') : '';
   if ($('kp-rate')) $('kp-rate').value = tr && tr.rate ? tr.rate : '';
+  BR_STATE.tripFxsEnabled = !!(tr && typeof tripMultiCurOn === 'function' && tripMultiCurOn(tr));
+  BR_STATE.tripFxsDraft = (tr && Array.isArray(tr.fxs))
+    ? tr.fxs.map(function (f) { return { c: f.c || '', r: f.r || 0, origC: f.c || '' }; })
+    : [];
+  if ($('kp-fxs-err')) $('kp-fxs-err').textContent = '';
+  brRenderTripFxsEditor();
   brOpenModal('modal-trip-form');
 }
 
@@ -25291,6 +26073,7 @@ function brBindEvents() {
         fr.onload = function () {
           try {
             var d = xlParse(X.read(fr.result, { type: 'array', cellDates: true }));
+            if (d.error) return toast(d.error);
             if (!d.it.length && !d.bk.length) return toast('Format Excel tidak dikenali. Unduh Template Excel terlebih dahulu.');
             var base = (f.name || 'Perjalanan').replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim().slice(0, 30) || 'Perjalanan Impor';
             if (d.fx || d.cur) {
@@ -25848,15 +26631,17 @@ function brBindEvents() {
             nonLatinNoteDesk = nonLatinDesk ? ' Catatan: karakter non-Latin tampil \'?\' di PDF.' : '';
           Promise.resolve((dlDesk && dlDesk.done) ? dlDesk.done : dlDesk).then(function (resD) {
             if (resD && resD.ok !== false) {
-              if ($('sh-status')) $('sh-status').textContent = 'PDF diunduh: ' + repDesk.filename + '.' + nonLatinNoteDesk;
-              toast('PDF diunduh: ' + repDesk.filename);
+              if ($('sh-status')) $('sh-status').textContent = 'PDF disimpan: ' + repDesk.filename + '.' + nonLatinNoteDesk;
+              toast('PDF disimpan');
             } else {
               if ($('sh-status')) $('sh-status').textContent = 'Gagal menyimpan PDF. Gunakan "Salin teks" atau coba lagi.';
+              toast('Gagal menyimpan PDF');
             }
           });
         } catch (pdfErr) {
           brCloseModal('modal-trip-share');
-          if (typeof printHtml === 'function') printHtml(tripPrintHtml(Psh, incCost));
+          if (typeof printHtml === 'function') { printHtml(tripPrintHtml(Psh, incCost)); toast('PDF disimpan'); }
+          else toast('Gagal menyimpan PDF');
         }
         return;
       }
@@ -25865,10 +26650,11 @@ function brBindEvents() {
         if (navigator.share) navigator.share({ title: Psh.name, text: txtSh }).catch(function () {});
         else window.open('https://wa.me/?text=' + encodeURIComponent(txtSh), '_blank', 'noopener');
         brCloseModal('modal-trip-share');
+        toast('Membuka berbagi teks');
       } else if (typeof copyText === 'function') {
         copyText(txtSh).then(function () {
           if ($('sh-status')) $('sh-status').textContent = 'Teks disalin. Tinggal tempel di WhatsApp atau catatan.';
-          toast('Itinerary disalin');
+          toast('Teks disalin');
         });
       }
       return;
@@ -25970,6 +26756,17 @@ function brBindEvents() {
       return;
     }
     if (t.closest('#kpf-close') || t.closest('#kpf-cancel')) { brCloseModal('modal-trip-form'); return; }
+    if (t.closest('#kp-fxs-add') && typeof tripHandleFxsAddRow === 'function') {
+      BR_STATE.tripFxsDraft = BR_STATE.tripFxsDraft || [];
+      tripHandleFxsAddRow($('kp-multi-cur'), $('kp-fxs-wrap'), $('kp-fxs-list'), $('kp-fxs-add'), $('kp-fxs-err'), !!BR_STATE.tripFxsEnabled, BR_STATE.tripFxsDraft, toast);
+      return;
+    }
+    var fxDelD = t.closest('#kp-fxs-list [data-fx-del]');
+    if (fxDelD && typeof tripHandleFxsDelRow === 'function') {
+      var trEditDelD = BR_STATE.tripModalMode === 'edit' && BR_STATE.tripEditId ? ALL.kas.pr[BR_STATE.tripEditId] : null;
+      tripHandleFxsDelRow($('kp-multi-cur'), $('kp-fxs-wrap'), $('kp-fxs-list'), $('kp-fxs-add'), $('kp-fxs-err'), !!BR_STATE.tripFxsEnabled, BR_STATE.tripFxsDraft || [], +fxDelD.dataset.fxDel, trEditDelD, toast);
+      return;
+    }
     var icalTrig = t.closest('[data-ical-trig], #kp-start-btn, #kp-end-btn');
     if (icalTrig) {
       e.stopPropagation();
@@ -26008,14 +26805,21 @@ function brBindEvents() {
           toast(toastMsg, function () { restoreSnap(sn.t); });
         }, 'Ya, hapus');
       };
-      if (t.closest('[data-it-done]')) { var id1 = t.closest('[data-it-done]').dataset.itDone, x1 = trAct.it.filter(function (x) { return x.id === id1; })[0]; if (x1) { x1.done = !x1.done; save(); renderTrip(); } return; }
+      if (t.closest('[data-it-done]')) { var id1 = t.closest('[data-it-done]').dataset.itDone, x1 = trAct.it.filter(function (x) { return x.id === id1; })[0]; if (x1) { x1.done = !x1.done; save(); renderTrip(); toast(x1.done ? 'Kegiatan ditandai selesai' : 'Status selesai dibatalkan'); } return; }
       if (t.closest('[data-trip-it-edit]')) {
         BR_STATE.tripEditItId = t.closest('[data-trip-it-edit]').dataset.tripItEdit;
         renderTrip();
-        if ($('trip-itin-form') && $('trip-itin-form').scrollIntoView) { try { $('trip-itin-form').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} }
+        if (typeof tripScrollToEditForm === 'function') tripScrollToEditForm($('trip-itin-form'), 'it-place', false);
+        else if ($('trip-itin-form') && $('trip-itin-form').scrollIntoView) { try { $('trip-itin-form').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} }
         return;
       }
-      if (t.closest('[data-it-cancel]')) { BR_STATE.tripEditItId = null; renderTrip(); return; }
+      if (t.closest('[data-it-cancel]')) {
+        var prevItId = BR_STATE.tripEditItId;
+        BR_STATE.tripEditItId = null;
+        renderTrip();
+        if (prevItId && typeof tripScrollBackToEditedRow === 'function') tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-it-row="' + prevItId + '"]'), false);
+        return;
+      }
       if (t.closest('[data-trip-it-del]')) {
         var id2 = t.closest('[data-trip-it-del]').dataset.tripItDel,
           x2 = (trAct.it || []).filter(function (x) { return x.id === id2; })[0];
@@ -26031,9 +26835,20 @@ function brBindEvents() {
         );
         return;
       }
-      if (t.closest('[data-bk-pay]')) { var id3 = t.closest('[data-bk-pay]').dataset.bkPay, x3 = trAct.bk.filter(function (x) { return x.id === id3; })[0]; if (x3) { var lockMsg = typeof tripToggleBkPaid === 'function' ? tripToggleBkPaid(trAct, x3) : (x3.paid = !x3.paid, ''); save(); renderTrip(); if (lockMsg) toast(lockMsg); } return; }
-      if (t.closest('[data-bk-edit]')) { BR_STATE.tripEditBkId = t.closest('[data-bk-edit]').dataset.bkEdit; renderTrip(); return; }
-      if (t.closest('[data-bk-cancel]')) { BR_STATE.tripEditBkId = null; renderTrip(); return; }
+      if (t.closest('[data-bk-pay]')) { var id3 = t.closest('[data-bk-pay]').dataset.bkPay, x3 = trAct.bk.filter(function (x) { return x.id === id3; })[0]; if (x3) { var lockMsg = typeof tripToggleBkPaid === 'function' ? tripToggleBkPaid(trAct, x3) : (x3.paid = !x3.paid, x3.paid ? 'Ditandai lunas' : 'Lunas dibatalkan'); save(); renderTrip(); if (lockMsg) toast(lockMsg); } return; }
+      if (t.closest('[data-bk-edit]')) {
+        BR_STATE.tripEditBkId = t.closest('[data-bk-edit]').dataset.bkEdit;
+        renderTrip();
+        if (typeof tripScrollToEditForm === 'function') tripScrollToEditForm($('trip-book-form'), 'bk-title', false);
+        return;
+      }
+      if (t.closest('[data-bk-cancel]')) {
+        var prevBkId = BR_STATE.tripEditBkId;
+        BR_STATE.tripEditBkId = null;
+        renderTrip();
+        if (prevBkId && typeof tripScrollBackToEditedRow === 'function') tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-bk-row="' + prevBkId + '"]'), false);
+        return;
+      }
       if (t.closest('[data-bk-del]')) {
         var id4 = t.closest('[data-bk-del]').dataset.bkDel,
           x4 = (trAct.bk || []).filter(function (x) { return x.id === id4; })[0];
@@ -26049,7 +26864,7 @@ function brBindEvents() {
         );
         return;
       }
-      if (t.closest('#br-trip-ck-std')) { CK_STD.forEach(function (txt) { if (!trAct.ck.some(function (x) { return x.text === txt; })) trAct.ck.push({ id: kid('c'), text: txt, done: false }); }); save(); renderTrip(); return; }
+      if (t.closest('#br-trip-ck-std')) { CK_STD.forEach(function (txt) { if (!trAct.ck.some(function (x) { return x.text === txt; })) trAct.ck.push({ id: kid('c'), text: txt, done: false }); }); save(); renderTrip(); toast('Daftar standar ditambahkan'); return; }
       if (t.closest('[data-ck-del]')) {
         var id5 = t.closest('[data-ck-del]').dataset.ckDel,
           x5 = (trAct.ck || []).filter(function (x) { return x.id === id5; })[0];
@@ -26074,8 +26889,18 @@ function brBindEvents() {
         );
         return;
       }
-      if (t.closest('#br-tg-edit')) { BR_STATE.tripGoalEdit = true; renderTrip(); return; }
-      if (t.closest('#br-tg-cancel')) { BR_STATE.tripGoalEdit = false; renderTrip(); return; }
+      if (t.closest('#br-tg-edit')) {
+        BR_STATE.tripGoalEdit = true;
+        renderTrip();
+        if (typeof tripScrollToEditForm === 'function') tripScrollToEditForm($('trip-goal-form'), 'tg-t', false);
+        return;
+      }
+      if (t.closest('#br-tg-cancel')) {
+        BR_STATE.tripGoalEdit = false;
+        renderTrip();
+        if (typeof tripScrollBackToEditedRow === 'function') tripScrollBackToEditedRow($('br-tg-card'), false);
+        return;
+      }
       if (t.closest('#br-tg-del')) {
         if (trAct.goal) brTripConfirmDel(
           'Hapus target tabungan perjalanan ini?',
@@ -26126,8 +26951,18 @@ function brBindEvents() {
       var sIdx = +t.dataset.brSmtog;
       if (SIM[sIdx]) { SIM[sIdx].off = !t.checked; renderSim(); }
     }
-    else if (t.id === 'kp-use-budget' && $('kp-budget-wrap')) $('kp-budget-wrap').style.display = t.value === '1' ? 'flex' : 'none';
-    else if (t.id === 'it-cur' || t.id === 'bk-cur') brSyncTripEqPrev();
+    else if (t.id === 'kp-use-budget') syncDeskTripBudgetWrap();
+    else if (t.id === 'kp-multi-cur' && typeof tripHandleFxsToggleChange === 'function') {
+      var trEditTogD = BR_STATE.tripModalMode === 'edit' && BR_STATE.tripEditId ? ALL.kas.pr[BR_STATE.tripEditId] : null;
+      tripHandleFxsToggleChange($('kp-multi-cur'), $('kp-fxs-wrap'), $('kp-fxs-list'), $('kp-fxs-add'), $('kp-fxs-err'), trEditTogD, function () { return BR_STATE.tripFxsDraft || []; }, function (v) { BR_STATE.tripFxsEnabled = !!v; }, toast);
+    }
+    else if (t.id === 'trip-note-box' && tp()) { clearTimeout(window._brNoteT); tp().note = t.value; save(); toast('Catatan disimpan'); }
+    else if (t.dataset && t.dataset.dtDay && tp()) { clearTimeout(window._brDtT); tp().dt[t.dataset.dtDay] = t.value; save(); toast('Judul hari disimpan'); }
+    else if (t.id === 'it-cur' || t.id === 'bk-cur') {
+      var rtElCurD = $(t.id === 'it-cur' ? 'it-rt' : 'bk-rt');
+      if (rtElCurD && !(rtElCurD.dataset && rtElCurD.dataset.userEdited === '1')) rtElCurD.value = '';
+      brSyncTripEqPrev();
+    }
     else if (t.dataset && t.dataset.ckTog) {
       var trC = tp(), c0 = trC && trC.ck.filter(function (x) { return x.id === t.dataset.ckTog; })[0];
       if (c0) { c0.done = t.checked; save(); renderTrip(); }
@@ -26138,11 +26973,19 @@ function brBindEvents() {
     var t = e.target;
     if (t.id === 'kas-search') renderKas();
     else if (t.id === 'qp-input') brUpdateQuickParsePreview();
-    else if (t.id === 'it-est' || t.id === 'bk-amt' || t.id === 'bk-rt') brSyncTripEqPrev();
+    else if (t.id === 'it-est' || t.id === 'bk-amt') brSyncTripEqPrev();
+    else if (t.id === 'it-rt' || t.id === 'bk-rt') { if (t.dataset) t.dataset.userEdited = '1'; brSyncTripEqPrev(); }
+    else if (t.closest && t.closest('#kp-fxs-list') && BR_STATE.tripFxsDraft) {
+      var idxFxD = t.dataset.fxCode != null ? +t.dataset.fxCode : (t.dataset.fxRate != null ? +t.dataset.fxRate : -1);
+      if (idxFxD >= 0 && BR_STATE.tripFxsDraft[idxFxD]) {
+        if (t.dataset.fxCode != null) BR_STATE.tripFxsDraft[idxFxD].c = t.value.toUpperCase();
+        if (t.dataset.fxRate != null) BR_STATE.tripFxsDraft[idxFxD].rRaw = t.value;
+      }
+    }
     else if (t.id === 'trip-note-box' && tp()) {
-      tp().note = t.value; clearTimeout(window._brNoteT); window._brNoteT = setTimeout(save, 350);
+      tp().note = t.value; clearTimeout(window._brNoteT); window._brNoteT = setTimeout(function () { save(); toast('Catatan disimpan'); }, 350);
     } else if (t.dataset && t.dataset.dtDay && tp()) {
-      tp().dt[t.dataset.dtDay] = t.value; clearTimeout(window._brDtT); window._brDtT = setTimeout(save, 350);
+      tp().dt[t.dataset.dtDay] = t.value; clearTimeout(window._brDtT); window._brDtT = setTimeout(function () { save(); toast('Judul hari disimpan'); }, 350);
     }
   });
 
@@ -26244,14 +27087,41 @@ function brBindEvents() {
         toast(metaErrT.error);
         return;
       }
-      if (BR_STATE.tripModalMode === 'edit' && tp()) {
-        Object.assign(tp(), { name: nmT, start: stT, end: enT, budget: budT, cur: curT, rate: curT ? rateT : 0 });
+      var isEditMetaD = (BR_STATE.tripModalMode === 'edit' && tp());
+      var fxResD = { error: '', fxs: [], renames: [] };
+      if (BR_STATE.tripFxsEnabled && typeof tripValidateFxsRows === 'function') {
+        fxResD = tripValidateFxsRows(curT, BR_STATE.tripFxsDraft || []);
+        if (fxResD.error) {
+          if ($('kp-fxs-err')) $('kp-fxs-err').textContent = fxResD.error;
+          toast(fxResD.error);
+          return;
+        }
+      } else if (isEditMetaD && typeof tripCountAllExtraCurUsage === 'function') {
+        var uOffD = tripCountAllExtraCurUsage(tp());
+        if (uOffD.total > 0) {
+          var offMsgD = tripFormatCurUsageMsg(uOffD);
+          if ($('kp-fxs-err')) $('kp-fxs-err').textContent = offMsgD;
+          toast(offMsgD);
+          return;
+        }
+      }
+      if (isEditMetaD) {
+        var trMetaD = tp();
+        Object.assign(trMetaD, { name: nmT, start: stT, end: enT, budget: budT, cur: curT, rate: curT ? rateT : 0 });
+        if (BR_STATE.tripFxsEnabled) {
+          if (typeof tripApplyFxsRenames === 'function') tripApplyFxsRenames(trMetaD, fxResD.renames);
+          trMetaD.fxs = fxResD.fxs;
+        } else {
+          delete trMetaD.fxs;
+        }
       } else {
         var idNew = kid('p');
-        ALL.kas.pr[idNew] = { id: idNew, name: nmT, link: false, saldo: 0, tx: [], start: stT, end: enT, budget: budT, cur: curT, rate: curT ? rateT : 0, dt: {}, it: [], bk: [], lk: [], ck: [], note: '', goal: null };
+        var newProfD = { id: idNew, name: nmT, link: false, saldo: 0, tx: [], start: stT, end: enT, budget: budT, cur: curT, rate: curT ? rateT : 0, dt: {}, it: [], bk: [], lk: [], ck: [], note: '', goal: null };
+        if (BR_STATE.tripFxsEnabled) newProfD.fxs = fxResD.fxs;
+        ALL.kas.pr[idNew] = newProfD;
         tripAct = idNew; BR_STATE.tripView = 'detail'; BR_STATE.tripSubTab = 'ring';
       }
-      brCloseModal('modal-trip-form'); save(); renderAll(); toast('Perjalanan disimpan');
+      brCloseModal('modal-trip-form'); save(); renderAll(); toast(isEditMetaD ? 'Perjalanan diperbarui' : 'Perjalanan dibuat');
     } else if (f.id === 'trip-xl-form') {
       e.preventDefault();
       var dXlB = BR_STATE.xlPending;
@@ -26271,36 +27141,50 @@ function brBindEvents() {
       toast('Perjalanan diimpor: ' + dXlB.it.length + ' kegiatan, ' + dXlB.bk.length + ' pemesanan.' + (typeof tripImportOfflineNote === 'function' ? tripImportOfflineNote() : ''));
     } else if (f.id === 'trip-itin-form' && tp()) {
       e.preventDefault();
-      var trI = tp(), objIt = {
+      var trI = tp();
+      var itCurSpecD = typeof tripParseCurSelectVal === 'function' ? tripParseCurSelectVal(trI, $('it-cur') && $('it-cur').value) : { fx: $('it-cur') && $('it-cur').value === 'fx', c: '' };
+      var objIt = {
         id: BR_STATE.tripEditItId || kid('it'),
         day: BR_STATE.inlineDates.itDay || trI.start || todayISO(),
         time: ($('it-t1') && $('it-t1').value || '').replace('.', ':'),
         time2: ($('it-t2') && $('it-t2').value || '').replace('.', ':'),
         place: ($('it-place') && $('it-place').value || '').trim(),
         est: getRpVal('it-est'),
-        fx: $('it-cur') && $('it-cur').value === 'fx',
+        fx: !!(trI.cur && itCurSpecD.fx),
         pay: $('it-pay') ? $('it-pay').value : 'cash',
         cat: $('it-cat') ? $('it-cat').value : 'Lainnya',
         link: ($('it-link') && $('it-link').value || '').trim(),
         note: ($('it-note') && $('it-note').value || '').trim(),
         done: false,
       };
+      if (objIt.fx && itCurSpecD.c) objIt.c = itCurSpecD.c;
       if (!objIt.place) { rkShakeInvalid($('it-place')); return; }
-      if (BR_STATE.tripEditItId) {
-        trI.it = trI.it.map(function (x) { return x.id === BR_STATE.tripEditItId ? Object.assign({}, x, objIt, { done: x.done }) : x; });
+      var editItIdD = BR_STATE.tripEditItId;
+      if (editItIdD) {
+        trI.it = trI.it.map(function (x) {
+          if (x.id !== editItIdD) return x;
+          var patchItD = Object.assign({}, objIt, { done: x.done });
+          return typeof tripMergeItemEdit === 'function' ? tripMergeItemEdit(x, patchItD, $('it-rt'), false) : Object.assign({}, x, patchItD);
+        });
         BR_STATE.tripEditItId = null;
       } else trI.it.push(objIt);
-      save(); renderTrip();
+      save(); renderTrip(); toast(editItIdD ? 'Kegiatan diperbarui' : 'Kegiatan disimpan');
+      if (editItIdD && typeof tripScrollBackToEditedRow === 'function') {
+        tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-it-row="' + editItIdD + '"]'), false);
+      }
     } else if (f.id === 'trip-book-form' && tp()) {
       e.preventDefault();
-      var trB = tp(), patchBk = {
+      var trB = tp();
+      var bkCurSpecD = typeof tripParseCurSelectVal === 'function' ? tripParseCurSelectVal(trB, $('bk-cur') && $('bk-cur').value) : { fx: $('bk-cur') && $('bk-cur').value === 'fx', c: '' };
+      var patchBk = {
         title: ($('bk-title') && $('bk-title').value || '').trim(),
         amt: getRpVal('bk-amt'),
-        fx: $('bk-cur') && $('bk-cur').value === 'fx',
+        fx: !!(trB.cur && bkCurSpecD.fx),
         a: BR_STATE.inlineDates.bkStart || '',
         b: BR_STATE.inlineDates.bkEnd || '',
         cat: $('bk-cat') ? $('bk-cat').value : 'Transport',
       };
+      if (patchBk.fx && bkCurSpecD.c) patchBk.c = bkCurSpecD.c;
       if (!patchBk.title) { rkShakeInvalid($('bk-title')); return; }
       if (!(patchBk.amt > 0)) { rkShakeInvalid($('bk-amt')); return; }
       var bkDtErr = typeof tripValidateDates === 'function' ? tripValidateDates(patchBk.a, patchBk.b) : null;
@@ -26309,9 +27193,10 @@ function brBindEvents() {
         toast(bkDtErr.error);
         return;
       }
-      if (BR_STATE.tripEditBkId) {
+      var editBkIdD = BR_STATE.tripEditBkId;
+      if (editBkIdD) {
         trB.bk = trB.bk.map(function (x) {
-          return x.id === BR_STATE.tripEditBkId
+          return x.id === editBkIdD
             ? (typeof tripMergeBkEdit === 'function' ? tripMergeBkEdit(x, patchBk, $('bk-rt')) : Object.assign({}, x, patchBk))
             : x;
         });
@@ -26319,17 +27204,23 @@ function brBindEvents() {
       } else {
         trB.bk.push(Object.assign({ id: kid('bk'), pay: 'on', link: '', paid: false, rec: '' }, patchBk));
       }
-      save(); renderTrip();
+      save(); renderTrip(); toast(editBkIdD ? 'Pemesanan diperbarui' : 'Pemesanan disimpan');
+      if (editBkIdD && typeof tripScrollBackToEditedRow === 'function') {
+        tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-bk-row="' + editBkIdD + '"]'), false);
+      }
     } else if (f.id === 'trip-ck-form' && tp()) {
       e.preventDefault();
       var txtC = ($('trip-ck-input') && $('trip-ck-input').value || '').trim();
       if (!txtC) { rkShakeInvalid($('trip-ck-input')); return; }
-      tp().ck.push({ id: kid('c'), text: txtC, done: false }); save(); renderTrip();
+      tp().ck.push({ id: kid('c'), text: txtC, done: false }); save(); renderTrip(); toast('Checklist ditambahkan');
     } else if (f.id === 'trip-lk-form' && tp()) {
       e.preventDefault();
       var tl = ($('trip-lk-title') && $('trip-lk-title').value || '').trim(), ul = ($('trip-lk-url') && $('trip-lk-url').value || '').trim();
       if (!tl || !ul) { rkShakeInvalid(!tl ? $('trip-lk-title') : $('trip-lk-url')); return; }
-      tp().lk.push({ id: kid('l'), title: tl, url: /^https?:\/\//i.test(ul) ? ul : 'https://' + ul }); save(); renderTrip();
+      var normLkD = /^https?:\/\//i.test(ul) ? ul : (/^[a-z]+:/i.test(ul) ? ul : 'https://' + ul);
+      var validLkD = typeof okUrl === 'function' ? okUrl(normLkD) : /^https?:\/\/[^\s"'<>]+$/i.test(normLkD);
+      if (!validLkD) { rkShakeInvalid($('trip-lk-url')); toast('Tautan tidak valid'); return; }
+      tp().lk.push({ id: kid('l'), title: tl, url: normLkD }); save(); renderTrip(); toast('Tautan ditambahkan');
     } else if (f.id === 'trip-goal-form' && tp()) {
       e.preventDefault();
       var tVal = getRpVal('tg-t'), s0Val = getRpVal('tg-s0'), linkG = !$('tg-link') || $('tg-link').value !== '0',
@@ -26344,8 +27235,12 @@ function brBindEvents() {
       if (!(gc.t > 0)) { rkShakeInvalid($('tg-t')); toast('Isi target tabungan.'); return; }
       if (!gc.n) { rkShakeInvalid($('tg-to')); toast('Bulan terakhir tidak boleh sebelum bulan mulai.'); return; }
       if (!gc.per) { rkShakeInvalid($('tg-t')); toast('Dana yang terkumpul sudah mencapai target.'); return; }
+      var wasGoalEditD = !!BR_STATE.tripGoalEdit;
       tp().goal = { t: gc.t, s0: gc.s0, from: gc.from, to: gc.to, per: gc.per, link: gc.link };
       BR_STATE.tripGoalEdit = false; save(); renderAll(); toast('Target tabungan disimpan');
+      if (wasGoalEditD && typeof tripScrollBackToEditedRow === 'function') {
+        tripScrollBackToEditedRow($('br-tg-card'), false);
+      }
     }
   });
 
@@ -26364,6 +27259,14 @@ function brBindEvents() {
     if (typeof getShellMode === 'function' && getShellMode() === 'mobile-app') return;
     var tag = ((e.target && e.target.tagName) || '').toLowerCase();
     if (e.key === 'Escape') {
+      var openMs = document.querySelector('#browser-shell .mselect.open'),
+        openPop = document.querySelector('#browser-shell .picker-popover.open');
+      if (openMs || openPop) {
+        var restoreBtn = openMs ? openMs.querySelector('.mselect-trigger') : null;
+        closeAllPickersAndMenus(null);
+        if (restoreBtn && typeof restoreBtn.focus === 'function') { try { restoreBtn.focus({ preventScroll: true }); } catch (err) {} }
+        return;
+      }
       if ($('chip-popover')) $('chip-popover').classList.remove('open');
       if ($('notif-popover')) {
         $('notif-popover').classList.remove('open');
@@ -26946,7 +27849,7 @@ function showMobToast(msg, undo) {
     clearTimeout(mobToastTimer);
     mobToastTimer = setTimeout(function () {
       box.classList.remove('show', 'has-undo');
-    }, typeof undo === 'function' ? 8000 : 2400);
+    }, typeof undo === 'function' ? 8000 : 2000);
   } else if (typeof toast === 'function') {
     toast(msg, undo);
   }
@@ -27379,10 +28282,17 @@ function mobShellTemplate() {
     '<div class="field"><label class="field-label" for="m-kp-name">Nama perjalanan</label><input class="input" id="m-kp-name" maxlength="30" placeholder="mis. Tokyo - Osaka 9D8N" required /></div>' +
     '<div class="bento-2"><div class="field"><span class="field-label">Mulai</span>' + mobDateFieldHtml('m-kp-start', '', false) + '</div>' +
     '<div class="field"><span class="field-label">Selesai</span>' + mobDateFieldHtml('m-kp-end', '', true) + '</div></div>' +
-    '<div class="bento-2"><div class="field"><label class="field-label" for="m-kp-use-budget">Anggaran</label><select class="input" id="m-kp-use-budget"><option value="0">Belum ditentukan</option><option value="1" selected>Tetapkan anggaran</option></select></div>' +
-    '<div class="field" id="m-kp-budget-wrap"><label class="field-label" for="m-kp-budget">Anggaran (Rp)</label><input class="input mono" id="m-kp-budget" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="10.000.000" /></div></div>' +
+    '<div class="bento-2"><div class="field"><label class="field-label" for="m-kp-use-budget">Anggaran</label><select class="input" id="m-kp-use-budget"><option value="0" selected>Belum ditentukan</option><option value="1">Tetapkan anggaran</option></select></div>' +
+    '<div class="field" id="m-kp-budget-wrap"><label class="field-label" for="m-kp-budget">Anggaran (Rp)</label><input class="input mono" id="m-kp-budget" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="mis. 10.000.000" /></div></div>' +
     '<div class="bento-2"><div class="field"><label class="field-label" for="m-kp-cur">Mata uang asing</label><input class="input" id="m-kp-cur" maxlength="3" placeholder="JPY" style="text-transform:uppercase" /></div>' +
-    '<div class="field"><label class="field-label" for="m-kp-rate">Kurs (Rp / 1 unit)</label><input class="input mono" id="m-kp-rate" type="number" step="0.01" placeholder="108.5" /></div></div></div>' +
+    '<div class="field"><label class="field-label" for="m-kp-rate">Kurs (Rp / 1 unit)</label><input class="input mono" id="m-kp-rate" type="number" step="0.01" placeholder="108.5" /></div></div>' +
+    '<div class="trip-multi-cur-box">' +
+    '<label class="trip-switch-row" for="m-kp-multi-cur"><input type="checkbox" id="m-kp-multi-cur" /><span>Gunakan beberapa mata uang</span></label>' +
+    '<div id="m-kp-fxs-wrap" class="stack" style="display:none;gap:8px;margin-top:8px">' +
+    '<div id="m-kp-fxs-list" class="stack" style="gap:6px"></div>' +
+    '<div id="m-kp-fxs-err" role="alert" style="color:var(--crimson);font-size:0.74rem;font-weight:600"></div>' +
+    '<div><button type="button" class="btn btn-secondary btn-sm" id="m-kp-fxs-add">+ Tambah mata uang</button></div>' +
+    '</div></div></div>' +
     '<div class="ms-foot"><button type="button" class="btn btn-secondary" data-mclose="m-sheet-trip">Batal</button><button type="submit" class="btn btn-primary">Simpan</button></div></form></div></div>' +
     '<div class="modal-backdrop" id="m-sheet-backup"><div class="modal-sheet"><div class="ms-handle"></div>' +
     '<div class="ms-head"><strong class="card-title">Cadangan &amp; Ekspor</strong><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-backup">✕</button></div>' +
@@ -28452,14 +29362,23 @@ function mobActiveTrip() {
   return list.find(function (p) { return p.id === MOB_STATE.tripId; }) || list[0];
 }
 
+function mobRenderTripFxsEditor() {
+  if (typeof tripRenderFxsEditorUi === 'function') {
+    tripRenderFxsEditorUi($('m-kp-multi-cur'), $('m-kp-fxs-wrap'), $('m-kp-fxs-list'), $('m-kp-fxs-add'), !!MOB_STATE.tripFxsEnabled, MOB_STATE.tripFxsDraft || []);
+  }
+}
+
 function mobSyncTripEqPrev() {
   var tr = mobActiveTrip();
-  if (typeof tripSyncEqPairs === 'function') {
+  var eItM = tr && MOB_STATE.tripEditIt ? (tr.it || []).find(function (x) { return x.id === MOB_STATE.tripEditIt; }) : null;
+  if (typeof tripSyncItemRateField === 'function') {
+    tripSyncItemRateField(tr, eItM, 'm-it-est', 'm-it-cur', 'm-it-est-eq', 'm-it-rt-wrap', 'm-it-rt', false);
+  } else if (typeof tripSyncEqPairs === 'function') {
     tripSyncEqPairs(tr, [['m-it-est', 'm-it-cur', 'm-it-est-eq']]);
   }
   var eBkM = tr && MOB_STATE.tripEditBk ? (tr.bk || []).find(function (x) { return x.id === MOB_STATE.tripEditBk; }) : null;
-  if (typeof tripSyncBkRateField === 'function') {
-    tripSyncBkRateField(tr, eBkM, 'm-bk-amt', 'm-bk-cur', 'm-bk-amt-eq', 'm-bk-rt-wrap', 'm-bk-rt');
+  if (typeof tripSyncItemRateField === 'function') {
+    tripSyncItemRateField(tr, eBkM, 'm-bk-amt', 'm-bk-cur', 'm-bk-amt-eq', 'm-bk-rt-wrap', 'm-bk-rt', true);
   } else if (typeof tripSyncEqPairs === 'function') {
     tripSyncEqPairs(tr, [['m-bk-amt', 'm-bk-cur', 'm-bk-amt-eq']]);
   }
@@ -28467,7 +29386,11 @@ function mobSyncTripEqPrev() {
 
 function syncMobTripBudgetWrap() {
   var sel = $('m-kp-use-budget'), wrap = $('m-kp-budget-wrap');
-  if (sel && wrap) wrap.style.display = sel.value === '1' ? 'flex' : 'none';
+  if (!sel || !wrap) return;
+  var isUse = sel.value === '1';
+  wrap.style.display = isUse ? 'flex' : 'none';
+  var fld = sel.closest ? sel.closest('.field') : null;
+  if (fld) fld.style.gridColumn = isUse ? '' : '1 / -1';
 }
 
 function renderMobTripListCard(t, activeId) {
@@ -28490,9 +29413,9 @@ function renderMobTripItinCard(tr, x) {
     : '';
   var payTxt = x.pay ? ((typeof PAYL !== 'undefined' && PAYL[x.pay]) || x.pay) : '';
   var amtBlock = typeof tripItemAmtHtml === 'function'
-    ? tripItemAmtHtml(tr, x.est, x.fx, 'msc-right', 'font-size:0.84rem')
+    ? tripItemAmtHtml(tr, x, null, 'msc-right', 'font-size:0.84rem')
     : '<strong class="mono pv msc-right" style="font-size:0.84rem">' + (x.est ? (x.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(x.est).toLocaleString('id-ID') : rp(x.est)) : '') + '</strong>';
-  return '<div class="mob-sched-card ' + (x.done ? 'done' : '') + '" style="padding:10px">' +
+  return '<div class="mob-sched-card ' + (x.done ? 'done' : '') + '" data-it-row="' + esc(x.id) + '" style="padding:10px">' +
     '<div class="msc-top"><div class="msc-left" style="flex:1">' + mobCatLogo(mobTripCatMapped(x.cat || 'Transport'), 30) +
     '<div style="min-width:0;flex:1">' +
     '<div style="font-weight:800;font-size:0.84rem;' + (x.done ? 'text-decoration:line-through;opacity:0.55;' : '') + '">' + timeHtml + esc(x.place) + '</div>' +
@@ -28512,7 +29435,10 @@ function renderMobTripItin(tr) {
     EIt = MOB_STATE.tripEditIt ? (tr.it || []).find(function (x) { return x.id === MOB_STATE.tripEditIt; }) : null,
     defDay = (EIt && EIt.day) || days[0] || tr.start || todayISO(),
     defPay = EIt ? (EIt.pay || '') : 'cash',
-    itRpFn = typeof tripItRp === 'function' ? tripItRp : function (P, x) { return typeof val === 'function' ? val(P, x.est, x.fx) : (+x.est || 0); },
+    itRpFn = typeof tripItRp === 'function' ? tripItRp : function (P, x) {
+      if (!x) return 0;
+      return (+x.est || 0) * (typeof tripItemRate === 'function' ? tripItemRate(P, x) : (typeof val === 'function' ? (x.fx ? (x.rt > 0 ? x.rt : (+(P && P.rate) || 0)) : 1) : 1));
+    },
     dayLblFn = typeof dayLabel === 'function' ? dayLabel : function (P, d) { return fmtD(d); };
   var formHtml =
     '<div class="card"><div class="card-hd"><h3 class="card-title">' + (EIt ? 'Ubah Kegiatan' : 'Tambah Kegiatan') + '</h3>' +
@@ -28525,9 +29451,9 @@ function renderMobTripItin(tr) {
     '<div class="field"><label class="field-label" for="m-it-place">Kegiatan</label><input class="input" id="m-it-place" maxlength="120" placeholder="mis. Senso-ji Temple" value="' + esc(EIt ? EIt.place : '') + '" required /></div>' +
     '<div class="field"><label class="field-label" for="m-it-est">Biaya &amp; Mata Uang</label>' +
     '<div style="display:flex;gap:6px"><input class="input mono" id="m-it-est" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EIt && EIt.est ? (+EIt.est).toLocaleString('id-ID') : '') + '" style="flex:1;min-width:0" />' +
-    '<select class="input" id="m-it-cur" aria-label="Mata uang" style="width:88px;flex-shrink:0"><option value="idr"' + (!(EIt && EIt.fx) ? ' selected' : '') + '>Rp</option>' +
-    (tr.cur ? '<option value="fx"' + (EIt && EIt.fx ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : '') +
+    '<select class="input" id="m-it-cur" aria-label="Mata uang" style="width:88px;flex-shrink:0">' + (typeof tripCurSelectOptsHtml === 'function' ? tripCurSelectOptsHtml(tr, EIt) : ('<option value="idr"' + (!(EIt && EIt.fx) ? ' selected' : '') + '>Rp</option>' + (tr.cur ? '<option value="fx"' + (EIt && EIt.fx ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : ''))) +
     '</select></div><div class="trip-eq-hint mono" id="m-it-est-eq"></div></div>' +
+    '<div class="field" id="m-it-rt-wrap" style="display:' + (EIt && EIt.fx && (typeof tripItemCur === 'function' ? tripItemCur(tr, EIt) : tr.cur) ? '' : 'none') + '"><label class="field-label" for="m-it-rt">Kurs (Rp per 1 ' + esc((EIt && typeof tripItemCur === 'function' ? tripItemCur(tr, EIt) : tr.cur) || 'asing') + ')</label><input class="input mono" id="m-it-rt" type="text" inputmode="decimal" placeholder="' + (tr.rate > 0 ? 'Ikut kurs perjalanan: ' + esc(tr.rate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + (EIt && typeof tripHasValidRt === 'function' && tripHasValidRt(EIt) ? esc(String(EIt.rt)) : '') + '" /><div class="msc-sub">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div>' +
     '<div class="bento-2">' +
     '<div class="field"><label class="field-label" for="m-it-pay">Pembayaran</label><select class="input" id="m-it-pay">' +
     '<option value=""' + (defPay === '' ? ' selected' : '') + '>Belum ditentukan</option>' +
@@ -28583,7 +29509,10 @@ function renderMobTrip() {
     subTabs = [['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['cek', 'Checklist'], ['cat', 'Catatan'], ['sv', 'Tabungan']],
     body = '';
 
-  var itRpFn = typeof tripItRp === 'function' ? tripItRp : function (P, x) { return typeof val === 'function' ? val(P, x.est, x.fx) : (+x.est || 0); },
+  var itRpFn = typeof tripItRp === 'function' ? tripItRp : function (P, x) {
+      if (!x) return 0;
+      return (+x.est || 0) * (typeof tripItemRate === 'function' ? tripItemRate(P, x) : (typeof val === 'function' ? (x.fx ? (x.rt > 0 ? x.rt : (+(P && P.rate) || 0)) : 1) : 1));
+    },
     bkRpFn = typeof tripBkRp === 'function' ? tripBkRp : (typeof tripAmtRp === 'function' ? tripAmtRp : function (P, x) { return typeof val === 'function' ? val(P, x.amt, x.fx) : (+x.amt || 0); }),
     dayLblFn = typeof dayLabel === 'function' ? dayLabel : function (P, d) { return fmtD(d); };
   if (MOB_STATE.tripSub === 'ring') {
@@ -28613,11 +29542,14 @@ function renderMobTrip() {
       '<div class="m-tile"><div class="m-tile-k">Sudah Dibayar</div><div class="m-tile-v pv" style="color:var(--emerald)">' + rp(pl.paid) + '</div><div class="m-tile-s pv">Belum dibayar: ' + rp(pl.b - pl.paid) + '</div></div>' +
       '<div class="m-tile"><div class="m-tile-k">Rencana per Hari</div><div class="m-tile-v pv">' + (N ? rp(Math.round(pl.t / N)) : '—') + '</div><div class="m-tile-s">' + (N ? N + ' hari' : 'Tanggal belum diisi') + (tr.cur && tr.rate ? ' · 1 ' + esc(tr.cur) + ' = Rp ' + tr.rate.toLocaleString('id-ID') : '') + '</div></div></div>' +
       '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Siapkan Tunai / Kartu</h3><p class="msc-sub">Akumulasi kebutuhan bayar di tempat</p></div></div><div class="stack" style="gap:6px">' +
-      (ck.length ? ck.map(function (k) {
-        var cx = pl.cash[k], eqRp = cx.idr + (cx.fx && tr.rate ? Math.round(cx.fx * tr.rate) : 0);
-        return '<div class="simple-row m-ring-row"><span class="simple-row-name">' + esc(k) + '</span><span class="mono pv m-ring-fx">' + (cx.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(cx.fx).toLocaleString('id-ID') : rp(cx.fx || cx.idr)) + '</span><span class="simple-row-amt pv">' + (cx.fx ? (tr.rate ? '≈ ' + rp(eqRp) : (cx.idr ? rp(cx.idr) : '—')) : rp(eqRp)) + '</span></div>';
+      (ck.length ? ck.map(function (c) {
+        var cx = pl.cash[c];
+        if (typeof tripCashRowHtml === 'function') return tripCashRowHtml(tr, c, cx, true);
+        var eqRp = Math.round(cx.idr + (cx.fxRp != null ? cx.fxRp : (cx.fx && tr.rate ? cx.fx * tr.rate : 0)));
+        return '<div class="simple-row m-ring-row"><span class="simple-row-name">' + esc(c) + '</span><span class="mono pv m-ring-fx">' + (cx.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(cx.fx).toLocaleString('id-ID') : rp(cx.fx || cx.idr)) + '</span><span class="simple-row-amt pv">' + (cx.fx ? (cx.fxRp > 0 ? '≈ ' + rp(eqRp) : (cx.idr ? rp(cx.idr) : '—')) : rp(eqRp)) + '</span></div>';
       }).join('') : '<div style="padding:10px 4px;color:var(--text-muted);font-size:0.78rem">Belum ada pengeluaran tunai/kartu harian di Itinerary.</div>') +
       '</div></div>' +
+      (typeof tripFxDetailCardHtml === 'function' ? tripFxDetailCardHtml(tr, true) : '') +
       '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Estimasi per Hari</h3><p class="msc-sub">Pengeluaran non-online dihitung dari jadwal kegiatan</p></div></div><div class="stack" style="gap:6px">' +
       (dk.length ? dk.map(function (d) {
         return '<div class="simple-row m-ring-row"><span class="simple-row-name">' + esc(dayLblFn(tr, d)) + '</span><span class="simple-row-bar"><i style="width:' + ((byDay[d] / dmax) * 100).toFixed(1) + '%;background:var(--accent)"></i></span><span class="simple-row-amt pv">' + rp(byDay[d]) + '</span></div>';
@@ -28644,10 +29576,9 @@ function renderMobTrip() {
       '<form id="m-trip-book-form" class="stack" style="gap:9px" novalidate>' +
       '<div class="field"><label class="field-label" for="m-bk-title">Nama</label><input class="input" id="m-bk-title" maxlength="120" placeholder="mis. Tiket Pesawat ANA PP" value="' + esc(EBk ? EBk.title : '') + '" required /></div>' +
       '<div class="field"><label class="field-label" for="m-bk-amt">Jumlah</label><div style="display:flex;gap:6px"><input class="input mono" id="m-bk-amt" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EBk && EBk.amt ? (+EBk.amt).toLocaleString('id-ID') : '') + '" style="flex:1;min-width:0" required />' +
-      '<select class="input" id="m-bk-cur" aria-label="Mata uang" style="width:88px;flex-shrink:0"><option value="idr"' + (!(EBk && EBk.fx) ? ' selected' : '') + '>Rp</option>' +
-      (tr.cur ? '<option value="fx"' + (EBk && EBk.fx ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : '') +
+      '<select class="input" id="m-bk-cur" aria-label="Mata uang" style="width:88px;flex-shrink:0">' + (typeof tripCurSelectOptsHtml === 'function' ? tripCurSelectOptsHtml(tr, EBk) : ('<option value="idr"' + (!(EBk && EBk.fx) ? ' selected' : '') + '>Rp</option>' + (tr.cur ? '<option value="fx"' + (EBk && EBk.fx ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : ''))) +
       '</select></div><div class="trip-eq-hint mono" id="m-bk-amt-eq"></div></div>' +
-      '<div class="field" id="m-bk-rt-wrap" style="display:' + (EBk && EBk.paid && EBk.fx && tr.cur ? '' : 'none') + '"><label class="field-label" for="m-bk-rt">Kurs saat dibayar (Rp per 1 ' + esc(tr.cur || 'asing') + ')</label><input class="input mono" id="m-bk-rt" type="text" inputmode="decimal" placeholder="Kosong = ikut kurs perjalanan" value="' + (EBk && typeof tripBkHasLock === 'function' && tripBkHasLock(EBk) ? esc(String(EBk.rt)) : '') + '" /><div class="trip-eq-hint">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div>' +
+      '<div class="field" id="m-bk-rt-wrap" style="display:' + (EBk && EBk.fx && (typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) ? '' : 'none') + '"><label class="field-label" for="m-bk-rt">Kurs' + (EBk && EBk.paid ? ' saat dibayar' : '') + ' (Rp per 1 ' + esc((EBk && typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) || 'asing') + ')</label><input class="input mono" id="m-bk-rt" type="text" inputmode="decimal" placeholder="' + (tr.rate > 0 ? 'Ikut kurs perjalanan: ' + esc(tr.rate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + (EBk && typeof tripHasValidRt === 'function' && tripHasValidRt(EBk) ? esc(String(EBk.rt)) : '') + '" /><div class="msc-sub">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div>' +
       '<div class="bento-2">' +
       '<div class="field"><span class="field-label">Mulai / Check-in</span>' + mobDateFieldHtml('m-bk-start', defBkStart, false) + '</div>' +
       '<div class="field"><span class="field-label">Selesai / Check-out</span>' + mobDateFieldHtml('m-bk-end', defBkEnd, true) + '</div></div>' +
@@ -28656,9 +29587,9 @@ function renderMobTrip() {
       '<div class="stack" style="gap:7px">' +
       ((tr.bk || []).map(function (x) {
         var bkAmtHtml = typeof tripItemAmtHtml === 'function'
-          ? tripItemAmtHtml(tr, x.amt, x.fx, 'msc-right', 'font-size:0.84rem', typeof tripBkHasLock === 'function' && tripBkHasLock(x) ? x.rt : 0)
+          ? tripItemAmtHtml(tr, x, null, 'msc-right', 'font-size:0.84rem')
           : '<strong class="mono pv msc-right" style="font-size:0.84rem">' + rp(bkRpFn(tr, x)) + '</strong>';
-        return '<div class="mob-sched-card ' + (x.paid ? 'done' : '') + '" style="padding:10px"><div class="msc-top"><div class="msc-left" style="flex:1">' + mobCatLogo(mobTripCatMapped(x.cat || 'Transport'), 30) +
+        return '<div class="mob-sched-card ' + (x.paid ? 'done' : '') + '" data-bk-row="' + esc(x.id) + '" style="padding:10px"><div class="msc-top"><div class="msc-left" style="flex:1">' + mobCatLogo(mobTripCatMapped(x.cat || 'Transport'), 30) +
           '<div style="min-width:0;flex:1"><div style="font-weight:800;font-size:0.84rem">' + esc(x.title) + '</div><div class="msc-badges" style="margin-top:4px"><span class="badge b-nt">' + esc(x.cat || 'Transport') + '</span>' +
           (x.a ? '<span class="badge b-nt">' + esc(mobFmtShortCal(x.a) + (x.b ? ' – ' + mobFmtShortCal(x.b) : '')) + '</span>' : '') +
           '</div></div></div>' + bkAmtHtml + '</div>' +
@@ -28706,7 +29637,7 @@ function renderMobTrip() {
           : { got: Math.min(g.t, (g.s0 || 0) + perG), pct: g.t ? Math.min(100, Math.round((Math.min(g.t, (g.s0 || 0) + perG) / g.t) * 100)) : 0 },
         gotG = gsG.got, pctG = gsG.pct;
       body =
-        '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Target Tabungan</h3><p class="msc-sub">Sisihan dana bulanan sebelum berangkat</p></div>' +
+        '<div class="card" id="m-tg-card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Target Tabungan</h3><p class="msc-sub">Sisihan dana bulanan sebelum berangkat</p></div>' +
         '<span class="badge ' + (g.link ? 'b-em' : 'b-nt') + '">' + (g.link ? 'Tersambung ke Rincian' : 'Hanya Pencatat') + '</span></div>' +
         '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px;font-size:0.82rem"><span>Terkumpul <strong class="mono pv">' + rp(gotG) + '</strong> dari <strong class="mono pv">' + rp(g.t) + '</strong></span><strong class="mono" style="color:var(--emerald)">' + pctG + '%</strong></div>' +
         '<div class="rank-track" style="height:8px;margin-bottom:10px"><div class="rank-fill" style="width:' + pctG + '%;background:var(--emerald)"></div></div>' +
@@ -31116,10 +32047,14 @@ function bindMobileShellEvents(root) {
       if ($('m-kp-name')) $('m-kp-name').value = '';
       mobSetDateVal('m-kp-start', todayISO());
       mobSetDateVal('m-kp-end', addDaysISO(todayISO(), 4));
-      if ($('m-kp-use-budget')) $('m-kp-use-budget').value = '1';
-      setRpVal('m-kp-budget', 10000000);
+      if ($('m-kp-use-budget')) $('m-kp-use-budget').value = '0';
+      setRpVal('m-kp-budget', '');
       if ($('m-kp-cur')) $('m-kp-cur').value = '';
       if ($('m-kp-rate')) $('m-kp-rate').value = '';
+      MOB_STATE.tripFxsEnabled = false;
+      MOB_STATE.tripFxsDraft = [];
+      if ($('m-kp-fxs-err')) $('m-kp-fxs-err').textContent = '';
+      mobRenderTripFxsEditor();
       syncMobTripBudgetWrap();
       mobOpenSheet('m-sheet-trip');
       return;
@@ -31140,6 +32075,7 @@ function bindMobileShellEvents(root) {
       if (sKindM === 'pdf') {
         if (typeof tripPdfData !== 'function' || typeof repPdf !== 'function' || typeof rkDownloadBlob !== 'function') {
           setShSt('Pembuat PDF tidak tersedia.');
+          showMobToast('Pembuat PDF tidak tersedia.');
           return;
         }
         var repT = tripPdfData(trSh, incCostM),
@@ -31153,11 +32089,14 @@ function bindMobileShellEvents(root) {
           var mD = (resD && resD.method) || (dlResT && dlResT.method) || '';
           if (okD) {
             setShSt('PDF siap dibagikan / disimpan (' + repT.filename + (mD ? ' · ' + mD : '') + ').' + nonLatinNote);
+            showMobToast('PDF disimpan');
           } else if (resD && resD.cancelled) {
             setShSt('Pengiriman PDF dibatalkan.' + nonLatinNote);
+            showMobToast('Pengiriman PDF dibatalkan.');
           } else {
             var errS = (resD && resD.error) ? ' (' + resD.error + ')' : '';
             setShSt('Gagal mengirim PDF' + errS + '. Gunakan "Salin teks" atau coba lagi.' + nonLatinNote);
+            showMobToast('Gagal mengirim PDF');
           }
         });
         return;
@@ -31166,23 +32105,25 @@ function bindMobileShellEvents(root) {
       if (sKindM === 'wa') {
         if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
           Promise.resolve(navigator.share({ title: trSh.name, text: txtShM }))
-            .then(function () { setShSt('Dialog berbagi dibuka.'); })
+            .then(function () { setShSt('Dialog berbagi dibuka.'); showMobToast('Membuka berbagi teks'); })
             .catch(function (err) {
-              if (!err || err.name !== 'AbortError') setShSt('Berbagi gagal. Gunakan "Salin teks" lalu tempel di WhatsApp.');
+              if (!err || err.name !== 'AbortError') { setShSt('Berbagi gagal. Gunakan "Salin teks" lalu tempel di WhatsApp.'); showMobToast('Berbagi teks gagal'); }
             });
           return;
         }
         var waUrl = 'https://wa.me/?text=' + encodeURIComponent(txtShM);
         if (waUrl.length > MOB_WA_URL_MAX) {
           setShSt('Teks terlalu panjang untuk tautan WhatsApp (' + waUrl.length + ' karakter). Gunakan "Salin teks" lalu tempel di WhatsApp.');
+          showMobToast('Teks terlalu panjang untuk tautan WhatsApp');
           return;
         }
         mobOpenExternalUrl(waUrl);
         setShSt('Membuka WhatsApp...');
+        showMobToast('Membuka berbagi teks');
       } else if (typeof copyText === 'function') {
         copyText(txtShM).then(function () {
           setShSt('Teks disalin. Tinggal tempel di WhatsApp atau catatan.');
-          showMobToast('Itinerary disalin');
+          showMobToast('Teks disalin');
         });
       }
       return;
@@ -31226,27 +32167,61 @@ function bindMobileShellEvents(root) {
       mobSetDateVal('m-kp-start', trE.start || todayISO());
       mobSetDateVal('m-kp-end', trE.end || addDaysISO(todayISO(), 4));
       if ($('m-kp-use-budget')) $('m-kp-use-budget').value = trE.budget ? '1' : '0';
-      setRpVal('m-kp-budget', trE.budget || 0);
+      setRpVal('m-kp-budget', trE.budget ? trE.budget : '');
       if ($('m-kp-cur')) $('m-kp-cur').value = trE.cur || '';
       if ($('m-kp-rate')) $('m-kp-rate').value = trE.rate || '';
+      MOB_STATE.tripFxsEnabled = !!(typeof tripMultiCurOn === 'function' && tripMultiCurOn(trE));
+      MOB_STATE.tripFxsDraft = Array.isArray(trE.fxs)
+        ? trE.fxs.map(function (f) { return { c: f.c || '', r: f.r || 0, origC: f.c || '' }; })
+        : [];
+      if ($('m-kp-fxs-err')) $('m-kp-fxs-err').textContent = '';
+      mobRenderTripFxsEditor();
       syncMobTripBudgetWrap();
       mobOpenSheet('m-sheet-trip');
+      return;
+    }
+    if (e.target.closest('#m-kp-fxs-add') && typeof tripHandleFxsAddRow === 'function') {
+      MOB_STATE.tripFxsDraft = MOB_STATE.tripFxsDraft || [];
+      tripHandleFxsAddRow($('m-kp-multi-cur'), $('m-kp-fxs-wrap'), $('m-kp-fxs-list'), $('m-kp-fxs-add'), $('m-kp-fxs-err'), !!MOB_STATE.tripFxsEnabled, MOB_STATE.tripFxsDraft, showMobToast);
+      return;
+    }
+    var mFxDel = e.target.closest('#m-kp-fxs-list [data-fx-del]');
+    if (mFxDel && typeof tripHandleFxsDelRow === 'function') {
+      var trEditDelM = MOB_STATE.tripModalMode === 'edit' ? mobActiveTrip() : null;
+      tripHandleFxsDelRow($('m-kp-multi-cur'), $('m-kp-fxs-wrap'), $('m-kp-fxs-list'), $('m-kp-fxs-add'), $('m-kp-fxs-err'), !!MOB_STATE.tripFxsEnabled, MOB_STATE.tripFxsDraft || [], +mFxDel.getAttribute('data-fx-del'), trEditDelM, showMobToast);
       return;
     }
     var mitE = e.target.closest('[data-mit-edit]');
     if (mitE) {
       MOB_STATE.tripEditIt = mitE.getAttribute('data-mit-edit');
       renderMobTrip();
-      var itFormEl = $('m-trip-itin-form');
-      if (itFormEl && typeof itFormEl.scrollIntoView === 'function') {
-        try { itFormEl.scrollIntoView({ block: 'center', behavior: (typeof rkIsReducedMotion === 'function' && rkIsReducedMotion()) ? 'auto' : 'smooth' }); } catch (err) {}
+      if (typeof tripScrollToEditForm === 'function') tripScrollToEditForm($('m-trip-itin-form'), null, true);
+      else if ($('m-trip-itin-form') && typeof $('m-trip-itin-form').scrollIntoView === 'function') {
+        try { $('m-trip-itin-form').scrollIntoView({ block: 'center', behavior: (typeof rkIsReducedMotion === 'function' && rkIsReducedMotion()) ? 'auto' : 'smooth' }); } catch (err) {}
       }
       return;
     }
-    if (e.target.closest('#m-it-cancel')) { MOB_STATE.tripEditIt = null; renderMobTrip(); return; }
+    if (e.target.closest('#m-it-cancel')) {
+      var prevItM = MOB_STATE.tripEditIt;
+      MOB_STATE.tripEditIt = null;
+      renderMobTrip();
+      if (prevItM && typeof tripScrollBackToEditedRow === 'function') tripScrollBackToEditedRow($('m-trip-root') && $('m-trip-root').querySelector('[data-it-row="' + prevItM + '"]'), true);
+      return;
+    }
     var mbkE = e.target.closest('[data-mbk-edit]');
-    if (mbkE) { MOB_STATE.tripEditBk = mbkE.getAttribute('data-mbk-edit'); renderMobTrip(); return; }
-    if (e.target.closest('#m-bk-cancel')) { MOB_STATE.tripEditBk = null; renderMobTrip(); return; }
+    if (mbkE) {
+      MOB_STATE.tripEditBk = mbkE.getAttribute('data-mbk-edit');
+      renderMobTrip();
+      if (typeof tripScrollToEditForm === 'function') tripScrollToEditForm($('m-trip-book-form'), null, true);
+      return;
+    }
+    if (e.target.closest('#m-bk-cancel')) {
+      var prevBkM = MOB_STATE.tripEditBk;
+      MOB_STATE.tripEditBk = null;
+      renderMobTrip();
+      if (prevBkM && typeof tripScrollBackToEditedRow === 'function') tripScrollBackToEditedRow($('m-trip-root') && $('m-trip-root').querySelector('[data-bk-row="' + prevBkM + '"]'), true);
+      return;
+    }
     var tlist = e.target.closest('[data-mtrip-list]');
     if (tlist) { MOB_STATE.tripView = 'list'; renderMobTrip(); return; }
     var tsel = e.target.closest('[data-mtrip-sel]');
@@ -31290,7 +32265,7 @@ function bindMobileShellEvents(root) {
       }, 'Ya, hapus');
     }
     var itt = e.target.closest('[data-mit-toggle]');
-    if (itt) { var t0 = mobActiveTrip(), it0 = t0 && t0.it.find(function (x) { return x.id === itt.getAttribute('data-mit-toggle'); }); if (it0) { it0.done = !it0.done; save(); syncUI(); } return; }
+    if (itt) { var t0 = mobActiveTrip(), it0 = t0 && t0.it.find(function (x) { return x.id === itt.getAttribute('data-mit-toggle'); }); if (it0) { it0.done = !it0.done; save(); mobPreserveScroll(function () { syncUI(); }); showMobToast(it0.done ? 'Kegiatan ditandai selesai' : 'Status selesai dibatalkan'); } return; }
     var itd = e.target.closest('[data-mit-del]');
     if (itd) {
       var t1 = mobActiveTrip(), idIt = itd.getAttribute('data-mit-del'), xIt = t1 && t1.it.find(function (x) { return x.id === idIt; });
@@ -31308,7 +32283,7 @@ function bindMobileShellEvents(root) {
       return;
     }
     var bkp = e.target.closest('[data-mbk-pay]');
-    if (bkp) { var t2 = mobActiveTrip(), bk0 = t2 && t2.bk.find(function (x) { return x.id === bkp.getAttribute('data-mbk-pay'); }); if (bk0) { var lockMsgM = typeof tripToggleBkPaid === 'function' ? tripToggleBkPaid(t2, bk0) : (bk0.paid = !bk0.paid, ''); save(); syncUI(); if (lockMsgM) showMobToast(lockMsgM); } return; }
+    if (bkp) { var t2 = mobActiveTrip(), bk0 = t2 && t2.bk.find(function (x) { return x.id === bkp.getAttribute('data-mbk-pay'); }); if (bk0) { var lockMsgM = typeof tripToggleBkPaid === 'function' ? tripToggleBkPaid(t2, bk0) : (bk0.paid = !bk0.paid, bk0.paid ? 'Ditandai lunas' : 'Lunas dibatalkan'); save(); mobPreserveScroll(function () { syncUI(); }); if (lockMsgM) showMobToast(lockMsgM); } return; }
     var bkd = e.target.closest('[data-mbk-del]');
     if (bkd) {
       var t3 = mobActiveTrip(), idBk = bkd.getAttribute('data-mbk-del'), xBk = t3 && t3.bk.find(function (x) { return x.id === idBk; });
@@ -31333,8 +32308,8 @@ function bindMobileShellEvents(root) {
       }
       return;
     }
-    if (e.target.closest('#m-tg-edit')) { MOB_STATE.tripGoalEdit = true; renderMobTrip(); return; }
-    if (e.target.closest('#m-tg-cancel')) { MOB_STATE.tripGoalEdit = false; renderMobTrip(); return; }
+    if (e.target.closest('#m-tg-edit')) { MOB_STATE.tripGoalEdit = true; renderMobTrip(); if (typeof tripScrollToEditForm === 'function') tripScrollToEditForm($('m-trip-goal-form'), null, true); return; }
+    if (e.target.closest('#m-tg-cancel')) { MOB_STATE.tripGoalEdit = false; renderMobTrip(); if (typeof tripScrollBackToEditedRow === 'function') tripScrollBackToEditedRow($('m-tg-card'), true); return; }
     var extL = e.target.closest('[data-m-ext-url]');
     if (extL) {
       e.preventDefault();
@@ -31423,11 +32398,39 @@ function bindMobileShellEvents(root) {
           ? '<span class="badge b-ac">' + esc(res.name) + '</span> <span class="badge b-em mono">' + rp(res.price) + '</span> <span class="badge b-nt">' + esc(every({ n: res.n || 1, unit: res.unit || 'bulan' })) + '</span> <span class="badge b-nt mono">' + fmtD(res.start) + '</span>'
           : '<span class="badge b-am">' + esc((res && res.error) || 'Format belum dikenali') + '</span>');
       }
+    } else if (t.id === 'm-kp-budget') {
+      if (getRpVal('m-kp-budget') > 0 && $('m-kp-use-budget') && $('m-kp-use-budget').value === '0') {
+        $('m-kp-use-budget').value = '1';
+        syncMobTripBudgetWrap();
+      }
     } else if (t.id === 'm-trip-note') {
       var tr = mobActiveTrip();
-      if (tr) { tr.note = t.value; save(); }
-    } else if (t.id === 'm-it-est' || t.id === 'm-bk-amt' || t.id === 'm-bk-rt') {
+      if (tr) {
+        tr.note = t.value;
+        clearTimeout(window._mobNoteT);
+        window._mobNoteT = setTimeout(function () { save(); showMobToast('Catatan disimpan'); }, 350);
+      }
+    } else if (t.dataset && t.dataset.mdtDay != null) {
+      var trDtIn = mobActiveTrip(), dKeyIn = t.dataset.mdtDay;
+      if (trDtIn && ISO_RE.test(dKeyIn)) {
+        if (!trDtIn.dt || typeof trDtIn.dt !== 'object') trDtIn.dt = {};
+        var dtValIn = String(t.value || '').trim().slice(0, 60);
+        if (dtValIn) trDtIn.dt[dKeyIn] = dtValIn;
+        else delete trDtIn.dt[dKeyIn];
+        clearTimeout(window._mobDtT);
+        window._mobDtT = setTimeout(function () { save(); showMobToast('Judul hari disimpan'); }, 350);
+      }
+    } else if (t.id === 'm-it-est' || t.id === 'm-bk-amt') {
       mobSyncTripEqPrev();
+    } else if (t.id === 'm-it-rt' || t.id === 'm-bk-rt') {
+      if (t.dataset) t.dataset.userEdited = '1';
+      mobSyncTripEqPrev();
+    } else if (t.closest && t.closest('#m-kp-fxs-list') && MOB_STATE.tripFxsDraft) {
+      var idxFxM = t.dataset.fxCode != null ? +t.dataset.fxCode : (t.dataset.fxRate != null ? +t.dataset.fxRate : -1);
+      if (idxFxM >= 0 && MOB_STATE.tripFxsDraft[idxFxM]) {
+        if (t.dataset.fxCode != null) MOB_STATE.tripFxsDraft[idxFxM].c = t.value.toUpperCase();
+        if (t.dataset.fxRate != null) MOB_STATE.tripFxsDraft[idxFxM].rRaw = t.value;
+      }
     }
   });
 
@@ -31438,7 +32441,12 @@ function bindMobileShellEvents(root) {
       $('m-kas-debt-box').style.display = t.checked ? 'grid' : 'none';
     } else if (t.id === 'm-kas-flt-cat') {
       renderMobKas();
+    } else if (t.id === 'm-kp-multi-cur' && typeof tripHandleFxsToggleChange === 'function') {
+      var trEditTogM = MOB_STATE.tripModalMode === 'edit' ? mobActiveTrip() : null;
+      tripHandleFxsToggleChange($('m-kp-multi-cur'), $('m-kp-fxs-wrap'), $('m-kp-fxs-list'), $('m-kp-fxs-add'), $('m-kp-fxs-err'), trEditTogM, function () { return MOB_STATE.tripFxsDraft || []; }, function (v) { MOB_STATE.tripFxsEnabled = !!v; }, showMobToast);
     } else if (t.id === 'm-it-cur' || t.id === 'm-bk-cur') {
+      var rtElCurM = $(t.id === 'm-it-cur' ? 'm-it-rt' : 'm-bk-rt');
+      if (rtElCurM && !(rtElCurM.dataset && rtElCurM.dataset.userEdited === '1')) rtElCurM.value = '';
       mobSyncTripEqPrev();
     } else if (t.dataset && t.dataset.msimtog != null) {
       var ix = +t.dataset.msimtog;
@@ -31475,6 +32483,11 @@ function bindMobileShellEvents(root) {
           mobSetXlBusy(false);
           try {
             var dXl = xlParse(X.read(fr.result, { type: 'array', cellDates: true }));
+            if (dXl.error) {
+              MOB_XL_DATA = null;
+              showMobToast(dXl.error);
+              return;
+            }
             if (!dXl.it.length && !dXl.bk.length) {
               showMobToast('Format tidak dikenali. Unduh Template Excel lalu isi sesuai kolomnya.');
               return;
@@ -31504,7 +32517,12 @@ function bindMobileShellEvents(root) {
       });
     } else if (t.id === 'm-kp-use-budget') {
       syncMobTripBudgetWrap();
+    } else if (t.id === 'm-trip-note') {
+      clearTimeout(window._mobNoteT);
+      var trCh = mobActiveTrip();
+      if (trCh) { trCh.note = t.value; save(); showMobToast('Catatan disimpan'); }
     } else if (t.dataset && t.dataset.mdtDay != null) {
+      clearTimeout(window._mobDtT);
       var trDt = mobActiveTrip(), dKey = t.dataset.mdtDay;
       if (trDt && ISO_RE.test(dKey)) {
         if (!trDt.dt || typeof trDt.dt !== 'object') trDt.dt = {};
@@ -31512,6 +32530,7 @@ function bindMobileShellEvents(root) {
         if (dtVal) trDt.dt[dKey] = dtVal;
         else delete trDt.dt[dKey];
         save();
+        showMobToast('Judul hari disimpan');
       }
     }
   });
@@ -31602,15 +32621,42 @@ function bindMobileShellEvents(root) {
         showMobToast(metaErrM.error);
         return;
       }
-      if (MOB_STATE.tripModalMode === 'edit' && mobActiveTrip()) {
-        Object.assign(mobActiveTrip(), { name: tnm, start: stD, end: enD, budget: budV, cur: cur, rate: cur ? rt : 0 });
+      var isEditMetaM = (MOB_STATE.tripModalMode === 'edit' && mobActiveTrip());
+      var fxResM = { error: '', fxs: [], renames: [] };
+      if (MOB_STATE.tripFxsEnabled && typeof tripValidateFxsRows === 'function') {
+        fxResM = tripValidateFxsRows(cur, MOB_STATE.tripFxsDraft || []);
+        if (fxResM.error) {
+          if ($('m-kp-fxs-err')) $('m-kp-fxs-err').textContent = fxResM.error;
+          showMobToast(fxResM.error);
+          return;
+        }
+      } else if (isEditMetaM && typeof tripCountAllExtraCurUsage === 'function') {
+        var uOffM = tripCountAllExtraCurUsage(mobActiveTrip());
+        if (uOffM.total > 0) {
+          var offMsgM = tripFormatCurUsageMsg(uOffM);
+          if ($('m-kp-fxs-err')) $('m-kp-fxs-err').textContent = offMsgM;
+          showMobToast(offMsgM);
+          return;
+        }
+      }
+      if (isEditMetaM) {
+        var trMetaM = mobActiveTrip();
+        Object.assign(trMetaM, { name: tnm, start: stD, end: enD, budget: budV, cur: cur, rate: cur ? rt : 0 });
+        if (MOB_STATE.tripFxsEnabled) {
+          if (typeof tripApplyFxsRenames === 'function') tripApplyFxsRenames(trMetaM, fxResM.renames);
+          trMetaM.fxs = fxResM.fxs;
+        } else {
+          delete trMetaM.fxs;
+        }
       } else {
         var pid = 'p' + Date.now().toString(36);
-        ALL.kas.pr[pid] = {
+        var newProfM = {
           id: pid, name: tnm, saldo: 0, link: false,
           start: stD, end: enD, budget: budV, cur: cur, rate: cur ? rt : 0,
           dt: {}, tx: [], it: [], bk: [], lk: [], ck: [], note: '', goal: null,
         };
+        if (MOB_STATE.tripFxsEnabled) newProfM.fxs = fxResM.fxs;
+        ALL.kas.pr[pid] = newProfM;
         MOB_STATE.tripId = pid;
         MOB_STATE.tripView = 'detail';
         MOB_STATE.tripSub = 'ring';
@@ -31618,7 +32664,7 @@ function bindMobileShellEvents(root) {
       mobCloseSheet('m-sheet-trip');
       save();
       syncUI();
-      showMobToast(MOB_STATE.tripModalMode === 'edit' ? 'Perjalanan diperbarui' : 'Perjalanan baru dibuat');
+      showMobToast(isEditMetaM ? 'Perjalanan diperbarui' : 'Perjalanan dibuat');
     } else if (f.id === 'm-trip-itin-form') {
       var trI = mobActiveTrip(), pl = ($('m-it-place') && $('m-it-place').value || '').trim();
       if (!trI || !pl) { if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-it-place')); return; }
@@ -31639,6 +32685,7 @@ function bindMobileShellEvents(root) {
         return;
       }
       var rawPay = $('m-it-pay') ? $('m-it-pay').value : 'cash';
+      var itCurSpecM = typeof tripParseCurSelectVal === 'function' ? tripParseCurSelectVal(trI, $('m-it-cur') && $('m-it-cur').value) : { fx: $('m-it-cur') && $('m-it-cur').value === 'fx', c: '' };
       var patchItM = {
         day: ($('m-it-day') && $('m-it-day').value) || trI.start || todayISO(),
         time: parsedTm,
@@ -31646,13 +32693,19 @@ function bindMobileShellEvents(root) {
         place: pl.slice(0, 120),
         cat: $('m-it-cat') ? $('m-it-cat').value : 'Transport',
         est: getRpVal('m-it-est'),
-        fx: !!(trI.cur && $('m-it-cur') && $('m-it-cur').value === 'fx'),
+        fx: !!(trI.cur && itCurSpecM.fx),
         pay: /^(ic|on|cash)$/.test(rawPay) ? rawPay : '',
         link: rawLink.slice(0, 400),
         note: ($('m-it-note') && $('m-it-note').value || '').trim().slice(0, 200),
       };
-      if (MOB_STATE.tripEditIt) {
-        trI.it = trI.it.map(function (x) { return x.id === MOB_STATE.tripEditIt ? Object.assign({}, x, patchItM) : x; });
+      if (patchItM.fx && itCurSpecM.c) patchItM.c = itCurSpecM.c;
+      var editItIdM = MOB_STATE.tripEditIt;
+      if (editItIdM) {
+        trI.it = trI.it.map(function (x) {
+          return x.id === editItIdM
+            ? (typeof tripMergeItemEdit === 'function' ? tripMergeItemEdit(x, patchItM, $('m-it-rt'), false) : Object.assign({}, x, patchItM))
+            : x;
+        });
         MOB_STATE.tripEditIt = null;
       } else {
         trI.it.push(Object.assign({
@@ -31662,28 +32715,34 @@ function bindMobileShellEvents(root) {
       }
       save();
       syncUI();
-      showMobToast('Kegiatan disimpan');
+      showMobToast(editItIdM ? 'Kegiatan diperbarui' : 'Kegiatan disimpan');
+      if (editItIdM && typeof tripScrollBackToEditedRow === 'function') {
+        tripScrollBackToEditedRow($('m-trip-root') && $('m-trip-root').querySelector('[data-it-row="' + editItIdM + '"]'), true);
+      }
     } else if (f.id === 'm-trip-book-form') {
       var trB = mobActiveTrip(), bt = ($('m-bk-title') && $('m-bk-title').value || '').trim(), bAmt = getRpVal('m-bk-amt');
       if (!trB || !bt) { if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-bk-title')); return; }
       if (!(bAmt > 0)) { if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-bk-amt')); return; }
+      var bkCurSpecM = typeof tripParseCurSelectVal === 'function' ? tripParseCurSelectVal(trB, $('m-bk-cur') && $('m-bk-cur').value) : { fx: $('m-bk-cur') && $('m-bk-cur').value === 'fx', c: '' };
       var patchBkM = {
         title: bt.slice(0, 120),
         cat: $('m-bk-cat') ? $('m-bk-cat').value : 'Transport',
         amt: bAmt,
-        fx: !!(trB.cur && $('m-bk-cur') && $('m-bk-cur').value === 'fx'),
+        fx: !!(trB.cur && bkCurSpecM.fx),
         a: ($('m-bk-start') && $('m-bk-start').value) || '',
         b: ($('m-bk-end') && $('m-bk-end').value) || '',
       };
+      if (patchBkM.fx && bkCurSpecM.c) patchBkM.c = bkCurSpecM.c;
       var bkDtErrM = typeof tripValidateDates === 'function' ? tripValidateDates(patchBkM.a, patchBkM.b) : null;
       if (bkDtErrM) {
         if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-bk-end-trig') || $('m-bk-title'));
         showMobToast(bkDtErrM.error);
         return;
       }
-      if (MOB_STATE.tripEditBk) {
+      var editBkIdM = MOB_STATE.tripEditBk;
+      if (editBkIdM) {
         trB.bk = trB.bk.map(function (x) {
-          return x.id === MOB_STATE.tripEditBk
+          return x.id === editBkIdM
             ? (typeof tripMergeBkEdit === 'function' ? tripMergeBkEdit(x, patchBkM, $('m-bk-rt')) : Object.assign({}, x, patchBkM))
             : x;
         });
@@ -31696,7 +32755,10 @@ function bindMobileShellEvents(root) {
       }
       save();
       syncUI();
-      showMobToast('Pemesanan disimpan');
+      showMobToast(editBkIdM ? 'Pemesanan diperbarui' : 'Pemesanan disimpan');
+      if (editBkIdM && typeof tripScrollBackToEditedRow === 'function') {
+        tripScrollBackToEditedRow($('m-trip-root') && $('m-trip-root').querySelector('[data-bk-row="' + editBkIdM + '"]'), true);
+      }
     } else if (f.id === 'm-trip-ck-form') {
       var trC = mobActiveTrip(), txt = ($('m-ck-inp') && $('m-ck-inp').value || '').trim();
       if (!trC || !txt) { if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-ck-inp')); return; }
@@ -31756,9 +32818,13 @@ function bindMobileShellEvents(root) {
         showMobToast('Dana yang terkumpul sudah mencapai target.');
         return;
       }
+      var wasGoalEditM = !!MOB_STATE.tripGoalEdit;
       trG.goal = { t: gc.t, s0: gc.s0, from: gc.from, to: gc.to, per: gc.per, link: gc.link };
       MOB_STATE.tripGoalEdit = false;
       save(); syncUI(); showMobToast('Target tabungan disimpan');
+      if (wasGoalEditM && typeof tripScrollBackToEditedRow === 'function') {
+        tripScrollBackToEditedRow($('m-tg-card'), true);
+      }
     } else if (f.id === 'm-trip-xl-form') {
       if (!MOB_XL_DATA || typeof xlValidateMeta !== 'function' || typeof xlBuildProfile !== 'function') return;
       var valXl = xlValidateMeta(MOB_XL_DATA, $('m-xl-name') && $('m-xl-name').value, $('m-xl-cur') && $('m-xl-cur').value, $('m-xl-rate') && $('m-xl-rate').value);

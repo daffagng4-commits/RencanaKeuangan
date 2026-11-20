@@ -73,6 +73,8 @@ function toast(msg, undo) {
   if (typeof getShellMode === 'function' && getShellMode() === 'mobile-app' && typeof showMobToast === 'function') {
     showMobToast(msg, undo);
   }
+  var tb = $('toast-box');
+  if (tb) tb.classList.remove('show');
   var t = $('tt');
   if (!t || !$('ttm') || !$('ttu')) return;
   $('ttm').textContent = msg;
@@ -84,7 +86,7 @@ function toast(msg, undo) {
     function () {
       t.hidden = true;
     },
-    undo ? 10000 : 4000,
+    undo ? 10000 : 2000,
   );
 }
 

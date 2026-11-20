@@ -2387,3 +2387,44 @@ body[data-shell="mobile-app"] #mobile-app-shell #m-svg-sim-chart {
     animation: none !important;
   }
 }
+
+/* Mode Perjalanan APK: Beberapa mata uang & kartu Rincian (Tahap 10B B2) */
+body[data-shell="mobile-app"] #mobile-app-shell .trip-multi-cur-box {
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-switch-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-fx-edit-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-fx-detail-row {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-fx-detail-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-fx-detail-mid {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-fx-detail-rate {
+  color: var(--text-muted);
+}
