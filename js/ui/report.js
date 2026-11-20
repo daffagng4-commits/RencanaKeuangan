@@ -170,10 +170,11 @@ function repPdf(rep) {
   var page = function () { ops = []; curAnnots = []; pages.push(ops); annotsPerPage.push(curAnnots); y = H - M; };
   var cont = function () { page(); put(rep.title, M, y - 12, 11, true, MUT); y -= 26; };
   var fit = function (cell, bold, w) {
-    var s = repEnc(cell);
-    if (repWidth(s, bold, 9) <= w - 6) return s;
-    while (s.length > 1 && repWidth(s + '..', bold, 9) > w - 6) s = s.slice(0, -1);
-    return s + '..';
+    var s = String(cell == null ? '' : cell);
+    if (repWidth(repEnc(s), bold, 9) <= w - 6) return s;
+    var chars = Array.from(s);
+    while (chars.length > 1 && repWidth(repEnc(chars.join('') + '..'), bold, 9) > w - 6) chars.pop();
+    return chars.join('') + '..';
   };
 
   page();
@@ -213,7 +214,7 @@ function repPdf(rep) {
         if (uri) {
           var fitted = fit(txt, c.bold, ws[i]),
             lCol = rawCell.color || LINK_INK,
-            tw = repWidth(fitted, c.bold, 9),
+            tw = repWidth(repEnc(fitted), c.bold, 9),
             ax = cx(i),
             x1 = c.align === 'r' ? ax - tw : ax,
             x2 = c.align === 'r' ? ax : ax + tw;

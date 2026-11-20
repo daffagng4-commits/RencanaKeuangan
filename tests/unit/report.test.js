@@ -108,7 +108,7 @@ test('A5.i + D3: safeHref menolak skema berbahaya & repPdf laporan tanpa href id
   const expected = {
     d: '329265b1ba8a1511f7d377a17a8bcffeed2f5b4514876a3f6c184faac64686a8',
     w: '9c966b4688c286890d5f8d969eb239449525d343dd7be1ed67229f02c2d3634f',
-    m: 'f24a639b14014347b4a7366752f26a82aa66dbc39c6fb77e3c43428b9059bcde',
+    m: '68d12f99925217802d1cbcfd03f7736446a160a102835c17520f803d6e09da83',
     y: '00a98f0b835b16de108ac1817a0bce5671b2e0063153efc037b1d05bdd09ada7',
   };
   for (const k of ['d', 'w', 'm', 'y']) {
@@ -272,4 +272,93 @@ test('B3: tripPdfData berada di modul bersama, label tombol desktop "Simpan PDF"
   assert.ok(uris.includes('https://page2.tokyo.jp/spot'), 'anotasi halaman lanjutan dipertahankan');
   assert.ok(uris.includes('https://www.tokyometro.jp/en/index.html'), 'tautan penting menjadi anotasi');
   assert.ok(!uris.some((u) => /javascript:|data:/i.test(u)), 'URL berbahaya ditolak');
+});
+
+test('Hotfix 6.1: repPdf tidak melakukan double-encode pada sel tabel (0x96 en-dash, em-dash, kutip, bullet, euro, elipsis, truncasi, & e2e trip)', async () => {
+  const c = loadCore({
+    window: { addEventListener() {} },
+    document: { addEventListener() {} },
+    localStorage: { getItem: () => null, setItem() {} },
+    ALL: { kas: { pr: {} }, year: 2026, data: { 2026: { year: 2026, saldo: 0, startMonth: 0, items: [], paid: {}, skip: {}, adj: [] } } },
+  });
+  c.S = c.ALL.data[2026];
+  vm.runInContext(
+    fs.readFileSync(path.join(__dirname, '..', '..', 'js', 'ui', 'trip.js'), 'utf8') +
+      '\n' +
+      fs.readFileSync(path.join(__dirname, '..', '..', 'js', 'ui', 'report.js'), 'utf8'),
+    c,
+    { filename: 'trip+report.js' },
+  );
+
+  // 1-4: Uji langsung sel kiri, sel {t, href}, sel rata kanan, pemotongan panjang (..), dan karakter non-WinAnsi
+  const sampleWinAnsi = '\u2014 \u201cA\u201d \u2018B\u2019 \u2022 \u20ac10 \u2026';
+  const expectedWinAnsi = '\x97 \x93A\x94 \x91B\x92 \x95 \x8010 \x85';
+  const longText = 'Rute \u2013 Panjang \u201cTokyo\u201d \u20ac50 ' + 'jalan '.repeat(25);
+  const bytes = c.repPdf({
+    title: 'Uji WinAnsi',
+    subtitle: 'Subjudul',
+    summary: [['Ringkas', 'Rp 100']],
+    tables: [
+      {
+        head: 'Jadwal',
+        cols: [
+          { t: 'JAM', w: 20 },
+          { t: 'KEGIATAN', w: 55 },
+          { t: 'BIAYA', w: 25, align: 'r' },
+        ],
+        rows: [
+          ['20.00\u201321.50', sampleWinAnsi, '\u20ac 25 \u2013 \u201cOK\u201d'],
+          ['09.00', { t: 'Peta \u2013 \u201cKlik\u201d \u2022 \u20ac5', href: 'https://maps.google.com/?q=tokyo' }, '\u2014'],
+          ['10.00', longText, ''],
+          ['11.00', 'NonLatin 日本語 😀', ''],
+        ],
+      },
+    ],
+  });
+  const raw = Buffer.from(bytes).toString('latin1');
+  assert.ok(raw.includes('(20.00\x9621.50) Tj'), 'sel jam memuat byte WinAnsi 0x96 untuk en-dash');
+  assert.ok(!raw.includes('(20.00?21.50)'), 'sel jam tidak boleh mengandung ? pengganti en-dash');
+  assert.ok(raw.includes('(' + expectedWinAnsi + ') Tj'), 'sel kiri mempertahankan em-dash, kutip melengkung, bullet, euro, dan elipsis');
+  assert.ok(raw.includes('(\x80 25 \x96 \x93OK\x94) Tj'), 'sel rata kanan mempertahankan byte WinAnsi');
+  assert.ok(raw.includes('(Peta \x96 \x93Klik\x94 \x95 \x805) Tj'), 'sel tautan {t, href} mempertahankan byte WinAnsi');
+  assert.match(raw, /\(Rute \x96 Panjang \x93Tokyo\x94 \x8050[^\n)]*\.\.\) Tj/, 'sel panjang terpotong .. tetap mempertahankan byte WinAnsi');
+  assert.ok(raw.includes('(NonLatin ??? ?) Tj'), 'karakter di luar WinAnsi (kanji/emoji) tetap menjadi ?');
+
+  // 5: End-to-end tripPdfData -> repPdf -> stream + pdf-lib + xref + anotasi
+  const e2eTrip = {
+    id: 'p-61',
+    name: 'Uji Jam \u2013 Tokyo',
+    start: '2026-01-26',
+    end: '2026-01-26',
+    cur: 'EUR',
+    rate: 17000,
+    dt: { '2026-01-26': 'Hari Pertama \u2014 Tiba' },
+    it: [
+      {
+        id: 'i1',
+        day: '2026-01-26',
+        time: '20:00',
+        time2: '21:50',
+        place: 'Makan malam \u2013 ramen \u201cx\u201d \u00b7 y',
+        est: 20,
+        fx: true,
+        pay: 'cash',
+        link: 'https://example.com/ramen',
+        note: 'Catatan \u2022 \u20ac20',
+      },
+    ],
+    bk: [],
+    lk: [{ id: 'l1', title: 'Panduan \u2013 Resmi', url: 'https://example.com/guide' }],
+  };
+  const repObj = c.tripPdfData(e2eTrip, true);
+  const e2eBytes = c.repPdf(repObj);
+  const e2eRaw = Buffer.from(e2eBytes).toString('latin1');
+  assert.ok(e2eRaw.includes('(20.00\x9621.50) Tj'), 'e2e tripPdfData->repPdf jam 20.00-21.50 memakai byte 0x96');
+  assert.ok(!e2eRaw.includes('(20.00?21.50)'), 'e2e tripPdfData->repPdf bebas ? pada rentang jam');
+  assert.ok(e2eRaw.includes('(Makan malam \x96 ramen \x93x\x94 \xb7 y) Tj'), 'e2e isi kegiatan bebas double-encode');
+
+  const e2eDoc = await PDFDocument.load(new Uint8Array(e2eBytes));
+  assert.equal(e2eDoc.getPageCount(), 1);
+  const annots = extractPageAnnots(e2eDoc, 0);
+  assert.equal(annots.length, 2, 'anotasi Link tetap utuh');
 });
