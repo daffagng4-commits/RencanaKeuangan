@@ -163,6 +163,17 @@ function safeHref(u) {
   return s;
 }
 
+/** Validasi tanggal kalender YYYY-MM-DD murni UTC tanpa bergantung zona waktu lokal. */
+function isValidIsoDate(s) {
+  if (typeof s !== 'string' || !ISO_RE.test(s)) return false;
+  var p = s.split('-');
+  var dt = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2]));
+  return !isNaN(dt.getTime()) && dt.toISOString().slice(0, 10) === s;
+}
+
+/** Daftar kategori valid untuk pengeluaran aktual perjalanan (union ICAT & BCAT). */
+var TRIP_AC_CAT_SET = { Makan: 1, Transport: 1, 'Tiket & Tour': 1, Belanja: 1, Penginapan: 1, Persiapan: 1, Lainnya: 1 };
+
 /** Catatan Kas: {pr:{[id]:{id,name,saldo,tx:[{id,d,t,amt,cat,note}]}}}. Selalu ada minimal satu profil. */
 function normKas(k) {
   var pr = {};
@@ -182,6 +193,90 @@ function normKas(k) {
           cleanFxs.push({ c: fc, r: fr });
         });
       }
+      var cleanIt = (Array.isArray(p.it) ? p.it : [])
+        .filter(function (x) {
+          return x && ISO_RE.test(x.day) && x.place;
+        })
+        .map(function (x, i) {
+          var isFxIt = !!x.fx;
+          var okRtIt = isFxIt && typeof x.rt === 'number' && Number.isFinite(x.rt) && x.rt > 0 && x.rt <= 1e9;
+          var xcIt = (isFxIt && cleanFxs && typeof x.c === 'string') ? x.c.trim().toUpperCase() : '';
+          var rowIt = {
+            id: String(x.id || 'i' + i),
+            day: x.day,
+            time: /^\d{2}:\d{2}$/.test(x.time) ? x.time : '',
+            time2: /^\d{2}:\d{2}$/.test(x.time2) ? x.time2 : '',
+            place: String(x.place).slice(0, 120),
+            cat: String(x.cat || '').slice(0, 20),
+            est: +x.est > 0 ? +x.est : 0,
+            fx: isFxIt,
+            pay: /^(ic|on|cash)$/.test(x.pay) ? x.pay : '',
+            link: okUrl(x.link) ? String(x.link).slice(0, 400) : '',
+            note: String(x.note || '').slice(0, 200),
+            done: !!x.done,
+            rec: String(x.rec || ''),
+          };
+          if (xcIt && validExtraSet[xcIt]) rowIt.c = xcIt;
+          if (okRtIt) rowIt.rt = x.rt;
+          return rowIt;
+        });
+      var cleanBk = (Array.isArray(p.bk) ? p.bk : [])
+        .filter(function (x) {
+          return x && x.title;
+        })
+        .map(function (x, i) {
+          var isFx = !!x.fx, isPaid = !!x.paid;
+          var okRt = isFx && typeof x.rt === 'number' && Number.isFinite(x.rt) && x.rt > 0 && x.rt <= 1e9;
+          var xcBk = (isFx && cleanFxs && typeof x.c === 'string') ? x.c.trim().toUpperCase() : '';
+          var row = {
+            id: String(x.id || 'b' + i),
+            title: String(x.title).slice(0, 120),
+            cat: String(x.cat || 'Lainnya').slice(0, 20),
+            amt: +x.amt > 0 ? +x.amt : 0,
+            fx: isFx,
+            pay: /^(ic|on|cash)$/.test(x.pay) ? x.pay : '',
+            link: okUrl(x.link) ? String(x.link).slice(0, 400) : '',
+            a: ISO_RE.test(x.a) ? x.a : '',
+            b: ISO_RE.test(x.b) ? x.b : '',
+            paid: isPaid,
+            rec: String(x.rec || ''),
+          };
+          if (xcBk && validExtraSet[xcBk]) row.c = xcBk;
+          if (okRt) row.rt = x.rt;
+          if (okRt && isPaid && x.ra === true) row.ra = true;
+          return row;
+        });
+      var validRfSet = {};
+      cleanIt.forEach(function (x) { validRfSet['it:' + x.id] = 1; });
+      cleanBk.forEach(function (x) { validRfSet['bk:' + x.id] = 1; });
+      var cleanAc = [], seenAcId = {};
+      if (Array.isArray(p.ac)) {
+        for (var ai = 0; ai < p.ac.length && cleanAc.length < 3000; ai++) {
+          var xa = p.ac[ai];
+          if (!xa || typeof xa !== 'object') continue;
+          var rawAcId = (typeof xa.id === 'string' || typeof xa.id === 'number') ? String(xa.id).trim().slice(0, 40) : '';
+          if (!rawAcId || seenAcId[rawAcId]) continue;
+          if (!isValidIsoDate(xa.d)) continue;
+          if (!(typeof xa.amt === 'number' && Number.isFinite(xa.amt) && xa.amt > 0 && xa.amt <= 1e12)) continue;
+          seenAcId[rawAcId] = 1;
+          var isFxAc = !!xa.fx;
+          var okRtAc = isFxAc && typeof xa.rt === 'number' && Number.isFinite(xa.rt) && xa.rt > 0 && xa.rt <= 1e9;
+          var xcAc = (isFxAc && cleanFxs && typeof xa.c === 'string') ? xa.c.trim().toUpperCase() : '';
+          var catAc = (typeof xa.cat === 'string' && TRIP_AC_CAT_SET[xa.cat]) ? xa.cat : 'Lainnya';
+          var rowAc = {
+            id: rawAcId,
+            d: xa.d,
+            amt: xa.amt,
+            fx: isFxAc,
+            cat: catAc,
+          };
+          if (xcAc && validExtraSet[xcAc]) rowAc.c = xcAc;
+          if (okRtAc) rowAc.rt = xa.rt;
+          if (typeof xa.note === 'string' && xa.note.length > 0) rowAc.note = xa.note.slice(0, 200);
+          if (typeof xa.rf === 'string' && validRfSet[xa.rf]) rowAc.rf = xa.rf;
+          cleanAc.push(rowAc);
+        }
+      }
       var profObj = {
         id: id,
         name: String(p.name || 'Profil').slice(0, 30),
@@ -200,59 +295,9 @@ function normKas(k) {
             });
           return o;
         })(),
-        it: (Array.isArray(p.it) ? p.it : [])
-          .filter(function (x) {
-            return x && ISO_RE.test(x.day) && x.place;
-          })
-          .map(function (x, i) {
-            var isFxIt = !!x.fx;
-            var okRtIt = isFxIt && typeof x.rt === 'number' && Number.isFinite(x.rt) && x.rt > 0 && x.rt <= 1e9;
-            var xcIt = (isFxIt && cleanFxs && typeof x.c === 'string') ? x.c.trim().toUpperCase() : '';
-            var rowIt = {
-              id: String(x.id || 'i' + i),
-              day: x.day,
-              time: /^\d{2}:\d{2}$/.test(x.time) ? x.time : '',
-              time2: /^\d{2}:\d{2}$/.test(x.time2) ? x.time2 : '',
-              place: String(x.place).slice(0, 120),
-              cat: String(x.cat || '').slice(0, 20),
-              est: +x.est > 0 ? +x.est : 0,
-              fx: isFxIt,
-              pay: /^(ic|on|cash)$/.test(x.pay) ? x.pay : '',
-              link: okUrl(x.link) ? String(x.link).slice(0, 400) : '',
-              note: String(x.note || '').slice(0, 200),
-              done: !!x.done,
-              rec: String(x.rec || ''),
-            };
-            if (xcIt && validExtraSet[xcIt]) rowIt.c = xcIt;
-            if (okRtIt) rowIt.rt = x.rt;
-            return rowIt;
-          }),
-        bk: (Array.isArray(p.bk) ? p.bk : [])
-          .filter(function (x) {
-            return x && x.title;
-          })
-          .map(function (x, i) {
-            var isFx = !!x.fx, isPaid = !!x.paid;
-            var okRt = isFx && typeof x.rt === 'number' && Number.isFinite(x.rt) && x.rt > 0 && x.rt <= 1e9;
-            var xcBk = (isFx && cleanFxs && typeof x.c === 'string') ? x.c.trim().toUpperCase() : '';
-            var row = {
-              id: String(x.id || 'b' + i),
-              title: String(x.title).slice(0, 120),
-              cat: String(x.cat || 'Lainnya').slice(0, 20),
-              amt: +x.amt > 0 ? +x.amt : 0,
-              fx: isFx,
-              pay: /^(ic|on|cash)$/.test(x.pay) ? x.pay : '',
-              link: okUrl(x.link) ? String(x.link).slice(0, 400) : '',
-              a: ISO_RE.test(x.a) ? x.a : '',
-              b: ISO_RE.test(x.b) ? x.b : '',
-              paid: isPaid,
-              rec: String(x.rec || ''),
-            };
-            if (xcBk && validExtraSet[xcBk]) row.c = xcBk;
-            if (okRt) row.rt = x.rt;
-            if (okRt && isPaid && x.ra === true) row.ra = true;
-            return row;
-          }),
+        it: cleanIt,
+        bk: cleanBk,
+        ac: cleanAc,
         lk: (Array.isArray(p.lk) ? p.lk : [])
           .filter(function (x) {
             return x && x.title && okUrl(x.url);
@@ -285,7 +330,7 @@ function normKas(k) {
       if (cleanFxs !== null) profObj.fxs = cleanFxs;
       pr[id] = profObj;
     });
-  if (!Object.keys(pr).length) pr.utama = { id: 'utama', name: 'Utama', saldo: 0, tx: [], link: true };
+  if (!Object.keys(pr).length) pr.utama = { id: 'utama', name: 'Utama', saldo: 0, tx: [], ac: [], link: true };
   var ids = Object.keys(pr),
     lk = null;
   ids.forEach(function (id) {

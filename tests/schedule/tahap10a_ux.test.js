@@ -257,6 +257,8 @@ const { boot } = require('./ui.js');
     'id:br-tg-edit', 'id:br-tg-cancel', 'attr:data-trip-open', 'attr:data-trip-pick', 'attr:data-triptab',
     'attr:data-trip-it-edit', 'attr:data-it-cancel', 'attr:data-bk-edit', 'attr:data-bk-cancel',
     'attr:data-ck-tog', 'attr:data-ical-trig', 'attr:data-ical-mv', 'attr:data-ical-pick',
+    // Tahap 11 Realisasi
+    'form:trip-ac-form', 'id:ac-cancel', 'attr:data-ac-cat', 'attr:data-ac-edit', 'attr:data-ac-del',
   ]);
   const collectDeskControls = () => {
     const found = [];
@@ -265,7 +267,7 @@ const { boot } = require('./ui.js');
       else if (el.id) found.push('id:' + el.id);
       else if (el.dataset) {
         for (const k of Object.keys(el.dataset)) {
-          if (/^(tripOpen|tripPick|triptab|itDone|tripItEdit|itCancel|tripItDel|bkPay|bkEdit|bkCancel|bkDel|ckTog|ckDel|lkDel|dtDay|icalTrig)$/.test(k)) {
+          if (/^(tripOpen|tripPick|triptab|itDone|tripItEdit|itCancel|tripItDel|bkPay|bkEdit|bkCancel|bkDel|ckTog|ckDel|lkDel|dtDay|icalTrig|acCat|acEdit|acDel)$/.test(k)) {
             const attrName = 'data-' + k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
             found.push('attr:' + attrName);
           }
@@ -278,7 +280,7 @@ const { boot } = require('./ui.js');
   w.renderTrip();
   const deskKeys = new Set(collectDeskControls());
   w.BR_STATE.tripView = 'detail';
-  for (const sub of ['ring', 'itin', 'book', 'cek', 'cat', 'sv']) {
+  for (const sub of ['ring', 'itin', 'book', 'real', 'cek', 'cat', 'sv']) {
     w.BR_STATE.tripSubTab = sub;
     if (sub === 'sv') w.BR_STATE.tripGoalEdit = false;
     w.renderTrip();

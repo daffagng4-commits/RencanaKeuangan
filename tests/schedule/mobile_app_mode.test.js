@@ -3588,6 +3588,9 @@ const { boot } = require('./ui.js');
     'attr:data-mit-edit', 'attr:data-mbk-edit', 'attr:data-mck-tog', 'attr:data-m-ext-url',
     'id:m-it-day-trig', 'id:m-bk-start-trig', 'id:m-bk-end-trig',
     'attr:data-mcal-trig', 'attr:data-mcal-mv', 'attr:data-mcal-pick',
+    // Tahap 11 Realisasi
+    'form:m-trip-ac-form', 'id:m-ac-cancel', 'id:m-ac-day-trig',
+    'attr:data-mac-cat', 'attr:data-mac-edit', 'attr:data-mac-del',
   ]);
   const collectMobControls = () => {
     const found = [];
@@ -3596,7 +3599,7 @@ const { boot } = require('./ui.js');
       else if (el.id) found.push('id:' + el.id);
       else if (el.dataset) {
         for (const k of Object.keys(el.dataset)) {
-          if (/^(mtripDel|mtripList|mtripSel|mtripsub|mitToggle|mitEdit|mitDel|mbkPay|mbkEdit|mbkDel|mckTog|mckDel|mlkDel|mdtDay|mExtUrl|mcalTrig)$/.test(k)) {
+          if (/^(mtripDel|mtripList|mtripSel|mtripsub|mitToggle|mitEdit|mitDel|mbkPay|mbkEdit|mbkDel|mckTog|mckDel|mlkDel|mdtDay|mExtUrl|mcalTrig|macCat|macEdit|macDel)$/.test(k)) {
             const attrName = 'data-' + k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
             found.push('attr:' + attrName);
           }
@@ -3609,7 +3612,7 @@ const { boot } = require('./ui.js');
   w.renderMobTrip();
   const mobKeys = new Set(collectMobControls());
   w.MOB_STATE.tripView = 'detail';
-  for (const sub of ['ring', 'itin', 'book', 'cek', 'cat', 'sv']) {
+  for (const sub of ['ring', 'itin', 'book', 'real', 'cek', 'cat', 'sv']) {
     w.MOB_STATE.tripSub = sub;
     if (sub === 'sv') w.MOB_STATE.tripGoalEdit = false;
     w.renderMobTrip();
@@ -3771,6 +3774,109 @@ const { boot } = require('./ui.js');
 
   delete w.ALL.kas.pr['p-10bm-b1'];
   w.MOB_STATE.tripId = null;
+
+  // 37. Tahap 11 (APK Mode Perjalanan): Sub-tab Realisasi vs Rencana
+  const origMobToday = w.todayISO;
+  try {
+    w.setShellMode('mobile-app');
+    w.todayISO = () => '2026-05-03';
+    w.ALL.kas.pr['p-t11m'] = {
+      id: 'p-t11m',
+      name: 'Tokyo T11 APK',
+      link: false,
+      saldo: 0,
+      tx: [],
+      start: '2026-05-01',
+      end: '2026-05-10',
+      budget: 25000000,
+      cur: 'JPY',
+      rate: 100,
+      dt: {},
+      it: [
+        { id: 't11m-i1', day: '2026-05-01', time: '12:00', time2: '', place: 'Sushi Ginza', est: 5000, fx: true, pay: 'cash', cat: 'Makan', link: '', note: '', done: false },
+      ],
+      bk: [
+        { id: 't11m-b1', title: 'Hotel Shinjuku', amt: 21500000, fx: false, paid: true, cat: 'Penginapan', a: '2026-05-01', b: '2026-05-10', pay: 'on', link: '', rec: '' },
+      ],
+      ac: [],
+      lk: [],
+      ck: [],
+      note: '',
+      goal: null,
+    };
+    w.MOB_STATE.tripId = 'p-t11m';
+    w.MOB_STATE.tripView = 'detail';
+    w.MOB_STATE.tripSub = 'ring';
+    w.MOB_STATE.tripEditAc = null;
+    w.renderMobTrip();
+    const mSubBtns = [...$('m-trip-root').querySelectorAll('[data-mtripsub]')].map((b) => b.getAttribute('data-mtripsub'));
+    assert.deepStrictEqual(mSubBtns, ['ring', 'itin', 'book', 'real', 'cek', 'cat', 'sv'], '37. APK urutan sub-tab meletakkan real setelah book');
+
+    click($('m-trip-root').querySelector('[data-mtripsub="real"]'));
+    assert.strictEqual(w.MOB_STATE.tripSub, 'real', '37. APK klik sub-tab Realisasi');
+    assert.ok($('m-trip-root').textContent.includes('Belum ada pengeluaran. Catat yang pertama.'), '37. APK empty state Realisasi tampil');
+
+    // Catat pengeluaran JPY 6.200 kurs 107 tertaut ke Sushi Ginza lewat form Tambah
+    w.mobSetDateVal('m-ac-day', '2026-05-01');
+    if (typeof w.mobSyncAcRefOptions === 'function') w.mobSyncAcRefOptions('2026-05-01');
+    $('m-ac-amt').value = '6200';
+    $('m-ac-cur').value = 'fx';
+    fire($('m-ac-cur'), 'change');
+    assert.strictEqual($('m-ac-rt-details').style.display !== 'none', true, '37. APK Kurs aktual tampil juga di form Tambah');
+    $('m-ac-rt').value = '107';
+    fire($('m-ac-rt'), 'input');
+    assert.ok($('m-ac-amt-eq').textContent.includes('663.400'), '37. APK pratinjau ≈ Rp mengikuti rt=107');
+    click($('m-trip-ac-form').querySelector('[data-mac-cat="Makan"]'));
+    $('m-ac-rf').value = 'it:t11m-i1';
+    $('m-ac-note').value = '<b>Sushi</b>';
+    fire($('m-trip-ac-form'), 'submit');
+    assert.strictEqual($('m-toast-box').textContent, 'Pengeluaran dicatat', '37. APK toast Pengeluaran dicatat');
+    assert.ok(!$('m-trip-root').innerHTML.includes('<b>Sushi</b>'), '37. APK catatan ter-escape aman');
+    const mRealTxt = $('m-trip-root').textContent;
+    assert.ok(mRealTxt.includes('Efek harga') && mRealTxt.includes('Rp 120.000'), '37. APK K3 efek harga Rp 120.000');
+    assert.ok(mRealTxt.includes('Efek kurs') && mRealTxt.includes('Rp 43.400'), '37. APK K3 efek kurs Rp 43.400');
+    assert.ok([...$('m-trip-root').querySelectorAll('.m-tile-v')].every((el) => el.classList.contains('pv')), '37. APK semua nilai KPI punya .pv');
+
+    // Ubah + scroll tanpa autofocus + Simpan toast
+    const acIdM = w.ALL.kas.pr['p-t11m'].ac[0].id;
+    const mAcScrolls = [];
+    let mAcFocus = false;
+    const origMSIV = w.HTMLElement.prototype.scrollIntoView;
+    const origMFocus = w.HTMLElement.prototype.focus;
+    w.HTMLElement.prototype.scrollIntoView = function () { mAcScrolls.push(this.id || this.getAttribute('data-ac-row') || this.tagName); };
+    w.HTMLElement.prototype.focus = function () { mAcFocus = true; return origMFocus.apply(this, arguments); };
+    click($('m-trip-root').querySelector('[data-mac-edit="' + acIdM + '"]'));
+    assert.strictEqual(w.MOB_STATE.tripEditAc, acIdM, '37. APK masuk mode edit pengeluaran');
+    assert.ok(mAcScrolls.length >= 1, '37. APK Ubah menggulir ke form');
+    assert.strictEqual(mAcFocus, false, '37. APK Ubah tidak memfokuskan input otomatis');
+    $('m-ac-note').value = 'Sushi Edit';
+    fire($('m-trip-ac-form'), 'submit');
+    assert.strictEqual($('m-toast-box').textContent, 'Pengeluaran diperbarui', '37. APK toast Pengeluaran diperbarui');
+    assert.strictEqual(w.MOB_STATE.tripEditAc, null, '37. APK tripEditAc reset sesudah simpan');
+    w.HTMLElement.prototype.scrollIntoView = origMSIV;
+    w.HTMLElement.prototype.focus = origMFocus;
+
+    // Pindah sub-tab mereset mode edit pengeluaran
+    click($('m-trip-root').querySelector('[data-mac-edit="' + acIdM + '"]'));
+    assert.strictEqual(w.MOB_STATE.tripEditAc, acIdM);
+    click($('m-trip-root').querySelector('[data-mtripsub="book"]'));
+    assert.strictEqual(w.MOB_STATE.tripEditAc, null, '37. APK pindah sub-tab mereset tripEditAc');
+
+    // C3 APK PDF & Bagikan memuat Realisasi tanpa '?'
+    const trM11 = w.ALL.kas.pr['p-t11m'];
+    const pdfM11 = w.tripPdfData(trM11, true);
+    assert.ok(pdfM11.tables.some((tb) => /Pengeluaran Aktual/i.test(tb.head)), '37.C3 APK tripPdfData memuat Pengeluaran Aktual');
+    assert.ok(!JSON.stringify(pdfM11).includes('≈'), '37.C3 APK tripPdfData bebas karakter ≈');
+    const streamM11 = Buffer.from(w.repPdf(pdfM11)).toString('latin1');
+    assert.ok(!streamM11.includes('?'), '37.C3 APK PDF stream bebas ?');
+    const txtM11 = w.tripText(trM11, true);
+    assert.ok(txtM11.includes('Realisasi Pengeluaran') && txtM11.includes('Sushi Edit'), '37.C3 APK tripText memuat Realisasi & catatan');
+
+    delete w.ALL.kas.pr['p-t11m'];
+    w.MOB_STATE.tripId = null;
+  } finally {
+    w.todayISO = origMobToday;
+  }
 
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('OK mobile_app_mode');

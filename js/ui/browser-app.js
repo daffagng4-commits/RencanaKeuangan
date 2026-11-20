@@ -122,10 +122,12 @@ var BR_STATE = {
   tripSubTab: 'ring',
   tripEditItId: null,
   tripEditBkId: null,
+  tripEditAcId: null,
+  tripAcCat: '',
   tripGoalEdit: false,
   tripModalMode: 'new',
   tripEditId: null,
-  inlineDates: { itDay: '', bkStart: '', bkEnd: '', kpStart: '', kpEnd: '', itemDate: '' },
+  inlineDates: { itDay: '', bkStart: '', bkEnd: '', acDay: '', kpStart: '', kpEnd: '', itemDate: '' },
   inlineCalView: {},
   chipCtx: null,
   scenItemId: null,
@@ -2766,6 +2768,10 @@ function brSyncTripEqPrev() {
   } else if (typeof tripSyncEqPairs === 'function') {
     tripSyncEqPairs(tr, [['bk-amt', 'bk-cur', 'bk-amt-eq']]);
   }
+  var eAc = tr && BR_STATE.tripEditAcId ? (tr.ac || []).filter(function (x) { return x.id === BR_STATE.tripEditAcId; })[0] : null;
+  if (typeof tripSyncAcFormUi === 'function') {
+    tripSyncAcFormUi(tr, eAc, 'ac-amt', 'ac-cur', 'ac-amt-eq', 'ac-rt-details', 'ac-rt');
+  }
 }
 
 function renderTrip() {
@@ -2801,7 +2807,7 @@ function renderTrip() {
   }
 
   var pl = tripPlan(tr), sub = BR_STATE.tripSubTab,
-    subTabs = [['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['cek', 'Checklist'], ['cat', 'Catatan'], ['sv', 'Tabungan']];
+    subTabs = [['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['real', 'Realisasi'], ['cek', 'Checklist'], ['cat', 'Catatan'], ['sv', 'Tabungan']];
   var bodyHtml = '';
 
   if (sub === 'ring') {
@@ -2885,12 +2891,22 @@ function renderTrip() {
       '<div class="field"><label class="field-label" for="bk-cat">Kategori</label><select class="input" id="bk-cat">' + BCAT.map(function (c) { return '<option value="' + esc(c) + '"' + ((EBk ? EBk.cat : 'Transport') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div></div>' +
       '<div style="display:flex;justify-content:flex-end;gap:8px;">' + (EBk ? '<button type="button" class="btn btn-secondary" data-bk-cancel="1">Batal</button>' : '') + '<button type="submit" class="btn btn-primary">' + (EBk ? 'Simpan Perubahan' : 'Tambah Pemesanan') + '</button></div></form></div>' +
       '<div class="card"><div class="stack" style="gap:8px;">' + ((tr.bk || []).length ? tr.bk.map(function (x) {
-        return '<div class="upcoming-item" data-bk-row="' + esc(x.id) + '"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) + '<div><div class="upcoming-name">' + esc(x.title) + '</div><div class="upcoming-meta"><span class="badge badge-neutral">' + esc(x.cat) + '</span>' + (x.a ? '<span class="badge badge-neutral">' + brFmtShortIndo(x.a) + (x.b ? ' – ' + brFmtShortIndo(x.b) : '') + '</span>' : '') + '</div></div></div>' +
+        var extraAc = typeof tripBkExtraAcHtml === 'function' ? tripBkExtraAcHtml(tr, x.id, false) : '';
+        return '<div class="upcoming-item" data-bk-row="' + esc(x.id) + '"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) + '<div><div class="upcoming-name">' + esc(x.title) + '</div><div class="upcoming-meta"><span class="badge badge-neutral">' + esc(x.cat) + '</span>' + (x.a ? '<span class="badge badge-neutral">' + brFmtShortIndo(x.a) + (x.b ? ' – ' + brFmtShortIndo(x.b) : '') + '</span>' : '') + '</div>' + extraAc + '</div></div>' +
           '<div class="upcoming-right">' + (typeof tripItemAmtHtml === 'function' ? tripItemAmtHtml(tr, x) : ('<strong class="mono pv">' + rp(tripAmtRp(tr, x)) + '</strong>')) +
           '<button type="button" class="btn ' + (x.paid ? 'btn-emerald' : 'btn-secondary') + ' btn-sm" data-bk-pay="' + esc(x.id) + '">' + (x.paid ? '✓ Lunas' : 'Tandai lunas') + '</button>' +
           '<button type="button" class="btn btn-secondary btn-sm" data-bk-edit="' + esc(x.id) + '">Ubah</button>' +
           '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);" data-bk-del="' + esc(x.id) + '">Hapus</button></div></div>';
       }).join('') : '<div style="padding:18px;text-align:center;color:var(--text-muted);">Belum ada pemesanan.</div>') + '</div></div>';
+  } else if (sub === 'real') {
+    var EAc = BR_STATE.tripEditAcId ? (tr.ac || []).filter(function (x) { return x && x.id === BR_STATE.tripEditAcId; })[0] : null;
+    if (!EAc && BR_STATE.tripEditAcId) BR_STATE.tripEditAcId = null;
+    var defsAc = typeof tripGetAcDefaults === 'function' ? tripGetAcDefaults(tr, EAc) : { d: tr.start || todayISO(), curVal: 'idr', cat: 'Makan' };
+    BR_STATE.inlineDates.acDay = EAc ? EAc.d : (BR_STATE.inlineDates.acDay || defsAc.d);
+    if (!BR_STATE.tripAcCat) BR_STATE.tripAcCat = EAc ? EAc.cat : defsAc.cat;
+    bodyHtml = typeof tripRenderRealSubTabHtml === 'function'
+      ? tripRenderRealSubTabHtml(tr, false, BR_STATE.tripEditAcId, BR_STATE.inlineDates.acDay, BR_STATE.tripAcCat)
+      : '';
   } else if (sub === 'cek') {
     var ck = tr.ck || [], doneCnt = ck.filter(function (c) { return c.done; }).length, pct = ck.length ? Math.round((doneCnt / ck.length) * 100) : 0;
     bodyHtml =
@@ -3027,6 +3043,9 @@ function setMode(m) {
       BR_STATE.tripView = 'list';
       BR_STATE.tripEditItId = null;
       BR_STATE.tripEditBkId = null;
+      BR_STATE.tripEditAcId = null;
+      BR_STATE.tripAcCat = '';
+      BR_STATE.inlineDates.acDay = '';
       BR_STATE.tripGoalEdit = false;
     }
     if (typeof autoTrip === 'function') autoTrip();
@@ -4035,9 +4054,9 @@ function brBindEvents() {
     // 8. Trip tab & modals
     if (t.closest('#br-trip-back-list')) { BR_STATE.tripView = 'list'; renderHeaderSummaryIfNeeded(); renderTrip(); return; }
     var tOpen = t.closest('[data-trip-open], [data-trip-pick]');
-    if (tOpen) { setTrip(tOpen.dataset.tripOpen || tOpen.dataset.tripPick); BR_STATE.tripView = 'detail'; BR_STATE.tripSubTab = 'ring'; renderAll(); return; }
+    if (tOpen) { setTrip(tOpen.dataset.tripOpen || tOpen.dataset.tripPick); BR_STATE.tripView = 'detail'; BR_STATE.tripSubTab = 'ring'; BR_STATE.tripEditAcId = null; BR_STATE.tripAcCat = ''; BR_STATE.inlineDates.acDay = ''; renderAll(); return; }
     var tSub = t.closest('[data-triptab]');
-    if (tSub) { BR_STATE.tripSubTab = tSub.dataset.triptab; BR_STATE.tripEditItId = null; BR_STATE.tripEditBkId = null; BR_STATE._tripSubAnimate = true; renderTrip(); return; }
+    if (tSub) { BR_STATE.tripSubTab = tSub.dataset.triptab; BR_STATE.tripEditItId = null; BR_STATE.tripEditBkId = null; BR_STATE.tripEditAcId = null; BR_STATE.tripAcCat = ''; BR_STATE.inlineDates.acDay = ''; BR_STATE._tripSubAnimate = true; renderTrip(); return; }
     if (t.closest('#br-trip-new')) { brOpenTripMetaModal(false); return; }
     if (t.closest('#br-trip-edit')) { brOpenTripMetaModal(true); return; }
     if (t.closest('#br-trip-xl') && $('xlf')) { $('xlf').click(); return; }
@@ -4088,6 +4107,11 @@ function brBindEvents() {
       if (p3[1] === 'itemDate' && $('item-date')) $('item-date').value = p3[3];
       if ($(p3[2])) $(p3[2]).textContent = brFmtShortIndo(p3[3]) + ' ' + p3[3].slice(0, 4);
       if ($(p3[0])) $(p3[0]).classList.remove('open');
+      if (p3[1] === 'acDay' && $('ac-rf') && tp() && typeof tripAcRefSelectOptsHtml === 'function') {
+        var curRfD = $('ac-rf').value || '';
+        $('ac-rf').innerHTML = tripAcRefSelectOptsHtml(tp(), p3[3], curRfD);
+        syncModernSelect($('ac-rf'));
+      }
       return;
     }
     var trAct = tp();
@@ -4125,6 +4149,7 @@ function brBindEvents() {
           'Sebelum menghapus kegiatan',
           function () {
             trAct.it = trAct.it.filter(function (x) { return x.id !== id2; });
+            if (typeof tripUnlinkAcRef === 'function') tripUnlinkAcRef(trAct, 'it:' + id2);
             if (BR_STATE.tripEditItId === id2) BR_STATE.tripEditItId = null;
           },
           'Kegiatan dihapus.',
@@ -4154,9 +4179,58 @@ function brBindEvents() {
           'Sebelum menghapus pemesanan',
           function () {
             trAct.bk = trAct.bk.filter(function (x) { return x.id !== id4; });
+            if (typeof tripUnlinkAcRef === 'function') tripUnlinkAcRef(trAct, 'bk:' + id4);
             if (BR_STATE.tripEditBkId === id4) BR_STATE.tripEditBkId = null;
           },
           'Pemesanan dihapus.',
+          false
+        );
+        return;
+      }
+      var acCatBtn = t.closest('#trip-ac-form [data-ac-cat]');
+      if (acCatBtn) {
+        BR_STATE.tripAcCat = acCatBtn.dataset.acCat || 'Makan';
+        $('trip-ac-form').querySelectorAll('[data-ac-cat]').forEach(function (b) {
+          var on = b.dataset.acCat === BR_STATE.tripAcCat;
+          b.classList.toggle('active', on);
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+        return;
+      }
+      if (t.closest('[data-ac-edit]')) {
+        var acEId = t.closest('[data-ac-edit]').dataset.acEdit;
+        var acEObj = (trAct.ac || []).filter(function (x) { return x && x.id === acEId; })[0];
+        if (acEObj) {
+          BR_STATE.tripEditAcId = acEId;
+          BR_STATE.inlineDates.acDay = acEObj.d;
+          BR_STATE.tripAcCat = acEObj.cat || 'Makan';
+          renderTrip();
+          if (typeof tripScrollToEditForm === 'function') tripScrollToEditForm($('trip-ac-form'), 'ac-amt', false);
+        }
+        return;
+      }
+      if (t.closest('#ac-cancel')) {
+        var prevAcId = BR_STATE.tripEditAcId;
+        BR_STATE.tripEditAcId = null;
+        BR_STATE.tripAcCat = '';
+        BR_STATE.inlineDates.acDay = '';
+        renderTrip();
+        if (prevAcId && typeof tripScrollBackToEditedRow === 'function') {
+          tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-ac-row="' + prevAcId + '"]'), false);
+        }
+        return;
+      }
+      if (t.closest('[data-ac-del]')) {
+        var idAcDel = t.closest('[data-ac-del]').dataset.acDel;
+        var xAcDel = (trAct.ac || []).filter(function (x) { return x && x.id === idAcDel; })[0];
+        if (xAcDel) brTripConfirmDel(
+          'Hapus pengeluaran <b>' + esc(xAcDel.note || xAcDel.cat || 'ini') + '</b>?',
+          'Sebelum menghapus pengeluaran',
+          function () {
+            trAct.ac = (trAct.ac || []).filter(function (x) { return x && x.id !== idAcDel; });
+            if (BR_STATE.tripEditAcId === idAcDel) { BR_STATE.tripEditAcId = null; BR_STATE.tripAcCat = ''; BR_STATE.inlineDates.acDay = ''; }
+          },
+          'Pengeluaran dihapus.',
           false
         );
         return;
@@ -4255,8 +4329,8 @@ function brBindEvents() {
     }
     else if (t.id === 'trip-note-box' && tp()) { clearTimeout(window._brNoteT); tp().note = t.value; save(); toast('Catatan disimpan'); }
     else if (t.dataset && t.dataset.dtDay && tp()) { clearTimeout(window._brDtT); tp().dt[t.dataset.dtDay] = t.value; save(); toast('Judul hari disimpan'); }
-    else if (t.id === 'it-cur' || t.id === 'bk-cur') {
-      var rtElCurD = $(t.id === 'it-cur' ? 'it-rt' : 'bk-rt');
+    else if (t.id === 'it-cur' || t.id === 'bk-cur' || t.id === 'ac-cur') {
+      var rtElCurD = $(t.id === 'it-cur' ? 'it-rt' : (t.id === 'bk-cur' ? 'bk-rt' : 'ac-rt'));
       if (rtElCurD && !(rtElCurD.dataset && rtElCurD.dataset.userEdited === '1')) rtElCurD.value = '';
       brSyncTripEqPrev();
     }
@@ -4270,8 +4344,8 @@ function brBindEvents() {
     var t = e.target;
     if (t.id === 'kas-search') renderKas();
     else if (t.id === 'qp-input') brUpdateQuickParsePreview();
-    else if (t.id === 'it-est' || t.id === 'bk-amt') brSyncTripEqPrev();
-    else if (t.id === 'it-rt' || t.id === 'bk-rt') { if (t.dataset) t.dataset.userEdited = '1'; brSyncTripEqPrev(); }
+    else if (t.id === 'it-est' || t.id === 'bk-amt' || t.id === 'ac-amt') brSyncTripEqPrev();
+    else if (t.id === 'it-rt' || t.id === 'bk-rt' || t.id === 'ac-rt') { if (t.dataset) t.dataset.userEdited = '1'; brSyncTripEqPrev(); }
     else if (t.closest && t.closest('#kp-fxs-list') && BR_STATE.tripFxsDraft) {
       var idxFxD = t.dataset.fxCode != null ? +t.dataset.fxCode : (t.dataset.fxRate != null ? +t.dataset.fxRate : -1);
       if (idxFxD >= 0 && BR_STATE.tripFxsDraft[idxFxD]) {
@@ -4504,6 +4578,53 @@ function brBindEvents() {
       save(); renderTrip(); toast(editBkIdD ? 'Pemesanan diperbarui' : 'Pemesanan disimpan');
       if (editBkIdD && typeof tripScrollBackToEditedRow === 'function') {
         tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-bk-row="' + editBkIdD + '"]'), false);
+      }
+    } else if (f.id === 'trip-ac-form' && tp()) {
+      e.preventDefault();
+      var trA = tp();
+      var amtAc = getRpVal('ac-amt');
+      if (!(amtAc > 0 && amtAc <= 1e12)) {
+        rkShakeInvalid($('ac-amt'));
+        toast('Isi nominal pengeluaran yang valid.');
+        return;
+      }
+      var curValAc = ($('ac-cur') && $('ac-cur').value) || 'idr';
+      var acCurSpec = typeof tripParseCurSelectVal === 'function' ? tripParseCurSelectVal(trA, curValAc) : { fx: curValAc === 'fx', c: '' };
+      var isFxAc = !!(trA.cur && acCurSpec.fx);
+      var editAcIdD = BR_STATE.tripEditAcId;
+      var oldAcObj = editAcIdD ? (trA.ac || []).filter(function (x) { return x && x.id === editAcIdD; })[0] : null;
+      var defsAcS = typeof tripGetAcDefaults === 'function' ? tripGetAcDefaults(trA, oldAcObj) : { d: trA.start || todayISO(), cat: 'Makan' };
+      var dAc = BR_STATE.inlineDates.acDay && ISO_RE.test(BR_STATE.inlineDates.acDay) ? BR_STATE.inlineDates.acDay : defsAcS.d;
+      var catAc = BR_STATE.tripAcCat || defsAcS.cat || 'Makan';
+      var objAc = {
+        id: editAcIdD || kid('ac'),
+        d: dAc,
+        amt: amtAc,
+        fx: isFxAc,
+        cat: catAc,
+      };
+      if (isFxAc && acCurSpec.c) objAc.c = acCurSpec.c;
+      var rtAc = (isFxAc && $('ac-rt') && typeof tripParseRateVal === 'function') ? tripParseRateVal($('ac-rt').value) : 0;
+      if (isFxAc && rtAc > 0) objAc.rt = rtAc;
+      var noteAc = ($('ac-note') && $('ac-note').value || '').trim().slice(0, 200);
+      if (noteAc) objAc.note = noteAc;
+      var rfAc = ($('ac-rf') && $('ac-rf').value || '').trim();
+      if (rfAc && /^(it|bk):.+$/.test(rfAc)) objAc.rf = rfAc;
+      if (!Array.isArray(trA.ac)) trA.ac = [];
+      if (editAcIdD) {
+        trA.ac = trA.ac.map(function (x) { return x && x.id === editAcIdD ? objAc : x; });
+      } else {
+        trA.ac.push(objAc);
+      }
+      if (typeof tripRememberAcDefaults === 'function') tripRememberAcDefaults(trA, dAc, curValAc, catAc);
+      BR_STATE.tripEditAcId = null;
+      BR_STATE.tripAcCat = '';
+      BR_STATE.inlineDates.acDay = '';
+      save();
+      renderTrip();
+      toast(editAcIdD ? 'Pengeluaran diperbarui' : 'Pengeluaran dicatat');
+      if (editAcIdD && typeof tripScrollBackToEditedRow === 'function') {
+        tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-ac-row="' + editAcIdD + '"]'), false);
       }
     } else if (f.id === 'trip-ck-form' && tp()) {
       e.preventDefault();
