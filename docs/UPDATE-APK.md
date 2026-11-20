@@ -36,10 +36,11 @@ Aplikasi Android (#mobile-app-shell → Menu → Pengaturan → Pembaruan Aplika
 
 - **Dari APK sebelum Tahap 6 (kunci debug acak)** -> ikuti migrasi sekali: login/sinkron cloud (atau ekspor cadangan `.JSON`), **uninstall** APK lama, pasang APK baru.
 - **Bootstrap dari Tahap 6 (sudah memakai kunci tetap) ke build Tahap 7**:
-  - Build Tahap 6 belum memiliki plugin `ApkInstaller` maupun izin in-app download baru, dan browser bawaan HP pada beberapa perangkat macet di 99%.
-  - Untuk memasang **build Tahap 7 pertama kalinya**, ketuk **Salin tautan** / **Unduh & pasang** lewat **Brave atau Chrome** satu kali lalu pasang APK-nya.
-  - Karena tanda tangan keystore **tetap sama**, pemasangan Tahap 7 menimpa APK Tahap 6 **tanpa uninstall** dan **data lokal tetap aman**.
+  - Build Tahap 6 belum memiliki plugin `ApkInstaller` maupun in-app download (hanya tombol **Unduh & pasang** yang membuka browser bawaan dan pada beberapa perangkat macet di 99%).
+  - Untuk memasang **build Tahap 7 pertama kalinya**, buka `https://github.com/daffagng4-commits/RencanaKeuangan/releases/tag/apk-latest` langsung di **Brave** atau **Chrome**, unduh berkas `renkeu-<nomor>.apk` dari bagian **Assets**, lalu pasang (**tanpa uninstall**; tanda tangan keystore tetap sama; **data lokal tetap aman**).
   - Mulai dari build Tahap 7 ke atas, pembaruan di masa depan akan diunduh langsung di dalam aplikasi dan langsung membuka pemasang Android.
+
+**Ketahanan cek & pemasang (Tahap 7.1):** Setelah APK selesai diunduh dan menunggu izin atau pemasangan, mengetuk **Cek pembaruan** tidak akan menghapus berkas yang sudah ada selama nomor rilis masih sama (berkas hanya di-reset bila tersedia rilis lebih baru atau aplikasi sudah versi terbaru; saat fase mengunduh/memverifikasi/memasang berlangsung, cek pembaruan dilewati). Jika pemasang sistem gagal terbuka setelah unduhan selesai, kartu menampilkan tombol utama **Coba pasang lagi** (tanpa mengunduh ulang) beserta pilihan **Unduh ulang**, dan otomatis mengunduh ulang apabila berkas di cache sudah tidak ditemukan.
 
 ---
 

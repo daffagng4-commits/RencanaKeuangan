@@ -91,3 +91,23 @@ test('Tahap 7 CSS & Docs: token progres, reduced-motion, dan panduan UPDATE-APK 
     assert.ok(doc.includes(kw), 'docs/UPDATE-APK.md mencakup "' + kw + '"');
   }
 });
+
+test('Tahap 7.1 C4: docs/UPDATE-APK.md memuat URL bootstrap apk-latest, tidak menyuruh Salin tautan untuk Tahap 6, dan menjelaskan C1/C2', () => {
+  const md = fs.readFileSync(path.join(ROOT, 'docs', 'UPDATE-APK.md'), 'utf8');
+  const mSec2 = md.match(/##\s*2\.\s*Bootstrap[\s\S]*?(?=\n##\s*3\.)/i);
+  assert.ok(mSec2, 'bagian 2 Bootstrap ditemukan di docs/UPDATE-APK.md');
+  const sec2 = mSec2[0];
+  assert.ok(
+    sec2.includes('https://github.com/daffagng4-commits/RencanaKeuangan/releases/tag/apk-latest'),
+    'bagian 2 memuat URL lengkap releases/tag/apk-latest',
+  );
+  assert.ok(sec2.includes('Assets'), 'bagian 2 menyebut bagian Assets');
+  assert.ok(/Brave/i.test(sec2) && /Chrome/i.test(sec2), 'bagian 2 menyebut Brave/Chrome');
+  assert.ok(/tanpa uninstall/i.test(sec2), 'bagian 2 menyebut tanpa uninstall');
+  assert.ok(
+    !/salin\s+tautan/i.test(sec2),
+    'bagian 2 bootstrap Tahap 6 TIDAK menyuruh mengetuk Salin tautan',
+  );
+  assert.ok(md.includes('Coba pasang lagi'), 'dokumen menjelaskan tombol Coba pasang lagi (C2)');
+  assert.ok(md.includes('Unduh ulang'), 'dokumen menjelaskan tombol Unduh ulang (C2)');
+});

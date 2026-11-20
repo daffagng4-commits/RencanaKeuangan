@@ -26338,6 +26338,7 @@ var RK_UPDATE_HASH_MAX_BYTES = 35 * 1024 * 1024;
 var _rkUpdStallTimer = null;
 var _rkUpdLastPaintAt = 0;
 var _rkUpdRunSeq = 0;
+var _rkUpdInFlightPaths = {};
 var MOB_UPDATE_STATE = {
   checking: false,
   status: 'idle',
@@ -27244,6 +27245,7 @@ function ensureMobileShell() {
     if (rkIsCapacitorNative() && !window._rkUpdAutoScheduled) {
       window._rkUpdAutoScheduled = true;
       setTimeout(function () {
+        if (typeof rkCleanupApkCacheOnStart === 'function') rkCleanupApkCacheOnStart();
         if (typeof rkAutoCheckApkUpdate === 'function') rkAutoCheckApkUpdate(false);
       }, 1500);
     }
@@ -28733,6 +28735,37 @@ function rkCleanupApkCache(fsPlugin) {
   });
 }
 
+function rkCleanupApkCacheOnStart() {
+  if (!rkIsCapacitorNative()) return Promise.resolve(false);
+  var isBusyOrReady = function () {
+    var ph = MOB_UPDATE_STATE.phase;
+    return ph === 'downloading' || ph === 'verifying' || ph === 'installing' ||
+      ph === 'ready' || ph === 'need-permission' || !!MOB_UPDATE_STATE.downloadedPath;
+  };
+  if (isBusyOrReady()) return Promise.resolve(false);
+  var fsP = rkCapPlugin('Filesystem');
+  if (!fsP || typeof fsP.readdir !== 'function' || typeof fsP.deleteFile !== 'function') {
+    return Promise.resolve(false);
+  }
+  try {
+    return Promise.resolve(fsP.readdir({ path: RK_UPDATE_DIR, directory: 'CACHE' })).then(function (res) {
+      if (isBusyOrReady()) return false;
+      var files = res && Array.isArray(res.files) ? res.files : [];
+      return Promise.all(files.map(function (entry) {
+        var nm = entry && typeof entry === 'object' ? (entry.name || '') : String(entry || '');
+        if (!nm || !/\.apk$/i.test(nm)) return Promise.resolve();
+        return Promise.resolve(fsP.deleteFile({ path: RK_UPDATE_DIR + '/' + nm, directory: 'CACHE' })).catch(function () {});
+      })).then(function () {
+        return true;
+      });
+    }).catch(function () {
+      return false;
+    });
+  } catch (e) {
+    return Promise.resolve(false);
+  }
+}
+
 function rkBindUpdAppStateResume() {
   if (typeof window !== 'undefined' && window._rkUpdAppStateBound) return;
   var appP = rkCapPlugin('App');
@@ -28842,6 +28875,15 @@ function renderMobUpdateCard() {
     if (hasValidUrl) {
       btnsHtml += '<button type="button" class="btn btn-secondary btn-sm m-upd-btn" id="m-btn-copy-update-url">Salin tautan</button>';
     }
+  } else if (ph === 'error' && MOB_UPDATE_STATE.downloadedPath) {
+    btnsHtml += '<button type="button" class="btn btn-emerald btn-sm m-upd-btn" id="m-btn-retry-install-update">Coba pasang lagi</button>';
+    if (info && info.url) {
+      btnsHtml += '<button type="button" class="btn btn-secondary btn-sm m-upd-btn" id="m-btn-install-update" data-force-dl="1">Unduh ulang</button>';
+      if (hasValidUrl) {
+        btnsHtml += '<button type="button" class="btn btn-secondary btn-sm m-upd-btn" id="m-btn-open-browser-update">Buka lewat browser</button>';
+        btnsHtml += '<button type="button" class="btn btn-secondary btn-sm m-upd-btn" id="m-btn-copy-update-url">Salin tautan</button>';
+      }
+    }
   } else if ((ph === 'stalled' || ph === 'error') && info && info.url) {
     btnsHtml += '<button type="button" class="btn btn-emerald btn-sm m-upd-btn" id="m-btn-install-update">Coba unduh lagi</button>';
     if (hasValidUrl) {
@@ -28871,26 +28913,36 @@ function renderMobUpdateCard() {
   rkSyncUpdateDots();
 }
 
+function rkResetApkDownloadState() {
+  MOB_UPDATE_STATE.phase = 'idle';
+  MOB_UPDATE_STATE.downloadedPath = '';
+  MOB_UPDATE_STATE.downloadedRun = 0;
+  MOB_UPDATE_STATE.unverifiedNote = '';
+  MOB_UPDATE_STATE.showSteps = false;
+  MOB_UPDATE_STATE.progressBytes = 0;
+  MOB_UPDATE_STATE.progressTotal = 0;
+  MOB_UPDATE_STATE.progressPct = 0;
+  MOB_UPDATE_STATE.indeterminate = false;
+}
+
 function rkCheckApkUpdate(opts) {
   var silent = !!(opts && opts.silent);
-  if (!rkIsCapacitorNative() || MOB_UPDATE_STATE.checking) return Promise.resolve(null);
+  var curPhase = MOB_UPDATE_STATE.phase;
+  if (!rkIsCapacitorNative() || MOB_UPDATE_STATE.checking ||
+      curPhase === 'downloading' || curPhase === 'verifying' || curPhase === 'installing') {
+    return Promise.resolve(null);
+  }
   if (typeof fetch !== 'function') {
     if (!silent) {
       MOB_UPDATE_STATE.status = 'error';
-      MOB_UPDATE_STATE.phase = 'idle';
+      if (!MOB_UPDATE_STATE.downloadedPath) rkResetApkDownloadState();
       MOB_UPDATE_STATE.message = 'Klien jaringan tidak tersedia.';
       renderMobUpdateCard();
     }
     return Promise.resolve(null);
   }
   MOB_UPDATE_STATE.checking = true;
-  MOB_UPDATE_STATE.phase = 'idle';
-  MOB_UPDATE_STATE.downloadedPath = '';
-  MOB_UPDATE_STATE.downloadedRun = 0;
-  MOB_UPDATE_STATE.unverifiedNote = '';
-  MOB_UPDATE_STATE.showSteps = false;
   if (!silent) {
-    MOB_UPDATE_STATE.message = '';
     renderMobUpdateCard();
   }
   try {
@@ -28929,11 +28981,16 @@ function rkCheckApkUpdate(opts) {
     return resp.json();
   }).then(function (rel) {
     MOB_UPDATE_STATE.checking = false;
+    var activePh = MOB_UPDATE_STATE.phase;
+    if (activePh === 'downloading' || activePh === 'verifying' || activePh === 'installing') {
+      return null;
+    }
     MOB_UPDATE_STATE.checkedAt = Date.now();
     var parsed = rel && rkParseReleaseNotes(rel.body);
     var assets = rel && Array.isArray(rel.assets) ? rel.assets : [];
     var apkAsset = assets.filter(function (a) { return a && /\.apk$/i.test(String(a.name || '')); })[0] || null;
     if (!parsed || !apkAsset || !apkAsset.browser_download_url) {
+      rkResetApkDownloadState();
       MOB_UPDATE_STATE.status = 'error';
       MOB_UPDATE_STATE.info = null;
       MOB_UPDATE_STATE.message = 'Data pembaruan tidak dapat dibaca atau tidak lengkap.';
@@ -28942,6 +28999,7 @@ function rkCheckApkUpdate(opts) {
     }
     var dlUrl = String(apkAsset.browser_download_url);
     if (dlUrl.indexOf(RK_UPDATE_DL_PREFIX) !== 0) {
+      rkResetApkDownloadState();
       MOB_UPDATE_STATE.status = 'error';
       MOB_UPDATE_STATE.info = null;
       MOB_UPDATE_STATE.message = 'Sumber tautan unduhan tidak valid / ditolak.';
@@ -28951,18 +29009,34 @@ function rkCheckApkUpdate(opts) {
     var meta = rkInstalledBuildMeta();
     var hasUpdate = !meta.run || parsed.run > meta.run;
     MOB_UPDATE_STATE.info = Object.assign({ url: dlUrl, assetName: apkAsset.name }, parsed);
-    MOB_UPDATE_STATE.status = hasUpdate ? 'available' : 'latest';
-    MOB_UPDATE_STATE.message = '';
-    renderMobUpdateCard();
-    if (silent && hasUpdate && typeof showMobToast === 'function') {
-      showMobToast('Pembaruan APK tersedia: build ' + parsed.run);
+    if (hasUpdate) {
+      var keepDownloaded = !!(MOB_UPDATE_STATE.downloadedPath && MOB_UPDATE_STATE.downloadedRun === parsed.run);
+      MOB_UPDATE_STATE.status = 'available';
+      if (!keepDownloaded) {
+        rkResetApkDownloadState();
+        MOB_UPDATE_STATE.message = '';
+      }
+      renderMobUpdateCard();
+      if (silent && !keepDownloaded && typeof showMobToast === 'function') {
+        showMobToast('Pembaruan APK tersedia: build ' + parsed.run);
+      }
+    } else {
+      MOB_UPDATE_STATE.status = 'latest';
+      rkResetApkDownloadState();
+      MOB_UPDATE_STATE.message = '';
+      renderMobUpdateCard();
     }
     return MOB_UPDATE_STATE.info;
   }).catch(function (err) {
     if (tid) clearTimeout(tid);
     MOB_UPDATE_STATE.checking = false;
+    var errPh = MOB_UPDATE_STATE.phase;
+    if (errPh === 'downloading' || errPh === 'verifying' || errPh === 'installing') {
+      return null;
+    }
     MOB_UPDATE_STATE.checkedAt = Date.now();
     if (!silent) {
+      if (!MOB_UPDATE_STATE.downloadedPath) rkResetApkDownloadState();
       MOB_UPDATE_STATE.status = 'error';
       MOB_UPDATE_STATE.info = null;
       if (err && (err.rkCode === 403 || err.rkCode === 429)) {
@@ -29058,14 +29132,23 @@ function rkLaunchApkInstall() {
       return true;
     });
   }).catch(function (err) {
+    var errMsg = (err && err.message) ? String(err.message) : '';
+    var isMissing = /berkas\s+apk\s+tidak\s+ditemukan|tidak\s+ditemukan|not\s+found|enoent/i.test(errMsg);
+    if (isMissing) {
+      MOB_UPDATE_STATE.downloadedPath = '';
+      MOB_UPDATE_STATE.downloadedRun = 0;
+    }
     MOB_UPDATE_STATE.phase = 'error';
-    MOB_UPDATE_STATE.message = 'Gagal membuka pemasang Android' + ((err && err.message) ? ' (' + err.message + ')' : '') + '. Coba lagi, buka lewat browser, atau salin tautan.';
+    MOB_UPDATE_STATE.message = isMissing
+      ? 'Berkas APK tidak ditemukan di cache. Ketuk Coba unduh lagi, buka lewat browser, atau salin tautan.'
+      : ('Gagal membuka pemasang Android' + (errMsg ? ' (' + errMsg + ')' : '') + '. Coba pasang lagi, unduh ulang, buka lewat browser, atau salin tautan.');
     renderMobUpdateCard();
     return false;
   });
 }
 
-function rkInstallApkInApp() {
+function rkInstallApkInApp(opts) {
+  var force = !!(opts && opts.force);
   var ph = MOB_UPDATE_STATE.phase;
   if (ph === 'downloading' || ph === 'verifying' || ph === 'installing') return Promise.resolve(false);
   var info = MOB_UPDATE_STATE.info;
@@ -29080,14 +29163,26 @@ function rkInstallApkInApp() {
   if (!rkHasInAppApkPlugins()) {
     return Promise.resolve(rkOpenApkDownload());
   }
-  if (MOB_UPDATE_STATE.downloadedPath && MOB_UPDATE_STATE.downloadedRun === info.run && (ph === 'need-permission' || ph === 'ready')) {
+  if (!force && MOB_UPDATE_STATE.downloadedPath && MOB_UPDATE_STATE.downloadedRun === info.run &&
+      (ph === 'need-permission' || ph === 'ready' || ph === 'error')) {
     return rkLaunchApkInstall();
   }
 
   var fsP = rkCapPlugin('Filesystem');
   var runNum = parseInt(info.run, 10) || Date.now();
-  var relPath = RK_UPDATE_DIR + '/renkeu-' + runNum + '.apk';
   var seq = ++_rkUpdRunSeq;
+  var useSeqSuffix = Object.keys(_rkUpdInFlightPaths).length > 0 || ph === 'stalled';
+  var relPath = useSeqSuffix
+    ? (RK_UPDATE_DIR + '/renkeu-' + runNum + '-' + seq + '.apk')
+    : (RK_UPDATE_DIR + '/renkeu-' + runNum + '.apk');
+  _rkUpdInFlightPaths[relPath] = (_rkUpdInFlightPaths[relPath] || 0) + 1;
+  var pathReleased = false;
+  var releaseInFlightPath = function () {
+    if (pathReleased) return;
+    pathReleased = true;
+    if (_rkUpdInFlightPaths[relPath] > 1) _rkUpdInFlightPaths[relPath] -= 1;
+    else delete _rkUpdInFlightPaths[relPath];
+  };
   var progHandle = null;
   var stallMs = (typeof window !== 'undefined' && typeof window.RK_UPDATE_STALL_MS === 'number' && window.RK_UPDATE_STALL_MS > 0)
     ? window.RK_UPDATE_STALL_MS
@@ -29097,21 +29192,22 @@ function rkInstallApkInApp() {
     clearTimeout(_rkUpdStallTimer);
     _rkUpdStallTimer = null;
   };
-  var armWatchdog = function () {
-    clearWatchdog();
-    _rkUpdStallTimer = setTimeout(function () {
-      if (seq !== _rkUpdRunSeq || MOB_UPDATE_STATE.phase !== 'downloading') return;
-      _rkUpdRunSeq += 1;
-      MOB_UPDATE_STATE.phase = 'stalled';
-      MOB_UPDATE_STATE.message = 'Unduhan tersendat (tidak ada progres). Gunakan "Buka lewat browser" atau "Salin tautan", lalu tempel di Brave/Chrome.';
-      renderMobUpdateCard();
-    }, stallMs);
-  };
   var removeProgListener = function () {
     if (!progHandle) return;
     var h = progHandle;
     progHandle = null;
     try { if (typeof h.remove === 'function') h.remove(); } catch (e) {}
+  };
+  var armWatchdog = function () {
+    clearWatchdog();
+    _rkUpdStallTimer = setTimeout(function () {
+      if (seq !== _rkUpdRunSeq || MOB_UPDATE_STATE.phase !== 'downloading') return;
+      _rkUpdRunSeq += 1;
+      removeProgListener();
+      MOB_UPDATE_STATE.phase = 'stalled';
+      MOB_UPDATE_STATE.message = 'Unduhan tersendat (tidak ada progres). Gunakan "Buka lewat browser" atau "Salin tautan", lalu tempel di Brave/Chrome.';
+      renderMobUpdateCard();
+    }, stallMs);
   };
 
   _rkUpdLastPaintAt = 0;
@@ -29160,6 +29256,7 @@ function rkInstallApkInApp() {
       });
     });
   }).then(function () {
+    releaseInFlightPath();
     clearWatchdog();
     removeProgListener();
     if (seq !== _rkUpdRunSeq) return false;
@@ -29187,6 +29284,7 @@ function rkInstallApkInApp() {
       return rkLaunchApkInstall();
     });
   }).catch(function (err) {
+    releaseInFlightPath();
     clearWatchdog();
     removeProgListener();
     if (seq !== _rkUpdRunSeq) return false;
@@ -29206,6 +29304,7 @@ if (typeof window !== 'undefined') {
   window.rkLaunchApkInstall = rkLaunchApkInstall;
   window.rkCopyApkUpdateUrl = rkCopyApkUpdateUrl;
   window.rkVerifyApkSha256 = rkVerifyApkSha256;
+  window.rkCleanupApkCacheOnStart = rkCleanupApkCacheOnStart;
 }
 
 function renderMobSettings() {
@@ -30267,7 +30366,11 @@ function bindMobileShellEvents(root) {
     if (mrep) { renderMobReportPreview(mrep.getAttribute('data-mrep')); return; }
     if (e.target.closest('#m-btn-dl-report')) { downloadRepPdf(MOB_STATE.repKind); return; }
     if (e.target.closest('#m-btn-check-update')) { rkCheckApkUpdate({ silent: false }); return; }
-    if (e.target.closest('#m-btn-install-update')) { rkInstallApkInApp(); return; }
+    var instUpdBtn = e.target.closest('#m-btn-install-update');
+    if (instUpdBtn) {
+      rkInstallApkInApp(instUpdBtn.getAttribute('data-force-dl') === '1' ? { force: true } : undefined);
+      return;
+    }
     if (e.target.closest('#m-btn-open-browser-update')) { rkOpenApkDownload(); return; }
     if (e.target.closest('#m-btn-copy-update-url')) { rkCopyApkUpdateUrl(); return; }
     if (e.target.closest('#m-btn-perm-update')) {

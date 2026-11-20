@@ -2902,6 +2902,373 @@ const { boot } = require('./ui.js');
   w.RK_UPDATE_STALL_MS = origStallMs31;
   Object.assign(w.RK_BUILD, origBuild31);
 
+  // 32. Tahap 7.1 (Hotfix kekokohan pembaruan APK in-app: C1, C2, C3, C5)
+  const origCap32 = w.Capacitor;
+  const origFetch32 = w.fetch;
+  const origCrypto32 = w.crypto;
+  const origCopyText32 = w.copyText;
+  const origOpenExt32 = w.mobOpenExternalUrl;
+  const origStallMs32 = w.RK_UPDATE_STALL_MS;
+  const origBuild32 = Object.assign({}, w.RK_BUILD);
+
+  const mkRel32 = (runNo, shaHex) => ({
+    run: runNo,
+    sha: 'sha' + runNo,
+    versionCode: runNo,
+    builtAt: '2026-11-20T06:00:00Z',
+    sha256: shaHex || sampleApkSha256,
+    msg: 'Release ' + runNo,
+    assetName: 'renkeu-' + runNo + '.apk',
+    url: 'https://github.com/daffagng4-commits/RencanaKeuangan/releases/download/apk-latest/renkeu-' + runNo + '.apk',
+  });
+  const mkApiRel32 = (relObj) => ({
+    tag_name: 'apk-latest',
+    prerelease: true,
+    body: [
+      'run=' + relObj.run,
+      'sha=' + relObj.sha,
+      'versionCode=' + relObj.versionCode,
+      'builtAt=' + relObj.builtAt,
+      'sha256=' + relObj.sha256,
+      'msg=' + relObj.msg,
+    ].join('\n'),
+    assets: [{ name: relObj.assetName, browser_download_url: relObj.url }],
+  });
+
+  const rel10_32 = mkRel32(10, sampleApkSha256);
+  const rel11_32 = mkRel32(11, sampleApkSha256);
+
+  let capLog32 = [];
+  let fetchCalls32 = [];
+  let nextApiRel32 = rel10_32;
+  let dlMode32 = 'manual'; // 'manual' | 'instant' | 'reject'
+  let dlHandles32 = [];
+  let allowInstall32 = true;
+  let installRejectMsg32 = '';
+  let readdirFiles32 = [];
+  let readdirReject32 = false;
+  let deleteReject32 = false;
+
+  Object.defineProperty(w, 'crypto', {
+    configurable: true,
+    value: { subtle: nodeCrypto31.webcrypto.subtle },
+  });
+  w.copyText = async () => {};
+  w.mobOpenExternalUrl = () => true;
+  w.fetch = (url, opts) => {
+    fetchCalls32.push({ url, opts });
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      async json() { return mkApiRel32(nextApiRel32); },
+    });
+  };
+  w.Capacitor = {
+    isNativePlatform: () => true,
+    isPluginAvailable: () => true,
+    Plugins: {
+      Browser: { async open(opts) { capLog32.push(['Browser.open', opts]); } },
+      App: { addListener() { return Promise.resolve({ remove() {} }); } },
+      Filesystem: {
+        async mkdir(opts) { capLog32.push(['Filesystem.mkdir', opts]); },
+        async readdir(opts) {
+          capLog32.push(['Filesystem.readdir', opts]);
+          if (readdirReject32) throw new Error('readdir gagal');
+          return { files: readdirFiles32 };
+        },
+        async deleteFile(opts) {
+          capLog32.push(['Filesystem.deleteFile', opts]);
+          if (deleteReject32) throw new Error('deleteFile gagal');
+        },
+        async readFile(opts) {
+          capLog32.push(['Filesystem.readFile', opts]);
+          return { data: sampleApkB64 };
+        },
+        addListener(ev, fn) {
+          capLog32.push(['Filesystem.addListener', ev]);
+          return Promise.resolve({ remove() {} });
+        },
+        downloadFile(opts) {
+          capLog32.push(['Filesystem.downloadFile', opts]);
+          if (dlMode32 === 'reject') return Promise.reject(new Error('Network down'));
+          if (dlMode32 === 'instant') return Promise.resolve({ path: '/cache/' + opts.path });
+          return new Promise((resolve, reject) => {
+            dlHandles32.push({ opts, resolve: () => resolve({ path: '/cache/' + opts.path }), reject });
+          });
+        },
+      },
+      ApkInstaller: {
+        async canInstall() {
+          capLog32.push(['ApkInstaller.canInstall']);
+          return { allowed: allowInstall32 };
+        },
+        async openInstallSettings() {
+          capLog32.push(['ApkInstaller.openInstallSettings']);
+        },
+        async install(opts) {
+          capLog32.push(['ApkInstaller.install', opts]);
+          if (installRejectMsg32) throw new Error(installRejectMsg32);
+        },
+      },
+    },
+  };
+
+  w.setShellMode('mobile-app');
+  w.switchMobileTab('settings');
+
+  const resetState32 = () => {
+    capLog32 = [];
+    fetchCalls32 = [];
+    dlHandles32 = [];
+    dlMode32 = 'instant';
+    allowInstall32 = true;
+    installRejectMsg32 = '';
+    readdirFiles32 = [];
+    readdirReject32 = false;
+    deleteReject32 = false;
+    nextApiRel32 = rel10_32;
+    w.RK_BUILD.id = '9-oldsha1';
+    w.RK_BUILD.run = '9';
+    w.MOB_UPDATE_STATE.checking = false;
+    w.MOB_UPDATE_STATE.status = 'available';
+    w.MOB_UPDATE_STATE.phase = 'idle';
+    w.MOB_UPDATE_STATE.message = '';
+    w.MOB_UPDATE_STATE.info = Object.assign({}, rel10_32);
+    w.MOB_UPDATE_STATE.showSteps = false;
+    w.MOB_UPDATE_STATE.downloadedPath = '';
+    w.MOB_UPDATE_STATE.downloadedRun = 0;
+    w.MOB_UPDATE_STATE.unverifiedNote = '';
+    w.renderMobUpdateCard();
+  };
+
+  // --- C1: Cek pembaruan mempertahankan unduhan yang cocok & melewati fase sibuk ---
+  resetState32();
+  w.MOB_UPDATE_STATE.phase = 'ready';
+  w.MOB_UPDATE_STATE.downloadedPath = 'rk-update/renkeu-10.apk';
+  w.MOB_UPDATE_STATE.downloadedRun = 10;
+  w.MOB_UPDATE_STATE.message = 'Pemasang Android dibuka. Ketuk Pasang.';
+  w.renderMobUpdateCard();
+  await w.rkCheckApkUpdate({ silent: false });
+  assert.strictEqual(w.MOB_UPDATE_STATE.phase, 'ready', '32.C1: phase=ready dipertahankan saat run sama');
+  assert.strictEqual(w.MOB_UPDATE_STATE.downloadedPath, 'rk-update/renkeu-10.apk', '32.C1: downloadedPath dipertahankan saat run sama');
+  assert.strictEqual(w.MOB_UPDATE_STATE.downloadedRun, 10, '32.C1: downloadedRun dipertahankan saat run sama');
+  assert.strictEqual(w.MOB_UPDATE_STATE.message, 'Pemasang Android dibuka. Ketuk Pasang.', '32.C1: pesan siap pasang bertahan');
+  assert.strictEqual(capLog32.filter((x) => x[0] === 'Filesystem.downloadFile').length, 0, '32.C1: tidak mengunduh ulang');
+  assert.ok($('m-btn-retry-install-update'), '32.C1: tombol Pasang tetap tersedia setelah Cek pembaruan');
+
+  // need-permission juga bertahan saat run sama
+  w.MOB_UPDATE_STATE.phase = 'need-permission';
+  w.MOB_UPDATE_STATE.message = 'Perlu izin pasang.';
+  await w.rkCheckApkUpdate({ silent: false });
+  assert.strictEqual(w.MOB_UPDATE_STATE.phase, 'need-permission', '32.C1: phase=need-permission dipertahankan saat run sama');
+  assert.strictEqual(w.MOB_UPDATE_STATE.downloadedPath, 'rk-update/renkeu-10.apk', '32.C1: downloadedPath bertahan di need-permission');
+
+  // Rilis lebih baru (run 11 > downloadedRun 10) mereset berkas unduhan lama
+  nextApiRel32 = rel11_32;
+  await w.rkCheckApkUpdate({ silent: false });
+  assert.strictEqual(w.MOB_UPDATE_STATE.phase, 'idle', '32.C1: rilis lebih baru mereset phase ke idle');
+  assert.strictEqual(w.MOB_UPDATE_STATE.downloadedPath, '', '32.C1: rilis lebih baru mengosongkan downloadedPath');
+  assert.strictEqual(w.MOB_UPDATE_STATE.downloadedRun, 0, '32.C1: rilis lebih baru mereset downloadedRun');
+  assert.strictEqual(w.MOB_UPDATE_STATE.status, 'available', '32.C1: status menjadi available untuk rilis 11');
+  assert.strictEqual(w.MOB_UPDATE_STATE.info.run, 11, '32.C1: info menunjuk rilis 11');
+
+  // Sudah terbaru (latest) ikut mereset unduhan lama
+  nextApiRel32 = rel10_32;
+  w.RK_BUILD.run = '10';
+  w.MOB_UPDATE_STATE.phase = 'ready';
+  w.MOB_UPDATE_STATE.downloadedPath = 'rk-update/renkeu-10.apk';
+  w.MOB_UPDATE_STATE.downloadedRun = 10;
+  await w.rkCheckApkUpdate({ silent: false });
+  assert.strictEqual(w.MOB_UPDATE_STATE.status, 'latest', '32.C1: status latest ketika RK_BUILD.run >= release.run');
+  assert.strictEqual(w.MOB_UPDATE_STATE.phase, 'idle', '32.C1: status latest mereset phase ke idle');
+  assert.strictEqual(w.MOB_UPDATE_STATE.downloadedPath, '', '32.C1: status latest mengosongkan downloadedPath');
+
+  // Fase sibuk (downloading / verifying / installing) melewati cek manual, silent, & auto-check tanpa menyentuh fetch/state
+  w.RK_BUILD.run = '9';
+  for (const busyPh of ['downloading', 'verifying', 'installing']) {
+    w.MOB_UPDATE_STATE.phase = busyPh;
+    w.MOB_UPDATE_STATE.checking = false;
+    w.MOB_UPDATE_STATE.downloadedPath = 'rk-update/renkeu-10.apk';
+    w.MOB_UPDATE_STATE.downloadedRun = 10;
+    w.MOB_UPDATE_STATE.message = 'status ' + busyPh;
+    fetchCalls32 = [];
+    w.localStorage.setItem('rk-apk-last-check', String(Date.now() - 8 * 3600 * 1000));
+    const rMan = await w.rkCheckApkUpdate({ silent: false });
+    const rSil = await w.rkCheckApkUpdate({ silent: true });
+    const rAuto = await w.rkAutoCheckApkUpdate(true);
+    assert.strictEqual(rMan, null, '32.C1: manual check mengembalikan null saat ' + busyPh);
+    assert.strictEqual(rSil, null, '32.C1: silent check mengembalikan null saat ' + busyPh);
+    assert.strictEqual(rAuto, null, '32.C1: auto-check mengembalikan null saat ' + busyPh);
+    assert.strictEqual(fetchCalls32.length, 0, '32.C1: fetch tidak dipanggil saat ' + busyPh);
+    assert.strictEqual(w.MOB_UPDATE_STATE.phase, busyPh, '32.C1: phase tidak berubah saat ' + busyPh);
+    assert.strictEqual(w.MOB_UPDATE_STATE.checking, false, '32.C1: checking tetap false saat ' + busyPh);
+    assert.strictEqual(w.MOB_UPDATE_STATE.downloadedPath, 'rk-update/renkeu-10.apk', '32.C1: downloadedPath tetap utuh saat ' + busyPh);
+    assert.strictEqual(w.MOB_UPDATE_STATE.message, 'status ' + busyPh, '32.C1: message tidak disentuh saat ' + busyPh);
+  }
+
+  // --- C2: Galat pemasang setelah unduhan sukses menawarkan Coba pasang lagi & Unduh ulang ---
+  resetState32();
+  dlMode32 = 'instant';
+  installRejectMsg32 = 'Gagal membuka pemasang APK';
+  await w.rkInstallApkInApp();
+  assert.strictEqual(w.MOB_UPDATE_STATE.phase, 'error', '32.C2: phase menjadi error saat install gagal');
+  assert.ok(w.MOB_UPDATE_STATE.downloadedPath, '32.C2: downloadedPath tetap terisi setelah install gagal');
+  assert.ok($('m-btn-retry-install-update'), '32.C2: tombol #m-btn-retry-install-update muncul saat install gagal');
+  assert.strictEqual($('m-btn-retry-install-update').textContent.trim(), 'Coba pasang lagi', '32.C2: label tombol utama Coba pasang lagi');
+  assert.ok($('m-btn-install-update'), '32.C2: tombol sekunder #m-btn-install-update muncul');
+  assert.strictEqual($('m-btn-install-update').textContent.trim(), 'Unduh ulang', '32.C2: label tombol sekunder Unduh ulang');
+  assert.ok($('m-btn-open-browser-update') && $('m-btn-copy-update-url'), '32.C2: tombol cadangan browser & salin tautan tetap ada');
+
+  installRejectMsg32 = '';
+  const dlBeforeRetryC2 = capLog32.filter((x) => x[0] === 'Filesystem.downloadFile').length;
+  const instBeforeRetryC2 = capLog32.filter((x) => x[0] === 'ApkInstaller.install').length;
+  click($('m-btn-retry-install-update'));
+  await new Promise((r) => setTimeout(r, 30));
+  assert.strictEqual(capLog32.filter((x) => x[0] === 'Filesystem.downloadFile').length, dlBeforeRetryC2, '32.C2: Coba pasang lagi TIDAK memanggil downloadFile');
+  assert.strictEqual(capLog32.filter((x) => x[0] === 'ApkInstaller.install').length, instBeforeRetryC2 + 1, '32.C2: Coba pasang lagi memanggil ApkInstaller.install');
+  assert.strictEqual(w.MOB_UPDATE_STATE.phase, 'ready', '32.C2: pemasangan ulang berhasil masuk phase=ready');
+
+  // Pemanggilan rkInstallApkInApp() di fase error dgn downloadedPath ada -> langsung pasang tanpa unduh ulang
+  installRejectMsg32 = 'Pemasang ditutup sementara';
+  await w.rkLaunchApkInstall();
+  assert.strictEqual(w.MOB_UPDATE_STATE.phase, 'error', '32.C2: masuk phase=error lagi');
+  installRejectMsg32 = '';
+  const dlBeforeDirectC2 = capLog32.filter((x) => x[0] === 'Filesystem.downloadFile').length;
+  const instBeforeDirectC2 = capLog32.filter((x) => x[0] === 'ApkInstaller.install').length;
+  await w.rkInstallApkInApp();
+  assert.strictEqual(capLog32.filter((x) => x[0] === 'Filesystem.downloadFile').length, dlBeforeDirectC2, '32.C2: rkInstallApkInApp() dari error+downloadedPath tidak mengunduh ulang');
+  assert.strictEqual(capLog32.filter((x) => x[0] === 'ApkInstaller.install').length, instBeforeDirectC2 + 1, '32.C2: rkInstallApkInApp() langsung memanggil install');
+
+  // Klik tombol Unduh ulang (dan opsi { force: true }) -> mengunduh ulang berkas
+  installRejectMsg32 = 'Gagal sementara';
+  await w.rkLaunchApkInstall();
+  installRejectMsg32 = '';
+  const dlBeforeForceBtnC2 = capLog32.filter((x) => x[0] === 'Filesystem.downloadFile').length;
+  click($('m-btn-install-update'));
+  await new Promise((r) => setTimeout(r, 35));
+  assert.strictEqual(capLog32.filter((x) => x[0] === 'Filesystem.downloadFile').length, dlBeforeForceBtnC2 + 1, '32.C2: mengetuk Unduh ulang memanggil downloadFile');
+
+  const dlBeforeForceOptC2 = capLog32.filter((x) => x[0] === 'Filesystem.downloadFile').length;
+  await w.rkInstallApkInApp({ force: true });
+  assert.strictEqual(capLog32.filter((x) => x[0] === 'Filesystem.downloadFile').length, dlBeforeForceOptC2 + 1, '32.C2: rkInstallApkInApp({ force: true }) mengunduh ulang');
+
+  // Galat "Berkas APK tidak ditemukan" membersihkan downloadedPath/downloadedRun -> ketukan berikutnya mengunduh ulang
+  installRejectMsg32 = 'Berkas APK tidak ditemukan';
+  await w.rkLaunchApkInstall();
+  assert.strictEqual(w.MOB_UPDATE_STATE.phase, 'error', '32.C2: galat berkas hilang tetap masuk phase=error');
+  assert.strictEqual(w.MOB_UPDATE_STATE.downloadedPath, '', '32.C2: galat berkas tidak ditemukan mengosongkan downloadedPath');
+  assert.strictEqual(w.MOB_UPDATE_STATE.downloadedRun, 0, '32.C2: galat berkas tidak ditemukan mereset downloadedRun');
+  assert.ok(!$('m-btn-retry-install-update'), '32.C2: tombol Coba pasang lagi disembunyikan bila berkas hilang');
+  assert.ok($('m-btn-install-update') && /Coba unduh lagi/.test($('m-btn-install-update').textContent), '32.C2: tombol Coba unduh lagi tampil bila berkas hilang');
+  installRejectMsg32 = '';
+  const dlAfterMissingC2 = capLog32.filter((x) => x[0] === 'Filesystem.downloadFile').length;
+  click($('m-btn-install-update'));
+  await new Promise((r) => setTimeout(r, 35));
+  assert.strictEqual(capLog32.filter((x) => x[0] === 'Filesystem.downloadFile').length, dlAfterMissingC2 + 1, '32.C2: ketukan setelah berkas hilang mengunduh ulang');
+
+  // --- C3: Nama berkas unik mencegah balapan penulis setelah stalled ---
+  resetState32();
+  dlMode32 = 'manual';
+  w.RK_UPDATE_STALL_MS = 75;
+  const dl1Prom = w.rkInstallApkInApp();
+  await new Promise((r) => setTimeout(r, 15));
+  const dl1Calls = capLog32.filter((x) => x[0] === 'Filesystem.downloadFile');
+  assert.strictEqual(dl1Calls.length, 1, '32.C3: percobaan 1 memanggil downloadFile');
+  const path1 = dl1Calls[0][1].path;
+  assert.strictEqual(dlHandles32.length, 1, '32.C3: percobaan 1 menggantung');
+
+  // Tunggu watchdog menandai stalled
+  await new Promise((r) => setTimeout(r, 110));
+  assert.strictEqual(w.MOB_UPDATE_STATE.phase, 'stalled', '32.C3: percobaan 1 masuk phase=stalled');
+
+  // Percobaan 2 dimulai saat percobaan 1 belum selesai menulis -> path harus berbeda & lolos pola Java
+  const dl2Prom = w.rkInstallApkInApp();
+  await new Promise((r) => setTimeout(r, 15));
+  const dl2Calls = capLog32.filter((x) => x[0] === 'Filesystem.downloadFile');
+  assert.strictEqual(dl2Calls.length, 2, '32.C3: percobaan 2 memanggil downloadFile');
+  const path2 = dl2Calls[1][1].path;
+  assert.notStrictEqual(path2, path1, '32.C3: percobaan ulang setelah stalled memakai path berbeda');
+  for (const p of [path1, path2]) {
+    assert.ok(
+      !p.startsWith('/') && !p.startsWith('\\') && !p.includes('..') && /^rk-update\/[^/\\]+\.apk$/i.test(p),
+      '32.C3: path lolos pola Java ApkInstallerPlugin: ' + p,
+    );
+  }
+
+  // Selesaikan percobaan 2 -> state & install memakai path2
+  dlHandles32[1].resolve();
+  await dl2Prom;
+  assert.strictEqual(w.MOB_UPDATE_STATE.phase, 'ready', '32.C3: percobaan 2 masuk ready');
+  assert.strictEqual(w.MOB_UPDATE_STATE.downloadedPath, path2, '32.C3: downloadedPath memakai path2');
+  const instAfterDl2 = capLog32.filter((x) => x[0] === 'ApkInstaller.install');
+  assert.strictEqual(instAfterDl2[instAfterDl2.length - 1][1].path, path2, '32.C3: install dipanggil dengan path2');
+
+  // Hasil percobaan 1 selesai belakangan -> diabaikan
+  const instCountBeforeLate = instAfterDl2.length;
+  dlHandles32[0].resolve();
+  await dl1Prom;
+  await new Promise((r) => setTimeout(r, 25));
+  assert.strictEqual(w.MOB_UPDATE_STATE.downloadedPath, path2, '32.C3: hasil lama tidak menimpa downloadedPath');
+  assert.strictEqual(w.MOB_UPDATE_STATE.phase, 'ready', '32.C3: hasil lama tidak mengubah phase');
+  assert.strictEqual(capLog32.filter((x) => x[0] === 'ApkInstaller.install').length, instCountBeforeLate, '32.C3: hasil lama tidak memicu install');
+
+  // --- C5: Pembersihan senyap rk-update saat start bila idle, dilewati saat fase aktif ---
+  assert.strictEqual(typeof w.rkCleanupApkCacheOnStart, 'function', '32.C5: fungsi rkCleanupApkCacheOnStart tersedia');
+  resetState32();
+  readdirFiles32 = [{ name: 'renkeu-9.apk' }, { name: 'renkeu-10-3.apk' }, { name: 'readme.txt' }];
+  $('m-toast-box').innerHTML = '';
+  const cleanOkC5 = await w.rkCleanupApkCacheOnStart();
+  assert.strictEqual(cleanOkC5, true, '32.C5: pembersihan saat idle berhasil');
+  assert.ok(capLog32.some((x) => x[0] === 'Filesystem.readdir' && x[1].path === 'rk-update' && x[1].directory === 'CACHE'), '32.C5: memindai cache/rk-update');
+  assert.ok(capLog32.some((x) => x[0] === 'Filesystem.deleteFile' && x[1].path === 'rk-update/renkeu-9.apk'), '32.C5: menghapus berkas .apk lama #1');
+  assert.ok(capLog32.some((x) => x[0] === 'Filesystem.deleteFile' && x[1].path === 'rk-update/renkeu-10-3.apk'), '32.C5: menghapus berkas .apk lama #2');
+  assert.ok(!capLog32.some((x) => x[0] === 'Filesystem.deleteFile' && x[1].path === 'rk-update/readme.txt'), '32.C5: hanya menghapus berkas .apk');
+  assert.strictEqual($('m-toast-box').textContent.trim(), '', '32.C5: pembersihan senyap tanpa toast');
+
+  // Galat Filesystem tidak melempar error atau memicu toast
+  resetState32();
+  readdirReject32 = true;
+  $('m-toast-box').innerHTML = '';
+  const cleanErr1 = await w.rkCleanupApkCacheOnStart();
+  assert.strictEqual(cleanErr1, false, '32.C5: readdir gagal kembali false secara senyap');
+  assert.strictEqual($('m-toast-box').textContent.trim(), '', '32.C5: readdir gagal tanpa toast');
+
+  resetState32();
+  readdirFiles32 = [{ name: 'renkeu-9.apk' }];
+  deleteReject32 = true;
+  $('m-toast-box').innerHTML = '';
+  await w.rkCleanupApkCacheOnStart();
+  assert.strictEqual($('m-toast-box').textContent.trim(), '', '32.C5: deleteFile gagal tanpa toast');
+
+  // Dilewati saat fase unduh/verifikasi/pasang aktif atau sudah ada berkas siap pasang
+  for (const actPh of ['downloading', 'verifying', 'installing', 'ready', 'need-permission']) {
+    resetState32();
+    readdirFiles32 = [{ name: 'renkeu-10.apk' }];
+    w.MOB_UPDATE_STATE.phase = actPh;
+    if (actPh === 'ready' || actPh === 'need-permission') {
+      w.MOB_UPDATE_STATE.downloadedPath = 'rk-update/renkeu-10.apk';
+    }
+    const skipC5 = await w.rkCleanupApkCacheOnStart();
+    assert.strictEqual(skipC5, false, '32.C5: pembersihan dilewati saat phase=' + actPh);
+    assert.strictEqual(
+      capLog32.filter((x) => x[0] === 'Filesystem.readdir' || x[0] === 'Filesystem.deleteFile').length,
+      0,
+      '32.C5: tidak menyentuh Filesystem saat phase=' + actPh,
+    );
+  }
+
+  // Pulihkan stub Tahap 7.1
+  resetState32();
+  w.MOB_UPDATE_STATE.info = null;
+  w.MOB_UPDATE_STATE.status = 'idle';
+  w.Capacitor = origCap32;
+  w.fetch = origFetch32;
+  Object.defineProperty(w, 'crypto', { configurable: true, value: origCrypto32 });
+  w.copyText = origCopyText32;
+  w.mobOpenExternalUrl = origOpenExt32;
+  w.RK_UPDATE_STALL_MS = origStallMs32;
+  Object.assign(w.RK_BUILD, origBuild32);
+
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('OK mobile_app_mode');
   process.exit(0);
