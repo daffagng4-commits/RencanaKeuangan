@@ -3414,6 +3414,81 @@ const { boot } = require('./ui.js');
   delete w.ALL.kas.pr['p-t8m-jpy'];
   w.MOB_STATE.tripId = null;
 
+  // 34. Tahap 9 (APK): Kurs terkunci (bk[].rt) untuk pemesanan yang sudah dibayar
+  w.ALL.kas.pr['p-t9m-jpy'] = {
+    id: 'p-t9m-jpy',
+    name: 'Osaka Lock APK',
+    link: false,
+    saldo: 0,
+    tx: [],
+    start: '2026-12-01',
+    end: '2026-12-03',
+    budget: 5000000,
+    cur: 'JPY',
+    rate: 100,
+    dt: {},
+    it: [],
+    bk: [
+      { id: 'm9-b1', title: 'Hotel Namba', amt: 10000, fx: true, paid: false, cat: 'Hotel', a: '2026-12-01', b: '2026-12-02', pay: 'on', link: '', rec: '' },
+      { id: 'm9-b2', title: 'Haruka Express', amt: 10000, fx: true, paid: false, cat: 'Transport', a: '2026-12-02', b: '2026-12-02', pay: 'on', link: '', rec: '' },
+    ],
+    lk: [],
+    ck: [],
+    note: '',
+    goal: null,
+  };
+  const p9m = () => w.ALL.kas.pr['p-t9m-jpy'];
+  w.setShellMode('mobile-app');
+  w.MOB_STATE.tripId = 'p-t9m-jpy';
+  w.MOB_STATE.tripView = 'detail';
+  w.MOB_STATE.tripSub = 'book';
+  w.renderMobTrip();
+
+  // Ketuk lunas pemesanan #1 -> rt=100 + toast APK
+  click($('m-trip-root').querySelector('[data-mbk-pay="m9-b1"]'));
+  assert.strictEqual(p9m().bk[0].paid, true, '34. APK ketuk lunas mengubah paid=true');
+  assert.strictEqual(p9m().bk[0].rt, 100, '34. APK ketuk lunas mengunci rt=100');
+  assert.ok($('m-toast-box') && $('m-toast-box').textContent.includes('Kurs terkunci: 1 JPY = Rp 100'), '34. APK toast konfirmasi kurs terkunci tampil');
+
+  // Ubah kurs 100 -> 110 via modal Ubah APK
+  click($('m-btn-trip-edit'));
+  $('m-kp-rate').value = '110';
+  fire($('m-trip-meta-form'), 'submit');
+  w.MOB_STATE.tripSub = 'ring';
+  w.renderMobTrip();
+  assert.strictEqual($('m-trip-root').querySelector('.m-tile-v').textContent, 'Rp 2.100.000', '34. APK total menjadi Rp 2.100.000');
+
+  w.MOB_STATE.tripSub = 'book';
+  w.renderMobTrip();
+  const m9Cards = [...$('m-trip-root').querySelectorAll('.mob-sched-card')];
+  const m9Hint0 = m9Cards[0].querySelector('.trip-eq-hint');
+  assert.ok(m9Hint0 && m9Hint0.textContent === '≈ Rp 1.000.000 · kurs terkunci 100' && m9Hint0.classList.contains('pv'), '34. APK kartu pemesanan menampilkan kurs terkunci + .pv');
+  assert.strictEqual(m9Cards[1].querySelector('.trip-eq-hint').textContent, '≈ Rp 1.100.000', '34. APK pemesanan belum lunas ikut kurs 110');
+
+  // Edit di form APK (#m-bk-rt-wrap & #m-bk-rt)
+  click($('m-trip-root').querySelector('[data-mbk-edit="m9-b1"]'));
+  assert.ok($('m-bk-rt-wrap') && $('m-bk-rt-wrap').style.display !== 'none', '34. APK #m-bk-rt-wrap tampil saat edit lunas asing');
+  assert.strictEqual($('m-bk-rt').value, '100', '34. APK #m-bk-rt terisi 100');
+  $('m-bk-rt').value = '105';
+  fire($('m-bk-rt'), 'input');
+  assert.strictEqual($('m-bk-amt-eq').textContent, '≈ Rp 1.050.000 · kurs terkunci 105', '34. APK pratinjau ekuivalen live dari #m-bk-rt');
+  fire($('m-trip-book-form'), 'submit');
+  assert.strictEqual(p9m().bk[0].rt, 105, '34. APK submit menyimpan rt=105');
+
+  // Kosongkan #m-bk-rt lalu simpan -> kembali ikut kurs perjalanan
+  click($('m-trip-root').querySelector('[data-mbk-edit="m9-b1"]'));
+  $('m-bk-rt').value = '';
+  fire($('m-trip-book-form'), 'submit');
+  assert.strictEqual(p9m().bk[0].rt, undefined, '34. APK mengosongkan #m-bk-rt menghapus rt');
+
+  // Batal lunas di APK menghapus rt
+  click($('m-trip-root').querySelector('[data-mbk-pay="m9-b1"]'));
+  assert.strictEqual(p9m().bk[0].paid, false, '34. APK batal lunas paid=false');
+  assert.strictEqual(p9m().bk[0].rt, undefined, '34. APK batal lunas menghapus rt');
+
+  delete w.ALL.kas.pr['p-t9m-jpy'];
+  w.MOB_STATE.tripId = null;
+
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('OK mobile_app_mode');
   process.exit(0);

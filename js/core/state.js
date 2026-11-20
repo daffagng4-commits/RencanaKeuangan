@@ -213,19 +213,23 @@ function normKas(k) {
             return x && x.title;
           })
           .map(function (x, i) {
-            return {
+            var isFx = !!x.fx, isPaid = !!x.paid;
+            var okRt = isPaid && isFx && typeof x.rt === 'number' && Number.isFinite(x.rt) && x.rt > 0 && x.rt <= 1e9;
+            var row = {
               id: String(x.id || 'b' + i),
               title: String(x.title).slice(0, 120),
               cat: String(x.cat || 'Lainnya').slice(0, 20),
               amt: +x.amt > 0 ? +x.amt : 0,
-              fx: !!x.fx,
+              fx: isFx,
               pay: /^(ic|on|cash)$/.test(x.pay) ? x.pay : '',
               link: okUrl(x.link) ? String(x.link).slice(0, 400) : '',
               a: ISO_RE.test(x.a) ? x.a : '',
               b: ISO_RE.test(x.b) ? x.b : '',
-              paid: !!x.paid,
+              paid: isPaid,
               rec: String(x.rec || ''),
             };
+            if (okRt) row.rt = x.rt;
+            return row;
           }),
         lk: (Array.isArray(p.lk) ? p.lk : [])
           .filter(function (x) {

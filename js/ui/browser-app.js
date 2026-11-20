@@ -2696,7 +2696,7 @@ function brDrawInlineCal(popId, stateKey, lblId) {
 }
 
 function tripAmtRp(P, x) {
-  return typeof val === 'function' ? val(P, x.amt, x.fx) : (+x.amt || 0);
+  return typeof tripBkRp === 'function' ? tripBkRp(P, x) : (typeof val === 'function' ? val(P, x.amt, x.fx) : (+x.amt || 0));
 }
 function tripItRp(P, x) {
   return typeof val === 'function' ? val(P, x.est, x.fx) : (+x.est || 0);
@@ -2705,8 +2705,15 @@ function tripDayLabel(P, d) {
   return typeof dayLabel === 'function' ? dayLabel(P, d) : fmtD(d);
 }
 function brSyncTripEqPrev() {
+  var tr = tp();
   if (typeof tripSyncEqPairs === 'function') {
-    tripSyncEqPairs(tp(), [['it-est', 'it-cur', 'it-est-eq'], ['bk-amt', 'bk-cur', 'bk-amt-eq']]);
+    tripSyncEqPairs(tr, [['it-est', 'it-cur', 'it-est-eq']]);
+  }
+  var eBk = tr && BR_STATE.tripEditBkId ? (tr.bk || []).filter(function (x) { return x.id === BR_STATE.tripEditBkId; })[0] : null;
+  if (typeof tripSyncBkRateField === 'function') {
+    tripSyncBkRateField(tr, eBk, 'bk-amt', 'bk-cur', 'bk-amt-eq', 'bk-rt-wrap', 'bk-rt');
+  } else if (typeof tripSyncEqPairs === 'function') {
+    tripSyncEqPairs(tr, [['bk-amt', 'bk-cur', 'bk-amt-eq']]);
   }
 }
 
@@ -2818,13 +2825,14 @@ function renderTrip() {
       '<div class="card"><div class="card-header"><div><h2 class="card-title">' + (EBk ? 'Ubah Pemesanan' : 'Tambah Pemesanan') + '</h2><p class="card-sub">Tiket pesawat, hotel, kereta, dan tur prabayar</p></div></div>' +
       '<form id="trip-book-form" class="stack" style="gap:12px;" novalidate><div class="grid-2"><div class="field"><label class="field-label" for="bk-title">Nama</label><input class="input" id="bk-title" placeholder="mis. Tiket Pesawat ANA PP" value="' + esc(EBk ? EBk.title : '') + '" required/></div>' +
       '<div class="field"><label class="field-label" for="bk-amt">Jumlah</label><div style="display:flex;gap:6px;"><input class="input mono" id="bk-amt" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EBk && EBk.amt ? fmtRpInputStr(String(EBk.amt)) : '') + '" style="flex:1;min-width:0;" required/><div style="width:94px;flex-shrink:0;"><select class="input" id="bk-cur"><option value="idr"' + (!(EBk && EBk.fx) ? ' selected' : '') + '>Rp</option>' + (tr.cur ? '<option value="fx"' + ((EBk && EBk.fx) ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : '') + '</select></div></div><div class="trip-eq-hint mono" id="bk-amt-eq"></div></div></div>' +
+      '<div class="field" id="bk-rt-wrap" style="display:' + (EBk && EBk.paid && EBk.fx && tr.cur ? '' : 'none') + ';"><label class="field-label" for="bk-rt">Kurs saat dibayar (Rp per 1 ' + esc(tr.cur || 'asing') + ')</label><input class="input mono" id="bk-rt" type="text" inputmode="decimal" placeholder="Kosong = ikut kurs perjalanan" value="' + (EBk && typeof tripBkHasLock === 'function' && tripBkHasLock(EBk) ? esc(String(EBk.rt)) : '') + '"/><div class="trip-eq-hint">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div>' +
       '<div class="grid-3"><div class="field"><span class="field-label">Mulai / Check-in</span><div class="custom-picker-wrap"><button type="button" class="cal-trigger-btn" style="width:100%;justify-content:space-between;" data-ical-trig="bk-start-cal|bkStart|bk-start-lbl"><span id="bk-start-lbl">' + brFmtShortIndo(BR_STATE.inlineDates.bkStart) + ' ' + BR_STATE.inlineDates.bkStart.slice(0, 4) + '</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button><div class="picker-popover" id="bk-start-cal"></div></div></div>' +
       '<div class="field"><span class="field-label">Selesai / Check-out</span><div class="custom-picker-wrap"><button type="button" class="cal-trigger-btn" style="width:100%;justify-content:space-between;" data-ical-trig="bk-end-cal|bkEnd|bk-end-lbl"><span id="bk-end-lbl">' + brFmtShortIndo(BR_STATE.inlineDates.bkEnd) + ' ' + BR_STATE.inlineDates.bkEnd.slice(0, 4) + '</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button><div class="picker-popover" id="bk-end-cal"></div></div></div>' +
       '<div class="field"><label class="field-label" for="bk-cat">Kategori</label><select class="input" id="bk-cat">' + BCAT.map(function (c) { return '<option value="' + esc(c) + '"' + ((EBk ? EBk.cat : 'Transport') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div></div>' +
       '<div style="display:flex;justify-content:flex-end;gap:8px;">' + (EBk ? '<button type="button" class="btn btn-secondary" data-bk-cancel="1">Batal</button>' : '') + '<button type="submit" class="btn btn-primary">' + (EBk ? 'Simpan Perubahan' : 'Tambah Pemesanan') + '</button></div></form></div>' +
       '<div class="card"><div class="stack" style="gap:8px;">' + ((tr.bk || []).length ? tr.bk.map(function (x) {
         return '<div class="upcoming-item"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) + '<div><div class="upcoming-name">' + esc(x.title) + '</div><div class="upcoming-meta"><span class="badge badge-neutral">' + esc(x.cat) + '</span>' + (x.a ? '<span class="badge badge-neutral">' + brFmtShortIndo(x.a) + (x.b ? ' – ' + brFmtShortIndo(x.b) : '') + '</span>' : '') + '</div></div></div>' +
-          '<div class="upcoming-right">' + (typeof tripItemAmtHtml === 'function' ? tripItemAmtHtml(tr, x.amt, x.fx) : ('<strong class="mono pv">' + rp(tripAmtRp(tr, x)) + '</strong>')) +
+          '<div class="upcoming-right">' + (typeof tripItemAmtHtml === 'function' ? tripItemAmtHtml(tr, x.amt, x.fx, '', '', typeof tripBkHasLock === 'function' && tripBkHasLock(x) ? x.rt : 0) : ('<strong class="mono pv">' + rp(tripAmtRp(tr, x)) + '</strong>')) +
           '<button type="button" class="btn ' + (x.paid ? 'btn-emerald' : 'btn-secondary') + ' btn-sm" data-bk-pay="' + esc(x.id) + '">' + (x.paid ? '✓ Lunas' : 'Tandai lunas') + '</button>' +
           '<button type="button" class="btn btn-secondary btn-sm" data-bk-edit="' + esc(x.id) + '">Ubah</button>' +
           '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);" data-bk-del="' + esc(x.id) + '">Hapus</button></div></div>';
@@ -4027,7 +4035,7 @@ function brBindEvents() {
         );
         return;
       }
-      if (t.closest('[data-bk-pay]')) { var id3 = t.closest('[data-bk-pay]').dataset.bkPay, x3 = trAct.bk.filter(function (x) { return x.id === id3; })[0]; if (x3) { x3.paid = !x3.paid; save(); renderTrip(); } return; }
+      if (t.closest('[data-bk-pay]')) { var id3 = t.closest('[data-bk-pay]').dataset.bkPay, x3 = trAct.bk.filter(function (x) { return x.id === id3; })[0]; if (x3) { var lockMsg = typeof tripToggleBkPaid === 'function' ? tripToggleBkPaid(trAct, x3) : (x3.paid = !x3.paid, ''); save(); renderTrip(); if (lockMsg) toast(lockMsg); } return; }
       if (t.closest('[data-bk-edit]')) { BR_STATE.tripEditBkId = t.closest('[data-bk-edit]').dataset.bkEdit; renderTrip(); return; }
       if (t.closest('[data-bk-cancel]')) { BR_STATE.tripEditBkId = null; renderTrip(); return; }
       if (t.closest('[data-bk-del]')) {
@@ -4134,7 +4142,7 @@ function brBindEvents() {
     var t = e.target;
     if (t.id === 'kas-search') renderKas();
     else if (t.id === 'qp-input') brUpdateQuickParsePreview();
-    else if (t.id === 'it-est' || t.id === 'bk-amt') brSyncTripEqPrev();
+    else if (t.id === 'it-est' || t.id === 'bk-amt' || t.id === 'bk-rt') brSyncTripEqPrev();
     else if (t.id === 'trip-note-box' && tp()) {
       tp().note = t.value; clearTimeout(window._brNoteT); window._brNoteT = setTimeout(save, 350);
     } else if (t.dataset && t.dataset.dtDay && tp()) {
@@ -4306,7 +4314,11 @@ function brBindEvents() {
         return;
       }
       if (BR_STATE.tripEditBkId) {
-        trB.bk = trB.bk.map(function (x) { return x.id === BR_STATE.tripEditBkId ? Object.assign({}, x, patchBk) : x; });
+        trB.bk = trB.bk.map(function (x) {
+          return x.id === BR_STATE.tripEditBkId
+            ? (typeof tripMergeBkEdit === 'function' ? tripMergeBkEdit(x, patchBk, $('bk-rt')) : Object.assign({}, x, patchBk))
+            : x;
+        });
         BR_STATE.tripEditBkId = null;
       } else {
         trB.bk.push(Object.assign({ id: kid('bk'), pay: 'on', link: '', paid: false, rec: '' }, patchBk));

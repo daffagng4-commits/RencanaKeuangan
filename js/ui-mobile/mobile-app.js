@@ -1860,8 +1860,15 @@ function mobActiveTrip() {
 }
 
 function mobSyncTripEqPrev() {
+  var tr = mobActiveTrip();
   if (typeof tripSyncEqPairs === 'function') {
-    tripSyncEqPairs(mobActiveTrip(), [['m-it-est', 'm-it-cur', 'm-it-est-eq'], ['m-bk-amt', 'm-bk-cur', 'm-bk-amt-eq']]);
+    tripSyncEqPairs(tr, [['m-it-est', 'm-it-cur', 'm-it-est-eq']]);
+  }
+  var eBkM = tr && MOB_STATE.tripEditBk ? (tr.bk || []).find(function (x) { return x.id === MOB_STATE.tripEditBk; }) : null;
+  if (typeof tripSyncBkRateField === 'function') {
+    tripSyncBkRateField(tr, eBkM, 'm-bk-amt', 'm-bk-cur', 'm-bk-amt-eq', 'm-bk-rt-wrap', 'm-bk-rt');
+  } else if (typeof tripSyncEqPairs === 'function') {
+    tripSyncEqPairs(tr, [['m-bk-amt', 'm-bk-cur', 'm-bk-amt-eq']]);
   }
 }
 
@@ -1984,7 +1991,7 @@ function renderMobTrip() {
     body = '';
 
   var itRpFn = typeof tripItRp === 'function' ? tripItRp : function (P, x) { return typeof val === 'function' ? val(P, x.est, x.fx) : (+x.est || 0); },
-    bkRpFn = typeof tripAmtRp === 'function' ? tripAmtRp : function (P, x) { return typeof val === 'function' ? val(P, x.amt, x.fx) : (+x.amt || 0); },
+    bkRpFn = typeof tripBkRp === 'function' ? tripBkRp : (typeof tripAmtRp === 'function' ? tripAmtRp : function (P, x) { return typeof val === 'function' ? val(P, x.amt, x.fx) : (+x.amt || 0); }),
     dayLblFn = typeof dayLabel === 'function' ? dayLabel : function (P, d) { return fmtD(d); };
   if (MOB_STATE.tripSub === 'ring') {
     var N = tr.start && tr.end && tr.end >= tr.start ? dayNo(tr.end, tr.start) + 1 : 0,
@@ -2047,6 +2054,7 @@ function renderMobTrip() {
       '<select class="input" id="m-bk-cur" aria-label="Mata uang" style="width:88px;flex-shrink:0"><option value="idr"' + (!(EBk && EBk.fx) ? ' selected' : '') + '>Rp</option>' +
       (tr.cur ? '<option value="fx"' + (EBk && EBk.fx ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : '') +
       '</select></div><div class="trip-eq-hint mono" id="m-bk-amt-eq"></div></div>' +
+      '<div class="field" id="m-bk-rt-wrap" style="display:' + (EBk && EBk.paid && EBk.fx && tr.cur ? '' : 'none') + '"><label class="field-label" for="m-bk-rt">Kurs saat dibayar (Rp per 1 ' + esc(tr.cur || 'asing') + ')</label><input class="input mono" id="m-bk-rt" type="text" inputmode="decimal" placeholder="Kosong = ikut kurs perjalanan" value="' + (EBk && typeof tripBkHasLock === 'function' && tripBkHasLock(EBk) ? esc(String(EBk.rt)) : '') + '" /><div class="trip-eq-hint">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div>' +
       '<div class="bento-2">' +
       '<div class="field"><span class="field-label">Mulai / Check-in</span>' + mobDateFieldHtml('m-bk-start', defBkStart, false) + '</div>' +
       '<div class="field"><span class="field-label">Selesai / Check-out</span>' + mobDateFieldHtml('m-bk-end', defBkEnd, true) + '</div></div>' +
@@ -2055,7 +2063,7 @@ function renderMobTrip() {
       '<div class="stack" style="gap:7px">' +
       ((tr.bk || []).map(function (x) {
         var bkAmtHtml = typeof tripItemAmtHtml === 'function'
-          ? tripItemAmtHtml(tr, x.amt, x.fx, 'msc-right', 'font-size:0.84rem')
+          ? tripItemAmtHtml(tr, x.amt, x.fx, 'msc-right', 'font-size:0.84rem', typeof tripBkHasLock === 'function' && tripBkHasLock(x) ? x.rt : 0)
           : '<strong class="mono pv msc-right" style="font-size:0.84rem">' + rp(bkRpFn(tr, x)) + '</strong>';
         return '<div class="mob-sched-card ' + (x.paid ? 'done' : '') + '" style="padding:10px"><div class="msc-top"><div class="msc-left" style="flex:1">' + mobCatLogo(mobTripCatMapped(x.cat || 'Transport'), 30) +
           '<div style="min-width:0;flex:1"><div style="font-weight:800;font-size:0.84rem">' + esc(x.title) + '</div><div class="msc-badges" style="margin-top:4px"><span class="badge b-nt">' + esc(x.cat || 'Transport') + '</span>' +
@@ -4707,7 +4715,7 @@ function bindMobileShellEvents(root) {
       return;
     }
     var bkp = e.target.closest('[data-mbk-pay]');
-    if (bkp) { var t2 = mobActiveTrip(), bk0 = t2 && t2.bk.find(function (x) { return x.id === bkp.getAttribute('data-mbk-pay'); }); if (bk0) { bk0.paid = !bk0.paid; save(); syncUI(); } return; }
+    if (bkp) { var t2 = mobActiveTrip(), bk0 = t2 && t2.bk.find(function (x) { return x.id === bkp.getAttribute('data-mbk-pay'); }); if (bk0) { var lockMsgM = typeof tripToggleBkPaid === 'function' ? tripToggleBkPaid(t2, bk0) : (bk0.paid = !bk0.paid, ''); save(); syncUI(); if (lockMsgM) showMobToast(lockMsgM); } return; }
     var bkd = e.target.closest('[data-mbk-del]');
     if (bkd) {
       var t3 = mobActiveTrip(), idBk = bkd.getAttribute('data-mbk-del'), xBk = t3 && t3.bk.find(function (x) { return x.id === idBk; });
@@ -4825,7 +4833,7 @@ function bindMobileShellEvents(root) {
     } else if (t.id === 'm-trip-note') {
       var tr = mobActiveTrip();
       if (tr) { tr.note = t.value; save(); }
-    } else if (t.id === 'm-it-est' || t.id === 'm-bk-amt') {
+    } else if (t.id === 'm-it-est' || t.id === 'm-bk-amt' || t.id === 'm-bk-rt') {
       mobSyncTripEqPrev();
     }
   });
@@ -5081,7 +5089,11 @@ function bindMobileShellEvents(root) {
         return;
       }
       if (MOB_STATE.tripEditBk) {
-        trB.bk = trB.bk.map(function (x) { return x.id === MOB_STATE.tripEditBk ? Object.assign({}, x, patchBkM) : x; });
+        trB.bk = trB.bk.map(function (x) {
+          return x.id === MOB_STATE.tripEditBk
+            ? (typeof tripMergeBkEdit === 'function' ? tripMergeBkEdit(x, patchBkM, $('m-bk-rt')) : Object.assign({}, x, patchBkM))
+            : x;
+        });
         MOB_STATE.tripEditBk = null;
       } else {
         trB.bk.push(Object.assign({

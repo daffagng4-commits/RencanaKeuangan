@@ -96,29 +96,103 @@ function fxs(P, n) {
   return P.cur + ' ' + Math.round(n).toLocaleString('id-ID');
 }
 /** Teks jumlah: "Rp ..." dan, bila asing, "JPY ... " di belakangnya. */
-function amtTxt(P, v, fx) {
-  return fx && P.cur ? fxs(P, v) + (P.rate ? ' <span class="sub">&asymp; ' + rp(val(P, v, fx)) + '</span>' : '') : rp(v);
+function amtTxt(P, v, fx, lockedRt) {
+  if (fx && P.cur) {
+    var lk = typeof lockedRt === 'number' && Number.isFinite(lockedRt) && lockedRt > 0 && lockedRt <= 1e9 ? lockedRt : 0;
+    var eqRp = lk ? (+v || 0) * lk : val(P, v, fx);
+    return fxs(P, v) + (lk || P.rate ? ' <span class="sub">&asymp; ' + rp(eqRp) + (lk ? ' &middot; kurs terkunci ' + lk.toLocaleString('id-ID') : '') + '</span>' : '');
+  }
+  return rp(v);
+}
+/** Cek apakah pemesanan asing lunas memiliki kurs terkunci (rt) yang valid. */
+function tripBkHasLock(x) {
+  return !!(x && x.fx && x.paid && typeof x.rt === 'number' && Number.isFinite(x.rt) && x.rt > 0 && x.rt <= 1e9);
+}
+/** Nilai rupiah pemesanan: memakai kurs terkunci bila ada, selainnya mengikuti kurs berjalan. */
+function tripBkRp(P, x) {
+  if (!x) return 0;
+  var amt = +x.amt || 0;
+  if (tripBkHasLock(x)) return amt * x.rt;
+  return val(P, amt, x.fx);
+}
+/** Urai teks input kurs menjadi angka positif valid (> 0 dan <= 1e9), atau 0 bila kosong/tidak sah. */
+function tripParseRateVal(raw) {
+  var s = String(raw == null ? '' : raw).trim().replace(',', '.');
+  if (!s) return 0;
+  var n = parseFloat(s);
+  return (Number.isFinite(n) && n > 0 && n <= 1e9) ? n : 0;
+}
+/** Balik status lunas pemesanan dan kunci/hapus kursnya; mengembalikan pesan toast bila baru dikunci. */
+function tripToggleBkPaid(P, x) {
+  if (!x) return '';
+  x.paid = !x.paid;
+  if (x.paid) {
+    var cur = String((P && P.cur) || '').trim();
+    var rate = +(P && P.rate) || 0;
+    if (x.fx && cur && Number.isFinite(rate) && rate > 0 && rate <= 1e9) {
+      x.rt = rate;
+      return 'Kurs terkunci: 1 ' + cur + ' = Rp ' + rate.toLocaleString('id-ID');
+    }
+    delete x.rt;
+    return '';
+  }
+  delete x.rt;
+  return '';
+}
+/** Gabungkan hasil edit form pemesanan sambil menjaga, mengubah, atau menghapus rt sesuai aturan. */
+function tripMergeBkEdit(oldBk, patchBk, rtInputEl) {
+  var merged = Object.assign({}, oldBk, patchBk);
+  if (!merged.paid || !merged.fx) {
+    delete merged.rt;
+    return merged;
+  }
+  if (rtInputEl) {
+    var parsedRt = tripParseRateVal(rtInputEl.value);
+    if (parsedRt > 0) merged.rt = parsedRt;
+    else delete merged.rt;
+  } else if (!tripBkHasLock(merged)) {
+    delete merged.rt;
+  }
+  return merged;
+}
+/** Sinkronkan visibilitas input kurs terkunci & pratinjau ekuivalen Rp pada form pemesanan. */
+function tripSyncBkRateField(P, editBk, amtId, curId, eqId, rtWrapId, rtId) {
+  var inp = $(amtId), sel = $(curId), eqEl = $(eqId), rtWrap = $(rtWrapId), rtInp = $(rtId);
+  var isFx = !!(sel && sel.value === 'fx' && P && String(P.cur || '').trim());
+  var isPaidEdit = !!(editBk && editBk.paid);
+  if (rtWrap) rtWrap.style.display = (isFx && isPaidEdit) ? '' : 'none';
+  if (!inp || !sel || !eqEl) return;
+  var valNum = typeof getRpVal === 'function' ? getRpVal(amtId) : (+String(inp.value || '').replace(/\D/g, '') || 0);
+  var lkRt = (isFx && isPaidEdit && rtInp) ? tripParseRateVal(rtInp.value) : 0;
+  var prev = tripFormEqPreview(P, valNum, sel.value === 'fx', lkRt);
+  eqEl.textContent = prev.text;
+  eqEl.classList.toggle('is-warn', !!prev.warn);
+  eqEl.classList.toggle('pv', !!(prev.text && !prev.warn));
 }
 /** Rincian pecahan rupiah vs mata uang asing, aturan inklusi persis sama dgn tripPlan(). */
 function tripFxSplit(P) {
   var cur = String((P && P.cur) || '').trim();
   var rate = +(P && P.rate) || 0;
-  var idrRaw = 0, fxAmt = 0;
+  var idrRaw = 0, fxAmt = 0, unlockedFxAmt = 0;
   if (P) {
     (P.bk || []).forEach(function (x) {
       var a = +x.amt || 0;
-      if (cur && x.fx) fxAmt += a;
-      else idrRaw += a;
+      if (cur && x.fx) {
+        fxAmt += a;
+        if (!tripBkHasLock(x) && a > 0) unlockedFxAmt += a;
+      } else idrRaw += a;
     });
     (P.it || []).forEach(function (x) {
       if (x.pay === 'on' || !x.est) return;
       var e = +x.est || 0;
-      if (cur && x.fx) fxAmt += e;
-      else idrRaw += e;
+      if (cur && x.fx) {
+        fxAmt += e;
+        if (e > 0) unlockedFxAmt += e;
+      } else idrRaw += e;
     });
   }
   var hasFx = !!(cur && fxAmt > 0);
-  var noRate = !!(hasFx && !(rate > 0));
+  var noRate = !!(hasFx && unlockedFxAmt > 0 && !(rate > 0));
   var idr = Math.round(idrRaw);
   var fxIdr = 0;
   if (hasFx && !noRate) {
@@ -127,17 +201,26 @@ function tripFxSplit(P) {
   }
   return { hasFx: hasFx, idr: idr, fxIdr: fxIdr, fxAmt: fxAmt, noRate: noRate };
 }
-/** Keterangan ekuivalen rupiah kecil bila nominal dalam mata uang asing berkurs > 0. */
-function tripEqHint(P, v, fx) {
-  var num = +v || 0;
-  if (!fx || !P || !String(P.cur || '').trim() || !(+(P.rate) > 0) || !(num > 0)) return '';
+/** Keterangan ekuivalen rupiah kecil bila nominal dalam mata uang asing (kurs terkunci atau kurs berjalan). */
+function tripEqHint(P, v, fx, lockedRt) {
+  var isObj = v && typeof v === 'object';
+  var num = isObj ? (+v.amt || 0) : (+v || 0);
+  var isFx = isObj ? !!v.fx : !!fx;
+  var lk = isObj
+    ? (tripBkHasLock(v) ? v.rt : 0)
+    : (typeof lockedRt === 'number' && Number.isFinite(lockedRt) && lockedRt > 0 && lockedRt <= 1e9 ? lockedRt : 0);
+  if (!isFx || !P || !String(P.cur || '').trim() || !(num > 0)) return '';
+  if (lk > 0) return '≈ ' + rp(num * lk) + ' · kurs terkunci ' + lk.toLocaleString('id-ID');
+  if (!(+(P.rate) > 0)) return '';
   return '≈ ' + rp(val(P, num, true));
 }
 /** Status pratinjau form (teks ekuivalen Rp atau peringatan kurs belum diatur). */
-function tripFormEqPreview(P, v, isFx) {
+function tripFormEqPreview(P, v, isFx, lockedRt) {
   if (!isFx || !P || !String(P.cur || '').trim()) return { text: '', warn: false };
+  var lk = typeof lockedRt === 'number' && Number.isFinite(lockedRt) && lockedRt > 0 && lockedRt <= 1e9 ? lockedRt : 0;
+  if (lk > 0) return { text: tripEqHint(P, v, true, lk), warn: false };
   if (!(+(P.rate) > 0)) return { text: 'Kurs belum diatur', warn: true };
-  return { text: tripEqHint(P, v, true), warn: false };
+  return { text: tripEqHint(P, v, true, 0), warn: false };
 }
 /** Sinkronkan daftar pasangan [idInput, idSelectCur, idEqEl] pada form itinerary/pemesanan. */
 function tripSyncEqPairs(P, pairs) {
@@ -170,15 +253,21 @@ function tripTotalHintHtml(P, pl) {
   );
 }
 /** HTML nominal baris daftar (itinerary / pemesanan): tambah ekuivalen kecil hanya untuk item fx. */
-function tripItemAmtHtml(P, amt, fx, strongCls, strongStyle) {
-  var num = +amt || 0;
+function tripItemAmtHtml(P, amt, fx, strongCls, strongStyle, lockedRt) {
+  var isObj = amt && typeof amt === 'object';
+  var num = isObj ? (+amt.amt || 0) : (+amt || 0);
+  var isFx = isObj ? !!amt.fx : !!fx;
+  var lk = isObj
+    ? (tripBkHasLock(amt) ? amt.rt : 0)
+    : (typeof lockedRt === 'number' && Number.isFinite(lockedRt) && lockedRt > 0 && lockedRt <= 1e9 ? lockedRt : 0);
   var cls = 'mono pv' + (strongCls ? ' ' + strongCls : '');
   var st = strongStyle ? ' style="' + strongStyle + '"' : '';
   if (!(num > 0)) return '<strong class="' + cls + '"' + st + '></strong>';
-  if (fx && P && String(P.cur || '').trim()) {
-    var eq = tripEqHint(P, num, true);
+  if (isFx && P && String(P.cur || '').trim()) {
+    var eq = tripEqHint(P, num, true, lk);
+    var stackSt = lk > 0 && strongCls === 'msc-right' ? ' style="max-width:54%;flex-shrink:1"' : '';
     return (
-      '<div class="trip-amt-stack"><strong class="' + cls + '"' + st + '>' + esc(fxs(P, num)) + '</strong>' +
+      '<div class="trip-amt-stack"' + stackSt + '><strong class="' + cls + '"' + st + '>' + esc(fxs(P, num)) + '</strong>' +
       (eq ? '\n<span class="trip-eq-hint mono pv">' + esc(eq) + '</span>' : '') +
       '</div>'
     );
@@ -207,7 +296,7 @@ function opts(L, sel, lab) {
 function tripPlan(P) {
   var r = { b: 0, d: 0, paid: 0, cash: {} };
   P.bk.forEach(function (x) {
-    var v = val(P, x.amt, x.fx);
+    var v = tripBkRp(P, x);
     r.b += v;
     if (x.paid) r.paid += v;
   });
@@ -250,7 +339,7 @@ function tripRing(P) {
   var pl = tripPlan(P), td = todayISO(), N = 0, no = 0, byDay = {}, bcat = {};
   P.bk.forEach(function (x) {
     var c = x.cat || 'Lainnya';
-    bcat[c] = (bcat[c] || 0) + val(P, x.amt, x.fx);
+    bcat[c] = (bcat[c] || 0) + tripBkRp(P, x);
   });
   P.it.forEach(function (x) {
     if (x.pay === 'on' || !x.est) return;
@@ -388,14 +477,14 @@ function tripBook(P) {
     (cats.map(function (c) {
       var L = P.bk.filter(function (x) { return x.cat === c; }), sum = 0;
       if (!L.length) return '';
-      L.forEach(function (x) { sum += val(P, x.amt, x.fx); });
+      L.forEach(function (x) { sum += tripBkRp(P, x); });
       return (
         '<div class="card"><div class="pgrp"><h2 class="m0">' + esc(c) + '</h2><b>' + rp(sum) + '</b></div>' +
         L.map(function (x) {
           return (
             '<div class="itm" style="grid-template-columns:1fr auto"><div><div class="ttl">' + esc(x.title) + '</div><div>' + pchip(x.pay) + (x.a ? '<span class="sub">' + dShort(x.a) + (x.b ? ' – ' + dShort(x.b) : '') + '</span> ' : '') + lnk(x.link) +
             '</div><div class="ac jcfs"><button class="g" data-bkpay="' + x.id + '">' + (x.paid ? '&#9745; Lunas' : '&#9744; Tandai lunas') + '</button><button class="g" data-bked="' + x.id + '">Ubah</button><button class="g d" data-bkdel="' + x.id + '">Hapus</button></div></div>' +
-            '<div class="co">' + amtTxt(P, x.amt, x.fx) + '</div></div>'
+            '<div class="co">' + amtTxt(P, x.amt, x.fx, tripBkHasLock(x) ? x.rt : 0) + '</div></div>'
           );
         }).join('') + '</div>'
       );
@@ -719,7 +808,7 @@ function bkSave() {
   if (a && b && b < a) return err('Tanggal selesai harus sama atau sesudah tanggal mulai.');
   var o = { title: t.slice(0, 120), cat: $('bkc').value, amt: parseRp($('bke').value) || 0, fx: !!$('bku') && $('bku').value === 'fx', pay: $('bkm').value, link: l, a: a, b: b };
   if (bkEdit)
-    P.bk = P.bk.map(function (x) { return x.id === bkEdit ? Object.assign({}, x, o) : x; });
+    P.bk = P.bk.map(function (x) { return x.id === bkEdit ? tripMergeBkEdit(x, o, null) : x; });
   else P.bk.push(Object.assign({ id: kid('b'), paid: false, rec: '' }, o));
   bkEdit = null;
   save();
@@ -728,10 +817,12 @@ function bkSave() {
 }
 /** Tandai pemesanan lunas / belum lunas. */
 function bkPay(id) {
-  var x = tp().bk.filter(function (b) { return b.id === id; })[0];
-  x.paid = !x.paid;
+  var P = tp(), x = P.bk.filter(function (b) { return b.id === id; })[0];
+  if (!x) return;
+  var lockMsg = tripToggleBkPaid(P, x);
   save();
   renderTrip();
+  if (lockMsg) toast(lockMsg);
 }
 /* ===== Target tabungan perjalanan ===== */
 /** Target tabungan semua perjalanan (dipakai mesin perhitungan Rincian). */
