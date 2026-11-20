@@ -99,6 +99,92 @@ function fxs(P, n) {
 function amtTxt(P, v, fx) {
   return fx && P.cur ? fxs(P, v) + (P.rate ? ' <span class="sub">&asymp; ' + rp(val(P, v, fx)) + '</span>' : '') : rp(v);
 }
+/** Rincian pecahan rupiah vs mata uang asing, aturan inklusi persis sama dgn tripPlan(). */
+function tripFxSplit(P) {
+  var cur = String((P && P.cur) || '').trim();
+  var rate = +(P && P.rate) || 0;
+  var idrRaw = 0, fxAmt = 0;
+  if (P) {
+    (P.bk || []).forEach(function (x) {
+      var a = +x.amt || 0;
+      if (cur && x.fx) fxAmt += a;
+      else idrRaw += a;
+    });
+    (P.it || []).forEach(function (x) {
+      if (x.pay === 'on' || !x.est) return;
+      var e = +x.est || 0;
+      if (cur && x.fx) fxAmt += e;
+      else idrRaw += e;
+    });
+  }
+  var hasFx = !!(cur && fxAmt > 0);
+  var noRate = !!(hasFx && !(rate > 0));
+  var idr = Math.round(idrRaw);
+  var fxIdr = 0;
+  if (hasFx && !noRate) {
+    var pl = tripPlan(P);
+    fxIdr = Math.round(pl.t) - idr;
+  }
+  return { hasFx: hasFx, idr: idr, fxIdr: fxIdr, fxAmt: fxAmt, noRate: noRate };
+}
+/** Keterangan ekuivalen rupiah kecil bila nominal dalam mata uang asing berkurs > 0. */
+function tripEqHint(P, v, fx) {
+  var num = +v || 0;
+  if (!fx || !P || !String(P.cur || '').trim() || !(+(P.rate) > 0) || !(num > 0)) return '';
+  return '≈ ' + rp(val(P, num, true));
+}
+/** Status pratinjau form (teks ekuivalen Rp atau peringatan kurs belum diatur). */
+function tripFormEqPreview(P, v, isFx) {
+  if (!isFx || !P || !String(P.cur || '').trim()) return { text: '', warn: false };
+  if (!(+(P.rate) > 0)) return { text: 'Kurs belum diatur', warn: true };
+  return { text: tripEqHint(P, v, true), warn: false };
+}
+/** Sinkronkan daftar pasangan [idInput, idSelectCur, idEqEl] pada form itinerary/pemesanan. */
+function tripSyncEqPairs(P, pairs) {
+  pairs.forEach(function (pair) {
+    var inp = $(pair[0]), sel = $(pair[1]), eqEl = $(pair[2]);
+    if (!inp || !sel || !eqEl) return;
+    var valNum = typeof getRpVal === 'function' ? getRpVal(pair[0]) : (+String(inp.value || '').replace(/\D/g, '') || 0);
+    var prev = tripFormEqPreview(P, valNum, sel.value === 'fx');
+    eqEl.textContent = prev.text;
+    eqEl.classList.toggle('is-warn', !!prev.warn);
+    eqEl.classList.toggle('pv', !!(prev.text && !prev.warn));
+  });
+}
+/** HTML hint tile "Total Rencana Biaya": identik dgn teks lama bila !hasFx. */
+function tripTotalHintHtml(P, pl) {
+  var p0 = pl || tripPlan(P);
+  var sp = tripFxSplit(P);
+  if (!sp.hasFx) return 'Pemesanan ' + rp(p0.b) + ' + Harian ' + rp(p0.d);
+  if (sp.noRate) {
+    return (
+      '<span class="trip-fx-line">Rupiah <span class="mono pv">' + rp(sp.idr) + '</span></span>\n' +
+      '<span class="trip-fx-line">Asing <span class="mono pv">' + esc(fxs(P, sp.fxAmt)) + '</span> &middot; kurs belum diatur</span>\n' +
+      '<span class="trip-fx-warn">Kurs belum diatur: total belum akurat</span>'
+    );
+  }
+  return (
+    '<span class="trip-fx-line">Rupiah <span class="mono pv">' + rp(sp.idr) + '</span></span>\n' +
+    '<span class="trip-fx-line">Asing <span class="mono pv">' + rp(sp.fxIdr) + '</span> <span class="trip-fx-eq mono pv">(≈ ' + esc(fxs(P, sp.fxAmt)) + ')</span></span>\n' +
+    '<span class="trip-fx-sub pv">Pemesanan ' + rp(p0.b) + ' + Harian ' + rp(p0.d) + '</span>'
+  );
+}
+/** HTML nominal baris daftar (itinerary / pemesanan): tambah ekuivalen kecil hanya untuk item fx. */
+function tripItemAmtHtml(P, amt, fx, strongCls, strongStyle) {
+  var num = +amt || 0;
+  var cls = 'mono pv' + (strongCls ? ' ' + strongCls : '');
+  var st = strongStyle ? ' style="' + strongStyle + '"' : '';
+  if (!(num > 0)) return '<strong class="' + cls + '"' + st + '></strong>';
+  if (fx && P && String(P.cur || '').trim()) {
+    var eq = tripEqHint(P, num, true);
+    return (
+      '<div class="trip-amt-stack"><strong class="' + cls + '"' + st + '>' + esc(fxs(P, num)) + '</strong>' +
+      (eq ? '\n<span class="trip-eq-hint mono pv">' + esc(eq) + '</span>' : '') +
+      '</div>'
+    );
+  }
+  return '<strong class="' + cls + '"' + st + '>' + rp(num) + '</strong>';
+}
 function lnk(u) {
   var su = typeof safeHref === 'function' ? safeHref(u) : '';
   if (!su) return '';
@@ -1701,7 +1787,16 @@ function tripPdfData(P, cost) {
   else subParts.push('Itinerary Perjalanan');
   if (cost && P.cur && P.rate) subParts.push('Kurs 1 ' + P.cur + ' = ' + rp(P.rate));
   var summary = [['Kegiatan', String((P.it || []).length) + ' jadwal'], ['Pemesanan', String((P.bk || []).length) + ' item']];
-  if (cost) summary = summary.concat([['Total Rencana Biaya', rp(pl.t)], ['Sudah Dibayar', rp(pl.paid)]]);
+  if (cost) {
+    summary = summary.concat([['Total Rencana Biaya', rp(pl.t)], ['Sudah Dibayar', rp(pl.paid)]]);
+    var spPdf = tripFxSplit(P);
+    if (spPdf.hasFx && !spPdf.noRate) {
+      summary = summary.concat([
+        ['Rupiah', rp(spPdf.idr)],
+        ['Mata uang asing', rp(spPdf.fxIdr) + ' (' + fxs(P, spPdf.fxAmt) + ')'],
+      ]);
+    }
+  }
   return { filename: tripSafePdfFilename(P.name), title: P.name || 'Itinerary Perjalanan', subtitle: subParts.join(' · '), summary: summary, tables: tables };
 }
 
@@ -1727,6 +1822,17 @@ function tripText(P, cost) {
     L.push('*Pemesanan*');
     P.bk.forEach(function (b) { L.push('• ' + b.title + (cost ? ' (' + amtPlain(P, b.amt, b.fx) + ')' : '') + (b.paid ? ' ✓' : '')); });
     L.push('');
+  }
+  if (cost) {
+    var spTxt = tripFxSplit(P);
+    if (spTxt.hasFx && !spTxt.noRate) {
+      var plTxt = tripPlan(P);
+      L.push('*Rencana Biaya*');
+      L.push('• Total: ' + rp(plTxt.t));
+      L.push('• Rupiah: ' + rp(spTxt.idr));
+      L.push('• Asing: ' + rp(spTxt.fxIdr) + ' (≈ ' + fxs(P, spTxt.fxAmt) + ')');
+      L.push('');
+    }
   }
   if (P.lk.length) {
     L.push('*Tautan penting*');

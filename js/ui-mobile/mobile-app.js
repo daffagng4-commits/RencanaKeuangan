@@ -1859,6 +1859,12 @@ function mobActiveTrip() {
   return list.find(function (p) { return p.id === MOB_STATE.tripId; }) || list[0];
 }
 
+function mobSyncTripEqPrev() {
+  if (typeof tripSyncEqPairs === 'function') {
+    tripSyncEqPairs(mobActiveTrip(), [['m-it-est', 'm-it-cur', 'm-it-est-eq'], ['m-bk-amt', 'm-bk-cur', 'm-bk-amt-eq']]);
+  }
+}
+
 function syncMobTripBudgetWrap() {
   var sel = $('m-kp-use-budget'), wrap = $('m-kp-budget-wrap');
   if (sel && wrap) wrap.style.display = sel.value === '1' ? 'flex' : 'none';
@@ -1883,7 +1889,9 @@ function renderMobTripItinCard(tr, x) {
     ? '<span class="mono" style="color:var(--accent-ink);margin-right:5px">' + esc(x.time.replace(':', '.')) + (x.time2 ? '–' + esc(x.time2.replace(':', '.')) : '') + '</span>'
     : '';
   var payTxt = x.pay ? ((typeof PAYL !== 'undefined' && PAYL[x.pay]) || x.pay) : '';
-  var amtTxtM = x.est ? (x.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(x.est).toLocaleString('id-ID') : rp(x.est)) : '';
+  var amtBlock = typeof tripItemAmtHtml === 'function'
+    ? tripItemAmtHtml(tr, x.est, x.fx, 'msc-right', 'font-size:0.84rem')
+    : '<strong class="mono pv msc-right" style="font-size:0.84rem">' + (x.est ? (x.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(x.est).toLocaleString('id-ID') : rp(x.est)) : '') + '</strong>';
   return '<div class="mob-sched-card ' + (x.done ? 'done' : '') + '" style="padding:10px">' +
     '<div class="msc-top"><div class="msc-left" style="flex:1">' + mobCatLogo(mobTripCatMapped(x.cat || 'Transport'), 30) +
     '<div style="min-width:0;flex:1">' +
@@ -1891,7 +1899,7 @@ function renderMobTripItinCard(tr, x) {
     '<div class="msc-badges" style="margin-top:4px"><span class="badge b-nt">' + esc(x.cat || 'Transport') + '</span>' +
     (payTxt ? '<span class="badge b-ac">' + esc(payTxt) + '</span>' : '') + '</div>' +
     (x.note ? '<div class="msc-sub" style="margin-top:4px">' + esc(x.note) + '</div>' : '') +
-    '</div></div><strong class="mono pv msc-right" style="font-size:0.84rem">' + amtTxtM + '</strong></div>' +
+    '</div></div>' + amtBlock + '</div>' +
     '<div style="display:flex;gap:6px;justify-content:flex-end">' +
     '<button type="button" class="btn btn-secondary btn-sm" data-mit-toggle="' + esc(x.id) + '">' + (x.done ? '✓ Selesai' : 'Tandai') + '</button>' +
     '<button type="button" class="btn btn-secondary btn-sm" data-mit-edit="' + esc(x.id) + '">Ubah</button>' +
@@ -1919,7 +1927,7 @@ function renderMobTripItin(tr) {
     '<div style="display:flex;gap:6px"><input class="input mono" id="m-it-est" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EIt && EIt.est ? (+EIt.est).toLocaleString('id-ID') : '') + '" style="flex:1;min-width:0" />' +
     '<select class="input" id="m-it-cur" aria-label="Mata uang" style="width:88px;flex-shrink:0"><option value="idr"' + (!(EIt && EIt.fx) ? ' selected' : '') + '>Rp</option>' +
     (tr.cur ? '<option value="fx"' + (EIt && EIt.fx ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : '') +
-    '</select></div></div>' +
+    '</select></div><div class="trip-eq-hint mono" id="m-it-est-eq"></div></div>' +
     '<div class="bento-2">' +
     '<div class="field"><label class="field-label" for="m-it-pay">Pembayaran</label><select class="input" id="m-it-pay">' +
     '<option value=""' + (defPay === '' ? ' selected' : '') + '>Belum ditentukan</option>' +
@@ -1996,17 +2004,18 @@ function renderMobTrip() {
     var dk = Object.keys(byDay).sort(),
       dmax = dk.reduce(function (m, d) { return Math.max(m, byDay[d]); }, 0) || 1,
       cl = Object.keys(bcat).sort(function (a, b) { return bcat[b] - bcat[a]; }),
-      ck = Object.keys(pl.cash).sort();
+      ck = Object.keys(pl.cash).sort(),
+      spM = typeof tripFxSplit === 'function' ? tripFxSplit(tr) : { hasFx: false };
     body =
       '<div class="bento-2 m-trip-kpis">' +
-      '<div class="m-tile"><div class="m-tile-k">Total Rencana Biaya</div><div class="m-tile-v pv">' + rp(pl.t) + '</div><div class="m-tile-s pv">Pemesanan ' + rp(pl.b) + ' + Harian ' + rp(pl.d) + '</div></div>' +
+      '<div class="m-tile"><div class="m-tile-k">Total Rencana Biaya</div><div class="m-tile-v pv">' + rp(pl.t) + '</div><div class="m-tile-s' + (spM.hasFx ? ' has-fx-split' : ' pv') + '">' + (typeof tripTotalHintHtml === 'function' ? tripTotalHintHtml(tr, pl) : ('Pemesanan ' + rp(pl.b) + ' + Harian ' + rp(pl.d))) + '</div></div>' +
       '<div class="m-tile"><div class="m-tile-k">' + (tr.budget ? (leftB >= 0 ? 'Sisa Anggaran' : 'Melebihi Anggaran') : 'Anggaran') + '</div><div class="m-tile-v pv" style="color:' + (tr.budget ? (leftB >= 0 ? 'var(--emerald)' : 'var(--crimson)') : 'var(--text-primary)') + '">' + (tr.budget ? rp(Math.abs(leftB)) : 'Belum diatur') + '</div><div class="m-tile-s pv">' + (tr.budget ? pctB + '% dari ' + rp(tr.budget) : 'Atur lewat tombol Ubah') + '</div></div>' +
       '<div class="m-tile"><div class="m-tile-k">Sudah Dibayar</div><div class="m-tile-v pv" style="color:var(--emerald)">' + rp(pl.paid) + '</div><div class="m-tile-s pv">Belum dibayar: ' + rp(pl.b - pl.paid) + '</div></div>' +
       '<div class="m-tile"><div class="m-tile-k">Rencana per Hari</div><div class="m-tile-v pv">' + (N ? rp(Math.round(pl.t / N)) : '—') + '</div><div class="m-tile-s">' + (N ? N + ' hari' : 'Tanggal belum diisi') + (tr.cur && tr.rate ? ' · 1 ' + esc(tr.cur) + ' = Rp ' + tr.rate.toLocaleString('id-ID') : '') + '</div></div></div>' +
       '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Siapkan Tunai / Kartu</h3><p class="msc-sub">Akumulasi kebutuhan bayar di tempat</p></div></div><div class="stack" style="gap:6px">' +
       (ck.length ? ck.map(function (k) {
         var cx = pl.cash[k], eqRp = cx.idr + (cx.fx && tr.rate ? Math.round(cx.fx * tr.rate) : 0);
-        return '<div class="simple-row m-ring-row"><span class="simple-row-name">' + esc(k) + '</span><span class="mono m-ring-fx">' + (cx.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(cx.fx).toLocaleString('id-ID') : rp(cx.fx || cx.idr)) + '</span><span class="simple-row-amt pv">' + (cx.fx && tr.rate ? '≈ ' + rp(eqRp) : rp(eqRp)) + '</span></div>';
+        return '<div class="simple-row m-ring-row"><span class="simple-row-name">' + esc(k) + '</span><span class="mono pv m-ring-fx">' + (cx.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(cx.fx).toLocaleString('id-ID') : rp(cx.fx || cx.idr)) + '</span><span class="simple-row-amt pv">' + (cx.fx ? (tr.rate ? '≈ ' + rp(eqRp) : (cx.idr ? rp(cx.idr) : '—')) : rp(eqRp)) + '</span></div>';
       }).join('') : '<div style="padding:10px 4px;color:var(--text-muted);font-size:0.78rem">Belum ada pengeluaran tunai/kartu harian di Itinerary.</div>') +
       '</div></div>' +
       '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Estimasi per Hari</h3><p class="msc-sub">Pengeluaran non-online dihitung dari jadwal kegiatan</p></div></div><div class="stack" style="gap:6px">' +
@@ -2037,7 +2046,7 @@ function renderMobTrip() {
       '<div class="field"><label class="field-label" for="m-bk-amt">Jumlah</label><div style="display:flex;gap:6px"><input class="input mono" id="m-bk-amt" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EBk && EBk.amt ? (+EBk.amt).toLocaleString('id-ID') : '') + '" style="flex:1;min-width:0" required />' +
       '<select class="input" id="m-bk-cur" aria-label="Mata uang" style="width:88px;flex-shrink:0"><option value="idr"' + (!(EBk && EBk.fx) ? ' selected' : '') + '>Rp</option>' +
       (tr.cur ? '<option value="fx"' + (EBk && EBk.fx ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : '') +
-      '</select></div></div>' +
+      '</select></div><div class="trip-eq-hint mono" id="m-bk-amt-eq"></div></div>' +
       '<div class="bento-2">' +
       '<div class="field"><span class="field-label">Mulai / Check-in</span>' + mobDateFieldHtml('m-bk-start', defBkStart, false) + '</div>' +
       '<div class="field"><span class="field-label">Selesai / Check-out</span>' + mobDateFieldHtml('m-bk-end', defBkEnd, true) + '</div></div>' +
@@ -2045,10 +2054,13 @@ function renderMobTrip() {
       '<div style="display:flex;justify-content:flex-end;gap:8px">' + (EBk ? '<button type="button" class="btn btn-secondary" id="m-bk-cancel">Batal</button>' : '') + '<button type="submit" class="btn btn-primary">' + (EBk ? 'Simpan Perubahan' : 'Tambah Pemesanan') + '</button></div></form></div>' +
       '<div class="stack" style="gap:7px">' +
       ((tr.bk || []).map(function (x) {
+        var bkAmtHtml = typeof tripItemAmtHtml === 'function'
+          ? tripItemAmtHtml(tr, x.amt, x.fx, 'msc-right', 'font-size:0.84rem')
+          : '<strong class="mono pv msc-right" style="font-size:0.84rem">' + rp(bkRpFn(tr, x)) + '</strong>';
         return '<div class="mob-sched-card ' + (x.paid ? 'done' : '') + '" style="padding:10px"><div class="msc-top"><div class="msc-left" style="flex:1">' + mobCatLogo(mobTripCatMapped(x.cat || 'Transport'), 30) +
           '<div style="min-width:0;flex:1"><div style="font-weight:800;font-size:0.84rem">' + esc(x.title) + '</div><div class="msc-badges" style="margin-top:4px"><span class="badge b-nt">' + esc(x.cat || 'Transport') + '</span>' +
           (x.a ? '<span class="badge b-nt">' + esc(mobFmtShortCal(x.a) + (x.b ? ' – ' + mobFmtShortCal(x.b) : '')) + '</span>' : '') +
-          '</div></div></div><strong class="mono pv msc-right" style="font-size:0.84rem">' + rp(bkRpFn(tr, x)) + '</strong></div>' +
+          '</div></div></div>' + bkAmtHtml + '</div>' +
           '<div style="display:flex;gap:6px;justify-content:flex-end"><button type="button" class="btn ' + (x.paid ? 'btn-emerald' : 'btn-secondary') + ' btn-sm" data-mbk-pay="' + esc(x.id) + '">' + (x.paid ? '✓ Lunas' : 'Tandai lunas') + '</button>' +
           '<button type="button" class="btn btn-secondary btn-sm" data-mbk-edit="' + esc(x.id) + '">Ubah</button>' +
           '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson)" data-mbk-del="' + esc(x.id) + '">Hapus</button></div></div>';
@@ -2123,6 +2135,7 @@ function renderMobTrip() {
     (tr.cur && tr.rate ? ' &middot; Kurs 1 ' + esc(tr.cur) + ' = <span class="mono pv">Rp ' + (+tr.rate).toLocaleString('id-ID') + '</span>' : '') + '</div></div>' +
     '<div class="m-trip-hd-actions"><button type="button" class="btn btn-secondary btn-sm" id="m-btn-trip-share">Bagikan</button><button type="button" class="btn btn-secondary btn-sm" id="m-btn-trip-edit">Ubah</button><button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson)" data-mtrip-del="' + esc(tr.id) + '">Hapus</button></div></div>' +
     '<div class="pill-slider">' + subTabs.map(function (st) { return '<button type="button" class="p-chip ' + (MOB_STATE.tripSub === st[0] ? 'active' : '') + '" data-mtripsub="' + st[0] + '">' + st[1] + '</button>'; }).join('') + '</div></div>' + body;
+  mobSyncTripEqPrev();
 }
 
 function getMobDueList() {
@@ -4812,6 +4825,8 @@ function bindMobileShellEvents(root) {
     } else if (t.id === 'm-trip-note') {
       var tr = mobActiveTrip();
       if (tr) { tr.note = t.value; save(); }
+    } else if (t.id === 'm-it-est' || t.id === 'm-bk-amt') {
+      mobSyncTripEqPrev();
     }
   });
 
@@ -4822,6 +4837,8 @@ function bindMobileShellEvents(root) {
       $('m-kas-debt-box').style.display = t.checked ? 'grid' : 'none';
     } else if (t.id === 'm-kas-flt-cat') {
       renderMobKas();
+    } else if (t.id === 'm-it-cur' || t.id === 'm-bk-cur') {
+      mobSyncTripEqPrev();
     } else if (t.dataset && t.dataset.msimtog != null) {
       var ix = +t.dataset.msimtog;
       if (SIM[ix]) { SIM[ix].off = !t.checked; renderMobSim(); }

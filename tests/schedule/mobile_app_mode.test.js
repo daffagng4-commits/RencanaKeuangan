@@ -3269,6 +3269,151 @@ const { boot } = require('./ui.js');
   w.RK_UPDATE_STALL_MS = origStallMs32;
   Object.assign(w.RK_BUILD, origBuild32);
 
+  // 33. Tahap 8 (Khusus APK Mode Perjalanan: rincian Rupiah/Asing di Ringkasan, form D2, daftar D4, noRate, !hasFx, .pv)
+  const origTripPr33 = {};
+  w.ALL.kas.pr['p-t8m-nofx'] = {
+    id: 'p-t8m-nofx',
+    name: 'Solo Hemat',
+    link: false,
+    saldo: 0,
+    tx: [],
+    start: '2026-12-01',
+    end: '2026-12-02',
+    budget: 2000000,
+    cur: '',
+    rate: 0,
+    dt: {},
+    it: [{ id: 'mi-nf', day: '2026-12-01', time: '08:00', time2: '', place: 'Gudeg', est: 100000, fx: false, pay: 'cash', cat: 'Makan', link: '', note: '', done: false }],
+    bk: [{ id: 'mb-nf', title: 'Kereta', amt: 500000, fx: false, paid: false, cat: 'Transport', a: '', b: '', pay: 'on', link: '', rec: '' }],
+    lk: [],
+    ck: [],
+    note: '',
+    goal: null,
+  };
+  w.ALL.kas.pr['p-t8m-jpy'] = {
+    id: 'p-t8m-jpy',
+    name: 'Osaka Tahap 8',
+    link: false,
+    saldo: 0,
+    tx: [],
+    start: '2026-12-01',
+    end: '2026-12-03',
+    budget: 5000000,
+    cur: 'JPY',
+    rate: 100,
+    dt: {},
+    it: [
+      { id: 'mi-j1', day: '2026-12-01', time: '10:00', time2: '', place: 'Nankai Express', est: 2500, fx: true, pay: 'ic', cat: 'Transport', link: '', note: '', done: false },
+      { id: 'mi-j2', day: '2026-12-01', time: '13:00', time2: '', place: 'Oleh-oleh Bandara', est: 50000, fx: false, pay: 'cash', cat: 'Belanja', link: '', note: '', done: false },
+    ],
+    bk: [
+      { id: 'mb-j1', title: 'Asuransi', amt: 1000000, fx: false, paid: true, cat: 'Persiapan', a: '2026-12-01', b: '2026-12-03', pay: 'on', link: '', rec: '' },
+      { id: 'mb-j2', title: 'Hotel Namba', amt: 10000, fx: true, paid: false, cat: 'Penginapan', a: '2026-12-01', b: '2026-12-03', pay: 'on', link: '', rec: '' },
+    ],
+    lk: [],
+    ck: [],
+    note: '',
+    goal: null,
+  };
+
+  w.setShellMode('mobile-app');
+  w.switchMobileTab('trip');
+
+  // 33.1 !hasFx tetap identik persis lama
+  w.MOB_STATE.tripId = 'p-t8m-nofx';
+  w.MOB_STATE.tripView = 'detail';
+  w.MOB_STATE.tripSub = 'ring';
+  w.renderMobTrip();
+  const mHintNoFx = $('m-trip-root').querySelector('.m-tile-s');
+  assert.strictEqual(mHintNoFx.textContent, 'Pemesanan Rp 500.000 + Harian Rp 100.000', '33.!hasFx: teks hint APK identik');
+  assert.ok(mHintNoFx.classList.contains('pv'), '33.!hasFx: kelas pv tetap ada');
+
+  // 33.2 Core FX + live edit kurs di APK tanpa muat ulang
+  w.MOB_STATE.tripId = 'p-t8m-jpy';
+  w.MOB_STATE.tripSub = 'ring';
+  w.renderMobTrip();
+  const mTile100 = $('m-trip-root').querySelector('.m-tile');
+  assert.strictEqual(mTile100.querySelector('.m-tile-v').textContent, 'Rp 2.300.000', '33.A: total APK kurs 100 = Rp 2.300.000');
+  const mHint100 = mTile100.querySelector('.m-tile-s').textContent;
+  assert.ok(/Rupiah\s+Rp\s*1\.050\.000/.test(mHint100), '33.A: APK memuat Rupiah Rp 1.050.000');
+  assert.ok(/Asing\s+Rp\s*1\.250\.000\s*\(≈\s*JPY\s*12\.500\)/.test(mHint100), '33.A: APK memuat Asing Rp 1.250.000 (≈ JPY 12.500)');
+  assert.ok(/Pemesanan\s+Rp\s*2\.000\.000\s*\+\s*Harian\s+Rp\s*300\.000/.test(mHint100), '33.A: APK mempertahankan baris lama');
+  const mPvTile = [...mTile100.querySelectorAll('.m-tile-s .pv')];
+  assert.ok(mPvTile.some((el) => /1\.050\.000/.test(el.textContent)) && mPvTile.some((el) => /JPY\s*12\.500/.test(el.textContent)), '33.A: kelas pv ada pada semua nominal baru di APK');
+
+  // Ubah kurs 100 -> 110 via modal Ubah APK
+  click($('m-btn-trip-edit'));
+  $('m-kp-rate').value = '110';
+  fire($('m-trip-meta-form'), 'submit');
+  const mTile110 = $('m-trip-root').querySelector('.m-tile');
+  assert.strictEqual(mTile110.querySelector('.m-tile-v').textContent, 'Rp 2.425.000', '33.A: ubah kurs 110 APK -> total Rp 2.425.000');
+  assert.ok(/Asing\s+Rp\s*1\.375\.000\s*\(≈\s*JPY\s*12\.500\)/.test(mTile110.textContent), '33.A: ubah kurs 110 APK -> Asing naik & JPY 12.500 tetap');
+
+  // 33.3 Daftar D4 & Form D2 pada APK (kembalikan rate=100)
+  w.ALL.kas.pr['p-t8m-jpy'].rate = 100;
+  w.MOB_STATE.tripSub = 'itin';
+  w.renderMobTrip();
+  const mItCards = [...$('m-trip-root').querySelectorAll('.mob-sched-card')];
+  assert.strictEqual(mItCards.length, 2, '33.D4 itinerary: 2 kartu kegiatan');
+  assert.ok(mItCards[0].textContent.includes('JPY 2.500'), '33.D4 itinerary fx: nominal JPY tampil');
+  const mItEq0 = mItCards[0].querySelector('.trip-eq-hint');
+  assert.ok(mItEq0 && mItEq0.textContent === '≈ Rp 250.000' && mItEq0.classList.contains('pv'), '33.D4 itinerary fx: hint ≈ Rp 250.000 + .pv');
+  assert.strictEqual(mItCards[1].querySelector('.trip-eq-hint'), null, '33.D4 itinerary rupiah: tidak ada hint');
+
+  $('m-it-cur').value = 'fx';
+  $('m-it-est').value = '4000';
+  fire($('m-it-est'), 'input');
+  assert.strictEqual($('m-it-est-eq').textContent, '≈ Rp 400.000', '33.D2 itinerary: ketik angka memperbarui ekuivalen');
+  assert.ok($('m-it-est-eq').classList.contains('pv'), '33.D2 itinerary: pratinjau memakai kelas pv');
+  $('m-it-cur').value = 'idr';
+  fire($('m-it-cur'), 'change');
+  assert.strictEqual($('m-it-est-eq').textContent, '', '33.D2 itinerary: pindah ke Rp mengosongkan pratinjau');
+
+  click($('m-trip-root').querySelector('[data-mit-edit="mi-j1"]'));
+  assert.strictEqual($('m-it-est-eq').textContent, '≈ Rp 250.000', '33.D2 itinerary mode edit: pratinjau langsung tampil');
+  click($('m-it-cancel'));
+
+  w.MOB_STATE.tripSub = 'book';
+  w.renderMobTrip();
+  const mBkCards = [...$('m-trip-root').querySelectorAll('.mob-sched-card')];
+  assert.strictEqual(mBkCards.length, 2, '33.D4 pemesanan: 2 kartu pemesanan');
+  assert.strictEqual(mBkCards[0].querySelector('.trip-eq-hint'), null, '33.D4 pemesanan rupiah: tidak ada hint');
+  const mBkEq1 = mBkCards[1].querySelector('.trip-eq-hint');
+  assert.ok(mBkCards[1].textContent.includes('JPY 10.000'), '33.D4 pemesanan fx: nominal JPY tampil');
+  assert.ok(mBkEq1 && mBkEq1.textContent === '≈ Rp 1.000.000' && mBkEq1.classList.contains('pv'), '33.D4 pemesanan fx: hint ≈ Rp 1.000.000 + .pv');
+
+  $('m-bk-cur').value = 'fx';
+  $('m-bk-amt').value = '6000';
+  fire($('m-bk-amt'), 'input');
+  assert.strictEqual($('m-bk-amt-eq').textContent, '≈ Rp 600.000', '33.D2 pemesanan: ketik angka memperbarui ekuivalen');
+  $('m-bk-cur').value = 'idr';
+  fire($('m-bk-cur'), 'change');
+  assert.strictEqual($('m-bk-amt-eq').textContent, '', '33.D2 pemesanan: pindah ke Rp mengosongkan pratinjau');
+
+  click($('m-trip-root').querySelector('[data-mbk-edit="mb-j2"]'));
+  assert.strictEqual($('m-bk-amt-eq').textContent, '≈ Rp 1.000.000', '33.D2 pemesanan mode edit: pratinjau langsung tampil');
+  click($('m-bk-cancel'));
+
+  // 33.4 noRate di APK
+  w.ALL.kas.pr['p-t8m-jpy'].rate = 0;
+  w.MOB_STATE.tripSub = 'ring';
+  w.renderMobTrip();
+  const mNrHint = $('m-trip-root').querySelector('.m-tile-s').textContent;
+  assert.ok(/Asing\s+JPY\s*12\.500\s*·\s*kurs belum diatur/i.test(mNrHint), '33.noRate APK: menyebut kurs belum diatur');
+  assert.ok(/Kurs belum diatur:\s*total belum akurat/i.test(mNrHint), '33.noRate APK: peringatan total belum akurat');
+  assert.ok(!mNrHint.includes('≈ Rp'), '33.noRate APK: tidak menampilkan ekuivalen Rp');
+  w.MOB_STATE.tripSub = 'itin';
+  w.renderMobTrip();
+  assert.strictEqual($('m-trip-root').querySelectorAll('.trip-eq-hint:not(:empty)').length, 0, '33.noRate APK daftar: tanpa hint ekuivalen');
+  $('m-it-cur').value = 'fx';
+  fire($('m-it-cur'), 'change');
+  assert.strictEqual($('m-it-est-eq').textContent, 'Kurs belum diatur', '33.noRate APK D2: form menampilkan Kurs belum diatur');
+
+  // Bersihkan profil uji Tahap 8
+  delete w.ALL.kas.pr['p-t8m-nofx'];
+  delete w.ALL.kas.pr['p-t8m-jpy'];
+  w.MOB_STATE.tripId = null;
+
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('OK mobile_app_mode');
   process.exit(0);

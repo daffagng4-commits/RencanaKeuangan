@@ -1888,6 +1888,55 @@
       flex-shrink: 0;
     }
 
+    #browser-shell .metric-tile-hint.has-fx-split {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      line-height: 1.32;
+    }
+    #browser-shell .trip-fx-line {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      overflow-wrap: anywhere;
+    }
+    #browser-shell .trip-fx-eq {
+      display: inline-block;
+      max-width: 100%;
+      color: var(--text-muted);
+    }
+    #browser-shell .trip-fx-sub {
+      display: block;
+      font-size: 0.69rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    #browser-shell .trip-fx-warn {
+      display: block;
+      font-size: 0.70rem;
+      color: var(--amber);
+    }
+    #browser-shell .trip-amt-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      text-align: right;
+      line-height: 1.25;
+    }
+    #browser-shell .trip-eq-hint {
+      display: block;
+      font-size: 0.70rem;
+      font-weight: 400;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    #browser-shell .trip-eq-hint.is-warn {
+      color: var(--amber);
+    }
+    #browser-shell .trip-eq-hint:empty {
+      display: none;
+    }
+
     #browser-shell .flow-table {
       width: 100%;
       border-collapse: collapse;
