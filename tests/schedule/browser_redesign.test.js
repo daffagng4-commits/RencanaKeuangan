@@ -459,10 +459,11 @@ const { boot } = require('./ui.js');
   assert(Math.abs(parseFloat(dPill.style.width) - dBtnW.offsetWidth) <= 1 && Math.abs(parseFloat(dPill.style.height) - dBtnW.offsetHeight) <= 1, 'ukuran pill desktop akhir = ukuran tombol aktif (toleransi 1px)');
 
   w.ALL.kas.pr.t_seg_test = { id: 't_seg_test', name: 'Trip Seg Uji', it: [], bk: [], ck: [], lk: [], lg: [] };
+  w.setMode('trip');
   w.setTrip('t_seg_test');
   w.BR_STATE.tripView = 'detail';
   w.BR_STATE.tripSubTab = 'ring';
-  w.setMode('trip');
+  w.renderTrip();
   const mockTripBtns = (segEl) => {
     [...segEl.querySelectorAll('.seg-btn')].forEach((b, idx) => {
       Object.defineProperty(b, 'offsetLeft', { configurable: true, value: 3 + idx * 84 });
@@ -660,7 +661,7 @@ const { boot } = require('./ui.js');
 
   // 1b-2. Hapus item Perjalanan desktop memakai askConfirm + snap() + Undo (#ttu)
   w.setMode('trip');
-  w.setTrip(dTripId);
+  click(shell.querySelector('[data-trip-open="' + dTripId + '"]'));
   const verifyDeskDel = (subTab, triggerFn, existsFn, label) => {
     w.BR_STATE.tripSubTab = subTab;
     w.renderTrip();

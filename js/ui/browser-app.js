@@ -118,7 +118,7 @@ var BR_STATE = {
   itemEditId: null,
   itemCat: 'Tagihan rutin',
   quickTxType: '-',
-  tripView: 'detail',
+  tripView: 'list',
   tripSubTab: 'ring',
   tripEditItId: null,
   tripEditBkId: null,
@@ -2950,9 +2950,18 @@ function modeUi() {
 }
 
 function setMode(m) {
+  var prevMode = typeof mode !== 'undefined' ? mode : 'rencana';
   mode = m;
   if (typeof remember === 'function') remember('rk-mode', m);
-  if (m === 'trip' && typeof autoTrip === 'function') autoTrip();
+  if (m === 'trip') {
+    if (prevMode !== 'trip') {
+      BR_STATE.tripView = 'list';
+      BR_STATE.tripEditItId = null;
+      BR_STATE.tripEditBkId = null;
+      BR_STATE.tripGoalEdit = false;
+    }
+    if (typeof autoTrip === 'function') autoTrip();
+  }
   renderAll();
 }
 
@@ -3294,8 +3303,8 @@ function brBindEvents() {
                 })();
             var id = built.id, nm = built.profile.name;
             ALL.kas.pr[id] = built.profile;
-            save(); setMode('trip'); setTrip(id); BR_STATE.tripView = 'detail'; renderAll();
-            toast('Perjalanan "' + nm + '" diimpor (' + d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan)');
+            save(); setMode('trip'); setTrip(id); BR_STATE.tripView = 'detail'; BR_STATE.tripSubTab = 'ring'; renderAll();
+            toast('Perjalanan "' + nm + '" diimpor (' + d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan)' + (typeof tripImportOfflineNote === 'function' ? tripImportOfflineNote() : ''));
           } catch (err) { toast('File Excel tidak dapat dibaca.'); }
         };
         fr.readAsArrayBuffer(f);
@@ -3816,7 +3825,30 @@ function brBindEvents() {
       var Psh = tp();
       if (!Psh) return;
       var incCost = $('sh-inc-cost') ? $('sh-inc-cost').checked : true, sKind = tripSh.dataset.sh;
-      if (sKind === 'pdf' && typeof printHtml === 'function') { brCloseModal('modal-trip-share'); printHtml(tripPrintHtml(Psh, incCost)); return; }
+      if (sKind === 'pdf') {
+        try {
+          if (typeof tripPdfData !== 'function' || typeof repPdf !== 'function' || typeof rkDownloadBlob !== 'function') {
+            throw new Error('Pembuat PDF tidak tersedia.');
+          }
+          var repDesk = tripPdfData(Psh, incCost),
+            bytesDesk = repPdf(repDesk),
+            dlDesk = rkDownloadBlob(repDesk.filename, bytesDesk, 'application/pdf'),
+            nonLatinDesk = typeof tripPdfHasNonWinAnsi === 'function' && tripPdfHasNonWinAnsi(Psh),
+            nonLatinNoteDesk = nonLatinDesk ? ' Catatan: karakter non-Latin tampil \'?\' di PDF.' : '';
+          Promise.resolve((dlDesk && dlDesk.done) ? dlDesk.done : dlDesk).then(function (resD) {
+            if (resD && resD.ok !== false) {
+              if ($('sh-status')) $('sh-status').textContent = 'PDF diunduh: ' + repDesk.filename + '.' + nonLatinNoteDesk;
+              toast('PDF diunduh: ' + repDesk.filename);
+            } else {
+              if ($('sh-status')) $('sh-status').textContent = 'Gagal menyimpan PDF. Gunakan "Salin teks" atau coba lagi.';
+            }
+          });
+        } catch (pdfErr) {
+          brCloseModal('modal-trip-share');
+          if (typeof printHtml === 'function') printHtml(tripPrintHtml(Psh, incCost));
+        }
+        return;
+      }
       var txtSh = typeof tripText === 'function' ? tripText(Psh, incCost) : Psh.name;
       if (sKind === 'wa') {
         if (navigator.share) navigator.share({ title: Psh.name, text: txtSh }).catch(function () {});
@@ -4223,7 +4255,7 @@ function brBindEvents() {
       ALL.kas.pr[builtXlB.id] = builtXlB.profile;
       brCloseModal('modal-trip-xl');
       save(); setMode('trip'); setTrip(builtXlB.id); BR_STATE.tripView = 'detail'; BR_STATE.tripSubTab = 'ring'; renderAll();
-      toast('Perjalanan diimpor: ' + dXlB.it.length + ' kegiatan, ' + dXlB.bk.length + ' pemesanan.');
+      toast('Perjalanan diimpor: ' + dXlB.it.length + ' kegiatan, ' + dXlB.bk.length + ' pemesanan.' + (typeof tripImportOfflineNote === 'function' ? tripImportOfflineNote() : ''));
     } else if (f.id === 'trip-itin-form' && tp()) {
       e.preventDefault();
       var trI = tp(), objIt = {

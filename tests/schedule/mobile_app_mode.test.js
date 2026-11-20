@@ -1893,12 +1893,12 @@ const { boot } = require('./ui.js');
   let dlArgs27 = null;
   w.rkDownloadBlob = function (name, data, mime) {
     dlArgs27 = { name, data, mime };
-    return { ok: true, method: 'data-url' };
+    return { ok: true, method: 'capacitor-share', done: Promise.resolve({ ok: true, method: 'capacitor-share' }) };
   };
   click(shSheet.querySelector('[data-msh="pdf"]'));
   await new Promise((r) => setTimeout(r, 10));
   assert(dlArgs27 && dlArgs27.mime === 'application/pdf' && Buffer.from(dlArgs27.data).toString('latin1').startsWith('%PDF-'), 'Tahap 4d: aksi PDF memanggil rkDownloadBlob dengan MIME application/pdf');
-  assert(/data-url/i.test($('m-sh-status').textContent) && /non-Latin|\?/i.test($('m-sh-status').textContent), 'Tahap 4d: status PDF menampilkan metode pengiriman jujur dan catatan karakter non-Latin');
+  assert(/capacitor-share|dibagikan/i.test($('m-sh-status').textContent) && /non-Latin|\?/i.test($('m-sh-status').textContent), 'Tahap 4d: status PDF menampilkan metode pengiriman jujur dan catatan karakter non-Latin');
   w.rkDownloadBlob = origDl27;
   t3().name = t3OrigName;
   w.mobCloseSheet('m-sheet-trip-share');
@@ -2230,6 +2230,396 @@ const { boot } = require('./ui.js');
   fire($('m-trip-meta-form'), 'submit');
   assert.strictEqual(Object.keys(w.ALL.kas.pr).length, trBeforeD5, 'D5b: APK menolak kurs kosong/<=0 saat mata uang diisi');
   w.mobCloseSheet('m-sheet-trip');
+
+  // 29. Tahap 6 Blok B (B1, B2 callers, B3 desktop PDF = APK PDF & fallback, B4 offline Excel import)
+  // B1: Awal aplikasi saat rk-mode='trip' & setiap pindah dari mode/tab lain mendarat di 'list' (0, 1, 2+ profil), tanpa mereset render internal
+  const tripSrcB1 = fs5.readFileSync(path5.join(__dirname, '..', '..', 'js', 'ui', 'browser-app.js'), 'utf8');
+  const mobSrcB1 = fs5.readFileSync(path5.join(__dirname, '..', '..', 'js', 'ui-mobile', 'mobile-app.js'), 'utf8');
+  assert(
+    /tripView:\s*'list'/.test(tripSrcB1) && /tripView:\s*'list'/.test(mobSrcB1),
+    'B1: BR_STATE.tripView dan MOB_STATE.tripView diinisialisasi ke list',
+  );
+  // Simulasi boot dengan rk-mode='trip' dan rk-trip ada
+  w.localStorage.setItem('rk-mode', 'trip');
+  w.localStorage.setItem('rk-trip', d1Trip.id);
+  w.setShellMode('browser');
+  w.setMode('rencana');
+  w.BR_STATE.tripView = 'detail';
+  w.setMode('trip');
+  assert.strictEqual(w.BR_STATE.tripView, 'list', 'B1 desktop: masuk Mode Perjalanan dari mode lain mengatur tripView = list');
+  assert($('trip-root').textContent.includes('Semua Perjalanan'), 'B1 desktop: halaman mendarat menampilkan Semua Perjalanan');
+  assert.strictEqual(w.localStorage.getItem('rk-trip'), d1Trip.id, 'B1 desktop: rk-trip tetap tersimpan');
+
+  // Buka detail -> render ulang internal (renderTrip, ganti subtab, switcher profil, renderAll) TIDAK reset ke list
+  click($('trip-root').querySelector('[data-trip-open="' + d1Trip.id + '"]'));
+  assert.strictEqual(w.BR_STATE.tripView, 'detail', 'B1 desktop: membuka profil masuk ke detail');
+  w.renderTrip();
+  w.renderAll();
+  assert.strictEqual(w.BR_STATE.tripView, 'detail', 'B1 desktop: renderTrip/renderAll saat sudah di Mode Perjalanan tidak mereset ke list');
+  click($('trip-root').querySelector('[data-triptab="itin"]'));
+  assert.strictEqual(w.BR_STATE.tripView, 'detail', 'B1 desktop: ganti subtab tidak mereset ke list');
+
+  // APK: masuk tab Perjalanan dari tab lain -> list (dengan 1 maupun 2+ profil), tanpa reset pada PTR / switcher / subtab
+  w.setShellMode('mobile-app');
+  w.switchMobileTab('rincian');
+  w.MOB_STATE.tripView = 'detail';
+  w.MOB_STATE.tripId = d1Trip.id;
+  w.switchMobileTab('trip');
+  assert.strictEqual(w.MOB_STATE.tripView, 'list', 'B1 APK: pindah ke tab Perjalanan dari tab lain selalu mendarat di list');
+  assert($('m-trip-root').textContent.includes('Semua Perjalanan'), 'B1 APK: menampilkan Semua Perjalanan');
+  const firstCardMob = $('m-trip-root').querySelector('[data-mtrip-sel]');
+  click(firstCardMob);
+  assert.strictEqual(w.MOB_STATE.tripView, 'detail', 'B1 APK: ketuk kartu masuk ke detail');
+  await w.window.rkMobRefresh();
+  assert.strictEqual(w.MOB_STATE.tripView, 'detail', 'B1 APK: Pull-to-Refresh tidak mereset detail ke list');
+  w.renderMobTrip();
+  assert.strictEqual(w.MOB_STATE.tripView, 'detail', 'B1 APK: renderMobTrip ulang tidak mereset detail ke list');
+  const subCekMob = $('m-trip-root').querySelector('[data-mtripsub="cek"]');
+  if (subCekMob) click(subCekMob);
+  assert.strictEqual(w.MOB_STATE.tripView, 'detail', 'B1 APK: ganti subtab tetap di detail');
+  const otherChip = $('m-trip-root').querySelector('#m-trip-prof-strip [data-mtrip-sel]:not(.active)');
+  if (otherChip) {
+    click(otherChip);
+    assert.strictEqual(w.MOB_STATE.tripView, 'detail', 'B1 APK: pindah profil lewat switcher tetap di detail');
+  }
+
+  // B1: 0 profil dan 1 profil tetap aman di list
+  const savedPrB1 = Object.assign({}, w.ALL.kas.pr);
+  const oneId = Object.keys(savedPrB1)[0];
+  w.ALL.kas.pr = { [oneId]: savedPrB1[oneId] };
+  w.switchMobileTab('kas');
+  w.switchMobileTab('trip');
+  assert.strictEqual(w.MOB_STATE.tripView, 'list', 'B1 APK: 1 profil tetap mendarat di list');
+  w.ALL.kas.pr = {};
+  w.switchMobileTab('kas');
+  w.switchMobileTab('trip');
+  assert.strictEqual(w.MOB_STATE.tripView, 'list', 'B1 APK: 0 profil berada di list empty state');
+  w.ALL.kas.pr = savedPrB1;
+
+  // B1: boot dengan rk-mode='trip' pada JSDOM baru tetap mendarat di list
+  const { JSDOM: JSDOM_B1 } = require('jsdom');
+  const htmlB1 = fs5.readFileSync(path5.join(__dirname, '..', '..', 'index.html'), 'utf8')
+    .replace(/<script[^>]*src="https?:[^"]*"[^>]*><\/script>/g, '')
+    .replace(/<link[^>]*href="https?:[^"]*"[^>]*>/g, '');
+  const bootDom = new JSDOM_B1(htmlB1, {
+    url: 'https://t.test/',
+    runScripts: 'dangerously',
+    pretendToBeVisual: true,
+    beforeParse(bw) {
+      bw.matchMedia = (q) => ({ matches: false, media: q, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
+      bw.Element.prototype.scrollIntoView = function () {};
+      bw.localStorage.setItem('rk-mode', 'trip');
+      bw.localStorage.setItem('rk-trip', d1Trip.id);
+    },
+  });
+  await new Promise((res) => setTimeout(res, 200));
+  assert.strictEqual(bootDom.window.mode, 'trip', 'B1 boot: mode awal tetap trip');
+  assert.strictEqual(bootDom.window.BR_STATE.tripView, 'list', 'B1 boot: rk-mode=trip tetap mendarat di daftar Semua Perjalanan');
+  bootDom.window.close();
+
+  // B3: Desktop Simpan PDF identik byte-per-byte dengan APK, tidak memanggil printHtml kecuali cadangan saat error
+  w.setShellMode('browser');
+  w.setMode('trip');
+  w.setTrip(d1Trip.id);
+  w.BR_STATE.tripView = 'detail';
+  w.renderTrip();
+  const deskShareBtnPdf = doc.querySelector('#modal-trip-share [data-sh="pdf"]');
+  assert(deskShareBtnPdf && deskShareBtnPdf.textContent.trim() === 'Simpan PDF', 'B3: tombol desktop berlabel Simpan PDF');
+
+  let printFallbackCalls = 0;
+  let capturedDesk = null;
+  let capturedMob = null;
+  const origPrintHtml = w.printHtml;
+  const origDlB3 = w.rkDownloadBlob;
+  w.printHtml = () => { printFallbackCalls += 1; };
+  w.rkDownloadBlob = (fn, data, mime) => {
+    capturedDesk = { fn, bytes: Buffer.from(data), mime };
+    return { ok: true, method: 'blob', done: Promise.resolve({ ok: true, method: 'blob' }) };
+  };
+  click($('br-trip-share'));
+  $('sh-inc-cost').checked = true;
+  click(deskShareBtnPdf);
+  await new Promise((r) => setTimeout(r, 20));
+  assert(capturedDesk && capturedDesk.bytes.length > 100 && capturedDesk.mime === 'application/pdf', 'B3: desktop Simpan PDF mengunduh PDF via rkDownloadBlob');
+  assert.strictEqual(printFallbackCalls, 0, 'B3: desktop Simpan PDF TIDAK memanggil printHtml pada jalur normal');
+
+  w.setShellMode('mobile-app');
+  w.switchMobileTab('trip');
+  w.MOB_STATE.tripId = d1Trip.id;
+  w.MOB_STATE.tripView = 'detail';
+  w.renderMobTrip();
+  w.rkDownloadBlob = (fn, data, mime) => {
+    capturedMob = { fn, bytes: Buffer.from(data), mime };
+    return { ok: true, method: 'capacitor-share', done: Promise.resolve({ ok: true, method: 'capacitor-share' }) };
+  };
+  click($('m-btn-trip-share'));
+  $('m-sh-inc-cost').checked = true;
+  click($('m-sheet-trip-share').querySelector('[data-msh="pdf"]'));
+  await new Promise((r) => setTimeout(r, 20));
+  assert(capturedMob && capturedDesk.fn === capturedMob.fn && capturedDesk.bytes.equals(capturedMob.bytes), 'B3: PDF Perjalanan desktop dan APK identik byte-per-byte');
+  w.mobCloseSheet('m-sheet-trip-share');
+
+  // B3 fallback: bila repPdf melempar galat, desktop jatuh kembali ke printHtml
+  w.setShellMode('browser');
+  const origRepPdfB3 = w.repPdf;
+  w.repPdf = () => { throw new Error('pdf error'); };
+  click($('br-trip-share'));
+  click(deskShareBtnPdf);
+  await new Promise((r) => setTimeout(r, 20));
+  assert.strictEqual(printFallbackCalls, 1, 'B3: cadangan printHtml hanya dipakai bila pembuatan PDF melempar galat');
+  w.repPdf = origRepPdfB3;
+  w.printHtml = origPrintHtml;
+  w.rkDownloadBlob = origDlB3;
+
+  // B2 callers: exportFile (doExport) dan downloadRepPdf memakai done jujur
+  w.setShellMode('mobile-app');
+  w.rkDownloadBlob = () => ({ ok: true, method: 'capacitor-share', done: Promise.resolve({ ok: false, cancelled: true, method: 'capacitor-share' }) });
+  w.downloadRepPdf('m');
+  await new Promise((r) => setTimeout(r, 20));
+  assert(/dibatalkan/i.test($('m-toast-box').textContent || $('xm').textContent || ''), 'B2 caller: downloadRepPdf melaporkan status dibatalkan bila user cancel');
+  w.exportFile('tes.json', '{}', 'application/json');
+  await new Promise((r) => setTimeout(r, 20));
+  assert(/dibatalkan/i.test($('m-toast-box').textContent || $('xm').textContent || ''), 'B2 caller: exportFile melaporkan status dibatalkan bila user cancel');
+  w.rkDownloadBlob = origDlB3;
+
+  // B4 & B1 (impor dari luar tab Perjalanan): pesan offline/sinkron vs online + mendarat di detail
+  const onLineDesc = Object.getOwnPropertyDescriptor(w.navigator, 'onLine');
+  Object.defineProperty(w.navigator, 'onLine', { configurable: true, get: () => false });
+  const origXlsxB4 = w.XLSX;
+  const fxFixB4 = JSON.parse(fs5.readFileSync(path5.join(__dirname, '..', 'fixtures', 'xl-sample-fx.json'), 'utf8'));
+  w.XLSX = {
+    read: () => ({ SheetNames: fxFixB4.SheetNames, Sheets: { Itinerary: 'it' } }),
+    utils: { sheet_to_json: () => fxFixB4.rowsBySheet.Itinerary },
+  };
+  w.switchMobileTab('rincian');
+  const xlFileB4 = $('m-xl-file');
+  const fileB4 = new w.File([new Uint8Array([1, 2])], 'Trip_Offline_B4.xlsx', {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  Object.defineProperty(xlFileB4, 'files', { configurable: true, get: () => [fileB4] });
+  fire(xlFileB4, 'change');
+  await new Promise((r) => setTimeout(r, 30));
+  $('m-xl-cur').value = 'JPY';
+  $('m-xl-rate').value = '115';
+  fire($('m-trip-xl-form'), 'submit');
+  assert.strictEqual(w.MOB_STATE.tab, 'trip', 'B1 APK: impor Excel dari luar tab pindah ke trip');
+  assert.strictEqual(w.MOB_STATE.tripView, 'detail', 'B1 APK: impor Excel mendarat di detail');
+  assert(
+    $('m-toast-box').textContent.includes('Tersimpan di perangkat. Akan disinkronkan saat online.'),
+    'B4 APK offline: pesan impor menyebut tersimpan di perangkat & akan disinkronkan saat online',
+  );
+
+  // B4 Desktop offline impor langsung dari mode rencana
+  w.setShellMode('browser');
+  w.setMode('rencana');
+  w.XLSX.utils.sheet_to_json = () => [['Tanggal', 'Jam', 'Keterangan', 'Biaya'], ['2026-07-01', '09.00', 'Kereta', 100000]];
+  const deskFileB4 = new w.File([new Uint8Array([1, 2])], 'Desk_Offline_B4.xlsx', {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  Object.defineProperty($('xlf'), 'files', { configurable: true, get: () => [deskFileB4] });
+  fire($('xlf'), 'change');
+  await new Promise((r) => setTimeout(r, 30));
+  assert.strictEqual(w.mode, 'trip', 'B1 desktop: impor Excel pindah ke mode trip');
+  assert.strictEqual(w.BR_STATE.tripView, 'detail', 'B1 desktop: impor Excel dari luar Mode Perjalanan tetap berakhir di detail');
+  assert(
+    $('ttm').textContent.includes('Tersimpan di perangkat. Akan disinkronkan saat online.'),
+    'B4 desktop offline: pesan impor menyebut tersimpan di perangkat & akan disinkronkan saat online',
+  );
+
+  // Kembalikan onLine = true -> pesan TIDAK menempelkan kalimat offline bila tidak ada masalah koneksi
+  Object.defineProperty(w.navigator, 'onLine', { configurable: true, get: () => true });
+  w.XLSX = {
+    read: () => ({ SheetNames: fxFixB4.SheetNames, Sheets: { Itinerary: 'it' } }),
+    utils: { sheet_to_json: () => fxFixB4.rowsBySheet.Itinerary },
+  };
+  w.setShellMode('mobile-app');
+  fire(xlFileB4, 'change');
+  await new Promise((r) => setTimeout(r, 30));
+  $('m-xl-name').value = 'Trip Online B4';
+  $('m-xl-cur').value = 'JPY';
+  $('m-xl-rate').value = '115';
+  fire($('m-trip-xl-form'), 'submit');
+  assert(
+    !$('m-toast-box').textContent.includes('Akan disinkronkan saat online'),
+    'B4 online: pesan impor standar tidak menyebut offline',
+  );
+  if (onLineDesc) Object.defineProperty(w.navigator, 'onLine', onLineDesc);
+  w.XLSX = origXlsxB4;
+
+  // 30. Tahap 6 Blok A (A3 & A4: Kartu Pembaruan Aplikasi di Pengaturan APK)
+  w.setShellMode('mobile-app');
+  w.switchMobileTab('settings');
+  const updCard = $('m-card-settings-update');
+  assert(updCard, 'A4: kartu #m-card-settings-update ada di tab Pengaturan APK');
+  // Non-native: tampil pesan hanya Android, tanpa tombol Cek pembaruan / Unduh
+  assert(/hanya tersedia di aplikasi Android/i.test(updCard.textContent), 'A4 non-native: menampilkan pesan hanya tersedia di aplikasi Android');
+  assert(!$('m-btn-check-update') && !$('m-btn-install-update'), 'A4 non-native: tidak menampilkan tombol Cek/Unduh');
+
+  // Native stubs untuk seluruh pengujian A4
+  const origCapA4 = w.Capacitor;
+  const origFetchA4 = w.fetch;
+  const origOpenExtA4 = w.mobOpenExternalUrl;
+  const origBuildA4 = Object.assign({}, w.RK_BUILD);
+  let openedApkUrls = [];
+  let fetchCalls = [];
+  w.Capacitor = { isNativePlatform: () => true, Plugins: { Browser: { async open() {} } } };
+  w.mobOpenExternalUrl = (url) => {
+    openedApkUrls.push(url);
+    return true;
+  };
+  const mkRelJson = (runNo, sha7, msg, dlUrl) => ({
+    tag_name: 'apk-latest',
+    prerelease: true,
+    body: `run=${runNo}\nsha=${sha7}\nversionCode=${runNo}\nbuiltAt=2026-11-20T03:00:00Z\nsha256=deadbeef\nmsg=${msg}`,
+    assets: [{ name: `renkeu-${runNo}.apk`, browser_download_url: dlUrl || `https://github.com/daffagng4-commits/RencanaKeuangan/releases/download/apk-latest/renkeu-${runNo}.apk` }],
+  });
+
+  // Helper trigger cek pembaruan & tunggu async selesai
+  const runCheckWithFetch = async (fnFetch) => {
+    fetchCalls = [];
+    w.fetch = (url, opts) => {
+      fetchCalls.push({ url, opts });
+      return fnFetch(url, opts);
+    };
+    click($('m-btn-check-update'));
+    await new Promise((r) => setTimeout(r, 30));
+  };
+
+  // Uji tombol nonaktif selama memeriksa + header GET/Accept/no-store/tanpa Authorization/AbortSignal
+  w.RK_BUILD.id = '9-oldsha1';
+  w.RK_BUILD.run = '9';
+  w.RK_BUILD.sha = 'oldsha1';
+  w.RK_BUILD.time = '2026-11-19T10:00:00Z';
+  w.renderMobSettings();
+  assert(updCard.textContent.includes('Versi terpasang:') && updCard.textContent.includes('9-oldsha1'), 'A4: menampilkan Versi terpasang');
+  assert($('m-set-build-ver').textContent.includes('Versi build: 9-oldsha1'), 'A4: baris Versi build Tahap 5 tetap lulus');
+
+  let resolveHold;
+  w.fetch = (url, opts) => {
+    fetchCalls.push({ url, opts });
+    return new Promise((r) => { resolveHold = r; });
+  };
+  click($('m-btn-check-update'));
+  assert.strictEqual($('m-btn-check-update').disabled, true, 'A4: tombol Cek pembaruan nonaktif selama memeriksa');
+  resolveHold({ ok: true, status: 200, async json() { return mkRelJson(10, 'newsha2', 'Fix PDF <img src=x onerror=alert(1)>'); } });
+  await new Promise((r) => setTimeout(r, 30));
+  assert.strictEqual($('m-btn-check-update').disabled, false, 'A4: tombol kembali aktif setelah selesai memeriksa');
+  assert.strictEqual(fetchCalls[0].url, 'https://api.github.com/repos/daffagng4-commits/RencanaKeuangan/releases/tags/apk-latest', 'A4: memanggil endpoint releases/tags/apk-latest');
+  assert.strictEqual(fetchCalls[0].opts.method, 'GET', 'A4: metode GET');
+  assert.strictEqual(fetchCalls[0].opts.cache, 'no-store', 'A4: cache no-store');
+  assert.strictEqual(fetchCalls[0].opts.headers.Accept, 'application/vnd.github+json', 'A4: header Accept vnd.github+json');
+  assert(!('Authorization' in fetchCalls[0].opts.headers), 'A4: tanpa header Authorization');
+  assert(fetchCalls[0].opts.signal, 'A4: memakai AbortController signal untuk timeout 10 dtk');
+
+  // Numerik 9 < 10 -> pembaruan tersedia + escaping XSS + Terakhir dicek tampil
+  assert(/Pembaruan tersedia:\s*build\s*10/i.test(updCard.textContent), 'A4: perbandingan numerik 9 < 10 mengenali build 10 lebih baru');
+  assert(!updCard.querySelector('img'), 'A4 XSS: HTML dari catatan rilis di-escape, bukan menjadi elemen DOM');
+  assert(updCard.textContent.includes('Terakhir dicek:'), 'A4: menampilkan waktu Terakhir dicek');
+  assert($('m-btn-install-update'), 'A4: menampilkan tombol Unduh & pasang');
+
+  // Klik Unduh & pasang membuka browser eksternal + menampilkan petunjuk 3 langkah tanpa menyatakan terpasang
+  openedApkUrls = [];
+  click($('m-btn-install-update'));
+  assert.strictEqual(openedApkUrls.length, 1, 'A4: klik Unduh & pasang memanggil mobOpenExternalUrl tepat 1x (tanpa listener ganda)');
+  assert.strictEqual(openedApkUrls[0], 'https://github.com/daffagng4-commits/RencanaKeuangan/releases/download/apk-latest/renkeu-10.apk');
+  assert(!/berhasil diperbarui|sudah terpasang/i.test(updCard.textContent), 'A4: tidak pernah menyatakan pemasangan berhasil');
+  assert(/pasang dari sumber ini/i.test(updCard.textContent), 'A4: menampilkan petunjuk 3 langkah pemasangan');
+
+  // Render ulang berkali-kali tidak menumpuk listener ganda
+  w.renderMobSettings();
+  w.renderMobSettings();
+  openedApkUrls = [];
+  click($('m-btn-install-update'));
+  assert.strictEqual(openedApkUrls.length, 1, 'A4: renderMobSettings berulang tidak menggandakan listener');
+
+  // URL aset di luar prefiks diizinkan DITOLAK dan mobOpenExternalUrl tidak dipanggil
+  await runCheckWithFetch(async () => ({
+    ok: true,
+    status: 200,
+    async json() { return mkRelJson(11, 'evil11', 'Evil APK', 'https://evil.example.com/renkeu.apk'); },
+  }));
+  openedApkUrls = [];
+  if ($('m-btn-install-update')) click($('m-btn-install-update'));
+  assert.strictEqual(openedApkUrls.length, 0, 'A4 security: URL di luar prefiks releases/download ditolak & mobOpenExternalUrl tidak dipanggil');
+  assert(/tidak valid|ditolak|sumber/i.test(updCard.textContent), 'A4 security: menampilkan pesan galat untuk URL tidak sah');
+
+  // Build terpasang sama & lebih baru dari rilis -> Sudah versi terbaru
+  w.RK_BUILD.id = '10-same';
+  w.RK_BUILD.run = '10';
+  await runCheckWithFetch(async () => ({ ok: true, status: 200, async json() { return mkRelJson(10, 'newsha2', 'Same build'); } }));
+  assert(/Sudah versi terbaru/i.test(updCard.textContent) && !$('m-btn-install-update'), 'A4: run 10 == 10 menampilkan Sudah versi terbaru');
+
+  w.RK_BUILD.id = '15-newer';
+  w.RK_BUILD.run = '15';
+  await runCheckWithFetch(async () => ({ ok: true, status: 200, async json() { return mkRelJson(10, 'newsha2', 'Older release'); } }));
+  assert(/Sudah versi terbaru/i.test(updCard.textContent) && !$('m-btn-install-update'), 'A4: run terpasang 15 > 10 menampilkan Sudah versi terbaru');
+
+  // Build lokal dev tanpa nomor versi -> menampilkan Build lokal & boleh cek
+  w.RK_BUILD.id = 'dev';
+  w.RK_BUILD.run = '';
+  w.RK_BUILD.time = 'dev';
+  await runCheckWithFetch(async () => ({ ok: true, status: 200, async json() { return mkRelJson(10, 'newsha2', 'Release for dev'); } }));
+  assert(updCard.textContent.includes('Build lokal (tidak ada nomor versi)'), 'A4 dev: menampilkan Build lokal (tidak ada nomor versi)');
+  assert(/Pembaruan tersedia:\s*build\s*10/i.test(updCard.textContent), 'A4 dev: tetap boleh cek & menawarkan build rilis');
+
+  // Error states: 403, 429, 404, catatan rilis rusak/kosong, timeout, offline
+  await runCheckWithFetch(async () => ({ ok: true, status: 200, async json() { return { body: 'not-valid-notes', assets: [] }; } }));
+  assert(/tidak dapat dibaca|rusak/i.test(updCard.textContent), 'A4 error: catatan rilis rusak/kosong ditangani jelas');
+
+  for (const st of [403, 429]) {
+    await runCheckWithFetch(async () => ({ ok: false, status: st, async json() { return {}; } }));
+    assert(/batas laju|403|429/i.test(updCard.textContent), 'A4 error: HTTP ' + st + ' menyebut batas laju');
+  }
+
+  await runCheckWithFetch(async () => ({ ok: false, status: 404, async json() { return {}; } }));
+  assert(/404|privat|tidak ditemukan/i.test(updCard.textContent), 'A4 error: HTTP 404 menyebut rilis tidak ada / repo privat');
+
+  await runCheckWithFetch(async () => {
+    const ae = new Error('Aborted');
+    ae.name = 'AbortError';
+    throw ae;
+  });
+  assert(/waktu|timeout|koneksi/i.test(updCard.textContent), 'A4 error: AbortError timeout menampilkan pesan jelas');
+
+  const onLineDescA4 = Object.getOwnPropertyDescriptor(w.navigator, 'onLine');
+  Object.defineProperty(w.navigator, 'onLine', { configurable: true, get: () => false });
+  await runCheckWithFetch(async () => { throw new TypeError('Failed to fetch'); });
+  assert(/offline|koneksi|jaringan/i.test(updCard.textContent), 'A4 error: offline/jaringan gagal menampilkan pesan jelas');
+  if (onLineDescA4) Object.defineProperty(w.navigator, 'onLine', onLineDescA4);
+
+  // Pemeriksaan otomatis saat aplikasi dibuka (dibatasi 6 jam, gagal diam-diam, titik penanda + 1 toast bila ada update)
+  w.localStorage.removeItem('rk-apk-last-check');
+  w.RK_BUILD.id = '9-old';
+  w.RK_BUILD.run = '9';
+  // Gagal diam-diam saat network error
+  fetchCalls = [];
+  w.fetch = async () => { throw new Error('silent net fail'); };
+  $('m-toast-box').innerHTML = '';
+  await w.rkAutoCheckApkUpdate(true);
+  assert.strictEqual($('m-toast-box').textContent.trim(), '', 'A4 auto-check: gagal diam-diam tanpa toast error');
+
+  // Auto-check kedua dalam < 6 jam TIDAK memanggil fetch ulang (throttle)
+  fetchCalls = [];
+  w.fetch = async (url, opts) => {
+    fetchCalls.push({ url, opts });
+    return { ok: true, status: 200, async json() { return mkRelJson(12, 'sha12', 'New v12'); } };
+  };
+  await w.rkAutoCheckApkUpdate();
+  assert.strictEqual(fetchCalls.length, 0, 'A4 auto-check: dibatasi maksimal 1x per 6 jam');
+
+  // Simulasikan > 6 jam berlalu -> auto-check memanggil fetch, menyalakan titik penanda, dan 1 toast update
+  w.localStorage.setItem('rk-apk-last-check', String(Date.now() - 7 * 3600 * 1000));
+  $('m-toast-box').innerHTML = '';
+  await w.rkAutoCheckApkUpdate();
+  assert.strictEqual(fetchCalls.length, 1, 'A4 auto-check: berjalan lagi setelah > 6 jam');
+  assert($('m-upd-dot') && $('m-upd-dot').style.display !== 'none', 'A4: titik penanda di entri Pengaturan menyala bila ada pembaruan');
+  assert(/build\s*12|pembaruan/i.test($('m-toast-box').textContent), 'A4 auto-check: 1 toast singkat tampil bila ada pembaruan');
+
+  // Kembalikan stub A4
+  w.Capacitor = origCapA4;
+  w.fetch = origFetchA4;
+  w.mobOpenExternalUrl = origOpenExtA4;
+  Object.assign(w.RK_BUILD, origBuildA4);
 
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('OK mobile_app_mode');

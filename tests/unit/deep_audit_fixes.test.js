@@ -47,7 +47,7 @@ test('detectShellMode otomatis mendeteksi Capacitor, Cordova, ReactNative, dan A
   assert.equal(desk.detectShellMode(''), 'browser');
 });
 
-test('rkDownloadBlob & downloadRepPdf mengunduh aman tanpa window.open, membersihkan Blob URL, dan punya fallback Android WebView', () => {
+test('rkDownloadBlob & downloadRepPdf mengunduh aman tanpa window.open, membersihkan Blob URL, dan punya fallback Android WebView', async () => {
   const clicked = [];
   const revoked = [];
   let openedPopup = false;
@@ -105,38 +105,148 @@ test('rkDownloadBlob & downloadRepPdf mengunduh aman tanpa window.open, membersi
   assert.equal(clicked[0].download, 'cadangan.json');
   assert.equal(revoked[0], 'blob:mock-1');
 
-  // Native WebView fallback via FileReader Data-URI
-  const wvClicks = [];
+  // B2: Native WebView tanpa plugin Filesystem/Share dan tanpa navigator.share TIDAK boleh dianggap berhasil via data-url
   const wvCtx = loadShellModeCtx({
     ua: 'Mozilla/5.0 (Linux; Android 13; wv) AppleWebKit/537.36',
     document: {
       body,
       getElementById() { return null; },
       createElement() {
-        return {
-          href: '', download: '', rel: '', style: {},
-          click() { wvClicks.push({ href: this.href, download: this.download }); },
-          remove() {},
-        };
+        return { href: '', download: '', rel: '', style: {}, click() {}, remove() {} };
       },
     },
   });
   wvCtx.Blob = c.Blob;
   wvCtx.URL = c.URL;
-  wvCtx.FileReader = class MockFR {
-    readAsDataURL() {
-      this.result = 'data:application/pdf;base64,JVBERi0=';
-      if (this.onload) this.onload();
-    }
-  };
   wvCtx.$ = () => null;
   wvCtx.toast = () => {};
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', 'ui', 'io.js'), 'utf8'), wvCtx, { filename: 'io.js' });
-  const res = wvCtx.rkDownloadBlob('laporan.pdf', new Uint8Array([1, 2]), 'application/pdf');
-  assert.equal(res.method, 'data-url');
-  assert.equal(wvClicks.length, 1);
-  assert.equal(wvClicks[0].download, 'laporan.pdf');
-  assert.ok(wvClicks[0].href.startsWith('data:application/pdf;base64,'));
+  const resNoPlugin = wvCtx.rkDownloadBlob('laporan.pdf', new Uint8Array([1, 2]), 'application/pdf');
+  const doneNoPlugin = await resNoPlugin.done;
+  assert.equal(resNoPlugin.ok, false);
+  assert.notEqual(resNoPlugin.method, 'data-url');
+  assert.equal(doneNoPlugin.ok, false);
+  assert.match(doneNoPlugin.error || '', /Salin teks|coba lagi/i);
+});
+
+test('B2: rkDownloadBlob native memakai Capacitor Filesystem (Directory.Cache + rk-export + cleanup <=5) & Share, base64 chunked akurat', async () => {
+  function setupNativeCap({ readdirRes, failWrite, failShare, failCleanup } = {}) {
+    const calls = [];
+    const deleted = [];
+    const written = {};
+    const c = loadShellModeCtx({
+      windowExtra: {
+        Capacitor: {
+          isNativePlatform: () => true,
+          isPluginAvailable: (n) => n === 'Filesystem' || n === 'Share',
+          Plugins: {
+            Filesystem: {
+              async writeFile(opts) {
+                calls.push(['writeFile', opts]);
+                if (failWrite) throw new Error(failWrite);
+                written[opts.path] = opts;
+                return { uri: 'file:///data/user/0/id.renkeu.app/cache/' + opts.path };
+              },
+              async readdir(opts) {
+                calls.push(['readdir', opts]);
+                if (failCleanup) throw new Error('readdir gagal');
+                return readdirRes || { files: [] };
+              },
+              async deleteFile(opts) {
+                calls.push(['deleteFile', opts]);
+                if (failCleanup) throw new Error('delete gagal');
+                deleted.push(opts.path);
+                return {};
+              },
+              async getUri(opts) {
+                calls.push(['getUri', opts]);
+                return { uri: 'file:///data/user/0/id.renkeu.app/cache/' + opts.path };
+              },
+            },
+            Share: {
+              async share(opts) {
+                calls.push(['share', opts]);
+                if (failShare) throw (failShare instanceof Error ? failShare : new Error(failShare));
+                return { activityType: 'com.google.android.apps.docs' };
+              },
+            },
+          },
+        },
+      },
+      document: { body: { appendChild() {}, removeChild() {} }, getElementById: () => null, createElement: () => ({ style: {}, click() {}, remove() {} }) },
+    });
+    c.Blob = class MockBlob {
+      constructor(parts, opts) {
+        this.parts = parts;
+        this.type = opts && opts.type;
+        this._bytes = Buffer.concat(
+          (parts || []).map((p) => (p instanceof Uint8Array ? Buffer.from(p) : Buffer.from(String(p), 'utf8'))),
+        );
+      }
+      async arrayBuffer() {
+        return this._bytes.buffer.slice(this._bytes.byteOffset, this._bytes.byteOffset + this._bytes.byteLength);
+      }
+    };
+    c.File = class { constructor(parts, name, opts) { this.parts = parts; this.name = name; this.type = opts && opts.type; } };
+    c.$ = () => null;
+    c.toast = () => {};
+    c.btoa = (s) => Buffer.from(s, 'latin1').toString('base64');
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', 'ui', 'io.js'), 'utf8'), c, { filename: 'io.js' });
+    return { c, calls, deleted, written };
+  }
+
+  // 1. Sukses dengan payload besar (220 KB) -> chunked base64 byte-exact, urutan writeFile -> readdir/delete -> getUri -> Share.share, nama aman
+  const bigBytes = new Uint8Array(220 * 1024);
+  for (let i = 0; i < bigBytes.length; i++) bigBytes[i] = (i * 31 + 7) & 255;
+  const okEnv = setupNativeCap({
+    readdirRes: {
+      files: [1, 2, 3, 4, 5, 6, 7].map((idx) => ({
+        name: `old-${idx}.pdf`,
+        type: 'file',
+        mtime: idx * 1000,
+      })),
+    },
+  });
+  const dlBig = okEnv.c.rkDownloadBlob('../itinerary:bali 日本?.pdf', bigBytes, 'application/pdf');
+  const resBig = await dlBig.done;
+  assert.equal(resBig.ok, true);
+  const wCall = okEnv.calls.find((x) => x[0] === 'writeFile');
+  const gCall = okEnv.calls.find((x) => x[0] === 'getUri');
+  const sCall = okEnv.calls.find((x) => x[0] === 'share');
+  assert.ok(wCall && gCall && sCall, 'writeFile, getUri, dan Share.share harus terpanggil');
+  assert.equal(wCall[1].directory, 'CACHE');
+  assert.equal(wCall[1].recursive, true);
+  assert.equal(wCall[1].encoding, undefined, 'binary base64 tidak boleh mengirim encoding UTF8');
+  assert.match(wCall[1].path, /^rk-export\/[a-zA-Z0-9._-]+\.pdf$/, 'path berada di subfolder rk-export/ dengan nama aman');
+  assert.ok(!wCall[1].path.includes('..'), 'path traversal dibersihkan');
+  const roundTrip = Buffer.from(wCall[1].data, 'base64');
+  assert.equal(roundTrip.length, bigBytes.length, 'ukuran byte base64 identik');
+  assert.ok(roundTrip.equals(Buffer.from(bigBytes)), 'isi base64 identik byte-per-byte tanpa overflow');
+  assert.equal(gCall[1].directory, 'CACHE');
+  assert.equal(gCall[1].path, wCall[1].path);
+  assert.deepEqual(Array.from(sCall[1].files), ['file:///data/user/0/id.renkeu.app/cache/' + wCall[1].path]);
+  assert.ok(okEnv.calls.findIndex((x) => x[0] === 'writeFile') < okEnv.calls.findIndex((x) => x[0] === 'getUri'));
+  assert.ok(okEnv.calls.findIndex((x) => x[0] === 'getUri') < okEnv.calls.findIndex((x) => x[0] === 'share'));
+  assert.equal(okEnv.deleted.length, 2, 'cleanup menyisakan maks 5 file (hapus 2 tertua dari 7)');
+  assert.ok(okEnv.deleted.includes('rk-export/old-1.pdf') && okEnv.deleted.includes('rk-export/old-2.pdf'));
+
+  // 2. Cleanup error TIDAK menggagalkan ekspor
+  const cleanErrEnv = setupNativeCap({ failCleanup: true });
+  const resCleanErr = await cleanErrEnv.c.rkDownloadBlob('template.xlsx', new Uint8Array([80, 75, 3, 4]), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet').done;
+  assert.equal(resCleanErr.ok, true, 'gagal membersihkan cache tidak menggagalkan ekspor');
+
+  // 3. Pembatalan pengguna ("Share canceled" dari @capacitor/share)
+  const cancelEnv = setupNativeCap({ failShare: 'Share canceled' });
+  const resCancel = await cancelEnv.c.rkDownloadBlob('a.pdf', new Uint8Array([37, 80]), 'application/pdf').done;
+  assert.equal(resCancel.ok, false);
+  assert.equal(resCancel.cancelled, true, '"Share canceled" dikenali sebagai pembatalan pengguna');
+
+  // 4. Galat tulis file
+  const errEnv = setupNativeCap({ failWrite: 'Disk full' });
+  const resErr = await errEnv.c.rkDownloadBlob('a.pdf', new Uint8Array([37, 80]), 'application/pdf').done;
+  assert.equal(resErr.ok, false);
+  assert.equal(resErr.cancelled, false);
+  assert.match(resErr.error || '', /Disk full/);
 });
 
 test('renderMobSim tidak membayangi variabel padding pB sehingga SVG bebas NaN pada kondisi kosong maupun defisit', () => {
@@ -222,6 +332,7 @@ test('A3: rkDownloadBlob mengekspos done Promise jujur (share ok/cancelled/error
     c.navigator.share = shareFn;
     c.$ = () => null;
     c.toast = () => {};
+    c.btoa = (s) => Buffer.from(s, 'latin1').toString('base64');
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'js', 'ui', 'io.js'), 'utf8'), c, { filename: 'io.js' });
     return c;
   };

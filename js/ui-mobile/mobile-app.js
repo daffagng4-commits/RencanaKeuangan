@@ -37,7 +37,7 @@ var MOB_STATE = {
   itemSub: 'all',
   itemCat: 'Tagihan rutin',
   itemEditId: null,
-  tripView: 'detail',
+  tripView: 'list',
   tripId: '',
   tripSub: 'ring',
   tripEditIt: null,
@@ -57,6 +57,20 @@ var MOB_BANNER_DUE = null;
 var mobToastTimer = null;
 var mobNotifTimer = null;
 var MOB_CAL_VIEW = {};
+
+var RK_UPDATE_REPO = 'daffagng4-commits/RencanaKeuangan';
+var RK_UPDATE_DL_PREFIX = 'https://github.com/' + RK_UPDATE_REPO + '/releases/download/';
+var RK_UPDATE_CHECK_LS = 'rk-apk-last-check';
+var RK_UPDATE_INTERVAL_MS = 6 * 60 * 60 * 1000;
+var RK_UPDATE_TIMEOUT_MS = 10000;
+var MOB_UPDATE_STATE = {
+  checking: false,
+  status: 'idle',
+  message: '',
+  info: null,
+  checkedAt: 0,
+  showSteps: false,
+};
 
 function mobFmtCalLbl(ds) {
   if (!ds || !ISO_RE.test(ds)) return 'Pilih tanggal';
@@ -217,145 +231,19 @@ function mobLoadXlsxWithTimeout() {
 }
 
 function mobHasNonWinAnsi(s) {
-  var arr = Array.from(String(s == null ? '' : s));
-  for (var i = 0; i < arr.length; i++) {
-    var ch = arr[i], c = ch.charCodeAt(0);
-    if (c < 32 || (c >= 32 && c < 127) || (c >= 160 && c < 256)) continue;
-    if (typeof REP_HI !== 'undefined' && REP_HI.indexOf(ch) >= 0) continue;
-    return true;
-  }
-  return false;
+  return typeof tripHasNonWinAnsi === 'function' ? tripHasNonWinAnsi(s) : false;
 }
 
 function mobTripHasNonWinAnsi(P) {
-  if (!P) return false;
-  if (mobHasNonWinAnsi(P.name)) return true;
-  var dks = Object.keys(P.dt || {});
-  for (var i = 0; i < dks.length; i++) if (mobHasNonWinAnsi(P.dt[dks[i]])) return true;
-  if ((P.it || []).some(function (x) { return mobHasNonWinAnsi(x.place) || mobHasNonWinAnsi(x.link) || mobHasNonWinAnsi(x.note); })) return true;
-  if ((P.bk || []).some(function (x) { return mobHasNonWinAnsi(x.title); })) return true;
-  if ((P.lk || []).some(function (x) { return mobHasNonWinAnsi(x.title) || mobHasNonWinAnsi(x.url); })) return true;
-  return false;
+  return typeof tripPdfHasNonWinAnsi === 'function' ? tripPdfHasNonWinAnsi(P) : false;
 }
 
 function mobWrapPdfText(str, maxW, bold) {
-  var s = String(str == null ? '' : str).trim();
-  if (!s) return [''];
-  var measure = function (txt) {
-    var enc = typeof repEnc === 'function' ? repEnc(txt) : txt;
-    return typeof repWidth === 'function' ? repWidth(enc, !!bold, 9) : enc.length * 5;
-  };
-  var lines = [];
-  s.split(/\r?\n/).forEach(function (para) {
-    var words = para.split(/\s+/).filter(Boolean);
-    if (!words.length) return;
-    var cur = '';
-    words.forEach(function (w) {
-      var cand = cur ? cur + ' ' + w : w;
-      if (measure(cand) <= maxW) {
-        cur = cand;
-      } else {
-        if (cur) { lines.push(cur); cur = ''; }
-        if (measure(w) <= maxW) {
-          cur = w;
-        } else {
-          var chars = Array.from(w), chunk = '';
-          chars.forEach(function (ch) {
-            if (measure(chunk + ch) <= maxW) chunk += ch;
-            else {
-              if (chunk) lines.push(chunk);
-              chunk = ch;
-            }
-          });
-          cur = chunk;
-        }
-      }
-    });
-    if (cur) lines.push(cur);
-  });
-  return lines.length ? lines : [''];
+  return typeof tripWrapPdfText === 'function' ? tripWrapPdfText(str, maxW, bold) : [String(str == null ? '' : str).trim() || ''];
 }
 
 function mobSafePdfFilename(name) {
-  var slug = String(name || 'perjalanan').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'perjalanan';
-  return 'itinerary-' + slug + '.pdf';
-}
-
-function tripPdfData(P, cost) {
-  var W = 595.28, M = 38, innerW = W - 2 * M,
-    pl = typeof tripPlan === 'function' ? tripPlan(P) : { b: 0, d: 0, t: 0, paid: 0 },
-    amtFn = typeof amtPlain === 'function' ? amtPlain : function (tr0, v, fx) { return fx && tr0.cur ? tr0.cur + ' ' + Math.round(v).toLocaleString('id-ID') : rp(v); },
-    tmFn = typeof tmShow === 'function' ? tmShow : function (v) { return v ? String(v).replace(':', '.') : ''; },
-    dayFn = typeof dayLabel === 'function' ? dayLabel : function (tr0, d) { return fmtD(d); },
-    sortFn = typeof byTime === 'function' ? byTime : function (a, b) { return (a.time || '').localeCompare(b.time || ''); },
-    colsIt = cost ? [{ t: 'JAM', w: 18 }, { t: 'KEGIATAN', w: 60 }, { t: 'BIAYA', w: 22, align: 'r' }] : [{ t: 'JAM', w: 20 }, { t: 'KEGIATAN', w: 80 }],
-    itMaxW = ((cost ? 60 : 80) * innerW) / 100 - 8,
-    tables = [];
-
-  (typeof tripDays === 'function' ? tripDays(P) : []).forEach(function (d) {
-    var its = (P.it || []).filter(function (x) { return x.day === d; }).sort(sortFn),
-      dayTitle = (P.dt && P.dt[d]) || '';
-    if (!its.length && !dayTitle) return;
-    var rows = [];
-    its.forEach(function (x) {
-      var jam = tmFn(x.time) + (x.time2 ? '–' + tmFn(x.time2) : ''),
-        biaya = cost && x.est ? amtFn(P, x.est, x.fx) : '',
-        safeLnk = x.link && typeof safeHref === 'function' ? safeHref(x.link) : '',
-        cells = mobWrapPdfText(x.place || '-', itMaxW, false);
-      if (x.link) {
-        mobWrapPdfText(x.link, itMaxW, false).forEach(function (ln) {
-          cells.push(safeLnk ? { t: ln, href: safeLnk } : ln);
-        });
-      }
-      if (x.note) cells = cells.concat(mobWrapPdfText(x.note, itMaxW, false));
-      cells.forEach(function (cellVal, idx) {
-        rows.push(cost ? [idx === 0 ? jam : '', cellVal, idx === 0 ? biaya : ''] : [idx === 0 ? jam : '', cellVal]);
-      });
-    });
-    if (!rows.length) rows.push(cost ? ['', '(Belum ada kegiatan)', ''] : ['', '(Belum ada kegiatan)']);
-    tables.push({ head: dayFn(P, d) + (dayTitle ? ' — ' + dayTitle : ''), cols: colsIt, rows: rows });
-  });
-
-  if (P.bk && P.bk.length) {
-    var colsBk = cost ? [{ t: 'PEMESANAN', w: 58 }, { t: 'STATUS', w: 18 }, { t: 'BIAYA', w: 24, align: 'r' }] : [{ t: 'PEMESANAN', w: 78 }, { t: 'STATUS', w: 22 }],
-      bkMaxW = ((cost ? 58 : 78) * innerW) / 100 - 8,
-      bkRows = [];
-    P.bk.forEach(function (x) {
-      var tLines = mobWrapPdfText(x.title || '-', bkMaxW, false),
-        stTxt = x.paid ? 'Lunas' : 'Belum',
-        bTxt = cost ? amtFn(P, x.amt, x.fx) : '';
-      tLines.forEach(function (ln, idx) {
-        bkRows.push(cost ? [ln, idx === 0 ? stTxt : '', idx === 0 ? bTxt : ''] : [ln, idx === 0 ? stTxt : '']);
-      });
-    });
-    tables.push({ head: 'Pemesanan', cols: colsBk, rows: bkRows });
-  }
-
-  if (P.lk && P.lk.length) {
-    var lkTitleW = (35 * innerW) / 100 - 8,
-      lkUrlW = (65 * innerW) / 100 - 8,
-      lkRows = [];
-    P.lk.forEach(function (l) {
-      var tLines = mobWrapPdfText(l.title || '-', lkTitleW, false),
-        uLines = mobWrapPdfText(l.url || '', lkUrlW, false),
-        safeLk = l.url && typeof safeHref === 'function' ? safeHref(l.url) : '',
-        cnt = Math.max(tLines.length, uLines.length);
-      for (var k = 0; k < cnt; k++) {
-        var uTxt = uLines[k] || '';
-        lkRows.push([tLines[k] || '', (uTxt && safeLk) ? { t: uTxt, href: safeLk } : uTxt]);
-      }
-    });
-    tables.push({ head: 'Tautan penting', cols: [{ t: 'JUDUL', w: 35 }, { t: 'TAUTAN', w: 65 }], rows: lkRows });
-  }
-
-  var nDays = P.start && P.end && P.end >= P.start ? dayNo(P.end, P.start) + 1 : 0,
-    subParts = [];
-  if (P.start && P.end) subParts.push(fmtD(P.start) + ' – ' + fmtD(P.end) + ' · ' + nDays + ' hari');
-  else subParts.push('Itinerary Perjalanan');
-  if (cost && P.cur && P.rate) subParts.push('Kurs 1 ' + P.cur + ' = ' + rp(P.rate));
-  var summary = [['Kegiatan', String((P.it || []).length) + ' jadwal'], ['Pemesanan', String((P.bk || []).length) + ' item']];
-  if (cost) summary = summary.concat([['Total Rencana Biaya', rp(pl.t)], ['Sudah Dibayar', rp(pl.paid)]]);
-  return { filename: mobSafePdfFilename(P.name), title: P.name || 'Itinerary Perjalanan', subtitle: subParts.join(' · '), summary: summary, tables: tables };
+  return typeof tripSafePdfFilename === 'function' ? tripSafePdfFilename(name) : 'itinerary-perjalanan.pdf';
 }
 
 function mobSetXlBusy(busy) {
@@ -805,6 +693,7 @@ function mobShellTemplate() {
     '<div class="pill-slider" id="m-rep-period-slider" style="margin-bottom:10px">' +
     '<button type="button" class="p-chip" data-mrep="d">Hari ini</button><button type="button" class="p-chip" data-mrep="w">Minggu ini</button><button type="button" class="p-chip active" data-mrep="m">Bulan ini</button><button type="button" class="p-chip" data-mrep="y">Tahun ini</button></div>' +
     '<div id="m-report-preview" class="stack" style="gap:10px"></div></div>' +
+    '<div class="card" id="m-card-settings-update"><div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Pembaruan Aplikasi</h2><div style="font-size:0.71rem;color:var(--text-muted)">Rilis APK Android via GitHub Releases</div></div></div><div class="m-upd-status">Pembaruan hanya tersedia di aplikasi Android</div></div>' +
     '<div class="m-set-build-ver" id="m-set-build-ver">Versi build: ' + esc((typeof window !== 'undefined' && window.RK_BUILD && window.RK_BUILD.id) ? window.RK_BUILD.id : 'dev') + '</div>' +
     '</div></section>' +
     '</main>' +
@@ -815,14 +704,14 @@ function mobShellTemplate() {
     '<button type="button" class="bn-btn" data-mtab="kas"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M20 7H5a2 2 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15V7"/></svg><span>Transaksi</span></button>' +
     '<div class="bn-center-slot"><button type="button" class="bn-plus-fab" id="m-yr-btn-center" aria-label="Tahun, bulan saldo, dan saldo awal" title="Tahun, bulan saldo, dan saldo awal"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>' +
     '<button type="button" class="bn-btn" data-mtab="jadwal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Jadwal</span></button>' +
-    '<button type="button" class="bn-btn" id="m-btn-more"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Menu</span></button>' +
+    '<button type="button" class="bn-btn" id="m-btn-more"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Menu</span><span class="m-upd-dot" id="m-more-upd-dot" style="display:none" aria-hidden="true"></span></button>' +
     '</nav>' +
     '<div class="phone-home-indicator" aria-hidden="true"></div>' +
     // SHEETS & POPOVERS (tidak memakai kelas .modal agar tidak bercampur dengan modal Browser Mode)
     '<div class="modal-backdrop" id="m-sheet-more"><div class="modal-sheet"><div class="ms-handle"></div>' +
     '<div class="ms-head"><strong style="font-size:0.92rem">Menu &amp; Fitur Lain</strong><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-more">Tutup</button></div>' +
     '<div class="ms-body">' +
-    '<button type="button" class="list-row" data-mgo="settings"><span><strong>Pengaturan</strong> &middot; Notifikasi, akun, cadangan</span><span class="badge b-am" id="m-menu-cnt-rem">0 tempo</span></button>' +
+    '<button type="button" class="list-row" data-mgo="settings"><span><span class="m-upd-dot" id="m-upd-dot" style="display:none" aria-hidden="true"></span><strong>Pengaturan</strong> &middot; Notifikasi, akun, cadangan</span><span class="badge b-am" id="m-menu-cnt-rem">0 tempo</span></button>' +
     '<button type="button" class="list-row" data-mgo="sim"><span><strong>Simulasi</strong> &middot; Uji skenario saldo</span><span class="badge b-em" id="m-menu-cnt-sim">0 aktif</span></button>' +
     '<button type="button" class="list-row" data-mgo="trip"><span><strong>Perjalanan</strong> &middot; <span id="m-menu-trip-lbl">Kelola trip</span></span><span class="badge b-nt" id="m-menu-cnt-trip">0 trip</span></button>' +
     '<button type="button" class="list-row" id="m-menu-theme"><span><strong>Tema Tampilan</strong></span><span class="badge b-nt" id="m-menu-thm-lbl">Terang</span></button>' +
@@ -1069,6 +958,12 @@ function ensureMobileShell() {
     rkInitCapacitorStatusBar();
     rkInitCapacitorBackButton();
     bindMobileShellEvents(root);
+    if (rkIsCapacitorNative() && !window._rkUpdAutoScheduled) {
+      window._rkUpdAutoScheduled = true;
+      setTimeout(function () {
+        if (typeof rkAutoCheckApkUpdate === 'function') rkAutoCheckApkUpdate(false);
+      }, 1500);
+    }
     var mm = $('m-main');
     if (mm && !mm._mobScrollBound) {
       mm._mobScrollBound = true;
@@ -1095,6 +990,12 @@ function switchMobileTab(tabId) {
   }
   var prevMobTab = MOB_STATE.tab;
   MOB_STATE.tab = tabId;
+  if (tabId === 'trip' && prevMobTab !== 'trip') {
+    MOB_STATE.tripView = 'list';
+    MOB_STATE.tripEditIt = null;
+    MOB_STATE.tripEditBk = null;
+    MOB_STATE.tripGoalEdit = false;
+  }
   var ms = document.querySelector('#mobile-app-shell .mob-shell');
   if (ms) ms.setAttribute('data-mtab-active', tabId);
   if (typeof rkSyncHeaderMotif === 'function') rkSyncHeaderMotif(tabId);
@@ -2373,6 +2274,264 @@ function triggerMobPhoneBarNotif(force) {
   }
 }
 
+function rkParseReleaseNotes(body) {
+  var lines = String(body || '').split(/\r?\n/), out = {};
+  for (var i = 0; i < lines.length; i++) {
+    var ln = lines[i].trim();
+    if (!ln) continue;
+    var eq = ln.indexOf('=');
+    if (eq <= 0) continue;
+    var k = ln.slice(0, eq).trim();
+    var v = ln.slice(eq + 1).trim();
+    out[k] = v;
+  }
+  var runNum = parseInt(out.run, 10);
+  if (!Number.isFinite(runNum) || runNum <= 0) return null;
+  var vcNum = parseInt(out.versionCode, 10);
+  return {
+    run: runNum,
+    sha: out.sha || '',
+    versionCode: Number.isFinite(vcNum) && vcNum > 0 ? vcNum : runNum,
+    builtAt: out.builtAt || '',
+    sha256: out.sha256 || '',
+    msg: out.msg || '',
+  };
+}
+
+function rkFormatApkTime(val) {
+  if (!val || val === 'dev') return '';
+  try {
+    var d = new Date(val);
+    if (Number.isNaN(d.getTime())) return String(val);
+    return d.toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    return String(val);
+  }
+}
+
+function rkInstalledBuildMeta() {
+  var b = (typeof window !== 'undefined' && window.RK_BUILD) ? window.RK_BUILD : null;
+  var id = (b && b.id) ? String(b.id) : 'dev';
+  var runNum = (b && b.run) ? parseInt(b.run, 10) : NaN;
+  if (!Number.isFinite(runNum) || runNum <= 0) runNum = 0;
+  var time = (b && b.time && b.time !== 'dev') ? String(b.time) : '';
+  return { id: id, run: runNum, sha: (b && b.sha) ? String(b.sha) : '', time: time, isDev: !id || id === 'dev' || !runNum };
+}
+
+function rkSyncUpdateDots() {
+  var show = MOB_UPDATE_STATE.status === 'available' && rkIsCapacitorNative();
+  if ($('m-upd-dot')) $('m-upd-dot').style.display = show ? 'inline-block' : 'none';
+  if ($('m-more-upd-dot')) $('m-more-upd-dot').style.display = show ? 'inline-block' : 'none';
+}
+
+function renderMobUpdateCard() {
+  var card = $('m-card-settings-update');
+  if (!card) return;
+  var isNat = rkIsCapacitorNative();
+  var meta = rkInstalledBuildMeta();
+  var verText = meta.isDev
+    ? 'Build lokal (tidak ada nomor versi)'
+    : meta.id + (meta.time ? ' (' + rkFormatApkTime(meta.time) + ')' : '');
+  var lastText = MOB_UPDATE_STATE.checkedAt > 0
+    ? rkFormatApkTime(new Date(MOB_UPDATE_STATE.checkedAt).toISOString())
+    : '';
+
+  if (!isNat) {
+    card.innerHTML =
+      '<div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Pembaruan Aplikasi</h2><div style="font-size:0.71rem;color:var(--text-muted)">Rilis APK Android via GitHub Releases</div></div></div>' +
+      '<div class="m-upd-meta"><div>Versi terpasang: <strong class="mono">' + esc(verText) + '</strong></div></div>' +
+      '<div class="m-upd-status" style="margin-top:8px">Pembaruan hanya tersedia di aplikasi Android</div>';
+    rkSyncUpdateDots();
+    return;
+  }
+
+  var st = MOB_UPDATE_STATE.status;
+  var info = MOB_UPDATE_STATE.info;
+  var statusHtml = '';
+  if (MOB_UPDATE_STATE.checking) {
+    statusHtml = '<div class="m-upd-status">Memeriksa pembaruan terbaru...</div>';
+  } else if (st === 'latest') {
+    statusHtml = '<div class="m-upd-status">Sudah versi terbaru.</div>';
+  } else if (st === 'available' && info) {
+    var dtPart = info.builtAt ? rkFormatApkTime(info.builtAt) : '';
+    var detailParts = ['build ' + info.run + (info.sha ? ' (' + info.sha + ')' : '')];
+    if (dtPart) detailParts.push(dtPart);
+    if (info.msg) detailParts.push(info.msg);
+    statusHtml = '<div class="m-upd-status is-avail">Pembaruan tersedia: ' + esc(detailParts.join(' · ')) + '</div>';
+  } else if (st === 'error' && MOB_UPDATE_STATE.message) {
+    statusHtml = '<div class="m-upd-status is-err">' + esc(MOB_UPDATE_STATE.message) + '</div>';
+  }
+
+  var stepsHtml = MOB_UPDATE_STATE.showSteps
+    ? '<ol class="m-upd-steps">' +
+      '<li>Ketuk berkas APK yang terunduh di notifikasi atau folder Unduhan.</li>' +
+      '<li>Izinkan "pasang dari sumber ini" satu kali bila diminta Android.</li>' +
+      '<li>Ketuk Pasang untuk memperbarui aplikasi.</li>' +
+      '</ol>'
+    : '';
+
+  var canInstall = st === 'available' && info && info.url;
+  card.innerHTML =
+    '<div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Pembaruan Aplikasi</h2><div style="font-size:0.71rem;color:var(--text-muted)">Rilis APK Android via GitHub Releases</div></div>' +
+    (st === 'available' ? '<span class="badge b-am">Tersedia</span>' : (st === 'latest' ? '<span class="badge b-em">Terbaru</span>' : '')) + '</div>' +
+    '<div class="stack" style="gap:8px">' +
+    '<div class="m-upd-meta">' +
+    '<div>Versi terpasang: <strong class="mono">' + esc(verText) + '</strong></div>' +
+    (lastText ? '<div>Terakhir dicek: <strong>' + esc(lastText) + '</strong></div>' : '') +
+    '</div>' +
+    statusHtml +
+    '<div class="m-upd-actions">' +
+    '<button type="button" class="btn btn-primary btn-sm m-upd-btn" id="m-btn-check-update"' + (MOB_UPDATE_STATE.checking ? ' disabled' : '') + '>' +
+    (MOB_UPDATE_STATE.checking ? 'Memeriksa...' : 'Cek pembaruan') + '</button>' +
+    (canInstall ? '<button type="button" class="btn btn-emerald btn-sm m-upd-btn" id="m-btn-install-update">Unduh &amp; pasang</button>' : '') +
+    '</div>' +
+    stepsHtml +
+    '</div>';
+  rkSyncUpdateDots();
+}
+
+function rkCheckApkUpdate(opts) {
+  var silent = !!(opts && opts.silent);
+  if (!rkIsCapacitorNative() || MOB_UPDATE_STATE.checking) return Promise.resolve(null);
+  if (typeof fetch !== 'function') {
+    if (!silent) {
+      MOB_UPDATE_STATE.status = 'error';
+      MOB_UPDATE_STATE.message = 'Klien jaringan tidak tersedia.';
+      renderMobUpdateCard();
+    }
+    return Promise.resolve(null);
+  }
+  MOB_UPDATE_STATE.checking = true;
+  MOB_UPDATE_STATE.showSteps = false;
+  if (!silent) {
+    MOB_UPDATE_STATE.message = '';
+    renderMobUpdateCard();
+  }
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(RK_UPDATE_CHECK_LS, String(Date.now()));
+  } catch (e) {}
+
+  var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  var tid = ctrl ? setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, RK_UPDATE_TIMEOUT_MS) : null;
+  var fetchOpts = {
+    method: 'GET',
+    headers: { Accept: 'application/vnd.github+json' },
+    cache: 'no-store',
+  };
+  if (ctrl && ctrl.signal) fetchOpts.signal = ctrl.signal;
+
+  return Promise.resolve(
+    fetch('https://api.github.com/repos/' + RK_UPDATE_REPO + '/releases/tags/apk-latest', fetchOpts)
+  ).then(function (resp) {
+    if (tid) clearTimeout(tid);
+    if (!resp) throw new Error('network');
+    if (resp.status === 403 || resp.status === 429) {
+      var rl = new Error('rate-limit');
+      rl.rkCode = resp.status;
+      throw rl;
+    }
+    if (resp.status === 404) {
+      var nf = new Error('not-found');
+      nf.rkCode = 404;
+      throw nf;
+    }
+    if (!resp.ok) {
+      var he = new Error('http-' + resp.status);
+      he.rkCode = resp.status;
+      throw he;
+    }
+    return resp.json();
+  }).then(function (rel) {
+    MOB_UPDATE_STATE.checking = false;
+    MOB_UPDATE_STATE.checkedAt = Date.now();
+    var parsed = rel && rkParseReleaseNotes(rel.body);
+    var assets = rel && Array.isArray(rel.assets) ? rel.assets : [];
+    var apkAsset = assets.filter(function (a) { return a && /\.apk$/i.test(String(a.name || '')); })[0] || null;
+    if (!parsed || !apkAsset || !apkAsset.browser_download_url) {
+      MOB_UPDATE_STATE.status = 'error';
+      MOB_UPDATE_STATE.info = null;
+      MOB_UPDATE_STATE.message = 'Data pembaruan tidak dapat dibaca atau tidak lengkap.';
+      renderMobUpdateCard();
+      return null;
+    }
+    var dlUrl = String(apkAsset.browser_download_url);
+    if (dlUrl.indexOf(RK_UPDATE_DL_PREFIX) !== 0) {
+      MOB_UPDATE_STATE.status = 'error';
+      MOB_UPDATE_STATE.info = null;
+      MOB_UPDATE_STATE.message = 'Sumber tautan unduhan tidak valid / ditolak.';
+      renderMobUpdateCard();
+      return null;
+    }
+    var meta = rkInstalledBuildMeta();
+    var hasUpdate = !meta.run || parsed.run > meta.run;
+    MOB_UPDATE_STATE.info = Object.assign({ url: dlUrl, assetName: apkAsset.name }, parsed);
+    MOB_UPDATE_STATE.status = hasUpdate ? 'available' : 'latest';
+    MOB_UPDATE_STATE.message = '';
+    renderMobUpdateCard();
+    if (silent && hasUpdate && typeof showMobToast === 'function') {
+      showMobToast('Pembaruan APK tersedia: build ' + parsed.run);
+    }
+    return MOB_UPDATE_STATE.info;
+  }).catch(function (err) {
+    if (tid) clearTimeout(tid);
+    MOB_UPDATE_STATE.checking = false;
+    MOB_UPDATE_STATE.checkedAt = Date.now();
+    if (!silent) {
+      MOB_UPDATE_STATE.status = 'error';
+      MOB_UPDATE_STATE.info = null;
+      if (err && (err.rkCode === 403 || err.rkCode === 429)) {
+        MOB_UPDATE_STATE.message = 'Batas laju GitHub API tercapai (' + err.rkCode + '). Coba lagi nanti.';
+      } else if (err && err.rkCode === 404) {
+        MOB_UPDATE_STATE.message = 'Rilis tidak ditemukan atau repositori bersifat privat (404).';
+      } else if (err && err.name === 'AbortError') {
+        MOB_UPDATE_STATE.message = 'Waktu koneksi habis (timeout). Periksa internet lalu coba lagi.';
+      } else if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        MOB_UPDATE_STATE.message = 'Perangkat sedang offline. Periksa koneksi internet.';
+      } else if (err && /^rate-limit|not-found|http-/.test(String(err.message || ''))) {
+        MOB_UPDATE_STATE.message = 'Gagal memeriksa pembaruan (kode ' + (err.rkCode || 'API') + ').';
+      } else {
+        MOB_UPDATE_STATE.message = 'Gagal memeriksa pembaruan: gangguan jaringan atau respons tidak terbaca.';
+      }
+      renderMobUpdateCard();
+    } else {
+      rkSyncUpdateDots();
+    }
+    return null;
+  });
+}
+
+function rkAutoCheckApkUpdate(forceBypassIdle) {
+  if (!rkIsCapacitorNative()) return Promise.resolve(null);
+  if (!forceBypassIdle && typeof navigator !== 'undefined' && navigator.onLine === false) return Promise.resolve(null);
+  var last = 0;
+  try {
+    if (typeof localStorage !== 'undefined') last = parseInt(localStorage.getItem(RK_UPDATE_CHECK_LS) || '0', 10) || 0;
+  } catch (e) { last = 0; }
+  if (last > 0 && (Date.now() - last) < RK_UPDATE_INTERVAL_MS) return Promise.resolve(null);
+  return rkCheckApkUpdate({ silent: true });
+}
+
+function rkOpenApkDownload() {
+  var info = MOB_UPDATE_STATE.info;
+  var url = info && info.url ? String(info.url) : '';
+  if (!url || url.indexOf(RK_UPDATE_DL_PREFIX) !== 0) {
+    MOB_UPDATE_STATE.status = 'error';
+    MOB_UPDATE_STATE.message = 'Sumber tautan unduhan tidak valid / ditolak.';
+    renderMobUpdateCard();
+    return false;
+  }
+  MOB_UPDATE_STATE.showSteps = true;
+  renderMobUpdateCard();
+  mobOpenExternalUrl(url);
+  return true;
+}
+
+if (typeof window !== 'undefined') {
+  window.rkAutoCheckApkUpdate = rkAutoCheckApkUpdate;
+  window.rkCheckApkUpdate = rkCheckApkUpdate;
+  window.rkParseReleaseNotes = rkParseReleaseNotes;
+}
+
 function renderMobSettings() {
   if (typeof rkIsNotifReset === 'function' && rkIsNotifReset()) MOB_STATE.notifEnabled = false;
   var due = getMobDueList(),
@@ -2428,6 +2587,7 @@ function renderMobSettings() {
   }
   if ($('m-btn-mark-late')) $('m-btn-mark-late').style.display = due.some(function (x) { return x.diff < 0; }) ? 'block' : 'none';
   if ($('m-set-build-ver')) $('m-set-build-ver').textContent = 'Versi build: ' + ((typeof window !== 'undefined' && window.RK_BUILD && window.RK_BUILD.id) ? window.RK_BUILD.id : 'dev');
+  renderMobUpdateCard();
   renderMobReportPreview(MOB_STATE.repKind);
 }
 
@@ -3390,7 +3550,7 @@ function bindMobileShellEvents(root) {
     if (e.target.closest('#m-btn-more')) { renderMobMetaMenus(); mobOpenSheet('m-sheet-more'); return; }
     if (e.target.closest('#m-menu-backup')) { mobCloseSheet('m-sheet-more'); mobOpenSheet('m-sheet-backup'); return; }
     var expBtn = e.target.closest('[data-mexp]');
-    if (expBtn) { doExport(expBtn.getAttribute('data-mexp')); mobCloseSheet('m-sheet-backup'); showMobToast('Menyiapkan unduhan'); return; }
+    if (expBtn) { doExport(expBtn.getAttribute('data-mexp')); mobCloseSheet('m-sheet-backup'); return; }
 
     var mjs = e.target.closest('[data-mjsub]');
     if (mjs) {
@@ -3430,6 +3590,8 @@ function bindMobileShellEvents(root) {
     var mrep = e.target.closest('[data-mrep]');
     if (mrep) { renderMobReportPreview(mrep.getAttribute('data-mrep')); return; }
     if (e.target.closest('#m-btn-dl-report')) { downloadRepPdf(MOB_STATE.repKind); return; }
+    if (e.target.closest('#m-btn-check-update')) { rkCheckApkUpdate({ silent: false }); return; }
+    if (e.target.closest('#m-btn-install-update')) { rkOpenApkDownload(); return; }
 
     var mrng = e.target.closest('[data-mrange]');
     if (mrng) {
@@ -3852,14 +4014,15 @@ function bindMobileShellEvents(root) {
           nonLatinNote = nonLatinT ? ' Catatan: karakter non-Latin tampil \'?\' di PDF; gunakan Kirim/Salin teks untuk teks lengkap.' : '';
         setShSt('Membuka dialog berbagi / menyimpan PDF (' + repT.filename + ')...');
         Promise.resolve((dlResT && dlResT.done) ? dlResT.done : dlResT).then(function (resD) {
-          var okD = resD && resD.ok !== false, mD = (resD && resD.method) || (dlResT && dlResT.method) || 'blob';
+          var okD = (!dlResT || dlResT.ok !== false) && (!resD || resD.ok !== false);
+          var mD = (resD && resD.method) || (dlResT && dlResT.method) || '';
           if (okD) {
-            setShSt('PDF berhasil dikirim lewat ' + mD + ' (' + repT.filename + ').' + nonLatinNote);
+            setShSt('PDF siap dibagikan / disimpan (' + repT.filename + (mD ? ' · ' + mD : '') + ').' + nonLatinNote);
           } else if (resD && resD.cancelled) {
             setShSt('Pengiriman PDF dibatalkan.' + nonLatinNote);
           } else {
             var errS = (resD && resD.error) ? ' (' + resD.error + ')' : '';
-            setShSt('Gagal mengirim PDF' + errS + '. Gunakan "Salin teks" untuk teks lengkap.' + nonLatinNote);
+            setShSt('Gagal mengirim PDF' + errS + '. Gunakan "Salin teks" atau coba lagi.' + nonLatinNote);
           }
         });
         return;
@@ -3906,10 +4069,11 @@ function bindMobileShellEvents(root) {
           : { ok: false, method: 'none' };
         mobSetXlBusy(false);
         return Promise.resolve((dlTplRes && dlTplRes.done) ? dlTplRes.done : dlTplRes).then(function (resT) {
-          if (resT && resT.ok === false) {
-            showMobToast(resT.cancelled ? 'Pengiriman template dibatalkan.' : 'Gagal mengirim template Excel.');
+          var okT = (!dlTplRes || dlTplRes.ok !== false) && (!resT || resT.ok !== false);
+          if (!okT) {
+            showMobToast(resT && resT.cancelled ? 'Pengiriman template dibatalkan.' : 'Gagal mengirim template Excel. Coba lagi.');
           } else {
-            showMobToast('Template Excel dikirim (' + ((resT && resT.method) || (dlTplRes && dlTplRes.method) || 'blob') + ').');
+            showMobToast('Template Excel siap dibagikan/disimpan (' + ((resT && resT.method) || (dlTplRes && dlTplRes.method) || 'blob') + ').');
           }
         });
       }).catch(function (err) {
@@ -4467,17 +4631,17 @@ function bindMobileShellEvents(root) {
         builtXl = xlBuildProfile(dXlOk, valXl.name, valXl.cur, valXl.rate);
       MOB_XL_DATA = null;
       ALL.kas.pr[builtXl.id] = builtXl.profile;
+      mobCloseSheet('m-sheet-trip-xl');
+      save();
+      if (MOB_STATE.tab !== 'trip') switchMobileTab('trip');
       MOB_STATE.tripId = builtXl.id;
       MOB_STATE.tripView = 'detail';
       MOB_STATE.tripSub = 'ring';
       MOB_STATE.tripEditIt = null;
       MOB_STATE.tripEditBk = null;
       MOB_STATE.tripGoalEdit = false;
-      mobCloseSheet('m-sheet-trip-xl');
-      save();
-      if (MOB_STATE.tab !== 'trip') switchMobileTab('trip');
-      else syncUI();
-      showMobToast('Perjalanan diimpor: ' + dXlOk.it.length + ' kegiatan, ' + dXlOk.bk.length + ' pemesanan.');
+      syncUI();
+      showMobToast('Perjalanan diimpor: ' + dXlOk.it.length + ' kegiatan, ' + dXlOk.bk.length + ' pemesanan.' + (typeof tripImportOfflineNote === 'function' ? tripImportOfflineNote() : ''));
     }
   });
 }

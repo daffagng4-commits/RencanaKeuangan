@@ -347,7 +347,22 @@ function downloadRepPdf(kind) {
   try {
     var D = repData(kind || curRepKind);
     if (typeof rkDownloadBlob === 'function') {
-      rkDownloadBlob(D.filename, repPdf(D), 'application/pdf');
+      var dlR = rkDownloadBlob(D.filename, repPdf(D), 'application/pdf');
+      var isNat = typeof isNativeShellEnv === 'function' && isNativeShellEnv();
+      if (!isNat && (!dlR || dlR.ok !== false) && typeof setX === 'function') {
+        setX('Laporan diunduh: ' + D.filename, 1);
+      }
+      Promise.resolve((dlR && dlR.done) ? dlR.done : dlR).then(function (res) {
+        if (typeof setX !== 'function') return;
+        if (res && res.ok !== false) {
+          if (isNat || res.method !== 'blob') setX('Laporan PDF siap dibagikan: ' + D.filename, 1);
+        } else if (res && res.cancelled) {
+          setX('Pengiriman laporan PDF dibatalkan.', 0);
+        } else {
+          var errS = (res && res.error) ? ' (' + res.error + ')' : '';
+          setX('Gagal mengirim laporan PDF' + errS + '. Coba lagi.', 0);
+        }
+      });
     } else {
       var a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([repPdf(D)], { type: 'application/pdf' }));
@@ -356,8 +371,8 @@ function downloadRepPdf(kind) {
       a.click();
       a.remove();
       setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+      if (typeof setX === 'function') setX('Laporan diunduh: ' + D.filename, 1);
     }
-    if (typeof setX === 'function') setX('Laporan diunduh: ' + D.filename, 1);
   } catch (err) {
     if (typeof setX === 'function') setX('Unduh laporan gagal: ' + (err && err.message || err), 0);
   }

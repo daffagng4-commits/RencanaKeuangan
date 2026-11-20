@@ -182,3 +182,94 @@ test('A5.ii-vi: repPdf menulis anotasi Link/URI valid per baris, multi-halaman, 
     assert.ok(a.rect[2] > a.rect[0] && a.rect[3] > a.rect[1], 'rect punya luas positif');
   }
 });
+
+test('B3: tripPdfData berada di modul bersama, label tombol desktop "Simpan PDF", dan struktur PDF multi-halaman/xref/URI/operator teks valid', async () => {
+  const idxDev = fs.readFileSync(path.join(__dirname, '..', '..', 'index.dev.html'), 'utf8');
+  const shPdfBtn = idxDev.match(/<button[^>]*data-sh="pdf"[^>]*>([^<]+)<\/button>/);
+  assert.ok(shPdfBtn, 'tombol data-sh="pdf" ada di index.dev.html');
+  assert.equal(shPdfBtn[1].trim(), 'Simpan PDF', 'label tombol PDF desktop adalah "Simpan PDF"');
+
+  const c = loadCore({
+    window: { addEventListener() {} },
+    document: { addEventListener() {} },
+    localStorage: { getItem: () => null, setItem() {} },
+    ALL: { kas: { pr: {} }, year: 2026, data: { 2026: { year: 2026, saldo: 0, startMonth: 0, items: [], paid: {}, skip: {}, adj: [] } } },
+  });
+  c.S = c.ALL.data[2026];
+  vm.runInContext(
+    fs.readFileSync(path.join(__dirname, '..', '..', 'js', 'ui', 'trip.js'), 'utf8') +
+      '\n' +
+      fs.readFileSync(path.join(__dirname, '..', '..', 'js', 'ui', 'report.js'), 'utf8'),
+    c,
+    { filename: 'trip+report.js' },
+  );
+  assert.equal(typeof c.tripPdfData, 'function', 'tripPdfData tersedia di modul bersama sebelum browser-app/mobile-app');
+
+  const manyIt = [];
+  for (let i = 0; i < 62; i++) {
+    manyIt.push({
+      id: 'it-' + i,
+      day: i < 31 ? '2026-12-01' : '2026-12-02',
+      time: '09:00',
+      time2: '10:00',
+      place: 'Museum ' + i + ' (Sayap Utara)',
+      est: 1500,
+      fx: true,
+      pay: 'cash',
+      cat: 'Tiket & Tour',
+      link: i === 2 ? 'https://example.com/jalan (1)\\日本語?x=1' : (i === 5 ? 'javascript:alert(9)' : (i === 55 ? 'https://page2.tokyo.jp/spot' : '')),
+      note: i === 2 ? 'Catatan khusus' : '',
+    });
+  }
+  const bigTrip = {
+    id: 'p-b3',
+    name: 'Tokyo Winter (2026)',
+    start: '2026-12-01',
+    end: '2026-12-02',
+    cur: 'JPY',
+    rate: 110,
+    budget: 20000000,
+    dt: { '2026-12-01': 'Hari Pertama' },
+    it: manyIt,
+    bk: [{ id: 'b1', title: 'Hotel Shinjuku', amt: 5000000, fx: false, paid: true, cat: 'Penginapan' }],
+    lk: [
+      { id: 'l1', title: 'Peta Resmi', url: 'https://www.tokyometro.jp/en/index.html' },
+      { id: 'l2', title: 'Tautan Buruk', url: 'data:text/html,xss' },
+    ],
+    ck: [],
+    note: '',
+    goal: null,
+  };
+  const rep = c.tripPdfData(bigTrip, true);
+  const bytes = c.repPdf(rep);
+  // Verifikasi byte-per-byte < 256, xref tepat, dan %%EOF
+  for (let i = 0; i < bytes.length; i++) {
+    assert.ok(bytes[i] >= 0 && bytes[i] <= 255);
+  }
+  const raw = Buffer.from(bytes).toString('latin1');
+  assert.ok(raw.endsWith('%%EOF\n') || raw.endsWith('%%EOF'), 'PDF diakhiri %%EOF');
+  const xrefPos = +raw.match(/startxref\n(\d+)/)[1];
+  assert.ok(raw.startsWith('xref', xrefPos), 'startxref mengarah tepat ke tabel xref');
+  const offs = [...raw.slice(xrefPos).matchAll(/^(\d{10}) 00000 n $/gm)].map((m) => +m[1]);
+  offs.forEach((o, i) => assert.ok(raw.startsWith(i + 1 + ' 0 obj', o), 'objek ' + (i + 1) + ' tepat pada offset xref'));
+
+  // Verifikasi operator teks selectable (BT ... Tj, bukan gambar XObject)
+  assert.match(raw, /BT[\s\S]*\/F1\s+[\d.]+\s+Tf[\s\S]*Tj[\s\S]*ET/, 'teks dirender sebagai operator teks WinAnsi, bukan raster/gambar');
+  assert.doesNotMatch(raw, /\/Subtype\s*\/Image/, 'tidak memakai gambar raster untuk isi PDF');
+
+  // Verifikasi pdf-lib load & anotasi per halaman
+  const doc = await PDFDocument.load(new Uint8Array(bytes));
+  assert.ok(doc.getPageCount() >= 2, 'tabel panjang terbagi ke beberapa halaman');
+  const uris = [];
+  for (let p = 0; p < doc.getPageCount(); p++) {
+    for (const a of extractPageAnnots(doc, p)) {
+      assert.equal(a.subtype, '/Link');
+      assert.ok(/^[\x20-\x7e]+$/.test(a.uri), 'URI anotasi ASCII murni: ' + a.uri);
+      uris.push(a.uri);
+    }
+  }
+  assert.ok(uris.some((u) => u.includes('example.com/jalan%20(1)')), 'URI berkarakter khusus ter-encode dan tetap ada');
+  assert.ok(uris.includes('https://page2.tokyo.jp/spot'), 'anotasi halaman lanjutan dipertahankan');
+  assert.ok(uris.includes('https://www.tokyometro.jp/en/index.html'), 'tautan penting menjadi anotasi');
+  assert.ok(!uris.some((u) => /javascript:|data:/i.test(u)), 'URL berbahaya ditolak');
+});

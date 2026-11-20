@@ -14,7 +14,82 @@ function setX(t, ok) {
   if (t && typeof toast === 'function') toast(t);
 }
 
-/** Unduh Blob/teks dengan aman di Browser, PWA Standalone, maupun Android WebView/APK tanpa window.open(). */
+/** Bersihkan nama berkas agar aman untuk path cache native tanpa path traversal. */
+function rkSafeExportFilename(name) {
+  var base = String(name || 'unduhan.bin').split(/[\\/]/).pop() || 'unduhan.bin';
+  var dot = base.lastIndexOf('.');
+  var stem = (dot > 0 ? base.slice(0, dot) : base).replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64) || 'unduhan';
+  var ext = dot > 0 ? base.slice(dot).replace(/[^a-zA-Z0-9.]/g, '').slice(0, 16) : '';
+  return stem + ext;
+}
+
+/** Konversi Uint8Array ke base64 per potongan agar tidak overflow tumpukan pada berkas besar. */
+function rkBytesToBase64(bytes) {
+  var u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes || 0);
+  var CHUNK = 12288; // kelipatan 3 agar btoa per potongan bebas padding tengah
+  var parts = [];
+  for (var i = 0; i < u8.length; i += CHUNK) {
+    var sub = u8.subarray(i, Math.min(i + CHUNK, u8.length));
+    var s = '';
+    for (var j = 0; j < sub.length; j += 1024) {
+      s += String.fromCharCode.apply(null, sub.subarray(j, Math.min(j + 1024, sub.length)));
+    }
+    parts.push(btoa(s));
+  }
+  return parts.join('');
+}
+
+function rkRawToBytes(data, blob) {
+  if (data instanceof Uint8Array) return Promise.resolve(data);
+  if (data instanceof ArrayBuffer) return Promise.resolve(new Uint8Array(data));
+  if (typeof data === 'string') {
+    if (typeof TextEncoder !== 'undefined') return Promise.resolve(new TextEncoder().encode(data));
+    var rawS = unescape(encodeURIComponent(data));
+    var outS = new Uint8Array(rawS.length);
+    for (var i = 0; i < rawS.length; i++) outS[i] = rawS.charCodeAt(i);
+    return Promise.resolve(outS);
+  }
+  if (blob && typeof blob.arrayBuffer === 'function') {
+    return Promise.resolve(blob.arrayBuffer()).then(function (ab) { return new Uint8Array(ab); });
+  }
+  if (blob && typeof FileReader !== 'undefined') {
+    return new Promise(function (resolve, reject) {
+      var fr = new FileReader();
+      fr.onload = function () { resolve(new Uint8Array(fr.result || new ArrayBuffer(0))); };
+      fr.onerror = function () { reject(new Error('Gagal membaca data berkas.')); };
+      fr.readAsArrayBuffer(blob);
+    });
+  }
+  return Promise.resolve(new Uint8Array(0));
+}
+
+function rkIsShareCancelErr(err) {
+  if (!err) return false;
+  if (err.name === 'AbortError') return true;
+  var msg = String(err.message || err || '');
+  return /share\s*canceled|cancell?ed|abort|dibatalkan/i.test(msg);
+}
+
+/** Bersihkan berkas ekspor lama di cache native (sisakan maks 5 terbaru); gagal membersihkan tidak menggagalkan ekspor. */
+function rkCleanupCacheExports(fsPlugin, keepName) {
+  if (!fsPlugin || typeof fsPlugin.readdir !== 'function' || typeof fsPlugin.deleteFile !== 'function') {
+    return Promise.resolve();
+  }
+  return Promise.resolve(fsPlugin.readdir({ path: 'rk-export', directory: 'CACHE' })).then(function (res) {
+    var list = (res && Array.isArray(res.files) ? res.files : []).map(function (entry) {
+      var nm = entry && typeof entry === 'object' ? (entry.name || '') : String(entry || '');
+      var mt = entry && typeof entry === 'object' ? Number(entry.mtime || entry.ctime || 0) : 0;
+      return { name: nm, mtime: nm === keepName ? Number.MAX_SAFE_INTEGER : mt };
+    }).filter(function (x) { return x.name; });
+    list.sort(function (a, b) { return b.mtime - a.mtime; });
+    var stale = list.slice(5);
+    return Promise.all(stale.map(function (x) {
+      return Promise.resolve(fsPlugin.deleteFile({ path: 'rk-export/' + x.name, directory: 'CACHE' })).catch(function () {});
+    }));
+  }).catch(function () {});
+}
+
+/** Unduh Blob/teks dengan aman di Browser, PWA Standalone, maupun Android WebView/APK. */
 function rkDownloadBlob(name, data, mime) {
   var type = mime || 'text/plain;charset=utf-8';
   var blob = data instanceof Blob ? data : new Blob([data], { type: type });
@@ -38,15 +113,60 @@ function rkDownloadBlob(name, data, mime) {
     }
   }
 
-  if (isNative && typeof FileReader !== 'undefined') {
+  if (isNative) {
+    var cap = typeof window !== 'undefined' ? window.Capacitor : null;
+    var plugins = cap && cap.Plugins ? cap.Plugins : null;
+    var capAvail = function (pname) {
+      if (!plugins || !plugins[pname]) return false;
+      if (typeof cap.isPluginAvailable === 'function') return !!cap.isPluginAvailable(pname);
+      return true;
+    };
+    var fsPlugin = capAvail('Filesystem') ? plugins.Filesystem : null;
+    var sharePlugin = capAvail('Share') ? plugins.Share : null;
+
+    if (fsPlugin && typeof fsPlugin.writeFile === 'function' && typeof fsPlugin.getUri === 'function' && sharePlugin && typeof sharePlugin.share === 'function') {
+      var safeName = rkSafeExportFilename(name);
+      var exportPath = 'rk-export/' + safeName;
+      var capDone = rkRawToBytes(data, blob)
+        .then(function (bytes) {
+          var b64 = rkBytesToBase64(bytes);
+          return Promise.resolve(fsPlugin.writeFile({
+            path: exportPath,
+            data: b64,
+            directory: 'CACHE',
+            recursive: true,
+          })).then(function (wRes) {
+            return rkCleanupCacheExports(fsPlugin, safeName).then(function () {
+              return Promise.resolve(fsPlugin.getUri({ path: exportPath, directory: 'CACHE' })).then(function (uRes) {
+                var uri = (uRes && uRes.uri) || (wRes && wRes.uri) || '';
+                if (!uri) throw new Error('URI berkas cache tidak tersedia.');
+                return Promise.resolve(sharePlugin.share({ title: safeName, files: [uri] })).then(function () {
+                  return { ok: true, method: 'capacitor-share', path: exportPath };
+                });
+              });
+            });
+          });
+        })
+        .catch(function (err) {
+          var cancelled = rkIsShareCancelErr(err);
+          return {
+            ok: false,
+            method: 'capacitor-share',
+            cancelled: cancelled,
+            error: (err && err.message) || String(err || 'Gagal membagikan file'),
+          };
+        });
+      return { ok: true, method: 'capacitor-share', done: capDone };
+    }
+
     if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare && typeof File !== 'undefined') {
       try {
-        var f = new File([blob], name, { type: type });
+        var f = new File([blob], rkSafeExportFilename(name), { type: type });
         if (navigator.canShare({ files: [f] })) {
           var shareDone = Promise.resolve(navigator.share({ files: [f], title: name })).then(
             function () { return { ok: true, method: 'share' }; },
             function (err) {
-              var cancelled = !!(err && err.name === 'AbortError');
+              var cancelled = rkIsShareCancelErr(err);
               return { ok: false, method: 'share', cancelled: cancelled, error: (err && err.message) || String(err || 'Gagal membagikan file') };
             }
           );
@@ -54,24 +174,13 @@ function rkDownloadBlob(name, data, mime) {
         }
       } catch (e) {}
     }
-    try {
-      var fr = new FileReader();
-      var dataDone = new Promise(function (resolve) {
-        fr.onload = function () {
-          if (typeof fr.result === 'string') {
-            triggerHref(fr.result, false);
-            resolve({ ok: true, method: 'data-url' });
-          } else {
-            resolve({ ok: false, method: 'data-url', error: 'Hasil unduhan tidak valid.' });
-          }
-        };
-        fr.onerror = function () {
-          resolve({ ok: false, method: 'data-url', error: 'Gagal membaca data file.' });
-        };
-        fr.readAsDataURL(blob);
-      });
-      return { ok: true, method: 'data-url', done: dataDone };
-    } catch (e) {}
+
+    var nativeErr = 'Pengiriman berkas native tidak tersedia. Gunakan "Salin teks" atau coba lagi.';
+    return {
+      ok: false,
+      method: 'none',
+      done: Promise.resolve({ ok: false, method: 'none', cancelled: false, error: nativeErr }),
+    };
   }
 
   var url = URL.createObjectURL(blob);
@@ -83,14 +192,30 @@ function rkDownloadBlob(name, data, mime) {
 function exportFile(name, data, mime) {
   if (!DL) {
     try {
-      rkDownloadBlob(name, data, mime);
-      setX('File diunduh: ' + name, 1);
+      var dlRes = rkDownloadBlob(name, data, mime);
+      var isNat = typeof isNativeShellEnv === 'function' && isNativeShellEnv();
+      if (!isNat && (!dlRes || dlRes.ok !== false)) {
+        setX('File diunduh: ' + name, 1);
+      }
+      Promise.resolve((dlRes && dlRes.done) ? dlRes.done : dlRes).then(function (res) {
+        if (res && res.ok !== false) {
+          if (isNat || res.method !== 'blob') setX('File siap dibagikan: ' + name, 1);
+        } else if (res && res.cancelled) {
+          setX('Unduhan dibatalkan.', 0);
+        } else {
+          if ($('ta') && typeof data === 'string') $('ta').value = data;
+          if ($('dt')) $('dt').open = true;
+          var errMsg = (res && res.error) ? ' (' + res.error + ')' : '';
+          setX('Gagal mengirim file' + errMsg + '. Gunakan "Salin teks" atau coba lagi.', 0);
+        }
+      });
+      return dlRes;
     } catch (e) {
       if ($('ta') && typeof data === 'string') $('ta').value = data;
       if ($('dt')) $('dt').open = true;
       setX('Unduh file gagal.', 0);
+      return { ok: false, method: 'none', done: Promise.resolve({ ok: false, error: (e && e.message) || 'Unduh file gagal.' }) };
     }
-    return;
   }
   DL.save({ filename: name, data: data })
     .then(function () {

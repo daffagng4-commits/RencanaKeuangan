@@ -1535,6 +1535,13 @@ function xlPick(e) {
     fr.readAsArrayBuffer(f);
   }).catch(function (x) { toast(x.message); });
 }
+/** Catatan status offline/sinkron saat impor Excel (B4). */
+function tripImportOfflineNote() {
+  var isOff = typeof navigator !== 'undefined' && navigator.onLine === false;
+  var syncErr = (typeof syncBlocked !== 'undefined' && syncBlocked) || (typeof window !== 'undefined' && window._rkLastPullOk === false);
+  return (isOff || syncErr) ? ' Tersimpan di perangkat. Akan disinkronkan saat online.' : '';
+}
+
 function xlCommit() {
   var d = xlData, v = xlValidateMeta(d, $('xln').value, $('xlu').value, $('xlk').value);
   if (!d) return;
@@ -1546,13 +1553,156 @@ function xlCommit() {
   save();
   setMode('trip');
   setTrip(built.id);
-  toast('Perjalanan diimpor: ' + d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan.');
+  toast('Perjalanan diimpor: ' + d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan.' + tripImportOfflineNote());
 }
 /** Unduh template Excel yang bisa langsung diisi lalu diimpor. */
 function xlTemplate() {
   loadXlsx().then(function (X) {
     X.writeFile(xlBuildTemplateWb(X), 'template-itinerary.xlsx');
   }).catch(function (x) { toast(x.message); });
+}
+
+/* ===== Pembuat data PDF Itinerary bersama (Desktop & APK, B3) ===== */
+function tripHasNonWinAnsi(s) {
+  var arr = Array.from(String(s == null ? '' : s));
+  for (var i = 0; i < arr.length; i++) {
+    var ch = arr[i], c = ch.charCodeAt(0);
+    if (c < 32 || (c >= 32 && c < 127) || (c >= 160 && c < 256)) continue;
+    if (typeof REP_HI !== 'undefined' && REP_HI.indexOf(ch) >= 0) continue;
+    return true;
+  }
+  return false;
+}
+
+function tripPdfHasNonWinAnsi(P) {
+  if (!P) return false;
+  if (tripHasNonWinAnsi(P.name)) return true;
+  var dks = Object.keys(P.dt || {});
+  for (var i = 0; i < dks.length; i++) if (tripHasNonWinAnsi(P.dt[dks[i]])) return true;
+  if ((P.it || []).some(function (x) { return tripHasNonWinAnsi(x.place) || tripHasNonWinAnsi(x.link) || tripHasNonWinAnsi(x.note); })) return true;
+  if ((P.bk || []).some(function (x) { return tripHasNonWinAnsi(x.title); })) return true;
+  if ((P.lk || []).some(function (x) { return tripHasNonWinAnsi(x.title) || tripHasNonWinAnsi(x.url); })) return true;
+  return false;
+}
+
+function tripWrapPdfText(str, maxW, bold) {
+  var s = String(str == null ? '' : str).trim();
+  if (!s) return [''];
+  var measure = function (txt) {
+    var enc = typeof repEnc === 'function' ? repEnc(txt) : txt;
+    return typeof repWidth === 'function' ? repWidth(enc, !!bold, 9) : enc.length * 5;
+  };
+  var lines = [];
+  s.split(/\r?\n/).forEach(function (para) {
+    var words = para.split(/\s+/).filter(Boolean);
+    if (!words.length) return;
+    var cur = '';
+    words.forEach(function (w) {
+      var cand = cur ? cur + ' ' + w : w;
+      if (measure(cand) <= maxW) {
+        cur = cand;
+      } else {
+        if (cur) { lines.push(cur); cur = ''; }
+        if (measure(w) <= maxW) {
+          cur = w;
+        } else {
+          var chars = Array.from(w), chunk = '';
+          chars.forEach(function (ch) {
+            if (measure(chunk + ch) <= maxW) chunk += ch;
+            else {
+              if (chunk) lines.push(chunk);
+              chunk = ch;
+            }
+          });
+          cur = chunk;
+        }
+      }
+    });
+    if (cur) lines.push(cur);
+  });
+  return lines.length ? lines : [''];
+}
+
+function tripSafePdfFilename(name) {
+  var slug = String(name || 'perjalanan').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'perjalanan';
+  return 'itinerary-' + slug + '.pdf';
+}
+
+function tripPdfData(P, cost) {
+  var W = 595.28, M = 38, innerW = W - 2 * M,
+    pl = typeof tripPlan === 'function' ? tripPlan(P) : { b: 0, d: 0, t: 0, paid: 0 },
+    amtFn = typeof amtPlain === 'function' ? amtPlain : function (tr0, v, fx) { return fx && tr0.cur ? tr0.cur + ' ' + Math.round(v).toLocaleString('id-ID') : rp(v); },
+    tmFn = typeof tmShow === 'function' ? tmShow : function (v) { return v ? String(v).replace(':', '.') : ''; },
+    dayFn = typeof dayLabel === 'function' ? dayLabel : function (tr0, d) { return fmtD(d); },
+    sortFn = typeof byTime === 'function' ? byTime : function (a, b) { return (a.time || '').localeCompare(b.time || ''); },
+    colsIt = cost ? [{ t: 'JAM', w: 18 }, { t: 'KEGIATAN', w: 60 }, { t: 'BIAYA', w: 22, align: 'r' }] : [{ t: 'JAM', w: 20 }, { t: 'KEGIATAN', w: 80 }],
+    itMaxW = ((cost ? 60 : 80) * innerW) / 100 - 8,
+    tables = [];
+
+  (typeof tripDays === 'function' ? tripDays(P) : []).forEach(function (d) {
+    var its = (P.it || []).filter(function (x) { return x.day === d; }).sort(sortFn),
+      dayTitle = (P.dt && P.dt[d]) || '';
+    if (!its.length && !dayTitle) return;
+    var rows = [];
+    its.forEach(function (x) {
+      var jam = tmFn(x.time) + (x.time2 ? '–' + tmFn(x.time2) : ''),
+        biaya = cost && x.est ? amtFn(P, x.est, x.fx) : '',
+        safeLnk = x.link && typeof safeHref === 'function' ? safeHref(x.link) : '',
+        cells = tripWrapPdfText(x.place || '-', itMaxW, false);
+      if (x.link) {
+        tripWrapPdfText(x.link, itMaxW, false).forEach(function (ln) {
+          cells.push(safeLnk ? { t: ln, href: safeLnk } : ln);
+        });
+      }
+      if (x.note) cells = cells.concat(tripWrapPdfText(x.note, itMaxW, false));
+      cells.forEach(function (cellVal, idx) {
+        rows.push(cost ? [idx === 0 ? jam : '', cellVal, idx === 0 ? biaya : ''] : [idx === 0 ? jam : '', cellVal]);
+      });
+    });
+    if (!rows.length) rows.push(cost ? ['', '(Belum ada kegiatan)', ''] : ['', '(Belum ada kegiatan)']);
+    tables.push({ head: dayFn(P, d) + (dayTitle ? ' — ' + dayTitle : ''), cols: colsIt, rows: rows });
+  });
+
+  if (P.bk && P.bk.length) {
+    var colsBk = cost ? [{ t: 'PEMESANAN', w: 58 }, { t: 'STATUS', w: 18 }, { t: 'BIAYA', w: 24, align: 'r' }] : [{ t: 'PEMESANAN', w: 78 }, { t: 'STATUS', w: 22 }],
+      bkMaxW = ((cost ? 58 : 78) * innerW) / 100 - 8,
+      bkRows = [];
+    P.bk.forEach(function (x) {
+      var tLines = tripWrapPdfText(x.title || '-', bkMaxW, false),
+        stTxt = x.paid ? 'Lunas' : 'Belum',
+        bTxt = cost ? amtFn(P, x.amt, x.fx) : '';
+      tLines.forEach(function (ln, idx) {
+        bkRows.push(cost ? [ln, idx === 0 ? stTxt : '', idx === 0 ? bTxt : ''] : [ln, idx === 0 ? stTxt : '']);
+      });
+    });
+    tables.push({ head: 'Pemesanan', cols: colsBk, rows: bkRows });
+  }
+
+  if (P.lk && P.lk.length) {
+    var lkTitleW = (35 * innerW) / 100 - 8,
+      lkUrlW = (65 * innerW) / 100 - 8,
+      lkRows = [];
+    P.lk.forEach(function (l) {
+      var tLines = tripWrapPdfText(l.title || '-', lkTitleW, false),
+        uLines = tripWrapPdfText(l.url || '', lkUrlW, false),
+        safeLk = l.url && typeof safeHref === 'function' ? safeHref(l.url) : '',
+        cnt = Math.max(tLines.length, uLines.length);
+      for (var k = 0; k < cnt; k++) {
+        var uTxt = uLines[k] || '';
+        lkRows.push([tLines[k] || '', (uTxt && safeLk) ? { t: uTxt, href: safeLk } : uTxt]);
+      }
+    });
+    tables.push({ head: 'Tautan penting', cols: [{ t: 'JUDUL', w: 35 }, { t: 'TAUTAN', w: 65 }], rows: lkRows });
+  }
+
+  var nDays = P.start && P.end && P.end >= P.start ? dayNo(P.end, P.start) + 1 : 0,
+    subParts = [];
+  if (P.start && P.end) subParts.push(fmtD(P.start) + ' – ' + fmtD(P.end) + ' · ' + nDays + ' hari');
+  else subParts.push('Itinerary Perjalanan');
+  if (cost && P.cur && P.rate) subParts.push('Kurs 1 ' + P.cur + ' = ' + rp(P.rate));
+  var summary = [['Kegiatan', String((P.it || []).length) + ' jadwal'], ['Pemesanan', String((P.bk || []).length) + ' item']];
+  if (cost) summary = summary.concat([['Total Rencana Biaya', rp(pl.t)], ['Sudah Dibayar', rp(pl.paid)]]);
+  return { filename: tripSafePdfFilename(P.name), title: P.name || 'Itinerary Perjalanan', subtitle: subParts.join(' · '), summary: summary, tables: tables };
 }
 
 /* ===== Bagikan itinerary ===== */
@@ -1637,7 +1787,17 @@ function bindXl() {
     var b = e.target.closest('[data-sh]'), P = tp();
     if (!b || !P) return;
     var cost = $('shc').checked, kind = b.dataset.sh;
-    if (kind === 'pdf') return printHtml(tripPrintHtml(P, cost));
+    if (kind === 'pdf') {
+      try {
+        if (typeof repPdf === 'function' && typeof rkDownloadBlob === 'function') {
+          var repObj = tripPdfData(P, cost);
+          var pdfBytes = repPdf(repObj);
+          rkDownloadBlob(repObj.filename, pdfBytes, 'application/pdf');
+          return;
+        }
+      } catch (pdfErr) {}
+      return printHtml(tripPrintHtml(P, cost));
+    }
     var t = tripText(P, cost);
     if (kind === 'wa' && navigator.share) navigator.share({ title: P.name, text: t }).catch(function () {});
     else if (kind === 'wa') window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener');

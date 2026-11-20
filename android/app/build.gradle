@@ -3,12 +3,17 @@ apply plugin: 'com.android.application'
 android {
     namespace = "id.renkeu.app"
     compileSdk = rootProject.ext.compileSdkVersion
+    def rkVerCodeRaw = System.getenv("RK_VERSION_CODE")
+    def rkVerCode = (rkVerCodeRaw && rkVerCodeRaw.isInteger()) ? rkVerCodeRaw.toInteger() : 1
+    def rkVerNameRaw = System.getenv("RK_VERSION_NAME")
+    def rkVerName = (rkVerNameRaw && !rkVerNameRaw.trim().isEmpty()) ? rkVerNameRaw.trim() : "1.0"
+
     defaultConfig {
         applicationId "id.renkeu.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode rkVerCode
+        versionName rkVerName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,7 +21,31 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+
+    def rkStorePath = System.getenv("RK_KEYSTORE_PATH")
+    def rkStorePass = System.getenv("RK_KEYSTORE_PASSWORD")
+    def rkKeyAlias = System.getenv("RK_KEY_ALIAS")
+    def rkKeyPass = System.getenv("RK_KEY_PASSWORD")
+    def rkStoreFile = rkStorePath ? file(rkStorePath) : null
+    def hasRkSigning = !!(rkStorePath && rkStorePass && rkKeyAlias && rkKeyPass && rkStoreFile != null && rkStoreFile.exists())
+
+    if (hasRkSigning) {
+        signingConfigs {
+            rk {
+                storeFile rkStoreFile
+                storePassword rkStorePass
+                keyAlias rkKeyAlias
+                keyPassword rkKeyPass
+            }
+        }
+    }
+
     buildTypes {
+        debug {
+            if (hasRkSigning) {
+                signingConfig signingConfigs.rk
+            }
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

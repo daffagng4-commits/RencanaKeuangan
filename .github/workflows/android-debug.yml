@@ -5,12 +5,21 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: write
+
+concurrency:
+  group: android-debug-apk-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-android-debug:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -33,7 +42,30 @@ jobs:
         run: npm ci
 
       - name: Set build ID
-        run: echo "RK_BUILD_ID=${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+        run: |
+          echo "RK_BUILD_ID=${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+          echo "RK_VERSION_CODE=${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+          echo "RK_VERSION_NAME=1.0.${GITHUB_RUN_NUMBER}" >> "$GITHUB_ENV"
+
+      - name: Prepare APK signing
+        env:
+          KS_B64: ${{ secrets.RK_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.RK_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.RK_KEY_ALIAS }}
+          KS_KEY_PASS: ${{ secrets.RK_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ] && [ -n "$KS_ALIAS" ] && [ -n "$KS_KEY_PASS" ]; then
+            KS_PATH="$RUNNER_TEMP/renkeu-debug-signing.jks"
+            printf '%s' "$KS_B64" | base64 --decode > "$KS_PATH"
+            echo "RK_KEYSTORE_PATH=$KS_PATH" >> "$GITHUB_ENV"
+            echo "RK_KEYSTORE_PASSWORD=$KS_PASS" >> "$GITHUB_ENV"
+            echo "RK_KEY_ALIAS=$KS_ALIAS" >> "$GITHUB_ENV"
+            echo "RK_KEY_PASSWORD=$KS_KEY_PASS" >> "$GITHUB_ENV"
+            echo "RK_HAS_SIGNING=true" >> "$GITHUB_ENV"
+          else
+            echo "RK_HAS_SIGNING=false" >> "$GITHUB_ENV"
+            echo "::warning::Secret penandatanganan APK tidak lengkap. Build APK tetap dilanjutkan dengan kunci debug bawaan, tetapi rilis bergulir apk-latest dilewati."
+          fi
 
       - name: Build web & sync Capacitor Android
         run: npm run cap:sync
@@ -50,3 +82,55 @@ jobs:
           name: renkeu-android-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Publish rolling prerelease apk-latest
+        if: ${{ env.RK_HAS_SIGNING == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="apk-latest"
+          APK_SRC="android/app/build/outputs/apk/debug/app-debug.apk"
+          ASSET_NAME="renkeu-${GITHUB_RUN_NUMBER}.apk"
+          ASSET_PATH="$RUNNER_TEMP/$ASSET_NAME"
+          cp "$APK_SRC" "$ASSET_PATH"
+
+          EXISTING_BODY="$(gh release view "$TAG" --json body --jq '.body' 2>/dev/null || true)"
+          EXISTING_RUN="$(printf '%s\n' "$EXISTING_BODY" | sed -n 's/^run=\([0-9][0-9]*\).*/\1/p' | head -n1 || true)"
+          if [ -n "$EXISTING_RUN" ] && [ "$EXISTING_RUN" -gt "$GITHUB_RUN_NUMBER" ]; then
+            echo "::warning::Rilis apk-latest saat ini (run=$EXISTING_RUN) sudah lebih baru daripada build ini (run=$GITHUB_RUN_NUMBER). Penerbitan dilewati agar rilis tidak mundur."
+            exit 0
+          fi
+
+          SHA7="${GITHUB_SHA::7}"
+          BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          APK_SHA256="$(sha256sum "$ASSET_PATH" | awk '{print $1}')"
+          MSG="$(git log -1 --pretty=%s | tr '\r\n' ' ' | sed 's/[[:space:]]\+/ /g; s/^ //; s/ $//')"
+
+          NOTES_FILE="$RUNNER_TEMP/release-notes.txt"
+          printf '%s\n' \
+            "run=${GITHUB_RUN_NUMBER}" \
+            "sha=${SHA7}" \
+            "versionCode=${GITHUB_RUN_NUMBER}" \
+            "builtAt=${BUILT_AT}" \
+            "sha256=${APK_SHA256}" \
+            "msg=${MSG}" > "$NOTES_FILE"
+
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/${TAG}" -f "sha=${GITHUB_SHA}" -F force=true >/dev/null
+          else
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/git/refs" -f "ref=refs/tags/${TAG}" -f "sha=${GITHUB_SHA}" >/dev/null
+          fi
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            OLD_ASSETS="$(gh release view "$TAG" --json assets --jq '.assets[].name' || true)"
+            for old_asset in $OLD_ASSETS; do
+              if [ -n "$old_asset" ]; then
+                gh release delete-asset "$TAG" "$old_asset" -y || true
+              fi
+            done
+            gh release upload "$TAG" "$ASSET_PATH" --clobber
+            gh release edit "$TAG" --title "Build ${GITHUB_RUN_NUMBER} (${SHA7})" --notes-file "$NOTES_FILE" --prerelease
+          else
+            gh release create "$TAG" "$ASSET_PATH" --target "$GITHUB_SHA" --title "Build ${GITHUB_RUN_NUMBER} (${SHA7})" --notes-file "$NOTES_FILE" --prerelease
+          fi
