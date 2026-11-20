@@ -2621,6 +2621,287 @@ const { boot } = require('./ui.js');
   w.mobOpenExternalUrl = origOpenExtA4;
   Object.assign(w.RK_BUILD, origBuildA4);
 
+  // 31. Tahap 7 (Khusus APK: unduh in-app + progress bar tanpa remount DOM + SHA-256 + ApkInstaller + cadangan)
+  const nodeCrypto31 = require('crypto');
+  const sampleApkBytes = Uint8Array.from({ length: 2048 }, (_, i) => (i * 17 + 3) & 255);
+  const sampleApkB64 = Buffer.from(sampleApkBytes).toString('base64');
+  const sampleApkSha256 = nodeCrypto31.createHash('sha256').update(sampleApkBytes).digest('hex');
+
+  const origCap31 = w.Capacitor;
+  const origCrypto31 = w.crypto;
+  const origCopyText31 = w.copyText;
+  const origOpenExt31 = w.mobOpenExternalUrl;
+  const origStallMs31 = w.RK_UPDATE_STALL_MS;
+  const origBuild31 = Object.assign({}, w.RK_BUILD);
+
+  let capLog31 = [];
+  let progListener31 = null;
+  let progRemovedCount31 = 0;
+  let appStateListeners31 = [];
+  let dlBehavior31 = 'ok';
+  let dlPendingResolve31 = null;
+  let allowInstall31 = true;
+  let copiedUrls31 = [];
+  let extOpened31 = [];
+  let pluginAvail31 = { Filesystem: true, ApkInstaller: true, Browser: true, App: true };
+
+  w.copyText = async (txt) => {
+    copiedUrls31.push(txt);
+  };
+  w.mobOpenExternalUrl = (u) => {
+    extOpened31.push(u);
+    return true;
+  };
+  Object.defineProperty(w, 'crypto', {
+    configurable: true,
+    value: { subtle: nodeCrypto31.webcrypto.subtle },
+  });
+  w.Capacitor = {
+    isNativePlatform: () => true,
+    isPluginAvailable: (name) => !!pluginAvail31[name],
+    Plugins: {
+      Browser: { async open(opts) { capLog31.push(['Browser.open', opts]); } },
+      App: {
+        addListener(ev, fn) {
+          capLog31.push(['App.addListener', ev]);
+          if (ev === 'appStateChange') appStateListeners31.push(fn);
+          return Promise.resolve({ remove() {} });
+        },
+      },
+      Filesystem: {
+        async mkdir(opts) { capLog31.push(['Filesystem.mkdir', opts]); },
+        async readdir(opts) {
+          capLog31.push(['Filesystem.readdir', opts]);
+          return { files: [{ name: 'renkeu-9.apk', type: 'file' }] };
+        },
+        async deleteFile(opts) { capLog31.push(['Filesystem.deleteFile', opts]); },
+        async readFile(opts) {
+          capLog31.push(['Filesystem.readFile', opts]);
+          return { data: dlBehavior31 === 'bad-hash' ? Buffer.from([1, 2, 3, 4]).toString('base64') : sampleApkB64 };
+        },
+        addListener(ev, fn) {
+          capLog31.push(['Filesystem.addListener', ev]);
+          if (ev === 'progress') progListener31 = fn;
+          return Promise.resolve({
+            remove() {
+              progRemovedCount31 += 1;
+              capLog31.push(['Filesystem.removeListener']);
+            },
+          });
+        },
+        downloadFile(opts) {
+          capLog31.push(['Filesystem.downloadFile', opts]);
+          if (dlBehavior31 === 'reject') return Promise.reject(new Error('Koneksi terputus'));
+          if (dlBehavior31 === 'hang') return new Promise((r) => { dlPendingResolve31 = r; });
+          return new Promise((r) => {
+            dlPendingResolve31 = () => r({ path: '/cache/' + opts.path });
+          });
+        },
+      },
+      ApkInstaller: {
+        async canInstall() {
+          capLog31.push(['ApkInstaller.canInstall']);
+          return { allowed: allowInstall31 };
+        },
+        async openInstallSettings() {
+          capLog31.push(['ApkInstaller.openInstallSettings']);
+        },
+        async install(opts) {
+          capLog31.push(['ApkInstaller.install', opts]);
+        },
+      },
+    },
+  };
+
+  w.setShellMode('mobile-app');
+  w.switchMobileTab('settings');
+  w.RK_BUILD.id = '9-oldsha1';
+  w.RK_BUILD.run = '9';
+  const rel10 = {
+    run: 10,
+    sha: 'newsha10',
+    versionCode: 10,
+    builtAt: '2026-11-20T05:00:00Z',
+    sha256: sampleApkSha256,
+    msg: 'Tahap 7 In-App Updater',
+    assetName: 'renkeu-10.apk',
+    url: 'https://github.com/daffagng4-commits/RencanaKeuangan/releases/download/apk-latest/renkeu-10.apk',
+  };
+  const resetToAvailable31 = () => {
+    capLog31 = [];
+    copiedUrls31 = [];
+    extOpened31 = [];
+    progListener31 = null;
+    progRemovedCount31 = 0;
+    dlBehavior31 = 'ok';
+    allowInstall31 = true;
+    pluginAvail31 = { Filesystem: true, ApkInstaller: true, Browser: true, App: true };
+    w.MOB_UPDATE_STATE.status = 'available';
+    w.MOB_UPDATE_STATE.checking = false;
+    w.MOB_UPDATE_STATE.phase = 'idle';
+    w.MOB_UPDATE_STATE.message = '';
+    w.MOB_UPDATE_STATE.info = Object.assign({}, rel10);
+    w.MOB_UPDATE_STATE.downloadedPath = '';
+    w.MOB_UPDATE_STATE.downloadedRun = 0;
+    w.MOB_UPDATE_STATE.unverifiedNote = '';
+    w.renderMobUpdateCard();
+  };
+
+  // (1) Unduhan sukses dgn event progres, identitas DOM #m-upd-prog-fill TIDAK diganti, ketukan ganda diabaikan, hash cocok -> install dipanggil
+  resetToAvailable31();
+  const dlProm1 = w.rkInstallApkInApp();
+  await new Promise((r) => setTimeout(r, 20));
+  // Ketukan ganda saat downloading diabaikan
+  click($('m-card-settings-update'));
+  w.rkInstallApkInApp();
+  const fillNodeStart = $('m-upd-prog-fill');
+  const trackStart = $('m-upd-prog-track');
+  assert(fillNodeStart && trackStart, '31.1: progress bar node dirender saat downloading');
+  assert.strictEqual(trackStart.getAttribute('role'), 'progressbar', '31.1: role="progressbar" ada');
+  assert.ok(trackStart.classList.contains('is-indeterminate'), '31.2: awal tanpa contentLength masuk keadaan tak-tentu (.is-indeterminate)');
+  assert.ok(!String($('m-upd-prog-text').textContent).includes('NaN'), '31.2: teks indeterminate bebas NaN%');
+
+  // Kirim event progres 50% -> tunggu >110ms -> kirim 100%, pastikan node #m-upd-prog-fill tetap node yg sama (===)
+  assert(progListener31, '31.1: listener progress Filesystem terdaftar');
+  progListener31({ url: rel10.url, bytes: 500000, contentLength: 1000000 });
+  assert.strictEqual($('m-upd-prog-fill'), fillNodeStart, '31.1: update progres pertama TIDAK mengganti node DOM #m-upd-prog-fill');
+  assert.strictEqual($('m-upd-prog-track').getAttribute('aria-valuenow'), '50', '31.1: aria-valuenow=50');
+  assert(/50%/.test($('m-upd-prog-text').textContent), '31.1: teks progres memuat 50%');
+  await new Promise((r) => setTimeout(r, 120));
+  progListener31({ url: rel10.url, bytes: 1000000, contentLength: 1000000 });
+  assert.strictEqual($('m-upd-prog-fill'), fillNodeStart, '31.1: update progres lanjutan TIDAK mengganti node DOM #m-upd-prog-fill');
+  assert.strictEqual($('m-upd-prog-track').getAttribute('aria-valuenow'), '100', '31.1: aria-valuenow=100');
+
+  dlPendingResolve31();
+  await dlProm1;
+  const mkdirIdx = capLog31.findIndex((x) => x[0] === 'Filesystem.mkdir');
+  const dlCalls31 = capLog31.filter((x) => x[0] === 'Filesystem.downloadFile');
+  assert.strictEqual(dlCalls31.length, 1, '31.8: ketukan ganda saat downloading tidak memanggil downloadFile ke-2 kali');
+  assert.ok(mkdirIdx >= 0 && mkdirIdx < capLog31.findIndex((x) => x[0] === 'Filesystem.downloadFile'), '31.1: mkdir rk-update dipanggil sebelum downloadFile');
+  assert.strictEqual(dlCalls31[0][1].directory, 'CACHE');
+  assert.strictEqual(dlCalls31[0][1].path, 'rk-update/renkeu-10.apk');
+  assert.strictEqual(dlCalls31[0][1].progress, true);
+  assert.strictEqual(dlCalls31[0][1].connectTimeout, 15000);
+  assert.strictEqual(dlCalls31[0][1].readTimeout, 30000);
+  assert.strictEqual(progRemovedCount31, 1, '31.1: listener progress selalu dihapus (.remove()) setelah selesai');
+  const instCall31 = capLog31.find((x) => x[0] === 'ApkInstaller.install');
+  assert(instCall31 && instCall31[1].path === 'rk-update/renkeu-10.apk', '31.2: hash cocok memanggil ApkInstaller.install dengan path relatif tepat');
+  assert($('m-card-settings-update').textContent.includes('Pemasang Android dibuka. Ketuk Pasang.'), '31.2: status jujur setelah install dipanggil');
+
+  // (3) Hash TIDAK cocok -> berkas dihapus, install TIDAK dipanggil, tombol cadangan tampil
+  resetToAvailable31();
+  dlBehavior31 = 'bad-hash';
+  const badHashProm = w.rkInstallApkInApp();
+  await new Promise((r) => setTimeout(r, 20));
+  dlPendingResolve31();
+  await badHashProm;
+  assert.ok(capLog31.some((x) => x[0] === 'Filesystem.deleteFile' && x[1].path === 'rk-update/renkeu-10.apk'), '31.2: hash tidak cocok menghapus berkas APK');
+  assert.ok(!capLog31.some((x) => x[0] === 'ApkInstaller.install'), '31.2: hash tidak cocok TIDAK memanggil ApkInstaller.install');
+  assert($('m-btn-open-browser-update') && $('m-btn-copy-update-url'), '31.2: tombol cadangan muncul saat hash gagal');
+
+  // (4) Tanpa sha256 dan tanpa crypto.subtle -> tetap lanjut install dengan keterangan "tidak diverifikasi"
+  resetToAvailable31();
+  w.MOB_UPDATE_STATE.info.sha256 = '';
+  const noShaProm = w.rkInstallApkInApp();
+  await new Promise((r) => setTimeout(r, 20));
+  dlPendingResolve31();
+  await noShaProm;
+  assert.ok(capLog31.some((x) => x[0] === 'ApkInstaller.install'), '31.3: tanpa sha256 tetap melanjutkan install');
+  assert(/tidak diverifikasi/i.test($('m-card-settings-update').textContent), '31.3: tanpa sha256 mencantumkan "tidak diverifikasi"');
+
+  resetToAvailable31();
+  Object.defineProperty(w, 'crypto', { configurable: true, value: undefined });
+  const noSubtleProm = w.rkInstallApkInApp();
+  await new Promise((r) => setTimeout(r, 20));
+  dlPendingResolve31();
+  await noSubtleProm;
+  assert.ok(capLog31.some((x) => x[0] === 'ApkInstaller.install'), '31.3: tanpa crypto.subtle tetap melanjutkan install');
+  assert(/tidak diverifikasi/i.test($('m-card-settings-update').textContent), '31.3: tanpa crypto.subtle mencantumkan "tidak diverifikasi"');
+  Object.defineProperty(w, 'crypto', { configurable: true, value: { subtle: nodeCrypto31.webcrypto.subtle } });
+
+  // (5) canInstall false -> status "Perlu izin", tidak mengunduh ulang; setelah true -> install dipanggil (baik tombol Pasang & appStateChange)
+  resetToAvailable31();
+  allowInstall31 = false;
+  const permProm = w.rkInstallApkInApp();
+  await new Promise((r) => setTimeout(r, 20));
+  dlPendingResolve31();
+  await permProm;
+  assert.strictEqual(w.MOB_UPDATE_STATE.phase, 'need-permission', '31.4: phase menjadi need-permission');
+  assert(/Perlu izin/i.test($('m-card-settings-update').textContent), '31.4: status menyebut Perlu izin');
+  assert($('m-btn-perm-update') && $('m-btn-retry-install-update'), '31.4: tombol pengaturan izin dan Pasang tampil');
+  click($('m-btn-perm-update'));
+  assert.ok(capLog31.some((x) => x[0] === 'ApkInstaller.openInstallSettings'), '31.4: tombol pengaturan memanggil openInstallSettings');
+  allowInstall31 = true;
+  if (appStateListeners31.length) {
+    appStateListeners31[appStateListeners31.length - 1]({ isActive: true });
+    await new Promise((r) => setTimeout(r, 20));
+    assert.strictEqual(w.MOB_UPDATE_STATE.phase, 'ready', '31.4: appStateChange kembali aktif mengecek ulang canInstall dan memindahkan phase ke ready');
+  }
+  const dlCountBeforeRetry = capLog31.filter((x) => x[0] === 'Filesystem.downloadFile').length;
+  click($('m-btn-retry-install-update'));
+  await new Promise((r) => setTimeout(r, 25));
+  assert.strictEqual(capLog31.filter((x) => x[0] === 'Filesystem.downloadFile').length, dlCountBeforeRetry, '31.4: Pasang ulang setelah izin TIDAK mengunduh ulang berkas');
+  assert.ok(capLog31.some((x) => x[0] === 'ApkInstaller.install'), '31.4: setelah izin true memanggil ApkInstaller.install');
+
+  // (6) Plugin tidak tersedia -> jalur lama mobOpenExternalUrl + validasi prefiks
+  resetToAvailable31();
+  pluginAvail31.ApkInstaller = false;
+  click($('m-btn-install-update'));
+  await new Promise((r) => setTimeout(r, 20));
+  assert.strictEqual(capLog31.filter((x) => x[0] === 'Filesystem.downloadFile').length, 0, '31.5: jika plugin tidak tersedia, tidak memanggil downloadFile');
+  assert.deepStrictEqual(extOpened31, [rel10.url], '31.5: fallback ke jalur browser mobOpenExternalUrl(info.url)');
+
+  // (7) Prefiks URL tidak valid ditolak SEBELUM downloadFile
+  resetToAvailable31();
+  w.MOB_UPDATE_STATE.info.url = 'https://evil.example.com/renkeu-10.apk';
+  const badUrlRes = await w.rkInstallApkInApp();
+  assert.strictEqual(badUrlRes, false, '31.6: URL di luar prefiks ditolak');
+  assert.strictEqual(capLog31.filter((x) => x[0] === 'Filesystem.downloadFile').length, 0, '31.6: downloadFile tidak dipanggil untuk URL tidak valid');
+
+  // (8) Galat downloadFile + Salin tautan + Watchdog macet
+  resetToAvailable31();
+  dlBehavior31 = 'reject';
+  await w.rkInstallApkInApp();
+  assert.strictEqual(w.MOB_UPDATE_STATE.phase, 'error', '31.7: error downloadFile mengubah phase menjadi error');
+  assert($('m-btn-open-browser-update') && $('m-btn-copy-update-url'), '31.7: tombol cadangan browser & salin tautan tampil saat galat');
+  click($('m-btn-copy-update-url'));
+  await new Promise((r) => setTimeout(r, 20));
+  assert.deepStrictEqual(copiedUrls31, [rel10.url], '31.7: Salin tautan menyalin info.url');
+  assert.ok($('m-toast-box').textContent.includes('Tautan disalin. Tempel di Chrome/Brave.'), '31.7: toast konfirmasi salin tautan tampil');
+
+  resetToAvailable31();
+  dlBehavior31 = 'hang';
+  w.RK_UPDATE_STALL_MS = 40;
+  w.rkInstallApkInApp();
+  await new Promise((r) => setTimeout(r, 85));
+  assert.strictEqual(w.MOB_UPDATE_STATE.phase, 'stalled', '31.7: watchdog macet mengubah phase ke stalled');
+  assert(/Unduhan tersendat/i.test($('m-card-settings-update').textContent), '31.7: status menyebut Unduhan tersendat');
+  assert($('m-btn-open-browser-update') && $('m-btn-copy-update-url'), '31.7: cadangan browser & salin tautan tampil saat macet');
+
+  // (9) Navigasi pindah tab di tengah unduhan tidak error + re-render kartu memulihkan keadaan
+  resetToAvailable31();
+  const navProm = w.rkInstallApkInApp();
+  await new Promise((r) => setTimeout(r, 20));
+  w.switchMobileTab('rincian');
+  progListener31({ url: rel10.url, bytes: 250000, contentLength: 1000000 });
+  w.switchMobileTab('settings');
+  assert.ok($('m-upd-prog-fill') && $('m-upd-prog-track').getAttribute('aria-valuenow') === '25', '31.8: kembali ke Pengaturan memulihkan progress bar 25%');
+  dlPendingResolve31();
+  await navProm;
+
+  // (10) Non-native tidak berubah
+  w.Capacitor = { isNativePlatform: () => false };
+  w.renderMobUpdateCard();
+  assert.ok(/Pembaruan hanya tersedia di aplikasi Android/.test($('m-card-settings-update').textContent) && !$('m-btn-check-update') && !$('m-btn-install-update'), '31.9: jalur non-native tetap persis sama tanpa tombol');
+
+  // Pulihkan stub Tahap 7
+  w.Capacitor = origCap31;
+  Object.defineProperty(w, 'crypto', { configurable: true, value: origCrypto31 });
+  w.copyText = origCopyText31;
+  w.mobOpenExternalUrl = origOpenExt31;
+  w.RK_UPDATE_STALL_MS = origStallMs31;
+  Object.assign(w.RK_BUILD, origBuild31);
+
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));
   console.log('OK mobile_app_mode');
   process.exit(0);

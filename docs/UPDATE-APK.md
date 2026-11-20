@@ -1,10 +1,10 @@
 # Pembaruan APK Rencana Keuangan (`id.renkeu.app`)
 
-Dokumen ini menjelaskan cara kerja pembaruan APK Android dari dalam aplikasi tanpa mengunduh artifact GitHub Actions secara manual.
+Dokumen ini menjelaskan cara kerja pembaruan APK Android langsung dari dalam aplikasi (in-app download + pemasang sistem Android), dengan cadangan browser/Salin tautan.
 
 ---
 
-## 1. Ringkasan Arsitektur
+## 1. Ringkasan Arsitektur (Tahap 7)
 
 ```text
 Push ke main / workflow_dispatch
@@ -14,72 +14,74 @@ GitHub Actions (.github/workflows/android-debug.yml)
    ├─ Menyematkan RK_BUILD_ID, RK_VERSION_CODE, RK_VERSION_NAME ke build web & Gradle
    ├─ Mendekode keystore tetap dari GitHub Secrets ke $RUNNER_TEMP
    ├─ Mem-build APK (assembleDebug) bertanda tangan keystore tetap
-   └─ Mengunggah APK & catatan kunci=nilai ke GitHub Release bergulir (tag `apk-latest`, prerelease)
+   └─ Mengunggah APK & catatan kunci=nilai (termasuk sha256=) ke GitHub Release `apk-latest`
          │
          ▼
-Aplikasi Android (#mobile-app-shell → Pengaturan → Pembaruan Aplikasi)
-   ├─ Memeriksa https://api.github.com/repos/daffagng4-commits/RencanaKeuangan/releases/tags/apk-latest
-   │  (GET publik, Accept: application/vnd.github+json, tanpa token/Authorization, timeout 10 dtk)
+Aplikasi Android (#mobile-app-shell → Menu → Pengaturan → Pembaruan Aplikasi)
+   ├─ Cek https://api.github.com/repos/daffagng4-commits/RencanaKeuangan/releases/tags/apk-latest
+   │  (GET publik, Accept: application/vnd.github+json, tanpa token, timeout 10 dtk)
    ├─ Membandingkan RK_BUILD.run secara numerik terhadap `run=` di catatan rilis
-   └─ Jika ada versi baru, tombol "Unduh & pasang" membuka URL aset APK lewat Capacitor Browser
-      (https://github.com/daffagng4-commits/RencanaKeuangan/releases/download/...)
+   └─ Saat menekan "Unduh & pasang" (jalur in-app):
+      ├─ Validasi prefiks URL (https://github.com/daffagng4-commits/RencanaKeuangan/releases/download/)
+      ├─ Unduh ke cache/rk-update/renkeu-<run>.apk via @capacitor/filesystem (progress bar)
+      ├─ Verifikasi SHA-256 berkas hasil unduhan (bila sha256 & WebCrypto tersedia)
+      ├─ Cek izin `REQUEST_INSTALL_PACKAGES` aplikasi **RenKeu** via plugin `ApkInstaller.canInstall()`
+      └─ Membuka pemasang paket sistem Android langsung pada berkas APK cache (FileProvider)
+         (+ cadangan "Buka lewat browser" & "Salin tautan" jika gagal / macet)
 ```
 
-> **Catatan keamanan & batas platform Android:**
-> Aplikasi Android tidak memasang APK secara diam-diam di latar belakang. Pemasangan langsung dari dalam aplikasi menggunakan plugin native APK installer merupakan tahap terpisah (di luar cakupan Tahap 6).
+---
+
+## 2. Bootstrap Tahap 7 & Migrasi Pertama
+
+- **Dari APK sebelum Tahap 6 (kunci debug acak)** -> ikuti migrasi sekali: login/sinkron cloud (atau ekspor cadangan `.JSON`), **uninstall** APK lama, pasang APK baru.
+- **Bootstrap dari Tahap 6 (sudah memakai kunci tetap) ke build Tahap 7**:
+  - Build Tahap 6 belum memiliki plugin `ApkInstaller` maupun izin in-app download baru, dan browser bawaan HP pada beberapa perangkat macet di 99%.
+  - Untuk memasang **build Tahap 7 pertama kalinya**, ketuk **Salin tautan** / **Unduh & pasang** lewat **Brave atau Chrome** satu kali lalu pasang APK-nya.
+  - Karena tanda tangan keystore **tetap sama**, pemasangan Tahap 7 menimpa APK Tahap 6 **tanpa uninstall** dan **data lokal tetap aman**.
+  - Mulai dari build Tahap 7 ke atas, pembaruan di masa depan akan diunduh langsung di dalam aplikasi dan langsung membuka pemasang Android.
 
 ---
 
-## 2. Setup Sekali (Keystore, Secrets, dan Visibilitas Repo)
+## 3. Izin "Pasang Aplikasi yang Tidak Dikenal"
 
-1. **Pastikan repositori GitHub bersifat publik** agar endpoint rilis `api.github.com` dan tautan unduhan APK dapat diakses oleh aplikasi tanpa menyematkan token pribadi apa pun.
+- Karena berkas APK kini diunduh dan dibuka langsung oleh aplikasi **RenKeu** (`id.renkeu.app`), Android meminta izin **Pasang aplikasi dari sumber ini** untuk **RenKeu sendiri** (bukan untuk browser seperti Brave/Chrome).
+- Saat izin belum aktif, aplikasi akan menampilkan status **"Perlu izin"** dan tombol **"Buka pengaturan izin"** (membuka setelan izin langsung ke aplikasi RenKeu) serta tombol **"Pasang"** tanpa mengunduh ulang berkas APK yang sudah selesai diunduh.
+
+---
+
+## 4. Setup Sekali (Keystore, Secrets, dan Visibilitas Repo)
+
+1. **Pastikan repositori GitHub bersifat publik** agar endpoint rilis `api.github.com` dan tautan unduhan APK dapat diakses tanpa menyematkan token.
 2. **Simpan 4 GitHub Secrets** pada *Settings → Secrets and variables → Actions*:
-   - `RK_KEYSTORE_BASE64`: isi file `.jks` dalam encoding base64 satu baris (`base64 -w0 renkeu.jks`).
+   - `RK_KEYSTORE_BASE64`: isi file `.jks` dalam encoding base64 satu baris.
    - `RK_KEYSTORE_PASSWORD`: kata sandi keystore.
-   - `RK_KEY_ALIAS`: alias kunci di dalam keystore (mis. `renkeu`).
+   - `RK_KEY_ALIAS`: alias kunci di dalam keystore.
    - `RK_KEY_PASSWORD`: kata sandi key alias.
-3. Jangan pernah menyimpan file `.jks`, `.keystore`, `keystore.properties`, atau token GitHub di dalam repositori git (`.gitignore` sudah mengecualikan ekstensi keystore).
+3. Jangan pernah menyimpan file `.jks`, `.keystore`, `keystore.properties`, atau token GitHub di dalam repositori git.
 
 ---
 
-## 3. Migrasi Pertama (WAJIB Dibaca Sebelum Memasang APK Baru)
+## 5. Pemecahan Masalah
 
-Build APK lama menggunakan kunci debug acak bawaan Android runner GitHub. Build baru dari rilis `apk-latest` menggunakan **kunci tetap** dari GitHub Secrets. Android akan menolak pembaruan di tempat jika tanda tangan APK lama berbeda dengan APK baru.
-
-**Langkah migrasi pertama (dilakukan SEKALI SAJA):**
-1. **Amankan data lebih dulu:**
-   - Buka aplikasi lama dan **login/sinkron cloud** (atau buka *Pengaturan → Cadangan & Ekspor Data → Cadangan .JSON* dan simpan file cadangan di tempat aman).
-   - Data lokal yang belum tersinkron ke cloud akan terhapus saat aplikasi lama di-uninstall!
-2. **Uninstall APK lama** dari perangkat Android.
-3. **Pasang APK pertama** yang diunduh dari rilis `apk-latest` (atau lewat artifact build bertanda tangan baru).
-4. Login kembali (atau impor file cadangan JSON) untuk memulihkan data.
-
-Setelah migrasi pertama ini selesai, semua build berikutnya bertanda tangan keystore tetap yang sama sehingga dapat dipasang menimpa aplikasi lama tanpa uninstall dan **tanpa menghilangkan data**.
-
----
-
-## 4. Pemecahan Masalah
-
-- **Gagal pasang: "App not installed as package conflicts with an existing package" / konflik tanda tangan**
-  - Penyebab: APK yang terpasang di HP masih memakai kunci debug acak lama (atau ditandatangani kunci berbeda).
-  - Solusi: Ikuti **Migrasi Pertama** di atas (pastikan sudah sinkron/ekspor data → uninstall APK lama → pasang APK dari rilis `apk-latest`).
+- **Unduhan di browser bawaan HP macet di 99% (atau koneksi terputus saat unduh)**
+  - Mulai Tahap 7, tombol **Unduh & pasang** mengunduh langsung di dalam aplikasi memakai `HttpURLConnection` native agar terhindar dari kendala pengelola unduhan browser bawaan.
+  - Jika unduhan in-app tidak menerima progres selama 30 detik (**"Unduhan tersendat"**) atau gagal jaringan, gunakan tombol cadangan **Salin tautan** (lalu tempel di **Brave** atau Chrome) atau **Buka lewat browser**.
+- **Verifikasi `sha256` gagal (unduhan rusak/terpotong)**
+  - Aplikasi otomatis menghapus berkas APK yang korup agar tidak memasang berkas terpotong dan menawarkan tombol coba lagi / **Buka lewat browser** / **Salin tautan**.
+- **Izin pemasangan ditolak / "Perlu izin"**
+  - Ketuk **Buka pengaturan izin** → aktifkan **Izinkan dari sumber ini** untuk **Rencana Keuangan (RenKeu)** → kembali ke aplikasi lalu ketuk **Pasang** (berkas tidak perlu diunduh ulang).
 - **Peringatan Google Play Protect**
-  - APK debug ditandatangani dengan keystore pribadi (bukan lewat Google Play Store). Jika Play Protect memunculkan peringatan "Play Protect tidak mengenali developer aplikasi ini", ketuk **Detail selengkapnya → Tetap pasang**.
-- **Diminta izin "Pasang aplikasi yang tidak dikenal" / "Pasang dari sumber ini"**
-  - Browser atau pengelola file (Chrome / Files Android) memerlukan izin pemasangan APK satu kali. Aktifkan izin **Izinkan dari sumber ini**, lalu kembali untuk mengetuk **Pasang**.
-- **HTTP 404 saat Cek pembaruan ("Rilis tidak ditemukan atau repo privat")**
-  - Periksa apakah workflow **Android Debug APK** sudah pernah berjalan sukses menerbitkan tag `apk-latest` setelah branch di-push ke `main` (atau dijalankan manual lewat `workflow_dispatch`).
-  - Jika rilis sudah ada di GitHub tetapi aplikasi tetap menerima `404`, kemungkinan repositori masih **Privat** (API publik tanpa token mengembalikan `404` untuk repo privat). Ubah repositori ke **Publik** jika ingin memakai pemeriksaan tanpa token.
+  - Karena APK ditandatangani secara mandiri di luar Play Store, Play Protect dapat memunculkan konfirmasi pengembang. Ketuk **Detail selengkapnya → Tetap pasang**.
+- **Gagal pasang: konflik tanda tangan paket**
+  - Pastikan aplikasi terpasang sebelumnya sudah menggunakan keystore tetap yang sama. Jika masih berasal dari build debug lama acak, lakukan sinkron/cadangan lalu uninstall APK lama sekali saja.
+- **HTTP 404 saat Cek pembaruan**
+  - Pastikan rilis `apk-latest` sudah terbit dan repositori bersifat **Publik**.
 - **HTTP 403 / 429 (Batas laju GitHub API)**
-  - GitHub API membatasi 60 permintaan/jam per alamat IP publik untuk permintaan tanpa token (WiFi bersama/VPN sering berbagi kuota). Tunggu beberapa menit atau matikan VPN lalu tekan **Cek pembaruan** lagi. Pemeriksaan otomatis aplikasi sudah dibatasi maksimal 1 kali setiap 6 jam.
-- **Rilis `apk-latest` tidak muncul setelah workflow hijau**
-  - Buka log langkah **Prepare APK signing** dan **Publish rolling prerelease apk-latest** di tab GitHub Actions.
-  - Jika muncul peringatan `::warning::` tentang secret tidak lengkap, periksa keempat nama secret (`RK_KEYSTORE_BASE64`, `RK_KEYSTORE_PASSWORD`, `RK_KEY_ALIAS`, `RK_KEY_PASSWORD`) dan pastikan `workflow_dispatch` atau `push` dijalankan pada branch `main` (bukan Pull Request).
+  - Kuota API tanpa token adalah 60 permintaan/jam per IP. Tunggu sebentar atau matikan VPN lalu coba lagi.
 
 ---
 
-## 5. Cadangan Keystore
+## 6. Cadangan Keystore
 
-Kehilangan atau berubahnya file `renkeu.jks` berarti pengguna harus kembali meng-uninstall aplikasi seperti saat migrasi pertama.
-- Simpan file asli `renkeu.jks` beserta password store, alias, dan key password di **password manager / brankas cloud terenkripsi pribadi** di luar repositori git.
-- Jangan membagikan file `.jks` maupun isi `RK_KEYSTORE_BASE64` di chat atau issue publik.
+Simpan file asli `renkeu.jks` beserta password store, alias, dan password key di brankas terenkripsi / password manager pribadi di luar repositori git.
