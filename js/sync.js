@@ -7,10 +7,38 @@ var pushT = null;
 var sb = null,
   sbUser = null;
 
+var syncBlocked = false,
+  syncSchemaBlocked = false,
+  cfRow = null;
+
+function rkRemoteSchemaVer(data) {
+  var raw = data && data.sv != null ? Number(data.sv) : 1;
+  return Number.isFinite(raw) && raw >= 1 ? raw : 1;
+}
+
+function rkSchemaBlockMessage() {
+  return 'Data cloud dibuat oleh versi aplikasi yang lebih baru. Perbarui aplikasi agar tidak ada data yang hilang.';
+}
+
+function rkSchemaBlockDesktopHtml() {
+  return '<strong>' + rkSchemaBlockMessage() + '</strong> Muat ulang halaman untuk memperbarui aplikasi, lalu coba lagi. <a href="#" id="sbr">Coba lagi</a>';
+}
+
 /** Tulis status sinkron di header. */
 function sbStat(t, bad) {
   var e = $('sbs'), vi = $('ver-info');
   if (!e) return;
+  if (syncSchemaBlocked) {
+    e.style.display = 'block';
+    e.style.color = 'var(--crimson, var(--wr))';
+    if (e.classList && e.classList.add) e.classList.add('rk-schema-banner');
+    e.innerHTML = rkSchemaBlockDesktopHtml();
+    var tsBlk = $('tsync');
+    if (tsBlk) tsBlk.textContent = '\u2601 Sinkron dijeda (perbarui aplikasi)';
+    if (typeof syncMobileCloudUI === 'function') syncMobileCloudUI();
+    return;
+  }
+  if (e.classList && e.classList.remove) e.classList.remove('rk-schema-banner');
   if (bad) {
     e.style.display = 'block';
     e.style.color = 'var(--wr)';
@@ -146,6 +174,7 @@ function setUser(s) {
   }
   if (!sameUser) {
     syncBlocked = false;
+    syncSchemaBlocked = false;
     rkResetToEmptyState(was && was.id);
     if (u && typeof loadState === 'function') {
       loadState(u.id);
@@ -163,7 +192,7 @@ function setUser(s) {
 
 /** Jadwalkan kirim ke cloud 300 ms setelah perubahan terakhir. */
 function schedPush() {
-  if (!sb || !sbUser || syncBlocked) return;
+  if (!sb || !sbUser || syncBlocked || syncSchemaBlocked) return;
   sbStat('Menyimpan ke cloud...');
   clearTimeout(pushT);
   pushT = setTimeout(push, 300);
@@ -176,9 +205,6 @@ function flushPush() {
   pushT = null;
   push();
 }
-
-var syncBlocked = false,
-  cfRow = null;
 
 /** Versi (rev) terakhir yang berhasil disinkronkan perangkat ini untuk akun aktif. */
 function getSync() {
@@ -200,7 +226,8 @@ function setSync(rev) {
 /** Kirim state ke cloud (update bersyarat where rev = prevRev untuk cegah balapan data). */
 function push() {
   pushT = null;
-  if (!sb || !sbUser || syncBlocked) return Promise.resolve();
+  if (!sb || !sbUser || syncBlocked || syncSchemaBlocked) return Promise.resolve();
+  if (ALL && typeof RK_SCHEMA_VER === 'number') ALL.sv = RK_SCHEMA_VER;
   if (!ALL.rev) {
     ALL.rev = Date.now();
     try {
@@ -288,6 +315,8 @@ function pull() {
       }
       var row = r.data;
       if (!row) {
+        syncSchemaBlocked = false;
+        syncBlocked = false;
         ALL = typeof emptyAllState === 'function' ? emptyAllState() : norm(null);
         S = ALL.data[ALL.year];
         lastData = dsig();
@@ -297,6 +326,21 @@ function pull() {
         finishSync(true);
         return push();
       }
+      var remoteSv = rkRemoteSchemaVer(row.data);
+      if (typeof RK_SCHEMA_VER === 'number' && remoteSv > RK_SCHEMA_VER) {
+        syncBlocked = true;
+        syncSchemaBlocked = true;
+        clearTimeout(pushT);
+        pushT = null;
+        cfRow = null;
+        if (typeof brCloseModal === 'function' && $('cf')) brCloseModal('cf');
+        else if ($('cf')) $('cf').hidden = true;
+        finishSync(false);
+        sbStat(rkSchemaBlockMessage(), 1);
+        return;
+      }
+      syncSchemaBlocked = false;
+      syncBlocked = false;
       var rr = +row.rev || 0,
         lr = +ALL.rev || 0,
         ls = getSync(),
@@ -652,13 +696,22 @@ function bindSync() {
   $('sbs').onclick = function (e) {
     if (e.target.id === 'sbr') {
       e.preventDefault();
-      syncBlocked = false;
+      if (!syncSchemaBlocked) syncBlocked = false;
       pull();
     }
   };
   $('cf').onclick = function (e) {
     var b = e.target.closest('button[data-cf]');
     if (!b || !cfRow) return;
+    if (syncSchemaBlocked || rkRemoteSchemaVer(cfRow.data) > (typeof RK_SCHEMA_VER === 'number' ? RK_SCHEMA_VER : 2)) {
+      if (typeof brCloseModal === 'function') brCloseModal('cf');
+      else $('cf').hidden = true;
+      syncBlocked = true;
+      syncSchemaBlocked = true;
+      cfRow = null;
+      sbStat(rkSchemaBlockMessage(), 1);
+      return;
+    }
     var c = b.dataset.cf,
       row = cfRow;
     if (c === 'later') {
@@ -699,28 +752,31 @@ function bindSync() {
       });
     }
   };
-  var lastDay = todayISO();
-  setInterval(function () {
-    if (todayISO() !== lastDay) {
-      lastDay = todayISO();
+  if (typeof window !== 'undefined' && !window._rkSyncDocBound) {
+    window._rkSyncDocBound = true;
+    var lastDay = todayISO();
+    setInterval(function () {
+      if (todayISO() !== lastDay) {
+        lastDay = todayISO();
+        refreshToday();
+      }
+    }, 60000);
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        flushPush();
+        return;
+      }
       refreshToday();
-    }
-  }, 60000);
-  document.addEventListener('visibilitychange', function () {
-    if (document.hidden) {
-      flushPush();
-      return;
-    }
-    refreshToday();
-    if (sbUser && !pushT && !syncBlocked) pull();
-  });
-  window.addEventListener('pagehide', flushPush);
-  window.addEventListener('online', function () {
-    if (sbUser && !syncBlocked) {
-      sbStat('Koneksi pulih, menyelaraskan...');
-      pull();
-    }
-  });
+      if (sbUser && !pushT && !syncBlocked && !syncSchemaBlocked) pull();
+    });
+    window.addEventListener('pagehide', flushPush);
+    window.addEventListener('online', function () {
+      if (sbUser && !syncBlocked && !syncSchemaBlocked) {
+        sbStat('Koneksi pulih, menyelaraskan...');
+        pull();
+      }
+    });
+  }
   $('acct').onclick = function () {
     if (!sb) {
       toast('Sinkron belum aktif. Isi Supabase di js/config.js.');

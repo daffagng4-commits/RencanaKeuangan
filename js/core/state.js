@@ -3,6 +3,7 @@
  */
 
 var KEY = 'rencana-keuangan-v1';
+var RK_SCHEMA_VER = 2; // Naikkan hanya bila bentuk data berubah di tahap mendatang.
 
 /** ALL = {year, rev, data:{[tahun]:{saldo,startMonth,items,paid,skip,adj}}}; S = data tahun aktif. */
 
@@ -147,6 +148,7 @@ function norm(a) {
     });
     Y.adj = [];
   });
+  a.sv = RK_SCHEMA_VER;
   return a;
 }
 
@@ -218,6 +220,13 @@ function normKas(k) {
           };
           if (xcIt && validExtraSet[xcIt]) rowIt.c = xcIt;
           if (okRtIt) rowIt.rt = x.rt;
+          var okAxIt = typeof x.ax === 'number' && Number.isFinite(x.ax) && x.ax > 0 && x.ax <= 1e12;
+          if (okAxIt) {
+            rowIt.ax = x.ax;
+            if (isFxIt && typeof x.ak === 'number' && Number.isFinite(x.ak) && x.ak > 0 && x.ak <= 1e9) {
+              rowIt.ak = x.ak;
+            }
+          }
           return rowIt;
         });
       var cleanBk = (Array.isArray(p.bk) ? p.bk : [])
@@ -244,8 +253,16 @@ function normKas(k) {
           if (xcBk && validExtraSet[xcBk]) row.c = xcBk;
           if (okRt) row.rt = x.rt;
           if (okRt && isPaid && x.ra === true) row.ra = true;
+          var okAxBk = typeof x.ax === 'number' && Number.isFinite(x.ax) && x.ax > 0 && x.ax <= 1e12;
+          if (okAxBk) {
+            row.ax = x.ax;
+            if (isFx && typeof x.ak === 'number' && Number.isFinite(x.ak) && x.ak > 0 && x.ak <= 1e9) {
+              row.ak = x.ak;
+            }
+          }
           return row;
         });
+      // warisan Tahap 11: sanitasi P.ac dipertahankan agar data lama tidak hilang saat simpan/sinkron (tanpa UI)
       var validRfSet = {};
       cleanIt.forEach(function (x) { validRfSet['it:' + x.id] = 1; });
       cleanBk.forEach(function (x) { validRfSet['bk:' + x.id] = 1; });
@@ -443,6 +460,7 @@ function save() {
   try {
     ALL.data[S.year] = S;
     ALL.year = S.year;
+    ALL.sv = RK_SCHEMA_VER;
     var dj = dsig();
     if (dj !== lastData) {
       lastData = dj;

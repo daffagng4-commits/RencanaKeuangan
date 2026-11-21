@@ -3588,11 +3588,10 @@ const { boot } = require('./ui.js');
     'attr:data-mit-edit', 'attr:data-mbk-edit', 'attr:data-mck-tog', 'attr:data-m-ext-url',
     'id:m-it-day-trig', 'id:m-bk-start-trig', 'id:m-bk-end-trig',
     'attr:data-mcal-trig', 'attr:data-mcal-mv', 'attr:data-mcal-pick',
-    // Tahap 11 Realisasi
-    'form:m-trip-ac-form', 'id:m-ac-cancel', 'id:m-ac-day-trig',
-    'attr:data-mac-cat', 'attr:data-mac-edit', 'attr:data-mac-del',
     // Tahap 12A C2 Akordeon & Tampilkan/Sembunyikan
     'id:m-it-fold-all', 'attr:data-mit-day-tog', 'attr:data-mit-more', 'attr:data-mbk-more',
+    // Tahap 12B C2 Harga Aktual
+    'attr:data-mit-act', 'attr:data-mbk-act',
   ]);
   const collectMobControls = () => {
     const found = [];
@@ -3601,7 +3600,7 @@ const { boot } = require('./ui.js');
       else if (el.id) found.push('id:' + el.id);
       else if (el.dataset) {
         for (const k of Object.keys(el.dataset)) {
-          if (/^(mtripDel|mtripList|mtripSel|mtripsub|mitToggle|mitEdit|mitDel|mitDayTog|mitMore|mbkPay|mbkEdit|mbkDel|mbkMore|mckTog|mckDel|mlkDel|mdtDay|mExtUrl|mcalTrig|macCat|macEdit|macDel)$/.test(k)) {
+          if (/^(mtripDel|mtripList|mtripSel|mtripsub|mitToggle|mitAct|mitEdit|mitDel|mitDayTog|mitMore|mbkPay|mbkAct|mbkEdit|mbkDel|mbkMore|mckTog|mckDel|mlkDel|mdtDay|mExtUrl|mcalTrig)$/.test(k)) {
             const attrName = 'data-' + k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
             found.push('attr:' + attrName);
           }
@@ -3614,7 +3613,7 @@ const { boot } = require('./ui.js');
   w.renderMobTrip();
   const mobKeys = new Set(collectMobControls());
   w.MOB_STATE.tripView = 'detail';
-  for (const sub of ['ring', 'itin', 'book', 'real', 'cek', 'cat', 'sv']) {
+  for (const sub of ['ring', 'itin', 'book', 'cek', 'cat', 'sv']) {
     w.MOB_STATE.tripSub = sub;
     if (sub === 'sv') w.MOB_STATE.tripGoalEdit = false;
     w.renderMobTrip();
@@ -3777,14 +3776,14 @@ const { boot } = require('./ui.js');
   delete w.ALL.kas.pr['p-10bm-b1'];
   w.MOB_STATE.tripId = null;
 
-  // 37. Tahap 11 (APK Mode Perjalanan): Sub-tab Realisasi vs Rencana
+  // 37. Tahap 12B Bagian E (menggantikan Tahap 11 sub-tab Realisasi): Sub-tab Realisasi dihapus & PDF/Bagikan memakai Rencana vs Realita
   const origMobToday = w.todayISO;
   try {
     w.setShellMode('mobile-app');
     w.todayISO = () => '2026-05-03';
     w.ALL.kas.pr['p-t11m'] = {
       id: 'p-t11m',
-      name: 'Tokyo T11 APK',
+      name: 'Tokyo 12B E APK',
       link: false,
       saldo: 0,
       tx: [],
@@ -3795,12 +3794,12 @@ const { boot } = require('./ui.js');
       rate: 100,
       dt: {},
       it: [
-        { id: 't11m-i1', day: '2026-05-01', time: '12:00', time2: '', place: 'Sushi Ginza', est: 5000, fx: true, pay: 'cash', cat: 'Makan', link: '', note: '', done: false },
+        { id: 't11m-i1', day: '2026-05-01', time: '12:00', time2: '', place: 'Sushi Ginza', est: 5000, fx: true, pay: 'cash', cat: 'Makan', link: '', note: '', done: false, ax: 6200, ak: 107 },
       ],
       bk: [
         { id: 't11m-b1', title: 'Hotel Shinjuku', amt: 21500000, fx: false, paid: true, cat: 'Penginapan', a: '2026-05-01', b: '2026-05-10', pay: 'on', link: '', rec: '' },
       ],
-      ac: [],
+      ac: [{ id: 'ac-w-m', d: '2026-05-01', amt: 10000, fx: false, cat: 'Makan', note: 'Warisan 🍣' }],
       lk: [],
       ck: [],
       note: '',
@@ -3809,70 +3808,20 @@ const { boot } = require('./ui.js');
     w.MOB_STATE.tripId = 'p-t11m';
     w.MOB_STATE.tripView = 'detail';
     w.MOB_STATE.tripSub = 'ring';
-    w.MOB_STATE.tripEditAc = null;
     w.renderMobTrip();
     const mSubBtns = [...$('m-trip-root').querySelectorAll('[data-mtripsub]')].map((b) => b.getAttribute('data-mtripsub'));
-    assert.deepStrictEqual(mSubBtns, ['ring', 'itin', 'book', 'real', 'cek', 'cat', 'sv'], '37. APK urutan sub-tab meletakkan real setelah book');
+    assert.deepStrictEqual(mSubBtns, ['ring', 'itin', 'book', 'cek', 'cat', 'sv'], '37. APK sub-tab real sudah dihapus dari DOM');
+    assert.strictEqual($('m-trip-ac-form'), null, '37. APK form #m-trip-ac-form sudah dihapus');
 
-    click($('m-trip-root').querySelector('[data-mtripsub="real"]'));
-    assert.strictEqual(w.MOB_STATE.tripSub, 'real', '37. APK klik sub-tab Realisasi');
-    assert.ok($('m-trip-root').textContent.includes('Belum ada pengeluaran. Catat yang pertama.'), '37. APK empty state Realisasi tampil');
-
-    // Catat pengeluaran JPY 6.200 kurs 107 tertaut ke Sushi Ginza lewat form Tambah
-    w.mobSetDateVal('m-ac-day', '2026-05-01');
-    if (typeof w.mobSyncAcRefOptions === 'function') w.mobSyncAcRefOptions('2026-05-01');
-    $('m-ac-amt').value = '6200';
-    $('m-ac-cur').value = 'fx';
-    fire($('m-ac-cur'), 'change');
-    assert.strictEqual($('m-ac-rt-details').style.display !== 'none', true, '37. APK Kurs aktual tampil juga di form Tambah');
-    $('m-ac-rt').value = '107';
-    fire($('m-ac-rt'), 'input');
-    assert.ok($('m-ac-amt-eq').textContent.includes('663.400'), '37. APK pratinjau ≈ Rp mengikuti rt=107');
-    click($('m-trip-ac-form').querySelector('[data-mac-cat="Makan"]'));
-    $('m-ac-rf').value = 'it:t11m-i1';
-    $('m-ac-note').value = '<b>Sushi</b>';
-    fire($('m-trip-ac-form'), 'submit');
-    assert.strictEqual($('m-toast-box').textContent, 'Pengeluaran dicatat', '37. APK toast Pengeluaran dicatat');
-    assert.ok(!$('m-trip-root').innerHTML.includes('<b>Sushi</b>'), '37. APK catatan ter-escape aman');
-    const mRealTxt = $('m-trip-root').textContent;
-    assert.ok(mRealTxt.includes('Efek harga') && mRealTxt.includes('Rp 120.000'), '37. APK K3 efek harga Rp 120.000');
-    assert.ok(mRealTxt.includes('Efek kurs') && mRealTxt.includes('Rp 43.400'), '37. APK K3 efek kurs Rp 43.400');
-    assert.ok([...$('m-trip-root').querySelectorAll('.m-tile-v')].every((el) => el.classList.contains('pv')), '37. APK semua nilai KPI punya .pv');
-
-    // Ubah + scroll tanpa autofocus + Simpan toast
-    const acIdM = w.ALL.kas.pr['p-t11m'].ac[0].id;
-    const mAcScrolls = [];
-    let mAcFocus = false;
-    const origMSIV = w.HTMLElement.prototype.scrollIntoView;
-    const origMFocus = w.HTMLElement.prototype.focus;
-    w.HTMLElement.prototype.scrollIntoView = function () { mAcScrolls.push(this.id || this.getAttribute('data-ac-row') || this.tagName); };
-    w.HTMLElement.prototype.focus = function () { mAcFocus = true; return origMFocus.apply(this, arguments); };
-    click($('m-trip-root').querySelector('[data-mac-edit="' + acIdM + '"]'));
-    assert.strictEqual(w.MOB_STATE.tripEditAc, acIdM, '37. APK masuk mode edit pengeluaran');
-    assert.ok(mAcScrolls.length >= 1, '37. APK Ubah menggulir ke form');
-    assert.strictEqual(mAcFocus, false, '37. APK Ubah tidak memfokuskan input otomatis');
-    $('m-ac-note').value = 'Sushi Edit';
-    fire($('m-trip-ac-form'), 'submit');
-    assert.strictEqual($('m-toast-box').textContent, 'Pengeluaran diperbarui', '37. APK toast Pengeluaran diperbarui');
-    assert.strictEqual(w.MOB_STATE.tripEditAc, null, '37. APK tripEditAc reset sesudah simpan');
-    w.HTMLElement.prototype.scrollIntoView = origMSIV;
-    w.HTMLElement.prototype.focus = origMFocus;
-
-    // Pindah sub-tab mereset mode edit pengeluaran
-    click($('m-trip-root').querySelector('[data-mac-edit="' + acIdM + '"]'));
-    assert.strictEqual(w.MOB_STATE.tripEditAc, acIdM);
-    click($('m-trip-root').querySelector('[data-mtripsub="book"]'));
-    assert.strictEqual(w.MOB_STATE.tripEditAc, null, '37. APK pindah sub-tab mereset tripEditAc');
-
-    // C3 APK PDF & Bagikan memuat Realisasi tanpa '?'
-    const trM11 = w.ALL.kas.pr['p-t11m'];
-    const pdfM11 = w.tripPdfData(trM11, true);
-    assert.ok(pdfM11.tables.some((tb) => /Pengeluaran Aktual/i.test(tb.head)), '37.C3 APK tripPdfData memuat Pengeluaran Aktual');
-    assert.ok(!JSON.stringify(pdfM11).includes('≈'), '37.C3 APK tripPdfData bebas karakter ≈');
-    const streamM11 = Buffer.from(w.repPdf(pdfM11)).toString('latin1');
-    assert.ok(!streamM11.includes('?'), '37.C3 APK PDF stream bebas ?');
-    const txtM11 = w.tripText(trM11, true);
-    assert.ok(txtM11.includes('Realisasi Pengeluaran') && txtM11.includes('Sushi Edit'), '37.C3 APK tripText memuat Realisasi & catatan');
+    const trM12 = w.ALL.kas.pr['p-t11m'];
+    const pdfM12 = w.tripPdfData(trM12, true);
+    assert.ok(!pdfM12.tables.some((tb) => /Pengeluaran Aktual/i.test(tb.head)), '37.C3 APK PDF tidak lagi menyertakan tabel Pengeluaran Aktual');
+    assert.ok(pdfM12.summary.some((r) => /Rencana vs Realita/i.test(r[0])), '37.C3 APK tripPdfData memuat Rencana vs Realita');
+    assert.ok(!JSON.stringify(pdfM12).includes('≈'), '37.C3 APK tripPdfData bebas karakter ≈');
+    const streamM12 = Buffer.from(w.repPdf(pdfM12)).toString('latin1');
+    assert.ok(!streamM12.includes('?'), '37.C3 APK PDF stream bebas ?');
+    const txtM12 = w.tripText(trM12, true);
+    assert.ok(txtM12.includes('*Rencana vs Realita*') && !txtM12.includes('Realisasi Pengeluaran'), '37.C3 APK tripText memuat Rencana vs Realita & tanpa Realisasi Pengeluaran');
 
     delete w.ALL.kas.pr['p-t11m'];
     w.MOB_STATE.tripId = null;
@@ -4291,6 +4240,108 @@ const { boot } = require('./ui.js');
     w.clearTimeout = origMobClrTO;
     delete w.ALL.kas.pr['p-t12m-c3'];
     w.MOB_STATE.tripId = null;
+  }
+
+  // 39. Tahap 12B C2 (APK Paritas): Harga Aktual, Baris Tombol, & Kartu Rencana vs Realita
+  {
+    w.setShellMode('mobile-app');
+    w.ALL.kas.pr['p-12bm'] = {
+      id: 'p-12bm',
+      name: 'Jepang APK 12B',
+      link: false,
+      saldo: 0,
+      tx: [],
+      start: '2026-10-01',
+      end: '2026-10-05',
+      budget: 25000000,
+      cur: 'JPY',
+      rate: 100,
+      fxs: [{ c: 'NOK', r: 1500 }],
+      dt: {},
+      it: [
+        { id: '12bm-i1', day: '2026-10-01', time: '19:00', time2: '', place: 'Wagyu Dinner', est: 5000, fx: true, pay: 'cash', cat: 'Makan', link: '', note: '', done: false },
+        { id: '12bm-i2', day: '2026-10-01', time: '20:00', time2: '', place: 'Oleh-oleh', est: 400000, fx: false, pay: 'cash', cat: 'Belanja', link: '', note: '', done: false },
+        { id: '12bm-i-on', day: '2026-10-01', time: '21:00', time2: '', place: 'Tur Online', est: 2000, fx: true, pay: 'on', cat: 'Tiket & Tour', link: '', note: '', done: false },
+      ],
+      bk: [
+        { id: '12bm-b1', title: 'Hotel Tokyo', amt: 20000000, fx: false, paid: false, cat: 'Penginapan', a: '2026-10-01', b: '2026-10-05', pay: 'on', link: '', rec: '' },
+      ],
+      lk: [],
+      ck: [],
+      note: '',
+      goal: null,
+    };
+    w.MOB_STATE.tripId = 'p-12bm';
+    w.MOB_STATE.tripView = 'detail';
+    w.MOB_STATE.tripSub = 'ring';
+    w.renderMobTrip();
+
+    // D APK n=0: keadaan kosong
+    assert.ok($('m-trip-root').querySelector('.trip-vs-empty'), '39.D APK: keadaan kosong saat n=0');
+
+    // Itin APK: urutan tombol + tombol Harga Aktual tidak ada di pay==='on'
+    w.MOB_STATE.tripSub = 'itin';
+    if (w.MOB_STATE.tripOpenDays) delete w.MOB_STATE.tripOpenDays['p-12bm'];
+    w.renderMobTrip();
+    click($('m-trip-root').querySelector('[data-mit-day-tog="2026-10-01"]'));
+
+    const mRow1 = $('m-trip-root').querySelector('[data-it-row="12bm-i1"]');
+    const mRowOn = $('m-trip-root').querySelector('[data-it-row="12bm-i-on"]');
+    assert.strictEqual(mRowOn.querySelector('[data-mit-act]'), null, '39.A/B APK: pay===on tidak punya tombol Harga Aktual');
+    const mItBtns = [...mRow1.querySelectorAll('.trip-card-actions button')].map((b) => b.textContent.replace(/✓\s*/g, '').trim());
+    assert.deepStrictEqual(mItBtns, ['Tandai', 'Harga Aktual', 'Ubah', 'Hapus'], '39.C APK Itin: urutan 4 tombol persis');
+
+    // Bottom sheet #m-sheet-actual untuk FX
+    click(mRow1.querySelector('[data-mit-act="12bm-i1"]'));
+    assert.ok($('m-sheet-actual') && $('m-sheet-actual').classList.contains('open'), '39.B APK: bottom sheet Harga Aktual terbuka');
+    assert.strictEqual($('m-act-ak-wrap').hidden, false, '39.B APK FX: input kurs tampil');
+    $('m-act-ax').value = '6200';
+    fire($('m-act-ax'), 'input');
+    $('m-act-ak').value = '107';
+    fire($('m-act-ak'), 'input');
+    assert.ok($('m-act-prev').textContent.includes('663.400') && $('m-act-prev').textContent.includes('lebih mahal Rp 163.400'), '39.B APK FX: pratinjau live akurat');
+    fire($('m-trip-actual-form'), 'submit');
+    assert.strictEqual($('m-sheet-actual').classList.contains('open'), false, '39.B APK: sheet tertutup setelah simpan');
+    assert.strictEqual($('m-toast-box').textContent, 'Harga aktual disimpan', '39.B APK: toast Harga aktual disimpan');
+    assert.strictEqual(w.ALL.kas.pr['p-12bm'].it[0].ax, 6200, '39.B APK: ax tersimpan');
+    assert.strictEqual(w.ALL.kas.pr['p-12bm'].it[0].ak, 107, '39.B APK: ak tersimpan');
+
+    // Bottom sheet item Rp tanpa kurs
+    click($('m-trip-root').querySelector('[data-mit-act="12bm-i2"]'));
+    assert.strictEqual($('m-act-ak-wrap').hidden, true, '39.B APK Rp: kolom kurs disembunyikan');
+    $('m-act-ax').value = '450000';
+    fire($('m-trip-actual-form'), 'submit');
+
+    // Booking APK: urutan tombol & simpan Harga Aktual
+    w.MOB_STATE.tripSub = 'book';
+    w.renderMobTrip();
+    const mBk1 = $('m-trip-root').querySelector('[data-bk-row="12bm-b1"]');
+    const mBkBtns = [...mBk1.querySelectorAll('.trip-card-actions button')].map((b) => b.textContent.replace(/✓\s*/g, '').trim());
+    assert.deepStrictEqual(mBkBtns, ['Tandai lunas', 'Harga Aktual', 'Ubah', 'Hapus'], '39.C APK Book: urutan 4 tombol persis');
+    click(mBk1.querySelector('[data-mbk-act="12bm-b1"]'));
+    $('m-act-ax').value = '20500000';
+    fire($('m-trip-actual-form'), 'submit');
+
+    // Ringkasan APK: kartu Rencana vs Realita n > 0
+    w.MOB_STATE.tripSub = 'ring';
+    w.renderMobTrip();
+    const mVsCard = $('m-trip-root').querySelector('.trip-vs-card');
+    assert.ok(mVsCard && mVsCard.textContent.includes('Rencana vs Realita'), '39.D APK: kartu Rencana vs Realita tampil');
+    assert.ok(mVsCard.textContent.includes('3 dari 3 item') && mVsCard.textContent.includes('Lebih'), '39.D APK: progres & selisih tampil');
+
+    delete w.ALL.kas.pr['p-12bm'];
+    w.MOB_STATE.tripId = null;
+
+    // 39.S Pengaman Versi Sinkronisasi APK: banner #m-sync-banner tampil persisten saat syncSchemaBlocked aktif
+    w.syncSchemaBlocked = true;
+    w.syncMobileCloudUI();
+    const mSyncBan = $('m-sync-banner');
+    assert.ok(mSyncBan && !mSyncBan.hidden, '39.S APK: banner #m-sync-banner tampil saat cloud versi baru');
+    assert.ok(mSyncBan.textContent.includes('Data cloud dibuat oleh versi aplikasi yang lebih baru. Perbarui aplikasi agar tidak ada data yang hilang.'), '39.S APK: pesan wajib banner schema');
+    assert.ok(mSyncBan.textContent.includes('Pengaturan') && /Cek pembaruan/i.test(mSyncBan.textContent), '39.S APK: petunjuk Cek pembaruan tampil');
+    w.syncSchemaBlocked = false;
+    w.syncMobileCloudUI();
+    assert.strictEqual($('m-sync-banner').hidden, true, '39.S APK: banner tersembunyi kembali setelah syncSchemaBlocked false');
   }
 
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));

@@ -4407,147 +4407,6 @@ body.privacy-on #browser-shell .pv {
   color: var(--text-muted);
 }
 
-/* Tahap 11: Sub-tab Realisasi Perjalanan */
-#browser-shell .trip-real-warn-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-#browser-shell .trip-real-warn-badge {
-  display: inline-block;
-  font-size: 0.78rem;
-  line-height: 1.35;
-}
-#browser-shell .trip-ac-cat-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-#browser-shell .trip-ac-cat-chips .chip-pill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 36px;
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-@media (pointer: coarse) {
-  #browser-shell .trip-ac-cat-chips .chip-pill,
-  #browser-shell .trip-ac-btn {
-    min-height: 44px;
-  }
-}
-@media (hover: hover) and (pointer: fine) {
-  #browser-shell .trip-ac-cat-chips .chip-pill:hover {
-    border-color: var(--border-strong);
-    color: var(--text-primary);
-  }
-}
-#browser-shell .trip-ac-cat-chips .chip-pill.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #FFFFFF;
-}
-#browser-shell .trip-ac-rt-details {
-  padding: 9px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-subtle);
-}
-#browser-shell .trip-ac-rt-sum {
-  cursor: pointer;
-  font-size: 0.81rem;
-  font-weight: 600;
-  color: var(--accent-ink);
-  min-height: 28px;
-}
-#browser-shell .trip-ac-day-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-#browser-shell .trip-ac-effect-note,
-#browser-shell .trip-bk-extra-note {
-  font-size: 0.76rem;
-  color: var(--text-secondary);
-  margin-top: 4px;
-  overflow-wrap: anywhere;
-}
-#browser-shell .trip-cat-cmp-wrap {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: auto;
-}
-#browser-shell .trip-cat-cmp-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.82rem;
-}
-#browser-shell .trip-cat-cmp-table th,
-#browser-shell .trip-cat-cmp-table td {
-  padding: 8px 6px;
-  border-bottom: 1px solid var(--border-subtle);
-  text-align: right;
-  vertical-align: middle;
-}
-#browser-shell .trip-cat-cmp-table th:first-child,
-#browser-shell .trip-cat-cmp-table td:first-child {
-  text-align: left;
-}
-#browser-shell .trip-cat-cmp-table th {
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-#browser-shell .trip-cat-cmp-table td.is-over {
-  color: var(--crimson);
-}
-#browser-shell .trip-cat-cmp-table td.is-under {
-  color: var(--emerald);
-}
-#browser-shell .trip-top-miss {
-  margin-top: 12px;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-subtle);
-}
-#browser-shell .trip-top-miss-hd {
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
-}
-#browser-shell .trip-top-miss-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-#browser-shell .trip-top-miss-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 0.81rem;
-  color: var(--text-primary);
-}
-#browser-shell .trip-ac-unlinked-row,
-#browser-shell .trip-ac-effect-sum {
-  margin-top: 10px;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-#browser-shell .mselect[data-select-for="ac-cur"] {
-  min-width: 78px;
-  width: 100%;
-}
-
 /* Tahap 12A C1: Error inline, aria-invalid, badge Di luar rentang, tanggal kalender nonaktif */
 #browser-shell .trip-field-err {
   color: var(--crimson);
@@ -4960,6 +4819,257 @@ body.privacy-on #browser-shell .pv {
     opacity: 1;
     transform: none;
   }
+}
+
+/* Tahap 12B C2: Baris Tombol Kartu, Harga Aktual (Item + Modal), & Kartu Rencana vs Realita */
+#browser-shell .trip-item-card {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+#browser-shell .trip-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+#browser-shell .trip-card-amt {
+  flex-shrink: 0;
+  text-align: right;
+}
+#browser-shell .trip-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+#browser-shell .trip-card-actions .btn {
+  min-height: 32px;
+  height: 32px;
+  padding: 0 11px;
+  font-size: 0.78rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+#browser-shell .trip-btn-done.btn-emerald {
+  background: var(--emerald-soft);
+  color: var(--emerald);
+  border: 1px solid var(--emerald-border);
+}
+#browser-shell .trip-btn-actual.has-ax {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-color: var(--accent-border);
+}
+#browser-shell .trip-item-actual-line {
+  margin-top: 5px;
+  font-size: 0.77rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+#browser-shell .trip-actual-diff.is-over { color: var(--crimson); font-weight: 700; }
+#browser-shell .trip-actual-diff.is-save { color: var(--emerald); font-weight: 700; }
+#browser-shell .trip-actual-diff.is-eq { color: var(--text-muted); font-weight: 700; }
+
+#browser-shell .trip-act-est-box {
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+#browser-shell .trip-act-prev {
+  font-size: 0.83rem;
+  font-weight: 700;
+  min-height: 1.25em;
+}
+#browser-shell .trip-act-prev.is-over { color: var(--crimson); }
+#browser-shell .trip-act-prev.is-save { color: var(--emerald); }
+#browser-shell .trip-act-prev.is-eq { color: var(--text-secondary); }
+#browser-shell .trip-act-prev-det {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin-top: -6px;
+}
+
+#browser-shell .trip-vs-empty {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-strong);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+#browser-shell .trip-vs-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+#browser-shell .trip-vs-hd {
+  margin-bottom: 0;
+}
+#browser-shell .trip-vs-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+#browser-shell .trip-vs-chip.is-over { background: var(--crimson-soft); color: var(--crimson); }
+#browser-shell .trip-vs-chip.is-save { background: var(--emerald-soft); color: var(--emerald); }
+#browser-shell .trip-vs-chip.is-eq { background: var(--bg-subtle); color: var(--text-secondary); }
+#browser-shell .trip-vs-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+#browser-shell .trip-vs-stat {
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-muted-row);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+#browser-shell .trip-vs-stat-k { font-size: 0.73rem; color: var(--text-muted); font-weight: 600; }
+#browser-shell .trip-vs-stat-v { font-size: 0.92rem; font-weight: 800; }
+#browser-shell .trip-vs-stat-v.is-over { color: var(--crimson); }
+#browser-shell .trip-vs-stat-v.is-save { color: var(--emerald); }
+#browser-shell .trip-vs-fx-row {
+  font-size: 0.79rem;
+  color: var(--text-secondary);
+}
+#browser-shell .trip-vs-prog {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+#browser-shell .trip-vs-prog-hd {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+#browser-shell .trip-vs-prog-track {
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-subtle);
+  overflow: hidden;
+}
+#browser-shell .trip-vs-prog-fill {
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+  transform-origin: left center;
+  transition: transform 180ms var(--ease-out);
+}
+#browser-shell .trip-vs-forecast-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.83rem;
+}
+#browser-shell .trip-vs-vs-plan {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+#browser-shell .trip-vs-bud-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+#browser-shell .trip-vs-bud-badge.is-over { background: var(--amber-soft); color: var(--amber); }
+#browser-shell .trip-vs-bud-badge.is-ok { background: var(--emerald-soft); color: var(--emerald); }
+#browser-shell .trip-vs-lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+#browser-shell .trip-vs-list-col {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+#browser-shell .trip-vs-list-hd {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+#browser-shell .trip-vs-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+#browser-shell .trip-vs-list-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+#browser-shell .trip-vs-list-row .is-over { color: var(--crimson); font-weight: 700; flex-shrink: 0; }
+#browser-shell .trip-vs-list-row .is-save { color: var(--emerald); font-weight: 700; flex-shrink: 0; }
+#browser-shell .trip-vs-cur-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+#browser-shell .trip-vs-cur-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.79rem;
+}
+#browser-shell .trip-vs-cur-nums { color: var(--text-secondary); flex: 1; min-width: 140px; }
+#browser-shell .trip-vs-cur-row .is-over { color: var(--crimson); font-weight: 700; }
+#browser-shell .trip-vs-cur-row .is-save { color: var(--emerald); font-weight: 700; }
+@media (max-width: 680px) {
+  #browser-shell .trip-vs-stats { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #browser-shell .trip-vs-prog-fill { transition: none; }
+}
+
+/* Tahap 12B S: Banner pengaman versi sinkronisasi persisten */
+#browser-shell .rk-schema-banner {
+  background: var(--crimson-soft);
+  color: var(--crimson);
+  border-bottom: 1px solid var(--crimson-border);
+  padding: 9px 28px !important;
+  font-size: 0.82rem !important;
+  line-height: 1.4;
+}
+#browser-shell .rk-schema-banner a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  margin-left: 6px;
 }
 </style>
 <style>
@@ -7397,134 +7507,6 @@ body[data-shell="mobile-app"] #mobile-app-shell .trip-fx-detail-rate {
   color: var(--text-muted);
 }
 
-/* Tahap 11: Sub-tab Realisasi Perjalanan APK */
-body[data-shell="mobile-app"] #mobile-app-shell .trip-real-warn-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-real-warn-badge {
-  display: inline-block;
-  font-size: 0.74rem;
-  line-height: 1.35;
-  white-space: normal;
-  text-align: left;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-ac-cat-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-ac-cat-chips .p-chip {
-  min-height: 44px;
-  padding: 6px 12px;
-  display: inline-flex;
-  align-items: center;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-ac-btn {
-  min-height: 44px;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-ac-rt-details {
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-subtle);
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-ac-rt-sum {
-  cursor: pointer;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--accent-ink);
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-ac-day-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 5px;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-ac-effect-note,
-body[data-shell="mobile-app"] #mobile-app-shell .trip-bk-extra-note {
-  font-size: 0.72rem;
-  color: var(--text-secondary);
-  margin-top: 4px;
-  overflow-wrap: anywhere;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-cat-cmp-wrap {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-cat-cmp-table {
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: collapse;
-  font-size: 0.71rem;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-cat-cmp-table th,
-body[data-shell="mobile-app"] #mobile-app-shell .trip-cat-cmp-table td {
-  padding: 6px 3px;
-  border-bottom: 1px solid var(--border-subtle);
-  text-align: right;
-  vertical-align: top;
-  overflow-wrap: anywhere;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-cat-cmp-table th:first-child,
-body[data-shell="mobile-app"] #mobile-app-shell .trip-cat-cmp-table td:first-child {
-  text-align: left;
-  width: 26%;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-cat-cmp-table th {
-  font-size: 0.67rem;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-cat-cmp-table td.is-over {
-  color: var(--crimson);
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-cat-cmp-table td.is-under {
-  color: var(--emerald);
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-cat-cmp-table .badge {
-  white-space: nowrap;
-  display: inline-block;
-  margin-top: 2px;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-top-miss {
-  margin-top: 10px;
-  padding: 9px 10px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-subtle);
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-top-miss-hd {
-  font-size: 0.73rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  margin-bottom: 5px;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-top-miss-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-top-miss-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 0.75rem;
-  color: var(--text-primary);
-}
-body[data-shell="mobile-app"] #mobile-app-shell .trip-ac-unlinked-row,
-body[data-shell="mobile-app"] #mobile-app-shell .trip-ac-effect-sum {
-  margin-top: 8px;
-  font-size: 0.74rem;
-  color: var(--text-secondary);
-}
-
 /* Tahap 12A C1: Error inline, aria-invalid, badge Di luar rentang, tanggal kalender nonaktif */
 body[data-shell="mobile-app"] #mobile-app-shell .trip-field-err {
   color: var(--crimson);
@@ -7930,6 +7912,258 @@ body[data-shell="mobile-app"] #mobile-app-shell .rk-row-highlight-static::after 
     opacity: 1;
     transform: none;
   }
+}
+
+/* Tahap 12B C2: Baris Tombol Kartu, Harga Aktual (Item + Bottom Sheet), & Kartu Rencana vs Realita */
+body[data-shell="mobile-app"] #mobile-app-shell .trip-item-card .trip-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  padding-top: 8px;
+  margin-top: 4px;
+  border-top: 1px solid var(--border-subtle);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-item-card .trip-card-actions .btn {
+  min-height: 44px;
+  padding: 6px 11px;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-item-card .trip-card-actions .btn-sm::after {
+  content: none;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-btn-done.btn-emerald {
+  background: var(--emerald-soft);
+  color: var(--emerald);
+  border: 1px solid var(--emerald-border);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-btn-actual.has-ax {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-color: var(--accent-border);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-item-actual-line {
+  margin-top: 5px;
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-actual-diff.is-over { color: var(--crimson); font-weight: 700; }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-actual-diff.is-save { color: var(--emerald); font-weight: 700; }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-actual-diff.is-eq { color: var(--text-muted); font-weight: 700; }
+
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-est-box {
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-prev {
+  font-size: 0.8rem;
+  font-weight: 700;
+  min-height: 1.2em;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-prev.is-over { color: var(--crimson); }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-prev.is-save { color: var(--emerald); }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-prev.is-eq { color: var(--text-secondary); }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-prev-det {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: -6px;
+}
+@media (max-height: 500px) {
+  body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .modal-sheet {
+    max-height: 92%;
+  }
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-empty {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px dashed var(--border-strong);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.38;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-hd {
+  margin-bottom: 0;
+  align-items: flex-start;
+  gap: 8px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 0.73rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-chip.is-over { background: var(--crimson-soft); color: var(--crimson); }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-chip.is-save { background: var(--emerald-soft); color: var(--emerald); }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-chip.is-eq { background: var(--bg-subtle); color: var(--text-secondary); }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-stats {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-stat {
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: var(--bg-muted-row);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-stat-k { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-stat-v { font-size: 0.84rem; font-weight: 800; }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-stat-v.is-over { color: var(--crimson); }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-stat-v.is-save { color: var(--emerald); }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-fx-row {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-prog {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-prog-hd {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-prog-track {
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-subtle);
+  overflow: hidden;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-prog-fill {
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+  transform-origin: left center;
+  transition: transform 180ms var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-forecast-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.78rem;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-vs-plan {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-bud-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-bud-badge.is-over { background: var(--amber-soft); color: var(--amber); }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-bud-badge.is-ok { background: var(--emerald-soft); color: var(--emerald); }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-lists {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-list-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-list-hd {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.75rem;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-list-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-list-row .is-over { color: var(--crimson); font-weight: 700; flex-shrink: 0; }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-list-row .is-save { color: var(--emerald); font-weight: 700; flex-shrink: 0; }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-cur-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-cur-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 0.73rem;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-cur-nums { color: var(--text-secondary); flex: 1; min-width: 120px; }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-cur-row .is-over { color: var(--crimson); font-weight: 700; }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-cur-row .is-save { color: var(--emerald); font-weight: 700; }
+@media (prefers-reduced-motion: reduce) {
+  body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-prog-fill { transition: none; }
+}
+
+/* Tahap 12B S: Banner pengaman versi sinkronisasi APK persisten */
+body[data-shell="mobile-app"] #mobile-app-shell .m-sync-banner {
+  margin: 8px 12px 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--crimson-soft);
+  border: 1px solid var(--crimson-border);
+  color: var(--crimson);
+  font-size: 0.77rem;
+  line-height: 1.38;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-sync-banner[hidden] {
+  display: none;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-sync-banner-title {
+  font-weight: 700;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-sync-banner-sub {
+  margin-top: 3px;
+  color: var(--text-primary);
+  font-size: 0.74rem;
 }
 </style>
 </head>
@@ -9162,6 +9396,42 @@ body[data-shell="mobile-app"] #mobile-app-shell .rk-row-highlight-static::after 
     </div>
   </div>
 
+  <!-- 8c. Modal Harga Aktual per Item (#modal-trip-actual) -->
+  <div class="modal-backdrop" id="modal-trip-actual" role="dialog" aria-modal="true" aria-labelledby="act-m-title" hidden>
+    <div class="modal-box" style="max-width: 440px;">
+      <div class="modal-head">
+        <div>
+          <h3 class="card-title" id="act-m-title">Harga Sebenarnya di Lapangan</h3>
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;" id="act-m-item"></div>
+        </div>
+        <button type="button" class="topbar-btn" style="width:32px; padding:0;" id="act-m-close" data-close-modal="modal-trip-actual" aria-label="Tutup">✕</button>
+      </div>
+      <form id="trip-actual-form" novalidate>
+        <div class="modal-body">
+          <div class="trip-act-est-box pv" id="act-m-est">Estimasi: Rp 0</div>
+          <div class="field">
+            <label class="field-label" for="act-m-ax" id="act-m-ax-lbl">Harga di lapangan (Rp)</label>
+            <input class="input mono" id="act-m-ax" type="text" inputmode="numeric" data-num-only="int" placeholder="0" required />
+            <div class="trip-field-err" id="act-m-ax-err" role="alert" hidden></div>
+          </div>
+          <div class="field" id="act-m-ak-wrap" hidden>
+            <label class="field-label" for="act-m-ak" id="act-m-ak-lbl">Kurs (Rp per 1 unit)</label>
+            <input class="input mono" id="act-m-ak" type="text" inputmode="decimal" data-num-only="dec" placeholder="ikut kurs efektif" />
+            <div class="trip-field-err" id="act-m-ak-err" role="alert" hidden></div>
+            <div class="sub">Kosongkan untuk mengikuti kurs efektif item.</div>
+          </div>
+          <div class="trip-act-prev pv" id="act-m-prev" aria-live="polite"></div>
+          <div class="trip-act-prev-det pv" id="act-m-prev-det"></div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-secondary" style="color:var(--crimson);margin-right:auto;" id="act-m-del" hidden>Hapus harga aktual</button>
+          <button type="button" class="btn btn-secondary" id="act-m-cancel" data-close-modal="modal-trip-actual">Batal</button>
+          <button type="submit" class="btn btn-primary" id="act-m-save">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- 9. Modal Laporan Keuangan (#modal-report) -->
   <div class="modal-backdrop" id="modal-report" role="dialog" aria-modal="true" aria-labelledby="rep-m-title" hidden>
     <div class="modal-box" style="max-width: 720px;">
@@ -9621,6 +9891,7 @@ function cmpFrom(a, b) {
  */
 
 var KEY = 'rencana-keuangan-v1';
+var RK_SCHEMA_VER = 2; // Naikkan hanya bila bentuk data berubah di tahap mendatang.
 
 /** ALL = {year, rev, data:{[tahun]:{saldo,startMonth,items,paid,skip,adj}}}; S = data tahun aktif. */
 
@@ -9765,6 +10036,7 @@ function norm(a) {
     });
     Y.adj = [];
   });
+  a.sv = RK_SCHEMA_VER;
   return a;
 }
 
@@ -9836,6 +10108,13 @@ function normKas(k) {
           };
           if (xcIt && validExtraSet[xcIt]) rowIt.c = xcIt;
           if (okRtIt) rowIt.rt = x.rt;
+          var okAxIt = typeof x.ax === 'number' && Number.isFinite(x.ax) && x.ax > 0 && x.ax <= 1e12;
+          if (okAxIt) {
+            rowIt.ax = x.ax;
+            if (isFxIt && typeof x.ak === 'number' && Number.isFinite(x.ak) && x.ak > 0 && x.ak <= 1e9) {
+              rowIt.ak = x.ak;
+            }
+          }
           return rowIt;
         });
       var cleanBk = (Array.isArray(p.bk) ? p.bk : [])
@@ -9862,8 +10141,16 @@ function normKas(k) {
           if (xcBk && validExtraSet[xcBk]) row.c = xcBk;
           if (okRt) row.rt = x.rt;
           if (okRt && isPaid && x.ra === true) row.ra = true;
+          var okAxBk = typeof x.ax === 'number' && Number.isFinite(x.ax) && x.ax > 0 && x.ax <= 1e12;
+          if (okAxBk) {
+            row.ax = x.ax;
+            if (isFx && typeof x.ak === 'number' && Number.isFinite(x.ak) && x.ak > 0 && x.ak <= 1e9) {
+              row.ak = x.ak;
+            }
+          }
           return row;
         });
+      // warisan Tahap 11: sanitasi P.ac dipertahankan agar data lama tidak hilang saat simpan/sinkron (tanpa UI)
       var validRfSet = {};
       cleanIt.forEach(function (x) { validRfSet['it:' + x.id] = 1; });
       cleanBk.forEach(function (x) { validRfSet['bk:' + x.id] = 1; });
@@ -10061,6 +10348,7 @@ function save() {
   try {
     ALL.data[S.year] = S;
     ALL.year = S.year;
+    ALL.sv = RK_SCHEMA_VER;
     var dj = dsig();
     if (dj !== lastData) {
       lastData = dj;
@@ -17927,10 +18215,38 @@ var pushT = null;
 var sb = null,
   sbUser = null;
 
+var syncBlocked = false,
+  syncSchemaBlocked = false,
+  cfRow = null;
+
+function rkRemoteSchemaVer(data) {
+  var raw = data && data.sv != null ? Number(data.sv) : 1;
+  return Number.isFinite(raw) && raw >= 1 ? raw : 1;
+}
+
+function rkSchemaBlockMessage() {
+  return 'Data cloud dibuat oleh versi aplikasi yang lebih baru. Perbarui aplikasi agar tidak ada data yang hilang.';
+}
+
+function rkSchemaBlockDesktopHtml() {
+  return '<strong>' + rkSchemaBlockMessage() + '</strong> Muat ulang halaman untuk memperbarui aplikasi, lalu coba lagi. <a href="#" id="sbr">Coba lagi</a>';
+}
+
 /** Tulis status sinkron di header. */
 function sbStat(t, bad) {
   var e = $('sbs'), vi = $('ver-info');
   if (!e) return;
+  if (syncSchemaBlocked) {
+    e.style.display = 'block';
+    e.style.color = 'var(--crimson, var(--wr))';
+    if (e.classList && e.classList.add) e.classList.add('rk-schema-banner');
+    e.innerHTML = rkSchemaBlockDesktopHtml();
+    var tsBlk = $('tsync');
+    if (tsBlk) tsBlk.textContent = '\u2601 Sinkron dijeda (perbarui aplikasi)';
+    if (typeof syncMobileCloudUI === 'function') syncMobileCloudUI();
+    return;
+  }
+  if (e.classList && e.classList.remove) e.classList.remove('rk-schema-banner');
   if (bad) {
     e.style.display = 'block';
     e.style.color = 'var(--wr)';
@@ -18066,6 +18382,7 @@ function setUser(s) {
   }
   if (!sameUser) {
     syncBlocked = false;
+    syncSchemaBlocked = false;
     rkResetToEmptyState(was && was.id);
     if (u && typeof loadState === 'function') {
       loadState(u.id);
@@ -18083,7 +18400,7 @@ function setUser(s) {
 
 /** Jadwalkan kirim ke cloud 300 ms setelah perubahan terakhir. */
 function schedPush() {
-  if (!sb || !sbUser || syncBlocked) return;
+  if (!sb || !sbUser || syncBlocked || syncSchemaBlocked) return;
   sbStat('Menyimpan ke cloud...');
   clearTimeout(pushT);
   pushT = setTimeout(push, 300);
@@ -18096,9 +18413,6 @@ function flushPush() {
   pushT = null;
   push();
 }
-
-var syncBlocked = false,
-  cfRow = null;
 
 /** Versi (rev) terakhir yang berhasil disinkronkan perangkat ini untuk akun aktif. */
 function getSync() {
@@ -18120,7 +18434,8 @@ function setSync(rev) {
 /** Kirim state ke cloud (update bersyarat where rev = prevRev untuk cegah balapan data). */
 function push() {
   pushT = null;
-  if (!sb || !sbUser || syncBlocked) return Promise.resolve();
+  if (!sb || !sbUser || syncBlocked || syncSchemaBlocked) return Promise.resolve();
+  if (ALL && typeof RK_SCHEMA_VER === 'number') ALL.sv = RK_SCHEMA_VER;
   if (!ALL.rev) {
     ALL.rev = Date.now();
     try {
@@ -18208,6 +18523,8 @@ function pull() {
       }
       var row = r.data;
       if (!row) {
+        syncSchemaBlocked = false;
+        syncBlocked = false;
         ALL = typeof emptyAllState === 'function' ? emptyAllState() : norm(null);
         S = ALL.data[ALL.year];
         lastData = dsig();
@@ -18217,6 +18534,21 @@ function pull() {
         finishSync(true);
         return push();
       }
+      var remoteSv = rkRemoteSchemaVer(row.data);
+      if (typeof RK_SCHEMA_VER === 'number' && remoteSv > RK_SCHEMA_VER) {
+        syncBlocked = true;
+        syncSchemaBlocked = true;
+        clearTimeout(pushT);
+        pushT = null;
+        cfRow = null;
+        if (typeof brCloseModal === 'function' && $('cf')) brCloseModal('cf');
+        else if ($('cf')) $('cf').hidden = true;
+        finishSync(false);
+        sbStat(rkSchemaBlockMessage(), 1);
+        return;
+      }
+      syncSchemaBlocked = false;
+      syncBlocked = false;
       var rr = +row.rev || 0,
         lr = +ALL.rev || 0,
         ls = getSync(),
@@ -18572,13 +18904,22 @@ function bindSync() {
   $('sbs').onclick = function (e) {
     if (e.target.id === 'sbr') {
       e.preventDefault();
-      syncBlocked = false;
+      if (!syncSchemaBlocked) syncBlocked = false;
       pull();
     }
   };
   $('cf').onclick = function (e) {
     var b = e.target.closest('button[data-cf]');
     if (!b || !cfRow) return;
+    if (syncSchemaBlocked || rkRemoteSchemaVer(cfRow.data) > (typeof RK_SCHEMA_VER === 'number' ? RK_SCHEMA_VER : 2)) {
+      if (typeof brCloseModal === 'function') brCloseModal('cf');
+      else $('cf').hidden = true;
+      syncBlocked = true;
+      syncSchemaBlocked = true;
+      cfRow = null;
+      sbStat(rkSchemaBlockMessage(), 1);
+      return;
+    }
     var c = b.dataset.cf,
       row = cfRow;
     if (c === 'later') {
@@ -18619,28 +18960,31 @@ function bindSync() {
       });
     }
   };
-  var lastDay = todayISO();
-  setInterval(function () {
-    if (todayISO() !== lastDay) {
-      lastDay = todayISO();
+  if (typeof window !== 'undefined' && !window._rkSyncDocBound) {
+    window._rkSyncDocBound = true;
+    var lastDay = todayISO();
+    setInterval(function () {
+      if (todayISO() !== lastDay) {
+        lastDay = todayISO();
+        refreshToday();
+      }
+    }, 60000);
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        flushPush();
+        return;
+      }
       refreshToday();
-    }
-  }, 60000);
-  document.addEventListener('visibilitychange', function () {
-    if (document.hidden) {
-      flushPush();
-      return;
-    }
-    refreshToday();
-    if (sbUser && !pushT && !syncBlocked) pull();
-  });
-  window.addEventListener('pagehide', flushPush);
-  window.addEventListener('online', function () {
-    if (sbUser && !syncBlocked) {
-      sbStat('Koneksi pulih, menyelaraskan...');
-      pull();
-    }
-  });
+      if (sbUser && !pushT && !syncBlocked && !syncSchemaBlocked) pull();
+    });
+    window.addEventListener('pagehide', flushPush);
+    window.addEventListener('online', function () {
+      if (sbUser && !syncBlocked && !syncSchemaBlocked) {
+        sbStat('Koneksi pulih, menyelaraskan...');
+        pull();
+      }
+    });
+  }
   $('acct').onclick = function () {
     if (!sb) {
       toast('Sinkron belum aktif. Isi Supabase di js/config.js.');
@@ -19786,27 +20130,24 @@ function tripAllCurList(P) {
   }
   return list;
 }
-/** Hitung pemakaian kode mata uang tertentu di pemesanan, itinerary, & realisasi. */
+/** Hitung pemakaian kode mata uang tertentu di pemesanan & itinerary. */
 function tripCountCurUsage(P, code) {
   var cUp = String(code || '').trim().toUpperCase();
-  if (!P || !cUp) return { total: 0, bk: 0, it: 0, ac: 0 };
-  var bkCnt = 0, itCnt = 0, acCnt = 0;
+  if (!P || !cUp) return { total: 0, bk: 0, it: 0 };
+  var bkCnt = 0, itCnt = 0;
   (P.bk || []).forEach(function (x) {
     if (x && x.fx && tripItemCur(P, x).toUpperCase() === cUp) bkCnt++;
   });
   (P.it || []).forEach(function (x) {
     if (x && x.fx && tripItemCur(P, x).toUpperCase() === cUp) itCnt++;
   });
-  (P.ac || []).forEach(function (x) {
-    if (x && x.fx && tripItemCur(P, x).toUpperCase() === cUp) acCnt++;
-  });
-  return { total: bkCnt + itCnt + acCnt, bk: bkCnt, it: itCnt, ac: acCnt };
+  return { total: bkCnt + itCnt, bk: bkCnt, it: itCnt };
 }
-/** Hitung total item (pemesanan, itinerary, & realisasi) yang memakai mata uang tambahan mana pun. */
+/** Hitung total item (pemesanan & itinerary) yang memakai mata uang tambahan mana pun. */
 function tripCountAllExtraCurUsage(P) {
-  if (!P) return { total: 0, bk: 0, it: 0, ac: 0 };
+  if (!P) return { total: 0, bk: 0, it: 0 };
   var mainUp = String(P.cur || '').trim().toUpperCase();
-  var bkCnt = 0, itCnt = 0, acCnt = 0;
+  var bkCnt = 0, itCnt = 0;
   (P.bk || []).forEach(function (x) {
     var ic = x && x.fx ? tripItemCur(P, x).toUpperCase() : '';
     if (ic && ic !== mainUp) bkCnt++;
@@ -19815,16 +20156,12 @@ function tripCountAllExtraCurUsage(P) {
     var ic = x && x.fx ? tripItemCur(P, x).toUpperCase() : '';
     if (ic && ic !== mainUp) itCnt++;
   });
-  (P.ac || []).forEach(function (x) {
-    var ic = x && x.fx ? tripItemCur(P, x).toUpperCase() : '';
-    if (ic && ic !== mainUp) acCnt++;
-  });
-  return { total: bkCnt + itCnt + acCnt, bk: bkCnt, it: itCnt, ac: acCnt };
+  return { total: bkCnt + itCnt, bk: bkCnt, it: itCnt };
 }
 /** Pesan standar penolakan hapus/matikan mata uang yang masih dipakai item. */
 function tripFormatCurUsageMsg(u) {
-  var o = u || { total: 0, bk: 0, it: 0, ac: 0 };
-  return 'Dipakai ' + o.total + ' item (' + o.bk + ' pemesanan, ' + o.it + ' itinerary' + (o.ac ? ', ' + o.ac + ' realisasi' : '') + ')';
+  var o = u || { total: 0, bk: 0, it: 0 };
+  return 'Dipakai ' + o.total + ' item (' + o.bk + ' pemesanan, ' + o.it + ' itinerary)';
 }
 /** HTML <option> pilihan mata uang pada form item (Rp, utama, dan tambahan bila saklar menyala). */
 function tripCurSelectOptsHtml(P, editItem) {
@@ -19949,7 +20286,7 @@ function tripValidateFxsRows(mainCurRaw, rows) {
   }
   return { error: '', fxs: clean, renames: renames };
 }
-/** Terapkan perubahan kode mata uang (rename) ke item pemesanan, itinerary, & realisasi yang memakai kode lama. */
+/** Terapkan perubahan kode mata uang (rename) ke item pemesanan & itinerary yang memakai kode lama. */
 function tripApplyFxsRenames(P, renames) {
   if (!P || !Array.isArray(renames) || !renames.length) return;
   var mapR = {};
@@ -19958,9 +20295,6 @@ function tripApplyFxsRenames(P, renames) {
     if (x && x.fx && x.c && mapR[String(x.c).toUpperCase()]) x.c = mapR[String(x.c).toUpperCase()];
   });
   (P.it || []).forEach(function (x) {
-    if (x && x.fx && x.c && mapR[String(x.c).toUpperCase()]) x.c = mapR[String(x.c).toUpperCase()];
-  });
-  (P.ac || []).forEach(function (x) {
     if (x && x.fx && x.c && mapR[String(x.c).toUpperCase()]) x.c = mapR[String(x.c).toUpperCase()];
   });
 }
@@ -20243,325 +20577,340 @@ function tripPlan(P) {
   return r;
 }
 
-/** Lepas tautan rf ('it:<id>' / 'bk:<id>') dari catatan pengeluaran aktual tanpa menghapus catatannya. */
-function tripUnlinkAcRef(P, rfKey) {
-  if (!P || !Array.isArray(P.ac) || !rfKey) return 0;
-  var n = 0;
-  P.ac.forEach(function (x) {
-    if (x && x.rf === rfKey) {
-      delete x.rf;
-      n++;
-    }
-  });
-  return n;
+/** Nilai Rupiah harga aktual di lapangan untuk satu item itinerary/pemesanan; 0 bila belum diisi. */
+function tripActualRp(P, x) {
+  if (!x || !(typeof x.ax === 'number' && Number.isFinite(x.ax) && x.ax > 0 && x.ax <= 1e12)) return 0;
+  if (!x.fx) return x.ax;
+  var hasAk = typeof x.ak === 'number' && Number.isFinite(x.ak) && x.ak > 0 && x.ak <= 1e9;
+  return x.ax * (hasAk ? x.ak : tripItemRate(P, x));
 }
 
-/** Nilai rupiah satu catatan pengeluaran aktual lewat tripItemRate(). */
-function tripAcRp(P, x) {
+/** Nilai Rupiah rencana untuk satu item (pemesanan pakai tripBkRp, itinerary pakai tripItRp). */
+function tripPlannedRp(P, x, isBookingOpt) {
   if (!x) return 0;
-  return (+x.amt || 0) * tripItemRate(P, x);
+  var isBk = isBookingOpt != null ? !!isBookingOpt : (x.amt != null);
+  return isBk ? tripBkRp(P, x) : tripItRp(P, x);
 }
 
-/** Pecahan pengeluaran aktual rupiah vs per mata uang asing; idr + fxIdr == Math.round(realHarian), Σ by.idr == fxIdr. */
-function tripAcSplit(P) {
-  var round0 = function (n) { var v = Math.round(n); return v === 0 ? 0 : v; };
-  var idrRaw = 0, fxAmt = 0, realHarian = 0, unlockedNoRate = false;
-  var byMap = {}, order = [];
-  var list = (P && Array.isArray(P.ac)) ? P.ac : [];
-  list.forEach(function (x) {
+/**
+ * Bandingkan Rencana vs Realita dari field ax/ak pada Pemesanan & Itinerary non-online:
+ * efekHarga + efekKurs == round(diff), forecast == tripPlan(P).t + diff, Σ byCur.diff == diff.
+ */
+function tripVsPlan(P) {
+  var out = {
+    n: 0,
+    m: 0,
+    estSum: 0,
+    actSum: 0,
+    diff: 0,
+    efekHarga: 0,
+    efekKurs: 0,
+    hasFx: false,
+    items: [],
+    topOver: [],
+    topSave: [],
+    forecast: 0,
+    planTotal: 0,
+    budget: 0,
+    overBudget: false,
+    overBudgetDiff: 0,
+    sisaPerkiraan: 0,
+    byCur: [],
+  };
+  if (!P) return out;
+  var pl = tripPlan(P);
+  out.planTotal = pl.t;
+  out.budget = (+P.budget > 0 && Number.isFinite(+P.budget)) ? +P.budget : 0;
+
+  var rawEst = 0, rawAct = 0, rawEfekKurs = 0, rawFxEst = 0, rawFxAct = 0, hasIdrAct = false;
+  var byCurRaw = {};
+
+  function inspect(x, isBk) {
     if (!x) return;
-    var amtNum = +x.amt || 0;
-    var rpVal = tripAcRp(P, x);
-    realHarian += rpVal;
-    var curC = x.fx ? tripItemCur(P, x) : '';
-    if (x.fx && curC) {
-      fxAmt += amtNum;
-      var missing = amtNum > 0 && !(tripItemRate(P, x) > 0);
-      if (missing) unlockedNoRate = true;
-      if (!byMap[curC]) {
-        byMap[curC] = { c: curC, amt: 0, rawRp: 0, noRate: false };
-        order.push(curC);
-      }
-      byMap[curC].amt += amtNum;
-      byMap[curC].rawRp += rpVal;
-      if (missing) byMap[curC].noRate = true;
+    if (!isBk && x.pay === 'on') return;
+    out.m++;
+    if (!(typeof x.ax === 'number' && Number.isFinite(x.ax) && x.ax > 0 && x.ax <= 1e12)) return;
+    out.n++;
+    var isFx = !!x.fx;
+    var curCode = isFx ? (tripItemCur(P, x) || String(P.cur || '').trim().toUpperCase()) : '';
+    var hasCurFx = !!(isFx && curCode);
+    var ratePlan = isFx ? tripItemRate(P, x) : 1;
+    var hasAk = isFx && typeof x.ak === 'number' && Number.isFinite(x.ak) && x.ak > 0 && x.ak <= 1e9;
+    var rateAct = isFx ? (hasAk ? x.ak : ratePlan) : 1;
+    var base = isBk ? (+x.amt || 0) : (+x.est || 0);
+    var plannedRp = tripPlannedRp(P, x, isBk);
+    var actualRp = tripActualRp(P, x);
+    var diffI = actualRp - plannedRp;
+    var efekKursI = isFx ? (x.ax * (rateAct - ratePlan)) : 0;
+    var efekHargaI = (x.ax - base) * ratePlan;
+    rawEst += plannedRp;
+    rawAct += actualRp;
+    rawEfekKurs += efekKursI;
+    if (hasCurFx) {
+      out.hasFx = true;
+      rawFxEst += plannedRp;
+      rawFxAct += actualRp;
+      var bc = byCurRaw[curCode] || (byCurRaw[curCode] = { c: curCode, estRp: 0, actRp: 0, axSum: 0 });
+      bc.estRp += plannedRp;
+      bc.actRp += actualRp;
+      bc.axSum += x.ax;
     } else {
-      idrRaw += amtNum;
+      hasIdrAct = true;
     }
-  });
-  var hasFx = fxAmt > 0;
-  var noRate = !!(hasFx && unlockedNoRate);
-  var idr = round0(idrRaw);
-  var fxIdr = hasFx ? round0(round0(realHarian) - idr) : 0;
-  var orderedKeys = [];
-  if (P) {
-    tripAllCurList(P).forEach(function (entry) {
-      for (var j = 0; j < order.length; j++) {
-        if (order[j].toUpperCase() === String(entry.c || '').toUpperCase() && orderedKeys.indexOf(order[j]) < 0) {
-          orderedKeys.push(order[j]);
-        }
-      }
+    out.items.push({
+      id: x.id,
+      kind: isBk ? 'bk' : 'it',
+      name: isBk ? (x.title || '') : (x.place || ''),
+      fx: hasCurFx,
+      cur: curCode,
+      base: base,
+      ax: x.ax,
+      ak: hasAk ? x.ak : 0,
+      ratePlan: ratePlan,
+      rateAct: rateAct,
+      estRp: plannedRp,
+      actRp: actualRp,
+      diff: diffI,
+      efekHarga: efekHargaI,
+      efekKurs: efekKursI,
     });
   }
-  order.forEach(function (k) {
-    if (orderedKeys.indexOf(k) < 0) orderedKeys.push(k);
+
+  (P.bk || []).forEach(function (x) { inspect(x, true); });
+  (P.it || []).forEach(function (x) { inspect(x, false); });
+
+  out.estSum = rawEst;
+  out.actSum = rawAct;
+  out.diff = rawAct - rawEst;
+  out.efekKurs = Math.round(rawEfekKurs);
+  out.efekHarga = Math.round(out.diff) - out.efekKurs;
+  out.forecast = out.planTotal + out.diff;
+
+  if (out.budget > 0) {
+    out.overBudget = out.forecast > out.budget;
+    if (out.overBudget) out.overBudgetDiff = out.forecast - out.budget;
+    else out.sisaPerkiraan = out.budget - out.forecast;
+  }
+
+  out.topOver = out.items
+    .filter(function (it) { return it.diff > 0; })
+    .sort(function (a, b) { return b.diff - a.diff; })
+    .slice(0, 3)
+    .map(function (it) { return { id: it.id, kind: it.kind, name: it.name, diff: it.diff }; });
+
+  out.topSave = out.items
+    .filter(function (it) { return it.diff < 0; })
+    .sort(function (a, b) { return a.diff - b.diff; })
+    .slice(0, 3)
+    .map(function (it) { return { id: it.id, kind: it.kind, name: it.name, diff: it.diff }; });
+
+  var curOrder = [];
+  if (P.cur) {
+    var mc = String(P.cur).trim().toUpperCase();
+    if (byCurRaw[mc]) curOrder.push(mc);
+  }
+  if (Array.isArray(P.fxs)) {
+    P.fxs.forEach(function (f) {
+      var fc = f && f.c ? String(f.c).trim().toUpperCase() : '';
+      if (fc && byCurRaw[fc] && curOrder.indexOf(fc) < 0) curOrder.push(fc);
+    });
+  }
+  Object.keys(byCurRaw).forEach(function (k) {
+    if (curOrder.indexOf(k) < 0) curOrder.push(k);
   });
-  var lastIdx = orderedKeys.length - 1;
-  var sumRoundedOthers = 0;
-  for (var i1 = 0; i1 < lastIdx; i1++) {
-    sumRoundedOthers += round0(byMap[orderedKeys[i1]].rawRp);
+  out.byCur = curOrder.map(function (c) {
+    var o = byCurRaw[c];
+    var eR = Math.round(o.estRp), aR = Math.round(o.actRp);
+    return { c: c, estRp: eR, actRp: aR, diff: Math.round(o.actRp - o.estRp), axSum: o.axSum };
+  });
+  if (out.byCur.length > 0) {
+    var targetFxDiff = hasIdrAct ? Math.round(rawFxAct - rawFxEst) : Math.round(out.diff);
+    var prevSum = 0;
+    for (var bi = 0; bi < out.byCur.length - 1; bi++) prevSum += out.byCur[bi].diff;
+    out.byCur[out.byCur.length - 1].diff = targetFxDiff - prevSum;
   }
-  var byList = [];
-  for (var i2 = 0; i2 < orderedKeys.length; i2++) {
-    var ent = byMap[orderedKeys[i2]];
-    var partIdr = i2 === lastIdx ? round0(fxIdr - sumRoundedOthers) : round0(ent.rawRp);
-    byList.push({ c: ent.c, amt: ent.amt, idr: partIdr, noRate: ent.noRate });
-  }
-  return { hasFx: hasFx, idr: idr, fxIdr: fxIdr, fxAmt: fxAmt, noRate: noRate, by: byList };
+  return out;
 }
 
-/** Ringkasan Realisasi vs Rencana perjalanan (murni & deterministik terhadap parameter todayISO). */
-function tripAcPlan(P, todayISOOpt) {
-  var round0 = function (n) { var v = Math.round(n); return v === 0 ? 0 : v; };
-  var today = (typeof todayISOOpt === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(todayISOOpt))
-    ? todayISOOpt
-    : (typeof todayISO === 'function' ? todayISO() : '');
-  var pl = P ? tripPlan(P) : { b: 0, d: 0, paid: 0, t: 0, cash: {} };
-  var acList = (P && Array.isArray(P.ac)) ? P.ac : [];
-  var itList = (P && Array.isArray(P.it)) ? P.it : [];
-  var bkList = (P && Array.isArray(P.bk)) ? P.bk : [];
-
-  var itById = {}, bkById = {};
-  itList.forEach(function (it) { if (it && it.id) itById[it.id] = it; });
-  bkList.forEach(function (bk) { if (bk && bk.id) bkById[bk.id] = bk; });
-
-  var realHarian = 0;
-  var unlinkedCount = 0, unlinkedRp = 0;
-  var bkExtraMap = {};
-  var itLinkedMap = {};
-
-  acList.forEach(function (x) {
-    if (!x) return;
-    var r = tripAcRp(P, x);
-    realHarian += r;
-    if (!x.rf) {
-      unlinkedCount++;
-      unlinkedRp += r;
-    } else if (x.rf.indexOf('bk:') === 0) {
-      var bid = x.rf.slice(3);
-      if (bkById[bid]) {
-        if (!bkExtraMap[bid]) bkExtraMap[bid] = { count: 0, rp: 0, items: [] };
-        bkExtraMap[bid].count++;
-        bkExtraMap[bid].rp += r;
-        bkExtraMap[bid].items.push(x);
-      } else {
-        unlinkedCount++;
-        unlinkedRp += r;
-      }
-    } else if (x.rf.indexOf('it:') === 0) {
-      var iid = x.rf.slice(3);
-      if (itById[iid]) {
-        if (!itLinkedMap[iid]) itLinkedMap[iid] = { item: itById[iid], items: [], amtSum: 0, acRpSum: 0 };
-        itLinkedMap[iid].items.push(x);
-        itLinkedMap[iid].amtSum += (+x.amt || 0);
-        itLinkedMap[iid].acRpSum += r;
-      } else {
-        unlinkedCount++;
-        unlinkedRp += r;
-      }
-    } else {
-      unlinkedCount++;
-      unlinkedRp += r;
-    }
-  });
-
-  var realTotal = pl.paid + realHarian;
-  var hasRange = !!(P && P.start && P.end && P.end >= P.start);
-  var N = hasRange ? (dayNo(P.end, P.start) + 1) : 0;
-  var elapsed = 0, through = '';
-  if (hasRange && today) {
-    if (today < P.start) {
-      elapsed = 0;
-      through = '';
-    } else if (today >= P.end) {
-      elapsed = N;
-      through = P.end;
-    } else {
-      elapsed = dayNo(today, P.start) + 1;
-      through = today;
-    }
+/** Format kurs angka Indonesia ringkas (maks 4 desimal). */
+function tripFormatRateIndo(n) {
+  var v = +n || 0;
+  try {
+    return v.toLocaleString('id-ID', { maximumFractionDigits: 4 });
+  } catch (e) {
+    return String(v);
   }
+}
 
-  var planToDate = 0, realToDate = 0;
-  var catMap = {}, dayPlanMap = {}, dayRealMap = {};
+/** Baris ringkas harga aktual pada kartu item (memakai pv & keterangan kata). */
+function tripItemActualLineHtml(P, x, isBooking) {
+  if (!x || !(typeof x.ax === 'number' && Number.isFinite(x.ax) && x.ax > 0 && x.ax <= 1e12)) return '';
+  if (!isBooking && x.pay === 'on') return '';
+  var actRp = Math.round(tripActualRp(P, x));
+  var planRp = Math.round(tripPlannedRp(P, x, isBooking));
+  var d = actRp - planRp;
+  var diffTxt = d > 0 ? ('lebih mahal ' + rp(d)) : d < 0 ? ('lebih murah ' + rp(Math.abs(d))) : 'sama dg estimasi';
+  var diffCls = d > 0 ? 'is-over' : d < 0 ? 'is-save' : 'is-eq';
+  var isFx = !!(x.fx && tripItemCur(P, x));
+  var effRate = isFx ? (x.ak > 0 ? x.ak : tripItemRate(P, x)) : 0;
+  var kursTxt = (isFx && effRate > 0) ? (' &middot; kurs ' + esc(tripFormatRateIndo(effRate))) : '';
+  return '<div class="trip-item-actual-line pv">Aktual <strong>' + rp(actRp) + '</strong> &middot; <span class="trip-actual-diff ' + diffCls + '">' + esc(diffTxt) + '</span>' + kursTxt + '</div>';
+}
 
-  itList.forEach(function (x) {
-    if (!x || x.pay === 'on' || !x.est) return;
-    var v = tripItRp(P, x);
-    dayPlanMap[x.day] = (dayPlanMap[x.day] || 0) + v;
-    if (hasRange) {
-      if (through && x.day <= through) {
-        planToDate += v;
-        var c1 = x.cat || 'Lainnya';
-        if (!catMap[c1]) catMap[c1] = { cat: c1, plan: 0, real: 0 };
-        catMap[c1].plan += v;
-      }
-    } else {
-      var c0 = x.cat || 'Lainnya';
-      if (!catMap[c0]) catMap[c0] = { cat: c0, plan: 0, real: 0 };
-      catMap[c0].plan += v;
-    }
-  });
+/** Tombol umum "Harga Aktual" untuk kartu item (dengan centang bila sudah diisi). */
+function tripItemActualBtnHtml(x, attrName) {
+  if (!x) return '';
+  var hasAx = !!(typeof x.ax === 'number' && Number.isFinite(x.ax) && x.ax > 0);
+  return '<button type="button" class="btn btn-secondary btn-sm trip-btn-actual' + (hasAx ? ' has-ax' : '') + '" ' +
+    attrName + '="' + esc(x.id) + '" aria-label="Catat harga sebenarnya di lapangan" title="Catat harga sebenarnya di lapangan">' +
+    (hasAx ? '<span aria-hidden="true">&#10003; </span>' : '') + 'Harga Aktual</button>';
+}
 
-  acList.forEach(function (x) {
-    if (!x) return;
-    var v = tripAcRp(P, x);
-    dayRealMap[x.d] = (dayRealMap[x.d] || 0) + v;
-    if (hasRange) {
-      if (through && x.d <= through) {
-        realToDate += v;
-        var c2 = x.cat || 'Lainnya';
-        if (!catMap[c2]) catMap[c2] = { cat: c2, plan: 0, real: 0 };
-        catMap[c2].real += v;
-      }
-    } else {
-      var c3 = x.cat || 'Lainnya';
-      if (!catMap[c3]) catMap[c3] = { cat: c3, plan: 0, real: 0 };
-      catMap[c3].real += v;
-    }
-  });
-
-  var diffToDate = hasRange ? (realToDate - planToDate) : 0;
-
-  var budget = (P && +P.budget > 0) ? +P.budget : 0;
-  var sisaAnggaranHarian = null, laju = 0, proyeksiHarian = null, sisaPerHari = null;
-  var overPace = false, overPaceDiff = 0, overBudget = false, overBudgetDiff = 0;
-  if (hasRange && budget > 0 && N > 0) {
-    sisaAnggaranHarian = budget - pl.b;
-    laju = elapsed > 0 ? realHarian / elapsed : 0;
-    proyeksiHarian = laju * N;
-    sisaPerHari = elapsed < N ? (sisaAnggaranHarian - realHarian) / (N - elapsed) : null;
-    if (elapsed > 0 && proyeksiHarian > sisaAnggaranHarian) {
-      overPace = true;
-      overPaceDiff = proyeksiHarian - sisaAnggaranHarian;
-    }
-    if (pl.b + realHarian > budget) {
-      overBudget = true;
-      overBudgetDiff = (pl.b + realHarian) - budget;
-    }
+/** Label baca-saja estimasi item untuk popup Harga Aktual. */
+function tripActualEstLabel(P, x, isBooking) {
+  if (!x) return 'Estimasi: Rp 0';
+  var base = isBooking ? (+x.amt || 0) : (+x.est || 0);
+  var curCode = x.fx ? tripItemCur(P, x) : '';
+  var planRp = Math.round(tripPlannedRp(P, x, isBooking));
+  if (curCode) {
+    return 'Estimasi: ' + curCode + ' ' + Math.round(base).toLocaleString('id-ID') + ' (≈ ' + rp(planRp) + ')';
   }
+  return 'Estimasi: ' + rp(planRp);
+}
 
-  var byCat = Object.keys(catMap).map(function (c) {
-    var row = catMap[c];
-    return { cat: c, plan: row.plan, real: row.real, diff: row.real - row.plan };
-  }).sort(function (a, b) {
-    return (b.diff - a.diff) || (b.real - a.real) || a.cat.localeCompare(b.cat);
-  });
-
-  var topMiss = byCat.filter(function (c) { return c.diff > 0; })
-    .sort(function (a, b) { return (b.diff - a.diff) || a.cat.localeCompare(b.cat); })
-    .slice(0, 3);
-
-  var itemCurKey = function (itObj) {
-    if (!itObj || !itObj.fx) return 'IDR';
-    var code = tripItemCur(P, itObj);
-    return code ? ('FX:' + code.toUpperCase()) : 'IDR';
-  };
-  var byItEffect = {};
-  var totalEfekHarga = 0, totalEfekKurs = 0, hasEffectSummary = false;
-  Object.keys(itLinkedMap).forEach(function (iid) {
-    var grp = itLinkedMap[iid];
-    var it = grp.item;
-    var planCur = itemCurKey(it);
-    var sameCur = grp.items.every(function (ax) { return itemCurKey(ax) === planCur; });
-    var estRp = tripItRp(P, it);
-    var selisihBulat = round0(grp.acRpSum - estRp);
-    if (sameCur) {
-      var ratePlan = tripItemRate(P, it);
-      var efekKursRaw = 0;
-      grp.items.forEach(function (ax) {
-        var rk = tripItemRate(P, ax);
-        efekKursRaw += (+ax.amt || 0) * (rk - ratePlan);
-      });
-      var efekKursBulat = round0(efekKursRaw);
-      var efekHargaBulat = round0(selisihBulat - efekKursBulat);
-      byItEffect[iid] = {
-        itId: iid,
-        sameCur: true,
-        cur: planCur,
-        estRp: round0(estRp),
-        acRp: round0(grp.acRpSum),
-        selisih: selisihBulat,
-        efekHarga: efekHargaBulat,
-        efekKurs: efekKursBulat,
-        count: grp.items.length,
-      };
-      totalEfekHarga += efekHargaBulat;
-      totalEfekKurs += efekKursBulat;
-      hasEffectSummary = true;
-    } else {
-      byItEffect[iid] = {
-        itId: iid,
-        sameCur: false,
-        cur: planCur,
-        estRp: round0(estRp),
-        acRp: round0(grp.acRpSum),
-        selisih: selisihBulat,
-        efekHarga: null,
-        efekKurs: null,
-        count: grp.items.length,
-      };
-    }
-  });
-
-  var dayKeysSet = {};
-  Object.keys(dayPlanMap).forEach(function (d) { dayKeysSet[d] = 1; });
-  Object.keys(dayRealMap).forEach(function (d) { dayKeysSet[d] = 1; });
-  var byDay = {};
-  Object.keys(dayKeysSet).sort().forEach(function (d) {
-    var dp = dayPlanMap[d] || 0;
-    var dr = dayRealMap[d] || 0;
-    byDay[d] = {
-      d: d,
-      plan: dp,
-      real: dr,
-      diff: dr - dp,
-      outOfRange: hasRange ? (d < P.start || d > P.end) : false,
-    };
-  });
-
+/** Hitung teks pratinjau langsung popup Harga Aktual. */
+function tripActualPreviewData(P, x, isBooking, rawAx, rawAk) {
+  if (!x) return { text: '', detail: '', tone: '' };
+  var digits = String(rawAx || '').replace(/\D/g, '').slice(0, 13);
+  var axNum = digits ? Number(digits) : 0;
+  if (!(axNum > 0 && Number.isFinite(axNum) && axNum <= 1e12)) {
+    return { text: '', detail: '', tone: '' };
+  }
+  var isFx = !!(x.fx && tripItemCur(P, x));
+  var ratePlan = isFx ? tripItemRate(P, x) : 1;
+  var parsedAk = isFx ? tripParseRateVal(rawAk) : 0;
+  var rateAct = isFx ? (parsedAk > 0 ? parsedAk : ratePlan) : 1;
+  var base = isBooking ? (+x.amt || 0) : (+x.est || 0);
+  var estRp = Math.round(tripPlannedRp(P, x, isBooking));
+  var actRp = Math.round(axNum * rateAct);
+  var d = actRp - estRp;
+  var diffTxt = d > 0
+    ? ('lebih mahal ' + rp(d) + ' dari estimasi')
+    : d < 0
+      ? ('lebih murah ' + rp(Math.abs(d)) + ' dari estimasi')
+      : 'sama dengan estimasi';
+  var detailTxt = '';
+  if (isFx && parsedAk > 0) {
+    var eh = Math.round((axNum - base) * ratePlan);
+    var ek = Math.round(axNum * (rateAct - ratePlan));
+    detailTxt = 'harga ' + tripSignedRp(eh) + ' · kurs ' + tripSignedRp(ek);
+  }
   return {
-    today: today,
-    hasRange: hasRange,
-    N: N,
-    elapsed: elapsed,
-    through: through,
-    budget: budget,
-    planBk: pl.b,
-    planDaily: pl.d,
-    planTotal: pl.t,
-    paid: pl.paid,
-    realHarian: realHarian,
-    realTotal: realTotal,
-    planToDate: planToDate,
-    realToDate: realToDate,
-    diffToDate: diffToDate,
-    sisaAnggaranHarian: sisaAnggaranHarian,
-    laju: laju,
-    proyeksiHarian: proyeksiHarian,
-    sisaPerHari: sisaPerHari,
-    overPace: overPace,
-    overPaceDiff: overPaceDiff,
-    overBudget: overBudget,
-    overBudgetDiff: overBudgetDiff,
-    byCat: byCat,
-    topMiss: topMiss,
-    unlinked: { count: unlinkedCount, rp: unlinkedRp },
-    bkExtra: bkExtraMap,
-    byItEffect: byItEffect,
-    effectSummary: { hasSplit: hasEffectSummary, efekHarga: totalEfekHarga, efekKurs: totalEfekKurs },
-    byDay: byDay,
+    text: '≈ ' + rp(actRp) + ' · ' + diffTxt,
+    detail: detailTxt,
+    tone: d > 0 ? 'over' : d < 0 ? 'save' : 'eq',
   };
+}
+
+/** Konfirmasi hapus harga aktual saat pengguna mengubah mata uang item yang sudah punya ax. */
+function tripConfirmCurrencyChangeIfActual(P, oldItem, nextFx, nextC, onProceed) {
+  if (!oldItem || !(oldItem.ax > 0)) {
+    onProceed(false);
+    return;
+  }
+  var mainCur = (P && P.cur ? String(P.cur).trim().toUpperCase() : '') || 'FX';
+  var oldCur = oldItem.fx ? (tripItemCur(P, oldItem) || mainCur).toUpperCase() : 'IDR';
+  var newCur = nextFx ? ((nextC ? String(nextC).trim().toUpperCase() : mainCur) || 'FX') : 'IDR';
+  if (oldCur === newCur) {
+    onProceed(false);
+    return;
+  }
+  if (typeof askConfirm === 'function') {
+    askConfirm(
+      'Harga aktual akan dihapus karena mata uang berubah. Lanjutkan?',
+      function () { onProceed(true); },
+      'Ya, lanjutkan',
+      'Ubah mata uang'
+    );
+  } else {
+    onProceed(true);
+  }
+}
+
+/** Render kartu "Rencana vs Realita" (atau keadaan kosong 1 baris) untuk sub-tab Ringkasan. */
+function tripRenderVsPlanCardHtml(P, isMobile) {
+  var vp = tripVsPlan(P);
+  if (!vp.m) return '';
+  if (!vp.n) {
+    return '<div class="trip-vs-empty" id="' + (isMobile ? 'm-' : '') + 'trip-vs-empty">' +
+      'Belum ada harga aktual. Buka Itinerary atau Pemesanan lalu ketuk Harga Aktual pada item.</div>';
+  }
+  var diffR = Math.round(vp.diff);
+  var statusCls = diffR > 0 ? 'is-over' : diffR < 0 ? 'is-save' : 'is-eq';
+  var statusTxt = diffR > 0 ? ('Lebih ' + rp(diffR)) : diffR < 0 ? ('Hemat ' + rp(Math.abs(diffR))) : 'Sama persis';
+  var ratio = vp.m > 0 ? Math.min(1, Math.max(0, vp.n / vp.m)) : 0;
+
+  var fxRowHtml = vp.hasFx
+    ? '<div class="trip-vs-fx-row">Efek harga <strong class="mono pv">' + esc(tripSignedRp(vp.efekHarga)) + '</strong> &middot; Efek kurs <strong class="mono pv">' + esc(tripSignedRp(vp.efekKurs)) + '</strong></div>'
+    : '';
+
+  var budHtml = '';
+  if (vp.budget > 0) {
+    budHtml = vp.overBudget
+      ? '<span class="trip-vs-bud-badge is-over">Perkiraan melebihi anggaran <strong class="mono pv">' + rp(Math.round(vp.overBudgetDiff)) + '</strong></span>'
+      : '<span class="trip-vs-bud-badge is-ok">Sisa anggaran <strong class="mono pv">' + rp(Math.round(vp.sisaPerkiraan)) + '</strong></span>';
+  }
+
+  var topListHtml = '';
+  if (vp.topOver.length || vp.topSave.length) {
+    topListHtml = '<div class="trip-vs-lists">';
+    if (vp.topOver.length) {
+      topListHtml += '<div class="trip-vs-list-col"><div class="trip-vs-list-hd">Paling meleset</div>' +
+        vp.topOver.map(function (it) {
+          return '<div class="trip-vs-list-row"><span class="trip-vs-list-name">' + esc(it.name || '-') + '</span><span class="mono pv is-over">+' + rp(Math.round(it.diff)) + '</span></div>';
+        }).join('') + '</div>';
+    }
+    if (vp.topSave.length) {
+      topListHtml += '<div class="trip-vs-list-col"><div class="trip-vs-list-hd">Paling hemat</div>' +
+        vp.topSave.map(function (it) {
+          return '<div class="trip-vs-list-row"><span class="trip-vs-list-name">' + esc(it.name || '-') + '</span><span class="mono pv is-save">-' + rp(Math.round(Math.abs(it.diff))) + '</span></div>';
+        }).join('') + '</div>';
+    }
+    topListHtml += '</div>';
+  }
+
+  var curBreakHtml = '';
+  if ((tripMultiCurOn(P) || vp.byCur.length > 1) && vp.byCur.length > 0) {
+    curBreakHtml = '<div class="trip-vs-cur-list"><div class="trip-vs-list-hd">Rincian per mata uang</div>' +
+      vp.byCur.map(function (b) {
+        var bdCls = b.diff > 0 ? 'is-over' : b.diff < 0 ? 'is-save' : 'is-eq';
+        return '<div class="trip-vs-cur-row"><span class="badge ' + (isMobile ? 'b-nt' : 'badge-neutral') + '">' + esc(b.c) + '</span>' +
+          '<span class="trip-vs-cur-nums">Estimasi <strong class="mono pv">' + rp(b.estRp) + '</strong> &rarr; Aktual <strong class="mono pv">' + rp(b.actRp) + '</strong></span>' +
+          '<span class="mono pv ' + bdCls + '">' + esc(tripSignedRp(b.diff)) + '</span></div>';
+      }).join('') + '</div>';
+  }
+
+  return '<div class="card trip-vs-card" id="' + (isMobile ? 'm-' : '') + 'trip-vs-card">' +
+    '<div class="' + (isMobile ? 'card-hd' : 'card-header') + ' trip-vs-hd">' +
+    '<div><h' + (isMobile ? '3' : '2') + ' class="card-title">Rencana vs Realita</h' + (isMobile ? '3' : '2') + '><p class="' + (isMobile ? 'msc-sub' : 'card-sub') + '">dari ' + vp.n + ' item yang sudah ada harga aktual</p></div>' +
+    '<span class="trip-vs-chip ' + statusCls + '"><span class="pv">' + esc(statusTxt) + '</span></span></div>' +
+    '<div class="trip-vs-stats">' +
+    '<div class="trip-vs-stat"><span class="trip-vs-stat-k">Estimasi (item terisi)</span><strong class="mono pv trip-vs-stat-v">' + rp(Math.round(vp.estSum)) + '</strong></div>' +
+    '<div class="trip-vs-stat"><span class="trip-vs-stat-k">Harga aktual</span><strong class="mono pv trip-vs-stat-v">' + rp(Math.round(vp.actSum)) + '</strong></div>' +
+    '<div class="trip-vs-stat"><span class="trip-vs-stat-k">Selisih</span><strong class="mono pv trip-vs-stat-v ' + statusCls + '">' + esc(tripSignedRp(diffR)) + '</strong></div>' +
+    '</div>' +
+    fxRowHtml +
+    '<div class="trip-vs-prog">' +
+    '<div class="trip-vs-prog-hd"><span>Terisi ' + vp.n + ' dari ' + vp.m + ' item</span><span class="mono">' + Math.round(ratio * 100) + '%</span></div>' +
+    '<div class="trip-vs-prog-track"><div class="trip-vs-prog-fill" style="transform:scaleX(' + ratio.toFixed(4) + ')"></div></div>' +
+    '</div>' +
+    '<div class="trip-vs-forecast-row">' +
+    '<span>Perkiraan total akhir <strong class="mono pv">' + rp(Math.round(vp.forecast)) + '</strong> <span class="trip-vs-vs-plan">vs rencana <span class="mono pv">' + rp(Math.round(vp.planTotal)) + '</span></span></span>' +
+    budHtml +
+    '</div>' +
+    topListHtml +
+    curBreakHtml +
+    '</div>';
 }
 
 /** Format nominal rupiah bertanda minus bila negatif (-Rp ... atau Rp ...). */
@@ -20569,399 +20918,6 @@ function tripSignedRp(n) {
   var v = Math.round(+n || 0);
   if (v === 0) v = 0;
   return (v < 0 ? '-' : '') + rp(Math.abs(v));
-}
-
-/** Format selisih rupiah bertanda eksplisit (+/-) untuk perbandingan aktual vs rencana. */
-function tripSignedPlusMinusRp(n) {
-  var v = Math.round(+n || 0);
-  if (v === 0) v = 0;
-  return (v > 0 ? '+' : v < 0 ? '-' : '') + rp(Math.abs(v));
-}
-
-/** Memori pilihan terakhir form pengeluaran per profil perjalanan { d, curVal, cat }. */
-var TRIP_AC_LAST = {};
-
-function tripGetAcDefaults(P, editAc) {
-  if (editAc) {
-    var ecVal = !editAc.fx ? 'idr' : (editAc.c ? 'fx:' + String(editAc.c).trim().toUpperCase() : 'fx');
-    return {
-      d: editAc.d || '',
-      curVal: ecVal,
-      cat: editAc.cat || AC_CATS[0],
-    };
-  }
-  var pid = P && P.id ? P.id : '';
-  var last = pid ? TRIP_AC_LAST[pid] : null;
-  var acArr = P && Array.isArray(P.ac) ? P.ac : [];
-  var lastAc = acArr.length ? acArr[acArr.length - 1] : null;
-  var td = typeof todayISO === 'function' ? todayISO() : '';
-  var inRange = !!(P && P.start && P.end && P.end >= P.start && td >= P.start && td <= P.end);
-  var dDef = inRange ? td : ((last && last.d) || (lastAc && lastAc.d) || (P && P.start) || td);
-  var curDef = 'idr';
-  if (last && last.curVal) curDef = last.curVal;
-  else if (lastAc) curDef = !lastAc.fx ? 'idr' : (lastAc.c ? 'fx:' + String(lastAc.c).trim().toUpperCase() : 'fx');
-  else if (P && String(P.cur || '').trim()) curDef = 'fx';
-  var catDef = (last && last.cat) || (lastAc && lastAc.cat) || AC_CATS[0];
-  return { d: dDef, curVal: curDef, cat: catDef };
-}
-
-function tripRememberAcDefaults(P, d, curVal, cat) {
-  if (!P || !P.id) return;
-  TRIP_AC_LAST[P.id] = { d: d || '', curVal: curVal || 'idr', cat: cat || AC_CATS[0] };
-}
-
-/** HTML <option> daftar "Tautkan ke..." (Itinerary pada tanggal terpilih terlebih dulu, lalu Pemesanan). */
-function tripAcRefSelectOptsHtml(P, dayISO, selectedRf) {
-  var html = '<option value=""' + (!selectedRf ? ' selected' : '') + '>— Tanpa tautan rencana —</option>';
-  if (!P) return html;
-  var sortIt = (P.it || []).filter(function (x) { return x && x.day === dayISO; }).sort(byTime);
-  if (sortIt.length) {
-    html += '<optgroup label="Kegiatan pada ' + esc(fmtD(dayISO)) + '">';
-    sortIt.forEach(function (x) {
-      var val = 'it:' + x.id;
-      var tm = x.time ? tmShow(x.time) + ' ' : '';
-      var estTxt = x.est ? ' (' + amtPlain(P, x) + ')' : '';
-      html += '<option value="' + esc(val) + '"' + (selectedRf === val ? ' selected' : '') + '>' + esc(tm + x.place + estTxt) + '</option>';
-    });
-    html += '</optgroup>';
-  }
-  if (selectedRf && selectedRf.indexOf('it:') === 0) {
-    var selItId = selectedRf.slice(3);
-    var alreadyInDay = sortIt.some(function (x) { return x.id === selItId; });
-    if (!alreadyInDay) {
-      var otherIt = (P.it || []).filter(function (x) { return x && x.id === selItId; })[0];
-      if (otherIt) {
-        html += '<option value="' + esc(selectedRf) + '" selected>' + esc(fmtD(otherIt.day) + ' · ' + otherIt.place) + '</option>';
-      }
-    }
-  }
-  if (P.bk && P.bk.length) {
-    html += '<optgroup label="Pemesanan (biaya tambahan di luar nominal pemesanan)">';
-    P.bk.forEach(function (b) {
-      var bVal = 'bk:' + b.id;
-      var bLabel = b.title + (b.paid ? ' (Lunas)' : '');
-      html += '<option value="' + esc(bVal) + '"' + (selectedRf === bVal ? ' selected' : '') + '>' + esc(bLabel) + '</option>';
-    });
-    html += '</optgroup>';
-  }
-  return html;
-}
-
-/** Sinkronkan visibilitas <details> Kurs aktual (tersedia di Tambah & Ubah bila mata uang asing) + pratinjau "≈ Rp". */
-function tripSyncAcFormUi(P, editAc, amtId, curId, eqId, rtDetailsId, rtId) {
-  var inp = $(amtId), sel = $(curId), eqEl = $(eqId), rtDet = $(rtDetailsId), rtInp = $(rtId);
-  var selSpec = sel ? tripParseCurSelectVal(P, sel.value) : { fx: false, c: '' };
-  var itemCur = selSpec.fx ? (selSpec.c || ((P && String(P.cur || '').trim()) || '')) : '';
-  var isFx = !!(selSpec.fx && itemCur);
-  if (rtDet) {
-    rtDet.style.display = isFx ? '' : 'none';
-    if (rtDet.querySelector) {
-      var lblEl = rtDet.querySelector('label');
-      if (lblEl) lblEl.textContent = 'Kurs aktual (Rp per 1 ' + (itemCur || 'asing') + ')';
-    }
-  }
-  if (rtInp) {
-    var curRate = isFx ? tripCurRate(P, itemCur) : 0;
-    rtInp.placeholder = curRate > 0 ? ('Ikut kurs perjalanan: ' + curRate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan';
-  }
-  if (!inp || !sel || !eqEl) return;
-  var valNum = typeof getRpVal === 'function' ? getRpVal(amtId) : (+String(inp.value || '').replace(/\D/g, '') || 0);
-  var lkRt = (isFx && rtInp) ? tripParseRateVal(rtInp.value) : 0;
-  var prev = tripFormEqPreview(P, valNum, isFx, lkRt, false, itemCur);
-  eqEl.textContent = prev.text;
-  eqEl.classList.toggle('is-warn', !!prev.warn);
-  eqEl.classList.toggle('pv', !!(prev.text && !prev.warn));
-}
-
-/** Biaya tambahan aktual (rf = bk:<id>) untuk ditampilkan di bawah baris pemesanan terkait. */
-function tripBkExtraAcHtml(P, bkId, isMobile) {
-  if (!P || !bkId) return '';
-  var list = (P.ac || []).filter(function (x) { return x && x.rf === 'bk:' + bkId; });
-  if (!list.length) return '';
-  var totRp = list.reduce(function (s, x) { return s + tripAcRp(P, x); }, 0);
-  return '<div class="trip-bk-extra-note' + (isMobile ? ' is-mob' : '') + '">Biaya tambahan aktual (' + list.length + ' catatan): <strong class="mono pv">' + rp(totRp) + '</strong></div>';
-}
-
-/** Kartu Rincian mata uang (pengeluaran aktual) dengan gaya identik Tahap 10B. */
-function tripAcFxDetailCardHtml(P, isMobile) {
-  if (!P) return '';
-  var sp = tripAcSplit(P);
-  var acLen = (P.ac || []).length;
-  var usedMulti = sp.by.length > 1 || (sp.idr > 0 && sp.by.length > 0);
-  if (!tripMultiCurOn(P) && !usedMulti) return '';
-  if (!acLen && !tripMultiCurOn(P)) return '';
-  var rows = [];
-  if (sp.idr > 0) {
-    rows.push({ isIdr: true, c: 'IDR', amt: sp.idr, idr: sp.idr, noRate: false });
-  }
-  sp.by.forEach(function (b) { rows.push({ isIdr: false, c: b.c, amt: b.amt, idr: b.idr, noRate: b.noRate }); });
-  if (!rows.length && tripMultiCurOn(P)) {
-    tripAllCurList(P).forEach(function (entry) {
-      rows.push({ isIdr: false, c: entry.c, amt: 0, idr: 0, noRate: !(entry.r > 0) });
-    });
-  }
-  if (!rows.length) return '';
-  var rowCls = isMobile ? 'simple-row m-ring-row trip-fx-detail-row' : 'simple-row trip-fx-detail-row';
-  var mainUp = String(P.cur || '').trim().toUpperCase();
-  var rowsHtml = rows.map(function (r) {
-    var isMain = r.c.toUpperCase() === mainUp;
-    var badgeCls = isMobile ? ('badge ' + (isMain ? 'b-ac' : 'b-nt')) : ('badge ' + (isMain ? 'badge-accent' : 'badge-neutral'));
-    var nomTxt = r.isIdr ? rp(r.amt) : esc(fxs(P, r.amt, r.c));
-    var rightPart = r.noRate
-      ? '<span class="trip-eq-hint is-warn" style="margin:0">Kurs ' + esc(r.c) + ' belum diatur</span>'
-      : '<span class="simple-row-amt pv">' + (r.isIdr ? rp(r.idr) : ('≈ ' + rp(r.idr))) + '</span>';
-    return (
-      '<div class="' + rowCls + '" style="cursor:default">' +
-      '<div class="trip-fx-detail-left"><span class="' + badgeCls + '">' + esc(r.c) + '</span>' +
-      '<span class="trip-fx-detail-mid"><strong class="mono pv">' + nomTxt + '</strong></span></div>' +
-      rightPart + '</div>'
-    );
-  }).join('');
-  if (isMobile) {
-    return (
-      '<div class="card trip-fx-detail-card trip-ac-fx-detail-card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Rincian Mata Uang (Aktual)</h3><p class="msc-sub">Total aktual per mata uang terpakai</p></div></div>' +
-      '<div class="stack" style="gap:6px">' + rowsHtml + '</div></div>'
-    );
-  }
-  return (
-    '<div class="card trip-fx-detail-card trip-ac-fx-detail-card"><div class="card-header"><div><h2 class="card-title">Rincian Mata Uang (Aktual)</h2><p class="card-sub">Total aktual per mata uang terpakai</p></div></div>' +
-    '<div class="simple-list">' + rowsHtml + '</div></div>'
-  );
-}
-
-/** Render seluruh isi sub-tab "Realisasi" untuk Desktop & APK agar paritas 100%. */
-function tripRenderRealSubTabHtml(P, isMobile, editAcId, draftDayISO, draftCat) {
-  if (!P) return '';
-  var ap = tripAcPlan(P, typeof todayISO === 'function' ? todayISO() : '');
-  var acList = Array.isArray(P.ac) ? P.ac : [];
-  var EAc = editAcId ? acList.filter(function (x) { return x && x.id === editAcId; })[0] : null;
-  var defs = tripGetAcDefaults(P, EAc);
-  var selDay = EAc ? EAc.d : (draftDayISO && ISO_RE.test(draftDayISO) ? draftDayISO : defs.d);
-  var selCat = EAc ? EAc.cat : (draftCat || defs.cat);
-  var selCurDummy = tripParseCurSelectVal(P, defs.curVal);
-  var curItemObj = EAc || { fx: selCurDummy.fx, c: selCurDummy.c };
-  var hasForeign = !!(curItemObj.fx && (curItemObj.c || String(P.cur || '').trim()));
-  var initRtStr = (EAc && tripHasValidRt(EAc)) ? String(EAc.rt) : '';
-
-  var tileCls = isMobile ? 'bento-2 m-trip-kpis trip-real-kpis' : 'grid-4 trip-real-kpis';
-  var mBox = isMobile ? 'm-tile' : 'metric-tile';
-  var mLbl = isMobile ? 'm-tile-k' : 'metric-tile-label';
-  var mVal = isMobile ? 'm-tile-v' : 'metric-tile-val';
-  var mHint = isMobile ? 'm-tile-s' : 'metric-tile-hint';
-  var bAc = isMobile ? 'b-ac' : 'badge-accent';
-  var bEm = isMobile ? 'b-em' : 'badge-emerald';
-  var bCr = isMobile ? 'b-cr' : 'badge-crimson';
-  var bAm = isMobile ? 'b-am' : 'badge-amber';
-  var bNt = isMobile ? 'b-nt' : 'badge-neutral';
-
-  var diffColor = !ap.hasRange || ap.elapsed === 0
-    ? 'var(--text-primary)'
-    : (ap.diffToDate > 0 ? 'var(--crimson)' : (ap.diffToDate < 0 ? 'var(--emerald)' : 'var(--text-primary)'));
-  var remColor = ap.sisaPerHari === null ? 'var(--text-primary)' : (ap.sisaPerHari < 0 ? 'var(--crimson)' : 'var(--emerald)');
-
-  var t1Val = ap.hasRange ? rp(ap.planToDate) : '—';
-  var t1Hint = ap.hasRange
-    ? ((ap.elapsed > 0 ? 'Hari ke-' + ap.elapsed + ' dari ' + ap.N : 'Belum mulai (' + ap.N + ' hari)') + ' &middot; Total rencana ' + rp(ap.planTotal))
-    : ('Total rencana ' + rp(ap.planTotal) + ' &middot; tanpa rentang tanggal');
-
-  var t2Val = ap.hasRange ? rp(ap.realToDate) : rp(ap.realTotal);
-  var t2Hint = 'Harian ' + rp(ap.realHarian) + ' + Pemesanan lunas ' + rp(ap.paid) + ' = Total ' + rp(ap.realTotal);
-
-  var t3Val = ap.hasRange ? tripSignedPlusMinusRp(ap.diffToDate) : '—';
-  var t3Hint = !ap.hasRange
-    ? 'Atur rentang tanggal lewat Ubah'
-    : (ap.elapsed === 0 ? 'Belum ada hari berjalan' : (ap.diffToDate > 0 ? 'Lebih besar dari rencana' : (ap.diffToDate < 0 ? 'Lebih hemat dari rencana' : 'Sesuai rencana')));
-
-  var t4Val = (ap.hasRange && ap.sisaPerHari !== null) ? tripSignedRp(ap.sisaPerHari) : '—';
-  var t4Hint = !ap.hasRange
-    ? 'Tanpa proyeksi (rentang tanggal belum lengkap)'
-    : (!ap.budget ? 'Anggaran belum diatur' : (ap.elapsed >= ap.N ? 'Perjalanan selesai (' + ap.N + ' hari)' : ('Sisa ' + (ap.N - ap.elapsed) + ' hari &middot; proyeksi ' + rp(ap.proyeksiHarian))));
-
-  var kpiHtml =
-    '<div class="' + tileCls + '">' +
-    '<div class="' + mBox + '"><div class="' + mLbl + '">Rencana (sampai hari ini)</div><div class="' + mVal + ' pv">' + t1Val + '</div><div class="' + mHint + ' pv">' + t1Hint + '</div></div>' +
-    '<div class="' + mBox + '"><div class="' + mLbl + '">Realisasi (sampai hari ini)</div><div class="' + mVal + ' pv">' + t2Val + '</div><div class="' + mHint + ' pv">' + t2Hint + '</div></div>' +
-    '<div class="' + mBox + '"><div class="' + mLbl + '">Selisih</div><div class="' + mVal + ' pv" style="color:' + diffColor + '">' + t3Val + '</div><div class="' + mHint + '">' + t3Hint + '</div></div>' +
-    '<div class="' + mBox + '"><div class="' + mLbl + '">Sisa per hari</div><div class="' + mVal + ' pv" style="color:' + remColor + '">' + t4Val + '</div><div class="' + mHint + ' pv">' + t4Hint + '</div></div>' +
-    '</div>';
-
-  var warnBadges = [];
-  if (!ap.hasRange) {
-    warnBadges.push('<span class="badge ' + bNt + ' trip-real-warn-badge">Rentang tanggal belum lengkap &middot; tanpa proyeksi dan perbandingan s/d hari ini</span>');
-  }
-  if (ap.overPace) {
-    warnBadges.push('<span class="badge ' + bAm + ' trip-real-warn-badge">Laju melebihi anggaran (lebih <span class="mono pv">' + rp(ap.overPaceDiff) + '</span>)</span>');
-  }
-  if (ap.overBudget) {
-    warnBadges.push('<span class="badge ' + bCr + ' trip-real-warn-badge">Melebihi anggaran (lebih <span class="mono pv">' + rp(ap.overBudgetDiff) + '</span>)</span>');
-  }
-  var warnRowHtml = warnBadges.length ? ('<div class="trip-real-warn-row">' + warnBadges.join('') + '</div>') : '';
-
-  var fPrefix = isMobile ? 'm-' : '';
-  var formId = isMobile ? 'm-trip-ac-form' : 'trip-ac-form';
-  var amtId = fPrefix + 'ac-amt';
-  var curId = fPrefix + 'ac-cur';
-  var eqId = fPrefix + 'ac-amt-eq';
-  var rtDetId = fPrefix + 'ac-rt-details';
-  var rtInpId = fPrefix + 'ac-rt';
-  var rfId = fPrefix + 'ac-rf';
-  var noteId = fPrefix + 'ac-note';
-  var cancelId = fPrefix + 'ac-cancel';
-  var catAttr = isMobile ? 'data-mac-cat' : 'data-ac-cat';
-  var capCls = isMobile ? 'msc-sub' : 'card-sub';
-  var subHd = isMobile
-    ? ('<div class="card-hd"><h3 class="card-title">' + (EAc ? 'Ubah Pengeluaran' : 'Catat Pengeluaran') + '</h3>' + (EAc ? '<button type="button" class="btn btn-secondary btn-sm" id="' + cancelId + '">Batal</button>' : '') + '</div>')
-    : ('<div class="card-header"><div><h2 class="card-title">' + (EAc ? 'Ubah Pengeluaran' : 'Catat Pengeluaran') + '</h2><p class="card-sub">Catat pengeluaran aktual selama perjalanan (pemesanan lunas sudah terhitung otomatis)</p></div></div>');
-
-  var dateFieldHtml = isMobile
-    ? (typeof mobDateFieldHtml === 'function' ? mobDateFieldHtml('m-ac-day', selDay, false) : '<input type="hidden" id="m-ac-day" value="' + esc(selDay) + '" />')
-    : ('<div class="custom-picker-wrap"><button type="button" class="cal-trigger-btn" style="width:100%;justify-content:space-between;" data-ical-trig="ac-day-cal|acDay|ac-day-lbl"><span id="ac-day-lbl">' + (typeof brFmtShortIndo === 'function' ? brFmtShortIndo(selDay) + ' ' + selDay.slice(0, 4) : esc(fmtD(selDay))) + '</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button><div class="picker-popover" id="ac-day-cal"></div></div>');
-
-  var catChipsHtml = '<div class="trip-ac-cat-chips">' + AC_CATS.map(function (c) {
-    var active = selCat === c;
-    var cCls = isMobile ? ('p-chip' + (active ? ' active' : '')) : ('chip-pill' + (active ? ' active' : ''));
-    return '<button type="button" class="' + cCls + '" ' + catAttr + '="' + esc(c) + '" aria-pressed="' + active + '">' + esc(c) + '</button>';
-  }).join('') + '</div>';
-
-  var itemCurShow = tripItemCur(P, curItemObj) || String(P.cur || '').trim() || 'asing';
-  var formHtml =
-    '<div class="card">' + subHd +
-    '<form id="' + formId + '" class="stack" style="gap:' + (isMobile ? '9px' : '12px') + ';" novalidate>' +
-    '<div class="' + (isMobile ? 'stack' : 'grid-2') + '" style="gap:' + (isMobile ? '9px' : '12px') + '">' +
-    '<div class="field"><label class="field-label" for="' + amtId + '">Nominal &amp; Mata Uang</label>' +
-    '<div style="display:flex;gap:6px;"><input class="input mono" id="' + amtId + '" type="text" inputmode="numeric" data-num-fmt="rp" data-num-only="int" placeholder="0" value="' + (EAc && EAc.amt ? (+EAc.amt).toLocaleString('id-ID') : '') + '" style="flex:1;min-width:0;" required/>' +
-    '<div style="width:' + (isMobile ? '88px' : '94px') + ';flex-shrink:0;"><select class="input" id="' + curId + '" aria-label="Mata uang pengeluaran">' + tripCurSelectOptsHtml(P, curItemObj) + '</select></div></div>' +
-    '<div class="trip-eq-hint mono" id="' + eqId + '"></div></div>' +
-    '<div class="field"><span class="field-label">Tanggal</span>' + dateFieldHtml + '</div></div>' +
-    '<details class="trip-ac-rt-details" id="' + rtDetId + '" style="display:' + (hasForeign ? '' : 'none') + '"' + (initRtStr ? ' open' : '') + '>' +
-    '<summary class="trip-ac-rt-sum">Kurs aktual (opsional)</summary>' +
-    '<div class="field" style="margin-top:8px"><label class="field-label" for="' + rtInpId + '">Kurs aktual (Rp per 1 ' + esc(itemCurShow) + ')</label>' +
-    '<input class="input mono" id="' + rtInpId + '" type="text" inputmode="decimal" data-num-only="dec" placeholder="' + (tripCurRate(P, itemCurShow) > 0 ? 'Ikut kurs perjalanan: ' + esc(tripCurRate(P, itemCurShow).toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + esc(initRtStr) + '"/>' +
-    '<div class="' + capCls + '">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div></details>' +
-    '<div class="field"><span class="field-label">Kategori</span>' + catChipsHtml + '</div>' +
-    '<div class="' + (isMobile ? 'stack' : 'grid-2') + '" style="gap:' + (isMobile ? '9px' : '12px') + '">' +
-    '<div class="field"><label class="field-label" for="' + rfId + '">Tautkan ke... (opsional)</label>' +
-    '<select class="input" id="' + rfId + '">' + tripAcRefSelectOptsHtml(P, selDay, EAc ? (EAc.rf || '') : '') + '</select>' +
-    '<div class="' + capCls + '">Pemesanan lunas sudah otomatis dihitung; tautkan ke pemesanan hanya untuk biaya tambahan di luar nominal pemesanan.</div></div>' +
-    '<div class="field"><label class="field-label" for="' + noteId + '">Catatan (opsional)</label>' +
-    '<input class="input" id="' + noteId + '" maxlength="200" placeholder="mis. Ramen Ichiran, kartu Suica" value="' + esc(EAc && EAc.note ? EAc.note : '') + '"/></div></div>' +
-    '<div style="display:flex;justify-content:flex-end;gap:8px;">' + (!isMobile && EAc ? '<button type="button" class="btn btn-secondary" id="' + cancelId + '">Batal</button>' : '') +
-    '<button type="submit" class="btn btn-primary">' + (EAc ? 'Simpan Perubahan' : 'Catat Pengeluaran') + '</button></div>' +
-    '</form></div>';
-
-  // Kelompokkan daftar pengeluaran aktual per hari
-  var itById = {}, bkById = {};
-  (P.it || []).forEach(function (x) { if (x && x.id) itById[x.id] = x; });
-  (P.bk || []).forEach(function (x) { if (x && x.id) bkById[x.id] = x; });
-  var acByDay = {};
-  acList.forEach(function (x) {
-    if (!x) return;
-    if (!acByDay[x.d]) acByDay[x.d] = [];
-    acByDay[x.d].push(x);
-  });
-  var acDayKeys = Object.keys(acByDay).sort();
-  var editAttr = isMobile ? 'data-mac-edit' : 'data-ac-edit';
-  var delAttr = isMobile ? 'data-mac-del' : 'data-ac-del';
-
-  var dailyListHtml = '';
-  if (!acList.length) {
-    dailyListHtml = '<div class="card"><div style="text-align:center;padding:22px 12px;color:var(--text-muted);font-size:0.84rem;">Belum ada pengeluaran. Catat yang pertama.<div class="' + capCls + '" style="margin-top:6px;">Pemesanan bertanda Lunas (<strong class="mono pv">' + rp(ap.paid) + '</strong>) sudah otomatis dihitung dalam Realisasi total.</div></div></div>';
-  } else {
-    dailyListHtml = '<div class="stack" style="gap:' + (isMobile ? '9px' : '12px') + ';">' + acDayKeys.map(function (d) {
-      var dInfo = ap.byDay[d] || { plan: 0, real: 0, diff: 0, outOfRange: false };
-      var diffStr = dInfo.plan > 0
-        ? ('vs rencana ' + rp(dInfo.plan) + ' (' + tripSignedPlusMinusRp(dInfo.diff) + (dInfo.diff > 0 ? ' lebih' : '') + ')')
-        : '';
-      var dayHeadRight =
-        '<div class="trip-ac-day-meta">' +
-        (dInfo.outOfRange ? '<span class="badge ' + bAm + '">Di luar rentang</span>' : '') +
-        '<span class="badge ' + bAc + ' mono pv">Aktual: ' + rp(dInfo.real) + '</span>' +
-        (diffStr ? '<span class="' + capCls + ' mono pv">' + diffStr + '</span>' : '') +
-        '</div>';
-      var rowsHtml = acByDay[d].map(function (x) {
-        var logoHtml = isMobile
-          ? (typeof mobCatLogo === 'function' && typeof mobTripCatMapped === 'function' ? mobCatLogo(mobTripCatMapped(x.cat || 'Lainnya'), 28) : '')
-          : (typeof brCatLogo === 'function' && typeof brTripCatMapped === 'function' ? brCatLogo(brTripCatMapped(x.cat || 'Lainnya'), 30) : '');
-        var outRowBadge = (ap.hasRange && (x.d < P.start || x.d > P.end)) ? ('<span class="badge ' + bAm + '">Di luar rentang</span>') : '';
-        var refBadge = '', effectNoteHtml = '';
-        if (x.rf && x.rf.indexOf('it:') === 0) {
-          var iid = x.rf.slice(3), itO = itById[iid];
-          if (itO) {
-            refBadge = '<span class="badge ' + bEm + '">Taut: ' + esc(itO.place) + '</span>';
-            var ef = ap.byItEffect[iid];
-            if (ef) {
-              effectNoteHtml = ef.sameCur
-                ? '<div class="trip-ac-effect-note">Efek harga <strong class="mono pv">' + tripSignedRp(ef.efekHarga) + '</strong> &middot; Efek kurs <strong class="mono pv">' + tripSignedRp(ef.efekKurs) + '</strong></div>'
-                : '<div class="trip-ac-effect-note">Selisih vs rencana ' + esc(itO.place) + ': <strong class="mono pv">' + tripSignedPlusMinusRp(ef.selisih) + '</strong> (beda mata uang)</div>';
-            }
-          }
-        } else if (x.rf && x.rf.indexOf('bk:') === 0) {
-          var bid = x.rf.slice(3), bkO = bkById[bid];
-          if (bkO) refBadge = '<span class="badge ' + bNt + '">Biaya tambahan: ' + esc(bkO.title) + '</span>';
-        }
-        var rtBadge = tripHasValidRt(x) ? ('<span class="badge ' + bNt + '">Kurs ' + esc(x.rt.toLocaleString('id-ID')) + '</span>') : '';
-        var amtBlock = tripItemAmtHtml(P, x, null, isMobile ? 'msc-right' : '', '');
-        var actsHtml =
-          '<button type="button" class="btn btn-secondary btn-sm trip-ac-btn" ' + editAttr + '="' + esc(x.id) + '">Ubah</button>' +
-          '<button type="button" class="btn btn-secondary btn-sm trip-ac-btn" style="color:var(--crimson);" ' + delAttr + '="' + esc(x.id) + '">Hapus</button>';
-        if (isMobile) {
-          return (
-            '<div class="mob-sched-card trip-ac-row" data-ac-row="' + esc(x.id) + '">' +
-            '<div class="msc-top"><div class="msc-left" style="flex:1">' + logoHtml +
-            '<div style="min-width:0;flex:1"><div style="font-weight:800;font-size:0.84rem;overflow-wrap:anywhere;">' + esc(x.note || x.cat || 'Pengeluaran') + '</div>' +
-            '<div class="msc-badges" style="margin-top:4px"><span class="badge b-nt">' + esc(x.cat || 'Lainnya') + '</span>' + outRowBadge + refBadge + rtBadge + '</div>' +
-            effectNoteHtml + '</div></div>' + amtBlock + '</div>' +
-            '<div style="display:flex;gap:6px;justify-content:flex-end;margin-top:6px">' + actsHtml + '</div></div>'
-          );
-        }
-        return (
-          '<div class="upcoming-item trip-ac-row" data-ac-row="' + esc(x.id) + '"><div class="upcoming-left">' + logoHtml +
-          '<div style="min-width:0;"><div class="upcoming-name">' + esc(x.note || x.cat || 'Pengeluaran') + '</div>' +
-          '<div class="upcoming-meta"><span class="badge badge-neutral">' + esc(x.cat || 'Lainnya') + '</span>' + outRowBadge + refBadge + rtBadge + '</div>' +
-          effectNoteHtml + '</div></div>' +
-          '<div class="upcoming-right">' + amtBlock + actsHtml + '</div></div>'
-        );
-      }).join('');
-      return (
-        '<div class="card"><div class="' + (isMobile ? 'card-hd' : 'card-header') + '" style="margin-bottom:10px;flex-wrap:wrap;gap:8px;">' +
-        '<' + (isMobile ? 'h3' : 'h2') + ' class="card-title">' + esc(dayLabel(P, d)) + '</' + (isMobile ? 'h3' : 'h2') + '>' +
-        dayHeadRight + '</div><div class="stack" style="gap:8px;">' + rowsHtml + '</div></div>'
-      );
-    }).join('') + '</div>';
-  }
-
-  // Kartu Perbandingan Kategori + Top 3 Meleset + Tanpa Tautan + Efek Total
-  var catRowsHtml = ap.byCat.length
-    ? '<div class="trip-cat-cmp-wrap"><table class="trip-cat-cmp-table"><thead><tr><th>Kategori</th><th>Rencana</th><th>Aktual</th><th>Selisih</th></tr></thead><tbody>' +
-      ap.byCat.map(function (c) {
-        var dCls = c.diff > 0 ? ' is-over' : (c.diff < 0 ? ' is-under' : '');
-        var dTxt = c.diff > 0
-          ? ('+' + rp(c.diff) + ' <span class="badge ' + bCr + '">lebih</span>')
-          : (c.diff < 0 ? ('-' + rp(Math.abs(c.diff)) + ' hemat') : 'Rp 0');
-        return '<tr><td><strong>' + esc(c.cat) + '</strong></td><td class="mono pv">' + rp(c.plan) + '</td><td class="mono pv">' + rp(c.real) + '</td><td class="mono pv' + dCls + '">' + dTxt + '</td></tr>';
-      }).join('') + '</tbody></table></div>'
-    : '<div class="' + capCls + '" style="padding:8px 0;">Belum ada data perbandingan kategori' + (ap.hasRange && ap.elapsed === 0 ? ' (perjalanan belum mulai)' : '.') + '</div>';
-
-  var topMissHtml = ap.topMiss.length
-    ? '<div class="trip-top-miss"><div class="trip-top-miss-hd">Kategori paling meleset (s/d hari ini)</div><div class="trip-top-miss-list">' +
-      ap.topMiss.map(function (c, idx) {
-        return '<div class="trip-top-miss-item"><span>' + (idx + 1) + '. ' + esc(c.cat) + '</span><span class="mono pv">+' + rp(c.diff) + ' lebih</span></div>';
-      }).join('') + '</div></div>'
-    : '';
-
-  var unlinkedLineHtml = '<div class="trip-ac-unlinked-row">Tanpa tautan rencana: <strong class="mono pv">' + rp(ap.unlinked.rp) + '</strong> (' + ap.unlinked.count + ' catatan)</div>';
-  var effectSummaryHtml = ap.effectSummary.hasSplit
-    ? '<div class="trip-ac-effect-sum">Efek harga <strong class="mono pv">' + tripSignedRp(ap.effectSummary.efekHarga) + '</strong> &middot; Efek kurs <strong class="mono pv">' + tripSignedRp(ap.effectSummary.efekKurs) + '</strong></div>'
-    : '';
-
-  var catCardHtml =
-    '<div class="card"><div class="' + (isMobile ? 'card-hd' : 'card-header') + '"><div><' + (isMobile ? 'h3' : 'h2') + ' class="card-title">Perbandingan per Kategori</' + (isMobile ? 'h3' : 'h2') + '>' +
-    '<p class="' + capCls + '">' + (ap.hasRange ? (ap.through ? 'Sampai ' + esc(fmtD(ap.through)) + ' (rencana harian vs aktual)' : 'Belum ada hari berjalan') : 'Semua hari (tanpa rentang tanggal)') + '</p></div></div>' +
-    catRowsHtml + topMissHtml + unlinkedLineHtml + effectSummaryHtml + '</div>';
-
-  var fxCurCardHtml = tripAcFxDetailCardHtml(P, isMobile);
-
-  return kpiHtml + warnRowHtml + formHtml + dailyListHtml + catCardHtml + fxCurCardHtml;
 }
 
 function tripBadge(P) {
@@ -21183,7 +21139,7 @@ function renderTrip() {
     return;
   }
   if (tripTab === 'now' && !tripActive(P)) tripTab = 'ring';
-  var tabs = (tripActive(P) ? [['now', 'Hari ini']] : []).concat([['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['real', 'Realisasi'], ['cek', 'Checklist'], ['cat', 'Catatan'], ['sv', 'Tabungan']]);
+  var tabs = (tripActive(P) ? [['now', 'Hari ini']] : []).concat([['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['cek', 'Checklist'], ['cat', 'Catatan'], ['sv', 'Tabungan']]);
   var allTrips = trips(),
     switcher = allTrips.length > 1
       ? '<div class="yb trip-sw">' + allTrips.map(function (t) { return '<button type="button" class="yp' + (t.id === P.id ? ' on' : '') + '" data-trip="' + esc(t.id) + '">' + esc(t.name) + '</button>'; }).join('') + '</div>'
@@ -21192,7 +21148,7 @@ function renderTrip() {
     '<div class="card trip-head-card"><div class="card-header"><div><div class="kp mb8"><button class="tbk" data-tback="1">&larr; Semua perjalanan</button>' + switcher + '</div><h2 style="margin:0 0 2px">' + esc(P.name) + '</h2><div class="sub">' +
     (P.start && P.end ? fmtD(P.start) + ' – ' + fmtD(P.end) : 'Tanggal belum diisi') + (P.cur && P.rate ? ' · 1 ' + P.cur + ' = ' + rp(P.rate) : '') + '</div></div><div class="kp m0"><button class="g" data-tshare="1">Bagikan</button><button class="g" data-ted="1">Ubah</button><button class="g d" data-tdel="1">Hapus</button></div></div><div class="kt fwrap trip-subtabs">' +
     tabs.map(function (t) { return '<button type="button" class="yp' + (tripTab === t[0] ? ' on' : '') + '" data-tt="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div></div>' +
-    (tripTab === 'now' ? tripNow(P) : tripTab === 'itin' ? tripItin(P) : tripTab === 'book' ? tripBook(P) : tripTab === 'real' ? tripRenderRealSubTabHtml(P, false, null, '', '') : tripTab === 'cek' ? tripCek(P) : tripTab === 'cat' ? tripCat(P) : tripTab === 'sv' ? goalCard(P, tripPlan(P)) : tripRing(P));
+    (tripTab === 'now' ? tripNow(P) : tripTab === 'itin' ? tripItin(P) : tripTab === 'book' ? tripBook(P) : tripTab === 'cek' ? tripCek(P) : tripTab === 'cat' ? tripCat(P) : tripTab === 'sv' ? goalCard(P, tripPlan(P)) : tripRing(P));
   if (P.cur) {
     fxPrev('ite', 'itu');
     fxPrev('bke', 'bku');
@@ -22315,7 +22271,6 @@ function tripRemove(k, id, msg) {
   askConfirm('Hapus ' + msg.toLowerCase() + (nm ? ' <b>' + esc(nm) + '</b>' : '') + '?', function () {
     var sn = snap('Sebelum menghapus ' + msg);
     P[k] = P[k].filter(function (o) { return o.id !== id; });
-    if (k === 'it' || k === 'bk') tripUnlinkAcRef(P, k + ':' + id);
     save();
     renderTrip();
     toast(msg + ' dihapus.', function () { restoreSnap(sn.t); });
@@ -22835,7 +22790,6 @@ function tripPdfHasNonWinAnsi(P) {
   if ((P.it || []).some(function (x) { return tripHasNonWinAnsi(x.place) || tripHasNonWinAnsi(x.link) || tripHasNonWinAnsi(x.note); })) return true;
   if ((P.bk || []).some(function (x) { return tripHasNonWinAnsi(x.title); })) return true;
   if ((P.lk || []).some(function (x) { return tripHasNonWinAnsi(x.title) || tripHasNonWinAnsi(x.url); })) return true;
-  if ((P.ac || []).some(function (x) { return tripHasNonWinAnsi(x.note) || tripHasNonWinAnsi(x.cat); })) return true;
   return false;
 }
 
@@ -22976,42 +22930,24 @@ function tripPdfData(P, cost) {
         });
       }
     }
-    if (Array.isArray(P.ac) && P.ac.length > 0 && typeof tripAcPlan === 'function') {
-      var apPdf = tripAcPlan(P, typeof todayISO === 'function' ? todayISO() : '');
-      if (apPdf.hasRange) {
-        summary.push(['Rencana s/d hari ini', rp(apPdf.planToDate)]);
-        summary.push(['Realisasi s/d hari ini', rp(apPdf.realToDate)]);
-        summary.push(['Selisih s/d hari ini', tripSignedPlusMinusRp(apPdf.diffToDate) + (apPdf.diffToDate > 0 ? ' (lebih)' : apPdf.diffToDate < 0 ? ' (hemat)' : '')]);
+    if (typeof tripVsPlan === 'function') {
+      var vpPdf = tripVsPlan(P);
+      if (vpPdf.n > 0) {
+        var diffPdfR = Math.round(vpPdf.diff);
+        var diffPdfTxt = diffPdfR === 0
+          ? 'Sama (Rp 0)'
+          : ((diffPdfR > 0 ? 'Lebih mahal +' : 'Lebih hemat -') + rp(Math.abs(diffPdfR)));
+        summary.push(['Rencana vs Realita (' + vpPdf.n + '/' + vpPdf.m + ' item)', 'Estimasi ' + rp(Math.round(vpPdf.estSum))]);
+        summary.push(['Harga aktual tercatat', rp(Math.round(vpPdf.actSum))]);
+        summary.push(['Selisih harga aktual', diffPdfTxt]);
+        if (vpPdf.hasFx) {
+          summary.push(['Efek harga / Efek kurs', 'Efek harga ' + tripSignedRp(vpPdf.efekHarga) + ' / Efek kurs ' + tripSignedRp(vpPdf.efekKurs)]);
+        }
+        summary.push(['Perkiraan total akhir', rp(Math.round(vpPdf.forecast))]);
+        if (vpPdf.overBudget) {
+          summary.push(['Peringatan Anggaran', 'Melebihi anggaran (' + rp(Math.round(vpPdf.overBudgetDiff)) + ')']);
+        }
       }
-      summary.push(['Realisasi Total', rp(apPdf.realTotal) + ' (Harian ' + rp(apPdf.realHarian) + ' + Lunas ' + rp(apPdf.paid) + ')']);
-      if (apPdf.overPace) {
-        summary.push(['Peringatan Laju', 'Laju melebihi anggaran (lebih ' + rp(apPdf.overPaceDiff) + ')']);
-      }
-      if (apPdf.overBudget) {
-        summary.push(['Peringatan Anggaran', 'Melebihi anggaran (lebih ' + rp(apPdf.overBudgetDiff) + ')']);
-      }
-      var acDescW = (50 * innerW) / 100 - 8;
-      var acRows = [];
-      var acSorted = P.ac.slice().sort(function (a, b) { return (a.d < b.d ? -1 : a.d > b.d ? 1 : 0); });
-      var prevAcDay = '';
-      acSorted.forEach(function (x) {
-        var dayCol = x.d !== prevAcDay ? fmtD(x.d) : '';
-        prevAcDay = x.d;
-        var outFlag = (apPdf.hasRange && (x.d < P.start || x.d > P.end)) ? ' [Di luar rentang]' : '';
-        var descStr = (x.cat || 'Lainnya') + (x.note ? ' - ' + x.note : '') + outFlag;
-        var nomStr = (x.fx && tripItemCur(P, x))
-          ? (amtFn(P, x) + ' (' + rp(tripAcRp(P, x)) + ')')
-          : rp(tripAcRp(P, x));
-        var dLines = tripWrapPdfText(descStr, acDescW, false);
-        dLines.forEach(function (ln, lidx) {
-          acRows.push([lidx === 0 ? dayCol : '', ln, lidx === 0 ? nomStr : '']);
-        });
-      });
-      tables.push({
-        head: 'Pengeluaran Aktual per Hari',
-        cols: [{ t: 'TANGGAL', w: 24 }, { t: 'KETERANGAN', w: 50 }, { t: 'NOMINAL', w: 26, align: 'r' }],
-        rows: acRows,
-      });
     }
   }
   return { filename: tripSafePdfFilename(P.name), title: P.name || 'Itinerary Perjalanan', subtitle: subParts.join(' · '), summary: summary, tables: tables };
@@ -23072,30 +23008,23 @@ function tripText(P, cost) {
         L.push('');
       }
     }
-    if (Array.isArray(P.ac) && P.ac.length > 0 && typeof tripAcPlan === 'function') {
-      var apTxt = tripAcPlan(P, typeof todayISO === 'function' ? todayISO() : '');
-      L.push('*Realisasi Pengeluaran*');
-      if (apTxt.hasRange) {
-        L.push('• Rencana s/d hari ini: ' + rp(apTxt.planToDate));
-        L.push('• Realisasi s/d hari ini: ' + rp(apTxt.realToDate));
-        L.push('• Selisih: ' + tripSignedPlusMinusRp(apTxt.diffToDate) + (apTxt.diffToDate > 0 ? ' (lebih)' : apTxt.diffToDate < 0 ? ' (hemat)' : ''));
+    if (typeof tripVsPlan === 'function') {
+      var vpTxt = tripVsPlan(P);
+      if (vpTxt.n > 0) {
+        var diffTxtR = Math.round(vpTxt.diff);
+        var diffTxtLbl = diffTxtR === 0
+          ? 'Sama (Rp 0)'
+          : ((diffTxtR > 0 ? 'Lebih mahal +' : 'Lebih hemat -') + rp(Math.abs(diffTxtR)));
+        L.push('*Rencana vs Realita*');
+        L.push('• Estimasi (' + vpTxt.n + '/' + vpTxt.m + ' item): ' + rp(Math.round(vpTxt.estSum)));
+        L.push('• Harga aktual: ' + rp(Math.round(vpTxt.actSum)));
+        L.push('• Selisih: ' + diffTxtLbl);
+        if (vpTxt.hasFx) {
+          L.push('• Efek harga: ' + tripSignedRp(vpTxt.efekHarga) + ' · Efek kurs: ' + tripSignedRp(vpTxt.efekKurs));
+        }
+        L.push('• Perkiraan total akhir: ' + rp(Math.round(vpTxt.forecast)));
+        L.push('');
       }
-      L.push('• Realisasi total: ' + rp(apTxt.realTotal) + ' (Harian ' + rp(apTxt.realHarian) + ' + Lunas ' + rp(apTxt.paid) + ')');
-      var acByDayTxt = {};
-      P.ac.forEach(function (x) {
-        if (!x) return;
-        if (!acByDayTxt[x.d]) acByDayTxt[x.d] = [];
-        acByDayTxt[x.d].push(x);
-      });
-      Object.keys(acByDayTxt).sort().forEach(function (d) {
-        var dInfoT = apTxt.byDay[d];
-        L.push('• ' + fmtD(d) + (dInfoT ? ' (' + rp(dInfoT.real) + ')' : ''));
-        acByDayTxt[d].forEach(function (x) {
-          var fxEq = x.fx && tripItemCur(P, x) ? (' ≈ ' + rp(tripAcRp(P, x))) : '';
-          L.push('   - ' + (x.cat || 'Lainnya') + (x.note ? ' · ' + x.note : '') + ' (' + amtPlain(P, x) + fxEq + ')');
-        });
-      });
-      L.push('');
     }
   }
   if (P.lk && P.lk.length) {
@@ -25351,14 +25280,12 @@ var BR_STATE = {
   tripSubTab: 'ring',
   tripEditItId: null,
   tripEditBkId: null,
-  tripEditAcId: null,
-  tripAcCat: '',
   tripGoalEdit: false,
   tripOpenDays: {},
   tripExpandedItems: {},
   tripModalMode: 'new',
   tripEditId: null,
-  inlineDates: { itDay: '', bkStart: '', bkEnd: '', acDay: '', kpStart: '', kpEnd: '', itemDate: '' },
+  inlineDates: { itDay: '', bkStart: '', bkEnd: '', kpStart: '', kpEnd: '', itemDate: '' },
   inlineCalView: {},
   chipCtx: null,
   scenItemId: null,
@@ -26133,6 +26060,14 @@ function brCloseModal(id) {
     el.classList.remove('is-closing');
   }
   if (id === 'yr-panel' && $('yr-btn')) $('yr-btn').setAttribute('aria-expanded', 'false');
+  if (id === 'modal-trip-actual') {
+    var retFocusD = BR_STATE._tripActReturnFocus;
+    BR_STATE._tripActReturnFocus = null;
+    BR_STATE.tripActTarget = null;
+    if (retFocusD && retFocusD.isConnected && typeof retFocusD.focus === 'function') {
+      try { retFocusD.focus({ preventScroll: true }); } catch (e) { try { retFocusD.focus(); } catch (e2) {} }
+    }
+  }
 }
 
 function brCubicPath(coords) {
@@ -27992,6 +27927,57 @@ var tripItRp = typeof tripItRp === 'function' ? tripItRp : function tripItRp(P, 
 function tripDayLabel(P, d) {
   return typeof dayLabel === 'function' ? dayLabel(P, d) : fmtD(d);
 }
+function brSyncActualPreview() {
+  var tgt = BR_STATE.tripActTarget, tr = tp();
+  if (!tgt || !tr) return;
+  var arr = tgt.kind === 'bk' ? (tr.bk || []) : (tr.it || []);
+  var x = arr.filter(function (o) { return o && o.id === tgt.id; })[0];
+  if (!x) return;
+  var prevEl = $('act-m-prev'), detEl = $('act-m-prev-det');
+  if (!prevEl) return;
+  var info = typeof tripActualPreviewData === 'function'
+    ? tripActualPreviewData(tr, x, tgt.kind === 'bk', $('act-m-ax') && $('act-m-ax').value, $('act-m-ak') && $('act-m-ak').value)
+    : { text: '', detail: '', tone: '' };
+  prevEl.textContent = info.text || '';
+  prevEl.classList.remove('is-over', 'is-save', 'is-eq');
+  if (info.tone) prevEl.classList.add('is-' + info.tone);
+  if (detEl) detEl.textContent = info.detail || '';
+}
+
+function brOpenActualModal(kind, itemId, triggerEl) {
+  var tr = tp();
+  if (!tr) return;
+  var isBk = kind === 'bk';
+  var arr = isBk ? (tr.bk || []) : (tr.it || []);
+  var x = arr.filter(function (o) { return o && o.id === itemId; })[0];
+  if (!x || (!isBk && x.pay === 'on')) return;
+  BR_STATE.tripActTarget = { kind: kind, id: itemId };
+  BR_STATE._tripActReturnFocus = triggerEl || null;
+  var isFx = !!(x.fx && typeof tripItemCur === 'function' && tripItemCur(tr, x));
+  var curCode = isFx ? tripItemCur(tr, x) : 'Rp';
+  var effRate = isFx && typeof tripItemRate === 'function' ? tripItemRate(tr, x) : 0;
+  if ($('act-m-item')) $('act-m-item').textContent = isBk ? (x.title || '') : (x.place || '');
+  if ($('act-m-est')) $('act-m-est').textContent = typeof tripActualEstLabel === 'function' ? tripActualEstLabel(tr, x, isBk) : '';
+  if ($('act-m-ax-lbl')) $('act-m-ax-lbl').textContent = 'Harga di lapangan (' + curCode + ')';
+  if ($('act-m-ax')) $('act-m-ax').value = x.ax > 0 ? (typeof fmtNumOnlyIntStr === 'function' ? fmtNumOnlyIntStr(String(Math.round(x.ax))) : String(Math.round(x.ax))) : '';
+  if (typeof tripSetFieldError === 'function') {
+    tripSetFieldError('act-m-ax-err', $('act-m-ax'), '', false);
+    tripSetFieldError('act-m-ak-err', $('act-m-ak'), '', false);
+  }
+  if ($('act-m-ak-wrap')) $('act-m-ak-wrap').hidden = !isFx;
+  if ($('act-m-ak-lbl')) $('act-m-ak-lbl').textContent = 'Kurs (Rp per 1 ' + (curCode || 'unit') + ')';
+  if ($('act-m-ak')) {
+    $('act-m-ak').value = (isFx && x.ak > 0) ? String(x.ak) : '';
+    $('act-m-ak').placeholder = effRate > 0 ? ('ikut kurs efektif: ' + (typeof tripFormatRateIndo === 'function' ? tripFormatRateIndo(effRate) : effRate)) : 'ikut kurs efektif';
+  }
+  if ($('act-m-del')) $('act-m-del').hidden = !(x.ax > 0);
+  brSyncActualPreview();
+  brOpenModal('modal-trip-actual');
+  if ($('act-m-ax') && typeof $('act-m-ax').focus === 'function') {
+    try { $('act-m-ax').focus({ preventScroll: true }); } catch (e) { try { $('act-m-ax').focus(); } catch (e2) {} }
+  }
+}
+
 function brSyncTripEqPrev() {
   var tr = tp();
   var eIt = tr && BR_STATE.tripEditItId ? (tr.it || []).filter(function (x) { return x.id === BR_STATE.tripEditItId; })[0] : null;
@@ -28005,10 +27991,6 @@ function brSyncTripEqPrev() {
     tripSyncItemRateField(tr, eBk, 'bk-amt', 'bk-cur', 'bk-amt-eq', 'bk-rt-wrap', 'bk-rt', true);
   } else if (typeof tripSyncEqPairs === 'function') {
     tripSyncEqPairs(tr, [['bk-amt', 'bk-cur', 'bk-amt-eq']]);
-  }
-  var eAc = tr && BR_STATE.tripEditAcId ? (tr.ac || []).filter(function (x) { return x.id === BR_STATE.tripEditAcId; })[0] : null;
-  if (typeof tripSyncAcFormUi === 'function') {
-    tripSyncAcFormUi(tr, eAc, 'ac-amt', 'ac-cur', 'ac-amt-eq', 'ac-rt-details', 'ac-rt');
   }
 }
 
@@ -28045,7 +28027,7 @@ function renderTrip() {
   }
 
   var pl = tripPlan(tr), sub = BR_STATE.tripSubTab,
-    subTabs = [['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['real', 'Realisasi'], ['cek', 'Checklist'], ['cat', 'Catatan'], ['sv', 'Tabungan']];
+    subTabs = [['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['cek', 'Checklist'], ['cat', 'Catatan'], ['sv', 'Tabungan']];
   var bodyHtml = '';
 
   if (sub === 'ring') {
@@ -28068,6 +28050,7 @@ function renderTrip() {
       '<div class="metric-tile"><div class="metric-tile-label">' + (tr.budget ? (left >= 0 ? 'Sisa Anggaran' : 'Melebihi Anggaran') : 'Anggaran') + '</div><div class="metric-tile-val pv" style="color:' + (tr.budget ? (left >= 0 ? 'var(--emerald)' : 'var(--crimson)') : 'var(--text-primary)') + ';">' + (tr.budget ? rp(Math.abs(left)) : 'Belum diatur') + '</div><div class="metric-tile-hint pv">' + (tr.budget ? pctBud + '% dari ' + rp(tr.budget) : 'Atur lewat tombol Ubah') + '</div></div>' +
       '<div class="metric-tile"><div class="metric-tile-label">Sudah Dibayar</div><div class="metric-tile-val pv" style="color:var(--emerald);">' + rp(pl.paid) + '</div><div class="metric-tile-hint pv">Belum dibayar: ' + rp(pl.b - pl.paid) + '</div></div>' +
       '<div class="metric-tile"><div class="metric-tile-label">Rencana per Hari</div><div class="metric-tile-val pv">' + (N ? rp(Math.round(pl.t / N)) : '—') + '</div><div class="metric-tile-hint">' + (N ? N + ' hari' : 'Tanggal belum diisi') + (tr.cur && tr.rate ? ' · 1 ' + esc(tr.cur) + ' = Rp ' + tr.rate.toLocaleString('id-ID') : '') + '</div></div></div>' +
+      (typeof tripRenderVsPlanCardHtml === 'function' ? tripRenderVsPlanCardHtml(tr, false) : '') +
       '<div class="grid-2"><div class="stack"><div class="card"><div class="card-header"><div><h2 class="card-title">Siapkan Tunai / Kartu</h2><p class="card-sub">Akumulasi kebutuhan bayar di tempat</p></div></div><div class="simple-list">' +
       (ck.length ? ck.map(function (k) {
         var cx = pl.cash[k];
@@ -28135,16 +28118,21 @@ function renderTrip() {
             var isExpD = !!(BR_STATE.tripExpandedItems && BR_STATE.tripExpandedItems[x.id]);
             var linkChipD = typeof tripLinkChipHtml === 'function' ? tripLinkChipHtml(x.link, false) : '';
             var txtIdD = 'it-txt-' + esc(x.id);
-            return '<div class="upcoming-item trip-item-card' + (isExpD ? ' is-expanded' : '') + '" data-it-row="' + esc(x.id) + '"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) +
+            var actLineItD = typeof tripItemActualLineHtml === 'function' ? tripItemActualLineHtml(tr, x, false) : '';
+            var actBtnItD = x.pay !== 'on' && typeof tripItemActualBtnHtml === 'function' ? tripItemActualBtnHtml(x, 'data-it-act') : '';
+            return '<div class="upcoming-item trip-item-card' + (isExpD ? ' is-expanded' : '') + '" data-it-row="' + esc(x.id) + '">' +
+              '<div class="trip-card-top"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) +
               '<div class="trip-card-body" id="' + txtIdD + '"><div class="upcoming-name trip-it-place trip-trunc-target" style="' + (x.done ? 'text-decoration:line-through;opacity:0.55;' : '') + '">' + (x.time ? '<span class="mono" style="color:var(--accent-ink);margin-right:6px;">' + esc(x.time.replace(':', '.')) + (x.time2 ? '–' + esc(x.time2.replace(':', '.')) : '') + '</span>' : '') + esc(x.place) + '</div>' +
               '<div class="upcoming-meta"><span class="badge badge-neutral">' + esc(x.cat) + '</span>' + (x.pay ? '<span class="badge badge-accent">' + esc(PAYL[x.pay] || x.pay) + '</span>' : '') + outItBadge + '</div>' +
               (x.note ? '<div class="trip-it-note trip-trunc-target">' + esc(x.note) + '</div>' : '') +
-              linkChipD +
+              linkChipD + actLineItD +
               '<div class="trip-more-wrap"><button type="button" class="trip-more-btn" data-it-more="' + esc(x.id) + '" aria-expanded="' + (isExpD ? 'true' : 'false') + '" aria-controls="' + txtIdD + '"' + (isExpD ? '' : ' hidden') + '>' + (isExpD ? 'Sembunyikan' : 'Tampilkan') + '</button></div></div></div>' +
-              '<div class="upcoming-right">' + (typeof tripItemAmtHtml === 'function' ? tripItemAmtHtml(tr, x) : ('<strong class="mono pv">' + (x.est ? (x.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(x.est).toLocaleString('id-ID') : rp(x.est)) : '') + '</strong>')) +
-              '<button type="button" class="btn btn-secondary btn-sm" data-it-done="' + esc(x.id) + '">' + (x.done ? '✓ Selesai' : 'Tandai') + '</button>' +
+              '<div class="upcoming-right trip-card-amt">' + (typeof tripItemAmtHtml === 'function' ? tripItemAmtHtml(tr, x) : ('<strong class="mono pv">' + (x.est ? (x.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(x.est).toLocaleString('id-ID') : rp(x.est)) : '') + '</strong>')) + '</div></div>' +
+              '<div class="trip-card-actions">' +
+              '<button type="button" class="btn btn-secondary btn-sm trip-btn-done" data-it-done="' + esc(x.id) + '">' + (x.done ? '✓ Selesai' : 'Tandai') + '</button>' +
+              actBtnItD +
               '<button type="button" class="btn btn-secondary btn-sm" data-trip-it-edit="' + esc(x.id) + '">Ubah</button>' +
-              '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);" data-trip-it-del="' + esc(x.id) + '">Hapus</button></div></div>';
+              '<button type="button" class="btn btn-secondary btn-sm trip-btn-del" style="color:var(--crimson);" data-trip-it-del="' + esc(x.id) + '">Hapus</button></div></div>';
           }).join('') : '<div style="padding:10px;color:var(--text-muted);font-size:0.82rem;">Belum ada kegiatan hari ini.</div>') + '</div></div></div>';
       }).join('') : '<div class="card"><div style="text-align:center;padding:24px;color:var(--text-muted);">Atur tanggal mulai/selesai atau tambahkan kegiatan pertama.</div></div>') + '</div>';
   } else if (sub === 'book') {
@@ -28174,28 +28162,23 @@ function renderTrip() {
       '<div class="trip-field-err" id="bk-date-err" role="alert" hidden></div>' +
       '<div class="trip-form-actions">' + (EBk ? '<button type="button" class="btn btn-secondary" data-bk-cancel="1">Batal</button>' : '') + '<button type="submit" class="btn btn-primary">' + (EBk ? 'Simpan Perubahan' : 'Tambah Pemesanan') + '</button></div></form></div>' +
       '<div class="card"><div class="stack" style="gap:8px;">' + ((tr.bk || []).length ? tr.bk.map(function (x) {
-        var extraAc = typeof tripBkExtraAcHtml === 'function' ? tripBkExtraAcHtml(tr, x.id, false) : '';
         var outBkBadge = typeof tripIsItemOutOfRange === 'function' && tripIsItemOutOfRange(tr, x, true) ? '<span class="badge badge-amber trip-out-range-badge">Di luar rentang</span>' : '';
         var isExpBkD = !!(BR_STATE.tripExpandedItems && BR_STATE.tripExpandedItems[x.id]);
         var bkLinkChipD = typeof tripLinkChipHtml === 'function' ? tripLinkChipHtml(x.link, false) : '';
         var bkTxtIdD = 'bk-txt-' + esc(x.id);
-        return '<div class="upcoming-item trip-item-card' + (isExpBkD ? ' is-expanded' : '') + '" data-bk-row="' + esc(x.id) + '"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) +
-          '<div class="trip-card-body" id="' + bkTxtIdD + '"><div class="upcoming-name trip-bk-title trip-trunc-target">' + esc(x.title) + '</div><div class="upcoming-meta"><span class="badge badge-neutral">' + esc(x.cat) + '</span>' + (x.a ? '<span class="badge badge-neutral">' + brFmtShortIndo(x.a) + (x.b ? ' – ' + brFmtShortIndo(x.b) : '') + '</span>' : '') + outBkBadge + '</div>' + bkLinkChipD + extraAc +
+        var actLineBkD = typeof tripItemActualLineHtml === 'function' ? tripItemActualLineHtml(tr, x, true) : '';
+        var actBtnBkD = typeof tripItemActualBtnHtml === 'function' ? tripItemActualBtnHtml(x, 'data-bk-act') : '';
+        return '<div class="upcoming-item trip-item-card' + (isExpBkD ? ' is-expanded' : '') + '" data-bk-row="' + esc(x.id) + '">' +
+          '<div class="trip-card-top"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) +
+          '<div class="trip-card-body" id="' + bkTxtIdD + '"><div class="upcoming-name trip-bk-title trip-trunc-target">' + esc(x.title) + '</div><div class="upcoming-meta"><span class="badge badge-neutral">' + esc(x.cat) + '</span>' + (x.a ? '<span class="badge badge-neutral">' + brFmtShortIndo(x.a) + (x.b ? ' – ' + brFmtShortIndo(x.b) : '') + '</span>' : '') + outBkBadge + '</div>' + bkLinkChipD + actLineBkD +
           '<div class="trip-more-wrap"><button type="button" class="trip-more-btn" data-bk-more="' + esc(x.id) + '" aria-expanded="' + (isExpBkD ? 'true' : 'false') + '" aria-controls="' + bkTxtIdD + '"' + (isExpBkD ? '' : ' hidden') + '>' + (isExpBkD ? 'Sembunyikan' : 'Tampilkan') + '</button></div></div></div>' +
-          '<div class="upcoming-right">' + (typeof tripItemAmtHtml === 'function' ? tripItemAmtHtml(tr, x) : ('<strong class="mono pv">' + rp(tripAmtRp(tr, x)) + '</strong>')) +
-          '<button type="button" class="btn ' + (x.paid ? 'btn-emerald' : 'btn-secondary') + ' btn-sm" data-bk-pay="' + esc(x.id) + '">' + (x.paid ? '✓ Lunas' : 'Tandai lunas') + '</button>' +
+          '<div class="upcoming-right trip-card-amt">' + (typeof tripItemAmtHtml === 'function' ? tripItemAmtHtml(tr, x) : ('<strong class="mono pv">' + rp(tripAmtRp(tr, x)) + '</strong>')) + '</div></div>' +
+          '<div class="trip-card-actions">' +
+          '<button type="button" class="btn ' + (x.paid ? 'btn-emerald' : 'btn-secondary') + ' btn-sm trip-btn-done" data-bk-pay="' + esc(x.id) + '">' + (x.paid ? '✓ Lunas' : 'Tandai lunas') + '</button>' +
+          actBtnBkD +
           '<button type="button" class="btn btn-secondary btn-sm" data-bk-edit="' + esc(x.id) + '">Ubah</button>' +
-          '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);" data-bk-del="' + esc(x.id) + '">Hapus</button></div></div>';
+          '<button type="button" class="btn btn-secondary btn-sm trip-btn-del" style="color:var(--crimson);" data-bk-del="' + esc(x.id) + '">Hapus</button></div></div>';
       }).join('') : '<div style="padding:18px;text-align:center;color:var(--text-muted);">Belum ada pemesanan.</div>') + '</div></div>';
-  } else if (sub === 'real') {
-    var EAc = BR_STATE.tripEditAcId ? (tr.ac || []).filter(function (x) { return x && x.id === BR_STATE.tripEditAcId; })[0] : null;
-    if (!EAc && BR_STATE.tripEditAcId) BR_STATE.tripEditAcId = null;
-    var defsAc = typeof tripGetAcDefaults === 'function' ? tripGetAcDefaults(tr, EAc) : { d: tr.start || todayISO(), curVal: 'idr', cat: 'Makan' };
-    BR_STATE.inlineDates.acDay = EAc ? EAc.d : (BR_STATE.inlineDates.acDay || defsAc.d);
-    if (!BR_STATE.tripAcCat) BR_STATE.tripAcCat = EAc ? EAc.cat : defsAc.cat;
-    bodyHtml = typeof tripRenderRealSubTabHtml === 'function'
-      ? tripRenderRealSubTabHtml(tr, false, BR_STATE.tripEditAcId, BR_STATE.inlineDates.acDay, BR_STATE.tripAcCat)
-      : '';
   } else if (sub === 'cek') {
     var ck = tr.ck || [], doneCnt = ck.filter(function (c) { return c.done; }).length, pct = ck.length ? Math.round((doneCnt / ck.length) * 100) : 0;
     bodyHtml =
@@ -28338,9 +28321,6 @@ function setMode(m) {
       BR_STATE.tripView = 'list';
       BR_STATE.tripEditItId = null;
       BR_STATE.tripEditBkId = null;
-      BR_STATE.tripEditAcId = null;
-      BR_STATE.tripAcCat = '';
-      BR_STATE.inlineDates.acDay = '';
       BR_STATE.tripGoalEdit = false;
     }
     if (typeof autoTrip === 'function') autoTrip();
@@ -29222,6 +29202,38 @@ function brBindEvents() {
 
     var closeM = t.closest('[data-close-modal]');
     if (closeM) { brCloseModal(closeM.dataset.closeModal); return; }
+    if (t.closest('#act-m-del')) {
+      var tgtDel = BR_STATE.tripActTarget, trDelA = tp();
+      if (!tgtDel || !trDelA) return;
+      var arrDelA = tgtDel.kind === 'bk' ? (trDelA.bk || []) : (trDelA.it || []);
+      var itemDelA = arrDelA.filter(function (o) { return o && o.id === tgtDel.id; })[0];
+      if (!itemDelA || !(itemDelA.ax > 0)) return;
+      var savedScrollDel = typeof window !== 'undefined' ? window.scrollY : 0;
+      var retKindD = tgtDel.kind, retIdD = tgtDel.id;
+      askConfirm(
+        'Hapus harga aktual untuk <b>' + esc((retKindD === 'bk' ? itemDelA.title : itemDelA.place) || 'item ini') + '</b>?',
+        function () {
+          var sn = snap('Sebelum hapus harga aktual');
+          delete itemDelA.ax;
+          delete itemDelA.ak;
+          save();
+          BR_STATE._tripActReturnFocus = null;
+          brCloseModal('modal-trip-actual');
+          renderTrip();
+          if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+            try { window.scrollTo(0, savedScrollDel); } catch (e) {}
+          }
+          var nextBtnD = $('trip-root') && $('trip-root').querySelector('[' + (retKindD === 'bk' ? 'data-bk-act' : 'data-it-act') + '="' + retIdD + '"]');
+          if (nextBtnD && typeof nextBtnD.focus === 'function') {
+            try { nextBtnD.focus({ preventScroll: true }); } catch (e) {}
+          }
+          toast('Harga aktual dihapus', function () { restoreSnap(sn.t); });
+        },
+        'Ya, hapus',
+        'Hapus harga aktual'
+      );
+      return;
+    }
     var bkEx = t.closest('#modal-backup [data-ex], [data-bk-ex]');
     if (bkEx && typeof doExport === 'function') { doExport(bkEx.dataset.ex || bkEx.dataset.bkEx); return; }
     if (t.closest('#btn-bk-imp') && $('fi')) { $('fi').click(); return; }
@@ -29349,9 +29361,9 @@ function brBindEvents() {
     // 8. Trip tab & modals
     if (t.closest('#br-trip-back-list')) { BR_STATE.tripView = 'list'; renderHeaderSummaryIfNeeded(); renderTrip(); return; }
     var tOpen = t.closest('[data-trip-open], [data-trip-pick]');
-    if (tOpen) { setTrip(tOpen.dataset.tripOpen || tOpen.dataset.tripPick); BR_STATE.tripView = 'detail'; BR_STATE.tripSubTab = 'ring'; BR_STATE.tripEditAcId = null; BR_STATE.tripAcCat = ''; BR_STATE.inlineDates.acDay = ''; renderAll(); return; }
+    if (tOpen) { setTrip(tOpen.dataset.tripOpen || tOpen.dataset.tripPick); BR_STATE.tripView = 'detail'; BR_STATE.tripSubTab = 'ring'; renderAll(); return; }
     var tSub = t.closest('[data-triptab]');
-    if (tSub) { BR_STATE.tripSubTab = tSub.dataset.triptab; BR_STATE.tripEditItId = null; BR_STATE.tripEditBkId = null; BR_STATE.tripEditAcId = null; BR_STATE.tripAcCat = ''; BR_STATE.inlineDates.acDay = ''; BR_STATE._tripSubAnimate = true; renderTrip(); return; }
+    if (tSub) { BR_STATE.tripSubTab = tSub.dataset.triptab; BR_STATE.tripEditItId = null; BR_STATE.tripEditBkId = null; BR_STATE._tripSubAnimate = true; renderTrip(); return; }
     if (t.closest('#br-trip-new')) { brOpenTripMetaModal(false); return; }
     if (t.closest('#br-trip-edit')) { brOpenTripMetaModal(true); return; }
     if (t.closest('#br-trip-xl') && $('xlf')) { $('xlf').click(); return; }
@@ -29422,11 +29434,6 @@ function brBindEvents() {
           $('trip-book-form') && $('trip-book-form').querySelector('[data-ical-trig^="bk-start-cal"]'),
           $('trip-book-form') && $('trip-book-form').querySelector('[data-ical-trig^="bk-end-cal"]'),
         ], '', false);
-      }
-      if (p3[1] === 'acDay' && $('ac-rf') && tp() && typeof tripAcRefSelectOptsHtml === 'function') {
-        var curRfD = $('ac-rf').value || '';
-        $('ac-rf').innerHTML = tripAcRefSelectOptsHtml(tp(), p3[3], curRfD);
-        syncModernSelect($('ac-rf'));
       }
       return;
     }
@@ -29527,12 +29534,21 @@ function brBindEvents() {
           'Sebelum menghapus kegiatan',
           function () {
             trAct.it = trAct.it.filter(function (x) { return x.id !== id2; });
-            if (typeof tripUnlinkAcRef === 'function') tripUnlinkAcRef(trAct, 'it:' + id2);
             if (BR_STATE.tripEditItId === id2) BR_STATE.tripEditItId = null;
           },
           'Kegiatan dihapus.',
           false
         );
+        return;
+      }
+      if (t.closest('[data-it-act]')) {
+        var actBtnItD = t.closest('[data-it-act]');
+        brOpenActualModal('it', actBtnItD.dataset.itAct, actBtnItD);
+        return;
+      }
+      if (t.closest('[data-bk-act]')) {
+        var actBtnBkD = t.closest('[data-bk-act]');
+        brOpenActualModal('bk', actBtnBkD.dataset.bkAct, actBtnBkD);
         return;
       }
       if (t.closest('[data-bk-pay]')) { var id3 = t.closest('[data-bk-pay]').dataset.bkPay, x3 = trAct.bk.filter(function (x) { return x.id === id3; })[0]; if (x3) { var lockMsg = typeof tripToggleBkPaid === 'function' ? tripToggleBkPaid(trAct, x3) : (x3.paid = !x3.paid, x3.paid ? 'Ditandai lunas' : 'Lunas dibatalkan'); save(); renderTrip(); if (lockMsg) toast(lockMsg); } return; }
@@ -29557,58 +29573,9 @@ function brBindEvents() {
           'Sebelum menghapus pemesanan',
           function () {
             trAct.bk = trAct.bk.filter(function (x) { return x.id !== id4; });
-            if (typeof tripUnlinkAcRef === 'function') tripUnlinkAcRef(trAct, 'bk:' + id4);
             if (BR_STATE.tripEditBkId === id4) BR_STATE.tripEditBkId = null;
           },
           'Pemesanan dihapus.',
-          false
-        );
-        return;
-      }
-      var acCatBtn = t.closest('#trip-ac-form [data-ac-cat]');
-      if (acCatBtn) {
-        BR_STATE.tripAcCat = acCatBtn.dataset.acCat || 'Makan';
-        $('trip-ac-form').querySelectorAll('[data-ac-cat]').forEach(function (b) {
-          var on = b.dataset.acCat === BR_STATE.tripAcCat;
-          b.classList.toggle('active', on);
-          b.setAttribute('aria-pressed', on ? 'true' : 'false');
-        });
-        return;
-      }
-      if (t.closest('[data-ac-edit]')) {
-        var acEId = t.closest('[data-ac-edit]').dataset.acEdit;
-        var acEObj = (trAct.ac || []).filter(function (x) { return x && x.id === acEId; })[0];
-        if (acEObj) {
-          BR_STATE.tripEditAcId = acEId;
-          BR_STATE.inlineDates.acDay = acEObj.d;
-          BR_STATE.tripAcCat = acEObj.cat || 'Makan';
-          renderTrip();
-          if (typeof tripScrollToEditForm === 'function') tripScrollToEditForm($('trip-ac-form'), 'ac-amt', false);
-        }
-        return;
-      }
-      if (t.closest('#ac-cancel')) {
-        var prevAcId = BR_STATE.tripEditAcId;
-        BR_STATE.tripEditAcId = null;
-        BR_STATE.tripAcCat = '';
-        BR_STATE.inlineDates.acDay = '';
-        renderTrip();
-        if (prevAcId && typeof tripScrollBackToEditedRow === 'function') {
-          tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-ac-row="' + prevAcId + '"]'), false);
-        }
-        return;
-      }
-      if (t.closest('[data-ac-del]')) {
-        var idAcDel = t.closest('[data-ac-del]').dataset.acDel;
-        var xAcDel = (trAct.ac || []).filter(function (x) { return x && x.id === idAcDel; })[0];
-        if (xAcDel) brTripConfirmDel(
-          'Hapus pengeluaran <b>' + esc(xAcDel.note || xAcDel.cat || 'ini') + '</b>?',
-          'Sebelum menghapus pengeluaran',
-          function () {
-            trAct.ac = (trAct.ac || []).filter(function (x) { return x && x.id !== idAcDel; });
-            if (BR_STATE.tripEditAcId === idAcDel) { BR_STATE.tripEditAcId = null; BR_STATE.tripAcCat = ''; BR_STATE.inlineDates.acDay = ''; }
-          },
-          'Pengeluaran dihapus.',
           false
         );
         return;
@@ -29707,8 +29674,8 @@ function brBindEvents() {
     }
     else if (t.id === 'trip-note-box' && tp()) { clearTimeout(window._brNoteT); tp().note = t.value; save(); toast('Catatan disimpan'); }
     else if (t.dataset && t.dataset.dtDay && tp()) { clearTimeout(window._brDtT); tp().dt[t.dataset.dtDay] = t.value; save(); toast('Judul hari disimpan'); }
-    else if (t.id === 'it-cur' || t.id === 'bk-cur' || t.id === 'ac-cur') {
-      var rtElCurD = $(t.id === 'it-cur' ? 'it-rt' : (t.id === 'bk-cur' ? 'bk-rt' : 'ac-rt'));
+    else if (t.id === 'it-cur' || t.id === 'bk-cur') {
+      var rtElCurD = $(t.id === 'it-cur' ? 'it-rt' : 'bk-rt');
       if (rtElCurD && !(rtElCurD.dataset && rtElCurD.dataset.userEdited === '1')) rtElCurD.value = '';
       brSyncTripEqPrev();
     }
@@ -29722,10 +29689,15 @@ function brBindEvents() {
     var t = e.target;
     if (t.id === 'kas-search') renderKas();
     else if (t.id === 'qp-input') brUpdateQuickParsePreview();
-    else if (t.id === 'it-est' || t.id === 'bk-amt' || t.id === 'ac-amt') brSyncTripEqPrev();
+    else if (t.id === 'act-m-ax' || t.id === 'act-m-ak') {
+      if (t.id === 'act-m-ax' && typeof tripSetFieldError === 'function') tripSetFieldError('act-m-ax-err', t, '', false);
+      if (t.id === 'act-m-ak' && typeof tripSetFieldError === 'function') tripSetFieldError('act-m-ak-err', t, '', false);
+      brSyncActualPreview();
+    }
+    else if (t.id === 'it-est' || t.id === 'bk-amt') brSyncTripEqPrev();
     else if (t.id === 'it-link' && typeof tripSetFieldError === 'function') tripSetFieldError('it-link-err', t, '', false);
     else if (t.id === 'bk-link' && typeof tripSetFieldError === 'function') tripSetFieldError('bk-link-err', t, '', false);
-    else if (t.id === 'it-rt' || t.id === 'bk-rt' || t.id === 'ac-rt') { if (t.dataset) t.dataset.userEdited = '1'; brSyncTripEqPrev(); }
+    else if (t.id === 'it-rt' || t.id === 'bk-rt') { if (t.dataset) t.dataset.userEdited = '1'; brSyncTripEqPrev(); }
     else if (t.closest && t.closest('#kp-fxs-list') && BR_STATE.tripFxsDraft) {
       var idxFxD = t.dataset.fxCode != null ? +t.dataset.fxCode : (t.dataset.fxRate != null ? +t.dataset.fxRate : -1);
       if (idxFxD >= 0 && BR_STATE.tripFxsDraft[idxFxD]) {
@@ -29941,32 +29913,44 @@ function brBindEvents() {
       };
       if (objIt.fx && itCurSpecD.c) objIt.c = itCurSpecD.c;
       if (!objIt.place) { rkShakeInvalid($('it-place')); return; }
-      if (editItIdD) {
-        trI.it = trI.it.map(function (x) {
-          if (x.id !== editItIdD) return x;
-          var patchItD = Object.assign({}, objIt, { done: x.done });
-          return typeof tripMergeItemEdit === 'function' ? tripMergeItemEdit(x, patchItD, $('it-rt'), false) : Object.assign({}, x, patchItD);
-        });
-        BR_STATE.tripEditItId = null;
-      } else trI.it.push(objIt);
-      save(); renderTrip();
-      if (editItIdD) {
-        toast('Kegiatan diperbarui');
-        if (typeof tripScrollBackToEditedRow === 'function') {
-          tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-it-row="' + editItIdD + '"]'), false);
-        }
-      } else {
-        var savedItIdD = objIt.id, savedTrItIdD = trI.id;
-        toast('Kegiatan disimpan', null, {
-          tone: 'success',
-          duration: 7000,
-          action: {
-            label: 'Lihat',
-            onClick: function () {
-              if (typeof tripFocusItemFromToast === 'function') tripFocusItemFromToast(savedTrItIdD, 'itin', savedItIdD, false);
+      var commitItSubmitD = function (stripActual) {
+        if (editItIdD) {
+          trI.it = trI.it.map(function (x) {
+            if (x.id !== editItIdD) return x;
+            var patchItD = Object.assign({}, objIt, { done: x.done });
+            var mergedItD = typeof tripMergeItemEdit === 'function' ? tripMergeItemEdit(x, patchItD, $('it-rt'), false) : Object.assign({}, x, patchItD);
+            if (stripActual) {
+              delete mergedItD.ax;
+              delete mergedItD.ak;
+            }
+            return mergedItD;
+          });
+          BR_STATE.tripEditItId = null;
+        } else trI.it.push(objIt);
+        save(); renderTrip();
+        if (editItIdD) {
+          toast('Kegiatan diperbarui');
+          if (typeof tripScrollBackToEditedRow === 'function') {
+            tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-it-row="' + editItIdD + '"]'), false);
+          }
+        } else {
+          var savedItIdD = objIt.id, savedTrItIdD = trI.id;
+          toast('Kegiatan disimpan', null, {
+            tone: 'success',
+            duration: 7000,
+            action: {
+              label: 'Lihat',
+              onClick: function () {
+                if (typeof tripFocusItemFromToast === 'function') tripFocusItemFromToast(savedTrItIdD, 'itin', savedItIdD, false);
+              },
             },
-          },
-        });
+          });
+        }
+      };
+      if (editItIdD && oldItD && typeof tripConfirmCurrencyChangeIfActual === 'function') {
+        tripConfirmCurrencyChangeIfActual(trI, oldItD, objIt.fx, objIt.c, commitItSubmitD);
+      } else {
+        commitItSubmitD(false);
       }
     } else if (f.id === 'trip-book-form' && tp()) {
       e.preventDefault();
@@ -30010,84 +29994,93 @@ function brBindEvents() {
       }
       if (typeof tripSetFieldError === 'function') tripSetFieldError('bk-link-err', $('bk-link'), '', false);
       patchBk.link = bkLinkResD.url;
-      var newBkIdD = '';
-      if (editBkIdD) {
-        trB.bk = trB.bk.map(function (x) {
-          return x.id === editBkIdD
-            ? (typeof tripMergeBkEdit === 'function' ? tripMergeBkEdit(x, patchBk, $('bk-rt')) : Object.assign({}, x, patchBk))
-            : x;
-        });
-        BR_STATE.tripEditBkId = null;
-      } else {
-        newBkIdD = kid('bk');
-        trB.bk.push(Object.assign({ id: newBkIdD, pay: 'on', paid: false, rec: '' }, patchBk));
-      }
-      save(); renderTrip();
-      if (editBkIdD) {
-        toast('Pemesanan diperbarui');
-        if (typeof tripScrollBackToEditedRow === 'function') {
-          tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-bk-row="' + editBkIdD + '"]'), false);
+      var commitBkSubmitD = function (stripActualBk) {
+        var newBkIdD = '';
+        if (editBkIdD) {
+          trB.bk = trB.bk.map(function (x) {
+            if (x.id !== editBkIdD) return x;
+            var mergedBkD = typeof tripMergeBkEdit === 'function' ? tripMergeBkEdit(x, patchBk, $('bk-rt')) : Object.assign({}, x, patchBk);
+            if (stripActualBk) {
+              delete mergedBkD.ax;
+              delete mergedBkD.ak;
+            }
+            return mergedBkD;
+          });
+          BR_STATE.tripEditBkId = null;
+        } else {
+          newBkIdD = kid('bk');
+          trB.bk.push(Object.assign({ id: newBkIdD, pay: 'on', paid: false, rec: '' }, patchBk));
         }
-      } else {
-        var savedTrBkIdD = trB.id;
-        toast('Pemesanan disimpan', null, {
-          tone: 'success',
-          duration: 7000,
-          action: {
-            label: 'Lihat',
-            onClick: function () {
-              if (typeof tripFocusItemFromToast === 'function') tripFocusItemFromToast(savedTrBkIdD, 'book', newBkIdD, false);
+        save(); renderTrip();
+        if (editBkIdD) {
+          toast('Pemesanan diperbarui');
+          if (typeof tripScrollBackToEditedRow === 'function') {
+            tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-bk-row="' + editBkIdD + '"]'), false);
+          }
+        } else {
+          var savedTrBkIdD = trB.id;
+          toast('Pemesanan disimpan', null, {
+            tone: 'success',
+            duration: 7000,
+            action: {
+              label: 'Lihat',
+              onClick: function () {
+                if (typeof tripFocusItemFromToast === 'function') tripFocusItemFromToast(savedTrBkIdD, 'book', newBkIdD, false);
+              },
             },
-          },
-        });
+          });
+        }
+      };
+      if (editBkIdD && oldBkD && typeof tripConfirmCurrencyChangeIfActual === 'function') {
+        tripConfirmCurrencyChangeIfActual(trB, oldBkD, patchBk.fx, patchBk.c, commitBkSubmitD);
+      } else {
+        commitBkSubmitD(false);
       }
-    } else if (f.id === 'trip-ac-form' && tp()) {
+    } else if (f.id === 'trip-actual-form' && tp()) {
       e.preventDefault();
-      var trA = tp();
-      var amtAc = getRpVal('ac-amt');
-      if (!(amtAc > 0 && amtAc <= 1e12)) {
-        rkShakeInvalid($('ac-amt'));
-        toast('Isi nominal pengeluaran yang valid.');
+      var tgtSaveD = BR_STATE.tripActTarget, trActSaveD = tp();
+      if (!tgtSaveD || !trActSaveD) return;
+      var isBkSaveD = tgtSaveD.kind === 'bk';
+      var arrSaveD = isBkSaveD ? (trActSaveD.bk || []) : (trActSaveD.it || []);
+      var itemSaveD = arrSaveD.filter(function (o) { return o && o.id === tgtSaveD.id; })[0];
+      if (!itemSaveD) return;
+      var rawAxD = String($('act-m-ax') && $('act-m-ax').value || '').replace(/\D/g, '').slice(0, 13);
+      var axValD = rawAxD ? Number(rawAxD) : 0;
+      if (!(axValD > 0 && Number.isFinite(axValD) && axValD <= 1e12)) {
+        if (typeof tripSetFieldError === 'function') tripSetFieldError('act-m-ax-err', $('act-m-ax'), 'Isi harga aktual lebih besar dari 0.', false);
+        if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('act-m-ax'));
         return;
       }
-      var curValAc = ($('ac-cur') && $('ac-cur').value) || 'idr';
-      var acCurSpec = typeof tripParseCurSelectVal === 'function' ? tripParseCurSelectVal(trA, curValAc) : { fx: curValAc === 'fx', c: '' };
-      var isFxAc = !!(trA.cur && acCurSpec.fx);
-      var editAcIdD = BR_STATE.tripEditAcId;
-      var oldAcObj = editAcIdD ? (trA.ac || []).filter(function (x) { return x && x.id === editAcIdD; })[0] : null;
-      var defsAcS = typeof tripGetAcDefaults === 'function' ? tripGetAcDefaults(trA, oldAcObj) : { d: trA.start || todayISO(), cat: 'Makan' };
-      var dAc = BR_STATE.inlineDates.acDay && ISO_RE.test(BR_STATE.inlineDates.acDay) ? BR_STATE.inlineDates.acDay : defsAcS.d;
-      var catAc = BR_STATE.tripAcCat || defsAcS.cat || 'Makan';
-      var objAc = {
-        id: editAcIdD || kid('ac'),
-        d: dAc,
-        amt: amtAc,
-        fx: isFxAc,
-        cat: catAc,
-      };
-      if (isFxAc && acCurSpec.c) objAc.c = acCurSpec.c;
-      var rtAc = (isFxAc && $('ac-rt') && typeof tripParseRateVal === 'function') ? tripParseRateVal($('ac-rt').value) : 0;
-      if (isFxAc && rtAc > 0) objAc.rt = rtAc;
-      var noteAc = ($('ac-note') && $('ac-note').value || '').trim().slice(0, 200);
-      if (noteAc) objAc.note = noteAc;
-      var rfAc = ($('ac-rf') && $('ac-rf').value || '').trim();
-      if (rfAc && /^(it|bk):.+$/.test(rfAc)) objAc.rf = rfAc;
-      if (!Array.isArray(trA.ac)) trA.ac = [];
-      if (editAcIdD) {
-        trA.ac = trA.ac.map(function (x) { return x && x.id === editAcIdD ? objAc : x; });
-      } else {
-        trA.ac.push(objAc);
+      if (typeof tripSetFieldError === 'function') tripSetFieldError('act-m-ax-err', $('act-m-ax'), '', false);
+      var isFxSaveD = !!(itemSaveD.fx && typeof tripItemCur === 'function' && tripItemCur(trActSaveD, itemSaveD));
+      var rawAkD = String($('act-m-ak') && $('act-m-ak').value || '').trim();
+      var akValD = 0;
+      if (isFxSaveD && rawAkD) {
+        akValD = typeof tripParseRateVal === 'function' ? tripParseRateVal(rawAkD) : 0;
+        if (!(akValD > 0 && Number.isFinite(akValD) && akValD <= 1e9)) {
+          if (typeof tripSetFieldError === 'function') tripSetFieldError('act-m-ak-err', $('act-m-ak'), 'Kurs harus angka lebih besar dari 0.', false);
+          if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('act-m-ak'));
+          return;
+        }
       }
-      if (typeof tripRememberAcDefaults === 'function') tripRememberAcDefaults(trA, dAc, curValAc, catAc);
-      BR_STATE.tripEditAcId = null;
-      BR_STATE.tripAcCat = '';
-      BR_STATE.inlineDates.acDay = '';
+      if (typeof tripSetFieldError === 'function') tripSetFieldError('act-m-ak-err', $('act-m-ak'), '', false);
+      itemSaveD.ax = axValD;
+      if (isFxSaveD && akValD > 0) itemSaveD.ak = akValD;
+      else delete itemSaveD.ak;
+      var savedScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
+      var focusBackIdD = itemSaveD.id, focusBackAttrD = isBkSaveD ? 'data-bk-act' : 'data-it-act';
       save();
+      BR_STATE._tripActReturnFocus = null;
+      brCloseModal('modal-trip-actual');
       renderTrip();
-      toast(editAcIdD ? 'Pengeluaran diperbarui' : 'Pengeluaran dicatat');
-      if (editAcIdD && typeof tripScrollBackToEditedRow === 'function') {
-        tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-ac-row="' + editAcIdD + '"]'), false);
+      if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+        try { window.scrollTo(0, savedScrollY); } catch (err) {}
       }
+      var backBtnD = $('trip-root') && $('trip-root').querySelector('[' + focusBackAttrD + '="' + focusBackIdD + '"]');
+      if (backBtnD && typeof backBtnD.focus === 'function') {
+        try { backBtnD.focus({ preventScroll: true }); } catch (err) {}
+      }
+      toast('Harga aktual disimpan');
     } else if (f.id === 'trip-ck-form' && tp()) {
       e.preventDefault();
       var txtC = ($('trip-ck-input') && $('trip-ck-input').value || '').trim();
@@ -30155,7 +30148,7 @@ function brBindEvents() {
       if (alatMenu) alatMenu.classList.remove('open');
       if ($('mobile-more-sheet')) $('mobile-more-sheet').classList.remove('open');
       closeAllPickersAndMenus(null);
-      ['yr-panel', 'modal-scenario', 'modal-quick-tx', 'modal-backup', 'modal-trip-form', 'modal-trip-share', 'modal-trip-xl', 'modal-report', 'lg', 'cf'].forEach(brCloseModal);
+      ['yr-panel', 'modal-scenario', 'modal-quick-tx', 'modal-backup', 'modal-trip-form', 'modal-trip-share', 'modal-trip-xl', 'modal-trip-actual', 'modal-report', 'lg', 'cf'].forEach(brCloseModal);
     } else if (e.key.toLowerCase() === 'n' && !['input', 'textarea', 'select'].includes(tag) && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
       brOpenModal('modal-quick-tx');
@@ -30418,8 +30411,6 @@ var MOB_STATE = {
   tripSub: 'ring',
   tripEditIt: null,
   tripEditBk: null,
-  tripEditAc: null,
-  tripAcCat: '',
   tripGoalEdit: false,
   tripOpenDays: {},
   tripExpandedItems: {},
@@ -30838,6 +30829,66 @@ function mobCloseSheet(id) {
     el.style.opacity = '';
     el.style.transition = '';
   }
+  if (id === 'm-sheet-actual') {
+    var retFocusM = MOB_STATE._tripActReturnFocus;
+    MOB_STATE._tripActReturnFocus = null;
+    MOB_STATE.tripActTarget = null;
+    if (retFocusM && retFocusM.isConnected && typeof retFocusM.focus === 'function') {
+      try { retFocusM.focus({ preventScroll: true }); } catch (e) { try { retFocusM.focus(); } catch (e2) {} }
+    }
+  }
+}
+
+function mobSyncActualPreview() {
+  var tgt = MOB_STATE.tripActTarget, tr = typeof mobActiveTrip === 'function' ? mobActiveTrip() : null;
+  if (!tgt || !tr) return;
+  var isBk = tgt.kind === 'bk';
+  var arr = isBk ? (tr.bk || []) : (tr.it || []);
+  var x = arr.find(function (o) { return o && o.id === tgt.id; });
+  if (!x) return;
+  var prevEl = $('m-act-prev'), detEl = $('m-act-prev-det');
+  if (!prevEl) return;
+  var info = typeof tripActualPreviewData === 'function'
+    ? tripActualPreviewData(tr, x, isBk, $('m-act-ax') && $('m-act-ax').value, $('m-act-ak') && $('m-act-ak').value)
+    : { text: '', detail: '', tone: '' };
+  prevEl.textContent = info.text || '';
+  prevEl.classList.remove('is-over', 'is-save', 'is-eq');
+  if (info.tone) prevEl.classList.add('is-' + info.tone);
+  if (detEl) detEl.textContent = info.detail || '';
+}
+
+function mobOpenActualSheet(kind, itemId, triggerEl) {
+  var tr = typeof mobActiveTrip === 'function' ? mobActiveTrip() : null;
+  if (!tr) return;
+  var isBk = kind === 'bk';
+  var arr = isBk ? (tr.bk || []) : (tr.it || []);
+  var x = arr.find(function (o) { return o && o.id === itemId; });
+  if (!x || (!isBk && x.pay === 'on')) return;
+  MOB_STATE.tripActTarget = { kind: kind, id: itemId };
+  MOB_STATE._tripActReturnFocus = triggerEl || null;
+  var isFx = !!(x.fx && typeof tripItemCur === 'function' && tripItemCur(tr, x));
+  var curCode = isFx ? tripItemCur(tr, x) : 'Rp';
+  var effRate = isFx && typeof tripItemRate === 'function' ? tripItemRate(tr, x) : 0;
+  if ($('m-act-item')) $('m-act-item').textContent = isBk ? (x.title || '') : (x.place || '');
+  if ($('m-act-est')) $('m-act-est').textContent = typeof tripActualEstLabel === 'function' ? tripActualEstLabel(tr, x, isBk) : '';
+  if ($('m-act-ax-lbl')) $('m-act-ax-lbl').textContent = 'Harga di lapangan (' + curCode + ')';
+  if ($('m-act-ax')) $('m-act-ax').value = x.ax > 0 ? (typeof fmtNumOnlyIntStr === 'function' ? fmtNumOnlyIntStr(String(Math.round(x.ax))) : String(Math.round(x.ax))) : '';
+  if (typeof tripSetFieldError === 'function') {
+    tripSetFieldError('m-act-ax-err', $('m-act-ax'), '', true);
+    tripSetFieldError('m-act-ak-err', $('m-act-ak'), '', true);
+  }
+  if ($('m-act-ak-wrap')) $('m-act-ak-wrap').hidden = !isFx;
+  if ($('m-act-ak-lbl')) $('m-act-ak-lbl').textContent = 'Kurs (Rp per 1 ' + (curCode || 'unit') + ')';
+  if ($('m-act-ak')) {
+    $('m-act-ak').value = (isFx && x.ak > 0) ? String(x.ak) : '';
+    $('m-act-ak').placeholder = effRate > 0 ? ('ikut kurs efektif: ' + (typeof tripFormatRateIndo === 'function' ? tripFormatRateIndo(effRate) : effRate)) : 'ikut kurs efektif';
+  }
+  if ($('m-act-del')) $('m-act-del').hidden = !(x.ax > 0);
+  mobSyncActualPreview();
+  mobOpenSheet('m-sheet-actual');
+  if ($('m-act-ax') && typeof $('m-act-ax').focus === 'function') {
+    try { $('m-act-ax').focus({ preventScroll: true }); } catch (e) { try { $('m-act-ax').focus(); } catch (e2) {} }
+  }
 }
 
 function mobDefaultFrame() {
@@ -30883,8 +30934,23 @@ function syncMobileCloudUI() {
   if ($('m-user-name')) $('m-user-name').innerHTML = 'Halo, <b>' + esc(du.name) + '</b>';
   if ($('m-pop-user-name')) $('m-pop-user-name').textContent = 'Halo, ' + du.name;
   var lbl = $('m-sync-lbl'), setSt = $('m-set-acct-status');
+  var isSchemaBlk = typeof syncSchemaBlocked !== 'undefined' && !!syncSchemaBlocked;
+  var ban = $('m-sync-banner');
+  if (ban) {
+    ban.hidden = !isSchemaBlk;
+    if (isSchemaBlk) {
+      ban.innerHTML =
+        '<div class="m-sync-banner-title">Data cloud dibuat oleh versi aplikasi yang lebih baru. Perbarui aplikasi agar tidak ada data yang hilang.</div>' +
+        '<div class="m-sync-banner-sub">Buka <strong>Pengaturan &rarr; Cek pembaruan</strong> untuk memperbarui aplikasi.</div>';
+    } else {
+      ban.textContent = '';
+    }
+  }
   var statusTxt = '● Mode Lokal', statusCol = 'var(--text-muted)';
-  if (typeof sb !== 'undefined' && sb) {
+  if (isSchemaBlk) {
+    statusTxt = '! Perlu pembaruan aplikasi (sinkron dijeda)';
+    statusCol = 'var(--crimson)';
+  } else if (typeof sb !== 'undefined' && sb) {
     if (u) {
       statusTxt = '● Sinkron Cloud (' + (u.email || du.name) + ')';
       statusCol = 'var(--emerald)';
@@ -30894,7 +30960,7 @@ function syncMobileCloudUI() {
     }
   }
   if (lbl) {
-    lbl.textContent = u ? '● Sinkron Cloud' : (typeof sb !== 'undefined' && sb ? '○ Belum Masuk' : '● Mode Lokal');
+    lbl.textContent = isSchemaBlk ? '! Perlu pembaruan' : (u ? '● Sinkron Cloud' : (typeof sb !== 'undefined' && sb ? '○ Belum Masuk' : '● Mode Lokal'));
     lbl.style.color = statusCol;
   }
   if (setSt) {
@@ -31000,6 +31066,7 @@ function mobShellTemplate() {
     '<svg class="m-ptr-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12l7 7 7-7"/></svg>' +
     '<span class="m-ptr-spin"></span>' +
     '</div>' +
+    '<div class="m-sync-banner" id="m-sync-banner" role="alert" hidden></div>' +
     '<main class="mob-main" id="m-main">' +
     // TAB 1: RINCIAN
     '<section class="tab-panel active" id="m-tab-rincian"><div class="stack">' +
@@ -31270,6 +31337,14 @@ function mobShellTemplate() {
     '<div class="field"><label class="field-label" for="m-xl-rate">Kurs (Rp / 1 unit)</label><input class="input mono" id="m-xl-rate" type="text" inputmode="decimal" data-num-only="dec" placeholder="110" /></div></div>' +
     '<div class="m-xl-err" id="m-xl-err" role="alert"></div></div>' +
     '<div class="ms-foot"><button type="button" class="btn btn-secondary" data-mclose="m-sheet-trip-xl">Batal</button><button type="submit" class="btn btn-primary" id="m-xl-submit">Impor</button></div></form></div></div>' +
+    '<div class="modal-backdrop" id="m-sheet-actual" role="dialog" aria-modal="true" aria-labelledby="m-act-title"><div class="modal-sheet"><div class="ms-handle"></div>' +
+    '<div class="ms-head"><div><strong class="card-title" id="m-act-title">Harga Sebenarnya di Lapangan</strong><div class="msc-sub" id="m-act-item"></div></div><button type="button" class="btn btn-secondary btn-sm" id="m-act-close" data-mclose="m-sheet-actual" aria-label="Tutup">✕</button></div>' +
+    '<form id="m-trip-actual-form" style="display:flex;flex-direction:column;min-height:0;flex:1" novalidate><div class="ms-body">' +
+    '<div class="trip-act-est-box pv" id="m-act-est">Estimasi: Rp 0</div>' +
+    '<div class="field"><label class="field-label" for="m-act-ax" id="m-act-ax-lbl">Harga di lapangan (Rp)</label><input class="input mono" id="m-act-ax" type="text" inputmode="numeric" data-num-only="int" placeholder="0" required /><div class="trip-field-err" id="m-act-ax-err" role="alert" hidden></div></div>' +
+    '<div class="field" id="m-act-ak-wrap" hidden><label class="field-label" for="m-act-ak" id="m-act-ak-lbl">Kurs (Rp per 1 unit)</label><input class="input mono" id="m-act-ak" type="text" inputmode="decimal" data-num-only="dec" placeholder="ikut kurs efektif" /><div class="trip-field-err" id="m-act-ak-err" role="alert" hidden></div><div class="msc-sub">Kosongkan untuk mengikuti kurs efektif item.</div></div>' +
+    '<div class="trip-act-prev pv" id="m-act-prev" aria-live="polite"></div><div class="trip-act-prev-det pv" id="m-act-prev-det"></div>' +
+    '</div><div class="ms-foot"><button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);margin-right:auto" id="m-act-del" hidden>Hapus harga aktual</button><button type="button" class="btn btn-secondary" id="m-act-cancel" data-mclose="m-sheet-actual">Batal</button><button type="submit" class="btn btn-primary" id="m-act-save">Simpan</button></div></form></div></div>' +
     '<input type="file" id="m-xl-file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden />' +
     '<div class="notif-popover" id="m-notif-popover"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:800;font-size:0.82rem">Pengingat Jatuh Tempo</span>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="m-pop-to-set">Atur Notif &rarr;</button></div><div id="m-pop-os-cta"></div><div class="stack" style="gap:7px" id="m-notif-pop-list"></div>' +
@@ -32330,17 +32405,6 @@ function mobSyncTripEqPrev() {
   } else if (typeof tripSyncEqPairs === 'function') {
     tripSyncEqPairs(tr, [['m-bk-amt', 'm-bk-cur', 'm-bk-amt-eq']]);
   }
-  var eAcM = tr && MOB_STATE.tripEditAc ? (tr.ac || []).find(function (x) { return x.id === MOB_STATE.tripEditAc; }) : null;
-  if (typeof tripSyncAcFormUi === 'function') {
-    tripSyncAcFormUi(tr, eAcM, 'm-ac-amt', 'm-ac-cur', 'm-ac-amt-eq', 'm-ac-rt-details', 'm-ac-rt');
-  }
-}
-
-function mobSyncAcRefOptions(dayISO) {
-  var rfSel = $('m-ac-rf'), tr = mobActiveTrip();
-  if (!rfSel || !tr || typeof tripAcRefSelectOptsHtml !== 'function') return;
-  var prevVal = rfSel.value || '';
-  rfSel.innerHTML = tripAcRefSelectOptsHtml(tr, dayISO || todayISO(), prevVal);
 }
 
 function syncMobTripBudgetWrap() {
@@ -32380,6 +32444,8 @@ function renderMobTripItinCard(tr, x) {
   var isExpItM = !!(MOB_STATE.tripExpandedItems && MOB_STATE.tripExpandedItems[x.id]);
   var itLinkChipM = typeof tripLinkChipHtml === 'function' ? tripLinkChipHtml(x.link, true) : '';
   var mTxtId = 'm-it-txt-' + esc(x.id);
+  var actLineItM = typeof tripItemActualLineHtml === 'function' ? tripItemActualLineHtml(tr, x, false) : '';
+  var actBtnItM = x.pay !== 'on' && typeof tripItemActualBtnHtml === 'function' ? tripItemActualBtnHtml(x, 'data-mit-act') : '';
   return '<div class="mob-sched-card trip-item-card ' + (x.done ? 'done ' : '') + (isExpItM ? 'is-expanded' : '') + '" data-it-row="' + esc(x.id) + '" style="padding:10px">' +
     '<div class="msc-top"><div class="msc-left" style="flex:1">' + mobCatLogo(mobTripCatMapped(x.cat || 'Transport'), 30) +
     '<div class="trip-card-body" id="' + mTxtId + '" style="min-width:0;flex:1">' +
@@ -32387,13 +32453,14 @@ function renderMobTripItinCard(tr, x) {
     '<div class="msc-badges" style="margin-top:4px"><span class="badge b-nt">' + esc(x.cat || 'Transport') + '</span>' +
     (payTxt ? '<span class="badge b-ac">' + esc(payTxt) + '</span>' : '') + outItBadgeM + '</div>' +
     (x.note ? '<div class="msc-sub trip-it-note trip-trunc-target" style="margin-top:4px">' + esc(x.note) + '</div>' : '') +
-    itLinkChipM +
+    itLinkChipM + actLineItM +
     '<div class="trip-more-wrap"><button type="button" class="trip-more-btn" data-mit-more="' + esc(x.id) + '" aria-expanded="' + (isExpItM ? 'true' : 'false') + '" aria-controls="' + mTxtId + '"' + (isExpItM ? '' : ' hidden') + '>' + (isExpItM ? 'Sembunyikan' : 'Tampilkan') + '</button></div>' +
     '</div></div>' + amtBlock + '</div>' +
-    '<div style="display:flex;gap:6px;justify-content:flex-end">' +
-    '<button type="button" class="btn btn-secondary btn-sm" data-mit-toggle="' + esc(x.id) + '">' + (x.done ? '✓ Selesai' : 'Tandai') + '</button>' +
+    '<div class="trip-card-actions">' +
+    '<button type="button" class="btn btn-secondary btn-sm trip-btn-done" data-mit-toggle="' + esc(x.id) + '">' + (x.done ? '✓ Selesai' : 'Tandai') + '</button>' +
+    actBtnItM +
     '<button type="button" class="btn btn-secondary btn-sm" data-mit-edit="' + esc(x.id) + '">Ubah</button>' +
-    '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson)" data-mit-del="' + esc(x.id) + '">Hapus</button>' +
+    '<button type="button" class="btn btn-secondary btn-sm trip-btn-del" style="color:var(--crimson)" data-mit-del="' + esc(x.id) + '">Hapus</button>' +
     '</div></div>';
 }
 
@@ -32486,7 +32553,7 @@ function renderMobTrip() {
   }
 
   var pl = tripPlan(tr),
-    subTabs = [['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['real', 'Realisasi'], ['cek', 'Checklist'], ['cat', 'Catatan'], ['sv', 'Tabungan']],
+    subTabs = [['ring', 'Ringkasan'], ['itin', 'Itinerary'], ['book', 'Pemesanan'], ['cek', 'Checklist'], ['cat', 'Catatan'], ['sv', 'Tabungan']],
     body = '';
 
   var itRpFn = typeof tripItRp === 'function' ? tripItRp : function (P, x) {
@@ -32521,6 +32588,7 @@ function renderMobTrip() {
       '<div class="m-tile"><div class="m-tile-k">' + (tr.budget ? (leftB >= 0 ? 'Sisa Anggaran' : 'Melebihi Anggaran') : 'Anggaran') + '</div><div class="m-tile-v pv" style="color:' + (tr.budget ? (leftB >= 0 ? 'var(--emerald)' : 'var(--crimson)') : 'var(--text-primary)') + '">' + (tr.budget ? rp(Math.abs(leftB)) : 'Belum diatur') + '</div><div class="m-tile-s pv">' + (tr.budget ? pctB + '% dari ' + rp(tr.budget) : 'Atur lewat tombol Ubah') + '</div></div>' +
       '<div class="m-tile"><div class="m-tile-k">Sudah Dibayar</div><div class="m-tile-v pv" style="color:var(--emerald)">' + rp(pl.paid) + '</div><div class="m-tile-s pv">Belum dibayar: ' + rp(pl.b - pl.paid) + '</div></div>' +
       '<div class="m-tile"><div class="m-tile-k">Rencana per Hari</div><div class="m-tile-v pv">' + (N ? rp(Math.round(pl.t / N)) : '—') + '</div><div class="m-tile-s">' + (N ? N + ' hari' : 'Tanggal belum diisi') + (tr.cur && tr.rate ? ' · 1 ' + esc(tr.cur) + ' = Rp ' + tr.rate.toLocaleString('id-ID') : '') + '</div></div></div>' +
+      (typeof tripRenderVsPlanCardHtml === 'function' ? tripRenderVsPlanCardHtml(tr, true) : '') +
       '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h3 class="card-title">Siapkan Tunai / Kartu</h3><p class="msc-sub">Akumulasi kebutuhan bayar di tempat</p></div></div><div class="stack" style="gap:6px">' +
       (ck.length ? ck.map(function (c) {
         var cx = pl.cash[c];
@@ -32571,31 +32639,25 @@ function renderMobTrip() {
         var bkAmtHtml = typeof tripItemAmtHtml === 'function'
           ? tripItemAmtHtml(tr, x, null, 'msc-right', 'font-size:0.84rem')
           : '<strong class="mono pv msc-right" style="font-size:0.84rem">' + rp(bkRpFn(tr, x)) + '</strong>';
-        var extraAcM = typeof tripBkExtraAcHtml === 'function' ? tripBkExtraAcHtml(tr, x.id, true) : '';
         var outBkBadgeM = typeof tripIsItemOutOfRange === 'function' && tripIsItemOutOfRange(tr, x, true)
           ? '<span class="badge b-am trip-out-range-badge">Di luar rentang</span>'
           : '';
         var isExpBkM = !!(MOB_STATE.tripExpandedItems && MOB_STATE.tripExpandedItems[x.id]);
         var bkLinkChipM = typeof tripLinkChipHtml === 'function' ? tripLinkChipHtml(x.link, true) : '';
         var mBkTxtId = 'm-bk-txt-' + esc(x.id);
+        var actLineBkM = typeof tripItemActualLineHtml === 'function' ? tripItemActualLineHtml(tr, x, true) : '';
+        var actBtnBkM = typeof tripItemActualBtnHtml === 'function' ? tripItemActualBtnHtml(x, 'data-mbk-act') : '';
         return '<div class="mob-sched-card trip-item-card ' + (x.paid ? 'done ' : '') + (isExpBkM ? 'is-expanded' : '') + '" data-bk-row="' + esc(x.id) + '" style="padding:10px"><div class="msc-top"><div class="msc-left" style="flex:1">' + mobCatLogo(mobTripCatMapped(x.cat || 'Transport'), 30) +
           '<div class="trip-card-body" id="' + mBkTxtId + '" style="min-width:0;flex:1"><div class="msc-name trip-bk-title trip-trunc-target" style="font-weight:800;font-size:0.84rem">' + esc(x.title) + '</div><div class="msc-badges" style="margin-top:4px"><span class="badge b-nt">' + esc(x.cat || 'Transport') + '</span>' +
           (x.a ? '<span class="badge b-nt">' + esc(mobFmtShortCal(x.a) + (x.b ? ' – ' + mobFmtShortCal(x.b) : '')) + '</span>' : '') + outBkBadgeM +
-          '</div>' + bkLinkChipM + extraAcM +
+          '</div>' + bkLinkChipM + actLineBkM +
           '<div class="trip-more-wrap"><button type="button" class="trip-more-btn" data-mbk-more="' + esc(x.id) + '" aria-expanded="' + (isExpBkM ? 'true' : 'false') + '" aria-controls="' + mBkTxtId + '"' + (isExpBkM ? '' : ' hidden') + '>' + (isExpBkM ? 'Sembunyikan' : 'Tampilkan') + '</button></div>' +
           '</div></div>' + bkAmtHtml + '</div>' +
-          '<div style="display:flex;gap:6px;justify-content:flex-end"><button type="button" class="btn ' + (x.paid ? 'btn-emerald' : 'btn-secondary') + ' btn-sm" data-mbk-pay="' + esc(x.id) + '">' + (x.paid ? '✓ Lunas' : 'Tandai lunas') + '</button>' +
+          '<div class="trip-card-actions"><button type="button" class="btn ' + (x.paid ? 'btn-emerald' : 'btn-secondary') + ' btn-sm trip-btn-done" data-mbk-pay="' + esc(x.id) + '">' + (x.paid ? '✓ Lunas' : 'Tandai lunas') + '</button>' +
+          actBtnBkM +
           '<button type="button" class="btn btn-secondary btn-sm" data-mbk-edit="' + esc(x.id) + '">Ubah</button>' +
-          '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson)" data-mbk-del="' + esc(x.id) + '">Hapus</button></div></div>';
+          '<button type="button" class="btn btn-secondary btn-sm trip-btn-del" style="color:var(--crimson)" data-mbk-del="' + esc(x.id) + '">Hapus</button></div></div>';
       }).join('') || '<div class="card" style="text-align:center;color:var(--text-muted);font-size:0.78rem;padding:16px">Belum ada pemesanan.</div>') + '</div>';
-  } else if (MOB_STATE.tripSub === 'real') {
-    var EAcM = MOB_STATE.tripEditAc ? (tr.ac || []).find(function (x) { return x && x.id === MOB_STATE.tripEditAc; }) : null;
-    if (!EAcM && MOB_STATE.tripEditAc) MOB_STATE.tripEditAc = null;
-    var defsAcM = typeof tripGetAcDefaults === 'function' ? tripGetAcDefaults(tr, EAcM) : { d: tr.start || todayISO(), curVal: 'idr', cat: 'Makan' };
-    if (!MOB_STATE.tripAcCat) MOB_STATE.tripAcCat = EAcM ? EAcM.cat : defsAcM.cat;
-    body = typeof tripRenderRealSubTabHtml === 'function'
-      ? tripRenderRealSubTabHtml(tr, true, MOB_STATE.tripEditAc, '', MOB_STATE.tripAcCat)
-      : '';
   } else if (MOB_STATE.tripSub === 'cek') {
     var ck = tr.ck || [], doneCnt = ck.filter(function (c) { return c.done; }).length, pctCk = ck.length ? Math.round((doneCnt / ck.length) * 100) : 0;
     body =
@@ -34273,6 +34335,9 @@ function bindMobileShellEvents(root) {
         ap.classList.remove('open');
         if (typeof rkSyncAcctOpenUI === 'function') rkSyncAcctOpenUI();
       }
+      if ($('m-sheet-actual') && $('m-sheet-actual').classList.contains('open')) {
+        mobCloseSheet('m-sheet-actual');
+      }
     });
   }
   root.addEventListener('pointerdown', function (e) {
@@ -34473,7 +34538,6 @@ function bindMobileShellEvents(root) {
       if ((p2[0] === 'm-bk-start' || p2[0] === 'm-bk-end') && typeof tripSetFieldError === 'function') {
         tripSetFieldError('m-bk-date-err', [$('m-bk-start-trig'), $('m-bk-end-trig')], '', true);
       }
-      if (p2[0] === 'm-ac-day') mobSyncAcRefOptions(p2[1]);
       return;
     }
     var bd = e.target.classList && e.target.classList.contains('modal-backdrop') ? e.target : null;
@@ -35315,49 +35379,15 @@ function bindMobileShellEvents(root) {
     var tlist = e.target.closest('[data-mtrip-list]');
     if (tlist) { MOB_STATE.tripView = 'list'; renderMobTrip(); return; }
     var tsel = e.target.closest('[data-mtrip-sel]');
-    if (tsel) { MOB_STATE.tripId = tsel.getAttribute('data-mtrip-sel'); MOB_STATE.tripView = 'detail'; MOB_STATE.tripSub = 'ring'; MOB_STATE.tripEditIt = null; MOB_STATE.tripEditBk = null; MOB_STATE.tripEditAc = null; MOB_STATE.tripAcCat = ''; MOB_STATE.tripGoalEdit = false; renderMobTrip(); initMobDragSliders(); return; }
+    if (tsel) { MOB_STATE.tripId = tsel.getAttribute('data-mtrip-sel'); MOB_STATE.tripView = 'detail'; MOB_STATE.tripSub = 'ring'; MOB_STATE.tripEditIt = null; MOB_STATE.tripEditBk = null; MOB_STATE.tripGoalEdit = false; renderMobTrip(); initMobDragSliders(); return; }
     var tsub = e.target.closest('[data-mtripsub]');
     if (tsub) {
       MOB_STATE.tripSub = tsub.getAttribute('data-mtripsub');
       MOB_STATE.tripEditIt = null;
       MOB_STATE.tripEditBk = null;
-      MOB_STATE.tripEditAc = null;
-      MOB_STATE.tripAcCat = '';
       MOB_STATE.tripGoalEdit = false;
       renderMobTrip();
       initMobDragSliders();
-      return;
-    }
-    var macCatBtn = e.target.closest('#m-trip-ac-form [data-mac-cat]');
-    if (macCatBtn) {
-      MOB_STATE.tripAcCat = macCatBtn.getAttribute('data-mac-cat') || 'Makan';
-      $('m-trip-ac-form').querySelectorAll('[data-mac-cat]').forEach(function (b) {
-        var on = b.getAttribute('data-mac-cat') === MOB_STATE.tripAcCat;
-        b.classList.toggle('active', on);
-        b.setAttribute('aria-pressed', on ? 'true' : 'false');
-      });
-      return;
-    }
-    var macE = e.target.closest('[data-mac-edit]');
-    if (macE) {
-      var idAcM = macE.getAttribute('data-mac-edit');
-      var trAcE = mobActiveTrip(), acObjM = trAcE && (trAcE.ac || []).find(function (x) { return x && x.id === idAcM; });
-      if (acObjM) {
-        MOB_STATE.tripEditAc = idAcM;
-        MOB_STATE.tripAcCat = acObjM.cat || 'Makan';
-        renderMobTrip();
-        if (typeof tripScrollToEditForm === 'function') tripScrollToEditForm($('m-trip-ac-form'), null, true);
-      }
-      return;
-    }
-    if (e.target.closest('#m-ac-cancel')) {
-      var prevAcM = MOB_STATE.tripEditAc;
-      MOB_STATE.tripEditAc = null;
-      MOB_STATE.tripAcCat = '';
-      renderMobTrip();
-      if (prevAcM && typeof tripScrollBackToEditedRow === 'function') {
-        tripScrollBackToEditedRow($('m-trip-root') && $('m-trip-root').querySelector('[data-ac-row="' + prevAcM + '"]'), true);
-      }
       return;
     }
     var tdel = e.target.closest('[data-mtrip-del]');
@@ -35390,6 +35420,38 @@ function bindMobileShellEvents(root) {
     }
     var itt = e.target.closest('[data-mit-toggle]');
     if (itt) { var t0 = mobActiveTrip(), it0 = t0 && t0.it.find(function (x) { return x.id === itt.getAttribute('data-mit-toggle'); }); if (it0) { it0.done = !it0.done; save(); mobPreserveScroll(function () { syncUI(); }); showMobToast(it0.done ? 'Kegiatan ditandai selesai' : 'Status selesai dibatalkan'); } return; }
+    var mitActB = e.target.closest('[data-mit-act]');
+    if (mitActB) { mobOpenActualSheet('it', mitActB.getAttribute('data-mit-act'), mitActB); return; }
+    var mbkActB = e.target.closest('[data-mbk-act]');
+    if (mbkActB) { mobOpenActualSheet('bk', mbkActB.getAttribute('data-mbk-act'), mbkActB); return; }
+    if (e.target.closest('#m-act-del')) {
+      var tgtDelM = MOB_STATE.tripActTarget, trDelM = typeof mobActiveTrip === 'function' ? mobActiveTrip() : null;
+      if (!tgtDelM || !trDelM) return;
+      var arrDelM = tgtDelM.kind === 'bk' ? (trDelM.bk || []) : (trDelM.it || []);
+      var itemDelM = arrDelM.find(function (o) { return o && o.id === tgtDelM.id; });
+      if (!itemDelM || !(itemDelM.ax > 0)) return;
+      var retKindM = tgtDelM.kind, retIdM = tgtDelM.id;
+      askConfirm(
+        'Hapus harga aktual untuk <b>' + esc((retKindM === 'bk' ? itemDelM.title : itemDelM.place) || 'item ini') + '</b>?',
+        function () {
+          var sn = snap('Sebelum hapus harga aktual');
+          delete itemDelM.ax;
+          delete itemDelM.ak;
+          save();
+          MOB_STATE._tripActReturnFocus = null;
+          mobCloseSheet('m-sheet-actual');
+          mobPreserveScroll(function () { syncUI(); });
+          var nextBtnM = $('m-trip-root') && $('m-trip-root').querySelector('[' + (retKindM === 'bk' ? 'data-mbk-act' : 'data-mit-act') + '="' + retIdM + '"]');
+          if (nextBtnM && typeof nextBtnM.focus === 'function') {
+            try { nextBtnM.focus({ preventScroll: true }); } catch (e2) {}
+          }
+          toast('Harga aktual dihapus', function () { mobPreserveScroll(function () { restoreSnap(sn.t); }); });
+        },
+        'Ya, hapus',
+        'Hapus harga aktual'
+      );
+      return;
+    }
     var itd = e.target.closest('[data-mit-del]');
     if (itd) {
       var t1 = mobActiveTrip(), idIt = itd.getAttribute('data-mit-del'), xIt = t1 && t1.it.find(function (x) { return x.id === idIt; });
@@ -35399,7 +35461,6 @@ function bindMobileShellEvents(root) {
           'Sebelum menghapus kegiatan perjalanan',
           function () {
             t1.it = t1.it.filter(function (x) { return x.id !== idIt; });
-            if (typeof tripUnlinkAcRef === 'function') tripUnlinkAcRef(t1, 'it:' + idIt);
             if (MOB_STATE.tripEditIt === idIt) MOB_STATE.tripEditIt = null;
           },
           'Kegiatan dihapus.'
@@ -35418,26 +35479,9 @@ function bindMobileShellEvents(root) {
           'Sebelum menghapus pemesanan perjalanan',
           function () {
             t3.bk = t3.bk.filter(function (x) { return x.id !== idBk; });
-            if (typeof tripUnlinkAcRef === 'function') tripUnlinkAcRef(t3, 'bk:' + idBk);
             if (MOB_STATE.tripEditBk === idBk) MOB_STATE.tripEditBk = null;
           },
           'Pemesanan dihapus.'
-        );
-      }
-      return;
-    }
-    var acDelM = e.target.closest('[data-mac-del]');
-    if (acDelM) {
-      var tAcD = mobActiveTrip(), idAcD = acDelM.getAttribute('data-mac-del'), xAcD = tAcD && (tAcD.ac || []).find(function (x) { return x && x.id === idAcD; });
-      if (tAcD && xAcD) {
-        mobTripConfirmDel(
-          'Hapus pengeluaran <b>' + esc(xAcD.note || xAcD.cat || 'ini') + '</b>?',
-          'Sebelum menghapus pengeluaran perjalanan',
-          function () {
-            tAcD.ac = (tAcD.ac || []).filter(function (x) { return x && x.id !== idAcD; });
-            if (MOB_STATE.tripEditAc === idAcD) { MOB_STATE.tripEditAc = null; MOB_STATE.tripAcCat = ''; }
-          },
-          'Pengeluaran dihapus.'
         );
       }
       return;
@@ -35562,13 +35606,17 @@ function bindMobileShellEvents(root) {
         clearTimeout(window._mobDtT);
         window._mobDtT = setTimeout(function () { save(); showMobToast('Judul hari disimpan'); }, 350);
       }
-    } else if (t.id === 'm-it-est' || t.id === 'm-bk-amt' || t.id === 'm-ac-amt') {
+    } else if (t.id === 'm-act-ax' || t.id === 'm-act-ak') {
+      if (t.id === 'm-act-ax' && typeof tripSetFieldError === 'function') tripSetFieldError('m-act-ax-err', t, '', true);
+      if (t.id === 'm-act-ak' && typeof tripSetFieldError === 'function') tripSetFieldError('m-act-ak-err', t, '', true);
+      mobSyncActualPreview();
+    } else if (t.id === 'm-it-est' || t.id === 'm-bk-amt') {
       mobSyncTripEqPrev();
     } else if (t.id === 'm-it-link' && typeof tripSetFieldError === 'function') {
       tripSetFieldError('m-it-link-err', t, '', true);
     } else if (t.id === 'm-bk-link' && typeof tripSetFieldError === 'function') {
       tripSetFieldError('m-bk-link-err', t, '', true);
-    } else if (t.id === 'm-it-rt' || t.id === 'm-bk-rt' || t.id === 'm-ac-rt') {
+    } else if (t.id === 'm-it-rt' || t.id === 'm-bk-rt') {
       if (t.dataset) t.dataset.userEdited = '1';
       mobSyncTripEqPrev();
     } else if (t.closest && t.closest('#m-kp-fxs-list') && MOB_STATE.tripFxsDraft) {
@@ -35590,8 +35638,8 @@ function bindMobileShellEvents(root) {
     } else if (t.id === 'm-kp-multi-cur' && typeof tripHandleFxsToggleChange === 'function') {
       var trEditTogM = MOB_STATE.tripModalMode === 'edit' ? mobActiveTrip() : null;
       tripHandleFxsToggleChange($('m-kp-multi-cur'), $('m-kp-fxs-wrap'), $('m-kp-fxs-list'), $('m-kp-fxs-add'), $('m-kp-fxs-err'), trEditTogM, function () { return MOB_STATE.tripFxsDraft || []; }, function (v) { MOB_STATE.tripFxsEnabled = !!v; }, showMobToast);
-    } else if (t.id === 'm-it-cur' || t.id === 'm-bk-cur' || t.id === 'm-ac-cur') {
-      var rtElCurM = $(t.id === 'm-it-cur' ? 'm-it-rt' : (t.id === 'm-bk-cur' ? 'm-bk-rt' : 'm-ac-rt'));
+    } else if (t.id === 'm-it-cur' || t.id === 'm-bk-cur') {
+      var rtElCurM = $(t.id === 'm-it-cur' ? 'm-it-rt' : 'm-bk-rt');
       if (rtElCurM && !(rtElCurM.dataset && rtElCurM.dataset.userEdited === '1')) rtElCurM.value = '';
       mobSyncTripEqPrev();
     } else if (t.dataset && t.dataset.msimtog != null) {
@@ -35869,40 +35917,51 @@ function bindMobileShellEvents(root) {
         note: ($('m-it-note') && $('m-it-note').value || '').trim().slice(0, 200),
       };
       if (patchItM.fx && itCurSpecM.c) patchItM.c = itCurSpecM.c;
-      var newItIdM = '';
-      if (editItIdM) {
-        trI.it = trI.it.map(function (x) {
-          return x.id === editItIdM
-            ? (typeof tripMergeItemEdit === 'function' ? tripMergeItemEdit(x, patchItM, $('m-it-rt'), false) : Object.assign({}, x, patchItM))
-            : x;
-        });
-        MOB_STATE.tripEditIt = null;
-      } else {
-        newItIdM = typeof kid === 'function' ? kid('i') : ('i' + Date.now().toString(36));
-        trI.it.push(Object.assign({
-          id: newItIdM,
-          done: false, rec: '',
-        }, patchItM));
-      }
-      save();
-      syncUI();
-      if (editItIdM) {
-        showMobToast('Kegiatan diperbarui');
-        if (typeof tripScrollBackToEditedRow === 'function') {
-          tripScrollBackToEditedRow($('m-trip-root') && $('m-trip-root').querySelector('[data-it-row="' + editItIdM + '"]'), true);
+      var commitItSubmitM = function (stripActualItM) {
+        var newItIdM = '';
+        if (editItIdM) {
+          trI.it = trI.it.map(function (x) {
+            if (x.id !== editItIdM) return x;
+            var mergedItM = typeof tripMergeItemEdit === 'function' ? tripMergeItemEdit(x, patchItM, $('m-it-rt'), false) : Object.assign({}, x, patchItM);
+            if (stripActualItM) {
+              delete mergedItM.ax;
+              delete mergedItM.ak;
+            }
+            return mergedItM;
+          });
+          MOB_STATE.tripEditIt = null;
+        } else {
+          newItIdM = typeof kid === 'function' ? kid('i') : ('i' + Date.now().toString(36));
+          trI.it.push(Object.assign({
+            id: newItIdM,
+            done: false, rec: '',
+          }, patchItM));
         }
-      } else {
-        var savedTrItIdM = trI.id;
-        showMobToast('Kegiatan disimpan', null, {
-          tone: 'success',
-          duration: 7000,
-          action: {
-            label: 'Lihat',
-            onClick: function () {
-              if (typeof tripFocusItemFromToast === 'function') tripFocusItemFromToast(savedTrItIdM, 'itin', newItIdM, true);
+        save();
+        syncUI();
+        if (editItIdM) {
+          showMobToast('Kegiatan diperbarui');
+          if (typeof tripScrollBackToEditedRow === 'function') {
+            tripScrollBackToEditedRow($('m-trip-root') && $('m-trip-root').querySelector('[data-it-row="' + editItIdM + '"]'), true);
+          }
+        } else {
+          var savedTrItIdM = trI.id;
+          showMobToast('Kegiatan disimpan', null, {
+            tone: 'success',
+            duration: 7000,
+            action: {
+              label: 'Lihat',
+              onClick: function () {
+                if (typeof tripFocusItemFromToast === 'function') tripFocusItemFromToast(savedTrItIdM, 'itin', newItIdM, true);
+              },
             },
-          },
-        });
+          });
+        }
+      };
+      if (editItIdM && oldItM && typeof tripConfirmCurrencyChangeIfActual === 'function') {
+        tripConfirmCurrencyChangeIfActual(trI, oldItM, patchItM.fx, patchItM.c, commitItSubmitM);
+      } else {
+        commitItSubmitM(false);
       }
     } else if (f.id === 'm-trip-book-form') {
       var trB = mobActiveTrip(), bt = ($('m-bk-title') && $('m-bk-title').value || '').trim(), bAmt = getRpVal('m-bk-amt');
@@ -35944,86 +36003,92 @@ function bindMobileShellEvents(root) {
       }
       if (typeof tripSetFieldError === 'function') tripSetFieldError('m-bk-link-err', $('m-bk-link'), '', true);
       patchBkM.link = bkLinkResM.url;
-      var newBkIdM = '';
-      if (editBkIdM) {
-        trB.bk = trB.bk.map(function (x) {
-          return x.id === editBkIdM
-            ? (typeof tripMergeBkEdit === 'function' ? tripMergeBkEdit(x, patchBkM, $('m-bk-rt')) : Object.assign({}, x, patchBkM))
-            : x;
-        });
-        MOB_STATE.tripEditBk = null;
-      } else {
-        newBkIdM = typeof kid === 'function' ? kid('b') : ('b' + Date.now().toString(36));
-        trB.bk.push(Object.assign({
-          id: newBkIdM,
-          pay: 'on', paid: false, rec: '',
-        }, patchBkM));
-      }
-      save();
-      syncUI();
-      if (editBkIdM) {
-        showMobToast('Pemesanan diperbarui');
-        if (typeof tripScrollBackToEditedRow === 'function') {
-          tripScrollBackToEditedRow($('m-trip-root') && $('m-trip-root').querySelector('[data-bk-row="' + editBkIdM + '"]'), true);
+      var commitBkSubmitM = function (stripActualBkM) {
+        var newBkIdM = '';
+        if (editBkIdM) {
+          trB.bk = trB.bk.map(function (x) {
+            if (x.id !== editBkIdM) return x;
+            var mergedBkM = typeof tripMergeBkEdit === 'function' ? tripMergeBkEdit(x, patchBkM, $('m-bk-rt')) : Object.assign({}, x, patchBkM);
+            if (stripActualBkM) {
+              delete mergedBkM.ax;
+              delete mergedBkM.ak;
+            }
+            return mergedBkM;
+          });
+          MOB_STATE.tripEditBk = null;
+        } else {
+          newBkIdM = typeof kid === 'function' ? kid('b') : ('b' + Date.now().toString(36));
+          trB.bk.push(Object.assign({
+            id: newBkIdM,
+            pay: 'on', paid: false, rec: '',
+          }, patchBkM));
         }
-      } else {
-        var savedTrBkIdM = trB.id;
-        showMobToast('Pemesanan disimpan', null, {
-          tone: 'success',
-          duration: 7000,
-          action: {
-            label: 'Lihat',
-            onClick: function () {
-              if (typeof tripFocusItemFromToast === 'function') tripFocusItemFromToast(savedTrBkIdM, 'book', newBkIdM, true);
+        save();
+        syncUI();
+        if (editBkIdM) {
+          showMobToast('Pemesanan diperbarui');
+          if (typeof tripScrollBackToEditedRow === 'function') {
+            tripScrollBackToEditedRow($('m-trip-root') && $('m-trip-root').querySelector('[data-bk-row="' + editBkIdM + '"]'), true);
+          }
+        } else {
+          var savedTrBkIdM = trB.id;
+          showMobToast('Pemesanan disimpan', null, {
+            tone: 'success',
+            duration: 7000,
+            action: {
+              label: 'Lihat',
+              onClick: function () {
+                if (typeof tripFocusItemFromToast === 'function') tripFocusItemFromToast(savedTrBkIdM, 'book', newBkIdM, true);
+              },
             },
-          },
-        });
+          });
+        }
+      };
+      if (editBkIdM && oldBkM && typeof tripConfirmCurrencyChangeIfActual === 'function') {
+        tripConfirmCurrencyChangeIfActual(trB, oldBkM, patchBkM.fx, patchBkM.c, commitBkSubmitM);
+      } else {
+        commitBkSubmitM(false);
       }
-    } else if (f.id === 'm-trip-ac-form') {
-      var trA = mobActiveTrip(), amtAcM = getRpVal('m-ac-amt');
-      if (!trA || !(amtAcM > 0 && amtAcM <= 1e12)) {
-        if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-ac-amt'));
-        showMobToast('Isi nominal pengeluaran yang valid.');
+    } else if (f.id === 'm-trip-actual-form') {
+      var tgtSaveM = MOB_STATE.tripActTarget, trActSaveM = typeof mobActiveTrip === 'function' ? mobActiveTrip() : null;
+      if (!tgtSaveM || !trActSaveM) return;
+      var isBkSaveM = tgtSaveM.kind === 'bk';
+      var arrSaveM = isBkSaveM ? (trActSaveM.bk || []) : (trActSaveM.it || []);
+      var itemSaveM = arrSaveM.find(function (o) { return o && o.id === tgtSaveM.id; });
+      if (!itemSaveM) return;
+      var rawAxM = String($('m-act-ax') && $('m-act-ax').value || '').replace(/\D/g, '').slice(0, 13);
+      var axValM = rawAxM ? Number(rawAxM) : 0;
+      if (!(axValM > 0 && Number.isFinite(axValM) && axValM <= 1e12)) {
+        if (typeof tripSetFieldError === 'function') tripSetFieldError('m-act-ax-err', $('m-act-ax'), 'Isi harga aktual lebih besar dari 0.', true);
+        if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-act-ax'));
         return;
       }
-      var curValAcM = ($('m-ac-cur') && $('m-ac-cur').value) || 'idr';
-      var acCurSpecM = typeof tripParseCurSelectVal === 'function' ? tripParseCurSelectVal(trA, curValAcM) : { fx: curValAcM === 'fx', c: '' };
-      var isFxAcM = !!(trA.cur && acCurSpecM.fx);
-      var editAcIdM = MOB_STATE.tripEditAc;
-      var oldAcObjM = editAcIdM ? (trA.ac || []).find(function (x) { return x && x.id === editAcIdM; }) : null;
-      var defsAcSM = typeof tripGetAcDefaults === 'function' ? tripGetAcDefaults(trA, oldAcObjM) : { d: trA.start || todayISO(), cat: 'Makan' };
-      var rawDM = $('m-ac-day') && $('m-ac-day').value;
-      var dAcM = (rawDM && ISO_RE.test(rawDM)) ? rawDM : defsAcSM.d;
-      var catAcM = MOB_STATE.tripAcCat || defsAcSM.cat || 'Makan';
-      var objAcM = {
-        id: editAcIdM || (typeof kid === 'function' ? kid('ac') : ('ac' + Date.now().toString(36))),
-        d: dAcM,
-        amt: amtAcM,
-        fx: isFxAcM,
-        cat: catAcM,
-      };
-      if (isFxAcM && acCurSpecM.c) objAcM.c = acCurSpecM.c;
-      var rtAcM = (isFxAcM && $('m-ac-rt') && typeof tripParseRateVal === 'function') ? tripParseRateVal($('m-ac-rt').value) : 0;
-      if (isFxAcM && rtAcM > 0) objAcM.rt = rtAcM;
-      var noteAcM = ($('m-ac-note') && $('m-ac-note').value || '').trim().slice(0, 200);
-      if (noteAcM) objAcM.note = noteAcM;
-      var rfAcM = ($('m-ac-rf') && $('m-ac-rf').value || '').trim();
-      if (rfAcM && /^(it|bk):.+$/.test(rfAcM)) objAcM.rf = rfAcM;
-      if (!Array.isArray(trA.ac)) trA.ac = [];
-      if (editAcIdM) {
-        trA.ac = trA.ac.map(function (x) { return x && x.id === editAcIdM ? objAcM : x; });
-      } else {
-        trA.ac.push(objAcM);
+      if (typeof tripSetFieldError === 'function') tripSetFieldError('m-act-ax-err', $('m-act-ax'), '', true);
+      var isFxSaveM = !!(itemSaveM.fx && typeof tripItemCur === 'function' && tripItemCur(trActSaveM, itemSaveM));
+      var rawAkM = String($('m-act-ak') && $('m-act-ak').value || '').trim();
+      var akValM = 0;
+      if (isFxSaveM && rawAkM) {
+        akValM = typeof tripParseRateVal === 'function' ? tripParseRateVal(rawAkM) : 0;
+        if (!(akValM > 0 && Number.isFinite(akValM) && akValM <= 1e9)) {
+          if (typeof tripSetFieldError === 'function') tripSetFieldError('m-act-ak-err', $('m-act-ak'), 'Kurs harus angka lebih besar dari 0.', true);
+          if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-act-ak'));
+          return;
+        }
       }
-      if (typeof tripRememberAcDefaults === 'function') tripRememberAcDefaults(trA, dAcM, curValAcM, catAcM);
-      MOB_STATE.tripEditAc = null;
-      MOB_STATE.tripAcCat = '';
+      if (typeof tripSetFieldError === 'function') tripSetFieldError('m-act-ak-err', $('m-act-ak'), '', true);
+      itemSaveM.ax = axValM;
+      if (isFxSaveM && akValM > 0) itemSaveM.ak = akValM;
+      else delete itemSaveM.ak;
+      var focusBackIdM = itemSaveM.id, focusBackAttrM = isBkSaveM ? 'data-mbk-act' : 'data-mit-act';
       save();
-      syncUI();
-      showMobToast(editAcIdM ? 'Pengeluaran diperbarui' : 'Pengeluaran dicatat');
-      if (editAcIdM && typeof tripScrollBackToEditedRow === 'function') {
-        tripScrollBackToEditedRow($('m-trip-root') && $('m-trip-root').querySelector('[data-ac-row="' + editAcIdM + '"]'), true);
+      MOB_STATE._tripActReturnFocus = null;
+      mobCloseSheet('m-sheet-actual');
+      mobPreserveScroll(function () { syncUI(); });
+      var backBtnM = $('m-trip-root') && $('m-trip-root').querySelector('[' + focusBackAttrM + '="' + focusBackIdM + '"]');
+      if (backBtnM && typeof backBtnM.focus === 'function') {
+        try { backBtnM.focus({ preventScroll: true }); } catch (err) {}
       }
+      showMobToast('Harga aktual disimpan');
     } else if (f.id === 'm-trip-ck-form') {
       var trC = mobActiveTrip(), txt = ($('m-ck-inp') && $('m-ck-inp').value || '').trim();
       if (!trC || !txt) { if (typeof rkShakeInvalid === 'function') rkShakeInvalid($('m-ck-inp')); return; }

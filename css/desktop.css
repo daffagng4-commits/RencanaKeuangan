@@ -2886,147 +2886,6 @@ body.privacy-on #browser-shell .pv {
   color: var(--text-muted);
 }
 
-/* Tahap 11: Sub-tab Realisasi Perjalanan */
-#browser-shell .trip-real-warn-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-#browser-shell .trip-real-warn-badge {
-  display: inline-block;
-  font-size: 0.78rem;
-  line-height: 1.35;
-}
-#browser-shell .trip-ac-cat-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-#browser-shell .trip-ac-cat-chips .chip-pill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 36px;
-  padding: 5px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-@media (pointer: coarse) {
-  #browser-shell .trip-ac-cat-chips .chip-pill,
-  #browser-shell .trip-ac-btn {
-    min-height: 44px;
-  }
-}
-@media (hover: hover) and (pointer: fine) {
-  #browser-shell .trip-ac-cat-chips .chip-pill:hover {
-    border-color: var(--border-strong);
-    color: var(--text-primary);
-  }
-}
-#browser-shell .trip-ac-cat-chips .chip-pill.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #FFFFFF;
-}
-#browser-shell .trip-ac-rt-details {
-  padding: 9px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-subtle);
-}
-#browser-shell .trip-ac-rt-sum {
-  cursor: pointer;
-  font-size: 0.81rem;
-  font-weight: 600;
-  color: var(--accent-ink);
-  min-height: 28px;
-}
-#browser-shell .trip-ac-day-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-#browser-shell .trip-ac-effect-note,
-#browser-shell .trip-bk-extra-note {
-  font-size: 0.76rem;
-  color: var(--text-secondary);
-  margin-top: 4px;
-  overflow-wrap: anywhere;
-}
-#browser-shell .trip-cat-cmp-wrap {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: auto;
-}
-#browser-shell .trip-cat-cmp-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.82rem;
-}
-#browser-shell .trip-cat-cmp-table th,
-#browser-shell .trip-cat-cmp-table td {
-  padding: 8px 6px;
-  border-bottom: 1px solid var(--border-subtle);
-  text-align: right;
-  vertical-align: middle;
-}
-#browser-shell .trip-cat-cmp-table th:first-child,
-#browser-shell .trip-cat-cmp-table td:first-child {
-  text-align: left;
-}
-#browser-shell .trip-cat-cmp-table th {
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-#browser-shell .trip-cat-cmp-table td.is-over {
-  color: var(--crimson);
-}
-#browser-shell .trip-cat-cmp-table td.is-under {
-  color: var(--emerald);
-}
-#browser-shell .trip-top-miss {
-  margin-top: 12px;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-subtle);
-}
-#browser-shell .trip-top-miss-hd {
-  font-size: 0.76rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
-}
-#browser-shell .trip-top-miss-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-#browser-shell .trip-top-miss-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 0.81rem;
-  color: var(--text-primary);
-}
-#browser-shell .trip-ac-unlinked-row,
-#browser-shell .trip-ac-effect-sum {
-  margin-top: 10px;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-#browser-shell .mselect[data-select-for="ac-cur"] {
-  min-width: 78px;
-  width: 100%;
-}
-
 /* Tahap 12A C1: Error inline, aria-invalid, badge Di luar rentang, tanggal kalender nonaktif */
 #browser-shell .trip-field-err {
   color: var(--crimson);
@@ -3439,4 +3298,255 @@ body.privacy-on #browser-shell .pv {
     opacity: 1;
     transform: none;
   }
+}
+
+/* Tahap 12B C2: Baris Tombol Kartu, Harga Aktual (Item + Modal), & Kartu Rencana vs Realita */
+#browser-shell .trip-item-card {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+#browser-shell .trip-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+#browser-shell .trip-card-amt {
+  flex-shrink: 0;
+  text-align: right;
+}
+#browser-shell .trip-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+#browser-shell .trip-card-actions .btn {
+  min-height: 32px;
+  height: 32px;
+  padding: 0 11px;
+  font-size: 0.78rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+#browser-shell .trip-btn-done.btn-emerald {
+  background: var(--emerald-soft);
+  color: var(--emerald);
+  border: 1px solid var(--emerald-border);
+}
+#browser-shell .trip-btn-actual.has-ax {
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  border-color: var(--accent-border);
+}
+#browser-shell .trip-item-actual-line {
+  margin-top: 5px;
+  font-size: 0.77rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+#browser-shell .trip-actual-diff.is-over { color: var(--crimson); font-weight: 700; }
+#browser-shell .trip-actual-diff.is-save { color: var(--emerald); font-weight: 700; }
+#browser-shell .trip-actual-diff.is-eq { color: var(--text-muted); font-weight: 700; }
+
+#browser-shell .trip-act-est-box {
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+#browser-shell .trip-act-prev {
+  font-size: 0.83rem;
+  font-weight: 700;
+  min-height: 1.25em;
+}
+#browser-shell .trip-act-prev.is-over { color: var(--crimson); }
+#browser-shell .trip-act-prev.is-save { color: var(--emerald); }
+#browser-shell .trip-act-prev.is-eq { color: var(--text-secondary); }
+#browser-shell .trip-act-prev-det {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin-top: -6px;
+}
+
+#browser-shell .trip-vs-empty {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-strong);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+#browser-shell .trip-vs-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+#browser-shell .trip-vs-hd {
+  margin-bottom: 0;
+}
+#browser-shell .trip-vs-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+#browser-shell .trip-vs-chip.is-over { background: var(--crimson-soft); color: var(--crimson); }
+#browser-shell .trip-vs-chip.is-save { background: var(--emerald-soft); color: var(--emerald); }
+#browser-shell .trip-vs-chip.is-eq { background: var(--bg-subtle); color: var(--text-secondary); }
+#browser-shell .trip-vs-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+#browser-shell .trip-vs-stat {
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-muted-row);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+#browser-shell .trip-vs-stat-k { font-size: 0.73rem; color: var(--text-muted); font-weight: 600; }
+#browser-shell .trip-vs-stat-v { font-size: 0.92rem; font-weight: 800; }
+#browser-shell .trip-vs-stat-v.is-over { color: var(--crimson); }
+#browser-shell .trip-vs-stat-v.is-save { color: var(--emerald); }
+#browser-shell .trip-vs-fx-row {
+  font-size: 0.79rem;
+  color: var(--text-secondary);
+}
+#browser-shell .trip-vs-prog {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+#browser-shell .trip-vs-prog-hd {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+#browser-shell .trip-vs-prog-track {
+  height: 7px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-subtle);
+  overflow: hidden;
+}
+#browser-shell .trip-vs-prog-fill {
+  width: 100%;
+  height: 100%;
+  background: var(--accent);
+  border-radius: var(--radius-pill);
+  transform-origin: left center;
+  transition: transform 180ms var(--ease-out);
+}
+#browser-shell .trip-vs-forecast-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.83rem;
+}
+#browser-shell .trip-vs-vs-plan {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+#browser-shell .trip-vs-bud-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+#browser-shell .trip-vs-bud-badge.is-over { background: var(--amber-soft); color: var(--amber); }
+#browser-shell .trip-vs-bud-badge.is-ok { background: var(--emerald-soft); color: var(--emerald); }
+#browser-shell .trip-vs-lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+#browser-shell .trip-vs-list-col {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+#browser-shell .trip-vs-list-hd {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+#browser-shell .trip-vs-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+#browser-shell .trip-vs-list-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+#browser-shell .trip-vs-list-row .is-over { color: var(--crimson); font-weight: 700; flex-shrink: 0; }
+#browser-shell .trip-vs-list-row .is-save { color: var(--emerald); font-weight: 700; flex-shrink: 0; }
+#browser-shell .trip-vs-cur-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+#browser-shell .trip-vs-cur-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.79rem;
+}
+#browser-shell .trip-vs-cur-nums { color: var(--text-secondary); flex: 1; min-width: 140px; }
+#browser-shell .trip-vs-cur-row .is-over { color: var(--crimson); font-weight: 700; }
+#browser-shell .trip-vs-cur-row .is-save { color: var(--emerald); font-weight: 700; }
+@media (max-width: 680px) {
+  #browser-shell .trip-vs-stats { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #browser-shell .trip-vs-prog-fill { transition: none; }
+}
+
+/* Tahap 12B S: Banner pengaman versi sinkronisasi persisten */
+#browser-shell .rk-schema-banner {
+  background: var(--crimson-soft);
+  color: var(--crimson);
+  border-bottom: 1px solid var(--crimson-border);
+  padding: 9px 28px !important;
+  font-size: 0.82rem !important;
+  line-height: 1.4;
+}
+#browser-shell .rk-schema-banner a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  margin-left: 6px;
 }

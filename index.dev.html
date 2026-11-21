@@ -1274,6 +1274,42 @@
     </div>
   </div>
 
+  <!-- 8c. Modal Harga Aktual per Item (#modal-trip-actual) -->
+  <div class="modal-backdrop" id="modal-trip-actual" role="dialog" aria-modal="true" aria-labelledby="act-m-title" hidden>
+    <div class="modal-box" style="max-width: 440px;">
+      <div class="modal-head">
+        <div>
+          <h3 class="card-title" id="act-m-title">Harga Sebenarnya di Lapangan</h3>
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-top:2px;" id="act-m-item"></div>
+        </div>
+        <button type="button" class="topbar-btn" style="width:32px; padding:0;" id="act-m-close" data-close-modal="modal-trip-actual" aria-label="Tutup">✕</button>
+      </div>
+      <form id="trip-actual-form" novalidate>
+        <div class="modal-body">
+          <div class="trip-act-est-box pv" id="act-m-est">Estimasi: Rp 0</div>
+          <div class="field">
+            <label class="field-label" for="act-m-ax" id="act-m-ax-lbl">Harga di lapangan (Rp)</label>
+            <input class="input mono" id="act-m-ax" type="text" inputmode="numeric" data-num-only="int" placeholder="0" required />
+            <div class="trip-field-err" id="act-m-ax-err" role="alert" hidden></div>
+          </div>
+          <div class="field" id="act-m-ak-wrap" hidden>
+            <label class="field-label" for="act-m-ak" id="act-m-ak-lbl">Kurs (Rp per 1 unit)</label>
+            <input class="input mono" id="act-m-ak" type="text" inputmode="decimal" data-num-only="dec" placeholder="ikut kurs efektif" />
+            <div class="trip-field-err" id="act-m-ak-err" role="alert" hidden></div>
+            <div class="sub">Kosongkan untuk mengikuti kurs efektif item.</div>
+          </div>
+          <div class="trip-act-prev pv" id="act-m-prev" aria-live="polite"></div>
+          <div class="trip-act-prev-det pv" id="act-m-prev-det"></div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-secondary" style="color:var(--crimson);margin-right:auto;" id="act-m-del" hidden>Hapus harga aktual</button>
+          <button type="button" class="btn btn-secondary" id="act-m-cancel" data-close-modal="modal-trip-actual">Batal</button>
+          <button type="submit" class="btn btn-primary" id="act-m-save">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- 9. Modal Laporan Keuangan (#modal-report) -->
   <div class="modal-backdrop" id="modal-report" role="dialog" aria-modal="true" aria-labelledby="rep-m-title" hidden>
     <div class="modal-box" style="max-width: 720px;">

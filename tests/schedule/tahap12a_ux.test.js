@@ -670,7 +670,6 @@ const { boot } = require('./ui.js');
   const swSrc12a = fs.readFileSync(path.join(__dirname, '..', '..', 'sw.js'), 'utf8');
   const swVer12a = swSrc12a.match(/CACHE_NAME\s*=\s*['"]rk-cache-v(\d+)['"]/);
   assert.ok(swVer12a && Number(swVer12a[1]) >= 33, 'C3 sw.js: CACHE_NAME harus dinaikkan minimal rk-cache-v33');
-  assert.ok(/['"]rk-cache-v33['"]/.test(swSrc12a), 'C3 sw.js: CACHE_NAME memakai rk-cache-v33');
 
   assert.strictEqual(errs.length, 0, 'tidak ada galat JavaScript: ' + errs.join(' | '));
   console.log('OK tahap12a_ux (C1-C3)');
