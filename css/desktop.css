@@ -3388,10 +3388,22 @@ body.privacy-on #browser-shell .pv {
   align-items: start;
 }
 #browser-shell .trip-act-inputs.is-fx {
-  grid-template-columns: minmax(0, 1fr) 108px;
+  grid-template-columns: minmax(0, 1fr) 118px;
 }
 #browser-shell .trip-act-inputs.is-fx.has-au {
   grid-template-columns: minmax(0, 1fr) 86px 96px;
+}
+#browser-shell #modal-trip-actual[data-actual-mode="rp"] .trip-act-col-au,
+#browser-shell #modal-trip-actual[data-actual-mode="rp"] .trip-act-col-ak,
+#browser-shell #modal-trip-actual[data-actual-mode="rp"] .trip-act-help,
+#browser-shell #modal-trip-actual[data-actual-mode="rp"] .trip-rate-read,
+#browser-shell #modal-trip-actual[data-actual-mode="fxplan"] .trip-act-fx-tog,
+#browser-shell #modal-trip-actual[data-actual-mode="fxplan"] .trip-act-col-au {
+  display: none !important;
+}
+#browser-shell #modal-trip-actual .trip-rate-read {
+  margin-top: -2px;
+  line-height: 1.25;
 }
 #browser-shell .trip-act-inputs .field {
   min-width: 0;

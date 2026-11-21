@@ -46,6 +46,9 @@ var MOB_STATE = {
   tripOpenDays: {},
   tripExpandedItems: {},
   tripRingDisclosures: {},
+  _tripSubScrollLeft: 0,
+  _tripSubResetScroll: false,
+  _tripSubCenterSmooth: false,
   tripModalMode: 'new',
   notifEnabled: true,
   notifHorizon: null,
@@ -95,16 +98,18 @@ function mobFmtCalLbl(ds) {
   return +ds.slice(8, 10) + ' ' + MON[+ds.slice(5, 7) - 1] + ' ' + ds.slice(0, 4);
 }
 
-function mobDateFieldHtml(id, val, rightAlign) {
+function mobDateFieldHtml(id, val, rightAlign, opts) {
   var v = ISO_RE.test(val || '') ? val : '';
+  var isSheet = !!(opts && opts.sheet);
+  var titleAttr = isSheet && opts.title ? ' data-pk-title="' + esc(opts.title) + '"' : '';
   return (
     '<div class="picker-wrap">' +
-    '<input type="hidden" id="' + esc(id) + '" value="' + esc(v) + '" />' +
+    '<input type="hidden" id="' + esc(id) + '" value="' + esc(v) + '"' + (isSheet ? ' data-pk-sheet="1"' + titleAttr : '') + ' />' +
     '<button type="button" class="cal-trigger" id="' + esc(id) + '-trig" data-mcal-trig="' + esc(id) + '">' +
     '<span id="' + esc(id) + '-lbl">' + esc(v ? mobFmtCalLbl(v) : 'Pilih tanggal') + '</span>' +
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
     '</button>' +
-    '<div class="picker-popover' + (rightAlign ? ' align-right' : '') + '" id="' + esc(id) + '-cal"></div>' +
+    (isSheet ? '' : '<div class="picker-popover' + (rightAlign ? ' align-right' : '') + '" id="' + esc(id) + '-cal"></div>') +
     '</div>'
   );
 }
@@ -116,16 +121,26 @@ function mobSetDateVal(id, ds) {
   if (ds && ISO_RE.test(ds)) MOB_CAL_VIEW[id] = { y: +ds.slice(0, 4), m: +ds.slice(5, 7) - 1 };
 }
 
-function mobDrawCal(id) {
-  var pop = $(id + '-cal'), inp = $(id);
-  if (!pop || !inp) return;
+function mobCalMinDate(id) {
+  if (id === 'm-kp-end' && $('m-kp-start') && ISO_RE.test($('m-kp-start').value)) {
+    return $('m-kp-start').value;
+  }
+  return '';
+}
+
+function mobBuildCalParts(id) {
+  var inp = $(id);
+  if (!inp) return null;
   var tr = typeof mobActiveTrip === 'function' ? mobActiveTrip() : null;
   var isTripRangeCal = (id === 'm-it-day' || id === 'm-bk-start' || id === 'm-bk-end');
   var hasRng = isTripRangeCal && tr && typeof tripHasFullRange === 'function' && tripHasFullRange(tr);
-  var today = todayISO(), cur = ISO_RE.test(inp.value) ? inp.value : (hasRng ? tr.start : today);
+  var minDate = mobCalMinDate(id);
+  var today = todayISO(), cur = ISO_RE.test(inp.value) ? inp.value : (hasRng ? tr.start : (minDate || today));
   var v = MOB_CAL_VIEW[id] || (hasRng && (cur < tr.start || cur > tr.end)
     ? { y: +tr.start.slice(0, 4), m: +tr.start.slice(5, 7) - 1 }
-    : { y: +cur.slice(0, 4), m: +cur.slice(5, 7) - 1 });
+    : (minDate && cur < minDate
+      ? { y: +minDate.slice(0, 4), m: +minDate.slice(5, 7) - 1 }
+      : { y: +cur.slice(0, 4), m: +cur.slice(5, 7) - 1 }));
   MOB_CAL_VIEW[id] = v;
   var first = new Date(Date.UTC(v.y, v.m, 1)).getUTCDay(),
     dim = new Date(Date.UTC(v.y, v.m + 1, 0)).getUTCDate(),
@@ -133,17 +148,88 @@ function mobDrawCal(id) {
   for (var i = 0; i < first; i++) cells += '<span></span>';
   for (var d = 1; d <= dim; d++) {
     var ds = v.y + '-' + pad2(v.m + 1) + '-' + pad2(d);
-    var outRng = hasRng && (ds < tr.start || ds > tr.end);
+    var outRng = (hasRng && (ds < tr.start || ds > tr.end)) || (!!minDate && ds < minDate);
     var cls = 'cal-day' + (ds === cur ? ' selected' : '') + (ds === today ? ' today' : '') + (outRng ? ' is-disabled' : '');
     cells += '<button type="button" class="' + cls + '" data-mcal-pick="' + esc(id) + '|' + ds + '"' + (outRng ? ' disabled aria-disabled="true"' : '') + '>' + d + '</button>';
   }
-  var todayOut = hasRng && (today < tr.start || today > tr.end);
-  pop.innerHTML =
-    '<div class="cal-head"><button type="button" class="btn btn-secondary btn-sm" data-mcal-mv="' + esc(id) + '|-1">‹</button>' +
-    '<strong style="font-size:0.80rem">' + esc(FULL_MON[v.m] + ' ' + v.y) + '</strong>' +
-    '<button type="button" class="btn btn-secondary btn-sm" data-mcal-mv="' + esc(id) + '|1">›</button></div>' +
-    '<div class="cal-grid"><span class="cal-dow">Min</span><span class="cal-dow">Sen</span><span class="cal-dow">Sel</span><span class="cal-dow">Rab</span><span class="cal-dow">Kam</span><span class="cal-dow">Jum</span><span class="cal-dow">Sab</span>' + cells + '</div>' +
-    (todayOut ? '' : '<div style="display:flex;justify-content:flex-start;margin-top:8px;padding-top:6px;border-top:1px solid var(--border-subtle)"><button type="button" class="badge b-ac" data-mcal-pick="' + esc(id) + '|' + today + '">Hari Ini</button></div>');
+  var todayDisabled = (hasRng && (today < tr.start || today > tr.end)) || (!!minDate && today < minDate);
+  var gridHtml =
+    '<div class="cal-head"><button type="button" class="btn btn-secondary btn-sm" data-mcal-mv="' + esc(id) + '|-1" aria-label="Bulan sebelumnya">‹</button>' +
+    '<strong style="font-size:0.86rem">' + esc(FULL_MON[v.m] + ' ' + v.y) + '</strong>' +
+    '<button type="button" class="btn btn-secondary btn-sm" data-mcal-mv="' + esc(id) + '|1" aria-label="Bulan berikutnya">›</button></div>' +
+    '<div class="cal-grid"><span class="cal-dow">Min</span><span class="cal-dow">Sen</span><span class="cal-dow">Sel</span><span class="cal-dow">Rab</span><span class="cal-dow">Kam</span><span class="cal-dow">Jum</span><span class="cal-dow">Sab</span>' + cells + '</div>';
+  return {
+    id: id,
+    inp: inp,
+    today: today,
+    todayDisabled: todayDisabled,
+    gridHtml: gridHtml,
+    title: inp.getAttribute('data-pk-title') || 'Pilih tanggal',
+  };
+}
+
+function mobDrawCal(id) {
+  var pop = $(id + '-cal');
+  if (!pop) return;
+  var p = mobBuildCalParts(id);
+  if (!p) return;
+  pop.innerHTML = p.gridHtml +
+    (p.todayDisabled ? '' : '<div style="display:flex;justify-content:flex-start;margin-top:8px;padding-top:6px;border-top:1px solid var(--border-subtle)"><button type="button" class="badge b-ac" data-mcal-pick="' + esc(id) + '|' + p.today + '">Hari Ini</button></div>');
+}
+
+function mobDrawCalSheet(id) {
+  var bodyEl = $('m-cal-sheet-body'), footEl = $('m-cal-sheet-foot'), titleEl = $('m-cal-sheet-title');
+  var p = mobBuildCalParts(id);
+  if (!bodyEl || !p) return;
+  if (titleEl) titleEl.textContent = p.title;
+  bodyEl.innerHTML = p.gridHtml;
+  if (footEl) {
+    footEl.innerHTML =
+      '<button type="button" class="btn btn-secondary" data-mcal-pick="' + esc(id) + '|' + p.today + '"' + (p.todayDisabled ? ' disabled aria-disabled="true"' : '') + '>Hari ini</button>' +
+      '<button type="button" class="btn btn-secondary" data-mcal-close="1">Batal</button>';
+  }
+}
+
+function mobOpenCalSheet(id, trigEl) {
+  var bd = $('m-cal-sheet-backdrop'), inp = $(id);
+  if (!bd || !inp) return;
+  document.querySelectorAll('#mobile-app-shell .picker-popover.open').forEach(function (p) { p.classList.remove('open'); });
+  var tr = typeof mobActiveTrip === 'function' ? mobActiveTrip() : null;
+  var isTripRangeCal = (id === 'm-it-day' || id === 'm-bk-start' || id === 'm-bk-end');
+  if (isTripRangeCal && tr && typeof tripHasFullRange === 'function' && tripHasFullRange(tr)) {
+    var curVal = inp.value || '';
+    if (!curVal || curVal < tr.start || curVal > tr.end) {
+      MOB_CAL_VIEW[id] = { y: +tr.start.slice(0, 4), m: +tr.start.slice(5, 7) - 1 };
+    }
+  }
+  var minD = mobCalMinDate(id);
+  if (minD && (!ISO_RE.test(inp.value) || inp.value < minD)) {
+    MOB_CAL_VIEW[id] = { y: +minD.slice(0, 4), m: +minD.slice(5, 7) - 1 };
+  }
+  MOB_STATE._calSheetTrigger = trigEl || $(id + '-trig');
+  clearTimeout(bd._mCloseT);
+  bd.classList.remove('is-closing');
+  mobDrawCalSheet(id);
+  bd.setAttribute('data-cal-for', id);
+  bd.setAttribute('aria-hidden', 'false');
+  if (bd.offsetWidth > 0) void bd.offsetWidth;
+  bd.classList.add('open');
+  if (document.body) document.body.setAttribute('data-cal-sheet-open', '1');
+}
+
+function mobCloseCalSheet(restoreFocus) {
+  var bd = $('m-cal-sheet-backdrop');
+  if (!bd) return;
+  var wasOpen = bd.classList.contains('open');
+  bd.classList.remove('open', 'is-closing');
+  bd.setAttribute('aria-hidden', 'true');
+  bd.removeAttribute('data-cal-for');
+  if (document.body) document.body.removeAttribute('data-cal-sheet-open');
+  var trig = MOB_STATE._calSheetTrigger;
+  MOB_STATE._calSheetTrigger = null;
+  if (wasOpen && restoreFocus !== false && trig && trig.isConnected && typeof trig.focus === 'function') {
+    try { trig.focus({ preventScroll: true }); } catch (e) { try { trig.focus(); } catch (e2) {} }
+  }
 }
 
 var MOB_CAT_META = {
@@ -205,14 +291,49 @@ function mobFmtShortCal(ds) {
   return +ds.slice(8, 10) + ' ' + MON[+ds.slice(5, 7) - 1];
 }
 
+function mobEnsureActiveTripChipVisible(smooth) {
+  var nav = $('m-trip-subnav');
+  if (!nav) return;
+  var active = nav.querySelector('.p-chip.active');
+  if (!active) return;
+  var cw = nav.clientWidth || 0;
+  var sw = nav.scrollWidth || 0;
+  if (!(sw > cw && cw > 0)) return;
+  var cLeft = active.offsetLeft || 0;
+  var cWidth = active.offsetWidth || 0;
+  var cRight = cLeft + cWidth;
+  var vLeft = nav.scrollLeft || 0;
+  var vRight = vLeft + cw;
+  if (cLeft >= vLeft && cRight <= vRight) return;
+  var target = Math.max(0, Math.min(sw - cw, Math.round(cLeft - (cw - cWidth) / 2)));
+  var reduceMotion = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var behavior = smooth && !reduceMotion ? 'smooth' : 'auto';
+  if (typeof nav.scrollTo === 'function') {
+    try {
+      nav.scrollTo({ left: target, behavior: behavior });
+    } catch (e) {
+      nav.scrollLeft = target;
+    }
+  } else {
+    nav.scrollLeft = target;
+  }
+  MOB_STATE._tripSubScrollLeft = target;
+}
+
 function mobPreserveScroll(fn) {
   var mm = $('m-main');
   var sy = typeof window !== 'undefined' ? (window.scrollY || (document.documentElement && document.documentElement.scrollTop) || 0) : 0;
   var mTop = mm ? mm.scrollTop : 0;
+  var oldNav = $('m-trip-subnav');
+  var prevNavLeft = oldNav ? oldNav.scrollLeft : (MOB_STATE._tripSubScrollLeft || 0);
   fn();
   if (mm && mTop) mm.scrollTop = mTop;
   if (sy > 0 && typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
     try { window.scrollTo(0, sy); } catch (e) {}
+  }
+  var newNav = $('m-trip-subnav');
+  if (newNav && !MOB_STATE._tripSubResetScroll && prevNavLeft > 0 && newNav.scrollLeft === 0) {
+    newNav.scrollLeft = prevNavLeft;
   }
 }
 
@@ -443,6 +564,7 @@ function mobOpenSheet(id) {
 function mobCloseSheet(id) {
   var el = $(id);
   if (!el) return;
+  if (id === 'm-sheet-trip') mobCloseCalSheet(false);
   if (id === 'm-sheet-trip-xl') MOB_XL_DATA = null;
   var red = typeof rkIsReducedMotion === 'function' && rkIsReducedMotion();
   var wasOpen = el.classList.contains('open') && el.offsetWidth > 0 && !red;
@@ -910,8 +1032,8 @@ function mobShellTemplate() {
     '<div class="ms-head"><strong class="card-title" id="m-kpt-title">Perjalanan Baru</strong><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-trip">✕</button></div>' +
     '<form id="m-trip-meta-form" style="display:flex;flex-direction:column;min-height:0;flex:1" novalidate><div class="ms-body">' +
     '<div class="field"><label class="field-label" for="m-kp-name">Nama perjalanan</label><input class="input" id="m-kp-name" maxlength="30" placeholder="mis. Tokyo - Osaka 9D8N" required /></div>' +
-    '<div class="bento-2"><div class="field"><span class="field-label">Mulai</span>' + mobDateFieldHtml('m-kp-start', '', false) + '</div>' +
-    '<div class="field"><span class="field-label">Selesai</span>' + mobDateFieldHtml('m-kp-end', '', true) + '</div></div>' +
+    '<div class="bento-2"><div class="field"><span class="field-label">Mulai</span>' + mobDateFieldHtml('m-kp-start', '', false, { sheet: true, title: 'Pilih tanggal mulai' }) + '</div>' +
+    '<div class="field"><span class="field-label">Selesai</span>' + mobDateFieldHtml('m-kp-end', '', true, { sheet: true, title: 'Pilih tanggal selesai' }) + '</div></div>' +
     '<div class="bento-2"><div class="field"><label class="field-label" for="m-kp-use-budget">Anggaran</label><select class="input" id="m-kp-use-budget"><option value="0" selected>Belum ditentukan</option><option value="1">Tetapkan anggaran</option></select></div>' +
     '<div class="field" id="m-kp-budget-wrap"><label class="field-label" for="m-kp-budget">Anggaran (Rp)</label><input class="input mono" id="m-kp-budget" type="text" inputmode="numeric" data-num-fmt="rp" data-num-only="int" placeholder="mis. 10.000.000" /></div></div>' +
     '<div class="bento-2"><div class="field"><label class="field-label" for="m-kp-cur">Mata uang asing</label><input class="input" id="m-kp-cur" maxlength="3" placeholder="JPY" style="text-transform:uppercase" /></div>' +
@@ -966,6 +1088,11 @@ function mobShellTemplate() {
     '<div class="trip-rate-read pv" id="m-act-ak-read" aria-live="polite" hidden></div><div class="msc-sub trip-act-help" id="m-act-ak-help" hidden></div>' +
     '<div class="trip-act-prev pv" id="m-act-prev" aria-live="polite"></div><div class="trip-act-prev-det pv" id="m-act-prev-det"></div>' +
     '</div><div class="ms-foot"><button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);margin-right:auto" id="m-act-del" hidden>Hapus harga aktual</button><button type="button" class="btn btn-secondary" id="m-act-cancel" data-mclose="m-sheet-actual">Batal</button><button type="submit" class="btn btn-primary" id="m-act-save">Simpan</button></div></form></div></div>' +
+    '<div class="m-cal-sheet-backdrop" id="m-cal-sheet-backdrop" role="presentation" aria-hidden="true">' +
+    '<div class="m-cal-sheet" id="m-cal-sheet" role="dialog" aria-modal="true" aria-labelledby="m-cal-sheet-title"><div class="ms-handle" aria-hidden="true"></div>' +
+    '<div class="m-cal-sh-head"><strong class="card-title" id="m-cal-sheet-title">Pilih tanggal</strong><button type="button" class="btn btn-secondary btn-sm m-cal-sh-x" data-mcal-close="1" aria-label="Tutup kalender">✕</button></div>' +
+    '<div class="m-cal-sh-body" id="m-cal-sheet-body"></div>' +
+    '<div class="m-cal-sh-foot" id="m-cal-sheet-foot"></div></div></div>' +
     '<input type="file" id="m-xl-file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden />' +
     '<div class="notif-popover" id="m-notif-popover"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:800;font-size:0.82rem">Pengingat Jatuh Tempo</span>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="m-pop-to-set">Atur Notif &rarr;</button></div><div id="m-pop-os-cta"></div><div class="stack" style="gap:7px" id="m-notif-pop-list"></div>' +
@@ -1047,6 +1174,11 @@ function rkHandleAndroidBack() {
     np.classList.remove('open');
     if (typeof rkSyncNotifOpenUI === 'function') rkSyncNotifOpenUI();
     return 'popover-notif';
+  }
+  var calSheet = $('m-cal-sheet-backdrop');
+  if (calSheet && calSheet.classList.contains('open')) {
+    mobCloseCalSheet(true);
+    return 'cal-sheet';
   }
   var dd = document.querySelector('#mobile-app-shell .mcal-pop.open, #mobile-app-shell .open[id$="-cal"], #mobile-app-shell .cat-drop.open');
   if (dd) {
@@ -2108,7 +2240,7 @@ function renderMobTripItin(tr) {
     (EIt ? '<button type="button" class="btn btn-secondary btn-sm" id="m-it-cancel">Batal</button>' : '') + '</div>' +
     '<form id="m-trip-itin-form" class="stack trip-form-layout" novalidate>' +
     '<div class="trip-form-row trip-row-date-time">' +
-    '<div class="field trip-col-date-mob"><span class="field-label">Tanggal</span>' + mobDateFieldHtml('m-it-day', defDay, false) + '</div>' +
+    '<div class="field trip-col-date-mob"><span class="field-label">Tanggal</span>' + mobDateFieldHtml('m-it-day', defDay, false, { sheet: true, title: 'Pilih tanggal kegiatan' }) + '</div>' +
     '<div class="field trip-col-time"><label class="field-label" for="m-it-time">Mulai</label><input class="input mono" id="m-it-time" inputmode="numeric" maxlength="5" placeholder="14.00" value="' + esc(EIt && EIt.time ? EIt.time.replace(':', '.') : '') + '" /></div>' +
     '<div class="field trip-col-time"><label class="field-label" for="m-it-time2">Selesai</label><input class="input mono" id="m-it-time2" inputmode="numeric" maxlength="5" placeholder="16.30" value="' + esc(EIt && EIt.time2 ? EIt.time2.replace(':', '.') : '') + '" /></div></div>' +
     '<div class="trip-field-err" id="m-it-day-err" role="alert" hidden></div>' +
@@ -2166,7 +2298,12 @@ function renderMobTrip() {
     tr = mobActiveTrip();
   if (tr) MOB_STATE.tripId = tr.id;
 
+  var oldSubNav = $('m-trip-subnav');
+  var prevSubLeft = oldSubNav ? oldSubNav.scrollLeft : (MOB_STATE._tripSubScrollLeft || 0);
   if (!tr || MOB_STATE.tripView === 'list') {
+    MOB_STATE._tripSubScrollLeft = 0;
+    MOB_STATE._tripSubResetScroll = false;
+    MOB_STATE._tripSubCenterSmooth = false;
     root.innerHTML =
       '<div class="card"><div class="m-trip-list-hd"><div><h2 class="card-title">Semua Perjalanan</h2><div style="font-size:0.71rem;color:var(--text-muted)">' + list.length + ' profil perjalanan</div></div>' +
       '<div class="m-trip-list-actions">' +
@@ -2257,8 +2394,8 @@ function renderMobTrip() {
       '</select></div><div class="trip-eq-hint mono" id="m-bk-amt-eq"></div></div>' +
       '<div class="field trip-col-full" id="m-bk-rt-wrap" style="display:' + (EBk && EBk.fx && (typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) ? '' : 'none') + '"><label class="field-label" for="m-bk-rt">Kurs' + (EBk && EBk.paid ? ' saat dibayar' : '') + ' (Rp per 1 ' + esc((EBk && typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) || 'asing') + ')</label><input class="input mono" id="m-bk-rt" type="text" inputmode="decimal" data-num-only="dec" placeholder="' + (tr.rate > 0 ? 'Ikut kurs perjalanan: ' + esc(tr.rate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + (EBk && typeof tripHasValidRt === 'function' && tripHasValidRt(EBk) ? esc(String(EBk.rt)) : '') + '" /><div class="trip-rate-read pv" id="m-bk-rt-read" aria-live="polite" hidden></div><div class="msc-sub">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div></div>' +
       '<div class="trip-form-row">' +
-      '<div class="field trip-col-half"><span class="field-label">Mulai / Check-in</span>' + mobDateFieldHtml('m-bk-start', defBkStart, false) + '</div>' +
-      '<div class="field trip-col-half"><span class="field-label">Selesai / Check-out</span>' + mobDateFieldHtml('m-bk-end', defBkEnd, true) + '</div></div>' +
+      '<div class="field trip-col-half"><span class="field-label">Mulai / Check-in</span>' + mobDateFieldHtml('m-bk-start', defBkStart, false, { sheet: true, title: 'Pilih tanggal check-in' }) + '</div>' +
+      '<div class="field trip-col-half"><span class="field-label">Selesai / Check-out</span>' + mobDateFieldHtml('m-bk-end', defBkEnd, true, { sheet: true, title: 'Pilih tanggal check-out' }) + '</div></div>' +
       '<div class="trip-field-err" id="m-bk-date-err" role="alert" hidden></div>' +
       '<div class="trip-form-row"><div class="field trip-col-full"><label class="field-label" for="m-bk-cat">Kategori</label><select class="input" id="m-bk-cat">' + BCAT.map(function (c) { return '<option value="' + esc(c) + '"' + ((EBk ? EBk.cat : 'Transport') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div></div>' +
       '<div class="trip-form-row"><div class="field trip-col-full"><label class="field-label" for="m-bk-link">Tautan (opsional)</label><input class="input" id="m-bk-link" inputmode="url" placeholder="https://..." value="' + esc(EBk ? (EBk.link || '') : '') + '" /><div class="trip-field-err" id="m-bk-link-err" role="alert" hidden></div></div></div>' +
@@ -2356,7 +2493,34 @@ function renderMobTrip() {
     '<div style="font-size:0.71rem;color:var(--text-muted)">' + (tr.start && tr.end ? fmtD(tr.start) + ' – ' + fmtD(tr.end) : 'Tanggal belum diisi') +
     (tr.cur && tr.rate ? ' &middot; Kurs 1 ' + esc(tr.cur) + ' = <span class="mono pv">Rp ' + (+tr.rate).toLocaleString('id-ID') + '</span>' : '') + '</div></div>' +
     '<div class="m-trip-hd-actions"><button type="button" class="btn btn-secondary btn-sm" id="m-btn-trip-share">Bagikan</button><button type="button" class="btn btn-secondary btn-sm" id="m-btn-trip-edit">Ubah</button><button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson)" data-mtrip-del="' + esc(tr.id) + '">Hapus</button></div></div>' +
-    '<div class="pill-slider">' + subTabs.map(function (st) { return '<button type="button" class="p-chip ' + (MOB_STATE.tripSub === st[0] ? 'active' : '') + '" data-mtripsub="' + st[0] + '">' + st[1] + '</button>'; }).join('') + '</div></div>' + body;
+    '<div class="pill-slider" id="m-trip-subnav" role="tablist" aria-label="Bagian perjalanan">' +
+    subTabs.map(function (st) {
+      var isActSub = MOB_STATE.tripSub === st[0];
+      return '<button type="button" class="p-chip' + (isActSub ? ' active' : '') + '" data-mtripsub="' + st[0] + '" role="tab" aria-selected="' + (isActSub ? 'true' : 'false') + '"' + (isActSub ? ' aria-current="page"' : '') + '>' + st[1] + '</button>';
+    }).join('') +
+    '</div></div>' + body;
+  var newSubNav = $('m-trip-subnav');
+  if (newSubNav) {
+    if (MOB_STATE._tripSubResetScroll) {
+      newSubNav.scrollLeft = 0;
+      MOB_STATE._tripSubScrollLeft = 0;
+      MOB_STATE._tripSubResetScroll = false;
+      MOB_STATE._tripSubCenterSmooth = false;
+    } else {
+      newSubNav.scrollLeft = prevSubLeft;
+      MOB_STATE._tripSubScrollLeft = newSubNav.scrollLeft;
+      var wantSmoothSub = !!MOB_STATE._tripSubCenterSmooth;
+      MOB_STATE._tripSubCenterSmooth = false;
+      mobEnsureActiveTripChipVisible(wantSmoothSub);
+    }
+    if (newSubNav.dataset.subScrollBound !== '1') {
+      newSubNav.dataset.subScrollBound = '1';
+      newSubNav.addEventListener('scroll', function () {
+        MOB_STATE._tripSubScrollLeft = newSubNav.scrollLeft;
+      }, { passive: true });
+    }
+  }
+  initMobDragSliders(root);
   mobSyncTripEqPrev();
   if (typeof tripBindNoteAutoGrow === 'function' && $('m-it-note')) {
     tripBindNoteAutoGrow($('m-it-note'), $('m-it-note-cnt'));
@@ -3954,6 +4118,11 @@ function bindMobileShellEvents(root) {
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
       if (typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') return;
+      var calBdEsc = $('m-cal-sheet-backdrop');
+      if (calBdEsc && calBdEsc.classList.contains('open')) {
+        mobCloseCalSheet(true);
+        return;
+      }
       var mp = $('m-notif-popover');
       if (mp && mp.classList.contains('open')) {
         mp.classList.remove('open');
@@ -4124,19 +4293,22 @@ function bindMobileShellEvents(root) {
       renderMobKas();
       return;
     }
+    if (e.target && (e.target.id === 'm-cal-sheet-backdrop' || e.target.closest('[data-mcal-close]'))) {
+      e.stopPropagation();
+      mobCloseCalSheet(true);
+      return;
+    }
     var mcalT = e.target.closest('[data-mcal-trig]');
     if (mcalT) {
       e.stopPropagation();
-      var cid = mcalT.getAttribute('data-mcal-trig'), popC = $(cid + '-cal');
+      var cid = mcalT.getAttribute('data-mcal-trig'), inpC = $(cid);
+      if (inpC && inpC.hasAttribute('data-pk-sheet')) {
+        mobOpenCalSheet(cid, mcalT);
+        return;
+      }
+      var popC = $(cid + '-cal');
       root.querySelectorAll('.picker-popover.open').forEach(function (p) { if (p !== popC) p.classList.remove('open'); });
       if (popC) {
-        var trCalM = mobActiveTrip();
-        if ((cid === 'm-it-day' || cid === 'm-bk-start' || cid === 'm-bk-end') && trCalM && typeof tripHasFullRange === 'function' && tripHasFullRange(trCalM)) {
-          var curMCal = $(cid) ? $(cid).value : '';
-          if (!curMCal || curMCal < trCalM.start || curMCal > trCalM.end) {
-            MOB_CAL_VIEW[cid] = { y: +trCalM.start.slice(0, 4), m: +trCalM.start.slice(5, 7) - 1 };
-          }
-        }
         mobDrawCal(cid);
         popC.classList.toggle('open');
       }
@@ -4150,7 +4322,12 @@ function bindMobileShellEvents(root) {
         cv.m += +ps[1];
         if (cv.m < 0) { cv.m = 11; cv.y--; }
         if (cv.m > 11) { cv.m = 0; cv.y++; }
-        mobDrawCal(idM);
+        var calBdMv = $('m-cal-sheet-backdrop');
+        if (calBdMv && calBdMv.classList.contains('open') && calBdMv.getAttribute('data-cal-for') === idM) {
+          mobDrawCalSheet(idM);
+        } else {
+          mobDrawCal(idM);
+        }
       }
       return;
     }
@@ -4160,7 +4337,12 @@ function bindMobileShellEvents(root) {
       if (mcalPk.disabled) return;
       var p2 = mcalPk.getAttribute('data-mcal-pick').split('|');
       mobSetDateVal(p2[0], p2[1]);
-      if ($(p2[0] + '-cal')) $(p2[0] + '-cal').classList.remove('open');
+      var calBdPk = $('m-cal-sheet-backdrop');
+      if (calBdPk && calBdPk.classList.contains('open') && calBdPk.getAttribute('data-cal-for') === p2[0]) {
+        mobCloseCalSheet(true);
+      } else if ($(p2[0] + '-cal')) {
+        $(p2[0] + '-cal').classList.remove('open');
+      }
       if (p2[0] === 'm-it-day' && typeof tripSetFieldError === 'function') {
         tripSetFieldError('m-it-day-err', $('m-it-day-trig'), '', true);
       }
@@ -5013,17 +5195,17 @@ function bindMobileShellEvents(root) {
       return;
     }
     var tlist = e.target.closest('[data-mtrip-list]');
-    if (tlist) { MOB_STATE.tripView = 'list'; renderMobTrip(); return; }
+    if (tlist) { MOB_STATE.tripView = 'list'; MOB_STATE._tripSubResetScroll = true; MOB_STATE._tripSubScrollLeft = 0; renderMobTrip(); return; }
     var tsel = e.target.closest('[data-mtrip-sel]');
-    if (tsel) { MOB_STATE.tripId = tsel.getAttribute('data-mtrip-sel'); MOB_STATE.tripView = 'detail'; MOB_STATE.tripSub = 'ring'; MOB_STATE.tripEditIt = null; MOB_STATE.tripEditBk = null; MOB_STATE.tripGoalEdit = false; renderMobTrip(); initMobDragSliders(); return; }
+    if (tsel) { MOB_STATE.tripId = tsel.getAttribute('data-mtrip-sel'); MOB_STATE.tripView = 'detail'; MOB_STATE.tripSub = 'ring'; MOB_STATE._tripSubResetScroll = true; MOB_STATE._tripSubScrollLeft = 0; MOB_STATE.tripEditIt = null; MOB_STATE.tripEditBk = null; MOB_STATE.tripGoalEdit = false; renderMobTrip(); initMobDragSliders(); return; }
     var tsub = e.target.closest('[data-mtripsub]');
     if (tsub) {
       MOB_STATE.tripSub = tsub.getAttribute('data-mtripsub');
       MOB_STATE.tripEditIt = null;
       MOB_STATE.tripEditBk = null;
       MOB_STATE.tripGoalEdit = false;
+      MOB_STATE._tripSubCenterSmooth = true;
       renderMobTrip();
-      initMobDragSliders();
       return;
     }
     var tdel = e.target.closest('[data-mtrip-del]');

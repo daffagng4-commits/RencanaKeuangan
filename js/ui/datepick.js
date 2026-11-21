@@ -30,11 +30,24 @@
     el.style.left = Math.round(left) + 'px';
     el.style.top = Math.round(top) + 'px';
   }
-  function close() {
+  function escStr(s) {
+    if (typeof esc === 'function') return esc(s);
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+  }
+  function close(restoreFocus) {
     if (!open) return;
-    open.a.setAttribute('aria-expanded', 'false');
-    open.el.remove();
+    var cur = open;
     open = null;
+    cur.a.setAttribute('aria-expanded', 'false');
+    cur.el.remove();
+    if (cur.isSheet && document.body) {
+      document.body.style.overflow = cur.prevOverflow || '';
+    }
+    if (restoreFocus && cur.focusEl && cur.focusEl.focus) {
+      cur.focusEl.focus();
+    }
   }
   function pop(a, cls, html) {
     close();
@@ -45,21 +58,66 @@
     document.body.appendChild(el);
     place(el, a);
     a.setAttribute('aria-expanded', 'true');
-    open = { el: el, a: a };
+    open = { el: el, a: a, focusEl: a, isSheet: false };
+    return el;
+  }
+  function popSheet(a, focusEl, titleText, html) {
+    close();
+    if (document.head && !document.getElementById('pk-sheet-css')) {
+      var st = document.createElement('style');
+      st.id = 'pk-sheet-css';
+      st.textContent =
+        '.pk-sheet-backdrop{position:fixed;inset:0;background:rgba(9,13,20,.52);z-index:9999;display:flex;align-items:flex-end;justify-content:center}' +
+        '.pk.pk-sheet{position:relative;width:100%;max-width:440px;max-height:min(86dvh,520px);display:flex;flex-direction:column;border-radius:18px 18px 0 0;background:var(--bg-surface,#fff);color:var(--text-primary,#0f172a);overflow:hidden;box-shadow:0 -12px 32px rgba(15,23,42,.22)}' +
+        '.pk-sheet-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border-subtle,#e2e8f0)}' +
+        '.pk-sheet-x{min-width:44px;min-height:44px}' +
+        '.pk-sheet-bd{overflow-y:auto;padding:10px 14px 12px}' +
+        '.pk-sheet .pk-h button,.pk-sheet .pk-f button{min-height:44px;min-width:44px}';
+      document.head.appendChild(st);
+    }
+    var bd = document.createElement('div');
+    bd.className = 'pk-sheet-backdrop';
+    bd.setAttribute('role', 'presentation');
+    var el = document.createElement('div');
+    el.className = 'pk pk-cal pk-sheet';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-label', titleText);
+    el.innerHTML =
+      '<div class="pk-sheet-hd"><strong>' + escStr(titleText) + '</strong>' +
+      '<button type="button" class="pk-sheet-x" data-pk-cancel="1" aria-label="Tutup">&times;</button></div>' +
+      '<div class="pk-sheet-bd">' + html + '</div>';
+    bd.appendChild(el);
+    var prevOverflow = document.body ? document.body.style.overflow : '';
+    if (document.body) {
+      document.body.appendChild(bd);
+      document.body.style.overflow = 'hidden';
+    }
+    (focusEl || a).setAttribute('aria-expanded', 'true');
+    open = { el: bd, sheetEl: el, a: focusEl || a, focusEl: focusEl || a, isSheet: true, prevOverflow: prevOverflow };
     return el;
   }
 
   document.addEventListener('pointerdown', function (e) {
-    if (open && !open.el.contains(e.target) && !open.a.contains(e.target)) close();
+    if (!open) return;
+    if (open.isSheet) {
+      if (e.target === open.el || (open.sheetEl && !open.sheetEl.contains(e.target))) close(true);
+      return;
+    }
+    if (!open.el.contains(e.target) && !open.a.contains(e.target)) close();
   }, true);
   document.addEventListener('keydown', function (e) {
     if (!open || e.key !== 'Escape') return;
-    var a = open.a;
-    close();
-    a.focus();
+    close(true);
   });
-  addEventListener('resize', close);
-  addEventListener('scroll', close, { passive: true });
+  addEventListener('resize', function () {
+    if (open && open.isSheet) return;
+    close();
+  });
+  addEventListener('scroll', function () {
+    if (open && open.isSheet) return;
+    close();
+  }, { passive: true });
 
   function head(y, m) {
     return '<div class="pk-h"><button type="button" data-mv="-1" aria-label="Bulan sebelumnya">&#8249;</button>' +
@@ -89,8 +147,10 @@
   }
 
   /* ---------- kalender satu tanggal ---------- */
-  function calOpen(inp, sync) {
-    var v = /^\d{4}-\d{2}-\d{2}$/.test(inp.value) ? inp.value : tday(),
+  function calOpen(inp, sync, triggerBtn) {
+    var isSheet = !!(inp.hasAttribute && inp.hasAttribute('data-pk-sheet')),
+      titleText = (isSheet && inp.getAttribute('data-pk-title')) || 'Pilih tanggal',
+      v = /^\d{4}-\d{2}-\d{2}$/.test(inp.value) ? inp.value : tday(),
       min = inp.getAttribute('min'),
       max = inp.getAttribute('max'),
       y = +v.slice(0, 4),
@@ -100,16 +160,23 @@
       inp.value = d; // setter di upDate ikut menyegarkan label tombol
       inp.dispatchEvent(new Event('input', { bubbles: true }));
       inp.dispatchEvent(new Event('change', { bubbles: true }));
-      close();
+      close(isSheet);
       if (sync) sync();
     }
     function draw() {
-      var el = pop(inp, 'pk-cal',
-        head(y, m) + wdays() + '<div class="pk-g">' + grid(y, m, inp.value, '', min, max) + '</div>' +
-        '<div class="pk-f"><button type="button" class="pk-l" data-t="1">Hari ini</button></div>');
+      var td = tday(),
+        tdOff = isSheet && ((min && td < min) || (max && td > max)),
+        calHtml = head(y, m) + wdays() + '<div class="pk-g">' + grid(y, m, inp.value, '', min, max) + '</div>' +
+        '<div class="pk-f"><button type="button" class="pk-l" data-t="1"' + (tdOff ? ' disabled aria-disabled="true"' : '') + '>Hari ini</button>' +
+        (isSheet ? '<button type="button" class="pk-l pk-cancel" data-pk-cancel="1">Batal</button>' : '') +
+        '</div>';
+      var el = isSheet
+        ? popSheet(inp, triggerBtn || inp, titleText, calHtml)
+        : pop(inp, 'pk-cal', calHtml);
       el.onclick = function (e) {
         var b = e.target.closest('button');
         if (!b) return;
+        if (b.dataset.pkCancel) return close(true);
         if (b.dataset.mv) {
           m += +b.dataset.mv;
           if (m < 0) { m = 11; y--; }
@@ -163,7 +230,7 @@
       get: function () { return inVal.get.call(inp); },
       set: function (x) { inVal.set.call(inp, x); sync(); }
     });
-    b.onclick = function () { calOpen(inp, sync); };
+    b.onclick = function () { calOpen(inp, sync, b); };
     sync();
   }
 

@@ -4909,10 +4909,22 @@ body.privacy-on #browser-shell .pv {
   align-items: start;
 }
 #browser-shell .trip-act-inputs.is-fx {
-  grid-template-columns: minmax(0, 1fr) 108px;
+  grid-template-columns: minmax(0, 1fr) 118px;
 }
 #browser-shell .trip-act-inputs.is-fx.has-au {
   grid-template-columns: minmax(0, 1fr) 86px 96px;
+}
+#browser-shell #modal-trip-actual[data-actual-mode="rp"] .trip-act-col-au,
+#browser-shell #modal-trip-actual[data-actual-mode="rp"] .trip-act-col-ak,
+#browser-shell #modal-trip-actual[data-actual-mode="rp"] .trip-act-help,
+#browser-shell #modal-trip-actual[data-actual-mode="rp"] .trip-rate-read,
+#browser-shell #modal-trip-actual[data-actual-mode="fxplan"] .trip-act-fx-tog,
+#browser-shell #modal-trip-actual[data-actual-mode="fxplan"] .trip-act-col-au {
+  display: none !important;
+}
+#browser-shell #modal-trip-actual .trip-rate-read {
+  margin-top: -2px;
+  line-height: 1.25;
 }
 #browser-shell .trip-act-inputs .field {
   min-width: 0;
@@ -5422,7 +5434,7 @@ body[data-shell="mobile-app"][data-phone-frame="full"] .mob-shell[data-mtab-acti
   position: relative;
   top: auto;
 }
-body[data-shell="mobile-app"][data-phone-frame="full"] .mob-shell {
+body[data-shell="mobile-app"][data-phone-frame="full"] #mobile-app-shell .mob-shell {
   width: 100%;
   max-width: 412px;
   height: auto;
@@ -8206,7 +8218,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs {
   align-items: start;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs.is-fx {
-  grid-template-columns: minmax(0, 1fr) 108px;
+  grid-template-columns: minmax(0, 1fr) 118px;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs.is-fx.has-au {
   grid-template-columns: minmax(0, 1fr) 86px 96px;
@@ -8215,6 +8227,35 @@ body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs.is-fx.has-au {
   body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs.is-fx.has-au {
     grid-template-columns: minmax(0, 1fr) 74px 86px;
   }
+}
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual[data-actual-mode="rp"] .trip-act-col-au,
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual[data-actual-mode="rp"] .trip-act-col-ak,
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual[data-actual-mode="rp"] .trip-act-help,
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual[data-actual-mode="rp"] .trip-rate-read,
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual[data-actual-mode="fxplan"] .trip-act-fx-tog,
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual[data-actual-mode="fxplan"] .trip-act-col-au {
+  display: none !important;
+}
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .ms-body {
+  padding: 9px 14px;
+  gap: 6px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .ms-foot {
+  padding: 8px 14px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .trip-act-est-box {
+  padding: 6px 10px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .trip-act-fx-tog {
+  min-height: 36px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .trip-rate-read {
+  margin-top: -1px;
+  line-height: 1.25;
+}
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .trip-act-help {
+  margin-top: -3px;
+  line-height: 1.25;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs .field {
   min-width: 0;
@@ -8606,6 +8647,137 @@ body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-full-line {
 @media (prefers-reduced-motion: reduce) {
   body[data-shell="mobile-app"] #mobile-app-shell .trip-disc-chev { transition: none; }
   body[data-shell="mobile-app"] #mobile-app-shell .trip-disc-body.is-opening { animation: none; }
+  body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sheet-backdrop,
+  body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sheet { transition: none; }
+}
+body[data-cal-sheet-open="1"],
+body[data-cal-sheet-open="1"] #mobile-app-shell .mob-main,
+body[data-cal-sheet-open="1"] #mobile-app-shell .modal-backdrop .ms-body {
+  overflow: hidden !important;
+  overscroll-behavior: contain;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 13, 20, 0.52);
+  backdrop-filter: blur(3px);
+  z-index: 225;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-sheet-close) var(--ease-in),
+    visibility 0s linear var(--dur-sheet-close);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sheet-backdrop.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity var(--dur-dialog-backdrop) var(--ease-out),
+    visibility 0s;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sheet {
+  width: 100%;
+  max-width: 440px;
+  max-height: min(86dvh, 520px);
+  background: var(--bg-surface);
+  border-radius: 22px 22px 0 0;
+  border-top: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  transform: translateY(100%);
+  transition: transform var(--dur-sheet-close) var(--ease-in);
+  will-change: transform;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sheet-backdrop.open .m-cal-sheet {
+  transform: translateY(0);
+  transition: transform var(--dur-dialog-open) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 16px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-x {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px 16px 12px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-body .cal-head {
+  gap: 8px;
+  margin-bottom: 8px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-body .cal-head button {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 1rem;
+  padding: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-body .cal-grid {
+  gap: 4px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-body .cal-day {
+  min-height: 36px;
+  height: auto;
+  border-radius: 10px;
+  font-size: 0.82rem;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-foot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-muted-row);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-foot .btn {
+  min-height: 44px;
+  flex: 1 1 0;
+}
+@media (max-height: 520px) {
+  body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sheet .ms-handle {
+    margin: 6px auto 2px;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-head {
+    padding: 4px 14px 6px;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-body {
+    padding: 6px 14px 8px;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-body .cal-day {
+    min-height: 32px;
+    font-size: 0.78rem;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-foot {
+    padding: 6px 14px;
+  }
+}
+body[data-shell="mobile-app"] #mobile-app-shell [hidden] {
+  display: none !important;
 }
 </style>
 </head>
@@ -21502,13 +21674,40 @@ function tripSyncActualDialogLive(tr, x, isBk, prefix) {
   var akWrap = g('ak-wrap'), akEl = g('ak'), akLbl = g('ak-lbl'), akRead = g('ak-read'), akHelp = g('ak-help');
   var fxTogWrap = g('fx-toggle-wrap'), useFxChk = g('use-fx');
   var prevEl = g('prev'), detEl = g('prev-det');
+  var formEl = axEl && axEl.form ? axEl.form : null;
+  var rootModalEl = axEl && axEl.closest ? axEl.closest('#modal-trip-actual, #m-sheet-actual') : null;
   var isItemFx = !!(x.fx && tripItemCur(tr, x));
   var useFx = isItemFx || !!(fxTogWrap && !fxTogWrap.hidden && useFxChk && useFxChk.checked);
+  var mode = isItemFx ? 'fxplan' : (useFx ? 'fx' : 'rp');
+  if (rootModalEl) rootModalEl.setAttribute('data-actual-mode', mode);
+  if (formEl && formEl._actDraft && !isItemFx && formEl._actDraft.lastMode && formEl._actDraft.lastMode !== mode) {
+    var dObj = formEl._actDraft;
+    if (dObj.lastMode === 'rp' && mode === 'fx') {
+      dObj.rpAx = axEl ? axEl.value : '';
+      if (auSel && !auSel.options.length) tripPopulateAuSelect(auSel, tr, dObj.fxAu || '');
+      if (axEl) axEl.value = dObj.fxAx || '';
+      if (akEl) akEl.value = dObj.fxAk || '';
+    } else if (dObj.lastMode === 'fx' && mode === 'rp') {
+      dObj.fxAx = axEl ? axEl.value : '';
+      dObj.fxAu = auSel ? auSel.value : '';
+      dObj.fxAk = akEl ? akEl.value : '';
+      if (axEl) axEl.value = dObj.rpAx || '';
+    }
+    dObj.lastMode = mode;
+  } else if (formEl && formEl._actDraft) {
+    formEl._actDraft.lastMode = mode;
+  }
+  if (mode === 'fx' && auSel && !auSel.options.length) {
+    tripPopulateAuSelect(auSel, tr, (formEl && formEl._actDraft && formEl._actDraft.fxAu) || '');
+  } else if (mode === 'fx' && auSel && auSel.options.length && auSel.selectedIndex < 0) {
+    auSel.selectedIndex = 0;
+    if (typeof syncModernSelect === 'function') syncModernSelect(auSel);
+  }
   if (inputsEl && inputsEl.classList) {
     inputsEl.classList.toggle('is-fx', useFx);
     inputsEl.classList.toggle('has-au', !isItemFx && useFx);
   }
-  if (auWrap) auWrap.hidden = !(!isItemFx && useFx);
+  if (auWrap) auWrap.hidden = mode !== 'fx';
   if (akWrap) akWrap.hidden = !useFx;
   var curCode = isItemFx ? tripItemCur(tr, x) : (useFx && auSel ? String(auSel.value || '').trim().toUpperCase() : '');
   var effRate = isItemFx ? tripItemRate(tr, x) : (curCode ? tripCurRate(tr, curCode) : 0);
@@ -21546,19 +21745,36 @@ function tripSetupActualDialog(tr, x, isBk, prefix, isMobile) {
   if (!tr || !x) return;
   var itemEl = g('item'), estEl = g('est'), axEl = g('ax'), akEl = g('ak');
   var fxTogWrap = g('fx-toggle-wrap'), useFxChk = g('use-fx'), auSel = g('au'), delBtn = g('del');
+  var formEl = axEl && axEl.form ? axEl.form : null;
   if (itemEl) itemEl.textContent = isBk ? (x.title || '') : (x.place || '');
   if (estEl) estEl.textContent = tripActualEstLabel(tr, x, isBk);
-  if (axEl) axEl.value = x.ax > 0 ? (typeof fmtNumOnlyIntStr === 'function' ? fmtNumOnlyIntStr(String(Math.round(x.ax))) : String(Math.round(x.ax))) : '';
+  var formattedAx = x.ax > 0 ? (typeof fmtNumOnlyIntStr === 'function' ? fmtNumOnlyIntStr(String(Math.round(x.ax))) : String(Math.round(x.ax))) : '';
+  if (axEl) axEl.value = formattedAx;
   tripSetFieldError(prefix + '-ax-err', axEl, '', isMobile);
   tripSetFieldError(prefix + '-ak-err', akEl, '', isMobile);
   var isItemFx = !!(x.fx && tripItemCur(tr, x));
   var curList = tripAllCurList(tr);
   var hasExistingAu = !!(x.ax > 0 && !isItemFx && x.au && curList.some(function (f) { return String(f.c || '').toUpperCase() === String(x.au || '').toUpperCase(); }));
+  var initMode = isItemFx ? 'fxplan' : (hasExistingAu ? 'fx' : 'rp');
+  if (formEl) {
+    formEl._actDraft = {
+      lastMode: initMode,
+      rpAx: initMode === 'rp' ? formattedAx : '',
+      fxAx: initMode === 'fx' ? formattedAx : '',
+      fxAu: hasExistingAu ? String(x.au || '').toUpperCase() : '',
+      fxAk: initMode === 'fx' && x.ak > 0 ? String(x.ak) : '',
+    };
+  }
   if (fxTogWrap && useFxChk) {
     if (!isItemFx && curList.length > 0) {
       fxTogWrap.hidden = false;
-      tripPopulateAuSelect(auSel, tr, x.au || '');
       useFxChk.checked = hasExistingAu;
+      if (hasExistingAu) {
+        tripPopulateAuSelect(auSel, tr, x.au || '');
+      } else if (auSel) {
+        auSel.innerHTML = '';
+        if (typeof syncModernSelect === 'function') syncModernSelect(auSel);
+      }
     } else {
       fxTogWrap.hidden = true;
       useFxChk.checked = false;
@@ -25287,11 +25503,24 @@ function bindTip() {
     el.style.left = Math.round(left) + 'px';
     el.style.top = Math.round(top) + 'px';
   }
-  function close() {
+  function escStr(s) {
+    if (typeof esc === 'function') return esc(s);
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+  }
+  function close(restoreFocus) {
     if (!open) return;
-    open.a.setAttribute('aria-expanded', 'false');
-    open.el.remove();
+    var cur = open;
     open = null;
+    cur.a.setAttribute('aria-expanded', 'false');
+    cur.el.remove();
+    if (cur.isSheet && document.body) {
+      document.body.style.overflow = cur.prevOverflow || '';
+    }
+    if (restoreFocus && cur.focusEl && cur.focusEl.focus) {
+      cur.focusEl.focus();
+    }
   }
   function pop(a, cls, html) {
     close();
@@ -25302,21 +25531,66 @@ function bindTip() {
     document.body.appendChild(el);
     place(el, a);
     a.setAttribute('aria-expanded', 'true');
-    open = { el: el, a: a };
+    open = { el: el, a: a, focusEl: a, isSheet: false };
+    return el;
+  }
+  function popSheet(a, focusEl, titleText, html) {
+    close();
+    if (document.head && !document.getElementById('pk-sheet-css')) {
+      var st = document.createElement('style');
+      st.id = 'pk-sheet-css';
+      st.textContent =
+        '.pk-sheet-backdrop{position:fixed;inset:0;background:rgba(9,13,20,.52);z-index:9999;display:flex;align-items:flex-end;justify-content:center}' +
+        '.pk.pk-sheet{position:relative;width:100%;max-width:440px;max-height:min(86dvh,520px);display:flex;flex-direction:column;border-radius:18px 18px 0 0;background:var(--bg-surface,#fff);color:var(--text-primary,#0f172a);overflow:hidden;box-shadow:0 -12px 32px rgba(15,23,42,.22)}' +
+        '.pk-sheet-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border-subtle,#e2e8f0)}' +
+        '.pk-sheet-x{min-width:44px;min-height:44px}' +
+        '.pk-sheet-bd{overflow-y:auto;padding:10px 14px 12px}' +
+        '.pk-sheet .pk-h button,.pk-sheet .pk-f button{min-height:44px;min-width:44px}';
+      document.head.appendChild(st);
+    }
+    var bd = document.createElement('div');
+    bd.className = 'pk-sheet-backdrop';
+    bd.setAttribute('role', 'presentation');
+    var el = document.createElement('div');
+    el.className = 'pk pk-cal pk-sheet';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-label', titleText);
+    el.innerHTML =
+      '<div class="pk-sheet-hd"><strong>' + escStr(titleText) + '</strong>' +
+      '<button type="button" class="pk-sheet-x" data-pk-cancel="1" aria-label="Tutup">&times;</button></div>' +
+      '<div class="pk-sheet-bd">' + html + '</div>';
+    bd.appendChild(el);
+    var prevOverflow = document.body ? document.body.style.overflow : '';
+    if (document.body) {
+      document.body.appendChild(bd);
+      document.body.style.overflow = 'hidden';
+    }
+    (focusEl || a).setAttribute('aria-expanded', 'true');
+    open = { el: bd, sheetEl: el, a: focusEl || a, focusEl: focusEl || a, isSheet: true, prevOverflow: prevOverflow };
     return el;
   }
 
   document.addEventListener('pointerdown', function (e) {
-    if (open && !open.el.contains(e.target) && !open.a.contains(e.target)) close();
+    if (!open) return;
+    if (open.isSheet) {
+      if (e.target === open.el || (open.sheetEl && !open.sheetEl.contains(e.target))) close(true);
+      return;
+    }
+    if (!open.el.contains(e.target) && !open.a.contains(e.target)) close();
   }, true);
   document.addEventListener('keydown', function (e) {
     if (!open || e.key !== 'Escape') return;
-    var a = open.a;
-    close();
-    a.focus();
+    close(true);
   });
-  addEventListener('resize', close);
-  addEventListener('scroll', close, { passive: true });
+  addEventListener('resize', function () {
+    if (open && open.isSheet) return;
+    close();
+  });
+  addEventListener('scroll', function () {
+    if (open && open.isSheet) return;
+    close();
+  }, { passive: true });
 
   function head(y, m) {
     return '<div class="pk-h"><button type="button" data-mv="-1" aria-label="Bulan sebelumnya">&#8249;</button>' +
@@ -25346,8 +25620,10 @@ function bindTip() {
   }
 
   /* ---------- kalender satu tanggal ---------- */
-  function calOpen(inp, sync) {
-    var v = /^\d{4}-\d{2}-\d{2}$/.test(inp.value) ? inp.value : tday(),
+  function calOpen(inp, sync, triggerBtn) {
+    var isSheet = !!(inp.hasAttribute && inp.hasAttribute('data-pk-sheet')),
+      titleText = (isSheet && inp.getAttribute('data-pk-title')) || 'Pilih tanggal',
+      v = /^\d{4}-\d{2}-\d{2}$/.test(inp.value) ? inp.value : tday(),
       min = inp.getAttribute('min'),
       max = inp.getAttribute('max'),
       y = +v.slice(0, 4),
@@ -25357,16 +25633,23 @@ function bindTip() {
       inp.value = d; // setter di upDate ikut menyegarkan label tombol
       inp.dispatchEvent(new Event('input', { bubbles: true }));
       inp.dispatchEvent(new Event('change', { bubbles: true }));
-      close();
+      close(isSheet);
       if (sync) sync();
     }
     function draw() {
-      var el = pop(inp, 'pk-cal',
-        head(y, m) + wdays() + '<div class="pk-g">' + grid(y, m, inp.value, '', min, max) + '</div>' +
-        '<div class="pk-f"><button type="button" class="pk-l" data-t="1">Hari ini</button></div>');
+      var td = tday(),
+        tdOff = isSheet && ((min && td < min) || (max && td > max)),
+        calHtml = head(y, m) + wdays() + '<div class="pk-g">' + grid(y, m, inp.value, '', min, max) + '</div>' +
+        '<div class="pk-f"><button type="button" class="pk-l" data-t="1"' + (tdOff ? ' disabled aria-disabled="true"' : '') + '>Hari ini</button>' +
+        (isSheet ? '<button type="button" class="pk-l pk-cancel" data-pk-cancel="1">Batal</button>' : '') +
+        '</div>';
+      var el = isSheet
+        ? popSheet(inp, triggerBtn || inp, titleText, calHtml)
+        : pop(inp, 'pk-cal', calHtml);
       el.onclick = function (e) {
         var b = e.target.closest('button');
         if (!b) return;
+        if (b.dataset.pkCancel) return close(true);
         if (b.dataset.mv) {
           m += +b.dataset.mv;
           if (m < 0) { m = 11; y--; }
@@ -25420,7 +25703,7 @@ function bindTip() {
       get: function () { return inVal.get.call(inp); },
       set: function (x) { inVal.set.call(inp, x); sync(); }
     });
-    b.onclick = function () { calOpen(inp, sync); };
+    b.onclick = function () { calOpen(inp, sync, b); };
     sync();
   }
 
@@ -31230,6 +31513,9 @@ var MOB_STATE = {
   tripOpenDays: {},
   tripExpandedItems: {},
   tripRingDisclosures: {},
+  _tripSubScrollLeft: 0,
+  _tripSubResetScroll: false,
+  _tripSubCenterSmooth: false,
   tripModalMode: 'new',
   notifEnabled: true,
   notifHorizon: null,
@@ -31279,16 +31565,18 @@ function mobFmtCalLbl(ds) {
   return +ds.slice(8, 10) + ' ' + MON[+ds.slice(5, 7) - 1] + ' ' + ds.slice(0, 4);
 }
 
-function mobDateFieldHtml(id, val, rightAlign) {
+function mobDateFieldHtml(id, val, rightAlign, opts) {
   var v = ISO_RE.test(val || '') ? val : '';
+  var isSheet = !!(opts && opts.sheet);
+  var titleAttr = isSheet && opts.title ? ' data-pk-title="' + esc(opts.title) + '"' : '';
   return (
     '<div class="picker-wrap">' +
-    '<input type="hidden" id="' + esc(id) + '" value="' + esc(v) + '" />' +
+    '<input type="hidden" id="' + esc(id) + '" value="' + esc(v) + '"' + (isSheet ? ' data-pk-sheet="1"' + titleAttr : '') + ' />' +
     '<button type="button" class="cal-trigger" id="' + esc(id) + '-trig" data-mcal-trig="' + esc(id) + '">' +
     '<span id="' + esc(id) + '-lbl">' + esc(v ? mobFmtCalLbl(v) : 'Pilih tanggal') + '</span>' +
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>' +
     '</button>' +
-    '<div class="picker-popover' + (rightAlign ? ' align-right' : '') + '" id="' + esc(id) + '-cal"></div>' +
+    (isSheet ? '' : '<div class="picker-popover' + (rightAlign ? ' align-right' : '') + '" id="' + esc(id) + '-cal"></div>') +
     '</div>'
   );
 }
@@ -31300,16 +31588,26 @@ function mobSetDateVal(id, ds) {
   if (ds && ISO_RE.test(ds)) MOB_CAL_VIEW[id] = { y: +ds.slice(0, 4), m: +ds.slice(5, 7) - 1 };
 }
 
-function mobDrawCal(id) {
-  var pop = $(id + '-cal'), inp = $(id);
-  if (!pop || !inp) return;
+function mobCalMinDate(id) {
+  if (id === 'm-kp-end' && $('m-kp-start') && ISO_RE.test($('m-kp-start').value)) {
+    return $('m-kp-start').value;
+  }
+  return '';
+}
+
+function mobBuildCalParts(id) {
+  var inp = $(id);
+  if (!inp) return null;
   var tr = typeof mobActiveTrip === 'function' ? mobActiveTrip() : null;
   var isTripRangeCal = (id === 'm-it-day' || id === 'm-bk-start' || id === 'm-bk-end');
   var hasRng = isTripRangeCal && tr && typeof tripHasFullRange === 'function' && tripHasFullRange(tr);
-  var today = todayISO(), cur = ISO_RE.test(inp.value) ? inp.value : (hasRng ? tr.start : today);
+  var minDate = mobCalMinDate(id);
+  var today = todayISO(), cur = ISO_RE.test(inp.value) ? inp.value : (hasRng ? tr.start : (minDate || today));
   var v = MOB_CAL_VIEW[id] || (hasRng && (cur < tr.start || cur > tr.end)
     ? { y: +tr.start.slice(0, 4), m: +tr.start.slice(5, 7) - 1 }
-    : { y: +cur.slice(0, 4), m: +cur.slice(5, 7) - 1 });
+    : (minDate && cur < minDate
+      ? { y: +minDate.slice(0, 4), m: +minDate.slice(5, 7) - 1 }
+      : { y: +cur.slice(0, 4), m: +cur.slice(5, 7) - 1 }));
   MOB_CAL_VIEW[id] = v;
   var first = new Date(Date.UTC(v.y, v.m, 1)).getUTCDay(),
     dim = new Date(Date.UTC(v.y, v.m + 1, 0)).getUTCDate(),
@@ -31317,17 +31615,88 @@ function mobDrawCal(id) {
   for (var i = 0; i < first; i++) cells += '<span></span>';
   for (var d = 1; d <= dim; d++) {
     var ds = v.y + '-' + pad2(v.m + 1) + '-' + pad2(d);
-    var outRng = hasRng && (ds < tr.start || ds > tr.end);
+    var outRng = (hasRng && (ds < tr.start || ds > tr.end)) || (!!minDate && ds < minDate);
     var cls = 'cal-day' + (ds === cur ? ' selected' : '') + (ds === today ? ' today' : '') + (outRng ? ' is-disabled' : '');
     cells += '<button type="button" class="' + cls + '" data-mcal-pick="' + esc(id) + '|' + ds + '"' + (outRng ? ' disabled aria-disabled="true"' : '') + '>' + d + '</button>';
   }
-  var todayOut = hasRng && (today < tr.start || today > tr.end);
-  pop.innerHTML =
-    '<div class="cal-head"><button type="button" class="btn btn-secondary btn-sm" data-mcal-mv="' + esc(id) + '|-1">‹</button>' +
-    '<strong style="font-size:0.80rem">' + esc(FULL_MON[v.m] + ' ' + v.y) + '</strong>' +
-    '<button type="button" class="btn btn-secondary btn-sm" data-mcal-mv="' + esc(id) + '|1">›</button></div>' +
-    '<div class="cal-grid"><span class="cal-dow">Min</span><span class="cal-dow">Sen</span><span class="cal-dow">Sel</span><span class="cal-dow">Rab</span><span class="cal-dow">Kam</span><span class="cal-dow">Jum</span><span class="cal-dow">Sab</span>' + cells + '</div>' +
-    (todayOut ? '' : '<div style="display:flex;justify-content:flex-start;margin-top:8px;padding-top:6px;border-top:1px solid var(--border-subtle)"><button type="button" class="badge b-ac" data-mcal-pick="' + esc(id) + '|' + today + '">Hari Ini</button></div>');
+  var todayDisabled = (hasRng && (today < tr.start || today > tr.end)) || (!!minDate && today < minDate);
+  var gridHtml =
+    '<div class="cal-head"><button type="button" class="btn btn-secondary btn-sm" data-mcal-mv="' + esc(id) + '|-1" aria-label="Bulan sebelumnya">‹</button>' +
+    '<strong style="font-size:0.86rem">' + esc(FULL_MON[v.m] + ' ' + v.y) + '</strong>' +
+    '<button type="button" class="btn btn-secondary btn-sm" data-mcal-mv="' + esc(id) + '|1" aria-label="Bulan berikutnya">›</button></div>' +
+    '<div class="cal-grid"><span class="cal-dow">Min</span><span class="cal-dow">Sen</span><span class="cal-dow">Sel</span><span class="cal-dow">Rab</span><span class="cal-dow">Kam</span><span class="cal-dow">Jum</span><span class="cal-dow">Sab</span>' + cells + '</div>';
+  return {
+    id: id,
+    inp: inp,
+    today: today,
+    todayDisabled: todayDisabled,
+    gridHtml: gridHtml,
+    title: inp.getAttribute('data-pk-title') || 'Pilih tanggal',
+  };
+}
+
+function mobDrawCal(id) {
+  var pop = $(id + '-cal');
+  if (!pop) return;
+  var p = mobBuildCalParts(id);
+  if (!p) return;
+  pop.innerHTML = p.gridHtml +
+    (p.todayDisabled ? '' : '<div style="display:flex;justify-content:flex-start;margin-top:8px;padding-top:6px;border-top:1px solid var(--border-subtle)"><button type="button" class="badge b-ac" data-mcal-pick="' + esc(id) + '|' + p.today + '">Hari Ini</button></div>');
+}
+
+function mobDrawCalSheet(id) {
+  var bodyEl = $('m-cal-sheet-body'), footEl = $('m-cal-sheet-foot'), titleEl = $('m-cal-sheet-title');
+  var p = mobBuildCalParts(id);
+  if (!bodyEl || !p) return;
+  if (titleEl) titleEl.textContent = p.title;
+  bodyEl.innerHTML = p.gridHtml;
+  if (footEl) {
+    footEl.innerHTML =
+      '<button type="button" class="btn btn-secondary" data-mcal-pick="' + esc(id) + '|' + p.today + '"' + (p.todayDisabled ? ' disabled aria-disabled="true"' : '') + '>Hari ini</button>' +
+      '<button type="button" class="btn btn-secondary" data-mcal-close="1">Batal</button>';
+  }
+}
+
+function mobOpenCalSheet(id, trigEl) {
+  var bd = $('m-cal-sheet-backdrop'), inp = $(id);
+  if (!bd || !inp) return;
+  document.querySelectorAll('#mobile-app-shell .picker-popover.open').forEach(function (p) { p.classList.remove('open'); });
+  var tr = typeof mobActiveTrip === 'function' ? mobActiveTrip() : null;
+  var isTripRangeCal = (id === 'm-it-day' || id === 'm-bk-start' || id === 'm-bk-end');
+  if (isTripRangeCal && tr && typeof tripHasFullRange === 'function' && tripHasFullRange(tr)) {
+    var curVal = inp.value || '';
+    if (!curVal || curVal < tr.start || curVal > tr.end) {
+      MOB_CAL_VIEW[id] = { y: +tr.start.slice(0, 4), m: +tr.start.slice(5, 7) - 1 };
+    }
+  }
+  var minD = mobCalMinDate(id);
+  if (minD && (!ISO_RE.test(inp.value) || inp.value < minD)) {
+    MOB_CAL_VIEW[id] = { y: +minD.slice(0, 4), m: +minD.slice(5, 7) - 1 };
+  }
+  MOB_STATE._calSheetTrigger = trigEl || $(id + '-trig');
+  clearTimeout(bd._mCloseT);
+  bd.classList.remove('is-closing');
+  mobDrawCalSheet(id);
+  bd.setAttribute('data-cal-for', id);
+  bd.setAttribute('aria-hidden', 'false');
+  if (bd.offsetWidth > 0) void bd.offsetWidth;
+  bd.classList.add('open');
+  if (document.body) document.body.setAttribute('data-cal-sheet-open', '1');
+}
+
+function mobCloseCalSheet(restoreFocus) {
+  var bd = $('m-cal-sheet-backdrop');
+  if (!bd) return;
+  var wasOpen = bd.classList.contains('open');
+  bd.classList.remove('open', 'is-closing');
+  bd.setAttribute('aria-hidden', 'true');
+  bd.removeAttribute('data-cal-for');
+  if (document.body) document.body.removeAttribute('data-cal-sheet-open');
+  var trig = MOB_STATE._calSheetTrigger;
+  MOB_STATE._calSheetTrigger = null;
+  if (wasOpen && restoreFocus !== false && trig && trig.isConnected && typeof trig.focus === 'function') {
+    try { trig.focus({ preventScroll: true }); } catch (e) { try { trig.focus(); } catch (e2) {} }
+  }
 }
 
 var MOB_CAT_META = {
@@ -31389,14 +31758,49 @@ function mobFmtShortCal(ds) {
   return +ds.slice(8, 10) + ' ' + MON[+ds.slice(5, 7) - 1];
 }
 
+function mobEnsureActiveTripChipVisible(smooth) {
+  var nav = $('m-trip-subnav');
+  if (!nav) return;
+  var active = nav.querySelector('.p-chip.active');
+  if (!active) return;
+  var cw = nav.clientWidth || 0;
+  var sw = nav.scrollWidth || 0;
+  if (!(sw > cw && cw > 0)) return;
+  var cLeft = active.offsetLeft || 0;
+  var cWidth = active.offsetWidth || 0;
+  var cRight = cLeft + cWidth;
+  var vLeft = nav.scrollLeft || 0;
+  var vRight = vLeft + cw;
+  if (cLeft >= vLeft && cRight <= vRight) return;
+  var target = Math.max(0, Math.min(sw - cw, Math.round(cLeft - (cw - cWidth) / 2)));
+  var reduceMotion = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var behavior = smooth && !reduceMotion ? 'smooth' : 'auto';
+  if (typeof nav.scrollTo === 'function') {
+    try {
+      nav.scrollTo({ left: target, behavior: behavior });
+    } catch (e) {
+      nav.scrollLeft = target;
+    }
+  } else {
+    nav.scrollLeft = target;
+  }
+  MOB_STATE._tripSubScrollLeft = target;
+}
+
 function mobPreserveScroll(fn) {
   var mm = $('m-main');
   var sy = typeof window !== 'undefined' ? (window.scrollY || (document.documentElement && document.documentElement.scrollTop) || 0) : 0;
   var mTop = mm ? mm.scrollTop : 0;
+  var oldNav = $('m-trip-subnav');
+  var prevNavLeft = oldNav ? oldNav.scrollLeft : (MOB_STATE._tripSubScrollLeft || 0);
   fn();
   if (mm && mTop) mm.scrollTop = mTop;
   if (sy > 0 && typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
     try { window.scrollTo(0, sy); } catch (e) {}
+  }
+  var newNav = $('m-trip-subnav');
+  if (newNav && !MOB_STATE._tripSubResetScroll && prevNavLeft > 0 && newNav.scrollLeft === 0) {
+    newNav.scrollLeft = prevNavLeft;
   }
 }
 
@@ -31627,6 +32031,7 @@ function mobOpenSheet(id) {
 function mobCloseSheet(id) {
   var el = $(id);
   if (!el) return;
+  if (id === 'm-sheet-trip') mobCloseCalSheet(false);
   if (id === 'm-sheet-trip-xl') MOB_XL_DATA = null;
   var red = typeof rkIsReducedMotion === 'function' && rkIsReducedMotion();
   var wasOpen = el.classList.contains('open') && el.offsetWidth > 0 && !red;
@@ -32094,8 +32499,8 @@ function mobShellTemplate() {
     '<div class="ms-head"><strong class="card-title" id="m-kpt-title">Perjalanan Baru</strong><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-trip">✕</button></div>' +
     '<form id="m-trip-meta-form" style="display:flex;flex-direction:column;min-height:0;flex:1" novalidate><div class="ms-body">' +
     '<div class="field"><label class="field-label" for="m-kp-name">Nama perjalanan</label><input class="input" id="m-kp-name" maxlength="30" placeholder="mis. Tokyo - Osaka 9D8N" required /></div>' +
-    '<div class="bento-2"><div class="field"><span class="field-label">Mulai</span>' + mobDateFieldHtml('m-kp-start', '', false) + '</div>' +
-    '<div class="field"><span class="field-label">Selesai</span>' + mobDateFieldHtml('m-kp-end', '', true) + '</div></div>' +
+    '<div class="bento-2"><div class="field"><span class="field-label">Mulai</span>' + mobDateFieldHtml('m-kp-start', '', false, { sheet: true, title: 'Pilih tanggal mulai' }) + '</div>' +
+    '<div class="field"><span class="field-label">Selesai</span>' + mobDateFieldHtml('m-kp-end', '', true, { sheet: true, title: 'Pilih tanggal selesai' }) + '</div></div>' +
     '<div class="bento-2"><div class="field"><label class="field-label" for="m-kp-use-budget">Anggaran</label><select class="input" id="m-kp-use-budget"><option value="0" selected>Belum ditentukan</option><option value="1">Tetapkan anggaran</option></select></div>' +
     '<div class="field" id="m-kp-budget-wrap"><label class="field-label" for="m-kp-budget">Anggaran (Rp)</label><input class="input mono" id="m-kp-budget" type="text" inputmode="numeric" data-num-fmt="rp" data-num-only="int" placeholder="mis. 10.000.000" /></div></div>' +
     '<div class="bento-2"><div class="field"><label class="field-label" for="m-kp-cur">Mata uang asing</label><input class="input" id="m-kp-cur" maxlength="3" placeholder="JPY" style="text-transform:uppercase" /></div>' +
@@ -32150,6 +32555,11 @@ function mobShellTemplate() {
     '<div class="trip-rate-read pv" id="m-act-ak-read" aria-live="polite" hidden></div><div class="msc-sub trip-act-help" id="m-act-ak-help" hidden></div>' +
     '<div class="trip-act-prev pv" id="m-act-prev" aria-live="polite"></div><div class="trip-act-prev-det pv" id="m-act-prev-det"></div>' +
     '</div><div class="ms-foot"><button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);margin-right:auto" id="m-act-del" hidden>Hapus harga aktual</button><button type="button" class="btn btn-secondary" id="m-act-cancel" data-mclose="m-sheet-actual">Batal</button><button type="submit" class="btn btn-primary" id="m-act-save">Simpan</button></div></form></div></div>' +
+    '<div class="m-cal-sheet-backdrop" id="m-cal-sheet-backdrop" role="presentation" aria-hidden="true">' +
+    '<div class="m-cal-sheet" id="m-cal-sheet" role="dialog" aria-modal="true" aria-labelledby="m-cal-sheet-title"><div class="ms-handle" aria-hidden="true"></div>' +
+    '<div class="m-cal-sh-head"><strong class="card-title" id="m-cal-sheet-title">Pilih tanggal</strong><button type="button" class="btn btn-secondary btn-sm m-cal-sh-x" data-mcal-close="1" aria-label="Tutup kalender">✕</button></div>' +
+    '<div class="m-cal-sh-body" id="m-cal-sheet-body"></div>' +
+    '<div class="m-cal-sh-foot" id="m-cal-sheet-foot"></div></div></div>' +
     '<input type="file" id="m-xl-file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden />' +
     '<div class="notif-popover" id="m-notif-popover"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:800;font-size:0.82rem">Pengingat Jatuh Tempo</span>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="m-pop-to-set">Atur Notif &rarr;</button></div><div id="m-pop-os-cta"></div><div class="stack" style="gap:7px" id="m-notif-pop-list"></div>' +
@@ -32231,6 +32641,11 @@ function rkHandleAndroidBack() {
     np.classList.remove('open');
     if (typeof rkSyncNotifOpenUI === 'function') rkSyncNotifOpenUI();
     return 'popover-notif';
+  }
+  var calSheet = $('m-cal-sheet-backdrop');
+  if (calSheet && calSheet.classList.contains('open')) {
+    mobCloseCalSheet(true);
+    return 'cal-sheet';
   }
   var dd = document.querySelector('#mobile-app-shell .mcal-pop.open, #mobile-app-shell .open[id$="-cal"], #mobile-app-shell .cat-drop.open');
   if (dd) {
@@ -33292,7 +33707,7 @@ function renderMobTripItin(tr) {
     (EIt ? '<button type="button" class="btn btn-secondary btn-sm" id="m-it-cancel">Batal</button>' : '') + '</div>' +
     '<form id="m-trip-itin-form" class="stack trip-form-layout" novalidate>' +
     '<div class="trip-form-row trip-row-date-time">' +
-    '<div class="field trip-col-date-mob"><span class="field-label">Tanggal</span>' + mobDateFieldHtml('m-it-day', defDay, false) + '</div>' +
+    '<div class="field trip-col-date-mob"><span class="field-label">Tanggal</span>' + mobDateFieldHtml('m-it-day', defDay, false, { sheet: true, title: 'Pilih tanggal kegiatan' }) + '</div>' +
     '<div class="field trip-col-time"><label class="field-label" for="m-it-time">Mulai</label><input class="input mono" id="m-it-time" inputmode="numeric" maxlength="5" placeholder="14.00" value="' + esc(EIt && EIt.time ? EIt.time.replace(':', '.') : '') + '" /></div>' +
     '<div class="field trip-col-time"><label class="field-label" for="m-it-time2">Selesai</label><input class="input mono" id="m-it-time2" inputmode="numeric" maxlength="5" placeholder="16.30" value="' + esc(EIt && EIt.time2 ? EIt.time2.replace(':', '.') : '') + '" /></div></div>' +
     '<div class="trip-field-err" id="m-it-day-err" role="alert" hidden></div>' +
@@ -33350,7 +33765,12 @@ function renderMobTrip() {
     tr = mobActiveTrip();
   if (tr) MOB_STATE.tripId = tr.id;
 
+  var oldSubNav = $('m-trip-subnav');
+  var prevSubLeft = oldSubNav ? oldSubNav.scrollLeft : (MOB_STATE._tripSubScrollLeft || 0);
   if (!tr || MOB_STATE.tripView === 'list') {
+    MOB_STATE._tripSubScrollLeft = 0;
+    MOB_STATE._tripSubResetScroll = false;
+    MOB_STATE._tripSubCenterSmooth = false;
     root.innerHTML =
       '<div class="card"><div class="m-trip-list-hd"><div><h2 class="card-title">Semua Perjalanan</h2><div style="font-size:0.71rem;color:var(--text-muted)">' + list.length + ' profil perjalanan</div></div>' +
       '<div class="m-trip-list-actions">' +
@@ -33441,8 +33861,8 @@ function renderMobTrip() {
       '</select></div><div class="trip-eq-hint mono" id="m-bk-amt-eq"></div></div>' +
       '<div class="field trip-col-full" id="m-bk-rt-wrap" style="display:' + (EBk && EBk.fx && (typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) ? '' : 'none') + '"><label class="field-label" for="m-bk-rt">Kurs' + (EBk && EBk.paid ? ' saat dibayar' : '') + ' (Rp per 1 ' + esc((EBk && typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) || 'asing') + ')</label><input class="input mono" id="m-bk-rt" type="text" inputmode="decimal" data-num-only="dec" placeholder="' + (tr.rate > 0 ? 'Ikut kurs perjalanan: ' + esc(tr.rate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + (EBk && typeof tripHasValidRt === 'function' && tripHasValidRt(EBk) ? esc(String(EBk.rt)) : '') + '" /><div class="trip-rate-read pv" id="m-bk-rt-read" aria-live="polite" hidden></div><div class="msc-sub">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div></div>' +
       '<div class="trip-form-row">' +
-      '<div class="field trip-col-half"><span class="field-label">Mulai / Check-in</span>' + mobDateFieldHtml('m-bk-start', defBkStart, false) + '</div>' +
-      '<div class="field trip-col-half"><span class="field-label">Selesai / Check-out</span>' + mobDateFieldHtml('m-bk-end', defBkEnd, true) + '</div></div>' +
+      '<div class="field trip-col-half"><span class="field-label">Mulai / Check-in</span>' + mobDateFieldHtml('m-bk-start', defBkStart, false, { sheet: true, title: 'Pilih tanggal check-in' }) + '</div>' +
+      '<div class="field trip-col-half"><span class="field-label">Selesai / Check-out</span>' + mobDateFieldHtml('m-bk-end', defBkEnd, true, { sheet: true, title: 'Pilih tanggal check-out' }) + '</div></div>' +
       '<div class="trip-field-err" id="m-bk-date-err" role="alert" hidden></div>' +
       '<div class="trip-form-row"><div class="field trip-col-full"><label class="field-label" for="m-bk-cat">Kategori</label><select class="input" id="m-bk-cat">' + BCAT.map(function (c) { return '<option value="' + esc(c) + '"' + ((EBk ? EBk.cat : 'Transport') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div></div>' +
       '<div class="trip-form-row"><div class="field trip-col-full"><label class="field-label" for="m-bk-link">Tautan (opsional)</label><input class="input" id="m-bk-link" inputmode="url" placeholder="https://..." value="' + esc(EBk ? (EBk.link || '') : '') + '" /><div class="trip-field-err" id="m-bk-link-err" role="alert" hidden></div></div></div>' +
@@ -33540,7 +33960,34 @@ function renderMobTrip() {
     '<div style="font-size:0.71rem;color:var(--text-muted)">' + (tr.start && tr.end ? fmtD(tr.start) + ' – ' + fmtD(tr.end) : 'Tanggal belum diisi') +
     (tr.cur && tr.rate ? ' &middot; Kurs 1 ' + esc(tr.cur) + ' = <span class="mono pv">Rp ' + (+tr.rate).toLocaleString('id-ID') + '</span>' : '') + '</div></div>' +
     '<div class="m-trip-hd-actions"><button type="button" class="btn btn-secondary btn-sm" id="m-btn-trip-share">Bagikan</button><button type="button" class="btn btn-secondary btn-sm" id="m-btn-trip-edit">Ubah</button><button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson)" data-mtrip-del="' + esc(tr.id) + '">Hapus</button></div></div>' +
-    '<div class="pill-slider">' + subTabs.map(function (st) { return '<button type="button" class="p-chip ' + (MOB_STATE.tripSub === st[0] ? 'active' : '') + '" data-mtripsub="' + st[0] + '">' + st[1] + '</button>'; }).join('') + '</div></div>' + body;
+    '<div class="pill-slider" id="m-trip-subnav" role="tablist" aria-label="Bagian perjalanan">' +
+    subTabs.map(function (st) {
+      var isActSub = MOB_STATE.tripSub === st[0];
+      return '<button type="button" class="p-chip' + (isActSub ? ' active' : '') + '" data-mtripsub="' + st[0] + '" role="tab" aria-selected="' + (isActSub ? 'true' : 'false') + '"' + (isActSub ? ' aria-current="page"' : '') + '>' + st[1] + '</button>';
+    }).join('') +
+    '</div></div>' + body;
+  var newSubNav = $('m-trip-subnav');
+  if (newSubNav) {
+    if (MOB_STATE._tripSubResetScroll) {
+      newSubNav.scrollLeft = 0;
+      MOB_STATE._tripSubScrollLeft = 0;
+      MOB_STATE._tripSubResetScroll = false;
+      MOB_STATE._tripSubCenterSmooth = false;
+    } else {
+      newSubNav.scrollLeft = prevSubLeft;
+      MOB_STATE._tripSubScrollLeft = newSubNav.scrollLeft;
+      var wantSmoothSub = !!MOB_STATE._tripSubCenterSmooth;
+      MOB_STATE._tripSubCenterSmooth = false;
+      mobEnsureActiveTripChipVisible(wantSmoothSub);
+    }
+    if (newSubNav.dataset.subScrollBound !== '1') {
+      newSubNav.dataset.subScrollBound = '1';
+      newSubNav.addEventListener('scroll', function () {
+        MOB_STATE._tripSubScrollLeft = newSubNav.scrollLeft;
+      }, { passive: true });
+    }
+  }
+  initMobDragSliders(root);
   mobSyncTripEqPrev();
   if (typeof tripBindNoteAutoGrow === 'function' && $('m-it-note')) {
     tripBindNoteAutoGrow($('m-it-note'), $('m-it-note-cnt'));
@@ -35138,6 +35585,11 @@ function bindMobileShellEvents(root) {
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
       if (typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') return;
+      var calBdEsc = $('m-cal-sheet-backdrop');
+      if (calBdEsc && calBdEsc.classList.contains('open')) {
+        mobCloseCalSheet(true);
+        return;
+      }
       var mp = $('m-notif-popover');
       if (mp && mp.classList.contains('open')) {
         mp.classList.remove('open');
@@ -35308,19 +35760,22 @@ function bindMobileShellEvents(root) {
       renderMobKas();
       return;
     }
+    if (e.target && (e.target.id === 'm-cal-sheet-backdrop' || e.target.closest('[data-mcal-close]'))) {
+      e.stopPropagation();
+      mobCloseCalSheet(true);
+      return;
+    }
     var mcalT = e.target.closest('[data-mcal-trig]');
     if (mcalT) {
       e.stopPropagation();
-      var cid = mcalT.getAttribute('data-mcal-trig'), popC = $(cid + '-cal');
+      var cid = mcalT.getAttribute('data-mcal-trig'), inpC = $(cid);
+      if (inpC && inpC.hasAttribute('data-pk-sheet')) {
+        mobOpenCalSheet(cid, mcalT);
+        return;
+      }
+      var popC = $(cid + '-cal');
       root.querySelectorAll('.picker-popover.open').forEach(function (p) { if (p !== popC) p.classList.remove('open'); });
       if (popC) {
-        var trCalM = mobActiveTrip();
-        if ((cid === 'm-it-day' || cid === 'm-bk-start' || cid === 'm-bk-end') && trCalM && typeof tripHasFullRange === 'function' && tripHasFullRange(trCalM)) {
-          var curMCal = $(cid) ? $(cid).value : '';
-          if (!curMCal || curMCal < trCalM.start || curMCal > trCalM.end) {
-            MOB_CAL_VIEW[cid] = { y: +trCalM.start.slice(0, 4), m: +trCalM.start.slice(5, 7) - 1 };
-          }
-        }
         mobDrawCal(cid);
         popC.classList.toggle('open');
       }
@@ -35334,7 +35789,12 @@ function bindMobileShellEvents(root) {
         cv.m += +ps[1];
         if (cv.m < 0) { cv.m = 11; cv.y--; }
         if (cv.m > 11) { cv.m = 0; cv.y++; }
-        mobDrawCal(idM);
+        var calBdMv = $('m-cal-sheet-backdrop');
+        if (calBdMv && calBdMv.classList.contains('open') && calBdMv.getAttribute('data-cal-for') === idM) {
+          mobDrawCalSheet(idM);
+        } else {
+          mobDrawCal(idM);
+        }
       }
       return;
     }
@@ -35344,7 +35804,12 @@ function bindMobileShellEvents(root) {
       if (mcalPk.disabled) return;
       var p2 = mcalPk.getAttribute('data-mcal-pick').split('|');
       mobSetDateVal(p2[0], p2[1]);
-      if ($(p2[0] + '-cal')) $(p2[0] + '-cal').classList.remove('open');
+      var calBdPk = $('m-cal-sheet-backdrop');
+      if (calBdPk && calBdPk.classList.contains('open') && calBdPk.getAttribute('data-cal-for') === p2[0]) {
+        mobCloseCalSheet(true);
+      } else if ($(p2[0] + '-cal')) {
+        $(p2[0] + '-cal').classList.remove('open');
+      }
       if (p2[0] === 'm-it-day' && typeof tripSetFieldError === 'function') {
         tripSetFieldError('m-it-day-err', $('m-it-day-trig'), '', true);
       }
@@ -36197,17 +36662,17 @@ function bindMobileShellEvents(root) {
       return;
     }
     var tlist = e.target.closest('[data-mtrip-list]');
-    if (tlist) { MOB_STATE.tripView = 'list'; renderMobTrip(); return; }
+    if (tlist) { MOB_STATE.tripView = 'list'; MOB_STATE._tripSubResetScroll = true; MOB_STATE._tripSubScrollLeft = 0; renderMobTrip(); return; }
     var tsel = e.target.closest('[data-mtrip-sel]');
-    if (tsel) { MOB_STATE.tripId = tsel.getAttribute('data-mtrip-sel'); MOB_STATE.tripView = 'detail'; MOB_STATE.tripSub = 'ring'; MOB_STATE.tripEditIt = null; MOB_STATE.tripEditBk = null; MOB_STATE.tripGoalEdit = false; renderMobTrip(); initMobDragSliders(); return; }
+    if (tsel) { MOB_STATE.tripId = tsel.getAttribute('data-mtrip-sel'); MOB_STATE.tripView = 'detail'; MOB_STATE.tripSub = 'ring'; MOB_STATE._tripSubResetScroll = true; MOB_STATE._tripSubScrollLeft = 0; MOB_STATE.tripEditIt = null; MOB_STATE.tripEditBk = null; MOB_STATE.tripGoalEdit = false; renderMobTrip(); initMobDragSliders(); return; }
     var tsub = e.target.closest('[data-mtripsub]');
     if (tsub) {
       MOB_STATE.tripSub = tsub.getAttribute('data-mtripsub');
       MOB_STATE.tripEditIt = null;
       MOB_STATE.tripEditBk = null;
       MOB_STATE.tripGoalEdit = false;
+      MOB_STATE._tripSubCenterSmooth = true;
       renderMobTrip();
-      initMobDragSliders();
       return;
     }
     var tdel = e.target.closest('[data-mtrip-del]');

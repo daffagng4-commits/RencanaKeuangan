@@ -1251,13 +1251,40 @@ function tripSyncActualDialogLive(tr, x, isBk, prefix) {
   var akWrap = g('ak-wrap'), akEl = g('ak'), akLbl = g('ak-lbl'), akRead = g('ak-read'), akHelp = g('ak-help');
   var fxTogWrap = g('fx-toggle-wrap'), useFxChk = g('use-fx');
   var prevEl = g('prev'), detEl = g('prev-det');
+  var formEl = axEl && axEl.form ? axEl.form : null;
+  var rootModalEl = axEl && axEl.closest ? axEl.closest('#modal-trip-actual, #m-sheet-actual') : null;
   var isItemFx = !!(x.fx && tripItemCur(tr, x));
   var useFx = isItemFx || !!(fxTogWrap && !fxTogWrap.hidden && useFxChk && useFxChk.checked);
+  var mode = isItemFx ? 'fxplan' : (useFx ? 'fx' : 'rp');
+  if (rootModalEl) rootModalEl.setAttribute('data-actual-mode', mode);
+  if (formEl && formEl._actDraft && !isItemFx && formEl._actDraft.lastMode && formEl._actDraft.lastMode !== mode) {
+    var dObj = formEl._actDraft;
+    if (dObj.lastMode === 'rp' && mode === 'fx') {
+      dObj.rpAx = axEl ? axEl.value : '';
+      if (auSel && !auSel.options.length) tripPopulateAuSelect(auSel, tr, dObj.fxAu || '');
+      if (axEl) axEl.value = dObj.fxAx || '';
+      if (akEl) akEl.value = dObj.fxAk || '';
+    } else if (dObj.lastMode === 'fx' && mode === 'rp') {
+      dObj.fxAx = axEl ? axEl.value : '';
+      dObj.fxAu = auSel ? auSel.value : '';
+      dObj.fxAk = akEl ? akEl.value : '';
+      if (axEl) axEl.value = dObj.rpAx || '';
+    }
+    dObj.lastMode = mode;
+  } else if (formEl && formEl._actDraft) {
+    formEl._actDraft.lastMode = mode;
+  }
+  if (mode === 'fx' && auSel && !auSel.options.length) {
+    tripPopulateAuSelect(auSel, tr, (formEl && formEl._actDraft && formEl._actDraft.fxAu) || '');
+  } else if (mode === 'fx' && auSel && auSel.options.length && auSel.selectedIndex < 0) {
+    auSel.selectedIndex = 0;
+    if (typeof syncModernSelect === 'function') syncModernSelect(auSel);
+  }
   if (inputsEl && inputsEl.classList) {
     inputsEl.classList.toggle('is-fx', useFx);
     inputsEl.classList.toggle('has-au', !isItemFx && useFx);
   }
-  if (auWrap) auWrap.hidden = !(!isItemFx && useFx);
+  if (auWrap) auWrap.hidden = mode !== 'fx';
   if (akWrap) akWrap.hidden = !useFx;
   var curCode = isItemFx ? tripItemCur(tr, x) : (useFx && auSel ? String(auSel.value || '').trim().toUpperCase() : '');
   var effRate = isItemFx ? tripItemRate(tr, x) : (curCode ? tripCurRate(tr, curCode) : 0);
@@ -1295,19 +1322,36 @@ function tripSetupActualDialog(tr, x, isBk, prefix, isMobile) {
   if (!tr || !x) return;
   var itemEl = g('item'), estEl = g('est'), axEl = g('ax'), akEl = g('ak');
   var fxTogWrap = g('fx-toggle-wrap'), useFxChk = g('use-fx'), auSel = g('au'), delBtn = g('del');
+  var formEl = axEl && axEl.form ? axEl.form : null;
   if (itemEl) itemEl.textContent = isBk ? (x.title || '') : (x.place || '');
   if (estEl) estEl.textContent = tripActualEstLabel(tr, x, isBk);
-  if (axEl) axEl.value = x.ax > 0 ? (typeof fmtNumOnlyIntStr === 'function' ? fmtNumOnlyIntStr(String(Math.round(x.ax))) : String(Math.round(x.ax))) : '';
+  var formattedAx = x.ax > 0 ? (typeof fmtNumOnlyIntStr === 'function' ? fmtNumOnlyIntStr(String(Math.round(x.ax))) : String(Math.round(x.ax))) : '';
+  if (axEl) axEl.value = formattedAx;
   tripSetFieldError(prefix + '-ax-err', axEl, '', isMobile);
   tripSetFieldError(prefix + '-ak-err', akEl, '', isMobile);
   var isItemFx = !!(x.fx && tripItemCur(tr, x));
   var curList = tripAllCurList(tr);
   var hasExistingAu = !!(x.ax > 0 && !isItemFx && x.au && curList.some(function (f) { return String(f.c || '').toUpperCase() === String(x.au || '').toUpperCase(); }));
+  var initMode = isItemFx ? 'fxplan' : (hasExistingAu ? 'fx' : 'rp');
+  if (formEl) {
+    formEl._actDraft = {
+      lastMode: initMode,
+      rpAx: initMode === 'rp' ? formattedAx : '',
+      fxAx: initMode === 'fx' ? formattedAx : '',
+      fxAu: hasExistingAu ? String(x.au || '').toUpperCase() : '',
+      fxAk: initMode === 'fx' && x.ak > 0 ? String(x.ak) : '',
+    };
+  }
   if (fxTogWrap && useFxChk) {
     if (!isItemFx && curList.length > 0) {
       fxTogWrap.hidden = false;
-      tripPopulateAuSelect(auSel, tr, x.au || '');
       useFxChk.checked = hasExistingAu;
+      if (hasExistingAu) {
+        tripPopulateAuSelect(auSel, tr, x.au || '');
+      } else if (auSel) {
+        auSel.innerHTML = '';
+        if (typeof syncModernSelect === 'function') syncModernSelect(auSel);
+      }
     } else {
       fxTogWrap.hidden = true;
       useFxChk.checked = false;

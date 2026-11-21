@@ -3939,8 +3939,9 @@ const { boot } = require('./ui.js');
 
     // Opt-in cal min/max APK
     click($('m-it-day-trig'));
-    const mCalDis = $('m-it-day-cal').querySelector('[data-mcal-pick$="|2026-12-10"]');
+    const mCalDis = $('m-cal-sheet-body').querySelector('[data-mcal-pick$="|2026-12-10"]');
     assert.ok(mCalDis && mCalDis.disabled, '38.B3 APK Cal: tanggal di luar rentang disabled');
+    click($('m-cal-sheet-backdrop').querySelector('[data-mcal-close]'));
     const outMRow = $('m-trip-root').querySelector('[data-it-row="12m-i-out"]');
     assert.ok(outMRow && outMRow.querySelector('.trip-out-range-badge'), '38.B3 APK Itin: badge Di luar rentang tampil');
 
@@ -4508,6 +4509,120 @@ const { boot } = require('./ui.js');
     delete w.ALL.kas.pr['p-12c-m42'];
     w.MOB_STATE.tripId = null;
     w.MOB_STATE.tripRingDisclosures = {};
+  }
+
+  // =========================================================================
+  // 43. Tahap 13 (Butir 1+2 APK): computed display none pada #m-sheet-actual
+  // =========================================================================
+  {
+    w.ALL.kas.pr['p-t13-m43'] = {
+      id: 'p-t13-m43',
+      name: 'Uji T13 APK 43',
+      cur: 'NOK',
+      rate: 1500,
+      start: '2026-11-21',
+      end: '2026-11-22',
+      it: [
+        { id: 'm43-rp', day: '2026-11-21', time: '09:00', place: 'Rp Item', est: 300000, fx: false, pay: 'cash', cat: 'Makan' },
+        { id: 'm43-fx', day: '2026-11-21', time: '12:00', place: 'NOK Item', est: 200, fx: true, pay: 'cash', cat: 'Tiket & Tour' },
+      ],
+      bk: [],
+      lk: [],
+      ck: [],
+      note: '',
+      goal: null,
+    };
+    w.switchMobileTab('trip');
+    w.MOB_STATE.tripId = 'p-t13-m43';
+    w.MOB_STATE.tripView = 'detail';
+    w.MOB_STATE.tripSub = 'itin';
+    w.renderMobTrip();
+    if ($('m-it-fold-all') && $('m-it-fold-all').textContent.includes('Buka')) click($('m-it-fold-all'));
+
+    click($('m-trip-root').querySelector('[data-mit-act="m43-rp"]'));
+    assert.strictEqual($('m-sheet-actual').getAttribute('data-actual-mode'), 'rp', '43.T13 APK Rp: mode rp');
+    assert.strictEqual(w.getComputedStyle($('m-act-au-wrap')).display, 'none', '43.T13 APK Rp: au-wrap computed display none');
+    assert.strictEqual(w.getComputedStyle($('m-act-ak-wrap')).display, 'none', '43.T13 APK Rp: ak-wrap computed display none');
+    assert.strictEqual(w.getComputedStyle($('m-act-del')).display, 'none', '43.T13 APK Rp: m-act-del computed display none');
+    click($('m-act-cancel'));
+
+    click($('m-trip-root').querySelector('[data-mit-act="m43-fx"]'));
+    assert.strictEqual($('m-sheet-actual').getAttribute('data-actual-mode'), 'fxplan', '43.T13 APK FX: mode fxplan');
+    assert.strictEqual(w.getComputedStyle($('m-act-au-wrap')).display, 'none', '43.T13 APK FX: au-wrap computed display none');
+    assert.strictEqual(w.getComputedStyle($('m-act-fx-toggle-wrap')).display, 'none', '43.T13 APK FX: toggle computed display none');
+    assert.notStrictEqual(w.getComputedStyle($('m-act-ak-wrap')).display, 'none', '43.T13 APK FX: ak-wrap tampil');
+    click($('m-act-cancel'));
+
+    delete w.ALL.kas.pr['p-t13-m43'];
+    w.MOB_STATE.tripId = null;
+  }
+
+  // =========================================================================
+  // 44. Tahap 13 (Butir 4 APK): Bar sub-tab mempertahankan scrollLeft & aksesibel
+  // =========================================================================
+  {
+    w.ALL.kas.pr['p-t13-m44'] = {
+      id: 'p-t13-m44',
+      name: 'B4 Mobile',
+      cur: 'JPY',
+      rate: 100,
+      start: '2026-11-21',
+      end: '2026-11-23',
+      it: [],
+      bk: [],
+      ck: [{ id: 'm44-c1', text: 'Tiket', done: false }],
+      lk: [],
+      note: '',
+      goal: null,
+    };
+    w.switchMobileTab('trip');
+    w.MOB_STATE.tripId = 'p-t13-m44';
+    w.MOB_STATE.tripView = 'detail';
+    w.MOB_STATE.tripSub = 'ring';
+    w.renderMobTrip();
+    const nav = $('m-trip-subnav');
+    assert.ok(nav, '44.T13 B4: #m-trip-subnav hadir di DOM');
+    nav.scrollLeft = 180;
+    w.MOB_STATE._tripSubScrollLeft = 180;
+    click(nav.querySelector('[data-mtripsub="sv"]'));
+    assert.ok($('m-trip-subnav').scrollLeft >= 180, '44.T13 B4: scrollLeft dipertahankan setelah pindah ke Tabungan');
+    assert.strictEqual($('m-trip-subnav').querySelector('[data-mtripsub="sv"]').getAttribute('aria-current'), 'page', '44.T13 B4: Tabungan aktif memiliki aria-current=page');
+    delete w.ALL.kas.pr['p-t13-m44'];
+    w.MOB_STATE.tripId = null;
+  }
+
+  // =========================================================================
+  // 45. Tahap 13 (Butir 3 APK): Kalender bottom sheet fixed untuk Mode Perjalanan
+  // =========================================================================
+  {
+    w.ALL.kas.pr['p-t13-m45'] = {
+      id: 'p-t13-m45',
+      name: 'B3 Sheet Cal',
+      cur: 'JPY',
+      rate: 100,
+      start: '2026-11-10',
+      end: '2026-11-25',
+      it: [],
+      bk: [],
+      ck: [],
+      lk: [],
+      note: '',
+      goal: null,
+    };
+    w.switchMobileTab('trip');
+    w.MOB_STATE.tripId = 'p-t13-m45';
+    w.MOB_STATE.tripView = 'list';
+    w.renderMobTrip();
+    click($('m-btn-trip-new'));
+    click($('m-kp-start-trig'));
+    const csBd = $('m-cal-sheet-backdrop');
+    assert.ok(csBd && csBd.classList.contains('open'), '45.T13 B3: m-kp-start membuka #m-cal-sheet-backdrop');
+    click(csBd.querySelector('[data-mcal-close]'));
+    assert.strictEqual(csBd.classList.contains('open'), false, '45.T13 B3: tombol Batal menutup #m-cal-sheet-backdrop');
+    assert.strictEqual($('m-sheet-trip').classList.contains('open'), true, '45.T13 B3: #m-sheet-trip tetap terbuka setelah Batal kalender');
+    w.mobCloseSheet('m-sheet-trip', true);
+    delete w.ALL.kas.pr['p-t13-m45'];
+    w.MOB_STATE.tripId = null;
   }
 
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));

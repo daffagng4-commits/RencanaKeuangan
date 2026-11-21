@@ -176,7 +176,7 @@ body[data-shell="mobile-app"][data-phone-frame="full"] .mob-shell[data-mtab-acti
   position: relative;
   top: auto;
 }
-body[data-shell="mobile-app"][data-phone-frame="full"] .mob-shell {
+body[data-shell="mobile-app"][data-phone-frame="full"] #mobile-app-shell .mob-shell {
   width: 100%;
   max-width: 412px;
   height: auto;
@@ -2960,7 +2960,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs {
   align-items: start;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs.is-fx {
-  grid-template-columns: minmax(0, 1fr) 108px;
+  grid-template-columns: minmax(0, 1fr) 118px;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs.is-fx.has-au {
   grid-template-columns: minmax(0, 1fr) 86px 96px;
@@ -2969,6 +2969,35 @@ body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs.is-fx.has-au {
   body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs.is-fx.has-au {
     grid-template-columns: minmax(0, 1fr) 74px 86px;
   }
+}
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual[data-actual-mode="rp"] .trip-act-col-au,
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual[data-actual-mode="rp"] .trip-act-col-ak,
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual[data-actual-mode="rp"] .trip-act-help,
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual[data-actual-mode="rp"] .trip-rate-read,
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual[data-actual-mode="fxplan"] .trip-act-fx-tog,
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual[data-actual-mode="fxplan"] .trip-act-col-au {
+  display: none !important;
+}
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .ms-body {
+  padding: 9px 14px;
+  gap: 6px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .ms-foot {
+  padding: 8px 14px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .trip-act-est-box {
+  padding: 6px 10px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .trip-act-fx-tog {
+  min-height: 36px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .trip-rate-read {
+  margin-top: -1px;
+  line-height: 1.25;
+}
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .trip-act-help {
+  margin-top: -3px;
+  line-height: 1.25;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs .field {
   min-width: 0;
@@ -3360,4 +3389,135 @@ body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-full-line {
 @media (prefers-reduced-motion: reduce) {
   body[data-shell="mobile-app"] #mobile-app-shell .trip-disc-chev { transition: none; }
   body[data-shell="mobile-app"] #mobile-app-shell .trip-disc-body.is-opening { animation: none; }
+  body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sheet-backdrop,
+  body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sheet { transition: none; }
+}
+body[data-cal-sheet-open="1"],
+body[data-cal-sheet-open="1"] #mobile-app-shell .mob-main,
+body[data-cal-sheet-open="1"] #mobile-app-shell .modal-backdrop .ms-body {
+  overflow: hidden !important;
+  overscroll-behavior: contain;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 13, 20, 0.52);
+  backdrop-filter: blur(3px);
+  z-index: 225;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-sheet-close) var(--ease-in),
+    visibility 0s linear var(--dur-sheet-close);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sheet-backdrop.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity var(--dur-dialog-backdrop) var(--ease-out),
+    visibility 0s;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sheet {
+  width: 100%;
+  max-width: 440px;
+  max-height: min(86dvh, 520px);
+  background: var(--bg-surface);
+  border-radius: 22px 22px 0 0;
+  border-top: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  transform: translateY(100%);
+  transition: transform var(--dur-sheet-close) var(--ease-in);
+  will-change: transform;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sheet-backdrop.open .m-cal-sheet {
+  transform: translateY(0);
+  transition: transform var(--dur-dialog-open) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 16px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-x {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px 16px 12px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-body .cal-head {
+  gap: 8px;
+  margin-bottom: 8px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-body .cal-head button {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-grid;
+  place-items: center;
+  font-size: 1rem;
+  padding: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-body .cal-grid {
+  gap: 4px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-body .cal-day {
+  min-height: 36px;
+  height: auto;
+  border-radius: 10px;
+  font-size: 0.82rem;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-foot {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-muted-row);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-foot .btn {
+  min-height: 44px;
+  flex: 1 1 0;
+}
+@media (max-height: 520px) {
+  body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sheet .ms-handle {
+    margin: 6px auto 2px;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-head {
+    padding: 4px 14px 6px;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-body {
+    padding: 6px 14px 8px;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-body .cal-day {
+    min-height: 32px;
+    font-size: 0.78rem;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-foot {
+    padding: 6px 14px;
+  }
+}
+body[data-shell="mobile-app"] #mobile-app-shell [hidden] {
+  display: none !important;
 }
