@@ -208,9 +208,25 @@
   --sidebar-w: 260px;
   --sidebar-w-collapsed: 72px;
   --topbar-h: 58px;
-  --bottom-nav-h: 68px;
+  --bottom-nav-h: 62px;
   --phone-w: 360px;
   --phone-h: 780px;
+
+  /* Mobile App Bottom Navigation Tokens (Light) */
+  --mob-nav-bg: #FFFFFF;
+  --mob-nav-border: rgba(15, 23, 42, 0.08);
+  --mob-nav-shadow: drop-shadow(0 8px 20px rgba(15, 23, 42, 0.10)) drop-shadow(0 2px 6px rgba(15, 23, 42, 0.06));
+  --mob-nav-icon: #64748B;
+  --mob-nav-icon-hover: #334155;
+  --mob-nav-active: var(--accent);
+  --mob-nav-gap-x: 14px;
+  --mob-nav-gap-b: max(12px, calc(env(safe-area-inset-bottom, 0px) + 6px));
+  --mob-fab-top: #2F7BEA;
+  --mob-fab-bot: #1F63CC;
+  --mob-fab-ink: #FFFFFF;
+  --mob-fab-shadow: 0 10px 22px rgba(31, 99, 204, 0.34), 0 3px 8px rgba(15, 82, 186, 0.20);
+  --dur-nav-dot: 320ms;
+  --ease-nav-jelly: cubic-bezier(0.34, 1.38, 0.64, 1);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -276,6 +292,17 @@
     --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.30), 0 0 0 1px var(--border-subtle);
     --shadow-nav: 0 -8px 28px rgba(0, 0, 0, 0.45);
     --sticky-shadow: 6px 0 14px -4px rgba(0, 0, 0, 0.55);
+
+    --mob-nav-bg: #161E2B;
+    --mob-nav-border: rgba(255, 255, 255, 0.09);
+    --mob-nav-shadow: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.48)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.32));
+    --mob-nav-icon: #94A3B8;
+    --mob-nav-icon-hover: #CBD5E1;
+    --mob-nav-active: var(--accent);
+    --mob-fab-top: #286ED6;
+    --mob-fab-bot: #1A52AD;
+    --mob-fab-ink: #FFFFFF;
+    --mob-fab-shadow: 0 10px 24px rgba(26, 82, 173, 0.46), 0 3px 8px rgba(0, 0, 0, 0.35);
   }
 }
 :root[data-theme="dark"] {
@@ -341,6 +368,17 @@
   --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.30), 0 0 0 1px var(--border-subtle);
   --shadow-nav: 0 -8px 28px rgba(0, 0, 0, 0.45);
   --sticky-shadow: 6px 0 14px -4px rgba(0, 0, 0, 0.55);
+
+  --mob-nav-bg: #161E2B;
+  --mob-nav-border: rgba(255, 255, 255, 0.09);
+  --mob-nav-shadow: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.48)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.32));
+  --mob-nav-icon: #94A3B8;
+  --mob-nav-icon-hover: #CBD5E1;
+  --mob-nav-active: var(--accent);
+  --mob-fab-top: #286ED6;
+  --mob-fab-bot: #1A52AD;
+  --mob-fab-ink: #FFFFFF;
+  --mob-fab-shadow: 0 10px 24px rgba(26, 82, 173, 0.46), 0 3px 8px rgba(0, 0, 0, 0.35);
 }
 :root[data-theme="bw"] {
   --bg-canvas: #ffffff; --bg-surface: #ffffff; --bg-subtle: #f2f2f2; --bg-muted-row: #fafafa;
@@ -462,6 +500,8 @@ body, input, button, select, textarea, table, kbd, code {
     --dur-nav-icon: 0.001ms;
     --dur-nav-pill: 0.001ms;
     --dur-nav-label: 0.001ms;
+    --dur-nav-dot: 0.001ms;
+    --ease-nav-jelly: linear;
     --dur-bell: 0.001ms;
     --dur-badge-pop: 0.001ms;
     --dur-icon-morph: 0.001ms;
@@ -1376,7 +1416,7 @@ body:not([data-shell="mobile-app"]) #m-btt-btn {
 
 #m-btt-btn {
   right: 16px;
-  bottom: calc(var(--bottom-nav-h) + 32px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--bottom-nav-h) + var(--mob-nav-gap-b) + 20px);
 }
 
 /* Theme View Transitions & Privacy Guard (#20) */
@@ -1469,7 +1509,8 @@ html.rk-theme-fallback .input {
   .rk-sync-hint,
   .rk-skel-wrap,
   .rk-morph-icon svg,
-  .rk-btt-btn {
+  .rk-btt-btn,
+  .bn-active-dot {
     transition-duration: 0.001ms !important;
   }
 }

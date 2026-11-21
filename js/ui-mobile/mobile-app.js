@@ -646,6 +646,7 @@ function setMobPhoneFrame(mode) {
   document.querySelectorAll('#m-phone-preview-bar [data-mpframe]').forEach(function (b) {
     b.classList.toggle('active', b.getAttribute('data-mpframe') === mode);
   });
+  if (typeof rkSyncMobNavLayout === 'function') rkSyncMobNavLayout(true);
 }
 
 function unmountMobileShell() {
@@ -961,13 +962,15 @@ function mobShellTemplate() {
     '</div></section>' +
     '</main>' +
     '<button type="button" class="rk-btt-btn" id="m-btt-btn" aria-label="Kembali ke atas" title="Kembali ke atas">↑ Atas</button>' +
-    // 5-SLOT BOTTOM NAV WITH GOLD "+" FAB
+    // 5-SLOT FLOATING BOTTOM NAV WITH CURVED NOTCH & CENTER "+" FAB
     '<nav class="mob-bottom-nav" aria-label="Navigasi Aplikasi">' +
-    '<button type="button" class="bn-btn active" data-mtab="rincian"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg><span>Rincian</span></button>' +
-    '<button type="button" class="bn-btn" data-mtab="kas"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M20 7H5a2 2 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15V7"/></svg><span>Transaksi</span></button>' +
-    '<div class="bn-center-slot"><button type="button" class="bn-plus-fab" id="m-yr-btn-center" aria-label="Tahun, bulan saldo, dan saldo awal" title="Tahun, bulan saldo, dan saldo awal"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>' +
-    '<button type="button" class="bn-btn" data-mtab="jadwal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Jadwal</span></button>' +
-    '<button type="button" class="bn-btn" id="m-btn-more"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Menu</span><span class="m-upd-dot" id="m-more-upd-dot" style="display:none" aria-hidden="true"></span></button>' +
+    '<div class="bn-bg" aria-hidden="true"><svg class="bn-bg-svg" id="m-bn-bg-svg" viewBox="0 0 362 62" fill="none" focusable="false"><path class="bn-bg-path" id="m-bn-bg-path" d="' + rkBuildNavNotchPath(362, 62) + '"/></svg></div>' +
+    '<span class="bn-active-dot is-instant" id="m-bn-dot" data-active-slot="0" aria-hidden="true"></span>' +
+    '<button type="button" class="bn-btn active" data-mtab="rincian" aria-label="Rincian" aria-current="page"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5"/></svg></button>' +
+    '<button type="button" class="bn-btn" data-mtab="kas" aria-label="Transaksi"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7H5a2 2 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15V7"/></svg></button>' +
+    '<div class="bn-center-slot"><button type="button" class="bn-plus-fab" id="m-yr-btn-center" aria-label="Tahun, bulan saldo, dan saldo awal" title="Tahun, bulan saldo, dan saldo awal"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>' +
+    '<button type="button" class="bn-btn" data-mtab="jadwal" aria-label="Jadwal"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button>' +
+    '<button type="button" class="bn-btn" id="m-btn-more" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span class="m-upd-dot" id="m-more-upd-dot" style="display:none" aria-hidden="true"></span></button>' +
     '</nav>' +
     '<div class="phone-home-indicator" aria-hidden="true"></div>' +
     // SHEETS & POPOVERS (tidak memakai kelas .modal agar tidak bercampur dengan modal Browser Mode)
@@ -1243,6 +1246,102 @@ if (typeof window !== 'undefined') {
   window.rkInitCapacitorBackButton = rkInitCapacitorBackButton;
 }
 
+function rkBuildNavNotchPath(w, h) {
+  var W = Math.max(240, Math.round(Number(w) || 362));
+  var H = Math.max(52, Math.round(Number(h) || 62));
+  var R = Math.min(26, Math.floor((H - 4) / 2));
+  var cx = W / 2;
+  var cy = 2;
+  var rN = 35;
+  var rF = 12;
+  var sumR = rN + rF;
+  var dyC = rF - cy;
+  var dx = Math.sqrt(sumR * sumR - dyC * dyC);
+  var t = rN / sumR;
+  var tx = dx * t;
+  var ty = cy + dyC * t;
+  return (
+    'M ' + R + ' 0 ' +
+    'L ' + (cx - dx).toFixed(2) + ' 0 ' +
+    'A ' + rF + ' ' + rF + ' 0 0 1 ' + (cx - tx).toFixed(2) + ' ' + ty.toFixed(2) + ' ' +
+    'A ' + rN + ' ' + rN + ' 0 0 0 ' + (cx + tx).toFixed(2) + ' ' + ty.toFixed(2) + ' ' +
+    'A ' + rF + ' ' + rF + ' 0 0 1 ' + (cx + dx).toFixed(2) + ' 0 ' +
+    'L ' + (W - R).toFixed(2) + ' 0 ' +
+    'A ' + R + ' ' + R + ' 0 0 1 ' + W + ' ' + R + ' ' +
+    'L ' + W + ' ' + (H - R) + ' ' +
+    'A ' + R + ' ' + R + ' 0 0 1 ' + (W - R).toFixed(2) + ' ' + H + ' ' +
+    'L ' + R + ' ' + H + ' ' +
+    'A ' + R + ' ' + R + ' 0 0 1 0 ' + (H - R) + ' ' +
+    'L 0 ' + R + ' ' +
+    'A ' + R + ' ' + R + ' 0 0 1 ' + R + ' 0 Z'
+  );
+}
+
+var _rkMobNavDotRaf = null;
+function rkSyncMobNavLayout(skipDotAnim) {
+  var nav = document.querySelector('#mobile-app-shell .mob-bottom-nav');
+  if (!nav) return;
+  var svg = nav.querySelector('.bn-bg-svg');
+  var pathEl = nav.querySelector('.bn-bg-path');
+  var navRect = typeof nav.getBoundingClientRect === 'function' ? nav.getBoundingClientRect() : null;
+  var w = navRect && navRect.width > 0 ? Math.round(navRect.width) : 0;
+  var h = navRect && navRect.height > 0 ? Math.round(navRect.height) : 62;
+  if (w > 0 && svg && pathEl) {
+    var key = w + 'x' + h;
+    if (nav._rkNotchKey !== key) {
+      svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+      pathEl.setAttribute('d', rkBuildNavNotchPath(w, h));
+      nav._rkNotchKey = key;
+    }
+  }
+  var dot = $('m-bn-dot');
+  if (!dot) return;
+  var activeBtn = nav.querySelector('.bn-btn.active') || nav.querySelector('.bn-btn[data-mtab="rincian"]');
+  var tabKey = activeBtn ? (activeBtn.getAttribute('data-mtab') || (activeBtn.id === 'm-btn-more' ? 'more' : 'rincian')) : 'rincian';
+  var slotMap = { rincian: 0, kas: 1, jadwal: 3, more: 4 };
+  var slotIdx = slotMap[tabKey] != null ? slotMap[tabKey] : 0;
+  var btnRect = activeBtn && typeof activeBtn.getBoundingClientRect === 'function' ? activeBtn.getBoundingClientRect() : null;
+  var dotX;
+  if (navRect && navRect.width > 0 && btnRect && btnRect.width > 0) {
+    dotX = (btnRect.left - navRect.left) + (btnRect.width / 2) - 2.5;
+  } else {
+    var baseW = 362;
+    var centerCol = 84;
+    var sideCol = (baseW - centerCol) / 4;
+    var centers = {
+      0: sideCol * 0.5,
+      1: sideCol * 1.5,
+      3: sideCol * 2 + centerCol + sideCol * 0.5,
+      4: sideCol * 2 + centerCol + sideCol * 1.5,
+    };
+    dotX = (centers[slotIdx] != null ? centers[slotIdx] : centers[0]) - 2.5;
+  }
+  if (_rkMobNavDotRaf && typeof cancelAnimationFrame === 'function') {
+    cancelAnimationFrame(_rkMobNavDotRaf);
+    _rkMobNavDotRaf = null;
+  }
+  var instant = !!skipDotAnim || (typeof rkIsReducedMotion === 'function' && rkIsReducedMotion());
+  if (instant) {
+    dot.classList.add('is-instant');
+  } else if (dot.classList.contains('is-instant')) {
+    void dot.offsetWidth;
+    dot.classList.remove('is-instant');
+  }
+  dot.setAttribute('data-active-slot', String(slotIdx));
+  dot.style.setProperty('--bn-dot-x', dotX.toFixed(2) + 'px');
+  if (instant && typeof requestAnimationFrame === 'function') {
+    _rkMobNavDotRaf = requestAnimationFrame(function () {
+      _rkMobNavDotRaf = null;
+      dot.classList.remove('is-instant');
+    });
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.rkBuildNavNotchPath = rkBuildNavNotchPath;
+  window.rkSyncMobNavLayout = rkSyncMobNavLayout;
+}
+
 function ensureMobileShell() {
   var root = $('mobile-app-shell');
   if (!root) return null;
@@ -1265,10 +1364,22 @@ function ensureMobileShell() {
       mm.addEventListener('scroll', rkSyncMobScrollUi, { passive: true });
     }
     rkSyncMobScrollUi();
+    var bnavEl = root.querySelector('.mob-bottom-nav');
+    if (bnavEl && typeof ResizeObserver === 'function' && !bnavEl._rkNavRo) {
+      bnavEl._rkNavRo = new ResizeObserver(function () {
+        rkSyncMobNavLayout(true);
+      });
+      bnavEl._rkNavRo.observe(bnavEl);
+    }
+    rkSyncMobNavLayout(true);
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(function () { rkSyncMobNavLayout(true); });
+    }
     if (typeof window !== 'undefined' && !window._rkMobResizeMotifBound) {
       window._rkMobResizeMotifBound = true;
       window.addEventListener('resize', function () {
         if (typeof rkSyncHeaderMotif === 'function') rkSyncHeaderMotif();
+        rkSyncMobNavLayout(true);
       }, { passive: true });
     }
   }
@@ -1314,6 +1425,7 @@ function switchMobileTab(tabId) {
     if (moreOn) mb.setAttribute('aria-current', 'page');
     else mb.removeAttribute('aria-current');
   }
+  rkSyncMobNavLayout(false);
   var mm = $('m-main');
   if (mm) mm.scrollTop = 0;
   rkSyncMobScrollUi();
@@ -4141,7 +4253,7 @@ function bindMobileShellEvents(root) {
   root.addEventListener('pointerdown', function (e) {
     if (typeof rkIsReducedMotion === 'function' && rkIsReducedMotion()) return;
     if (e.button && e.button !== 0) return;
-    var host = e.target && e.target.closest ? e.target.closest('.btn, .list-row, .cat-bento-card, .p-chip, .m-scen-card, .bn-btn') : null;
+    var host = e.target && e.target.closest ? e.target.closest('.btn, .list-row, .cat-bento-card, .p-chip, .m-scen-card') : null;
     if (!host || host.disabled || host.classList.contains('ico-btn') || host.classList.contains('av-btn') || host.classList.contains('seg-btn')) return;
     host.classList.add('rk-ripple-host');
     var rect = typeof host.getBoundingClientRect === 'function' ? host.getBoundingClientRect() : { left: 0, top: 0, width: 64, height: 44 };

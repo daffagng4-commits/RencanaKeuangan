@@ -55,24 +55,18 @@ body[data-shell="mobile-app"] {
   --mob-hdr-top: #0E3F86;
   --mob-hdr-mid: #0C3677;
   --mob-hdr-bot: #0A2F6B;
-  --mob-fab-top: #2F7BEA;
-  --mob-fab-bot: #1F63CC;
 }
 @media (prefers-color-scheme: dark) {
   html:not([data-theme="light"]) body[data-shell="mobile-app"] {
     --mob-hdr-top: #092B60;
     --mob-hdr-mid: #082452;
     --mob-hdr-bot: #061C42;
-    --mob-fab-top: #286ED6;
-    --mob-fab-bot: #1A52AD;
   }
 }
 html[data-theme="dark"] body[data-shell="mobile-app"] {
   --mob-hdr-top: #092B60;
   --mob-hdr-mid: #082452;
   --mob-hdr-bot: #061C42;
-  --mob-fab-top: #286ED6;
-  --mob-fab-bot: #1A52AD;
 }
 
 body[data-shell="mobile-app"][data-phone-frame="390"] { --phone-w: 390px; --phone-h: 844px; }
@@ -143,7 +137,8 @@ body[data-shell="mobile-app"] #mobile-app-shell .phone-home-indicator {
   width: 112px;
   height: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.48);
+  background: var(--text-faint);
+  opacity: 0.45;
   pointer-events: none;
   z-index: 95;
 }
@@ -676,7 +671,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .mob-main {
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: none;
-  padding: 12px 12px calc(var(--bottom-nav-h) + 36px + env(safe-area-inset-bottom, 0px));
+  padding: 12px 12px calc(var(--bottom-nav-h) + var(--mob-nav-gap-b) + 44px);
 }
 body[data-shell="mobile-app"] #mobile-app-shell .mob-main::-webkit-scrollbar {
   display: none;
@@ -1425,122 +1420,201 @@ body[data-shell="mobile-app"] #mobile-app-shell .rank-track { height: 7px; borde
 body[data-shell="mobile-app"] #mobile-app-shell .rank-fill { height: 100%; border-radius: 99px; transition: width 260ms var(--ease-out); }
 
 /* ==========================================================================
-   5-SLOT BOTTOM NAVIGATION BAR — V4 BLUE BAR, WHITE TABS, BRIGHT BLUE "+" FAB
+   5-SLOT BOTTOM NAVIGATION BAR — FLOATING NOTCH BAR, ICON ONLY, BLUE ACCENT
    ========================================================================== */
 body[data-shell="mobile-app"] #mobile-app-shell .mob-bottom-nav {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  max-width: 100%;
-  height: calc(var(--bottom-nav-h) + 10px);
-  padding: 2px 6px 12px;
-  background: linear-gradient(180deg, var(--mob-hdr-top) 0%, var(--mob-hdr-bot) 100%);
-  border-top-left-radius: 26px;
-  border-top-right-radius: 26px;
-  border-top: none;
-  box-shadow: 0 -8px 28px rgba(7, 22, 54, 0.22);
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  align-items: center;
-  z-index: 80;
-}
-
-body[data-shell="mobile-app"][data-phone-frame="full"] .mob-bottom-nav {
-  left: 50%;
-  transform: translateX(-50%);
-  max-width: 412px;
-  height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
-  padding: 4px 6px env(safe-area-inset-bottom, 0px);
-}
-
-@media (max-width: 520px) {
-  body[data-shell="mobile-app"] #mobile-app-shell .mob-bottom-nav {
-    left: 0 !important;
-    transform: none !important;
-    max-width: 100% !important;
-    height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px)) !important;
-    padding: 4px 6px env(safe-area-inset-bottom, 0px) !important;
-  }
-}
-
-body[data-shell="mobile-app"] #mobile-app-shell .bn-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  min-width: 44px;
-  height: 54px;
-  font-size: 0.67rem;
-  font-weight: 500;
-  color: #FFFFFF;
-  opacity: 0.6;
-  position: relative;
+  bottom: var(--mob-nav-gap-b);
+  left: var(--mob-nav-gap-x);
+  right: var(--mob-nav-gap-x);
+  width: auto;
+  height: var(--bottom-nav-h);
+  padding: 0;
   background: transparent;
   border: none;
   box-shadow: none;
-  transition:
-    opacity var(--dur-nav-label) var(--ease-out),
-    transform var(--dur-press) var(--ease-out);
+  display: grid;
+  grid-template-columns: 1fr 1fr clamp(74px, 23%, 88px) 1fr 1fr;
+  align-items: center;
+  z-index: 80;
+  overflow: visible;
+}
+
+body[data-shell="mobile-app"][data-phone-frame="full"] #mobile-app-shell .mob-bottom-nav {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: calc(min(100vw, 412px) - (var(--mob-nav-gap-x) * 2));
+}
+
+@media (max-width: 520px) {
+  body[data-shell="mobile-app"] #mobile-app-shell .mob-bottom-nav,
+  body[data-shell="mobile-app"][data-phone-frame="full"] #mobile-app-shell .mob-bottom-nav {
+    left: var(--mob-nav-gap-x);
+    right: var(--mob-nav-gap-x);
+    transform: none;
+    width: auto;
+  }
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .bn-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  filter: var(--mob-nav-shadow);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .bn-bg-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .bn-bg-path {
+  fill: var(--mob-nav-bg);
+  stroke: var(--mob-nav-border);
+  stroke-width: 1;
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: var(--tap);
+  height: 100%;
+  padding: 0 0 4px;
+  color: var(--mob-nav-icon);
+  opacity: 1;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--dur-med) var(--ease-out);
 }
 body[data-shell="mobile-app"] #mobile-app-shell .bn-btn::before {
   content: "";
   position: absolute;
   inset: -4px 0;
+  min-width: var(--tap);
+  min-height: var(--tap);
   background: transparent;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .bn-btn svg {
-  transition: transform var(--dur-nav-icon) var(--ease-spring);
+  width: 24px;
+  height: 24px;
+  display: block;
+  transform: translateY(0) scale(1);
+  transition: transform var(--dur-nav-icon) var(--ease-nav-jelly);
   will-change: transform;
 }
-body[data-shell="mobile-app"] #mobile-app-shell .bn-btn span {
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active {
+  color: var(--mob-nav-active);
   opacity: 1;
-  transition: opacity var(--dur-nav-label) var(--ease-out);
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
-body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active { color: #FFFFFF; opacity: 1; font-weight: 700; background: transparent; border: none; box-shadow: none; }
-body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active svg { stroke-width: 2.3; transform: translateY(-3px) scale(1.15); }
-body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active span { opacity: 1; }
-@media (hover: hover) and (pointer: fine) {
-  body[data-shell="mobile-app"] #mobile-app-shell .bn-btn:not(.active):hover { opacity: 0.88; }
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active svg {
+  stroke-width: 2.25;
+  transform: translateY(-3px) scale(1.06);
 }
-body[data-shell="mobile-app"] #mobile-app-shell .bn-btn:active { transform: scale(0.96); }
-html[data-theme="dark"] body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active { color: #FFFFFF; opacity: 1; }
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn:active svg {
+  transform: scale(0.92);
+  transition-duration: var(--dur-press);
+  transition-timing-function: var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active:active svg {
+  transform: translateY(-2px) scale(0.92);
+  transition-duration: var(--dur-press);
+  transition-timing-function: var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .bn-btn:focus-visible {
+  outline: 2px solid var(--mob-nav-active);
+  outline-offset: -4px;
+  border-radius: var(--radius-md);
+}
+
+body[data-shell="mobile-app"] #mobile-app-shell .bn-active-dot {
+  position: absolute;
+  left: 0;
+  bottom: 8px;
+  width: 5px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: var(--mob-nav-active);
+  pointer-events: none;
+  z-index: 2;
+  opacity: 1;
+  transform: translate3d(var(--bn-dot-x, 32px), 0, 0);
+  transition:
+    transform var(--dur-nav-dot) var(--ease-nav-jelly),
+    opacity var(--dur-med) var(--ease-out);
+  will-change: transform;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .bn-active-dot.is-instant {
+  transition: none !important;
+}
 
 body[data-shell="mobile-app"] #mobile-app-shell .bn-center-slot {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  height: 54px;
-  padding-bottom: 3px;
   position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .bn-plus-fab {
   position: absolute;
-  top: -36px;
+  top: -26px;
   left: 50%;
   transform: translateX(-50%) scale(1);
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-pill);
   background: linear-gradient(155deg, var(--mob-fab-top) 0%, var(--mob-fab-bot) 100%);
-  color: #FFFFFF;
+  color: var(--mob-fab-ink);
   display: grid;
   place-items: center;
-  border: 5px solid var(--mob-hdr-bot);
-  box-shadow: 0 10px 22px rgba(7, 22, 54, 0.34), 0 1px 0 rgba(255, 255, 255, 0.25) inset;
-  transition: transform var(--dur-press) var(--ease-out);
-}
-@media (hover: hover) and (pointer: fine) {
-  body[data-shell="mobile-app"] #mobile-app-shell .bn-plus-fab:hover { transform: translateX(-50%) scale(1.03); }
+  border: none;
+  box-shadow: var(--mob-fab-shadow);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-nav-icon) var(--ease-nav-jelly);
+  will-change: transform;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .bn-plus-fab:active {
-  transform: translateX(-50%) scale(0.95);
+  transform: translateX(-50%) scale(0.94);
   transition-duration: var(--dur-press);
+  transition-timing-function: var(--ease-out);
 }
-body[data-shell="mobile-app"] #mobile-app-shell .bn-center-lbl { font-size: 0.67rem; font-weight: 800; color: var(--text-primary); margin-top: 26px; }
+body[data-shell="mobile-app"] #mobile-app-shell .bn-plus-fab:focus-visible {
+  outline: 2px solid var(--mob-nav-active);
+  outline-offset: 3px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  body[data-shell="mobile-app"] #mobile-app-shell .bn-btn:not(.active):hover {
+    color: var(--mob-nav-icon-hover);
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell .bn-plus-fab:hover {
+    transform: translateX(-50%) scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-shell="mobile-app"] #mobile-app-shell .bn-active-dot,
+  body[data-shell="mobile-app"] #mobile-app-shell .bn-btn,
+  body[data-shell="mobile-app"] #mobile-app-shell .bn-btn svg,
+  body[data-shell="mobile-app"] #mobile-app-shell .bn-plus-fab {
+    transition: none !important;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell .bn-btn.active svg {
+    transform: translateY(-2px);
+  }
+}
 
 /* Bottom Sheets & Popovers */
 body[data-shell="mobile-app"] #mobile-app-shell .modal-backdrop {
@@ -2306,8 +2380,8 @@ body[data-shell="mobile-app"] #mobile-app-shell .m-upd-dot {
 }
 body[data-shell="mobile-app"] #mobile-app-shell #m-btn-more .m-upd-dot {
   position: absolute;
-  top: 7px;
-  right: 18px;
+  top: 12px;
+  right: calc(50% - 16px);
   margin-right: 0;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .m-upd-prog-wrap {
@@ -2724,7 +2798,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .trip-form-actions .btn {
 body[data-shell="mobile-app"] #mobile-app-shell .toast-box.has-action,
 body[data-shell="mobile-app"][data-phone-frame="full"] #mobile-app-shell .toast-box.has-action {
   top: auto;
-  bottom: calc(var(--bottom-nav-h) + 44px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--bottom-nav-h) + var(--mob-nav-gap-b) + 36px);
   transform: translateX(-50%) translateY(12px);
   display: inline-flex;
   align-items: center;
@@ -2803,7 +2877,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .m-toast-close:focus-visible {
 @media (max-width: 520px) {
   body[data-shell="mobile-app"] #mobile-app-shell .toast-box.has-action {
     top: auto;
-    bottom: calc(var(--bottom-nav-h) + 44px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(var(--bottom-nav-h) + var(--mob-nav-gap-b) + 36px);
     max-width: calc(100vw - 24px);
   }
 }
