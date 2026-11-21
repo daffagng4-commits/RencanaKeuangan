@@ -68,26 +68,119 @@ function tab(t) {
   if (prev !== t && typeof rkScheduleEntrance === 'function') rkScheduleEntrance('browser', t);
 }
 
-/** Tampilkan pesan singkat; bila ada `undo`, muncul tombol Urungkan selama 10 detik. */
-function toast(msg, undo) {
+/** Tampilkan pesan singkat; dukung tombol `undo` (10 dtk) maupun `opts.action` (mis. "Lihat" 7 dtk + jeda hover/fokus/sentuh). */
+function toast(msg, undo, opts) {
   if (typeof getShellMode === 'function' && getShellMode() === 'mobile-app' && typeof showMobToast === 'function') {
-    showMobToast(msg, undo);
+    showMobToast(msg, undo, opts);
   }
   var tb = $('toast-box');
   if (tb) tb.classList.remove('show');
   var t = $('tt');
   if (!t || !$('ttm') || !$('ttu')) return;
+  var hasAct = !!(opts && opts.action && typeof opts.action.onClick === 'function');
+  var ico = $('tt-ico');
+  if (!ico && hasAct && typeof document !== 'undefined') {
+    ico = document.createElement('span');
+    ico.id = 'tt-ico';
+    ico.className = 'tt-ico';
+    ico.setAttribute('aria-hidden', 'true');
+    ico.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    t.insertBefore(ico, $('ttm'));
+  }
+  var actBtn = $('tt-act');
+  if (!actBtn && hasAct && typeof document !== 'undefined') {
+    actBtn = document.createElement('button');
+    actBtn.id = 'tt-act';
+    actBtn.type = 'button';
+    actBtn.className = 'tt-act';
+    actBtn.setAttribute('data-toast-act', '1');
+    t.appendChild(actBtn);
+  }
+  var clsBtn = $('tt-cls');
+  if (!clsBtn && hasAct && typeof document !== 'undefined') {
+    clsBtn = document.createElement('button');
+    clsBtn.id = 'tt-cls';
+    clsBtn.type = 'button';
+    clsBtn.className = 'tt-cls';
+    clsBtn.setAttribute('data-toast-close', '1');
+    clsBtn.setAttribute('aria-label', 'Tutup');
+    clsBtn.textContent = '×';
+    t.appendChild(clsBtn);
+  }
+  var clearT = function () {
+    clearTimeout(t._h);
+    t._h = null;
+  };
+  var closeT = function () {
+    clearT();
+    t._toastPaused = false;
+    t._toastRem = 0;
+    t._u = null;
+    t.hidden = true;
+    t.classList.remove('has-action', 'is-success');
+  };
+  var startT = function (ms) {
+    clearT();
+    t._toastRem = Math.max(0, ms);
+    t._toastStart = Date.now();
+    t._toastPaused = false;
+    t._h = setTimeout(closeT, t._toastRem);
+  };
+  if (!t._rkToastTimerHelpers) {
+    t._rkToastTimerHelpers = {
+      pause: function () {
+        if (t.hidden || t._toastPaused || !t._h) return;
+        t._toastPaused = true;
+        var elapsed = Date.now() - (t._toastStart || Date.now());
+        t._toastRem = Math.max(50, (t._toastRem || 0) - elapsed);
+        clearT();
+      },
+      resume: function () {
+        if (t.hidden || !t._toastPaused) return;
+        startT(t._toastRem);
+      },
+    };
+    t.addEventListener('mouseenter', t._rkToastTimerHelpers.pause);
+    t.addEventListener('focusin', t._rkToastTimerHelpers.pause);
+    t.addEventListener('touchstart', t._rkToastTimerHelpers.pause, { passive: true });
+    t.addEventListener('mouseleave', t._rkToastTimerHelpers.resume);
+    t.addEventListener('focusout', function (ev) {
+      if (!ev || !ev.relatedTarget || !t.contains(ev.relatedTarget)) t._rkToastTimerHelpers.resume();
+    });
+    t.addEventListener('touchend', t._rkToastTimerHelpers.resume);
+  }
+  t.classList.toggle('has-action', hasAct);
+  t.classList.toggle('is-success', !!(hasAct && opts && opts.tone === 'success'));
+  if (ico) ico.hidden = !(hasAct && opts && opts.tone === 'success');
   $('ttm').textContent = msg;
   $('ttu').hidden = !undo;
   t._u = undo || null;
+  if (actBtn) {
+    if (hasAct) {
+      actBtn.textContent = opts.action.label || 'Lihat';
+      actBtn.hidden = false;
+      actBtn.onclick = function () {
+        var fn = opts.action.onClick;
+        closeT();
+        if (typeof fn === 'function') fn();
+      };
+    } else {
+      actBtn.hidden = true;
+      actBtn.onclick = null;
+    }
+  }
+  if (clsBtn) {
+    if (hasAct) {
+      clsBtn.hidden = false;
+      clsBtn.onclick = closeT;
+    } else {
+      clsBtn.hidden = true;
+      clsBtn.onclick = null;
+    }
+  }
   t.hidden = false;
-  clearTimeout(t._h);
-  t._h = setTimeout(
-    function () {
-      t.hidden = true;
-    },
-    undo ? 10000 : 2000,
-  );
+  var dur = hasAct ? ((opts && opts.duration) || 7000) : (undo ? 10000 : 2000);
+  startT(dur);
 }
 
 /** Dialog konfirmasi terpadu (#13 Desktop & APK). `onYes` dipanggil hanya bila pengguna menekan tombol aksi. */

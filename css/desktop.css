@@ -3026,3 +3026,417 @@ body.privacy-on #browser-shell .pv {
   min-width: 78px;
   width: 100%;
 }
+
+/* Tahap 12A C1: Error inline, aria-invalid, badge Di luar rentang, tanggal kalender nonaktif */
+#browser-shell .trip-field-err {
+  color: var(--crimson);
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-top: 4px;
+  line-height: 1.35;
+}
+#browser-shell .trip-field-err[hidden] { display: none; }
+#browser-shell .input[aria-invalid="true"],
+#browser-shell .cal-trigger-btn[aria-invalid="true"] {
+  border-color: var(--crimson);
+  box-shadow: 0 0 0 3px var(--crimson-soft);
+}
+#browser-shell .trip-out-range-badge {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+#browser-shell .cal-day.is-disabled,
+#browser-shell .cal-day:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Tahap 12A C2: Akordeon Hari Itinerary, Teks Panjang, & Chip Tautan */
+#browser-shell .trip-it-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+#browser-shell .trip-it-count {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+#browser-shell .trip-day-card {
+  padding: 0;
+  overflow: hidden;
+}
+#browser-shell .trip-day-acc-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  min-height: 48px;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: inherit;
+  transition: background var(--transition-fast);
+}
+@media (hover: hover) and (pointer: fine) {
+  #browser-shell .trip-day-acc-btn:hover {
+    background: var(--bg-subtle);
+  }
+}
+#browser-shell .trip-day-acc-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+#browser-shell .trip-day-acc-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+#browser-shell .trip-day-acc-title {
+  font-weight: 800;
+  font-size: 0.92rem;
+  color: var(--text-primary);
+}
+#browser-shell .trip-day-acc-sub {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#browser-shell .trip-day-acc-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+#browser-shell .trip-acc-chev {
+  color: var(--text-muted);
+  transition: transform 150ms var(--ease-out);
+  flex-shrink: 0;
+}
+#browser-shell .trip-day-acc-btn[aria-expanded="true"] .trip-acc-chev {
+  transform: rotate(180deg);
+}
+#browser-shell .trip-day-panel {
+  padding: 12px 16px 15px;
+  border-top: 1px solid var(--border-subtle);
+  gap: 10px;
+}
+#browser-shell .trip-day-panel[hidden] {
+  display: none !important;
+}
+@keyframes tripDayPanelOpen {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+#browser-shell .trip-day-panel.is-opening {
+  animation: tripDayPanelOpen 140ms var(--ease-out);
+}
+#browser-shell .trip-item-card {
+  align-items: flex-start;
+  position: relative;
+}
+#browser-shell .trip-item-card .upcoming-left {
+  flex: 1;
+  min-width: 0;
+  align-items: flex-start;
+}
+#browser-shell .trip-card-body {
+  min-width: 0;
+  flex: 1;
+}
+#browser-shell .trip-item-card .trip-it-note {
+  margin-top: 4px;
+  font-size: 0.79rem;
+  color: var(--text-muted);
+  line-height: 1.42;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+#browser-shell .trip-item-card.is-expanded .trip-it-place,
+#browser-shell .trip-item-card.is-expanded .trip-bk-title,
+#browser-shell .trip-item-card.is-expanded .trip-it-note {
+  display: block;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  -webkit-line-clamp: unset;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+#browser-shell .trip-more-wrap {
+  margin-top: 5px;
+}
+#browser-shell .trip-more-wrap:has(.trip-more-btn[hidden]) {
+  display: none;
+}
+#browser-shell .trip-more-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  color: var(--accent-ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+#browser-shell .trip-more-btn[hidden] {
+  display: none !important;
+}
+#browser-shell .trip-more-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  #browser-shell .trip-more-btn:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent-border);
+  }
+}
+#browser-shell .trip-card-link-row {
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+#browser-shell .trip-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  min-height: 26px;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-border);
+  color: var(--accent-ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+#browser-shell .trip-card-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  #browser-shell .trip-card-link:hover {
+    background: var(--bg-subtle);
+  }
+}
+#browser-shell .trip-card-link-ico {
+  flex-shrink: 0;
+}
+#browser-shell .trip-card-link-host {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  #browser-shell .trip-acc-chev {
+    transition: none;
+  }
+  #browser-shell .trip-day-panel.is-opening {
+    animation: none;
+  }
+}
+
+/* Tahap 12A C3: Tata Letak Form Itinerary/Pemesanan, Textarea Catatan, Toast "Lihat", & Sorot Baris */
+#browser-shell .trip-form-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+#browser-shell .trip-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-start;
+}
+#browser-shell .trip-col-date { flex: 0 0 158px; min-width: 140px; }
+#browser-shell .trip-col-time { flex: 0 0 86px; min-width: 78px; }
+#browser-shell .trip-col-grow { flex: 1 1 220px; min-width: 0; }
+#browser-shell .trip-col-amt-cur { flex: 1.25 1 230px; min-width: 0; }
+#browser-shell .trip-col-pay { flex: 1 1 165px; min-width: 145px; }
+#browser-shell .trip-col-cat { flex: 1 1 165px; min-width: 145px; }
+#browser-shell .trip-col-rate { flex: 0 0 210px; min-width: 185px; }
+#browser-shell .trip-col-full { flex: 1 1 100%; min-width: 0; }
+#browser-shell .trip-amt-cur-pair {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+#browser-shell .trip-cur-box {
+  width: 94px;
+  flex-shrink: 0;
+}
+#browser-shell .trip-form-layout .input:not(textarea),
+#browser-shell .trip-form-layout select.input,
+#browser-shell .trip-form-layout .cal-trigger-btn,
+#browser-shell .trip-form-layout .mselect-trigger {
+  min-height: 40px;
+  height: 40px;
+  box-sizing: border-box;
+}
+#browser-shell .trip-note-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+#browser-shell .trip-note-cnt {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+#browser-shell .trip-note-area {
+  min-height: 40px;
+  padding: 9px 12px;
+  line-height: 1.4;
+  resize: none;
+  overflow-y: hidden;
+  font-family: inherit;
+}
+#browser-shell .trip-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
+}
+#browser-shell .trip-form-actions .btn {
+  min-height: 40px;
+}
+#browser-shell .tt.has-action {
+  min-height: 52px;
+  padding: 8px 14px 8px 16px;
+  border-radius: var(--radius-lg);
+  font-size: 0.9rem;
+  gap: 10px;
+  max-width: min(520px, calc(100vw - 32px));
+}
+#browser-shell .tt .tt-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--emerald);
+  flex-shrink: 0;
+}
+#browser-shell .tt .tt-ico[hidden] { display: none; }
+#browser-shell .tt.has-action .tt-act {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+#browser-shell .tt.has-action .tt-act::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  min-height: 44px;
+}
+#browser-shell .tt.has-action .tt-cls {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--bg-surface);
+  opacity: 0.8;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+#browser-shell .tt.has-action .tt-cls::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  min-width: 44px;
+  min-height: 44px;
+}
+#browser-shell .tt .tt-act[hidden],
+#browser-shell .tt .tt-cls[hidden] { display: none; }
+#browser-shell .tt.has-action .tt-act:focus-visible,
+#browser-shell .tt.has-action .tt-cls:focus-visible {
+  outline: 2px solid var(--bg-surface);
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  #browser-shell .tt.has-action .tt-act:hover {
+    background: var(--accent-hover);
+  }
+  #browser-shell .tt.has-action .tt-cls:hover {
+    opacity: 1;
+  }
+}
+@keyframes rkHighlightPulseDesk {
+  0% { opacity: 0; transform: scale(0.985); }
+  20% { opacity: 1; transform: scale(1); }
+  45% { opacity: 0.2; transform: scale(0.995); }
+  70% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+#browser-shell .rk-row-highlight {
+  position: relative;
+}
+#browser-shell .rk-row-highlight::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 2px solid var(--accent);
+  pointer-events: none;
+  animation: rkHighlightPulseDesk 1500ms var(--ease-out) forwards;
+}
+#browser-shell .rk-row-highlight-static::after {
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  #browser-shell .rk-row-highlight::after {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

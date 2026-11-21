@@ -3591,6 +3591,8 @@ const { boot } = require('./ui.js');
     // Tahap 11 Realisasi
     'form:m-trip-ac-form', 'id:m-ac-cancel', 'id:m-ac-day-trig',
     'attr:data-mac-cat', 'attr:data-mac-edit', 'attr:data-mac-del',
+    // Tahap 12A C2 Akordeon & Tampilkan/Sembunyikan
+    'id:m-it-fold-all', 'attr:data-mit-day-tog', 'attr:data-mit-more', 'attr:data-mbk-more',
   ]);
   const collectMobControls = () => {
     const found = [];
@@ -3599,7 +3601,7 @@ const { boot } = require('./ui.js');
       else if (el.id) found.push('id:' + el.id);
       else if (el.dataset) {
         for (const k of Object.keys(el.dataset)) {
-          if (/^(mtripDel|mtripList|mtripSel|mtripsub|mitToggle|mitEdit|mitDel|mbkPay|mbkEdit|mbkDel|mckTog|mckDel|mlkDel|mdtDay|mExtUrl|mcalTrig|macCat|macEdit|macDel)$/.test(k)) {
+          if (/^(mtripDel|mtripList|mtripSel|mtripsub|mitToggle|mitEdit|mitDel|mitDayTog|mitMore|mbkPay|mbkEdit|mbkDel|mbkMore|mckTog|mckDel|mlkDel|mdtDay|mExtUrl|mcalTrig|macCat|macEdit|macDel)$/.test(k)) {
             const attrName = 'data-' + k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
             found.push('attr:' + attrName);
           }
@@ -3876,6 +3878,419 @@ const { boot } = require('./ui.js');
     w.MOB_STATE.tripId = null;
   } finally {
     w.todayISO = origMobToday;
+  }
+
+  // 38. Tahap 12A (APK Mode Perjalanan): C1 (Butir 3, 4, 5)
+  {
+    const fireMInput = (el, val) => {
+      el.value = val;
+      el.dispatchEvent(new w.Event('input', { bubbles: true, cancelable: true }));
+    };
+    const fireMPaste = (el, text) => {
+      try { el.setSelectionRange(0, el.value.length); } catch (e) {}
+      const ev = new w.Event('paste', { bubbles: true, cancelable: true });
+      Object.defineProperty(ev, 'clipboardData', {
+        value: { getData: (fmt) => (fmt === 'text/plain' || fmt === 'text' ? text : '') },
+      });
+      el.dispatchEvent(ev);
+      if (!ev.defaultPrevented) {
+        el.value = text;
+        el.dispatchEvent(new w.Event('input', { bubbles: true }));
+      }
+      return ev;
+    };
+    const fireMDrop = (el, text) => {
+      try { el.setSelectionRange(0, el.value.length); } catch (e) {}
+      const ev = new w.Event('drop', { bubbles: true, cancelable: true });
+      Object.defineProperty(ev, 'dataTransfer', {
+        value: { getData: (fmt) => (fmt === 'text/plain' || fmt === 'text' ? text : '') },
+      });
+      el.dispatchEvent(ev);
+      if (!ev.defaultPrevented) {
+        el.value = text;
+        el.dispatchEvent(new w.Event('input', { bubbles: true }));
+      }
+      return ev;
+    };
+
+    w.setShellMode('mobile-app');
+    w.switchMobileTab('kas');
+    const mKasAmt = $('m-kas-amt');
+    assert.ok(mKasAmt && !mKasAmt.hasAttribute('data-num-only'), '38.B4 Regresi: #m-kas-amt tidak memakai data-num-only');
+    fireMInput(mKasAmt, '250rb');
+    assert.strictEqual(mKasAmt.value, '250rb', '38.B4 Regresi APK Kas: shorthand 250rb tetap');
+
+    w.ALL.kas.pr['p-t12m'] = {
+      id: 'p-t12m',
+      name: 'Sapporo 12A APK',
+      link: false,
+      saldo: 0,
+      tx: [],
+      start: '2026-12-12',
+      end: '2026-12-21',
+      budget: 25000000,
+      cur: 'JPY',
+      rate: 108.5,
+      fxs: [{ c: 'SGD', r: 12000 }],
+      dt: {},
+      it: [
+        { id: '12m-i1', day: '2026-12-15', time: '09:00', time2: '', place: 'Susukino', est: 2000, fx: true, pay: 'cash', cat: 'Makan', link: '', note: '', done: false },
+        { id: '12m-i-out', day: '2026-12-28', time: '11:00', time2: '', place: 'Out Item APK', est: 50000, fx: false, pay: 'cash', cat: 'Lainnya', link: '', note: '', done: false },
+      ],
+      bk: [
+        { id: '12m-b1', title: 'Sapporo Hotel', amt: 15000, fx: true, paid: false, cat: 'Penginapan', a: '2026-12-12', b: '2026-12-18', pay: 'on', link: '', rec: '' },
+        { id: '12m-b-out', title: 'Booking Luar Rentang', amt: 300000, fx: false, paid: false, cat: 'Lainnya', a: '2026-12-25', b: '2026-12-26', pay: 'on', link: '', rec: '' },
+      ],
+      lk: [],
+      ck: [],
+      note: '',
+      goal: null,
+    };
+    const pM12 = () => w.ALL.kas.pr['p-t12m'];
+    w.switchMobileTab('trip');
+    w.MOB_STATE.tripId = 'p-t12m';
+    w.MOB_STATE.tripView = 'detail';
+    w.MOB_STATE.tripSub = 'itin';
+    w.MOB_STATE.tripEditIt = null;
+    w.renderMobTrip();
+
+    // 38.B4 APK input angka (#m-it-est int, #m-it-rt dec, #m-bk-amt int)
+    const mItEst = $('m-it-est');
+    assert.strictEqual(mItEst.getAttribute('data-num-only'), 'int', '38.B4 APK: #m-it-est punya data-num-only="int"');
+    assert.strictEqual(mItEst.getAttribute('inputmode'), 'numeric', '38.B4 APK: #m-it-est inputmode="numeric"');
+    fireMInput(mItEst, '12abc-+e');
+    assert.strictEqual(mItEst.value, '12', '38.B4 APK: sanitasi 12abc-+e -> 12');
+    fireMPaste(mItEst, '1.234.567');
+    assert.strictEqual(mItEst.value, '1.234.567', '38.B4 APK: paste 1.234.567 utuh');
+    fireMDrop(mItEst, 'Rp 45.678 xyz');
+    assert.strictEqual(mItEst.value, '45.678', '38.B4 APK: drop -> 45.678');
+    fireMInput(mItEst, '999999999999999');
+    assert.strictEqual(mItEst.value.replace(/\D/g, '').length, 13, '38.B4 APK: maks 13 digit');
+
+    // 38.B3 APK validasi tanggal Itinerary (scroll tanpa memaksa keyboard) + badge Di luar rentang
+    let mItFocusForced = false;
+    let mItScrolled = false;
+    const origFocusM = w.HTMLElement.prototype.focus;
+    const origScrollM = w.HTMLElement.prototype.scrollIntoView;
+    w.HTMLElement.prototype.focus = function () { mItFocusForced = true; return origFocusM.apply(this, arguments); };
+    w.HTMLElement.prototype.scrollIntoView = function () { mItScrolled = true; };
+    const expItErrM = 'Tanggal kegiatan harus berada dalam rentang perjalanan (12 Des 2026 - 21 Des 2026).';
+    $('m-it-place').value = 'Luar Rentang APK';
+    $('m-it-day').value = '2026-12-25';
+    fire($('m-trip-itin-form'), 'submit');
+    w.HTMLElement.prototype.focus = origFocusM;
+    w.HTMLElement.prototype.scrollIntoView = origScrollM;
+
+    assert.strictEqual(pM12().it.length, 2, '38.B3 APK Itin (> end): tidak menyimpan');
+    assert.strictEqual($('m-it-day-trig').getAttribute('aria-invalid'), 'true', '38.B3 APK Itin: trigger aria-invalid="true"');
+    assert.strictEqual(mItScrolled, true, '38.B3 APK Itin: menggulir ke kolom tanggal');
+    assert.strictEqual(mItFocusForced, false, '38.B3 APK Itin: tidak memaksa keyboard lewat focus()');
+    assert.strictEqual($('m-it-day-err').textContent.trim(), expItErrM, '38.B3 APK Itin: pesan inline persis');
+    assert.strictEqual($('m-toast-box').textContent, expItErrM, '38.B3 APK Itin: toast galat persis');
+
+    // Opt-in cal min/max APK
+    click($('m-it-day-trig'));
+    const mCalDis = $('m-it-day-cal').querySelector('[data-mcal-pick$="|2026-12-10"]');
+    assert.ok(mCalDis && mCalDis.disabled, '38.B3 APK Cal: tanggal di luar rentang disabled');
+    const outMRow = $('m-trip-root').querySelector('[data-it-row="12m-i-out"]');
+    assert.ok(outMRow && outMRow.querySelector('.trip-out-range-badge'), '38.B3 APK Itin: badge Di luar rentang tampil');
+
+    // 38.B3 + B5 APK Pemesanan
+    w.MOB_STATE.tripSub = 'book';
+    w.MOB_STATE.tripEditBk = null;
+    w.renderMobTrip();
+    assert.strictEqual($('m-bk-amt').getAttribute('data-num-only'), 'int', '38.B4 APK: #m-bk-amt data-num-only="int"');
+    assert.ok($('m-bk-link'), '38.B5 APK: #m-bk-link tersedia');
+    $('m-bk-title').value = 'Hotel Salah Rentang APK';
+    $('m-bk-amt').value = '1000000';
+    $('m-bk-start').value = '2026-12-11';
+    $('m-bk-end').value = '2026-12-15';
+    fire($('m-trip-book-form'), 'submit');
+    assert.strictEqual(pM12().bk.length, 2, '38.B3 APK Book: tanggal di luar rentang tidak tersimpan');
+    assert.strictEqual($('m-bk-date-err').textContent.trim(), 'Tanggal masuk dan keluar harus berada dalam rentang perjalanan (12 Des 2026 - 21 Des 2026).', '38.B3 APK Book: pesan rentang persis');
+    $('m-bk-start').value = '2026-12-18';
+    $('m-bk-end').value = '2026-12-15';
+    fire($('m-trip-book-form'), 'submit');
+    assert.strictEqual($('m-bk-date-err').textContent.trim(), 'Tanggal keluar tidak boleh sebelum tanggal masuk.', '38.B3 APK Book: pesan b < a persis');
+    $('m-bk-start').value = '2026-12-12';
+    $('m-bk-end').value = '2026-12-21';
+    $('m-bk-link').value = 'https://contoh.com/' + 'x'.repeat(390);
+    fire($('m-trip-book-form'), 'submit');
+    assert.strictEqual($('m-bk-link-err').textContent.trim(), 'Tautan terlalu panjang (maks. 400 karakter).', '38.B5 APK Book: > 400 karakter ditolak');
+    $('m-bk-link').value = 'contoh.com/hotel-apk';
+    fire($('m-trip-book-form'), 'submit');
+    assert.ok(pM12().bk.some((x) => x.title === 'Hotel Salah Rentang APK' && x.link === 'https://contoh.com/hotel-apk'), '38.B5 APK Book: auto-https dan tersimpan ke bk.link');
+
+    // Konfirmasi mempersempit rentang APK
+    click($('m-btn-trip-edit'));
+    $('m-kp-start').value = '2026-12-16';
+    $('m-kp-end').value = '2026-12-17';
+    fire($('m-trip-meta-form'), 'submit');
+    const mCfmOut = doc.querySelector('.modal.cfm');
+    assert.ok(mCfmOut && /\d+\s+item berada di luar rentang baru\. Tetap simpan\?/.test(mCfmOut.textContent), '38.B3 APK Meta Edit: konfirmasi item di luar rentang muncul');
+    click(mCfmOut.querySelector('[data-cf-n]'));
+    w.mobCloseSheet('m-sheet-trip');
+
+    delete w.ALL.kas.pr['p-t12m'];
+    w.MOB_STATE.tripId = null;
+
+    // 38.C2 APK (Butir 1, 2, 6): Akordeon hari, Tautan kartu via Browser plugin, Tampilkan/Sembunyikan
+    w.ALL.kas.pr['p-t12m-c2'] = {
+      id: 'p-t12m-c2',
+      name: 'Kyoto C2 APK',
+      link: false,
+      saldo: 0,
+      tx: [],
+      start: '2026-12-12',
+      end: '2026-12-14',
+      budget: 10000000,
+      cur: 'JPY',
+      rate: 105,
+      dt: { '2026-12-12': 'Hari Tiba Kyoto' },
+      it: [
+        {
+          id: '12m-i-long',
+          day: '2026-12-12',
+          time: '09:00',
+          time2: '12:00',
+          place: 'Jelajah Fushimi Inari Taisha Gerbang Senbon Torii sampai Puncak Gunung Inari',
+          est: 2000,
+          fx: true,
+          pay: 'cash',
+          cat: 'Tiket & Tour',
+          link: 'https://www.klook.com/id/activity/888-fushimi/',
+          note: 'Catatan panjang kegiatan di APK untuk memastikan tombol Tampilkan bekerja.',
+          done: false,
+        },
+        {
+          id: '12m-i-short',
+          day: '2026-12-12',
+          time: '15:00',
+          time2: '',
+          place: 'Matcha',
+          est: 500,
+          fx: true,
+          pay: 'cash',
+          cat: 'Makan',
+          link: 'javascript:alert(1)',
+          note: 'Ok',
+          done: false,
+        },
+      ],
+      bk: [
+        {
+          id: '12m-b-long',
+          title: 'Tiket Shinkansen Nozomi Tokyo Kyoto PP Kursi Fuji',
+          amt: 28000,
+          fx: true,
+          paid: false,
+          cat: 'Transport',
+          a: '2026-12-12',
+          b: '2026-12-14',
+          pay: 'on',
+          link: 'https://www.smart-ex.jp/en/guide/',
+          rec: '',
+        },
+      ],
+      lk: [],
+      ck: [],
+      note: '',
+      goal: null,
+    };
+    w.switchMobileTab('trip');
+    w.MOB_STATE.tripId = 'p-t12m-c2';
+    w.MOB_STATE.tripView = 'detail';
+    w.MOB_STATE.tripSub = 'itin';
+    w.MOB_STATE.tripEditIt = null;
+    if (w.MOB_STATE.tripOpenDays) delete w.MOB_STATE.tripOpenDays['p-t12m-c2'];
+    if (w.MOB_STATE.tripExpandedItems) w.MOB_STATE.tripExpandedItems = {};
+    w.renderMobTrip();
+
+    // 38.B6 APK Akordeon hari bawaan tertutup, Buka semua/Tutup semua, Ubah membuka hari
+    const mDayTogs = [...$('m-trip-root').querySelectorAll('[data-mit-day-tog]')];
+    assert.strictEqual(mDayTogs.length, 3, '38.B6 APK: 3 header hari akordeon');
+    assert.ok(mDayTogs.every((b) => b.tagName === 'BUTTON' && b.getAttribute('aria-expanded') === 'false'), '38.B6 APK: bawaan aria-expanded="false"');
+    mDayTogs.forEach((b) => {
+      const p = doc.getElementById(b.getAttribute('aria-controls'));
+      assert.ok(p && p.hidden === true, '38.B6 APK: panel bawaan hidden=true');
+    });
+    assert.ok(mDayTogs[0].textContent.includes('2 kegiatan') && mDayTogs[1].textContent.includes('0 kegiatan'), '38.B6 APK: jumlah kegiatan tampil di header');
+    click(mDayTogs[0]);
+    assert.strictEqual($('m-trip-root').querySelector('[data-mit-day-tog="2026-12-12"]').getAttribute('aria-expanded'), 'true', '38.B6 APK: klik header membuka hari');
+    click($('m-it-fold-all'));
+    assert.ok([...$('m-trip-root').querySelectorAll('[data-mit-day-tog]')].every((b) => b.getAttribute('aria-expanded') === 'true'), '38.B6 APK: Buka semua');
+    click($('m-it-fold-all'));
+    assert.ok([...$('m-trip-root').querySelectorAll('[data-mit-day-tog]')].every((b) => b.getAttribute('aria-expanded') === 'false'), '38.B6 APK: Tutup semua');
+    click($('m-trip-root').querySelector('[data-mit-edit="12m-i-long"]'));
+    assert.strictEqual($('m-trip-root').querySelector('[data-mit-day-tog="2026-12-12"]').getAttribute('aria-expanded'), 'true', '38.B6 APK: Ubah otomatis membuka hari');
+    click($('m-it-cancel'));
+
+    // 38.B2 APK Tautan kartu Itinerary & Browser plugin stub (bukan navigasi WebView)
+    const mRowLong = $('m-trip-root').querySelector('[data-it-row="12m-i-long"]');
+    const mRowShort = $('m-trip-root').querySelector('[data-it-row="12m-i-short"]');
+    const mLinkLong = mRowLong.querySelector('.trip-card-link');
+    assert.ok(mLinkLong && mLinkLong.getAttribute('data-m-ext-url') === 'https://www.klook.com/id/activity/888-fushimi/', '38.B2 APK Itin: chip tautan pakai data-m-ext-url');
+    assert.ok(mLinkLong.textContent.trim().includes('klook.com') && !mLinkLong.textContent.includes('www.'), '38.B2 APK Itin: domain tanpa www.');
+    assert.strictEqual(mRowShort.querySelector('.trip-card-link'), null, '38.B2 APK Itin: tautan javascript: tidak dirender');
+    const brOpenCallsM = [];
+    const origCapM = w.Capacitor;
+    w.Capacitor = {
+      isNativePlatform: () => true,
+      Plugins: { Browser: { open: (arg) => { brOpenCallsM.push(arg); return Promise.resolve(); } } },
+    };
+    click(mLinkLong);
+    assert.strictEqual(brOpenCallsM.length, 1, '38.B2 APK Itin: klik tautan memanggil Capacitor Browser plugin tepat 1x');
+    assert.strictEqual(brOpenCallsM[0].url, 'https://www.klook.com/id/activity/888-fushimi/', '38.B2 APK Itin: Browser.open menerima URL aman');
+    w.Capacitor = origCapM;
+
+    // 38.B1 APK Tombol Tampilkan/Sembunyikan (Itinerary + Pemesanan paritas)
+    const mMoreLong = mRowLong.querySelector('[data-mit-more="12m-i-long"]');
+    const mMoreShort = mRowShort.querySelector('[data-mit-more="12m-i-short"]');
+    assert.ok(mMoreLong && mMoreLong.hidden === true && mMoreShort && mMoreShort.hidden === true, '38.B1 APK: tombol tersembunyi bila tidak terpotong');
+    const mPlaceEl = mRowLong.querySelector('.trip-it-place');
+    Object.defineProperty(mPlaceEl, 'scrollHeight', { configurable: true, get: () => 64 });
+    Object.defineProperty(mPlaceEl, 'clientHeight', { configurable: true, get: () => 22 });
+    w.tripRefreshTruncation($('m-trip-root'), w.MOB_STATE.tripExpandedItems);
+    assert.strictEqual(mMoreLong.hidden, false, '38.B1 APK: tombol Tampilkan muncul saat terpotong');
+    click(mMoreLong);
+    assert.ok(mRowLong.classList.contains('is-expanded') && mMoreLong.textContent.trim() === 'Sembunyikan', '38.B1 APK: toggle Tampilkan -> Sembunyikan');
+    w.renderMobTrip();
+    assert.ok($('m-trip-root').querySelector('[data-it-row="12m-i-long"]').classList.contains('is-expanded'), '38.B1 APK: status expanded bertahan saat renderMobTrip');
+
+    w.MOB_STATE.tripSub = 'book';
+    w.renderMobTrip();
+    const mBkRow = $('m-trip-root').querySelector('[data-bk-row="12m-b-long"]');
+    assert.ok(mBkRow.querySelector('.trip-card-link') && mBkRow.querySelector('.trip-card-link').textContent.includes('smart-ex.jp'), '38.B2 APK Book: chip tautan smart-ex.jp tampil');
+    const mBkTitle = mBkRow.querySelector('.trip-bk-title');
+    const mBkMore = mBkRow.querySelector('[data-mbk-more="12m-b-long"]');
+    Object.defineProperty(mBkTitle, 'scrollHeight', { configurable: true, get: () => 56 });
+    Object.defineProperty(mBkTitle, 'clientHeight', { configurable: true, get: () => 20 });
+    w.tripRefreshTruncation($('m-trip-root'), w.MOB_STATE.tripExpandedItems);
+    assert.strictEqual(mBkMore.hidden, false, '38.B1 APK Book: tombol Tampilkan muncul');
+    click(mBkMore);
+    assert.ok(mBkRow.classList.contains('is-expanded') && mBkMore.textContent.trim() === 'Sembunyikan', '38.B1 APK Book: toggle ke Sembunyikan');
+
+    delete w.ALL.kas.pr['p-t12m-c2'];
+    w.MOB_STATE.tripId = null;
+
+    // -----------------------------------------------------------------------
+    // 38.C3 APK: Butir 7 (Form Layout + Textarea) & Butir 8 (Toast "Lihat")
+    // -----------------------------------------------------------------------
+    w.ALL.kas.pr['p-t12m-c3'] = {
+      id: 'p-t12m-c3',
+      name: 'Hokkaido APK C3',
+      link: false,
+      saldo: 0,
+      tx: [],
+      start: '2026-12-20',
+      end: '2026-12-22',
+      budget: 15000000,
+      cur: 'JPY',
+      rate: 105,
+      dt: {},
+      it: [
+        { id: '12m-i-ed', day: '2026-12-20', time: '09:00', time2: '10:00', place: 'Odori Park', est: 500, fx: true, pay: 'cash', cat: 'Tiket & Tour', link: '', note: 'Catatan APK', done: false },
+      ],
+      bk: [
+        { id: '12m-b-ed', title: 'Hotel Susukino', amt: 18000, fx: true, paid: false, cat: 'Penginapan', a: '2026-12-20', b: '2026-12-22', pay: 'on', link: '', rec: '' },
+      ],
+      lk: [],
+      ck: [],
+      note: '',
+      goal: null,
+    };
+    w.MOB_STATE.tripId = 'p-t12m-c3';
+    w.MOB_STATE.tripView = 'detail';
+    w.MOB_STATE.tripSub = 'itin';
+    if (w.MOB_STATE.tripOpenDays) delete w.MOB_STATE.tripOpenDays['p-t12m-c3'];
+    w.renderMobTrip();
+
+    // B7 APK Itinerary: ID utuh, .trip-form-layout, <textarea id="m-it-note"> + #m-it-note-cnt
+    ['m-it-day-trig', 'm-it-time', 'm-it-time2', 'm-it-place', 'm-it-est', 'm-it-cur', 'm-it-pay', 'm-it-cat', 'm-it-rt-wrap', 'm-it-rt', 'm-it-link', 'm-it-note', 'm-it-note-cnt'].forEach((id) => {
+      assert.ok($(id), '38.B7 APK Itin: ID #' + id + ' tersedia');
+    });
+    const mItFormAdd = $('m-trip-itin-form');
+    assert.ok(mItFormAdd.classList.contains('trip-form-layout'), '38.B7 APK Itin: memakai .trip-form-layout');
+    const mItRowCnt = mItFormAdd.querySelectorAll('.trip-form-row').length;
+    assert.ok(mItRowCnt >= 4, '38.B7 APK Itin: memakai baris .trip-form-row');
+    assert.strictEqual($('m-it-note').tagName, 'TEXTAREA', '38.B7 APK Itin: #m-it-note berupa <textarea>');
+    assert.strictEqual($('m-it-note-cnt').textContent.trim(), '0/200', '38.B7 APK Itin: counter awal 0/200');
+    $('m-it-note').value = 'Catatan APK';
+    fire($('m-it-note'), 'input');
+    assert.strictEqual($('m-it-note-cnt').textContent.trim(), '11/200', '38.B7 APK Itin: counter update live');
+
+    click($('m-trip-root').querySelector('[data-mit-edit="12m-i-ed"]'));
+    assert.strictEqual($('m-trip-itin-form').querySelectorAll('.trip-form-row').length, mItRowCnt, '38.B7 APK Itin: layout Tambah dan Ubah identik');
+    click($('m-it-cancel'));
+
+    // B7 APK Book: ID utuh & .trip-form-layout
+    w.MOB_STATE.tripSub = 'book';
+    w.renderMobTrip();
+    ['m-bk-title', 'm-bk-amt', 'm-bk-cur', 'm-bk-rt-wrap', 'm-bk-rt', 'm-bk-start-trig', 'm-bk-end-trig', 'm-bk-cat', 'm-bk-link'].forEach((id) => {
+      assert.ok($(id), '38.B7 APK Book: ID #' + id + ' tersedia');
+    });
+    assert.ok($('m-trip-book-form').classList.contains('trip-form-layout'), '38.B7 APK Book: memakai .trip-form-layout');
+
+    // B8 APK: showMobToast kompatibilitas, textContent tetap bersih untuk Seksi #35, tombol Lihat, 7000ms, jeda sentuh, highlight
+    w.MOB_STATE.tripSub = 'itin';
+    if (w.MOB_STATE.tripOpenDays) delete w.MOB_STATE.tripOpenDays['p-t12m-c3'];
+    w.renderMobTrip();
+
+    const origMobSetTO = w.setTimeout;
+    const origMobClrTO = w.clearTimeout;
+    const schedMob = [];
+    let mobTid = 9500;
+    w.setTimeout = function (fn, ms) {
+      const id = ++mobTid;
+      schedMob.push({ id, fn, ms, cleared: false });
+      return id;
+    };
+    w.clearTimeout = function (id) {
+      const hit = schedMob.find((x) => x.id === id);
+      if (hit) hit.cleared = true;
+    };
+
+    $('m-it-day').value = '2026-12-22';
+    $('m-it-place').value = 'Hakodate Ropeway';
+    fire($('m-trip-itin-form'), 'submit');
+    assert.strictEqual($('m-toast-box').textContent, 'Kegiatan disimpan', '38.B8 APK Compat: textContent murni Kegiatan disimpan');
+    assert.ok($('m-toast-box').classList.contains('show') && $('m-toast-box').classList.contains('has-action'), '38.B8 APK: kelas show & has-action');
+    const mActBtn = $('m-toast-box').querySelector('[data-toast-act]');
+    const mClsBtn = $('m-toast-box').querySelector('[data-toast-close]');
+    assert.ok(mActBtn && mActBtn.getAttribute('data-label') === 'Lihat' && mActBtn.getAttribute('aria-label') === 'Lihat', '38.B8 APK: tombol Lihat via data-label & aria-label');
+    assert.ok(mClsBtn && mClsBtn.getAttribute('aria-label') === 'Tutup', '38.B8 APK: tombol tutup tersedia');
+    const mobTimerAdd = schedMob[schedMob.length - 1];
+    assert.ok(mobTimerAdd && mobTimerAdd.ms >= 6900 && mobTimerAdd.ms <= 7100, '38.B8 APK: durasi 7000ms');
+
+    // Jeda saat sentuh/hover & tutup
+    fire($('m-toast-box'), 'touchstart');
+    assert.strictEqual(mobTimerAdd.cleared, true, '38.B8 APK: timer dijeda saat touchstart');
+    fire($('m-toast-box'), 'touchend');
+    assert.ok(schedMob[schedMob.length - 1].id !== mobTimerAdd.id, '38.B8 APK: timer dilanjutkan saat touchend');
+
+    // Klik Lihat dari sub-tab berbeda
+    const mNewIt = w.ALL.kas.pr['p-t12m-c3'].it.find((x) => x.place === 'Hakodate Ropeway');
+    assert.strictEqual($('m-trip-root').querySelector('[data-mit-day-tog="2026-12-22"]').getAttribute('aria-expanded'), 'false', '38.B8 APK: hari tertutup sebelum Lihat diklik');
+    w.MOB_STATE.tripSub = 'ring';
+    w.renderMobTrip();
+    click(mActBtn);
+    assert.strictEqual($('m-toast-box').classList.contains('show'), false, '38.B8 APK: klik Lihat menutup toast');
+    assert.strictEqual(w.MOB_STATE.tripSub, 'itin', '38.B8 APK Lihat: pindah ke sub-tab itin');
+    assert.strictEqual($('m-trip-root').querySelector('[data-mit-day-tog="2026-12-22"]').getAttribute('aria-expanded'), 'true', '38.B8 APK Lihat: membuka hari kegiatan');
+    const mHlRow = $('m-trip-root').querySelector('[data-it-row="' + mNewIt.id + '"]');
+    assert.ok(mHlRow && mHlRow.classList.contains('rk-row-highlight'), '38.B8 APK Lihat: menyorot baris kegiatan');
+    schedMob[schedMob.length - 1].fn();
+    assert.strictEqual($('m-trip-root').querySelector('[data-it-row="' + mNewIt.id + '"]').classList.contains('rk-row-highlight'), false, '38.B8 APK Lihat: sorot hilang setelah timer');
+
+    // Item hilang -> toast "Kegiatan tidak ditemukan"
+    w.ALL.kas.pr['p-t12m-c3'].it = [];
+    w.tripFocusItemFromToast('p-t12m-c3', 'itin', 'hilang-id', true);
+    assert.strictEqual($('m-toast-box').textContent, 'Kegiatan tidak ditemukan', '38.B8 APK Missing: pesan Kegiatan tidak ditemukan');
+
+    w.setTimeout = origMobSetTO;
+    w.clearTimeout = origMobClrTO;
+    delete w.ALL.kas.pr['p-t12m-c3'];
+    w.MOB_STATE.tripId = null;
   }
 
   assert.strictEqual(errs.length, 0, 'tidak ada error runtime JS: ' + errs.join(' | '));

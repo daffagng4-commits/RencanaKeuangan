@@ -484,7 +484,7 @@ function tripRenderFxsRowsHtml(rows) {
     return (
       '<div class="trip-fx-edit-row" data-fx-row="' + idx + '">' +
       '<input type="text" class="input mono trip-fx-code-inp" data-fx-code="' + idx + '" maxlength="3" placeholder="NOK" value="' + esc(r.c || '') + '" style="text-transform:uppercase" aria-label="Kode mata uang tambahan ' + (idx + 1) + '" />' +
-      '<input type="text" class="input mono trip-fx-rate-inp" data-fx-rate="' + idx + '" inputmode="decimal" placeholder="Kurs Rp (opsional)" value="' + esc(rStr) + '" aria-label="Kurs Rupiah untuk mata uang ' + esc(r.c || String(idx + 1)) + '" />' +
+      '<input type="text" class="input mono trip-fx-rate-inp" data-fx-rate="' + idx + '" data-num-only="dec" inputmode="decimal" placeholder="Kurs Rp (opsional)" value="' + esc(rStr) + '" aria-label="Kurs Rupiah untuk mata uang ' + esc(r.c || String(idx + 1)) + '" />' +
       '<button type="button" class="btn btn-secondary btn-sm trip-fx-del-btn" data-fx-del="' + idx + '" aria-label="Hapus mata uang tambahan">Hapus</button>' +
       '</div>'
     );
@@ -1398,14 +1398,14 @@ function tripRenderRealSubTabHtml(P, isMobile, editAcId, draftDayISO, draftCat) 
     '<form id="' + formId + '" class="stack" style="gap:' + (isMobile ? '9px' : '12px') + ';" novalidate>' +
     '<div class="' + (isMobile ? 'stack' : 'grid-2') + '" style="gap:' + (isMobile ? '9px' : '12px') + '">' +
     '<div class="field"><label class="field-label" for="' + amtId + '">Nominal &amp; Mata Uang</label>' +
-    '<div style="display:flex;gap:6px;"><input class="input mono" id="' + amtId + '" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EAc && EAc.amt ? (+EAc.amt).toLocaleString('id-ID') : '') + '" style="flex:1;min-width:0;" required/>' +
+    '<div style="display:flex;gap:6px;"><input class="input mono" id="' + amtId + '" type="text" inputmode="numeric" data-num-fmt="rp" data-num-only="int" placeholder="0" value="' + (EAc && EAc.amt ? (+EAc.amt).toLocaleString('id-ID') : '') + '" style="flex:1;min-width:0;" required/>' +
     '<div style="width:' + (isMobile ? '88px' : '94px') + ';flex-shrink:0;"><select class="input" id="' + curId + '" aria-label="Mata uang pengeluaran">' + tripCurSelectOptsHtml(P, curItemObj) + '</select></div></div>' +
     '<div class="trip-eq-hint mono" id="' + eqId + '"></div></div>' +
     '<div class="field"><span class="field-label">Tanggal</span>' + dateFieldHtml + '</div></div>' +
     '<details class="trip-ac-rt-details" id="' + rtDetId + '" style="display:' + (hasForeign ? '' : 'none') + '"' + (initRtStr ? ' open' : '') + '>' +
     '<summary class="trip-ac-rt-sum">Kurs aktual (opsional)</summary>' +
     '<div class="field" style="margin-top:8px"><label class="field-label" for="' + rtInpId + '">Kurs aktual (Rp per 1 ' + esc(itemCurShow) + ')</label>' +
-    '<input class="input mono" id="' + rtInpId + '" type="text" inputmode="decimal" placeholder="' + (tripCurRate(P, itemCurShow) > 0 ? 'Ikut kurs perjalanan: ' + esc(tripCurRate(P, itemCurShow).toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + esc(initRtStr) + '"/>' +
+    '<input class="input mono" id="' + rtInpId + '" type="text" inputmode="decimal" data-num-only="dec" placeholder="' + (tripCurRate(P, itemCurShow) > 0 ? 'Ikut kurs perjalanan: ' + esc(tripCurRate(P, itemCurShow).toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + esc(initRtStr) + '"/>' +
     '<div class="' + capCls + '">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div></details>' +
     '<div class="field"><span class="field-label">Kategori</span>' + catChipsHtml + '</div>' +
     '<div class="' + (isMobile ? 'stack' : 'grid-2') + '" style="gap:' + (isMobile ? '9px' : '12px') + '">' +
@@ -2146,6 +2146,373 @@ function tripValidateDates(a, b) {
   var sa = String(a || '').trim(), sb = String(b || '').trim();
   if (sa && sb && sb < sa) return { field: 'end', error: 'Tanggal selesai tidak boleh sebelum tanggal mulai.' };
   return null;
+}
+/** Cek apakah profil perjalanan memiliki rentang P.start..P.end lengkap dan valid. */
+function tripHasFullRange(P) {
+  if (!P) return false;
+  var s = String(P.start || '').trim(), e = String(P.end || '').trim();
+  return !!(s && e && /^\d{4}-\d{2}-\d{2}$/.test(s) && /^\d{4}-\d{2}-\d{2}$/.test(e) && e >= s);
+}
+/** Format teks rentang Indonesia untuk pesan galat, mis. "12 Des 2026 - 21 Des 2026". */
+function tripRangeTextIndo(P) {
+  if (!tripHasFullRange(P)) return '';
+  return fmtD(P.start) + ' - ' + fmtD(P.end);
+}
+/** Validasi tanggal kegiatan itinerary terhadap rentang P.start..P.end bila lengkap. */
+function tripValidateItinDate(P, dayIso, oldItem) {
+  if (!tripHasFullRange(P)) return null;
+  var d = String(dayIso || '').trim();
+  if (oldItem && tripIsItemOutOfRange(P, oldItem, false) && d === String(oldItem.day || '').trim()) {
+    return null;
+  }
+  if (!d || d < P.start || d > P.end) {
+    return {
+      field: 'day',
+      error: 'Tanggal kegiatan harus berada dalam rentang perjalanan (' + tripRangeTextIndo(P) + ').',
+    };
+  }
+  return null;
+}
+/** Validasi tanggal masuk/keluar pemesanan (b < a dan rentang P.start..P.end bila lengkap). */
+function tripValidateBookingDates(P, aIso, bIso, oldItem) {
+  var a = String(aIso || '').trim(), b = String(bIso || '').trim();
+  if (a && b && b < a) {
+    return {
+      field: 'end',
+      badStart: false,
+      badEnd: true,
+      error: 'Tanggal keluar tidak boleh sebelum tanggal masuk.',
+    };
+  }
+  if (oldItem && tripIsItemOutOfRange(P, oldItem, true) && a === String(oldItem.a || '').trim() && b === String(oldItem.b || '').trim()) {
+    return null;
+  }
+  if (tripHasFullRange(P)) {
+    var badStart = !a || a < P.start || a > P.end;
+    var badEnd = b ? (b < P.start || b > P.end) : false;
+    if (badStart || badEnd) {
+      return {
+        field: badStart ? 'start' : 'end',
+        badStart: badStart,
+        badEnd: badEnd,
+        error: 'Tanggal masuk dan keluar harus berada dalam rentang perjalanan (' + tripRangeTextIndo(P) + ').',
+      };
+    }
+  }
+  return null;
+}
+/** Cek apakah satu item itinerary atau pemesanan saat ini berada di luar P.start..P.end. */
+function tripIsItemOutOfRange(P, item, isBooking) {
+  if (!tripHasFullRange(P) || !item) return false;
+  if (isBooking) {
+    return !!(
+      (item.a && (item.a < P.start || item.a > P.end)) ||
+      (item.b && (item.b < P.start || item.b > P.end))
+    );
+  }
+  return !!(item.day && (item.day < P.start || item.day > P.end));
+}
+/** Hitung total item (kegiatan + pemesanan) yang jatuh di luar rentang baru (newStart..newEnd). */
+function tripCountItemsOutsideRange(P, newStart, newEnd) {
+  if (!P || !newStart || !newEnd || !/^\d{4}-\d{2}-\d{2}$/.test(newStart) || !/^\d{4}-\d{2}-\d{2}$/.test(newEnd) || newEnd < newStart) {
+    return 0;
+  }
+  var count = 0;
+  (P.it || []).forEach(function (x) {
+    if (x && x.day && (x.day < newStart || x.day > newEnd)) count++;
+  });
+  (P.bk || []).forEach(function (x) {
+    if (x && ((x.a && (x.a < newStart || x.a > newEnd)) || (x.b && (x.b < newStart || x.b > newEnd)))) count++;
+  });
+  return count;
+}
+/** Normalisasi dan validasi input tautan (opsional; kosong boleh; auto https:// bila tanpa skema; maks 400 karakter). */
+function tripValidateAndNormUrl(rawUrl) {
+  var s = String(rawUrl == null ? '' : rawUrl).trim();
+  if (!s) return { ok: true, url: '', error: '' };
+  if (s.length > 400) {
+    return { ok: false, url: s, error: 'Tautan terlalu panjang (maks. 400 karakter).' };
+  }
+  if (/^[a-z][a-z0-9+.-]*:/i.test(s)) {
+    if (!/^https?:\/\//i.test(s)) {
+      return { ok: false, url: s, error: 'Tautan tidak valid. Gunakan alamat web, mis. https://contoh.com' };
+    }
+  } else {
+    if (/^\/\//.test(s)) s = 'https:' + s;
+    else s = 'https://' + s;
+  }
+  if (s.length > 400) {
+    return { ok: false, url: s, error: 'Tautan terlalu panjang (maks. 400 karakter).' };
+  }
+  var passedOkUrl = typeof okUrl === 'function' ? okUrl(s) : /^https?:\/\/[^\s"'<>]+$/i.test(s);
+  var hostMatch = s.match(/^https?:\/\/([^/?#:\s]+)(?:[:/?#]|$)/i);
+  var host = hostMatch ? hostMatch[1] : '';
+  if (!passedOkUrl || !host || host.indexOf('.') < 1 || /^\.|\.$/.test(host) || host.indexOf('..') >= 0) {
+    return { ok: false, url: s, error: 'Tautan tidak valid. Gunakan alamat web, mis. https://contoh.com' };
+  }
+  return { ok: true, url: s, error: '' };
+}
+/** Tampilkan atau bersihkan pesan galat inline form Perjalanan (+ aria-invalid + fokus Desktop / gulir APK). */
+function tripSetFieldError(errId, ctrlEls, msg, isMobile) {
+  var errEl = typeof $ === 'function' ? $(errId) : (typeof document !== 'undefined' ? document.getElementById(errId) : null);
+  var list = Array.isArray(ctrlEls) ? ctrlEls : (ctrlEls ? [ctrlEls] : []);
+  if (errEl) {
+    errEl.textContent = msg || '';
+    errEl.hidden = !msg;
+  }
+  list.forEach(function (el) {
+    if (!el || !el.setAttribute) return;
+    if (msg) el.setAttribute('aria-invalid', 'true');
+    else el.removeAttribute('aria-invalid');
+  });
+  if (msg && list[0]) {
+    var first = list[0];
+    if (isMobile) {
+      if (typeof first.scrollIntoView === 'function') {
+        var beh = (typeof rkIsReducedMotion === 'function' && rkIsReducedMotion()) ? 'auto' : 'smooth';
+        try { first.scrollIntoView({ behavior: beh, block: 'center' }); } catch (e) {}
+      }
+    } else if (typeof first.focus === 'function') {
+      try { first.focus({ preventScroll: false }); } catch (e) { try { first.focus(); } catch (e2) {} }
+    }
+  }
+}
+/** Ekstrak nama domain bersih (tanpa www.) dari URL http(s) yang valid. */
+function tripExtractDomain(url) {
+  var su = typeof safeHref === 'function' ? safeHref(url) : String(url || '').trim();
+  if (!su) return '';
+  var host = '';
+  try {
+    if (typeof URL === 'function') host = new URL(su).hostname || '';
+  } catch (e) {}
+  if (!host) {
+    var m = su.match(/^https?:\/\/([^/?#:\s]+)/i);
+    host = m ? m[1] : '';
+  }
+  return host.replace(/^www\./i, '');
+}
+/** Render chip/baris tautan kartu dengan ikon SVG inline dan domain tanpa www.; APK memicu mobOpenExternalUrl. */
+function tripLinkChipHtml(rawUrl, isMobile) {
+  var su = typeof safeHref === 'function' ? safeHref(rawUrl) : '';
+  var ok = su && (typeof okUrl === 'function' ? okUrl(su) : /^https?:\/\/[^\s"'<>]+$/i.test(su));
+  if (!ok) return '';
+  var dom = tripExtractDomain(su) || su;
+  var ico = '<svg class="trip-card-link-ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+  if (isMobile) {
+    return (
+      '<div class="trip-card-link-row">' +
+      '<button type="button" class="trip-card-link" data-m-ext-url="' + esc(su) + '" title="' + esc(su) + '">' +
+      ico + '<span class="trip-card-link-host">' + esc(dom) + '</span></button></div>'
+    );
+  }
+  return (
+    '<div class="trip-card-link-row">' +
+    '<a class="trip-card-link" href="' + esc(su) + '" title="' + esc(su) + '" target="_blank" rel="noopener noreferrer">' +
+    ico + '<span class="trip-card-link-host">' + esc(dom) + '</span></a></div>'
+  );
+}
+/** Cek apakah hari Itinerary sedang terbuka pada state tampilan sesi (bawaan tertutup). */
+function tripIsDayOpen(stateObj, tripId, dayIso) {
+  if (!stateObj || !tripId || !dayIso) return false;
+  var map = stateObj.tripOpenDays && stateObj.tripOpenDays[tripId];
+  return !!(map && map[dayIso] === true);
+}
+/** Atur status buka/tutup satu hari Itinerary pada state tampilan sesi. */
+function tripSetDayOpen(stateObj, tripId, dayIso, isOpen) {
+  if (!stateObj || !tripId || !dayIso) return;
+  if (!stateObj.tripOpenDays || typeof stateObj.tripOpenDays !== 'object') stateObj.tripOpenDays = {};
+  if (!stateObj.tripOpenDays[tripId] || typeof stateObj.tripOpenDays[tripId] !== 'object') {
+    stateObj.tripOpenDays[tripId] = {};
+  }
+  stateObj.tripOpenDays[tripId][dayIso] = !!isOpen;
+}
+/** Cek apakah seluruh hari perjalanan pada Itinerary sedang terbuka. */
+function tripAreAllDaysOpen(stateObj, tripId, days) {
+  if (!Array.isArray(days) || !days.length) return false;
+  return days.every(function (d) { return tripIsDayOpen(stateObj, tripId, d); });
+}
+/** Balik seluruh hari antara Buka semua / Tutup semua; mengembalikan status baru (true = semua terbuka). */
+function tripToggleAllDays(stateObj, tripId, days) {
+  if (!stateObj || !tripId || !Array.isArray(days)) return false;
+  var openAll = !tripAreAllDaysOpen(stateObj, tripId, days);
+  days.forEach(function (d) { tripSetDayOpen(stateObj, tripId, d, openAll); });
+  return openAll;
+}
+/** Deteksi keterpotongan teks aktual pada kartu Itinerary & Pemesanan lalu tampilkan/sembunyikan tombol Tampilkan. */
+function tripRefreshTruncation(rootEl, expandedMap) {
+  if (!rootEl || !rootEl.querySelectorAll) return;
+  var cards = rootEl.querySelectorAll('[data-it-row], [data-bk-row]');
+  Array.prototype.forEach.call(cards, function (card) {
+    var id = card.getAttribute('data-it-row') || card.getAttribute('data-bk-row') || '';
+    var isBk = card.hasAttribute('data-bk-row');
+    var btn = card.querySelector(
+      isBk ? '[data-bk-more], [data-mbk-more]' : '[data-it-more], [data-mit-more]'
+    );
+    if (!btn) return;
+    var isExp = !!(expandedMap && id && expandedMap[id]);
+    card.classList.toggle('is-expanded', isExp);
+    if (isExp) {
+      btn.hidden = false;
+      btn.textContent = 'Sembunyikan';
+      btn.setAttribute('aria-expanded', 'true');
+      return;
+    }
+    var targets = card.querySelectorAll('.trip-trunc-target');
+    var cut = false;
+    for (var i = 0; i < targets.length; i++) {
+      var el = targets[i];
+      var sh = el.scrollHeight || 0, ch = el.clientHeight || 0;
+      var sw = el.scrollWidth || 0, cw = el.clientWidth || 0;
+      if ((ch > 0 && sh > ch + 1) || (cw > 0 && sw > cw + 1) || (ch === 0 && sh > 1) || (cw === 0 && sw > 1)) {
+        cut = true;
+        break;
+      }
+    }
+    btn.hidden = !cut;
+    btn.textContent = 'Tampilkan';
+    btn.setAttribute('aria-expanded', 'false');
+  });
+}
+/** Jadwalkan deteksi ulang keterpotongan setelah render, font siap, dan perubahan ukuran layar (debounced). */
+function tripScheduleTruncationRefresh(rootEl, getExpandedMap) {
+  if (!rootEl) return;
+  var run = function () {
+    var map = typeof getExpandedMap === 'function' ? getExpandedMap() : getExpandedMap;
+    tripRefreshTruncation(rootEl, map || {});
+  };
+  run();
+  if (typeof requestAnimationFrame === 'function') {
+    try { requestAnimationFrame(run); } catch (e) {}
+  }
+  if (typeof document !== 'undefined' && document.fonts && document.fonts.ready && !rootEl._rkFontsTruncBound) {
+    rootEl._rkFontsTruncBound = true;
+    try {
+      document.fonts.ready.then(run, function () {});
+    } catch (e) {}
+  }
+  var debounced = function () {
+    clearTimeout(rootEl._rkTruncT);
+    rootEl._rkTruncT = setTimeout(run, 80);
+  };
+  if (typeof ResizeObserver === 'function' && !rootEl._rkTruncRo) {
+    try {
+      var ro = new ResizeObserver(debounced);
+      ro.observe(rootEl);
+      rootEl._rkTruncRo = ro;
+    } catch (e) {}
+  } else if (typeof window !== 'undefined' && !rootEl._rkTruncResizeBound) {
+    rootEl._rkTruncResizeBound = true;
+    window.addEventListener('resize', debounced);
+  }
+}
+/** Ikat tinggi otomatis (maks 4 baris) dan penghitung karakter n/200 pada textarea catatan kegiatan. */
+function tripBindNoteAutoGrow(noteEl, cntEl) {
+  if (!noteEl) return;
+  var maxLen = parseInt(noteEl.getAttribute('maxlength') || '200', 10) || 200;
+  var sync = function () {
+    var val = String(noteEl.value || '');
+    if (cntEl) cntEl.textContent = val.length + '/' + maxLen;
+    try {
+      noteEl.style.height = 'auto';
+      var cs = typeof getComputedStyle === 'function' ? getComputedStyle(noteEl) : null;
+      var lh = cs ? parseFloat(cs.lineHeight) : 0;
+      if (!lh || isNaN(lh)) lh = 20;
+      var pv = cs ? (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) : 18;
+      var bw = cs ? (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0) : 2;
+      var maxH = Math.round(lh * 4 + pv + bw);
+      var sh = noteEl.scrollHeight || 0;
+      if (sh > 0) {
+        noteEl.style.height = Math.min(sh, maxH) + 'px';
+        noteEl.style.overflowY = sh > maxH ? 'auto' : 'hidden';
+      }
+    } catch (e) {}
+  };
+  sync();
+  if (!noteEl._rkAutoGrowBound) {
+    noteEl._rkAutoGrowBound = true;
+    noteEl.addEventListener('input', sync);
+  }
+}
+/** Buka sub-tab & hari item dari tombol "Lihat" di toast, gulir halus ke kartu, lalu beri 2 denyut sorot (hormati reduced motion). */
+function tripFocusItemFromToast(tripId, kind, itemId, isMobile) {
+  var prMap = typeof ALL !== 'undefined' && ALL && ALL.kas && ALL.kas.pr ? ALL.kas.pr : null;
+  var tr = prMap && tripId ? prMap[tripId] : null;
+  var isBk = kind === 'book';
+  var arr = tr ? (isBk ? (tr.bk || []) : (tr.it || [])) : [];
+  var item = null;
+  for (var i = 0; i < arr.length; i++) {
+    if (arr[i] && arr[i].id === itemId) { item = arr[i]; break; }
+  }
+  var showMiss = function () {
+    if (isMobile && typeof showMobToast === 'function') showMobToast('Kegiatan tidak ditemukan');
+    else if (typeof toast === 'function') toast('Kegiatan tidak ditemukan');
+  };
+  if (!tr || !item) {
+    showMiss();
+    return false;
+  }
+  if (isMobile) {
+    if (typeof MOB_STATE !== 'undefined' && MOB_STATE) {
+      MOB_STATE.tripId = tr.id;
+      MOB_STATE.tripView = 'detail';
+      MOB_STATE.tripSub = isBk ? 'book' : 'itin';
+      if (!isBk && item.day) tripSetDayOpen(MOB_STATE, tr.id, item.day, true);
+    }
+    if (typeof switchMobileTab === 'function' && typeof MOB_STATE !== 'undefined' && MOB_STATE && MOB_STATE.tab !== 'trip') {
+      switchMobileTab('trip');
+    } else if (typeof renderMobTrip === 'function') {
+      renderMobTrip();
+    }
+  } else {
+    if (typeof setMode === 'function' && typeof mode !== 'undefined' && mode !== 'trip') setMode('trip');
+    if (typeof setTrip === 'function' && (typeof tp !== 'function' || !tp() || tp().id !== tr.id)) setTrip(tr.id);
+    if (typeof BR_STATE !== 'undefined' && BR_STATE) {
+      BR_STATE.tripView = 'detail';
+      BR_STATE.tripSubTab = isBk ? 'book' : 'itin';
+      if (!isBk && item.day) tripSetDayOpen(BR_STATE, tr.id, item.day, true);
+    }
+    if (typeof renderTrip === 'function') renderTrip();
+  }
+  var root = typeof $ === 'function' ? $(isMobile ? 'm-trip-root' : 'trip-root') : null;
+  var sel = isBk ? ('[data-bk-row="' + itemId + '"]') : ('[data-it-row="' + itemId + '"]');
+  var row = root ? root.querySelector(sel) : null;
+  if (!row) {
+    showMiss();
+    return false;
+  }
+  var reduced = typeof rkIsReducedMotion === 'function'
+    ? rkIsReducedMotion()
+    : (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  if (root) {
+    root.querySelectorAll('.rk-row-highlight').forEach(function (el) {
+      if (el !== row) {
+        el.classList.remove('rk-row-highlight', 'rk-row-highlight-static');
+        if (el._rkHlTimer) { clearTimeout(el._rkHlTimer); el._rkHlTimer = null; }
+      }
+    });
+  }
+  var mm = isMobile && typeof $ === 'function' ? $('m-main') : null;
+  if (mm && mm.scrollHeight > mm.clientHeight + 2 && typeof row.getBoundingClientRect === 'function' && typeof mm.getBoundingClientRect === 'function') {
+    var rr = row.getBoundingClientRect(), mr = mm.getBoundingClientRect();
+    var targetTop = mm.scrollTop + (rr.top - mr.top) - Math.max(24, (mm.clientHeight - rr.height) / 2);
+    if (typeof mm.scrollTo === 'function') {
+      try { mm.scrollTo({ top: Math.max(0, targetTop), behavior: reduced ? 'auto' : 'smooth' }); } catch (e) { mm.scrollTop = Math.max(0, targetTop); }
+    } else {
+      mm.scrollTop = Math.max(0, targetTop);
+    }
+  } else if (typeof row.scrollIntoView === 'function') {
+    try { row.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' }); } catch (e) {}
+  }
+  row.classList.remove('rk-row-highlight', 'rk-row-highlight-static');
+  try { void row.offsetWidth; } catch (e) {}
+  row.classList.add('rk-row-highlight');
+  if (reduced) row.classList.add('rk-row-highlight-static');
+  if (row._rkHlTimer) clearTimeout(row._rkHlTimer);
+  row._rkHlTimer = setTimeout(function () {
+    row.classList.remove('rk-row-highlight', 'rk-row-highlight-static');
+    row._rkHlTimer = null;
+  }, reduced ? 2000 : 1600);
+  return true;
 }
 /** Validasi minimal profil perjalanan untuk desktop dan APK. */
 function tripValidateMetaInput(start, end, curRaw, rateRaw) {

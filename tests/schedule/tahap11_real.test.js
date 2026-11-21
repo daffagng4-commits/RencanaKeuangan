@@ -603,9 +603,10 @@ function mulberry32(seed) {
     assert.ok(txtK5.includes('Biaya city tax') && txtK5.includes('SEK 300') && txtK5.includes('≈ Rp 486.000'), 'C3 tripText memuat detail aktual dan ≈ Rp');
     assert.ok(!w.tripText(pKasus5, false).includes('Realisasi Pengeluaran'), 'C3 tripText tanpa cost tidak menyertakan Realisasi');
 
-    // Service Worker rk-cache-v32
+    // Service Worker minimal rk-cache-v32 (naik di tahap berikutnya ke v33+)
     const swSrc = fs.readFileSync(path.join(__dirname, '..', '..', 'sw.js'), 'utf8');
-    assert.ok(/CACHE_NAME\s*=\s*['"]rk-cache-v32['"]/.test(swSrc), 'C3 sw.js: CACHE_NAME harus dinaikkan menjadi rk-cache-v32');
+    const swVerMatch = swSrc.match(/CACHE_NAME\s*=\s*['"]rk-cache-v(\d+)['"]/);
+    assert.ok(swVerMatch && Number(swVerMatch[1]) >= 32, 'C3 sw.js: CACHE_NAME harus minimal rk-cache-v32');
   } finally {
     w.todayISO = origToday;
   }

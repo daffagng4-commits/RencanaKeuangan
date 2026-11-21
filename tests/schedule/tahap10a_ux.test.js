@@ -259,6 +259,8 @@ const { boot } = require('./ui.js');
     'attr:data-ck-tog', 'attr:data-ical-trig', 'attr:data-ical-mv', 'attr:data-ical-pick',
     // Tahap 11 Realisasi
     'form:trip-ac-form', 'id:ac-cancel', 'attr:data-ac-cat', 'attr:data-ac-edit', 'attr:data-ac-del',
+    // Tahap 12A C2 Akordeon & Tampilkan/Sembunyikan
+    'id:br-it-fold-all', 'attr:data-it-day-tog', 'attr:data-it-more', 'attr:data-bk-more',
   ]);
   const collectDeskControls = () => {
     const found = [];
@@ -267,7 +269,7 @@ const { boot } = require('./ui.js');
       else if (el.id) found.push('id:' + el.id);
       else if (el.dataset) {
         for (const k of Object.keys(el.dataset)) {
-          if (/^(tripOpen|tripPick|triptab|itDone|tripItEdit|itCancel|tripItDel|bkPay|bkEdit|bkCancel|bkDel|ckTog|ckDel|lkDel|dtDay|icalTrig|acCat|acEdit|acDel)$/.test(k)) {
+          if (/^(tripOpen|tripPick|triptab|itDone|tripItEdit|itCancel|tripItDel|itDayTog|itMore|bkPay|bkEdit|bkCancel|bkDel|bkMore|ckTog|ckDel|lkDel|dtDay|icalTrig|acCat|acEdit|acDel)$/.test(k)) {
             const attrName = 'data-' + k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
             found.push('attr:' + attrName);
           }

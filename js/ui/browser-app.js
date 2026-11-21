@@ -125,6 +125,8 @@ var BR_STATE = {
   tripEditAcId: null,
   tripAcCat: '',
   tripGoalEdit: false,
+  tripOpenDays: {},
+  tripExpandedItems: {},
   tripModalMode: 'new',
   tripEditId: null,
   inlineDates: { itDay: '', bkStart: '', bkEnd: '', acDay: '', kpStart: '', kpEnd: '', itemDate: '' },
@@ -2728,20 +2730,27 @@ function brTripCatMapped(c) {
 function brDrawInlineCal(popId, stateKey, lblId) {
   var pop = $(popId);
   if (!pop) return;
-  var today = todayISO(), dsCur = BR_STATE.inlineDates[stateKey] || today,
-    v = BR_STATE.inlineCalView[popId] || { y: +dsCur.slice(0, 4), m: +dsCur.slice(5, 7) - 1 };
+  var tr = (typeof tp === 'function') ? tp() : null;
+  var isTripRangeCal = (popId === 'it-day-cal' || popId === 'bk-start-cal' || popId === 'bk-end-cal');
+  var hasRng = isTripRangeCal && tr && typeof tripHasFullRange === 'function' && tripHasFullRange(tr);
+  var today = todayISO(), dsCur = BR_STATE.inlineDates[stateKey] || (hasRng ? tr.start : today),
+    v = BR_STATE.inlineCalView[popId] || (hasRng && (dsCur < tr.start || dsCur > tr.end)
+      ? { y: +tr.start.slice(0, 4), m: +tr.start.slice(5, 7) - 1 }
+      : { y: +dsCur.slice(0, 4), m: +dsCur.slice(5, 7) - 1 });
   BR_STATE.inlineCalView[popId] = v;
   var firstDay = new Date(Date.UTC(v.y, v.m, 1)).getUTCDay(), dim = new Date(Date.UTC(v.y, v.m + 1, 0)).getUTCDate(), cells = '';
   for (var i = 0; i < firstDay; i++) cells += '<span></span>';
   for (var d = 1; d <= dim; d++) {
     var ds = v.y + '-' + pad2(v.m + 1) + '-' + pad2(d);
-    var cls = 'cal-day' + (ds === dsCur ? ' selected' : '') + (ds === today ? ' today' : '');
-    cells += '<button type="button" class="' + cls + '" data-ical-pick="' + popId + '|' + stateKey + '|' + lblId + '|' + ds + '">' + d + '</button>';
+    var outRng = hasRng && (ds < tr.start || ds > tr.end);
+    var cls = 'cal-day' + (ds === dsCur ? ' selected' : '') + (ds === today ? ' today' : '') + (outRng ? ' is-disabled' : '');
+    cells += '<button type="button" class="' + cls + '" data-ical-pick="' + popId + '|' + stateKey + '|' + lblId + '|' + ds + '"' + (outRng ? ' disabled aria-disabled="true"' : '') + '>' + d + '</button>';
   }
+  var todayOut = hasRng && (today < tr.start || today > tr.end);
   pop.innerHTML =
     '<div class="cal-head"><button type="button" class="btn btn-secondary btn-sm" data-ical-mv="' + popId + '|' + stateKey + '|' + lblId + '|-1">‹</button><strong style="font-size:0.84rem;">' + FULL_MON[v.m] + ' ' + v.y + '</strong><button type="button" class="btn btn-secondary btn-sm" data-ical-mv="' + popId + '|' + stateKey + '|' + lblId + '|1">›</button></div>' +
     '<div class="cal-grid"><span class="cal-dow">Min</span><span class="cal-dow">Sen</span><span class="cal-dow">Sel</span><span class="cal-dow">Rab</span><span class="cal-dow">Kam</span><span class="cal-dow">Jum</span><span class="cal-dow">Sab</span>' + cells + '</div>' +
-    '<div class="cal-presets"><button type="button" class="badge badge-accent" style="cursor:pointer;" data-ical-pick="' + popId + '|' + stateKey + '|' + lblId + '|' + today + '">Hari Ini</button></div>';
+    (todayOut ? '' : '<div class="cal-presets"><button type="button" class="badge badge-accent" style="cursor:pointer;" data-ical-pick="' + popId + '|' + stateKey + '|' + lblId + '|' + today + '">Hari Ini</button></div>');
 }
 
 function tripAmtRp(P, x) {
@@ -2846,53 +2855,104 @@ function renderTrip() {
       }).join('') : '<div style="padding:14px;color:var(--text-muted);font-size:0.82rem;">Belum ada data biaya.</div>') +
       '</div></div></div>';
   } else if (sub === 'itin') {
+    if (BR_STATE._tripRenderedId !== tr.id) {
+      BR_STATE._tripRenderedId = tr.id;
+      BR_STATE.inlineDates.itDay = '';
+      BR_STATE.inlineDates.bkStart = '';
+      BR_STATE.inlineDates.bkEnd = '';
+      delete BR_STATE.inlineCalView['it-day-cal'];
+      delete BR_STATE.inlineCalView['bk-start-cal'];
+      delete BR_STATE.inlineCalView['bk-end-cal'];
+    }
     var EIt = BR_STATE.tripEditItId ? (tr.it || []).filter(function (x) { return x.id === BR_STATE.tripEditItId; })[0] : null,
       days = tripDays(tr);
-    BR_STATE.inlineDates.itDay = EIt ? EIt.day : (BR_STATE.inlineDates.itDay || days[0] || tr.start || todayISO());
+    BR_STATE.inlineDates.itDay = EIt ? EIt.day : (BR_STATE.inlineDates.itDay || tr.start || days[0] || todayISO());
     bodyHtml =
       '<div class="card"><div class="card-header"><div><h2 class="card-title">' + (EIt ? 'Ubah Kegiatan' : 'Tambah Kegiatan') + '</h2><p class="card-sub">Catat jadwal jam, lokasi, tautan peta, &amp; estimasi biaya</p></div></div>' +
-      '<form id="trip-itin-form" class="stack" style="gap:12px;" novalidate><div class="grid-3">' +
-      '<div class="field"><span class="field-label">Tanggal</span><div class="custom-picker-wrap"><button type="button" class="cal-trigger-btn" style="width:100%;justify-content:space-between;" data-ical-trig="it-day-cal|itDay|it-day-lbl"><span id="it-day-lbl">' + brFmtShortIndo(BR_STATE.inlineDates.itDay) + ' ' + BR_STATE.inlineDates.itDay.slice(0, 4) + '</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button><div class="picker-popover" id="it-day-cal"></div></div></div>' +
-      '<div class="grid-2" style="gap:8px;"><div class="field"><label class="field-label" for="it-t1">Mulai</label><input class="input mono" id="it-t1" placeholder="14.00" value="' + esc(EIt ? (EIt.time || '').replace(':', '.') : '') + '"/></div><div class="field"><label class="field-label" for="it-t2">Selesai</label><input class="input mono" id="it-t2" placeholder="16.30" value="' + esc(EIt ? (EIt.time2 || '').replace(':', '.') : '') + '"/></div></div>' +
-      '<div class="field"><label class="field-label" for="it-place">Kegiatan</label><input class="input" id="it-place" placeholder="mis. Senso-ji Temple" value="' + esc(EIt ? EIt.place : '') + '" required/></div></div>' +
-      '<div class="grid-3"><div class="field"><label class="field-label" for="it-est">Biaya &amp; Mata Uang</label><div style="display:flex;gap:6px;"><input class="input mono" id="it-est" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EIt && EIt.est ? fmtRpInputStr(String(EIt.est)) : '') + '" style="flex:1;min-width:0;"/><div style="width:94px;flex-shrink:0;"><select class="input" id="it-cur">' + (typeof tripCurSelectOptsHtml === 'function' ? tripCurSelectOptsHtml(tr, EIt) : ('<option value="idr"' + (!(EIt && EIt.fx) ? ' selected' : '') + '>Rp</option>' + (tr.cur ? '<option value="fx"' + ((EIt && EIt.fx) ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : ''))) + '</select></div></div><div class="trip-eq-hint mono" id="it-est-eq"></div></div>' +
-      '<div class="field"><label class="field-label" for="it-pay">Pembayaran</label><select class="input" id="it-pay"><option value=""' + (EIt && !EIt.pay ? ' selected' : '') + '>Belum ditentukan</option><option value="ic"' + (EIt && EIt.pay === 'ic' ? ' selected' : '') + '>Kartu IC</option><option value="on"' + (EIt && EIt.pay === 'on' ? ' selected' : '') + '>Online (Pemesanan)</option><option value="cash"' + (!EIt || EIt.pay === 'cash' ? ' selected' : '') + '>Cash</option></select></div>' +
-      '<div class="field"><label class="field-label" for="it-cat">Kategori</label><select class="input" id="it-cat">' + ICAT.map(function (c) { return '<option value="' + esc(c) + '"' + ((EIt ? EIt.cat : 'Transport') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div></div>' +
-      '<div class="field" id="it-rt-wrap" style="display:' + (EIt && EIt.fx && (typeof tripItemCur === 'function' ? tripItemCur(tr, EIt) : tr.cur) ? '' : 'none') + ';"><label class="field-label" for="it-rt">Kurs (Rp per 1 ' + esc((EIt && typeof tripItemCur === 'function' ? tripItemCur(tr, EIt) : tr.cur) || 'asing') + ')</label><input class="input mono" id="it-rt" type="text" inputmode="decimal" placeholder="' + (tr.rate > 0 ? 'Ikut kurs perjalanan: ' + esc(tr.rate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + (EIt && typeof tripHasValidRt === 'function' && tripHasValidRt(EIt) ? esc(String(EIt.rt)) : '') + '"/><div class="card-sub">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div>' +
-      '<div class="grid-2"><div class="field"><label class="field-label" for="it-link">Tautan Peta / Tiket (opsional)</label><input class="input" id="it-link" placeholder="https://..." value="' + esc(EIt ? (EIt.link || '') : '') + '"/></div><div class="field"><label class="field-label" for="it-note">Catatan (opsional)</label><input class="input" id="it-note" placeholder="Catatan singkat" value="' + esc(EIt ? (EIt.note || '') : '') + '"/></div></div>' +
-      '<div style="display:flex;justify-content:flex-end;gap:8px;">' + (EIt ? '<button type="button" class="btn btn-secondary" data-it-cancel="1">Batal</button>' : '') + '<button type="submit" class="btn btn-primary">' + (EIt ? 'Simpan Perubahan' : 'Tambah Kegiatan') + '</button></div></form></div>' +
+      '<form id="trip-itin-form" class="stack trip-form-layout" novalidate>' +
+      '<div class="trip-form-row">' +
+      '<div class="field trip-col-date"><span class="field-label">Tanggal</span><div class="custom-picker-wrap"><button type="button" class="cal-trigger-btn" style="width:100%;justify-content:space-between;" data-ical-trig="it-day-cal|itDay|it-day-lbl"><span id="it-day-lbl">' + brFmtShortIndo(BR_STATE.inlineDates.itDay) + ' ' + BR_STATE.inlineDates.itDay.slice(0, 4) + '</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button><div class="picker-popover" id="it-day-cal"></div></div><div class="trip-field-err" id="it-day-err" role="alert" hidden></div></div>' +
+      '<div class="field trip-col-time"><label class="field-label" for="it-t1">Mulai</label><input class="input mono" id="it-t1" placeholder="14.00" value="' + esc(EIt ? (EIt.time || '').replace(':', '.') : '') + '"/></div>' +
+      '<div class="field trip-col-time"><label class="field-label" for="it-t2">Selesai</label><input class="input mono" id="it-t2" placeholder="16.30" value="' + esc(EIt ? (EIt.time2 || '').replace(':', '.') : '') + '"/></div>' +
+      '<div class="field trip-col-grow"><label class="field-label" for="it-place">Kegiatan</label><input class="input" id="it-place" placeholder="mis. Senso-ji Temple" value="' + esc(EIt ? EIt.place : '') + '" required/></div></div>' +
+      '<div class="trip-form-row"><div class="field trip-col-amt-cur"><label class="field-label" for="it-est">Biaya &amp; Mata Uang</label><div class="trip-amt-cur-pair"><input class="input mono" id="it-est" type="text" inputmode="numeric" data-num-fmt="rp" data-num-only="int" placeholder="0" value="' + (EIt && EIt.est ? fmtRpInputStr(String(EIt.est)) : '') + '" style="flex:1;min-width:0;"/><div class="trip-cur-box"><select class="input" id="it-cur">' + (typeof tripCurSelectOptsHtml === 'function' ? tripCurSelectOptsHtml(tr, EIt) : ('<option value="idr"' + (!(EIt && EIt.fx) ? ' selected' : '') + '>Rp</option>' + (tr.cur ? '<option value="fx"' + ((EIt && EIt.fx) ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : ''))) + '</select></div></div><div class="trip-eq-hint mono" id="it-est-eq"></div></div>' +
+      '<div class="field trip-col-pay"><label class="field-label" for="it-pay">Pembayaran</label><select class="input" id="it-pay"><option value=""' + (EIt && !EIt.pay ? ' selected' : '') + '>Belum ditentukan</option><option value="ic"' + (EIt && EIt.pay === 'ic' ? ' selected' : '') + '>Kartu IC</option><option value="on"' + (EIt && EIt.pay === 'on' ? ' selected' : '') + '>Online (Pemesanan)</option><option value="cash"' + (!EIt || EIt.pay === 'cash' ? ' selected' : '') + '>Cash</option></select></div>' +
+      '<div class="field trip-col-cat"><label class="field-label" for="it-cat">Kategori</label><select class="input" id="it-cat">' + ICAT.map(function (c) { return '<option value="' + esc(c) + '"' + ((EIt ? EIt.cat : 'Transport') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div></div>' +
+      '<div class="trip-form-row"><div class="field trip-col-rate" id="it-rt-wrap" style="display:' + (EIt && EIt.fx && (typeof tripItemCur === 'function' ? tripItemCur(tr, EIt) : tr.cur) ? '' : 'none') + ';"><label class="field-label" for="it-rt">Kurs (Rp per 1 ' + esc((EIt && typeof tripItemCur === 'function' ? tripItemCur(tr, EIt) : tr.cur) || 'asing') + ')</label><input class="input mono" id="it-rt" type="text" inputmode="decimal" data-num-only="dec" placeholder="' + (tr.rate > 0 ? 'Ikut kurs perjalanan: ' + esc(tr.rate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + (EIt && typeof tripHasValidRt === 'function' && tripHasValidRt(EIt) ? esc(String(EIt.rt)) : '') + '"/><div class="card-sub">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div>' +
+      '<div class="field trip-col-grow"><label class="field-label" for="it-link">Tautan Peta / Tiket (opsional)</label><input class="input" id="it-link" inputmode="url" placeholder="https://..." value="' + esc(EIt ? (EIt.link || '') : '') + '"/><div class="trip-field-err" id="it-link-err" role="alert" hidden></div></div></div>' +
+      '<div class="trip-form-row"><div class="field trip-col-full"><div class="trip-note-hd"><label class="field-label" for="it-note">Catatan (opsional)</label><span class="trip-note-cnt mono" id="it-note-cnt">' + (EIt && EIt.note ? String(EIt.note).length : 0) + '/200</span></div><textarea class="input trip-note-area" id="it-note" rows="1" maxlength="200" placeholder="Catatan singkat">' + esc(EIt ? (EIt.note || '') : '') + '</textarea></div></div>' +
+      '<div class="trip-form-actions">' + (EIt ? '<button type="button" class="btn btn-secondary" data-it-cancel="1">Batal</button>' : '') + '<button type="submit" class="btn btn-primary">' + (EIt ? 'Simpan Perubahan' : 'Tambah Kegiatan') + '</button></div></form></div>' +
+      (days.length ? (function () {
+        var allOpenD = typeof tripAreAllDaysOpen === 'function' ? tripAreAllDaysOpen(BR_STATE, tr.id, days) : false;
+        return '<div class="trip-it-toolbar"><span class="trip-it-count">' + days.length + ' hari</span>' +
+          '<button type="button" class="btn btn-secondary btn-sm trip-fold-all-btn" id="br-it-fold-all">' + (allOpenD ? 'Tutup semua' : 'Buka semua') + '</button></div>';
+      })() : '') +
       '<div class="stack">' + (days.length ? days.map(function (d) {
         var its = (tr.it || []).filter(function (x) { return x.day === d; }).sort(function (a, b) { return (a.time || '').localeCompare(b.time || ''); });
         var dTot = its.reduce(function (s, x) { return s + (x.pay === 'on' || !x.est ? 0 : tripItRp(tr, x)); }, 0);
-        return '<div class="card"><div class="card-header" style="margin-bottom:10px;"><div><h3 class="card-title">' + esc(tripDayLabel(tr, d)) + '</h3></div>' + (dTot ? '<span class="badge badge-accent mono pv">Estimasi: ' + rp(dTot) + '</span>' : '') + '</div>' +
-          '<input class="input" style="margin-bottom:10px;" value="' + esc((tr.dt && tr.dt[d]) || '') + '" placeholder="Judul hari, mis. Jakarta – Tokyo" data-dt-day="' + d + '"/>' +
+        var dOpen = typeof tripIsDayOpen === 'function' ? tripIsDayOpen(BR_STATE, tr.id, d) : false;
+        var dtTitle = tr.dt && tr.dt[d] ? tr.dt[d] : '';
+        var chevSvg = '<svg class="trip-acc-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>';
+        return '<div class="card trip-day-card" data-it-day-card="' + esc(d) + '">' +
+          '<button type="button" class="trip-day-acc-btn" data-it-day-tog="' + esc(d) + '" aria-expanded="' + (dOpen ? 'true' : 'false') + '" aria-controls="it-day-panel-' + esc(d) + '">' +
+          '<span class="trip-day-acc-main"><span class="trip-day-acc-title">' + esc(tripDayLabel(tr, d)) + '</span>' +
+          (dtTitle ? '<span class="trip-day-acc-sub">' + esc(dtTitle) + '</span>' : '') + '</span>' +
+          '<span class="trip-day-acc-meta"><span class="badge badge-neutral">' + its.length + ' kegiatan</span>' +
+          (dTot ? '<span class="badge badge-accent mono pv">Estimasi: ' + rp(dTot) + '</span>' : '') + chevSvg + '</span></button>' +
+          '<div class="trip-day-panel stack" id="it-day-panel-' + esc(d) + '"' + (dOpen ? '' : ' hidden') + '>' +
+          '<input class="input" value="' + esc(dtTitle) + '" placeholder="Judul hari, mis. Jakarta – Tokyo" data-dt-day="' + esc(d) + '"/>' +
           '<div class="stack" style="gap:8px;">' + (its.length ? its.map(function (x) {
-            return '<div class="upcoming-item" data-it-row="' + esc(x.id) + '"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) +
-              '<div style="min-width:0;"><div class="upcoming-name" style="' + (x.done ? 'text-decoration:line-through;opacity:0.55;' : '') + '">' + (x.time ? '<span class="mono" style="color:var(--accent-ink);margin-right:6px;">' + esc(x.time.replace(':', '.')) + (x.time2 ? '–' + esc(x.time2.replace(':', '.')) : '') + '</span>' : '') + esc(x.place) + '</div>' +
-              '<div class="upcoming-meta"><span class="badge badge-neutral">' + esc(x.cat) + '</span>' + (x.pay ? '<span class="badge badge-accent">' + esc(PAYL[x.pay] || x.pay) + '</span>' : '') + (x.note ? '<span>' + esc(x.note) + '</span>' : '') + '</div></div></div>' +
+            var outItBadge = typeof tripIsItemOutOfRange === 'function' && tripIsItemOutOfRange(tr, x, false) ? '<span class="badge badge-amber trip-out-range-badge">Di luar rentang</span>' : '';
+            var isExpD = !!(BR_STATE.tripExpandedItems && BR_STATE.tripExpandedItems[x.id]);
+            var linkChipD = typeof tripLinkChipHtml === 'function' ? tripLinkChipHtml(x.link, false) : '';
+            var txtIdD = 'it-txt-' + esc(x.id);
+            return '<div class="upcoming-item trip-item-card' + (isExpD ? ' is-expanded' : '') + '" data-it-row="' + esc(x.id) + '"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) +
+              '<div class="trip-card-body" id="' + txtIdD + '"><div class="upcoming-name trip-it-place trip-trunc-target" style="' + (x.done ? 'text-decoration:line-through;opacity:0.55;' : '') + '">' + (x.time ? '<span class="mono" style="color:var(--accent-ink);margin-right:6px;">' + esc(x.time.replace(':', '.')) + (x.time2 ? '–' + esc(x.time2.replace(':', '.')) : '') + '</span>' : '') + esc(x.place) + '</div>' +
+              '<div class="upcoming-meta"><span class="badge badge-neutral">' + esc(x.cat) + '</span>' + (x.pay ? '<span class="badge badge-accent">' + esc(PAYL[x.pay] || x.pay) + '</span>' : '') + outItBadge + '</div>' +
+              (x.note ? '<div class="trip-it-note trip-trunc-target">' + esc(x.note) + '</div>' : '') +
+              linkChipD +
+              '<div class="trip-more-wrap"><button type="button" class="trip-more-btn" data-it-more="' + esc(x.id) + '" aria-expanded="' + (isExpD ? 'true' : 'false') + '" aria-controls="' + txtIdD + '"' + (isExpD ? '' : ' hidden') + '>' + (isExpD ? 'Sembunyikan' : 'Tampilkan') + '</button></div></div></div>' +
               '<div class="upcoming-right">' + (typeof tripItemAmtHtml === 'function' ? tripItemAmtHtml(tr, x) : ('<strong class="mono pv">' + (x.est ? (x.fx && tr.cur ? esc(tr.cur) + ' ' + Math.round(x.est).toLocaleString('id-ID') : rp(x.est)) : '') + '</strong>')) +
               '<button type="button" class="btn btn-secondary btn-sm" data-it-done="' + esc(x.id) + '">' + (x.done ? '✓ Selesai' : 'Tandai') + '</button>' +
               '<button type="button" class="btn btn-secondary btn-sm" data-trip-it-edit="' + esc(x.id) + '">Ubah</button>' +
               '<button type="button" class="btn btn-secondary btn-sm" style="color:var(--crimson);" data-trip-it-del="' + esc(x.id) + '">Hapus</button></div></div>';
-          }).join('') : '<div style="padding:10px;color:var(--text-muted);font-size:0.82rem;">Belum ada kegiatan hari ini.</div>') + '</div></div>';
+          }).join('') : '<div style="padding:10px;color:var(--text-muted);font-size:0.82rem;">Belum ada kegiatan hari ini.</div>') + '</div></div></div>';
       }).join('') : '<div class="card"><div style="text-align:center;padding:24px;color:var(--text-muted);">Atur tanggal mulai/selesai atau tambahkan kegiatan pertama.</div></div>') + '</div>';
   } else if (sub === 'book') {
+    if (BR_STATE._tripRenderedId !== tr.id) {
+      BR_STATE._tripRenderedId = tr.id;
+      BR_STATE.inlineDates.itDay = '';
+      BR_STATE.inlineDates.bkStart = '';
+      BR_STATE.inlineDates.bkEnd = '';
+      delete BR_STATE.inlineCalView['it-day-cal'];
+      delete BR_STATE.inlineCalView['bk-start-cal'];
+      delete BR_STATE.inlineCalView['bk-end-cal'];
+    }
     var EBk = BR_STATE.tripEditBkId ? (tr.bk || []).filter(function (x) { return x.id === BR_STATE.tripEditBkId; })[0] : null;
-    BR_STATE.inlineDates.bkStart = EBk ? (EBk.a || tr.start || todayISO()) : (tr.start || todayISO());
-    BR_STATE.inlineDates.bkEnd = EBk ? (EBk.b || tr.end || todayISO()) : (tr.end || todayISO());
+    BR_STATE.inlineDates.bkStart = EBk ? (EBk.a || tr.start || todayISO()) : (BR_STATE.inlineDates.bkStart || tr.start || todayISO());
+    BR_STATE.inlineDates.bkEnd = EBk ? (EBk.b || tr.end || todayISO()) : (BR_STATE.inlineDates.bkEnd || tr.end || todayISO());
     bodyHtml =
       '<div class="grid-3"><div class="metric-tile"><div class="metric-tile-label">Total Pemesanan</div><div class="metric-tile-val pv">' + rp(pl.b) + '</div></div><div class="metric-tile"><div class="metric-tile-label">Sudah Dibayar</div><div class="metric-tile-val pv" style="color:var(--emerald);">' + rp(pl.paid) + '</div></div><div class="metric-tile"><div class="metric-tile-label">Belum Dibayar</div><div class="metric-tile-val pv" style="color:var(--amber);">' + rp(pl.b - pl.paid) + '</div></div></div>' +
       '<div class="card"><div class="card-header"><div><h2 class="card-title">' + (EBk ? 'Ubah Pemesanan' : 'Tambah Pemesanan') + '</h2><p class="card-sub">Tiket pesawat, hotel, kereta, dan tur prabayar</p></div></div>' +
-      '<form id="trip-book-form" class="stack" style="gap:12px;" novalidate><div class="grid-2"><div class="field"><label class="field-label" for="bk-title">Nama</label><input class="input" id="bk-title" placeholder="mis. Tiket Pesawat ANA PP" value="' + esc(EBk ? EBk.title : '') + '" required/></div>' +
-      '<div class="field"><label class="field-label" for="bk-amt">Jumlah</label><div style="display:flex;gap:6px;"><input class="input mono" id="bk-amt" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="0" value="' + (EBk && EBk.amt ? fmtRpInputStr(String(EBk.amt)) : '') + '" style="flex:1;min-width:0;" required/><div style="width:94px;flex-shrink:0;"><select class="input" id="bk-cur">' + (typeof tripCurSelectOptsHtml === 'function' ? tripCurSelectOptsHtml(tr, EBk) : ('<option value="idr"' + (!(EBk && EBk.fx) ? ' selected' : '') + '>Rp</option>' + (tr.cur ? '<option value="fx"' + ((EBk && EBk.fx) ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : ''))) + '</select></div></div><div class="trip-eq-hint mono" id="bk-amt-eq"></div></div></div>' +
-      '<div class="field" id="bk-rt-wrap" style="display:' + (EBk && EBk.fx && (typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) ? '' : 'none') + ';"><label class="field-label" for="bk-rt">Kurs' + (EBk && EBk.paid ? ' saat dibayar' : '') + ' (Rp per 1 ' + esc((EBk && typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) || 'asing') + ')</label><input class="input mono" id="bk-rt" type="text" inputmode="decimal" placeholder="' + (tr.rate > 0 ? 'Ikut kurs perjalanan: ' + esc(tr.rate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + (EBk && typeof tripHasValidRt === 'function' && tripHasValidRt(EBk) ? esc(String(EBk.rt)) : '') + '"/><div class="card-sub">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div>' +
-      '<div class="grid-3"><div class="field"><span class="field-label">Mulai / Check-in</span><div class="custom-picker-wrap"><button type="button" class="cal-trigger-btn" style="width:100%;justify-content:space-between;" data-ical-trig="bk-start-cal|bkStart|bk-start-lbl"><span id="bk-start-lbl">' + brFmtShortIndo(BR_STATE.inlineDates.bkStart) + ' ' + BR_STATE.inlineDates.bkStart.slice(0, 4) + '</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button><div class="picker-popover" id="bk-start-cal"></div></div></div>' +
-      '<div class="field"><span class="field-label">Selesai / Check-out</span><div class="custom-picker-wrap"><button type="button" class="cal-trigger-btn" style="width:100%;justify-content:space-between;" data-ical-trig="bk-end-cal|bkEnd|bk-end-lbl"><span id="bk-end-lbl">' + brFmtShortIndo(BR_STATE.inlineDates.bkEnd) + ' ' + BR_STATE.inlineDates.bkEnd.slice(0, 4) + '</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button><div class="picker-popover" id="bk-end-cal"></div></div></div>' +
-      '<div class="field"><label class="field-label" for="bk-cat">Kategori</label><select class="input" id="bk-cat">' + BCAT.map(function (c) { return '<option value="' + esc(c) + '"' + ((EBk ? EBk.cat : 'Transport') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div></div>' +
-      '<div style="display:flex;justify-content:flex-end;gap:8px;">' + (EBk ? '<button type="button" class="btn btn-secondary" data-bk-cancel="1">Batal</button>' : '') + '<button type="submit" class="btn btn-primary">' + (EBk ? 'Simpan Perubahan' : 'Tambah Pemesanan') + '</button></div></form></div>' +
+      '<form id="trip-book-form" class="stack trip-form-layout" novalidate>' +
+      '<div class="trip-form-row"><div class="field trip-col-grow"><label class="field-label" for="bk-title">Nama</label><input class="input" id="bk-title" placeholder="mis. Tiket Pesawat ANA PP" value="' + esc(EBk ? EBk.title : '') + '" required/></div>' +
+      '<div class="field trip-col-amt-cur"><label class="field-label" for="bk-amt">Jumlah</label><div class="trip-amt-cur-pair"><input class="input mono" id="bk-amt" type="text" inputmode="numeric" data-num-fmt="rp" data-num-only="int" placeholder="0" value="' + (EBk && EBk.amt ? fmtRpInputStr(String(EBk.amt)) : '') + '" style="flex:1;min-width:0;" required/><div class="trip-cur-box"><select class="input" id="bk-cur">' + (typeof tripCurSelectOptsHtml === 'function' ? tripCurSelectOptsHtml(tr, EBk) : ('<option value="idr"' + (!(EBk && EBk.fx) ? ' selected' : '') + '>Rp</option>' + (tr.cur ? '<option value="fx"' + ((EBk && EBk.fx) ? ' selected' : '') + '>' + esc(tr.cur) + '</option>' : ''))) + '</select></div></div><div class="trip-eq-hint mono" id="bk-amt-eq"></div></div>' +
+      '<div class="field trip-col-rate" id="bk-rt-wrap" style="display:' + (EBk && EBk.fx && (typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) ? '' : 'none') + ';"><label class="field-label" for="bk-rt">Kurs' + (EBk && EBk.paid ? ' saat dibayar' : '') + ' (Rp per 1 ' + esc((EBk && typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) || 'asing') + ')</label><input class="input mono" id="bk-rt" type="text" inputmode="decimal" data-num-only="dec" placeholder="' + (tr.rate > 0 ? 'Ikut kurs perjalanan: ' + esc(tr.rate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + (EBk && typeof tripHasValidRt === 'function' && tripHasValidRt(EBk) ? esc(String(EBk.rt)) : '') + '"/><div class="card-sub">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div></div>' +
+      '<div class="trip-form-row"><div class="field trip-col-date"><span class="field-label">Mulai / Check-in</span><div class="custom-picker-wrap"><button type="button" class="cal-trigger-btn" style="width:100%;justify-content:space-between;" data-ical-trig="bk-start-cal|bkStart|bk-start-lbl"><span id="bk-start-lbl">' + brFmtShortIndo(BR_STATE.inlineDates.bkStart) + ' ' + BR_STATE.inlineDates.bkStart.slice(0, 4) + '</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button><div class="picker-popover" id="bk-start-cal"></div></div></div>' +
+      '<div class="field trip-col-date"><span class="field-label">Selesai / Check-out</span><div class="custom-picker-wrap"><button type="button" class="cal-trigger-btn" style="width:100%;justify-content:space-between;" data-ical-trig="bk-end-cal|bkEnd|bk-end-lbl"><span id="bk-end-lbl">' + brFmtShortIndo(BR_STATE.inlineDates.bkEnd) + ' ' + BR_STATE.inlineDates.bkEnd.slice(0, 4) + '</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></button><div class="picker-popover" id="bk-end-cal"></div></div></div>' +
+      '<div class="field trip-col-cat"><label class="field-label" for="bk-cat">Kategori</label><select class="input" id="bk-cat">' + BCAT.map(function (c) { return '<option value="' + esc(c) + '"' + ((EBk ? EBk.cat : 'Transport') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div>' +
+      '<div class="field trip-col-grow"><label class="field-label" for="bk-link">Tautan (opsional)</label><input class="input" id="bk-link" inputmode="url" placeholder="https://..." value="' + esc(EBk ? (EBk.link || '') : '') + '"/><div class="trip-field-err" id="bk-link-err" role="alert" hidden></div></div></div>' +
+      '<div class="trip-field-err" id="bk-date-err" role="alert" hidden></div>' +
+      '<div class="trip-form-actions">' + (EBk ? '<button type="button" class="btn btn-secondary" data-bk-cancel="1">Batal</button>' : '') + '<button type="submit" class="btn btn-primary">' + (EBk ? 'Simpan Perubahan' : 'Tambah Pemesanan') + '</button></div></form></div>' +
       '<div class="card"><div class="stack" style="gap:8px;">' + ((tr.bk || []).length ? tr.bk.map(function (x) {
         var extraAc = typeof tripBkExtraAcHtml === 'function' ? tripBkExtraAcHtml(tr, x.id, false) : '';
-        return '<div class="upcoming-item" data-bk-row="' + esc(x.id) + '"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) + '<div><div class="upcoming-name">' + esc(x.title) + '</div><div class="upcoming-meta"><span class="badge badge-neutral">' + esc(x.cat) + '</span>' + (x.a ? '<span class="badge badge-neutral">' + brFmtShortIndo(x.a) + (x.b ? ' – ' + brFmtShortIndo(x.b) : '') + '</span>' : '') + '</div>' + extraAc + '</div></div>' +
+        var outBkBadge = typeof tripIsItemOutOfRange === 'function' && tripIsItemOutOfRange(tr, x, true) ? '<span class="badge badge-amber trip-out-range-badge">Di luar rentang</span>' : '';
+        var isExpBkD = !!(BR_STATE.tripExpandedItems && BR_STATE.tripExpandedItems[x.id]);
+        var bkLinkChipD = typeof tripLinkChipHtml === 'function' ? tripLinkChipHtml(x.link, false) : '';
+        var bkTxtIdD = 'bk-txt-' + esc(x.id);
+        return '<div class="upcoming-item trip-item-card' + (isExpBkD ? ' is-expanded' : '') + '" data-bk-row="' + esc(x.id) + '"><div class="upcoming-left">' + brCatLogo(brTripCatMapped(x.cat), 30) +
+          '<div class="trip-card-body" id="' + bkTxtIdD + '"><div class="upcoming-name trip-bk-title trip-trunc-target">' + esc(x.title) + '</div><div class="upcoming-meta"><span class="badge badge-neutral">' + esc(x.cat) + '</span>' + (x.a ? '<span class="badge badge-neutral">' + brFmtShortIndo(x.a) + (x.b ? ' – ' + brFmtShortIndo(x.b) : '') + '</span>' : '') + outBkBadge + '</div>' + bkLinkChipD + extraAc +
+          '<div class="trip-more-wrap"><button type="button" class="trip-more-btn" data-bk-more="' + esc(x.id) + '" aria-expanded="' + (isExpBkD ? 'true' : 'false') + '" aria-controls="' + bkTxtIdD + '"' + (isExpBkD ? '' : ' hidden') + '>' + (isExpBkD ? 'Sembunyikan' : 'Tampilkan') + '</button></div></div></div>' +
           '<div class="upcoming-right">' + (typeof tripItemAmtHtml === 'function' ? tripItemAmtHtml(tr, x) : ('<strong class="mono pv">' + rp(tripAmtRp(tr, x)) + '</strong>')) +
           '<button type="button" class="btn ' + (x.paid ? 'btn-emerald' : 'btn-secondary') + ' btn-sm" data-bk-pay="' + esc(x.id) + '">' + (x.paid ? '✓ Lunas' : 'Tandai lunas') + '</button>' +
           '<button type="button" class="btn btn-secondary btn-sm" data-bk-edit="' + esc(x.id) + '">Ubah</button>' +
@@ -2978,8 +3038,14 @@ function renderTrip() {
 
   initModernSelects(root);
   brSyncTripEqPrev();
+  if (typeof tripBindNoteAutoGrow === 'function' && $('it-note')) {
+    tripBindNoteAutoGrow($('it-note'), $('it-note-cnt'));
+  }
   rkSyncSegPills(root.querySelector('.trip-subtabs'), !!BR_STATE._tripSubAnimate);
   BR_STATE._tripSubAnimate = false;
+  if (typeof tripScheduleTruncationRefresh === 'function') {
+    tripScheduleTruncationRefresh(root, function () { return BR_STATE.tripExpandedItems; });
+  }
 }
 
 /* ==========================================================================
@@ -4088,7 +4154,18 @@ function brBindEvents() {
       e.stopPropagation();
       var spec = icalTrig.id === 'kp-start-btn' ? 'kp-start-cal|kpStart|kp-start-lbl' : icalTrig.id === 'kp-end-btn' ? 'kp-end-cal|kpEnd|kp-end-lbl' : icalTrig.dataset.icalTrig,
         parts = spec.split('|'), popI = $(parts[0]);
-      if (popI) { closeAllPickersAndMenus(popI); brDrawInlineCal(parts[0], parts[1], parts[2]); popI.classList.toggle('open'); }
+      if (popI) {
+        var trCalD = tp();
+        if ((parts[0] === 'it-day-cal' || parts[0] === 'bk-start-cal' || parts[0] === 'bk-end-cal') && trCalD && typeof tripHasFullRange === 'function' && tripHasFullRange(trCalD)) {
+          var curCalValD = BR_STATE.inlineDates[parts[1]] || '';
+          if (!curCalValD || curCalValD < trCalD.start || curCalValD > trCalD.end) {
+            BR_STATE.inlineCalView[parts[0]] = { y: +trCalD.start.slice(0, 4), m: +trCalD.start.slice(5, 7) - 1 };
+          }
+        }
+        closeAllPickersAndMenus(popI);
+        brDrawInlineCal(parts[0], parts[1], parts[2]);
+        popI.classList.toggle('open');
+      }
       return;
     }
     var icalMv = t.closest('[data-ical-mv]');
@@ -4101,12 +4178,22 @@ function brBindEvents() {
     var icalPk = t.closest('[data-ical-pick]');
     if (icalPk) {
       e.stopPropagation();
+      if (icalPk.disabled) return;
       var p3 = icalPk.dataset.icalPick.split('|');
       BR_STATE.inlineDates[p3[1]] = p3[3];
       BR_STATE.inlineCalView[p3[0]] = { y: +p3[3].slice(0, 4), m: +p3[3].slice(5, 7) - 1 };
       if (p3[1] === 'itemDate' && $('item-date')) $('item-date').value = p3[3];
       if ($(p3[2])) $(p3[2]).textContent = brFmtShortIndo(p3[3]) + ' ' + p3[3].slice(0, 4);
       if ($(p3[0])) $(p3[0]).classList.remove('open');
+      if (p3[1] === 'itDay' && typeof tripSetFieldError === 'function') {
+        tripSetFieldError('it-day-err', $('trip-itin-form') && $('trip-itin-form').querySelector('[data-ical-trig^="it-day-cal"]'), '', false);
+      }
+      if ((p3[1] === 'bkStart' || p3[1] === 'bkEnd') && typeof tripSetFieldError === 'function') {
+        tripSetFieldError('bk-date-err', [
+          $('trip-book-form') && $('trip-book-form').querySelector('[data-ical-trig^="bk-start-cal"]'),
+          $('trip-book-form') && $('trip-book-form').querySelector('[data-ical-trig^="bk-end-cal"]'),
+        ], '', false);
+      }
       if (p3[1] === 'acDay' && $('ac-rf') && tp() && typeof tripAcRefSelectOptsHtml === 'function') {
         var curRfD = $('ac-rf').value || '';
         $('ac-rf').innerHTML = tripAcRefSelectOptsHtml(tp(), p3[3], curRfD);
@@ -4126,9 +4213,71 @@ function brBindEvents() {
           toast(toastMsg, function () { restoreSnap(sn.t); });
         }, 'Ya, hapus');
       };
+      if (t.closest('#br-it-fold-all')) {
+        var daysFoldD = tripDays(trAct);
+        var openAllD = typeof tripToggleAllDays === 'function' ? tripToggleAllDays(BR_STATE, trAct.id, daysFoldD) : false;
+        var tripRootD = $('trip-root');
+        if (tripRootD) {
+          tripRootD.querySelectorAll('[data-it-day-tog]').forEach(function (btnD) {
+            var dkD = btnD.dataset.itDayTog;
+            var pnlD = document.getElementById('it-day-panel-' + dkD);
+            btnD.setAttribute('aria-expanded', openAllD ? 'true' : 'false');
+            if (pnlD) {
+              pnlD.hidden = !openAllD;
+              if (openAllD) {
+                pnlD.classList.remove('is-opening');
+                void pnlD.offsetWidth;
+                pnlD.classList.add('is-opening');
+                if (typeof tripRefreshTruncation === 'function') tripRefreshTruncation(pnlD, BR_STATE.tripExpandedItems);
+              }
+            }
+          });
+          var foldBtnEl = $('br-it-fold-all');
+          if (foldBtnEl) foldBtnEl.textContent = openAllD ? 'Tutup semua' : 'Buka semua';
+        }
+        return;
+      }
+      var itDayTogBtn = t.closest('[data-it-day-tog]');
+      if (itDayTogBtn) {
+        var dkTogD = itDayTogBtn.dataset.itDayTog;
+        var nextOpenD = !(typeof tripIsDayOpen === 'function' && tripIsDayOpen(BR_STATE, trAct.id, dkTogD));
+        if (typeof tripSetDayOpen === 'function') tripSetDayOpen(BR_STATE, trAct.id, dkTogD, nextOpenD);
+        itDayTogBtn.setAttribute('aria-expanded', nextOpenD ? 'true' : 'false');
+        var pnlTogD = document.getElementById('it-day-panel-' + dkTogD);
+        if (pnlTogD) {
+          pnlTogD.hidden = !nextOpenD;
+          if (nextOpenD) {
+            pnlTogD.classList.remove('is-opening');
+            void pnlTogD.offsetWidth;
+            pnlTogD.classList.add('is-opening');
+            if (typeof tripRefreshTruncation === 'function') tripRefreshTruncation(pnlTogD, BR_STATE.tripExpandedItems);
+          }
+        }
+        var foldBtnD2 = $('br-it-fold-all');
+        if (foldBtnD2 && typeof tripAreAllDaysOpen === 'function') {
+          foldBtnD2.textContent = tripAreAllDaysOpen(BR_STATE, trAct.id, tripDays(trAct)) ? 'Tutup semua' : 'Buka semua';
+        }
+        return;
+      }
+      var moreItemBtnD = t.closest('[data-it-more], [data-bk-more]');
+      if (moreItemBtnD) {
+        var mIdD = moreItemBtnD.dataset.itMore || moreItemBtnD.dataset.bkMore;
+        var rowCardD = moreItemBtnD.closest('[data-it-row], [data-bk-row]');
+        var nxtExpD = !(BR_STATE.tripExpandedItems && BR_STATE.tripExpandedItems[mIdD]);
+        BR_STATE.tripExpandedItems = BR_STATE.tripExpandedItems || {};
+        BR_STATE.tripExpandedItems[mIdD] = nxtExpD;
+        if (rowCardD) rowCardD.classList.toggle('is-expanded', nxtExpD);
+        moreItemBtnD.textContent = nxtExpD ? 'Sembunyikan' : 'Tampilkan';
+        moreItemBtnD.setAttribute('aria-expanded', nxtExpD ? 'true' : 'false');
+        return;
+      }
       if (t.closest('[data-it-done]')) { var id1 = t.closest('[data-it-done]').dataset.itDone, x1 = trAct.it.filter(function (x) { return x.id === id1; })[0]; if (x1) { x1.done = !x1.done; save(); renderTrip(); toast(x1.done ? 'Kegiatan ditandai selesai' : 'Status selesai dibatalkan'); } return; }
       if (t.closest('[data-trip-it-edit]')) {
         BR_STATE.tripEditItId = t.closest('[data-trip-it-edit]').dataset.tripItEdit;
+        var itEditObjD = (trAct.it || []).filter(function (x) { return x.id === BR_STATE.tripEditItId; })[0];
+        if (itEditObjD && itEditObjD.day && typeof tripSetDayOpen === 'function') {
+          tripSetDayOpen(BR_STATE, trAct.id, itEditObjD.day, true);
+        }
         renderTrip();
         if (typeof tripScrollToEditForm === 'function') tripScrollToEditForm($('trip-itin-form'), 'it-place', false);
         else if ($('trip-itin-form') && $('trip-itin-form').scrollIntoView) { try { $('trip-itin-form').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} }
@@ -4345,6 +4494,8 @@ function brBindEvents() {
     if (t.id === 'kas-search') renderKas();
     else if (t.id === 'qp-input') brUpdateQuickParsePreview();
     else if (t.id === 'it-est' || t.id === 'bk-amt' || t.id === 'ac-amt') brSyncTripEqPrev();
+    else if (t.id === 'it-link' && typeof tripSetFieldError === 'function') tripSetFieldError('it-link-err', t, '', false);
+    else if (t.id === 'bk-link' && typeof tripSetFieldError === 'function') tripSetFieldError('bk-link-err', t, '', false);
     else if (t.id === 'it-rt' || t.id === 'bk-rt' || t.id === 'ac-rt') { if (t.dataset) t.dataset.userEdited = '1'; brSyncTripEqPrev(); }
     else if (t.closest && t.closest('#kp-fxs-list') && BR_STATE.tripFxsDraft) {
       var idxFxD = t.dataset.fxCode != null ? +t.dataset.fxCode : (t.dataset.fxRate != null ? +t.dataset.fxRate : -1);
@@ -4476,23 +4627,33 @@ function brBindEvents() {
           return;
         }
       }
-      if (isEditMetaD) {
-        var trMetaD = tp();
-        Object.assign(trMetaD, { name: nmT, start: stT, end: enT, budget: budT, cur: curT, rate: curT ? rateT : 0 });
-        if (BR_STATE.tripFxsEnabled) {
-          if (typeof tripApplyFxsRenames === 'function') tripApplyFxsRenames(trMetaD, fxResD.renames);
-          trMetaD.fxs = fxResD.fxs;
+      var commitMetaD = function () {
+        if (isEditMetaD) {
+          var trMetaD = tp();
+          Object.assign(trMetaD, { name: nmT, start: stT, end: enT, budget: budT, cur: curT, rate: curT ? rateT : 0 });
+          if (BR_STATE.tripFxsEnabled) {
+            if (typeof tripApplyFxsRenames === 'function') tripApplyFxsRenames(trMetaD, fxResD.renames);
+            trMetaD.fxs = fxResD.fxs;
+          } else {
+            delete trMetaD.fxs;
+          }
         } else {
-          delete trMetaD.fxs;
+          var idNew = kid('p');
+          var newProfD = { id: idNew, name: nmT, link: false, saldo: 0, tx: [], start: stT, end: enT, budget: budT, cur: curT, rate: curT ? rateT : 0, dt: {}, it: [], bk: [], lk: [], ck: [], note: '', goal: null };
+          if (BR_STATE.tripFxsEnabled) newProfD.fxs = fxResD.fxs;
+          ALL.kas.pr[idNew] = newProfD;
+          tripAct = idNew; BR_STATE.tripView = 'detail'; BR_STATE.tripSubTab = 'ring';
         }
-      } else {
-        var idNew = kid('p');
-        var newProfD = { id: idNew, name: nmT, link: false, saldo: 0, tx: [], start: stT, end: enT, budget: budT, cur: curT, rate: curT ? rateT : 0, dt: {}, it: [], bk: [], lk: [], ck: [], note: '', goal: null };
-        if (BR_STATE.tripFxsEnabled) newProfD.fxs = fxResD.fxs;
-        ALL.kas.pr[idNew] = newProfD;
-        tripAct = idNew; BR_STATE.tripView = 'detail'; BR_STATE.tripSubTab = 'ring';
+        brCloseModal('modal-trip-form'); save(); renderAll(); toast(isEditMetaD ? 'Perjalanan diperbarui' : 'Perjalanan dibuat');
+      };
+      if (isEditMetaD && typeof tripCountItemsOutsideRange === 'function') {
+        var outMetaD = tripCountItemsOutsideRange(tp(), stT, enT);
+        if (outMetaD > 0) {
+          askConfirm(outMetaD + ' item berada di luar rentang baru. Tetap simpan?', commitMetaD, 'Tetap simpan', 'Konfirmasi rentang tanggal');
+          return;
+        }
       }
-      brCloseModal('modal-trip-form'); save(); renderAll(); toast(isEditMetaD ? 'Perjalanan diperbarui' : 'Perjalanan dibuat');
+      commitMetaD();
     } else if (f.id === 'trip-xl-form') {
       e.preventDefault();
       var dXlB = BR_STATE.xlPending;
@@ -4513,10 +4674,31 @@ function brBindEvents() {
     } else if (f.id === 'trip-itin-form' && tp()) {
       e.preventDefault();
       var trI = tp();
+      var editItIdD = BR_STATE.tripEditItId;
+      var oldItD = editItIdD ? (trI.it || []).filter(function (x) { return x.id === editItIdD; })[0] : null;
+      var dayItD = BR_STATE.inlineDates.itDay || trI.start || todayISO();
+      var itDayTrigD = $('trip-itin-form') && $('trip-itin-form').querySelector('[data-ical-trig^="it-day-cal"]');
+      var itDtErrD = typeof tripValidateItinDate === 'function' ? tripValidateItinDate(trI, dayItD, oldItD) : null;
+      if (itDtErrD) {
+        if (typeof tripSetFieldError === 'function') tripSetFieldError('it-day-err', itDayTrigD, itDtErrD.error, false);
+        toast(itDtErrD.error);
+        return;
+      }
+      if (typeof tripSetFieldError === 'function') tripSetFieldError('it-day-err', itDayTrigD, '', false);
+      var itLinkResD = typeof tripValidateAndNormUrl === 'function'
+        ? tripValidateAndNormUrl($('it-link') && $('it-link').value)
+        : { ok: true, url: ($('it-link') && $('it-link').value || '').trim(), error: '' };
+      if (!itLinkResD.ok) {
+        if (typeof tripSetFieldError === 'function') tripSetFieldError('it-link-err', $('it-link'), itLinkResD.error, false);
+        rkShakeInvalid($('it-link'));
+        toast(itLinkResD.error);
+        return;
+      }
+      if (typeof tripSetFieldError === 'function') tripSetFieldError('it-link-err', $('it-link'), '', false);
       var itCurSpecD = typeof tripParseCurSelectVal === 'function' ? tripParseCurSelectVal(trI, $('it-cur') && $('it-cur').value) : { fx: $('it-cur') && $('it-cur').value === 'fx', c: '' };
       var objIt = {
-        id: BR_STATE.tripEditItId || kid('it'),
-        day: BR_STATE.inlineDates.itDay || trI.start || todayISO(),
+        id: editItIdD || kid('it'),
+        day: dayItD,
         time: ($('it-t1') && $('it-t1').value || '').replace('.', ':'),
         time2: ($('it-t2') && $('it-t2').value || '').replace('.', ':'),
         place: ($('it-place') && $('it-place').value || '').trim(),
@@ -4524,13 +4706,12 @@ function brBindEvents() {
         fx: !!(trI.cur && itCurSpecD.fx),
         pay: $('it-pay') ? $('it-pay').value : 'cash',
         cat: $('it-cat') ? $('it-cat').value : 'Lainnya',
-        link: ($('it-link') && $('it-link').value || '').trim(),
+        link: itLinkResD.url,
         note: ($('it-note') && $('it-note').value || '').trim(),
         done: false,
       };
       if (objIt.fx && itCurSpecD.c) objIt.c = itCurSpecD.c;
       if (!objIt.place) { rkShakeInvalid($('it-place')); return; }
-      var editItIdD = BR_STATE.tripEditItId;
       if (editItIdD) {
         trI.it = trI.it.map(function (x) {
           if (x.id !== editItIdD) return x;
@@ -4539,14 +4720,33 @@ function brBindEvents() {
         });
         BR_STATE.tripEditItId = null;
       } else trI.it.push(objIt);
-      save(); renderTrip(); toast(editItIdD ? 'Kegiatan diperbarui' : 'Kegiatan disimpan');
-      if (editItIdD && typeof tripScrollBackToEditedRow === 'function') {
-        tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-it-row="' + editItIdD + '"]'), false);
+      save(); renderTrip();
+      if (editItIdD) {
+        toast('Kegiatan diperbarui');
+        if (typeof tripScrollBackToEditedRow === 'function') {
+          tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-it-row="' + editItIdD + '"]'), false);
+        }
+      } else {
+        var savedItIdD = objIt.id, savedTrItIdD = trI.id;
+        toast('Kegiatan disimpan', null, {
+          tone: 'success',
+          duration: 7000,
+          action: {
+            label: 'Lihat',
+            onClick: function () {
+              if (typeof tripFocusItemFromToast === 'function') tripFocusItemFromToast(savedTrItIdD, 'itin', savedItIdD, false);
+            },
+          },
+        });
       }
     } else if (f.id === 'trip-book-form' && tp()) {
       e.preventDefault();
       var trB = tp();
+      var editBkIdD = BR_STATE.tripEditBkId;
+      var oldBkD = editBkIdD ? (trB.bk || []).filter(function (x) { return x.id === editBkIdD; })[0] : null;
       var bkCurSpecD = typeof tripParseCurSelectVal === 'function' ? tripParseCurSelectVal(trB, $('bk-cur') && $('bk-cur').value) : { fx: $('bk-cur') && $('bk-cur').value === 'fx', c: '' };
+      var bkStTrigD = $('trip-book-form') && $('trip-book-form').querySelector('[data-ical-trig^="bk-start-cal"]');
+      var bkEndTrigD = $('trip-book-form') && $('trip-book-form').querySelector('[data-ical-trig^="bk-end-cal"]');
       var patchBk = {
         title: ($('bk-title') && $('bk-title').value || '').trim(),
         amt: getRpVal('bk-amt'),
@@ -4558,13 +4758,30 @@ function brBindEvents() {
       if (patchBk.fx && bkCurSpecD.c) patchBk.c = bkCurSpecD.c;
       if (!patchBk.title) { rkShakeInvalid($('bk-title')); return; }
       if (!(patchBk.amt > 0)) { rkShakeInvalid($('bk-amt')); return; }
-      var bkDtErr = typeof tripValidateDates === 'function' ? tripValidateDates(patchBk.a, patchBk.b) : null;
+      var bkDtErr = typeof tripValidateBookingDates === 'function'
+        ? tripValidateBookingDates(trB, patchBk.a, patchBk.b, oldBkD)
+        : (typeof tripValidateDates === 'function' ? tripValidateDates(patchBk.a, patchBk.b) : null);
       if (bkDtErr) {
-        rkShakeInvalid($('bk-end-cal') ? $('bk-end-cal').previousElementSibling : $('bk-title'));
+        var badTrigsD = bkDtErr.field === 'end' && !bkDtErr.badStart
+          ? [bkEndTrigD]
+          : (bkDtErr.badStart && bkDtErr.badEnd ? [bkStTrigD, bkEndTrigD] : [bkStTrigD || bkEndTrigD]);
+        if (typeof tripSetFieldError === 'function') tripSetFieldError('bk-date-err', badTrigsD, bkDtErr.error, false);
         toast(bkDtErr.error);
         return;
       }
-      var editBkIdD = BR_STATE.tripEditBkId;
+      if (typeof tripSetFieldError === 'function') tripSetFieldError('bk-date-err', [bkStTrigD, bkEndTrigD], '', false);
+      var bkLinkResD = typeof tripValidateAndNormUrl === 'function'
+        ? tripValidateAndNormUrl($('bk-link') && $('bk-link').value)
+        : { ok: true, url: '', error: '' };
+      if (!bkLinkResD.ok) {
+        if (typeof tripSetFieldError === 'function') tripSetFieldError('bk-link-err', $('bk-link'), bkLinkResD.error, false);
+        rkShakeInvalid($('bk-link'));
+        toast(bkLinkResD.error);
+        return;
+      }
+      if (typeof tripSetFieldError === 'function') tripSetFieldError('bk-link-err', $('bk-link'), '', false);
+      patchBk.link = bkLinkResD.url;
+      var newBkIdD = '';
       if (editBkIdD) {
         trB.bk = trB.bk.map(function (x) {
           return x.id === editBkIdD
@@ -4573,11 +4790,27 @@ function brBindEvents() {
         });
         BR_STATE.tripEditBkId = null;
       } else {
-        trB.bk.push(Object.assign({ id: kid('bk'), pay: 'on', link: '', paid: false, rec: '' }, patchBk));
+        newBkIdD = kid('bk');
+        trB.bk.push(Object.assign({ id: newBkIdD, pay: 'on', paid: false, rec: '' }, patchBk));
       }
-      save(); renderTrip(); toast(editBkIdD ? 'Pemesanan diperbarui' : 'Pemesanan disimpan');
-      if (editBkIdD && typeof tripScrollBackToEditedRow === 'function') {
-        tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-bk-row="' + editBkIdD + '"]'), false);
+      save(); renderTrip();
+      if (editBkIdD) {
+        toast('Pemesanan diperbarui');
+        if (typeof tripScrollBackToEditedRow === 'function') {
+          tripScrollBackToEditedRow($('trip-root') && $('trip-root').querySelector('[data-bk-row="' + editBkIdD + '"]'), false);
+        }
+      } else {
+        var savedTrBkIdD = trB.id;
+        toast('Pemesanan disimpan', null, {
+          tone: 'success',
+          duration: 7000,
+          action: {
+            label: 'Lihat',
+            onClick: function () {
+              if (typeof tripFocusItemFromToast === 'function') tripFocusItemFromToast(savedTrBkIdD, 'book', newBkIdD, false);
+            },
+          },
+        });
       }
     } else if (f.id === 'trip-ac-form' && tp()) {
       e.preventDefault();

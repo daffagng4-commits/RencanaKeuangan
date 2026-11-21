@@ -138,9 +138,81 @@ function setRpVal(elOrId, val) {
   syncPairedSlider(el);
 }
 
+/** Periksa mode opt-in angka murni (`"int"` | `"dec"`) pada elemen input. */
+function getNumOnlyMode(el) {
+  if (!el || el.tagName !== 'INPUT' || !el.getAttribute) return '';
+  var m = el.getAttribute('data-num-only');
+  return m === 'int' || m === 'dec' ? m : '';
+}
+
+/** Sanitasi string menjadi maksimal 13 digit murni lalu format pemisah ribuan titik (`'12abc'` -> `'12'`). */
+function fmtNumOnlyIntStr(raw) {
+  if (raw == null) return '';
+  var d = String(raw).replace(/\D/g, '').replace(/^0+(?=\d)/, '').slice(0, 13);
+  if (!d) return '';
+  return d.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+/** Sanitasi string kurs menjadi digit plus maksimal SATU pemisah desimal (`,` atau `.`). */
+function sanitizeNumOnlyDecStr(raw) {
+  if (raw == null) return '';
+  var s = String(raw),
+    out = '',
+    hasSep = false,
+    digits = 0;
+  for (var i = 0; i < s.length; i++) {
+    var ch = s[i];
+    if (ch >= '0' && ch <= '9') {
+      if (digits < 12) {
+        out += ch;
+        digits++;
+      }
+    } else if ((ch === ',' || ch === '.') && !hasSep) {
+      hasSep = true;
+      out += ch;
+    }
+  }
+  return out;
+}
+
+/** Terapkan sanitasi integer murni real-time dengan menjaga posisi kursor. */
+function fmtLiveNumOnlyInt(el) {
+  if (!el) return;
+  var v = String(el.value || '');
+  var p = typeof el.selectionStart === 'number' ? el.selectionStart : v.length;
+  var n = v.slice(0, p).replace(/\D/g, '').length;
+  var f = fmtNumOnlyIntStr(v);
+  el.value = f;
+  var i = 0,
+    c = 0;
+  while (i < f.length && c < n) {
+    if (/\d/.test(f[i])) c++;
+    i++;
+  }
+  try {
+    if (typeof el.setSelectionRange === 'function') el.setSelectionRange(i, i);
+  } catch (e) {}
+  syncPairedSlider(el);
+}
+
+/** Terapkan sanitasi desimal murni real-time dengan menjaga posisi kursor. */
+function fmtLiveNumOnlyDec(el) {
+  if (!el) return;
+  var v = String(el.value || '');
+  var p = typeof el.selectionStart === 'number' ? el.selectionStart : v.length;
+  var beforeSanLen = sanitizeNumOnlyDecStr(v.slice(0, p)).length;
+  var f = sanitizeNumOnlyDecStr(v);
+  el.value = f;
+  var pos = Math.min(f.length, beforeSanLen);
+  try {
+    if (typeof el.setSelectionRange === 'function') el.setSelectionRange(pos, pos);
+  } catch (e) {}
+}
+
 /** Periksa apakah elemen termasuk input nominal yang harus diformat otomatis. */
 function isNumInput(el) {
   if (!el || el.tagName !== 'INPUT') return false;
+  if (getNumOnlyMode(el)) return false;
   if (el.getAttribute && el.getAttribute('data-num-fmt') === 'rp') return true;
   return !!(el.id && NUM_INPUT_IDS[el.id]);
 }
@@ -149,10 +221,60 @@ function isNumInput(el) {
 function bindNumInputs() {
   if (typeof document === 'undefined' || document._rkNumBound) return;
   document._rkNumBound = true;
+  document.addEventListener('beforeinput', function (e) {
+    var t = e.target;
+    var mode = getNumOnlyMode(t);
+    if (!mode) return;
+    if (e.data == null || e.data === '') return;
+    if (e.inputType && e.inputType.indexOf('insert') !== 0) return;
+    var d = String(e.data);
+    if (mode === 'int') {
+      if (!/\d/.test(d)) e.preventDefault();
+    } else if (mode === 'dec') {
+      if (!/[\d.,]/.test(d)) {
+        e.preventDefault();
+        return;
+      }
+      var v = String(t.value || '');
+      var s = typeof t.selectionStart === 'number' ? t.selectionStart : v.length;
+      var en = typeof t.selectionEnd === 'number' ? t.selectionEnd : s;
+      var rest = v.slice(0, s) + v.slice(en);
+      if (/^[.,]+$/.test(d) && /[.,]/.test(rest)) e.preventDefault();
+    }
+  });
+  function handlePasteOrDropNumOnly(e) {
+    var t = e.target;
+    var mode = getNumOnlyMode(t);
+    if (!mode) return;
+    var dt = e.type === 'paste' ? e.clipboardData : e.dataTransfer;
+    if (!dt || typeof dt.getData !== 'function') return;
+    var txt = dt.getData('text/plain') || dt.getData('text') || '';
+    e.preventDefault();
+    var v = String(t.value || '');
+    var s = typeof t.selectionStart === 'number' ? t.selectionStart : v.length;
+    var en = typeof t.selectionEnd === 'number' ? t.selectionEnd : s;
+    var combined = v.slice(0, s) + txt + v.slice(en);
+    if (mode === 'int') {
+      t.value = fmtNumOnlyIntStr(combined);
+      syncPairedSlider(t);
+    } else {
+      t.value = sanitizeNumOnlyDecStr(combined);
+    }
+    try {
+      if (typeof Event === 'function') t.dispatchEvent(new Event('input', { bubbles: true }));
+    } catch (err) {}
+  }
+  document.addEventListener('paste', handlePasteOrDropNumOnly);
+  document.addEventListener('drop', handlePasteOrDropNumOnly);
   document.addEventListener('input', function (e) {
     var t = e.target;
     if (!t) return;
-    if (isNumInput(t)) {
+    var numOnly = getNumOnlyMode(t);
+    if (numOnly === 'int') {
+      fmtLiveNumOnlyInt(t);
+    } else if (numOnly === 'dec') {
+      fmtLiveNumOnlyDec(t);
+    } else if (isNumInput(t)) {
       fmtLive(t);
     } else if (t.classList && t.classList.contains('modern-slider')) {
       syncModernSlider(t);
@@ -165,6 +287,15 @@ function bindNumInputs() {
     'blur',
     function (e) {
       var t = e.target;
+      var numOnly = getNumOnlyMode(t);
+      if (numOnly === 'int') {
+        fmtLiveNumOnlyInt(t);
+        return;
+      }
+      if (numOnly === 'dec') {
+        fmtLiveNumOnlyDec(t);
+        return;
+      }
       if (!isNumInput(t) || !t.value) return;
       if (/[^\d.,\s]/.test(t.value)) {
         t.value = fmtRpBlurStr(t.value);
