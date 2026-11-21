@@ -176,12 +176,58 @@ function amtTxt(P, v, fx, lockedRt, isPaidOpt, curOpt) {
   }
   return rp(num);
 }
+/** Urai input kurs berbasis lokal Indonesia (`1.500`->1500, `16,5`->16.5, `1.234,5`->1234.5, `0.500`->0.5, `1.5.0`->0). */
+function tripParseRateLocale(raw) {
+  var s = String(raw == null ? '' : raw).trim();
+  if (!s || /[^0-9.,]/.test(s)) return 0;
+  var hasComma = s.indexOf(',') >= 0;
+  var hasDot = s.indexOf('.') >= 0;
+  var normStr = '';
+  if (hasComma && hasDot) {
+    if (s.indexOf(',') !== s.lastIndexOf(',')) return 0;
+    var partsCD = s.split(',');
+    var intCD = partsCD[0], decCD = partsCD[1];
+    if (!decCD || !/^\d+$/.test(decCD)) return 0;
+    if (!/^\d{1,3}(\.\d{3})+$/.test(intCD)) return 0;
+    normStr = intCD.replace(/\./g, '') + '.' + decCD;
+  } else if (hasComma) {
+    if (s.indexOf(',') !== s.lastIndexOf(',')) return 0;
+    if (!/^\d*,\d+$/.test(s)) return 0;
+    normStr = s.replace(',', '.');
+  } else if (hasDot) {
+    if (/^(?!0+\.)\d{1,3}(\.\d{3})+$/.test(s)) {
+      normStr = s.replace(/\./g, '');
+    } else if (/^\d*\.\d+$/.test(s)) {
+      normStr = s;
+    } else {
+      return 0;
+    }
+  } else if (/^\d+$/.test(s)) {
+    normStr = s;
+  } else {
+    return 0;
+  }
+  var n = parseFloat(normStr);
+  return (Number.isFinite(n) && n > 0 && n <= 1e9) ? n : 0;
+}
 /** Urai teks input kurs menjadi angka positif valid (> 0 dan <= 1e9), atau 0 bila kosong/tidak sah. */
 function tripParseRateVal(raw) {
-  var s = String(raw == null ? '' : raw).trim().replace(',', '.');
-  if (!s) return 0;
-  var n = parseFloat(s);
-  return (Number.isFinite(n) && n > 0 && n <= 1e9) ? n : 0;
+  return tripParseRateLocale(raw);
+}
+/** Format teks pratinjau "Terbaca" untuk kolom kurs (`Terbaca: 1 NOK = Rp 1.500`), kosong bila tidak sah/kosong. */
+function tripFormatRateReadText(rateRaw, curCodeOpt) {
+  var val = tripParseRateLocale(rateRaw);
+  if (!(val > 0)) return '';
+  var cu = String(curCodeOpt == null ? '' : curCodeOpt).trim().toUpperCase();
+  var fmt = typeof tripFormatRateIndo === 'function' ? tripFormatRateIndo(val) : String(val);
+  return cu ? ('Terbaca: 1 ' + cu + ' = Rp ' + fmt) : ('Terbaca: Rp ' + fmt);
+}
+/** Sinkronkan elemen DOM pratinjau `.trip-rate-read` di bawah kolom kurs. */
+function tripSyncRateReadEl(readEl, rateRaw, curCodeOpt) {
+  if (!readEl) return;
+  var txt = tripFormatRateReadText(rateRaw, curCodeOpt);
+  readEl.textContent = txt;
+  readEl.hidden = !txt;
 }
 /** Balik status lunas pemesanan: pertahankan rt manual, kunci otomatis dgn ra=true, lepas hanya yg ra; kembalikan pesan toast gabungan. */
 function tripToggleBkPaid(P, x) {
@@ -318,6 +364,8 @@ function tripSyncItemRateField(P, editItem, amtId, curId, eqId, rtWrapId, rtId, 
     var curRate = isFx ? tripCurRate(P, itemCur) : 0;
     rtInp.placeholder = curRate > 0 ? ('Ikut kurs perjalanan: ' + curRate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan';
   }
+  var rtReadEl = typeof $ === 'function' ? $(rtId + '-read') : (typeof document !== 'undefined' ? document.getElementById(rtId + '-read') : null);
+  tripSyncRateReadEl(rtReadEl, (isEditMode && isFx && rtInp) ? rtInp.value : '', itemCur);
   if (!inp || !sel || !eqEl) return;
   var valNum = typeof getRpVal === 'function' ? getRpVal(amtId) : (+String(inp.value || '').replace(/\D/g, '') || 0);
   var lkRt = (isEditMode && isFx && rtInp) ? tripParseRateVal(rtInp.value) : 0;
@@ -355,16 +403,23 @@ function tripAllCurList(P) {
   }
   return list;
 }
+/** Cek apakah item memakai kode mata uang asing (sebagai mata uang item fx atau mata uang aktual au). */
+function tripItemUsesCur(P, x, cUp) {
+  if (!x || !cUp) return false;
+  if (x.fx && tripItemCur(P, x).toUpperCase() === cUp) return true;
+  if (!x.fx && x.ax > 0 && x.au && String(x.au).trim().toUpperCase() === cUp) return true;
+  return false;
+}
 /** Hitung pemakaian kode mata uang tertentu di pemesanan & itinerary. */
 function tripCountCurUsage(P, code) {
   var cUp = String(code || '').trim().toUpperCase();
   if (!P || !cUp) return { total: 0, bk: 0, it: 0 };
   var bkCnt = 0, itCnt = 0;
   (P.bk || []).forEach(function (x) {
-    if (x && x.fx && tripItemCur(P, x).toUpperCase() === cUp) bkCnt++;
+    if (tripItemUsesCur(P, x, cUp)) bkCnt++;
   });
   (P.it || []).forEach(function (x) {
-    if (x && x.fx && tripItemCur(P, x).toUpperCase() === cUp) itCnt++;
+    if (tripItemUsesCur(P, x, cUp)) itCnt++;
   });
   return { total: bkCnt + itCnt, bk: bkCnt, it: itCnt };
 }
@@ -374,11 +429,11 @@ function tripCountAllExtraCurUsage(P) {
   var mainUp = String(P.cur || '').trim().toUpperCase();
   var bkCnt = 0, itCnt = 0;
   (P.bk || []).forEach(function (x) {
-    var ic = x && x.fx ? tripItemCur(P, x).toUpperCase() : '';
+    var ic = x && x.fx ? tripItemCur(P, x).toUpperCase() : (!x.fx && x && x.ax > 0 && x.au ? String(x.au).trim().toUpperCase() : '');
     if (ic && ic !== mainUp) bkCnt++;
   });
   (P.it || []).forEach(function (x) {
-    var ic = x && x.fx ? tripItemCur(P, x).toUpperCase() : '';
+    var ic = x && x.fx ? tripItemCur(P, x).toUpperCase() : (!x.fx && x && x.ax > 0 && x.au ? String(x.au).trim().toUpperCase() : '');
     if (ic && ic !== mainUp) itCnt++;
   });
   return { total: bkCnt + itCnt, bk: bkCnt, it: itCnt };
@@ -474,11 +529,13 @@ function tripRenderFxsRowsHtml(rows) {
   }
   return rows.map(function (r, idx) {
     var rStr = r.rRaw != null ? String(r.rRaw) : (r.r > 0 ? String(r.r) : '');
+    var fxReadTxt = tripFormatRateReadText(rStr, r.c || '');
     return (
       '<div class="trip-fx-edit-row" data-fx-row="' + idx + '">' +
       '<input type="text" class="input mono trip-fx-code-inp" data-fx-code="' + idx + '" maxlength="3" placeholder="NOK" value="' + esc(r.c || '') + '" style="text-transform:uppercase" aria-label="Kode mata uang tambahan ' + (idx + 1) + '" />' +
       '<input type="text" class="input mono trip-fx-rate-inp" data-fx-rate="' + idx + '" data-num-only="dec" inputmode="decimal" placeholder="Kurs Rp (opsional)" value="' + esc(rStr) + '" aria-label="Kurs Rupiah untuk mata uang ' + esc(r.c || String(idx + 1)) + '" />' +
       '<button type="button" class="btn btn-secondary btn-sm trip-fx-del-btn" data-fx-del="' + idx + '" aria-label="Hapus mata uang tambahan">Hapus</button>' +
+      '<div class="trip-rate-read pv" data-fx-read="' + idx + '"' + (fxReadTxt ? '' : ' hidden') + '>' + esc(fxReadTxt) + '</div>' +
       '</div>'
     );
   }).join('');
@@ -634,34 +691,137 @@ function tripSyncEqPairs(P, pairs) {
     eqEl.classList.toggle('pv', !!(prev.text && !prev.warn));
   });
 }
+/** Format nominal Rupiah ringkas untuk ringkasan (mis. Rp 1,5 jt / Rp 450 rb). */
+function rpShort(n) {
+  var raw = Math.round(+n || 0);
+  if (!raw) return 'Rp 0';
+  var sign = raw < 0 ? '-' : '';
+  var a = Math.abs(raw);
+  if (a >= 1e9) {
+    var mVal = Math.round(a / 1e8) / 10;
+    return sign + 'Rp ' + String(mVal).replace('.', ',') + ' M';
+  }
+  if (a >= 1e6) {
+    var jVal = Math.round(a / 1e5) / 10;
+    if (jVal >= 1000) return sign + 'Rp ' + String(Math.round(jVal / 100) / 10).replace('.', ',') + ' M';
+    return sign + 'Rp ' + String(jVal).replace('.', ',') + ' jt';
+  }
+  if (a >= 1e3) {
+    var rVal = Math.round(a / 1000);
+    if (rVal >= 1000) return sign + 'Rp 1 jt';
+    return sign + 'Rp ' + rVal + ' rb';
+  }
+  return sign + 'Rp ' + a;
+}
+/** Cek status terbuka disclosure pada UI state (bawaan tertutup). */
+function tripIsDisclosureOpen(stateObj, key) {
+  return !!(stateObj && stateObj.tripRingDisclosures && stateObj.tripRingDisclosures[key]);
+}
+/** Komponen lipat bersama (Progressive Disclosure) untuk Ringkasan Perjalanan. */
+function tripDisclosureHtml(opts) {
+  var o = opts || {};
+  var key = String(o.key || '');
+  var open = !!o.open;
+  var openLbl = String(o.openLabel || 'Rincian');
+  var closeLbl = String(o.closeLabel || 'Tutup');
+  var ctrlId = String(o.ctrlId || ('trip-disc-' + key.replace(/[^a-zA-Z0-9_-]/g, '_')));
+  var btnCls = 'trip-disc-btn' + (o.btnClass ? ' ' + o.btnClass : '');
+  var chevSvg = '<svg class="trip-disc-chev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>';
+  var triggerHtml = '<button type="button" class="' + btnCls + '" data-trip-disc="' + esc(key) + '" aria-expanded="' + (open ? 'true' : 'false') + '" aria-controls="' + esc(ctrlId) + '" data-open-lbl="' + esc(openLbl) + '" data-close-lbl="' + esc(closeLbl) + '">' +
+    '<span class="trip-disc-lbl">' + esc(open ? closeLbl : openLbl) + '</span>' + chevSvg + '</button>';
+  var bodyHtml = '<div class="trip-disc-body' + (o.bodyClass ? ' ' + o.bodyClass : '') + '" id="' + esc(ctrlId) + '"' + (open ? '' : ' hidden') + '>' + (o.bodyHtml || '') + '</div>';
+  return { triggerHtml: triggerHtml, bodyHtml: bodyHtml };
+}
+/** Handler toggle untuk tombol [data-trip-disc] pada Desktop & APK. */
+function tripHandleDisclosureToggle(stateObj, btnEl, scopeRoot) {
+  if (!btnEl) return;
+  var key = btnEl.getAttribute('data-trip-disc') || '';
+  if (!key) return;
+  var curOpen = btnEl.getAttribute('aria-expanded') === 'true';
+  var nextOpen = !curOpen;
+  if (stateObj) {
+    stateObj.tripRingDisclosures = stateObj.tripRingDisclosures || {};
+    if (nextOpen) stateObj.tripRingDisclosures[key] = true;
+    else delete stateObj.tripRingDisclosures[key];
+  }
+  btnEl.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
+  var lblEl = btnEl.querySelector('.trip-disc-lbl');
+  if (lblEl) {
+    lblEl.textContent = nextOpen ? (btnEl.getAttribute('data-close-lbl') || 'Tutup') : (btnEl.getAttribute('data-open-lbl') || 'Rincian');
+  }
+  var ctrlId = btnEl.getAttribute('aria-controls');
+  var panelEl = ctrlId && scopeRoot && scopeRoot.querySelector ? scopeRoot.querySelector('#' + ctrlId) : null;
+  if (!panelEl && ctrlId && typeof document !== 'undefined') panelEl = document.getElementById(ctrlId);
+  if (panelEl) {
+    panelEl.hidden = !nextOpen;
+    if (nextOpen && panelEl.classList) {
+      panelEl.classList.remove('is-opening');
+      void panelEl.offsetWidth;
+      panelEl.classList.add('is-opening');
+    }
+  }
+}
+/** Format nominal singkatan untuk kartu Rencana vs Realita (mendukung multi-cur). */
+function tripShortFxBrief(P, sp) {
+  if (!sp || !sp.hasFx) return '';
+  if (!tripMultiCurOn(P) && sp.by.length <= 1) return esc(fxs(P, sp.fxAmt));
+  var parts = sp.by.slice(0, 2).map(function (b) { return esc(fxs(P, b.amt, b.c)); });
+  if (sp.by.length > 2) parts.push('+' + (sp.by.length - 2));
+  return parts.join(' &middot; ');
+}
 /** HTML hint tile "Total Rencana Biaya": identik dgn teks lama bila !hasFx & saklar mati. */
-function tripTotalHintHtml(P, pl) {
+function tripTotalHintHtml(P, pl, stateObj, isMobile) {
   var p0 = pl || tripPlan(P);
   var sp = tripFxSplit(P);
   if (!sp.hasFx) return 'Pemesanan ' + rp(p0.b) + ' + Harian ' + rp(p0.d);
+  var detailHtml = '';
   if (!tripMultiCurOn(P) && sp.by.length <= 1) {
     if (sp.noRate) {
-      return (
+      detailHtml =
         '<span class="trip-fx-line">Rupiah <span class="mono pv">' + rp(sp.idr) + '</span></span>\n' +
         '<span class="trip-fx-line">Asing <span class="mono pv">' + esc(fxs(P, sp.fxAmt)) + '</span> &middot; kurs belum diatur</span>\n' +
-        '<span class="trip-fx-warn">Kurs belum diatur: total belum akurat</span>'
-      );
+        '<span class="trip-fx-warn">Kurs belum diatur: total belum akurat</span>';
+    } else {
+      detailHtml =
+        '<span class="trip-fx-line">Rupiah <span class="mono pv">' + rp(sp.idr) + '</span></span>\n' +
+        '<span class="trip-fx-line">Asing <span class="mono pv">' + rp(sp.fxIdr) + '</span> <span class="trip-fx-eq mono pv">(≈ ' + esc(fxs(P, sp.fxAmt)) + ')</span></span>\n' +
+        '<span class="trip-fx-sub pv">Pemesanan ' + rp(p0.b) + ' + Harian ' + rp(p0.d) + '</span>';
     }
-    return (
+  } else {
+    var fxParts = sp.by.slice(0, 2).map(function (b) { return esc(fxs(P, b.amt, b.c)); });
+    if (sp.by.length > 2) fxParts.push('+' + (sp.by.length - 2));
+    var warnCors = sp.by.filter(function (b) { return b.noRate; }).map(function (b) { return 'Kurs ' + esc(b.c) + ' belum diatur'; });
+    detailHtml =
       '<span class="trip-fx-line">Rupiah <span class="mono pv">' + rp(sp.idr) + '</span></span>\n' +
-      '<span class="trip-fx-line">Asing <span class="mono pv">' + rp(sp.fxIdr) + '</span> <span class="trip-fx-eq mono pv">(≈ ' + esc(fxs(P, sp.fxAmt)) + ')</span></span>\n' +
-      '<span class="trip-fx-sub pv">Pemesanan ' + rp(p0.b) + ' + Harian ' + rp(p0.d) + '</span>'
-    );
+      '<span class="trip-fx-line">Asing <span class="mono pv">' + rp(sp.fxIdr) + '</span> <span class="trip-fx-eq mono pv">(≈ ' + fxParts.join(' &middot; ') + ')</span></span>' +
+      (warnCors.length ? '\n<span class="trip-fx-warn">' + warnCors.join(' &middot; ') + '</span>' : '') +
+      '\n<span class="trip-fx-sub pv">Pemesanan ' + rp(p0.b) + ' + Harian ' + rp(p0.d) + '</span>';
   }
-  var fxParts = sp.by.slice(0, 2).map(function (b) { return esc(fxs(P, b.amt, b.c)); });
-  if (sp.by.length > 2) fxParts.push('+' + (sp.by.length - 2));
-  var warnCors = sp.by.filter(function (b) { return b.noRate; }).map(function (b) { return 'Kurs ' + esc(b.c) + ' belum diatur'; });
-  return (
-    '<span class="trip-fx-line">Rupiah <span class="mono pv">' + rp(sp.idr) + '</span></span>\n' +
-    '<span class="trip-fx-line">Asing <span class="mono pv">' + rp(sp.fxIdr) + '</span> <span class="trip-fx-eq mono pv">(≈ ' + fxParts.join(' &middot; ') + ')</span></span>' +
-    (warnCors.length ? '\n<span class="trip-fx-warn">' + warnCors.join(' &middot; ') + '</span>' : '') +
-    '\n<span class="trip-fx-sub pv">Pemesanan ' + rp(p0.b) + ' + Harian ' + rp(p0.d) + '</span>'
-  );
+  var discKey = 'tot:' + String((P && P.id) || 'trip');
+  var isOpen = tripIsDisclosureOpen(stateObj, discKey);
+  var ctrlId = (isMobile ? 'm-' : '') + 'trip-tot-det-' + String((P && P.id) || '0').replace(/[^a-zA-Z0-9_-]/g, '_');
+  var fxBrief = tripShortFxBrief(P, sp);
+  var briefTxt = '';
+  if (sp.noRate) {
+    briefTxt = (sp.idr > 0 ? rpShort(sp.idr) + ' + ' : '') + fxBrief;
+  } else {
+    var segs = [];
+    if (sp.idr > 0) segs.push(rpShort(sp.idr));
+    if (sp.fxIdr > 0) segs.push('Asing ' + rpShort(sp.fxIdr));
+    else if (fxBrief) segs.push(fxBrief);
+    briefTxt = segs.join(' + ') || rpShort(0);
+  }
+  var warnPill = sp.noRate ? ' <span class="trip-fx-warn-pill">Kurs belum diatur</span>' : '';
+  var disc = tripDisclosureHtml({
+    key: discKey,
+    ctrlId: ctrlId,
+    open: isOpen,
+    openLabel: 'Rincian',
+    closeLabel: 'Tutup',
+    bodyClass: 'trip-tot-det',
+    bodyHtml: detailHtml,
+  });
+  return '<div class="trip-tot-bar"><span class="trip-tot-brief pv">' + briefTxt + '</span>' + warnPill + disc.triggerHtml + '</div>' + disc.bodyHtml;
 }
 /** Kartu baru "Rincian mata uang" di Ringkasan (Desktop & APK); tampil bila saklar menyala atau >1 mata uang terpakai. */
 function tripFxDetailCardHtml(P, isMobile) {
@@ -802,12 +962,35 @@ function tripPlan(P) {
   return r;
 }
 
+/** Kode mata uang aktual item (3 huruf uppercase bila asing, atau '' bila Rupiah). */
+function tripActualCur(P, x) {
+  if (!x) return '';
+  if (x.fx) return (tripItemCur(P, x) || String((P && P.cur) || '').trim()).toUpperCase();
+  if (typeof x.ax === 'number' && Number.isFinite(x.ax) && x.ax > 0 && typeof x.au === 'string') {
+    var auUp = x.au.trim().toUpperCase();
+    if (/^[A-Z]{3}$/.test(auUp)) return auUp;
+  }
+  return '';
+}
+
+/** Cek apakah item berhak menampilkan tombol & popup Harga Aktual (P2). */
+function tripItemHasActualBtn(x, isBookingOpt) {
+  if (!x) return false;
+  var isBk = isBookingOpt != null ? !!isBookingOpt : (x.amt != null);
+  if (!isBk && x.pay === 'on') return false;
+  var base = isBk ? (+x.amt || 0) : (+x.est || 0);
+  var hasAx = typeof x.ax === 'number' && Number.isFinite(x.ax) && x.ax > 0 && x.ax <= 1e12;
+  return base > 0 || hasAx;
+}
+
 /** Nilai Rupiah harga aktual di lapangan untuk satu item itinerary/pemesanan; 0 bila belum diisi. */
 function tripActualRp(P, x) {
   if (!x || !(typeof x.ax === 'number' && Number.isFinite(x.ax) && x.ax > 0 && x.ax <= 1e12)) return 0;
-  if (!x.fx) return x.ax;
+  var actCur = tripActualCur(P, x);
+  if (!actCur) return x.ax;
   var hasAk = typeof x.ak === 'number' && Number.isFinite(x.ak) && x.ak > 0 && x.ak <= 1e9;
-  return x.ax * (hasAk ? x.ak : tripItemRate(P, x));
+  var r = hasAk ? x.ak : (x.fx ? tripItemRate(P, x) : tripCurRate(P, actCur));
+  return x.ax * (r > 0 ? r : 0);
 }
 
 /** Nilai Rupiah rencana untuk satu item (pemesanan pakai tripBkRp, itinerary pakai tripItRp). */
@@ -847,47 +1030,45 @@ function tripVsPlan(P) {
   out.planTotal = pl.t;
   out.budget = (+P.budget > 0 && Number.isFinite(+P.budget)) ? +P.budget : 0;
 
-  var rawEst = 0, rawAct = 0, rawEfekKurs = 0, rawFxEst = 0, rawFxAct = 0, hasIdrAct = false;
+  var rawEst = 0, rawAct = 0, rawEfekKurs = 0;
   var byCurRaw = {};
 
   function inspect(x, isBk) {
     if (!x) return;
     if (!isBk && x.pay === 'on') return;
+    var base = isBk ? (+x.amt || 0) : (+x.est || 0);
+    var hasAx = typeof x.ax === 'number' && Number.isFinite(x.ax) && x.ax > 0 && x.ax <= 1e12;
+    if (!(base > 0 || hasAx)) return;
     out.m++;
-    if (!(typeof x.ax === 'number' && Number.isFinite(x.ax) && x.ax > 0 && x.ax <= 1e12)) return;
+    if (!hasAx) return;
     out.n++;
     var isFx = !!x.fx;
-    var curCode = isFx ? (tripItemCur(P, x) || String(P.cur || '').trim().toUpperCase()) : '';
-    var hasCurFx = !!(isFx && curCode);
+    var planCur = isFx ? (tripItemCur(P, x) || String(P.cur || '').trim().toUpperCase()) : 'IDR';
+    var actCur = tripActualCur(P, x) || 'IDR';
+    var hasCurFx = actCur !== 'IDR';
+    var sameFxCur = !!(isFx && planCur && planCur !== 'IDR' && actCur === planCur);
     var ratePlan = isFx ? tripItemRate(P, x) : 1;
-    var hasAk = isFx && typeof x.ak === 'number' && Number.isFinite(x.ak) && x.ak > 0 && x.ak <= 1e9;
-    var rateAct = isFx ? (hasAk ? x.ak : ratePlan) : 1;
-    var base = isBk ? (+x.amt || 0) : (+x.est || 0);
+    var hasAk = hasCurFx && typeof x.ak === 'number' && Number.isFinite(x.ak) && x.ak > 0 && x.ak <= 1e9;
+    var rateAct = hasCurFx ? (hasAk ? x.ak : (isFx ? ratePlan : tripCurRate(P, actCur))) : 1;
     var plannedRp = tripPlannedRp(P, x, isBk);
     var actualRp = tripActualRp(P, x);
     var diffI = actualRp - plannedRp;
-    var efekKursI = isFx ? (x.ax * (rateAct - ratePlan)) : 0;
-    var efekHargaI = (x.ax - base) * ratePlan;
+    var efekKursI = sameFxCur ? (x.ax * (rateAct - ratePlan)) : 0;
+    var efekHargaI = sameFxCur ? ((x.ax - base) * ratePlan) : diffI;
     rawEst += plannedRp;
     rawAct += actualRp;
     rawEfekKurs += efekKursI;
-    if (hasCurFx) {
-      out.hasFx = true;
-      rawFxEst += plannedRp;
-      rawFxAct += actualRp;
-      var bc = byCurRaw[curCode] || (byCurRaw[curCode] = { c: curCode, estRp: 0, actRp: 0, axSum: 0 });
-      bc.estRp += plannedRp;
-      bc.actRp += actualRp;
-      bc.axSum += x.ax;
-    } else {
-      hasIdrAct = true;
-    }
+    if (hasCurFx) out.hasFx = true;
+    var bc = byCurRaw[actCur] || (byCurRaw[actCur] = { c: actCur, estRp: 0, actRp: 0, axSum: 0 });
+    bc.estRp += plannedRp;
+    bc.actRp += actualRp;
+    bc.axSum += x.ax;
     out.items.push({
       id: x.id,
       kind: isBk ? 'bk' : 'it',
       name: isBk ? (x.title || '') : (x.place || ''),
       fx: hasCurFx,
-      cur: curCode,
+      cur: actCur === 'IDR' ? '' : actCur,
       base: base,
       ax: x.ax,
       ak: hasAk ? x.ak : 0,
@@ -941,27 +1122,28 @@ function tripVsPlan(P) {
     });
   }
   Object.keys(byCurRaw).forEach(function (k) {
-    if (curOrder.indexOf(k) < 0) curOrder.push(k);
+    if (k !== 'IDR' && curOrder.indexOf(k) < 0) curOrder.push(k);
   });
+  if (byCurRaw.IDR && curOrder.indexOf('IDR') < 0) curOrder.push('IDR');
   out.byCur = curOrder.map(function (c) {
     var o = byCurRaw[c];
     var eR = Math.round(o.estRp), aR = Math.round(o.actRp);
     return { c: c, estRp: eR, actRp: aR, diff: Math.round(o.actRp - o.estRp), axSum: o.axSum };
   });
   if (out.byCur.length > 0) {
-    var targetFxDiff = hasIdrAct ? Math.round(rawFxAct - rawFxEst) : Math.round(out.diff);
+    var targetAllDiff = Math.round(out.diff);
     var prevSum = 0;
     for (var bi = 0; bi < out.byCur.length - 1; bi++) prevSum += out.byCur[bi].diff;
-    out.byCur[out.byCur.length - 1].diff = targetFxDiff - prevSum;
+    out.byCur[out.byCur.length - 1].diff = targetAllDiff - prevSum;
   }
   return out;
 }
 
-/** Format kurs angka Indonesia ringkas (maks 4 desimal). */
+/** Format kurs angka Indonesia ringkas (maks 6 desimal). */
 function tripFormatRateIndo(n) {
   var v = +n || 0;
   try {
-    return v.toLocaleString('id-ID', { maximumFractionDigits: 4 });
+    return v.toLocaleString('id-ID', { maximumFractionDigits: 6 });
   } catch (e) {
     return String(v);
   }
@@ -976,15 +1158,18 @@ function tripItemActualLineHtml(P, x, isBooking) {
   var d = actRp - planRp;
   var diffTxt = d > 0 ? ('lebih mahal ' + rp(d)) : d < 0 ? ('lebih murah ' + rp(Math.abs(d))) : 'sama dg estimasi';
   var diffCls = d > 0 ? 'is-over' : d < 0 ? 'is-save' : 'is-eq';
-  var isFx = !!(x.fx && tripItemCur(P, x));
-  var effRate = isFx ? (x.ak > 0 ? x.ak : tripItemRate(P, x)) : 0;
-  var kursTxt = (isFx && effRate > 0) ? (' &middot; kurs ' + esc(tripFormatRateIndo(effRate))) : '';
-  return '<div class="trip-item-actual-line pv">Aktual <strong>' + rp(actRp) + '</strong> &middot; <span class="trip-actual-diff ' + diffCls + '">' + esc(diffTxt) + '</span>' + kursTxt + '</div>';
+  var actCur = tripActualCur(P, x);
+  var effRate = actCur ? (x.ak > 0 ? x.ak : (x.fx ? tripItemRate(P, x) : tripCurRate(P, actCur))) : 0;
+  var kursTxt = (actCur && effRate > 0) ? (' &middot; kurs ' + esc(tripFormatRateIndo(effRate))) : '';
+  var actMainHtml = (!x.fx && actCur)
+    ? ('Aktual <strong>' + esc(actCur) + ' ' + esc(Math.round(x.ax).toLocaleString('id-ID')) + ' (≈ ' + rp(actRp) + ')</strong>')
+    : ('Aktual <strong>' + rp(actRp) + '</strong>');
+  return '<div class="trip-item-actual-line pv">' + actMainHtml + ' &middot; <span class="trip-actual-diff ' + diffCls + '">' + esc(diffTxt) + '</span>' + kursTxt + '</div>';
 }
 
 /** Tombol umum "Harga Aktual" untuk kartu item (dengan centang bila sudah diisi). */
-function tripItemActualBtnHtml(x, attrName) {
-  if (!x) return '';
+function tripItemActualBtnHtml(x, attrName, isBookingOpt) {
+  if (!tripItemHasActualBtn(x, isBookingOpt)) return '';
   var hasAx = !!(typeof x.ax === 'number' && Number.isFinite(x.ax) && x.ax > 0);
   return '<button type="button" class="btn btn-secondary btn-sm trip-btn-actual' + (hasAx ? ' has-ax' : '') + '" ' +
     attrName + '="' + esc(x.id) + '" aria-label="Catat harga sebenarnya di lapangan" title="Catat harga sebenarnya di lapangan">' +
@@ -1004,20 +1189,24 @@ function tripActualEstLabel(P, x, isBooking) {
 }
 
 /** Hitung teks pratinjau langsung popup Harga Aktual. */
-function tripActualPreviewData(P, x, isBooking, rawAx, rawAk) {
+function tripActualPreviewData(P, x, isBooking, rawAx, rawAk, rawAuOpt) {
   if (!x) return { text: '', detail: '', tone: '' };
   var digits = String(rawAx || '').replace(/\D/g, '').slice(0, 13);
   var axNum = digits ? Number(digits) : 0;
   if (!(axNum > 0 && Number.isFinite(axNum) && axNum <= 1e12)) {
     return { text: '', detail: '', tone: '' };
   }
-  var isFx = !!(x.fx && tripItemCur(P, x));
-  var ratePlan = isFx ? tripItemRate(P, x) : 1;
-  var parsedAk = isFx ? tripParseRateVal(rawAk) : 0;
-  var rateAct = isFx ? (parsedAk > 0 ? parsedAk : ratePlan) : 1;
+  var isItemFx = !!(x.fx && tripItemCur(P, x));
+  var auCode = !isItemFx && typeof rawAuOpt === 'string' ? rawAuOpt.trim().toUpperCase() : '';
+  var actCur = isItemFx ? tripItemCur(P, x) : (/^[A-Z]{3}$/.test(auCode) ? auCode : '');
+  var isActFx = !!actCur;
+  var ratePlan = isItemFx ? tripItemRate(P, x) : 1;
+  var defaultActRate = isItemFx ? ratePlan : (isActFx ? tripCurRate(P, actCur) : 0);
+  var parsedAk = isActFx ? tripParseRateLocale(rawAk) : 0;
+  var rateAct = isActFx ? (parsedAk > 0 ? parsedAk : defaultActRate) : 1;
   var base = isBooking ? (+x.amt || 0) : (+x.est || 0);
   var estRp = Math.round(tripPlannedRp(P, x, isBooking));
-  var actRp = Math.round(axNum * rateAct);
+  var actRp = Math.round(axNum * (rateAct > 0 ? rateAct : 0));
   var d = actRp - estRp;
   var diffTxt = d > 0
     ? ('lebih mahal ' + rp(d) + ' dari estimasi')
@@ -1025,7 +1214,7 @@ function tripActualPreviewData(P, x, isBooking, rawAx, rawAk) {
       ? ('lebih murah ' + rp(Math.abs(d)) + ' dari estimasi')
       : 'sama dengan estimasi';
   var detailTxt = '';
-  if (isFx && parsedAk > 0) {
+  if (isItemFx && parsedAk > 0) {
     var eh = Math.round((axNum - base) * ratePlan);
     var ek = Math.round(axNum * (rateAct - ratePlan));
     detailTxt = 'harga ' + tripSignedRp(eh) + ' · kurs ' + tripSignedRp(ek);
@@ -1035,6 +1224,144 @@ function tripActualPreviewData(P, x, isBooking, rawAx, rawAk) {
     detail: detailTxt,
     tone: d > 0 ? 'over' : d < 0 ? 'save' : 'eq',
   };
+}
+
+/** Isi opsi mata uang asing pada dropdown popup Harga Aktual dari profil perjalanan. */
+function tripPopulateAuSelect(selEl, P, preferredCur) {
+  if (!selEl) return;
+  var list = tripAllCurList(P);
+  var prefUp = String(preferredCur || '').trim().toUpperCase();
+  var hasPref = prefUp && list.some(function (f) { return String(f.c || '').toUpperCase() === prefUp; });
+  selEl.innerHTML = list.map(function (f, idx) {
+    var cu = String(f.c || '').trim().toUpperCase();
+    var isSel = hasPref ? (cu === prefUp) : (idx === 0);
+    return '<option value="' + esc(cu) + '"' + (isSel ? ' selected' : '') + '>' + esc(cu) + '</option>';
+  }).join('');
+  if (typeof syncModernSelect === 'function') syncModernSelect(selEl);
+}
+
+/** Sinkronkan tampilan & pratinjau langsung popup Harga Aktual (Desktop & APK). */
+function tripSyncActualDialogLive(tr, x, isBk, prefix) {
+  var g = function (sfx) {
+    var id = prefix + '-' + sfx;
+    return typeof $ === 'function' ? $(id) : (typeof document !== 'undefined' ? document.getElementById(id) : null);
+  };
+  if (!tr || !x) return;
+  var inputsEl = g('inputs'), axEl = g('ax'), axLbl = g('ax-lbl'), auWrap = g('au-wrap'), auSel = g('au');
+  var akWrap = g('ak-wrap'), akEl = g('ak'), akLbl = g('ak-lbl'), akRead = g('ak-read'), akHelp = g('ak-help');
+  var fxTogWrap = g('fx-toggle-wrap'), useFxChk = g('use-fx');
+  var prevEl = g('prev'), detEl = g('prev-det');
+  var isItemFx = !!(x.fx && tripItemCur(tr, x));
+  var useFx = isItemFx || !!(fxTogWrap && !fxTogWrap.hidden && useFxChk && useFxChk.checked);
+  if (inputsEl && inputsEl.classList) {
+    inputsEl.classList.toggle('is-fx', useFx);
+    inputsEl.classList.toggle('has-au', !isItemFx && useFx);
+  }
+  if (auWrap) auWrap.hidden = !(!isItemFx && useFx);
+  if (akWrap) akWrap.hidden = !useFx;
+  var curCode = isItemFx ? tripItemCur(tr, x) : (useFx && auSel ? String(auSel.value || '').trim().toUpperCase() : '');
+  var effRate = isItemFx ? tripItemRate(tr, x) : (curCode ? tripCurRate(tr, curCode) : 0);
+  if (axLbl) axLbl.textContent = useFx ? ('Nominal (' + (curCode || 'asing') + ')') : 'Harga di lapangan (Rp)';
+  if (akLbl) akLbl.textContent = curCode ? ('Kurs (Rp/' + curCode + ')') : 'Kurs (Rp)';
+  if (akEl) akEl.placeholder = effRate > 0 ? tripFormatRateIndo(effRate) : 'Isi kurs';
+  if (akHelp) {
+    akHelp.hidden = !useFx;
+    if (useFx) {
+      akHelp.textContent = effRate > 0
+        ? ('Kosong = ikut kurs ' + (isItemFx ? 'efektif' : 'perjalanan') + ' (1 ' + (curCode || 'asing') + ' = Rp ' + tripFormatRateIndo(effRate) + ')')
+        : ('Kurs ' + (curCode || 'asing') + ' belum diatur — isi kurs manual');
+    } else {
+      akHelp.textContent = '';
+    }
+  }
+  if (akRead) tripSyncRateReadEl(akRead, useFx && akEl ? akEl.value : '', curCode);
+  var info = tripActualPreviewData(tr, x, isBk, axEl && axEl.value, akEl && akEl.value, (!isItemFx && useFx) ? curCode : '');
+  if (prevEl) {
+    prevEl.textContent = info.text || '';
+    prevEl.className = 'trip-act-prev pv' + (info.tone ? (' is-' + info.tone) : '');
+  }
+  if (detEl) {
+    detEl.textContent = info.detail || '';
+    detEl.hidden = !info.detail;
+  }
+}
+
+/** Inisialisasi kontrol popup Harga Aktual saat dibuka (Desktop & APK). */
+function tripSetupActualDialog(tr, x, isBk, prefix, isMobile) {
+  var g = function (sfx) {
+    var id = prefix + '-' + sfx;
+    return typeof $ === 'function' ? $(id) : (typeof document !== 'undefined' ? document.getElementById(id) : null);
+  };
+  if (!tr || !x) return;
+  var itemEl = g('item'), estEl = g('est'), axEl = g('ax'), akEl = g('ak');
+  var fxTogWrap = g('fx-toggle-wrap'), useFxChk = g('use-fx'), auSel = g('au'), delBtn = g('del');
+  if (itemEl) itemEl.textContent = isBk ? (x.title || '') : (x.place || '');
+  if (estEl) estEl.textContent = tripActualEstLabel(tr, x, isBk);
+  if (axEl) axEl.value = x.ax > 0 ? (typeof fmtNumOnlyIntStr === 'function' ? fmtNumOnlyIntStr(String(Math.round(x.ax))) : String(Math.round(x.ax))) : '';
+  tripSetFieldError(prefix + '-ax-err', axEl, '', isMobile);
+  tripSetFieldError(prefix + '-ak-err', akEl, '', isMobile);
+  var isItemFx = !!(x.fx && tripItemCur(tr, x));
+  var curList = tripAllCurList(tr);
+  var hasExistingAu = !!(x.ax > 0 && !isItemFx && x.au && curList.some(function (f) { return String(f.c || '').toUpperCase() === String(x.au || '').toUpperCase(); }));
+  if (fxTogWrap && useFxChk) {
+    if (!isItemFx && curList.length > 0) {
+      fxTogWrap.hidden = false;
+      tripPopulateAuSelect(auSel, tr, x.au || '');
+      useFxChk.checked = hasExistingAu;
+    } else {
+      fxTogWrap.hidden = true;
+      useFxChk.checked = false;
+      if (auSel) {
+        auSel.innerHTML = '';
+        if (typeof syncModernSelect === 'function') syncModernSelect(auSel);
+      }
+    }
+  }
+  if (akEl) akEl.value = ((isItemFx || hasExistingAu) && x.ak > 0) ? String(x.ak) : '';
+  if (delBtn) delBtn.hidden = !(x.ax > 0);
+  tripSyncActualDialogLive(tr, x, isBk, prefix);
+}
+
+/** Validasi dan terapkan hasil submit popup Harga Aktual ke item. */
+function tripApplyActualSubmit(tr, x, prefix, isMobile) {
+  var g = function (sfx) {
+    var id = prefix + '-' + sfx;
+    return typeof $ === 'function' ? $(id) : (typeof document !== 'undefined' ? document.getElementById(id) : null);
+  };
+  var axEl = g('ax'), akEl = g('ak'), auEl = g('au');
+  var fxTogWrap = g('fx-toggle-wrap'), useFxChk = g('use-fx');
+  var rawAx = String(axEl && axEl.value || '').replace(/\D/g, '').slice(0, 13);
+  var axVal = rawAx ? Number(rawAx) : 0;
+  if (!(axVal > 0 && Number.isFinite(axVal) && axVal <= 1e12)) {
+    tripSetFieldError(prefix + '-ax-err', axEl, 'Isi harga aktual lebih besar dari 0.', isMobile);
+    if (typeof rkShakeInvalid === 'function') rkShakeInvalid(axEl);
+    return { ok: false };
+  }
+  tripSetFieldError(prefix + '-ax-err', axEl, '', isMobile);
+  var isItemFx = !!(x.fx && tripItemCur(tr, x));
+  var useFx = isItemFx || !!(fxTogWrap && !fxTogWrap.hidden && useFxChk && useFxChk.checked);
+  var auVal = '';
+  if (!isItemFx && useFx && auEl) {
+    auVal = String(auEl.value || '').trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(auVal)) auVal = '';
+  }
+  var rawAk = String(akEl && akEl.value || '').trim();
+  var akVal = 0;
+  if (useFx && rawAk) {
+    akVal = tripParseRateLocale(rawAk);
+    if (!(akVal > 0 && Number.isFinite(akVal) && akVal <= 1e9)) {
+      tripSetFieldError(prefix + '-ak-err', akEl, 'Kurs harus angka lebih besar dari 0.', isMobile);
+      if (typeof rkShakeInvalid === 'function') rkShakeInvalid(akEl);
+      return { ok: false };
+    }
+  }
+  tripSetFieldError(prefix + '-ak-err', akEl, '', isMobile);
+  x.ax = axVal;
+  if (!isItemFx && useFx && auVal) x.au = auVal;
+  else delete x.au;
+  if (useFx && akVal > 0) x.ak = akVal;
+  else delete x.ak;
+  return { ok: true };
 }
 
 /** Konfirmasi hapus harga aktual saat pengguna mengubah mata uang item yang sudah punya ax. */
@@ -1063,7 +1390,7 @@ function tripConfirmCurrencyChangeIfActual(P, oldItem, nextFx, nextC, onProceed)
 }
 
 /** Render kartu "Rencana vs Realita" (atau keadaan kosong 1 baris) untuk sub-tab Ringkasan. */
-function tripRenderVsPlanCardHtml(P, isMobile) {
+function tripRenderVsPlanCardHtml(P, isMobile, stateObj) {
   var vp = tripVsPlan(P);
   if (!vp.m) return '';
   if (!vp.n) {
@@ -1072,7 +1399,7 @@ function tripRenderVsPlanCardHtml(P, isMobile) {
   }
   var diffR = Math.round(vp.diff);
   var statusCls = diffR > 0 ? 'is-over' : diffR < 0 ? 'is-save' : 'is-eq';
-  var statusTxt = diffR > 0 ? ('Lebih ' + rp(diffR)) : diffR < 0 ? ('Hemat ' + rp(Math.abs(diffR))) : 'Sama persis';
+  var statusTxtShort = diffR > 0 ? ('Lebih ' + rpShort(diffR)) : diffR < 0 ? ('Hemat ' + rpShort(Math.abs(diffR))) : 'Sama persis';
   var ratio = vp.m > 0 ? Math.min(1, Math.max(0, vp.n / vp.m)) : 0;
 
   var fxRowHtml = vp.hasFx
@@ -1104,10 +1431,11 @@ function tripRenderVsPlanCardHtml(P, isMobile) {
     topListHtml += '</div>';
   }
 
+  var fxBuckets = vp.byCur.filter(function (b) { return b.c !== 'IDR'; });
   var curBreakHtml = '';
-  if ((tripMultiCurOn(P) || vp.byCur.length > 1) && vp.byCur.length > 0) {
+  if ((tripMultiCurOn(P) || fxBuckets.length > 1) && fxBuckets.length > 0) {
     curBreakHtml = '<div class="trip-vs-cur-list"><div class="trip-vs-list-hd">Rincian per mata uang</div>' +
-      vp.byCur.map(function (b) {
+      fxBuckets.map(function (b) {
         var bdCls = b.diff > 0 ? 'is-over' : b.diff < 0 ? 'is-save' : 'is-eq';
         return '<div class="trip-vs-cur-row"><span class="badge ' + (isMobile ? 'b-nt' : 'badge-neutral') + '">' + esc(b.c) + '</span>' +
           '<span class="trip-vs-cur-nums">Estimasi <strong class="mono pv">' + rp(b.estRp) + '</strong> &rarr; Aktual <strong class="mono pv">' + rp(b.actRp) + '</strong></span>' +
@@ -1115,27 +1443,52 @@ function tripRenderVsPlanCardHtml(P, isMobile) {
       }).join('') + '</div>';
   }
 
-  return '<div class="card trip-vs-card" id="' + (isMobile ? 'm-' : '') + 'trip-vs-card">' +
-    '<div class="' + (isMobile ? 'card-hd' : 'card-header') + ' trip-vs-hd">' +
-    '<div><h' + (isMobile ? '3' : '2') + ' class="card-title">Rencana vs Realita</h' + (isMobile ? '3' : '2') + '><p class="' + (isMobile ? 'msc-sub' : 'card-sub') + '">dari ' + vp.n + ' item yang sudah ada harga aktual</p></div>' +
-    '<span class="trip-vs-chip ' + statusCls + '"><span class="pv">' + esc(statusTxt) + '</span></span></div>' +
-    '<div class="trip-vs-stats">' +
-    '<div class="trip-vs-stat"><span class="trip-vs-stat-k">Estimasi (item terisi)</span><strong class="mono pv trip-vs-stat-v">' + rp(Math.round(vp.estSum)) + '</strong></div>' +
-    '<div class="trip-vs-stat"><span class="trip-vs-stat-k">Harga aktual</span><strong class="mono pv trip-vs-stat-v">' + rp(Math.round(vp.actSum)) + '</strong></div>' +
-    '<div class="trip-vs-stat"><span class="trip-vs-stat-k">Selisih</span><strong class="mono pv trip-vs-stat-v ' + statusCls + '">' + esc(tripSignedRp(diffR)) + '</strong></div>' +
-    '</div>' +
+  var discKeyVs = 'vs:' + String((P && P.id) || 'trip');
+  var isOpenVs = tripIsDisclosureOpen(stateObj, discKeyVs);
+  var ctrlIdVs = (isMobile ? 'm-' : '') + 'trip-vs-det-' + String((P && P.id) || '0').replace(/[^a-zA-Z0-9_-]/g, '_');
+  var fullRowHtml =
+    '<div class="trip-vs-full-line pv">Penuh: Estimasi <strong class="mono">' + rp(Math.round(vp.estSum)) + '</strong> &rarr; Aktual <strong class="mono">' + rp(Math.round(vp.actSum)) + '</strong> (<strong class="mono ' + statusCls + '">' + esc(tripSignedRp(diffR)) + '</strong>)</div>';
+  var detailInnerHtml =
+    fullRowHtml +
     fxRowHtml +
-    '<div class="trip-vs-prog">' +
-    '<div class="trip-vs-prog-hd"><span>Terisi ' + vp.n + ' dari ' + vp.m + ' item</span><span class="mono">' + Math.round(ratio * 100) + '%</span></div>' +
-    '<div class="trip-vs-prog-track"><div class="trip-vs-prog-fill" style="transform:scaleX(' + ratio.toFixed(4) + ')"></div></div>' +
-    '</div>' +
     '<div class="trip-vs-forecast-row">' +
     '<span>Perkiraan total akhir <strong class="mono pv">' + rp(Math.round(vp.forecast)) + '</strong> <span class="trip-vs-vs-plan">vs rencana <span class="mono pv">' + rp(Math.round(vp.planTotal)) + '</span></span></span>' +
     budHtml +
     '</div>' +
     topListHtml +
-    curBreakHtml +
+    curBreakHtml;
+  var discVs = tripDisclosureHtml({
+    key: discKeyVs,
+    ctrlId: ctrlIdVs,
+    open: isOpenVs,
+    openLabel: 'Rincian',
+    closeLabel: 'Tutup',
+    bodyClass: 'trip-vs-det',
+    bodyHtml: detailInnerHtml,
+  });
+
+  return '<div class="card trip-vs-card" id="' + (isMobile ? 'm-' : '') + 'trip-vs-card">' +
+    '<div class="' + (isMobile ? 'card-hd' : 'card-header') + ' trip-vs-hd">' +
+    '<div><h' + (isMobile ? '3' : '2') + ' class="card-title">Rencana vs Realita</h' + (isMobile ? '3' : '2') + '><p class="' + (isMobile ? 'msc-sub' : 'card-sub') + ' trip-vs-sub">dari ' + vp.n + ' item aktual</p></div>' +
+    '<div class="trip-vs-hd-right"><span class="trip-vs-chip ' + statusCls + '"><span class="pv">' + esc(statusTxtShort) + '</span></span>' + discVs.triggerHtml + '</div></div>' +
+    '<div class="trip-vs-prog">' +
+    '<div class="trip-vs-prog-hd"><span>Terisi ' + vp.n + ' dari ' + vp.m + ' item</span><span class="mono">' + Math.round(ratio * 100) + '%</span></div>' +
+    '<div class="trip-vs-prog-track"><div class="trip-vs-prog-fill" style="transform:scaleX(' + ratio.toFixed(4) + ')"></div></div>' +
+    '</div>' +
+    '<div class="trip-vs-stats is-compact">' +
+    '<div class="trip-vs-stat"><span class="trip-vs-stat-k">Estimasi</span><strong class="mono pv trip-vs-stat-v">' + esc(rpShort(vp.estSum)) + '</strong></div>' +
+    '<div class="trip-vs-stat"><span class="trip-vs-stat-k">Aktual</span><strong class="mono pv trip-vs-stat-v">' + esc(rpShort(vp.actSum)) + '</strong></div>' +
+    '<div class="trip-vs-stat"><span class="trip-vs-stat-k">Selisih</span><strong class="mono pv trip-vs-stat-v ' + statusCls + '">' + esc(tripSignedRpShort(diffR)) + '</strong></div>' +
+    '</div>' +
+    discVs.bodyHtml +
     '</div>';
+}
+
+/** Format nominal rupiah singkat bertanda minus bila negatif (-Rp 1,5 jt). */
+function tripSignedRpShort(n) {
+  var v = Math.round(+n || 0);
+  if (!v) return 'Rp 0';
+  return (v < 0 ? '-' : '') + rpShort(Math.abs(v));
 }
 
 /** Format nominal rupiah bertanda minus bila negatif (-Rp ... atau Rp ...). */
@@ -1588,7 +1941,7 @@ function kasSavePm() {
     a = $('kpa').value,
     b = $('kpb').value,
     cu = $('kpu').value.trim().toUpperCase(),
-    rt = parseFloat($('kpk').value) || 0,
+    rt = tripParseRateLocale($('kpk').value),
     useB = $('kpgm').value === '1',
     bg = useB ? parseRp($('kpg').value) || 0 : 0,
     err = function (t) {
@@ -2132,7 +2485,7 @@ function tripValidateMetaInput(start, end, curRaw, rateRaw) {
   if (dtErr) return dtErr;
   var cu = String(curRaw == null ? '' : curRaw).trim().toUpperCase();
   if (cu && !/^[A-Z]{3}$/.test(cu)) return { field: 'cur', error: 'Mata uang terdiri dari 3 huruf, mis. JPY.' };
-  var rt = parseFloat(String(rateRaw == null ? '' : rateRaw).replace(',', '.')) || 0;
+  var rt = tripParseRateLocale(rateRaw);
   if (cu && !(rt > 0)) return { field: 'rate', error: 'Isi kurs: berapa rupiah untuk 1 ' + cu + '.' };
   return null;
 }
@@ -2882,7 +3235,7 @@ function xlSummaryText(d) {
 function xlValidateMeta(d, nama, curRaw, kursRaw) {
   var n = String(nama == null ? '' : nama).trim().slice(0, 30),
     cu = String(curRaw == null ? '' : curRaw).trim().toUpperCase(),
-    rt = parseFloat(String(kursRaw == null ? '' : kursRaw).replace(',', '.')) || 0;
+    rt = tripParseRateLocale(kursRaw);
   if (!d) return { error: '' };
   if (d.error) return { error: d.error };
   if (d.curs && d.curs.length > 7) return { error: 'Maksimal 6 mata uang tambahan (total 7 kode asing).' };
@@ -2900,7 +3253,7 @@ function xlBuildProfile(d, nama, cur, kurs) {
   var id = 'p' + Date.now().toString(36);
   if (ALL && ALL.kas && ALL.kas.pr && ALL.kas.pr[id]) id = kid('p');
   var cu = String(cur == null ? '' : cur).trim().toUpperCase(),
-    rt = parseFloat(String(kurs == null ? '' : kurs).replace(',', '.')) || 0;
+    rt = tripParseRateLocale(kurs);
   var extrasClean = (Array.isArray(d.extras) ? d.extras : []).filter(function (ec) {
     return ec && /^[A-Z]{3}$/.test(ec) && ec !== cu && ec !== 'IDR' && ec !== 'RP';
   }).slice(0, 6);

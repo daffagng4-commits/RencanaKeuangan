@@ -3364,6 +3364,63 @@ body.privacy-on #browser-shell .pv {
   font-weight: 600;
   color: var(--text-secondary);
 }
+#browser-shell .trip-act-fx-tog {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+#browser-shell .trip-act-fx-tog[hidden] { display: none; }
+#browser-shell .trip-act-fx-tog input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+#browser-shell .trip-act-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+#browser-shell .trip-act-inputs.is-fx {
+  grid-template-columns: minmax(0, 1fr) 108px;
+}
+#browser-shell .trip-act-inputs.is-fx.has-au {
+  grid-template-columns: minmax(0, 1fr) 86px 96px;
+}
+#browser-shell .trip-act-inputs .field {
+  min-width: 0;
+  margin-bottom: 0;
+}
+#browser-shell .trip-act-inputs .input,
+#browser-shell .trip-act-inputs select,
+#browser-shell .trip-act-inputs .mselect {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  height: 38px;
+}
+#browser-shell .trip-act-inputs .mselect-trigger {
+  height: 38px;
+  min-height: 38px;
+}
+#browser-shell .trip-act-inputs .field-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#browser-shell .trip-act-help {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: -2px;
+}
+#browser-shell .trip-act-help[hidden] { display: none; }
 #browser-shell .trip-act-prev {
   font-size: 0.83rem;
   font-weight: 700;
@@ -3549,4 +3606,118 @@ body.privacy-on #browser-shell .pv {
   font-weight: 700;
   text-decoration: underline;
   margin-left: 6px;
+}
+
+/* Tahap 12A.1 K: Pratinjau Terbaca di bawah kolom kurs */
+#browser-shell .trip-rate-read {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#browser-shell .trip-rate-read[hidden] {
+  display: none;
+}
+#browser-shell .trip-fx-edit-row .trip-rate-read {
+  grid-column: 1 / -1;
+  margin-top: -2px;
+}
+
+/* Tahap 12B.1 P5/P6: Progressive Disclosure Ringkasan (Desktop) */
+#browser-shell .trip-disc-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  min-height: 26px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-subtle);
+  color: var(--accent-ink);
+  font: inherit;
+  font-size: 0.73rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background-color 140ms var(--ease-out), border-color 140ms var(--ease-out);
+}
+@media (hover: hover) {
+  #browser-shell .trip-disc-btn:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent-border);
+  }
+}
+#browser-shell .trip-disc-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+#browser-shell .trip-disc-chev {
+  transition: transform 140ms var(--ease-out);
+  flex-shrink: 0;
+}
+#browser-shell .trip-disc-btn[aria-expanded="true"] .trip-disc-chev {
+  transform: rotate(180deg);
+}
+@keyframes rkDiscFadeD {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+#browser-shell .trip-disc-body[hidden] { display: none; }
+#browser-shell .trip-disc-body.is-opening {
+  animation: rkDiscFadeD 150ms var(--ease-out);
+}
+#browser-shell .trip-tot-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+#browser-shell .trip-tot-brief {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+#browser-shell .trip-fx-warn-pill {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+#browser-shell .trip-tot-det {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+#browser-shell .trip-vs-hd-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+#browser-shell .trip-vs-det {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+#browser-shell .trip-vs-full-line {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+@media (prefers-reduced-motion: reduce) {
+  #browser-shell .trip-disc-chev { transition: none; }
+  #browser-shell .trip-disc-body.is-opening { animation: none; }
 }

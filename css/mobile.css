@@ -2842,8 +2842,8 @@ body[data-shell="mobile-app"] #mobile-app-shell .rk-row-highlight-static::after 
 /* Tahap 12B C2: Baris Tombol Kartu, Harga Aktual (Item + Bottom Sheet), & Kartu Rencana vs Realita */
 body[data-shell="mobile-app"] #mobile-app-shell .trip-item-card .trip-card-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 5px;
   justify-content: flex-end;
   align-items: center;
   padding-top: 8px;
@@ -2851,15 +2851,62 @@ body[data-shell="mobile-app"] #mobile-app-shell .trip-item-card .trip-card-actio
   border-top: 1px solid var(--border-subtle);
 }
 body[data-shell="mobile-app"] #mobile-app-shell .trip-item-card .trip-card-actions .btn {
-  min-height: 44px;
-  padding: 6px 11px;
+  position: relative;
+  flex: 0 0 auto;
+  min-height: 32px;
+  height: 32px;
+  padding: 0 8px;
   font-size: 0.75rem;
+  line-height: 1;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-item-card .trip-card-actions .btn::before {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
 body[data-shell="mobile-app"] #mobile-app-shell .trip-item-card .trip-card-actions .btn-sm::after {
   content: none;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-item-card .trip-card-actions .trip-btn-del {
+  width: 38px;
+  min-width: 38px;
+  padding: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-item-card .trip-card-actions .trip-btn-del::before {
+  inset: -4px 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-item-card .trip-card-actions .trip-btn-del svg {
+  pointer-events: none;
+  display: block;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 350px) {
+  body[data-shell="mobile-app"] #mobile-app-shell .trip-item-card .trip-card-actions {
+    gap: 4px;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell .trip-item-card .trip-card-actions .btn {
+    padding: 0 6px;
+    font-size: 0.75rem;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell .trip-item-card .trip-card-actions .trip-btn-del {
+    width: 32px;
+    min-width: 32px;
+    padding: 0;
+  }
 }
 body[data-shell="mobile-app"] #mobile-app-shell .trip-btn-done.btn-emerald {
   background: var(--emerald-soft);
@@ -2882,13 +2929,70 @@ body[data-shell="mobile-app"] #mobile-app-shell .trip-actual-diff.is-save { colo
 body[data-shell="mobile-app"] #mobile-app-shell .trip-actual-diff.is-eq { color: var(--text-muted); font-weight: 700; }
 
 body[data-shell="mobile-app"] #mobile-app-shell .trip-act-est-box {
-  padding: 9px 11px;
+  padding: 8px 11px;
   border-radius: 10px;
   background: var(--bg-subtle);
   border: 1px solid var(--border-subtle);
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-secondary);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-fx-tog {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-fx-tog[hidden] { display: none; }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-fx-tog input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--accent);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs.is-fx {
+  grid-template-columns: minmax(0, 1fr) 108px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs.is-fx.has-au {
+  grid-template-columns: minmax(0, 1fr) 86px 96px;
+}
+@media (max-width: 350px) {
+  body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs.is-fx.has-au {
+    grid-template-columns: minmax(0, 1fr) 74px 86px;
+  }
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs .field {
+  min-width: 0;
+  margin-bottom: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs .input,
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  height: 38px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-inputs .field-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-help {
+  margin-top: -2px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-act-help[hidden] { display: none; }
+body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .modal-sheet {
+  max-height: calc(100% - 16px);
 }
 body[data-shell="mobile-app"] #mobile-app-shell .trip-act-prev {
   font-size: 0.8rem;
@@ -2905,7 +3009,17 @@ body[data-shell="mobile-app"] #mobile-app-shell .trip-act-prev-det {
 }
 @media (max-height: 500px) {
   body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .modal-sheet {
-    max-height: 92%;
+    max-height: 96%;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .ms-body {
+    padding: 8px 14px;
+    gap: 5px;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .trip-act-est-box {
+    padding: 6px 10px;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell #m-sheet-actual .trip-act-fx-tog {
+    min-height: 32px;
   }
 }
 
@@ -3089,4 +3203,161 @@ body[data-shell="mobile-app"] #mobile-app-shell .m-sync-banner-sub {
   margin-top: 3px;
   color: var(--text-primary);
   font-size: 0.74rem;
+}
+
+/* Tahap 12A.1 K: Pratinjau Terbaca di bawah kolom kurs APK */
+body[data-shell="mobile-app"] #mobile-app-shell .trip-rate-read {
+  font-size: 0.71rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-rate-read[hidden] {
+  display: none;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-fx-edit-row .trip-rate-read {
+  grid-column: 1 / -1;
+  margin-top: -1px;
+}
+
+/* Tahap 12B.1 P5/P6: Progressive Disclosure Ringkasan (APK) */
+body[data-shell="mobile-app"] #mobile-app-shell .trip-disc-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  min-height: 24px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-subtle);
+  color: var(--accent-ink);
+  font: inherit;
+  font-size: 0.69rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-disc-btn::before {
+  content: '';
+  position: absolute;
+  inset: -8px -4px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-disc-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-disc-chev {
+  transition: transform 140ms var(--ease-out);
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-disc-btn[aria-expanded="true"] .trip-disc-chev {
+  transform: rotate(180deg);
+}
+@keyframes rkDiscFadeM {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-disc-body[hidden] { display: none; }
+body[data-shell="mobile-app"] #mobile-app-shell .trip-disc-body.is-opening {
+  animation: rkDiscFadeM 150ms var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-tot-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 5px;
+  line-height: 1.2;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-tot-brief {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  line-height: 1.2;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-disc-btn {
+  padding: 1px 6px;
+  min-height: 18px;
+  font-size: 0.65rem;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-trip-kpis .m-tile {
+  padding: 9px 11px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-fx-warn-pill {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--amber-soft);
+  color: var(--amber);
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-tot-det {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .card.trip-vs-card {
+  padding: 10px 11px;
+  gap: 5px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .card.trip-vs-card .trip-vs-hd {
+  align-items: center;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .card.trip-vs-card .trip-vs-prog {
+  gap: 2px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .card.trip-vs-card .trip-vs-prog-track {
+  height: 5px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-sub {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.15;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-hd-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-stats.is-compact {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-stats.is-compact .trip-vs-stat {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+  padding: 5px 6px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-stats.is-compact .trip-vs-stat-v {
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-det {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 7px;
+  border-top: 1px solid var(--border-subtle);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .trip-vs-full-line {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-shell="mobile-app"] #mobile-app-shell .trip-disc-chev { transition: none; }
+  body[data-shell="mobile-app"] #mobile-app-shell .trip-disc-body.is-opening { animation: none; }
 }

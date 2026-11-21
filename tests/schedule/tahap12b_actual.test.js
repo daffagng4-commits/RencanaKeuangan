@@ -526,9 +526,9 @@ const { boot } = require('./ui.js');
   // =========================================================================
   // C4: BAGIAN S — Pengaman Versi Sinkronisasi (RK_SCHEMA_VER / sv)
   // =========================================================================
-  assert.strictEqual(w.RK_SCHEMA_VER, 2, 'C4 S: konstanta RK_SCHEMA_VER === 2');
-  assert.strictEqual(w.norm(null).sv, 2, 'C4 S: norm(null) mengisi sv === RK_SCHEMA_VER');
-  assert.strictEqual(w.emptyAllState(2026).sv, 2, 'C4 S: emptyAllState() mengisi sv === RK_SCHEMA_VER');
+  assert.strictEqual(w.RK_SCHEMA_VER, 3, 'C4 S: konstanta RK_SCHEMA_VER === 3');
+  assert.strictEqual(w.norm(null).sv, 3, 'C4 S: norm(null) mengisi sv === RK_SCHEMA_VER');
+  assert.strictEqual(w.emptyAllState(2026).sv, 3, 'C4 S: emptyAllState() mengisi sv === RK_SCHEMA_VER');
 
   // Siapkan mock Supabase untuk menguji push/pull/konflik & banner persisten
   const origSb = w.sb;
@@ -568,13 +568,13 @@ const { boot } = require('./ui.js');
     };
     if (typeof w.bindSync === 'function') w.bindSync();
 
-    // 1. push() selalu menyertakan data.sv === 2
+    // 1. push() selalu menyertakan data.sv === 3
     w.syncBlocked = false;
     w.syncSchemaBlocked = false;
     w.ALL.rev = Date.now();
     await w.push();
     assert.strictEqual(pushedPayloads.length, 1, 'C4 S: push mengirim payload ke mock cloud');
-    assert.strictEqual(pushedPayloads[0].data.sv, 2, 'C4 S: payload.data.sv selalu 2');
+    assert.strictEqual(pushedPayloads[0].data.sv, 3, 'C4 S: payload.data.sv selalu 3');
 
     // 2. pull() menerima data cloud dengan sv lebih tinggi (sv: 99) -> blokir total
     pushedPayloads.length = 0;
@@ -625,21 +625,21 @@ const { boot } = require('./ui.js');
     assert.ok(mBan.textContent.includes('Pengaturan') && /Cek pembaruan/i.test(mBan.textContent), 'C4 S APK: petunjuk Pengaturan -> Cek pembaruan tampil');
     w.setShellMode('browser');
 
-    // 3. Upgrade / cloud sv <= RK_SCHEMA_VER (sv === 2 atau sv hilang -> dianggap 1): sinkron normal kembali
+    // 3. Upgrade / cloud sv <= RK_SCHEMA_VER (sv <= 3 atau sv hilang -> dianggap 1): sinkron normal kembali
     const compatState = w.emptyAllState(2026);
     compatState.data[2026].saldo = 12345678;
     delete compatState.sv; // Data lama tanpa field sv (dianggap v1)
     remoteRowMock = { rev: Date.now() + 90000, data: compatState };
     await w.pull();
-    assert.strictEqual(w.syncBlocked, false, 'C4 S: cloud lama tanpa sv (dianggap v1 <= 2) membuka blokir & sinkron normal');
+    assert.strictEqual(w.syncBlocked, false, 'C4 S: cloud lama tanpa sv (dianggap v1 <= 3) membuka blokir & sinkron normal');
     assert.strictEqual(w.syncSchemaBlocked, false, 'C4 S: syncSchemaBlocked false kembali');
-    assert.strictEqual(w.ALL.data[2026].saldo, 12345678, 'C4 S: data cloud sv<=2 berhasil dimuat');
-    assert.strictEqual(w.ALL.sv, 2, 'C4 S: ALL.sv tetap 2 setelah memuat data lama');
+    assert.strictEqual(w.ALL.data[2026].saldo, 12345678, 'C4 S: data cloud sv<=3 berhasil dimuat');
+    assert.strictEqual(w.ALL.sv, 3, 'C4 S: ALL.sv tetap 3 setelah memuat data lama');
 
     // 4. Ekspor / Impor cadangan JSON membawa sv & menerima cadangan lama tanpa sv
     const exportedJson = JSON.stringify(w.ALL, null, 1);
     const parsedExp = JSON.parse(exportedJson);
-    assert.strictEqual(parsedExp.sv, 2, 'C4 S Backup: JSON ekspor menyertakan sv === 2');
+    assert.strictEqual(parsedExp.sv, 3, 'C4 S Backup: JSON ekspor menyertakan sv === 3');
     const legacyBackup = JSON.parse(exportedJson);
     delete legacyBackup.sv;
     legacyBackup.data[2029] = {
@@ -655,12 +655,12 @@ const { boot } = require('./ui.js');
     w.doImport(JSON.stringify(legacyBackup));
     assert.ok(w.ALL.data[2029] && w.ALL.data[2029].saldo === 777000 && w.ALL.data[2029].items.some((x) => x.id === 999111), 'C4 S Backup: impor cadangan lama tanpa sv berhasil menggabung tahun & item baru');
     assert.strictEqual(w.ALL.data[2026].saldo, 12345678, 'C4 S Backup: data eksisting 2026 tetap utuh');
-    assert.strictEqual(w.ALL.sv, 2, 'C4 S Backup: ALL.sv setelah impor cadangan lama tetap 2');
+    assert.strictEqual(w.ALL.sv, 3, 'C4 S Backup: ALL.sv setelah impor cadangan lama tetap 3');
     const replacedOld = w.norm(legacyBackup);
     assert.strictEqual(replacedOld.data[2029].saldo, 777000, 'C4 S Backup: norm() cadangan lama tanpa sv mempertahankan saldo');
-    assert.strictEqual(replacedOld.sv, 2, 'C4 S Backup: norm() mengisi sv === 2 pada cadangan lama');
+    assert.strictEqual(replacedOld.sv, 3, 'C4 S Backup: norm() mengisi sv === 3 pada cadangan lama');
     w.doImport(exportedJson);
-    assert.strictEqual(w.ALL.data[2026].saldo, 12345678, 'C4 S Backup: impor cadangan dengan sv:2 berhasil');
+    assert.strictEqual(w.ALL.data[2026].saldo, 12345678, 'C4 S Backup: impor cadangan dengan sv:3 berhasil');
   } finally {
     w.sb = origSb;
     w.sbUser = origSbUser;

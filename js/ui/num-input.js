@@ -153,26 +153,35 @@ function fmtNumOnlyIntStr(raw) {
   return d.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-/** Sanitasi string kurs menjadi digit plus maksimal SATU pemisah desimal (`,` atau `.`). */
+/** Sanitasi string kurs menjadi digit, titik ribuan (boleh berkali-kali), dan maksimal SATU koma desimal. */
 function sanitizeNumOnlyDecStr(raw) {
   if (raw == null) return '';
   var s = String(raw),
     out = '',
-    hasSep = false,
+    hasComma = false,
     digits = 0;
   for (var i = 0; i < s.length; i++) {
     var ch = s[i];
     if (ch >= '0' && ch <= '9') {
-      if (digits < 12) {
+      if (digits < 15) {
         out += ch;
         digits++;
       }
-    } else if ((ch === ',' || ch === '.') && !hasSep) {
-      hasSep = true;
+    } else if (ch === '.') {
+      out += ch;
+    } else if (ch === ',' && !hasComma) {
+      hasComma = true;
       out += ch;
     }
   }
   return out;
+}
+
+/** Format nilai kurs ke bentuk kanonik tanpa pemisah ribuan saat blur (1500, 105,5). */
+function fmtRateCanonicalStr(val) {
+  if (!(typeof val === 'number' && Number.isFinite(val) && val > 0 && val <= 1e9)) return '';
+  if (val >= 1e-6) return String(val).replace('.', ',');
+  return val.toFixed(6).replace(/0+$/, '').replace(/\.$/, '').replace('.', ',');
 }
 
 /** Terapkan sanitasi integer murni real-time dengan menjaga posisi kursor. */
@@ -235,11 +244,13 @@ function bindNumInputs() {
         e.preventDefault();
         return;
       }
-      var v = String(t.value || '');
-      var s = typeof t.selectionStart === 'number' ? t.selectionStart : v.length;
-      var en = typeof t.selectionEnd === 'number' ? t.selectionEnd : s;
-      var rest = v.slice(0, s) + v.slice(en);
-      if (/^[.,]+$/.test(d) && /[.,]/.test(rest)) e.preventDefault();
+      if (d.indexOf(',') >= 0) {
+        var v = String(t.value || '');
+        var s = typeof t.selectionStart === 'number' ? t.selectionStart : v.length;
+        var en = typeof t.selectionEnd === 'number' ? t.selectionEnd : s;
+        var rest = v.slice(0, s) + v.slice(en);
+        if (rest.indexOf(',') >= 0) e.preventDefault();
+      }
     }
   });
   function handlePasteOrDropNumOnly(e) {
@@ -294,6 +305,13 @@ function bindNumInputs() {
       }
       if (numOnly === 'dec') {
         fmtLiveNumOnlyDec(t);
+        if (t.value && typeof tripParseRateLocale === 'function') {
+          var parsedDec = tripParseRateLocale(t.value);
+          if (parsedDec > 0) {
+            var canonDec = fmtRateCanonicalStr(parsedDec);
+            if (canonDec) t.value = canonDec;
+          }
+        }
         return;
       }
       if (!isNumInput(t) || !t.value) return;

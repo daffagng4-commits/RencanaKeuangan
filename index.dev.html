@@ -1191,6 +1191,7 @@
             <div class="field">
               <label class="field-label" for="kp-rate">Kurs: Rp per 1 mata uang</label>
               <input class="input mono" id="kp-rate" type="text" inputmode="decimal" data-num-only="dec" placeholder="108.5" />
+              <div class="trip-rate-read pv" id="kp-rate-read" aria-live="polite" hidden></div>
             </div>
           </div>
           <div class="trip-multi-cur-box">
@@ -1262,6 +1263,7 @@
             <div class="field">
               <label class="field-label" for="br-xl-rate">Kurs (Rp / 1 unit)</label>
               <input class="input mono" id="br-xl-rate" type="text" inputmode="decimal" data-num-only="dec" placeholder="110" />
+              <div class="trip-rate-read pv" id="br-xl-rate-read" aria-live="polite" hidden></div>
             </div>
           </div>
           <div id="br-xl-err" role="alert" style="color:var(--crimson);font-size:0.82rem;font-weight:600;min-height:1.1em;"></div>
@@ -1287,17 +1289,28 @@
       <form id="trip-actual-form" novalidate>
         <div class="modal-body">
           <div class="trip-act-est-box pv" id="act-m-est">Estimasi: Rp 0</div>
-          <div class="field">
-            <label class="field-label" for="act-m-ax" id="act-m-ax-lbl">Harga di lapangan (Rp)</label>
-            <input class="input mono" id="act-m-ax" type="text" inputmode="numeric" data-num-only="int" placeholder="0" required />
-            <div class="trip-field-err" id="act-m-ax-err" role="alert" hidden></div>
+          <label class="trip-act-fx-tog" id="act-m-fx-toggle-wrap" hidden>
+            <input type="checkbox" id="act-m-use-fx" />
+            <span>Gunakan mata uang asing</span>
+          </label>
+          <div class="trip-act-inputs" id="act-m-inputs">
+            <div class="field trip-act-col-ax">
+              <label class="field-label" for="act-m-ax" id="act-m-ax-lbl">Harga di lapangan (Rp)</label>
+              <input class="input mono" id="act-m-ax" type="text" inputmode="numeric" data-num-only="int" placeholder="0" required />
+            </div>
+            <div class="field trip-act-col-au" id="act-m-au-wrap" hidden>
+              <label class="field-label" for="act-m-au">Mata uang</label>
+              <select class="input" id="act-m-au" aria-label="Mata uang aktual"></select>
+            </div>
+            <div class="field trip-act-col-ak" id="act-m-ak-wrap" hidden>
+              <label class="field-label" for="act-m-ak" id="act-m-ak-lbl">Kurs</label>
+              <input class="input mono" id="act-m-ak" type="text" inputmode="decimal" data-num-only="dec" placeholder="Ikut kurs" />
+            </div>
           </div>
-          <div class="field" id="act-m-ak-wrap" hidden>
-            <label class="field-label" for="act-m-ak" id="act-m-ak-lbl">Kurs (Rp per 1 unit)</label>
-            <input class="input mono" id="act-m-ak" type="text" inputmode="decimal" data-num-only="dec" placeholder="ikut kurs efektif" />
-            <div class="trip-field-err" id="act-m-ak-err" role="alert" hidden></div>
-            <div class="sub">Kosongkan untuk mengikuti kurs efektif item.</div>
-          </div>
+          <div class="trip-field-err" id="act-m-ax-err" role="alert" hidden></div>
+          <div class="trip-field-err" id="act-m-ak-err" role="alert" hidden></div>
+          <div class="trip-rate-read pv" id="act-m-ak-read" aria-live="polite" hidden></div>
+          <div class="sub trip-act-help" id="act-m-ak-help" hidden></div>
           <div class="trip-act-prev pv" id="act-m-prev" aria-live="polite"></div>
           <div class="trip-act-prev-det pv" id="act-m-prev-det"></div>
         </div>

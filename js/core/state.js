@@ -3,7 +3,7 @@
  */
 
 var KEY = 'rencana-keuangan-v1';
-var RK_SCHEMA_VER = 2; // Naikkan hanya bila bentuk data berubah di tahap mendatang.
+var RK_SCHEMA_VER = 3; // Naikkan hanya bila bentuk data berubah di tahap mendatang.
 
 /** ALL = {year, rev, data:{[tahun]:{saldo,startMonth,items,paid,skip,adj}}}; S = data tahun aktif. */
 
@@ -176,6 +176,21 @@ function isValidIsoDate(s) {
 /** Daftar kategori valid untuk pengeluaran aktual perjalanan (union ICAT & BCAT). */
 var TRIP_AC_CAT_SET = { Makan: 1, Transport: 1, 'Tiket & Tour': 1, Belanja: 1, Penginapan: 1, Persiapan: 1, Lainnya: 1 };
 
+/** Normalisasi field harga aktual (ax, au, ak) pada item itinerary/pemesanan. */
+function normTripActualFields(row, x, isFx, mainCurUp, validExtraSet) {
+  if (!row || !x) return;
+  if (!(typeof x.ax === 'number' && Number.isFinite(x.ax) && x.ax > 0 && x.ax <= 1e12)) return;
+  var hasAuField = x.au != null && x.au !== '';
+  var rawAu = typeof x.au === 'string' ? x.au.trim().toUpperCase() : '';
+  var validAu = /^[A-Z]{3}$/.test(rawAu) && (rawAu === mainCurUp || !!validExtraSet[rawAu]);
+  if (hasAuField && !validAu) return;
+  row.ax = x.ax;
+  if (!isFx && validAu) row.au = rawAu;
+  if ((isFx || validAu) && typeof x.ak === 'number' && Number.isFinite(x.ak) && x.ak > 0 && x.ak <= 1e9) {
+    row.ak = x.ak;
+  }
+}
+
 /** Catatan Kas: {pr:{[id]:{id,name,saldo,tx:[{id,d,t,amt,cat,note}]}}}. Selalu ada minimal satu profil. */
 function normKas(k) {
   var pr = {};
@@ -220,13 +235,7 @@ function normKas(k) {
           };
           if (xcIt && validExtraSet[xcIt]) rowIt.c = xcIt;
           if (okRtIt) rowIt.rt = x.rt;
-          var okAxIt = typeof x.ax === 'number' && Number.isFinite(x.ax) && x.ax > 0 && x.ax <= 1e12;
-          if (okAxIt) {
-            rowIt.ax = x.ax;
-            if (isFxIt && typeof x.ak === 'number' && Number.isFinite(x.ak) && x.ak > 0 && x.ak <= 1e9) {
-              rowIt.ak = x.ak;
-            }
-          }
+          normTripActualFields(rowIt, x, isFxIt, mainCurUp, validExtraSet);
           return rowIt;
         });
       var cleanBk = (Array.isArray(p.bk) ? p.bk : [])
@@ -253,13 +262,7 @@ function normKas(k) {
           if (xcBk && validExtraSet[xcBk]) row.c = xcBk;
           if (okRt) row.rt = x.rt;
           if (okRt && isPaid && x.ra === true) row.ra = true;
-          var okAxBk = typeof x.ax === 'number' && Number.isFinite(x.ax) && x.ax > 0 && x.ax <= 1e12;
-          if (okAxBk) {
-            row.ax = x.ax;
-            if (isFx && typeof x.ak === 'number' && Number.isFinite(x.ak) && x.ak > 0 && x.ak <= 1e9) {
-              row.ak = x.ak;
-            }
-          }
+          normTripActualFields(row, x, isFx, mainCurUp, validExtraSet);
           return row;
         });
       // warisan Tahap 11: sanitasi P.ac dipertahankan agar data lama tidak hilang saat simpan/sinkron (tanpa UI)
