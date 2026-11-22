@@ -5,10 +5,15 @@ const { boot } = require('./ui.js');
 
 const ROOT = path.resolve(__dirname, '../..');
 
+function parseScaleY(str) {
+  const m = String(str || '').match(/scaleY\(\s*([0-9.eE+-]+)\s*\)/);
+  return m ? Number(m[1]) : NaN;
+}
+
 (async () => {
   const t = boot();
   await t.ready();
-  const { w, $ , errs } = t;
+  const { w, $, errs } = t;
   const doc = w.document;
 
   w.__today = '2026-11-22';
@@ -31,14 +36,10 @@ const ROOT = path.resolve(__dirname, '../..');
   const shellRoot = $('mobile-app-shell');
   const wm = shellRoot.querySelector('svg.mt-wordmark');
 
-  // Struktur 6 grup huruf berurutan dan invarian path
-  assert(Array.isArray(w.RK_WORDMARK_LETTERS) && w.RK_WORDMARK_LETTERS.length === 6, 'RK_WORDMARK_LETTERS berisi tepat 6 path huruf (R,e,n,K,e,u)');
-  assert.strictEqual(w.RK_WORDMARK_LETTERS.join(''), w.RK_WORDMARK_PATH, 'Invarian: RK_WORDMARK_LETTERS.join("") === RK_WORDMARK_PATH');
-  assert.deepStrictEqual(
-    [...w.RK_WORDMARK_LETTERS].map((p) => (p.match(/M/g) || []).length),
-    [2, 1, 1, 1, 1, 1],
-    'Jumlah perintah M per huruf konsisten (R punya lubang dalam, huruf lain 1 subpath)'
-  );
+  // Struktur 6 glyph Pacifico berurutan dan invarian path (diperbarui setara ke kontrak Tahap 18)
+  assert(Array.isArray(w.RK_WM_GLYPHS) && w.RK_WM_GLYPHS.length === 6, 'RK_WM_GLYPHS berisi tepat 6 path huruf (R,e,n,K,e,u)');
+  assert.strictEqual(w.RK_WM_GLYPHS.join(''), w.RK_WORDMARK_PATH, 'Invarian: RK_WM_GLYPHS.join("") === RK_WORDMARK_PATH');
+  assert(Array.isArray(w.RK_WM_BOXES) && w.RK_WM_BOXES.length === 6, 'RK_WM_BOXES berisi tepat 6 kotak batas huruf');
   assert(wm, 'svg.mt-wordmark tersedia');
   assert.strictEqual(wm.getAttribute('role'), 'img', 'wordmark mempertahankan role="img"');
   assert.strictEqual(wm.getAttribute('aria-label'), 'RenKeu', 'wordmark mempertahankan aria-label="RenKeu"');
@@ -50,8 +51,8 @@ const ROOT = path.resolve(__dirname, '../..');
     assert(g.querySelector('.mt-wm-white') && g.querySelector('.mt-wm-dead') && g.querySelector('.mt-wm-lit') && g.querySelector('.mt-wm-flash'), `grup huruf ${idx} memuat 4 lapisan warna`);
   });
 
-  // Sisa Tahap 16 dan spinner PTR sudah dihapus dari DOM
-  assert(!doc.querySelector('.m-ptr-spin, .mt-wm-beam, .mt-wm-shimmer-clip, #rk-wm-clip, #rk-wm-grad'), 'elemen Tahap 16 dan spinner PTR tidak ada di DOM');
+  // Sisa Tahap 16/17 lama dan spinner PTR sudah dihapus dari DOM
+  assert(!doc.querySelector('.m-ptr-spin, .mt-wm-beam, .mt-wm-shimmer-clip, #rk-wm-clip, #rk-wm-grad'), 'elemen shimmer lama dan spinner PTR tidak ada di DOM');
 
   // Render ulang berulang tidak menggandakan grup huruf atau ID
   w.renderMobileApp();
@@ -61,34 +62,40 @@ const ROOT = path.resolve(__dirname, '../..');
   assert.strictEqual(shellRoot.querySelectorAll('g.mt-wm-letter').length, 6, 'render ulang tidak menggandakan grup huruf');
   assert.strictEqual(doc.querySelectorAll('#m-refresh-status').length, 1, 'id #m-refresh-status tetap unik');
 
-  // Jam tiruan dan timer tiruan untuk memverifikasi urutan langkah, loop, finale, dan jalur non-sukses
+  // Jam tiruan scheduler tunggal untuk memverifikasi lintasan kontinu, loop, finale, dan jalur non-sukses
   const origNow = w.Date.now;
-  const origSetTimeout = w.setTimeout;
-  const origClearTimeout = w.clearTimeout;
+  const origClock = w._rkWmClock;
   let fakeNow = Date.now() + 500000;
   w.Date.now = () => fakeNow;
-  const timers = [];
-  let tSeq = 1;
-  w.setTimeout = (fn, ms) => {
-    const id = tSeq++;
-    timers.push({ id, fn, due: fakeNow + (Number(ms) || 0), cleared: false });
+  const jobs = [];
+  let jSeq = 1;
+  const pushJob = (fn, ms) => {
+    const id = jSeq++;
+    jobs.push({ id, fn, due: fakeNow + (Number(ms) || 0), cleared: false });
     return id;
   };
-  w.clearTimeout = (id) => {
-    const found = timers.find((x) => x.id === id);
+  const cancelJob = (id) => {
+    const found = jobs.find((x) => x.id === id);
     if (found) found.cleared = true;
   };
-  const activeTimersCount = () => timers.filter((x) => !x.cleared).length;
+  w._rkWmClock = {
+    now: () => fakeNow,
+    raf: (fn) => pushJob(fn, 16),
+    cancelRaf: cancelJob,
+    setTimeout: pushJob,
+    clearTimeout: cancelJob,
+  };
+  const activeJobsCount = () => jobs.filter((x) => !x.cleared).length;
   const advanceTime = (ms) => {
     const target = fakeNow + ms;
     while (true) {
-      const next = timers
+      const next = jobs
         .filter((x) => !x.cleared && x.due <= target)
         .sort((a, b) => a.due - b.due)[0];
       if (!next) break;
       next.cleared = true;
       fakeNow = next.due;
-      next.fn();
+      next.fn(fakeNow);
     }
     fakeNow = target;
   };
@@ -108,67 +115,63 @@ const ROOT = path.resolve(__dirname, '../..');
     el.dispatchEvent(ev);
     return ev;
   };
-
-  const bnav = shellRoot.querySelector('.mob-bottom-nav');
-  const rinBtn = bnav.querySelector('[data-mtab="rincian"]');
+  const getClipScales = () => [...shellRoot.querySelectorAll('svg.mt-wordmark rect.mt-wm-clip-rect')].map((r) => parseScaleY(r.style.transform));
 
   // Pantau perubahan data-refreshing dan data-wm-finale lewat MutationObserver
-  const refTransitions = [];
+  const refEvents = [];
   const finaleEvents = [];
   const obs = new w.MutationObserver((muts) => {
     for (const m of muts) {
       if (m.attributeName === 'data-refreshing') {
         const wasOn = m.oldValue === '1';
-        const isOn = !wasOn;
-        refTransitions.push(isOn ? 'on' : 'off');
+        const nowOn = !wasOn;
+        refEvents.push(nowOn ? 'on' : 'off');
       } else if (m.attributeName === 'data-wm-finale') {
-        const wasStart = m.oldValue === '1';
-        finaleEvents.push(wasStart ? 'end' : 'start');
+        const wasOn = m.oldValue === '1';
+        const nowOn = !wasOn;
+        finaleEvents.push(nowOn ? 'start' : 'end');
       }
     }
   });
   obs.observe(shellRoot, { attributes: true, attributeOldValue: true, attributeFilter: ['data-refreshing', 'data-wm-finale'] });
 
-  // Urutan cahaya R -> e -> n -> K -> e -> u pada refresh lokal cepat, lalu finale kuning hanya setelah u
+  // 1. Refresh lokal via PTR: abu-abu -> lintasan kontinu R..u -> finale kuning (in -> out) -> idle putih
   w._rkPtrReset();
-  timers.length = 0;
-  refTransitions.length = 0;
+  await flushMicrotasks();
+  refEvents.length = 0;
   finaleEvents.length = 0;
   fireTouch($('m-tab-rincian'), 'touchstart', 160, 120);
   fireTouch($('m-tab-rincian'), 'touchmove', 160, 250);
   fireTouch($('m-tab-rincian'), 'touchend', 160, 250);
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'PTR lokal mengaktifkan data-refreshing="1"');
+  assert.strictEqual($('m-main').getAttribute('aria-busy'), 'true', 'aria-busy="true" aktif saat refresh');
+  assert.strictEqual($('m-refresh-status').textContent, 'Menyegarkan data', 'status screen reader aktif');
 
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'PTR menyalakan data-refreshing="1"');
-  assert.strictEqual($('m-main').getAttribute('aria-busy'), 'true', '#m-main berstatus aria-busy="true"');
-  assert.strictEqual($('m-refresh-status').textContent, 'Menyegarkan data', 'status pembaca layar tampil');
-
-  const stepMs = w.RK_WM_STEP_MS || 300;
-  for (let s = 0; s < 6; s++) {
-    assert.strictEqual(shellRoot.getAttribute('data-wm-step'), String(s), `langkah ${s} menyalakan huruf ke-${s}`);
-    assert.strictEqual(shellRoot.getAttribute('data-wm-finale'), null, `belum ada finale pada langkah ${s}`);
-    const litEls = [...shellRoot.querySelectorAll('g.mt-wm-letter.is-lit')];
-    assert.strictEqual(litEls.length, 1, `tepat satu huruf .is-lit pada langkah ${s}`);
-    assert.strictEqual(litEls[0].getAttribute('data-wm-idx'), String(s), `huruf .is-lit sesuai indeks ${s}`);
-    advanceTime(stepMs);
+  const passMs = w.RK_WM_PASS_MS;
+  advanceTime(176);
+  assert.strictEqual(shellRoot.getAttribute('data-wm-mode'), 'run', 'masuk fase run kontinu');
+  for (let i = 0; i < 6; i++) {
+    advanceTime(passMs / 6);
+    const scales = getClipScales();
+    assert(scales[i] > 0.85, `huruf ke-${i} terisi pada lintasan kontinu (scale=${scales[i]})`);
+    for (let j = 0; j < i; j++) {
+      assert(scales[j] >= 0.99, `huruf sebelumnya ${j} tetap penuh kumulatif (scale=${scales[j]})`);
+    }
   }
-  await flushMicrotasks();
-
-  // Tepat setelah langkah 5 (u) selesai -> masuk finale kuning
-  assert.strictEqual(shellRoot.getAttribute('data-wm-finale'), '1', 'setelah u selesai, masuk fase finale kuning');
+  advanceTime(32);
+  assert.strictEqual(shellRoot.getAttribute('data-wm-finale'), '1', 'setelah P=1 selesai, masuk fase finale kuning');
   assert.strictEqual(shellRoot.getAttribute('data-wm-flash'), 'in', 'awal finale menaikkan kilat kuning (in)');
-  advanceTime(130);
-  assert.strictEqual(shellRoot.getAttribute('data-wm-finale'), '1', 'finale tetap aktif saat memudar ke putih');
+  advanceTime(140);
   assert.strictEqual(shellRoot.getAttribute('data-wm-flash'), 'out', 'kilat kuning memudar ke putih penuh (out)');
   advanceTime(420);
   await flushMicrotasks();
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'setelah finale selesai kembali idle');
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'setelah finale selesai kembali idle putih');
   assert.strictEqual(shellRoot.getAttribute('data-wm-finale'), null, 'atribut data-wm-finale dilepas');
-  assert.strictEqual(shellRoot.getAttribute('data-wm-step'), null, 'atribut data-wm-step dilepas');
-  assert.strictEqual(shellRoot.querySelectorAll('g.mt-wm-letter.is-lit').length, 0, 'tidak ada huruf .is-lit saat idle');
-  assert.deepStrictEqual(refTransitions, ['on', 'off'], 'satu siklus PTR menghasilkan tepat 1x on dan 1x off');
-  assert.deepStrictEqual(finaleEvents, ['start', 'end'], 'finale muncul tepat 1x lalu dilepas');
+  assert.strictEqual(activeJobsCount(), 0, 'tidak ada rAF/timer tersisa saat idle');
+  assert.deepStrictEqual(refEvents, ['on', 'off'], 'PTR lokal: tepat 1x on dan 1x off');
+  assert.deepStrictEqual(finaleEvents, ['start', 'end'], 'PTR lokal: finale berjalan tepat 1x');
 
-  // Refresh lambat (pull cloud ditahan): cahaya mengulang dari R, finale baru setelah pull selesai & sampai u
+  // 2. Cloud pull lambat: lintasan berulang sampai pull() selesai, baru finale setelah P=1
   const origSb = w.sb;
   const origSbUser = w.sbUser;
   const origPull = w.pull;
@@ -176,154 +179,180 @@ const ROOT = path.resolve(__dirname, '../..');
   w.sbUser = { id: 'u-t17-a', email: 'a@example.com' };
   w.syncMobileCloudUI();
 
-  let resSlow = null;
-  w.pull = () => new Promise((r) => { resSlow = () => { w._rkLastPullOk = true; r(); }; });
+  let resolvePull = null;
+  w.pull = () => new Promise((r) => { resolvePull = () => { w._rkLastPullOk = true; r(); }; });
+  const bnav = shellRoot.querySelector('.mob-bottom-nav');
   w._rkPtrReset();
-  refTransitions.length = 0;
+  await flushMicrotasks();
+  refEvents.length = 0;
   finaleEvents.length = 0;
-  realClick(rinBtn);
+  realClick(bnav.querySelector('[data-mtab="rincian"]'));
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'cloud lambat: aktif');
+  // A1: panggil ulang syncMobileCloudUI untuk user sama saat pull() pending -> TIDAK boleh mematikan indikator
+  w.syncMobileCloudUI();
+  w.syncMobileCloudUI();
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'A1: syncMobileCloudUI pengguna sama tidak mematikan indikator');
 
-  // A1: panggil syncMobileCloudUI berulang untuk pengguna yang sama saat pull ditahan -> indikator tetap aktif
-  for (let k = 0; k < 4; k++) w.syncMobileCloudUI();
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'A1: syncMobileCloudUI pada pengguna sama tidak mematikan indikator');
-
-  // Lewati satu lintasan penuh 6 huruf sementara pull masih tertahan -> harus loop ke R (tanpa finale)
-  advanceTime(stepMs * 6);
-  assert.strictEqual(shellRoot.getAttribute('data-wm-finale'), null, 'pull masih berjalan: belum finale setelah u pertama');
-  advanceTime(200);
-  assert.strictEqual(shellRoot.getAttribute('data-wm-step'), '0', 'pull masih berjalan: cahaya mengulang kembali ke huruf R (0)');
-
-  // Selesaikan pull di tengah lintasan ke-2 (di langkah 1) -> tunggu sampai u lalu finale
-  advanceTime(stepMs);
-  assert.strictEqual(shellRoot.getAttribute('data-wm-step'), '1', 'lintasan ke-2 di huruf e (1)');
-  resSlow();
+  advanceTime(176 + passMs + 32);
+  assert.strictEqual(shellRoot.getAttribute('data-wm-finale'), null, 'pull masih berjalan: belum finale di akhir lintasan 1');
+  advanceTime(250);
+  assert.strictEqual(shellRoot.getAttribute('data-wm-mode'), 'run', 'pull masih berjalan: mengulang lintasan 2');
+  resolvePull();
   await flushMicrotasks();
-  assert.strictEqual(shellRoot.getAttribute('data-wm-finale'), null, 'pull selesai di langkah 1: finale menunggu sampai u');
-  advanceTime(stepMs * 5);
-  assert.strictEqual(shellRoot.getAttribute('data-wm-finale'), '1', 'setelah u lintasan ke-2, finale kuning berjalan');
-  advanceTime(560);
+  assert.strictEqual(shellRoot.getAttribute('data-wm-finale'), null, 'pull selesai di tengah lintasan 2: finale menunggu P=1');
+  advanceTime(passMs + 650);
   await flushMicrotasks();
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'cloud lambat selesai dan kembali idle');
-  assert.deepStrictEqual(finaleEvents, ['start', 'end'], 'cloud lambat memainkan finale tepat 1x');
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'cloud lambat selesai kembali idle');
+  assert.deepStrictEqual(refEvents, ['on', 'off'], 'cloud lambat: 1x on dan 1x off');
+  assert.deepStrictEqual(finaleEvents, ['start', 'end'], 'cloud lambat: tepat 1x finale');
 
-  // 10x re-tap tanpa jeda: cahaya tidak restart, data-refreshing 1x on & 1x off, finale 1x
+  // 3. Re-tap 10x cepat tidak me-restart lintasan & finale hanya 1x
   w.sbUser = null;
   w.syncMobileCloudUI();
   w._rkPtrReset();
-  refTransitions.length = 0;
-  finaleEvents.length = 0;
-  realClick(rinBtn);
-  advanceTime(stepMs); // pindah ke langkah 1 (e)
-  assert.strictEqual(shellRoot.getAttribute('data-wm-step'), '1', 'sebelum ketukan ke-2 berada di langkah 1');
-  for (let k = 0; k < 9; k++) {
-    realClick(rinBtn);
-    advanceTime(15);
-  }
-  assert.strictEqual(shellRoot.getAttribute('data-wm-step'), '1', '10x re-tap tidak me-restart cahaya kembali ke R');
-  advanceTime(stepMs * 5 + 600);
   await flushMicrotasks();
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, '10x re-tap berhenti ke idle');
-  assert.deepStrictEqual(refTransitions, ['on', 'off'], '10x re-tap hanya 1x on dan 1x off');
-  assert.deepStrictEqual(finaleEvents, ['start', 'end'], '10x re-tap hanya 1x finale');
-
-  // Ketukan baru saat finale berlangsung: finale berhenti dan siklus baru mulai dari abu-abu + R
-  w._rkPtrReset();
+  refEvents.length = 0;
   finaleEvents.length = 0;
-  realClick(rinBtn);
-  advanceTime(stepMs * 6);
+  const rincianBtn = bnav.querySelector('[data-mtab="rincian"]');
+  realClick(rincianBtn);
+  advanceTime(176 + 500);
+  const pBefore = w._rkWmState().p;
+  for (let k = 0; k < 9; k++) {
+    realClick(rincianBtn);
+    advanceTime(20);
+  }
+  assert(w._rkWmState().p >= pBefore, '10x re-tap tidak me-restart progres kembali ke awal');
+  advanceTime(passMs + 700);
+  await flushMicrotasks();
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, '10x re-tap selesai kembali idle');
+  assert.deepStrictEqual(refEvents, ['on', 'off'], '10x re-tap: 1x on dan 1x off');
+  assert.deepStrictEqual(finaleEvents, ['start', 'end'], '10x re-tap: tepat 1x finale');
+
+  // 4. Ketukan di tengah finale: finale dibatalkan, siklus baru mulai dari abu-abu (P=0)
+  w._rkPtrReset();
+  await flushMicrotasks();
+  realClick(rincianBtn);
+  advanceTime(176 + passMs + 48);
   assert.strictEqual(shellRoot.getAttribute('data-wm-finale'), '1', 'berada di tengah finale');
-  realClick(rinBtn);
+  realClick(rincianBtn);
   assert.strictEqual(shellRoot.getAttribute('data-wm-finale'), null, 'ketukan saat finale langsung menghentikan finale');
   assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'siklus baru langsung aktif');
-  assert.strictEqual(shellRoot.getAttribute('data-wm-step'), '0', 'siklus baru mulai dari huruf R (0)');
-  advanceTime(stepMs * 6 + 600);
+  assert.strictEqual(w._rkWmState().p, 0, 'siklus baru mulai dari P=0');
+  advanceTime(176 + passMs + 600);
   await flushMicrotasks();
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'siklus lanjutan selesai ke idle');
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'siklus baru selesai bersih');
 
-  // Jalur non-sukses (reject, timeout 20 dtk, logout, _rkPtrReset, unmountMobileShell): tanpa finale kuning
-  w.sbUser = { id: 'u-t17-a', email: 'a@example.com' };
+  // 5. Jalur non-sukses TIDAK boleh memainkan kilat kuning
+  w.sbUser = { id: 'u-t17-b', email: 'b@example.com' };
   w.syncMobileCloudUI();
 
-  // a) pull() reject
+  // 5a. pull() reject
   let rejPull = null;
   w.pull = () => new Promise((_, rej) => { rejPull = () => rej(new Error('offline')); });
   w._rkPtrReset();
+  await flushMicrotasks();
   finaleEvents.length = 0;
-  realClick(rinBtn);
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'reject: aktif saat mulai');
+  realClick(rincianBtn);
+  advanceTime(400);
   rejPull();
   await flushMicrotasks();
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'reject: langsung kembali idle');
-  assert.strictEqual(finaleEvents.length, 0, 'reject: tidak memainkan finale kuning');
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'pull() reject: langsung berhenti');
+  assert.strictEqual(finaleEvents.length, 0, 'pull() reject: tanpa finale kuning');
+  assert.strictEqual(activeJobsCount(), 0, 'pull() reject: semua loop/timer bersih');
 
-  // b) pull() tidak pernah selesai -> pengaman 20 detik tanpa kuning
+  // 5b. _rkLastPullOk === false
+  w.pull = () => { w._rkLastPullOk = false; w._rkLastPullErr = 'timeout'; return Promise.resolve(); };
+  w._rkPtrReset();
+  await flushMicrotasks();
+  finaleEvents.length = 0;
+  realClick(rincianBtn);
+  await flushMicrotasks();
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, '_rkLastPullOk=false: langsung berhenti');
+  assert.strictEqual(finaleEvents.length, 0, '_rkLastPullOk=false: tanpa finale kuning');
+
+  // 5c. Timeout pengaman 20 detik
   w.pull = () => new Promise(() => {});
   w._rkPtrReset();
+  await flushMicrotasks();
   finaleEvents.length = 0;
-  realClick(rinBtn);
+  realClick(rincianBtn);
   advanceTime(19500);
   assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'timeout 20s: masih aktif pada 19,5 detik');
   advanceTime(600);
+  await flushMicrotasks();
   assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'timeout 20s: berhenti otomatis');
   assert.strictEqual(finaleEvents.length, 0, 'timeout 20s: tanpa finale kuning');
+  assert.strictEqual(activeJobsCount(), 0, 'timeout 20s: semua loop/timer bersih');
 
-  // c) logout -> berhenti tanpa kuning
+  // 5d. Logout / ganti pengguna
   w._rkPtrReset();
+  await flushMicrotasks();
   finaleEvents.length = 0;
-  realClick(rinBtn);
+  realClick(rincianBtn);
+  advanceTime(350);
   w.sbUser = null;
   w.syncMobileCloudUI();
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'logout: berhenti tanpa menunggu');
+  await flushMicrotasks();
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'logout: langsung berhenti');
   assert.strictEqual(finaleEvents.length, 0, 'logout: tanpa finale kuning');
 
-  // d) _rkPtrReset() -> berhenti tanpa kuning dan tanpa timer tersisa
-  w.sbUser = { id: 'u-t17-b', email: 'b@example.com' };
-  w.syncMobileCloudUI();
-  timers.length = 0;
-  finaleEvents.length = 0;
-  realClick(rinBtn);
-  w._rkPtrReset();
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, '_rkPtrReset: berhenti');
-  assert.strictEqual(finaleEvents.length, 0, '_rkPtrReset: tanpa finale kuning');
-
-  // e) Reduced motion: tidak ada langkah/finale, abu-abu statis 850ms lalu putih seketika
-  const origRed = w.rkIsReducedMotion;
-  w.rkIsReducedMotion = () => true;
-  w.sbUser = null;
-  w.syncMobileCloudUI();
-  w._rkPtrReset();
-  finaleEvents.length = 0;
-  realClick(rinBtn);
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'reduced-motion: data-refreshing aktif');
-  assert.strictEqual(shellRoot.getAttribute('data-wm-step'), null, 'reduced-motion: tidak menjalankan langkah huruf');
-  assert.strictEqual(shellRoot.querySelectorAll('g.mt-wm-letter.is-lit').length, 0, 'reduced-motion: tidak ada huruf menyala');
-  advanceTime(400);
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'reduced-motion: masih abu-abu statis sebelum 850ms');
-  advanceTime(500);
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'reduced-motion: kembali putih setelah 850ms');
-  assert.strictEqual(finaleEvents.length, 0, 'reduced-motion: tidak memainkan finale kuning');
-  w.rkIsReducedMotion = origRed;
-
-  // f) unmountMobileShell: berhenti tanpa kuning
+  // 5e. _rkPtrReset()
   w.sbUser = { id: 'u-t17-c', email: 'c@example.com' };
   w.syncMobileCloudUI();
-  w.pull = () => new Promise(() => {});
+  w._rkPtrReset();
+  await flushMicrotasks();
   finaleEvents.length = 0;
-  realClick(rinBtn);
+  realClick(rincianBtn);
+  advanceTime(400);
+  w._rkPtrReset();
+  await flushMicrotasks();
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, '_rkPtrReset: langsung berhenti');
+  assert.strictEqual(finaleEvents.length, 0, '_rkPtrReset: tanpa finale kuning');
+  assert.strictEqual(activeJobsCount(), 0, '_rkPtrReset: semua loop/timer bersih');
+
+  // 6. prefers-reduced-motion: abu-abu statis minimal 850ms lalu langsung putih, tanpa lintasan waktu dan tanpa kuning
+  w.sbUser = null;
+  w.syncMobileCloudUI();
+  const origMatchMedia = w.matchMedia;
+  w.matchMedia = (q) => ({ matches: String(q).includes('prefers-reduced-motion'), media: q, addListener() {}, removeListener() {} });
+  w._rkPtrReset();
+  await flushMicrotasks();
+  finaleEvents.length = 0;
+  realClick(rincianBtn);
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'reduced-motion: abu-abu aktif');
+  assert.strictEqual(w._rkWmState().p, 0, 'reduced-motion: P tetap 0');
+  advanceTime(500);
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'reduced-motion: tetap aktif sebelum 850ms');
+  advanceTime(400);
+  await flushMicrotasks();
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'reduced-motion: kembali putih setelah >= 850ms');
+  assert.strictEqual(finaleEvents.length, 0, 'reduced-motion: tanpa finale kuning');
+  assert.strictEqual(activeJobsCount(), 0, 'reduced-motion: semua timer bersih');
+  w.matchMedia = origMatchMedia;
+
+  // 5f. unmountMobileShell()
+  w.sbUser = { id: 'u-t17-d', email: 'd@example.com' };
+  w.syncMobileCloudUI();
+  w.pull = () => new Promise(() => {});
+  w._rkPtrReset();
+  await flushMicrotasks();
+  finaleEvents.length = 0;
+  realClick(rincianBtn);
+  advanceTime(400);
   w.unmountMobileShell();
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'unmountMobileShell: berhenti');
+  await flushMicrotasks();
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'unmountMobileShell: berhenti bersih');
   assert.strictEqual(finaleEvents.length, 0, 'unmountMobileShell: tanpa finale kuning');
 
   // Pulihkan mock
   obs.disconnect();
-  w.setTimeout = origSetTimeout;
-  w.clearTimeout = origClearTimeout;
+  w._rkWmClock = origClock;
   w.Date.now = origNow;
   w.sb = origSb;
   w.sbUser = origSbUser;
   w.pull = origPull;
 
-  // Audit statis CSS, token, Desktop, dan sw.js >= v40
+  // Audit statis CSS, token, Desktop, dan sw.js >= v41
   const cssMob = fs.readFileSync(path.join(ROOT, 'css/mobile.css'), 'utf8');
   const cssTok = fs.readFileSync(path.join(ROOT, 'css/tokens.css'), 'utf8');
   const cssDesk = fs.readFileSync(path.join(ROOT, 'css/desktop.css'), 'utf8');
@@ -335,22 +364,22 @@ const ROOT = path.resolve(__dirname, '../..');
   assert(wmStart >= 0 && wmEnd > wmStart, 'Blok CSS wordmark ditemukan');
   const wmCssBlock = cssMob.slice(wmStart, wmEnd);
   assert(!/#[0-9a-fA-F]{3,8}\b/.test(wmCssBlock), 'Blok CSS wordmark di css/mobile.css bebas hex literal (harus via token)');
-  assert(!/transition\s*:[^;]*\b(fill|filter|width|left|stop-color)\b/i.test(wmCssBlock), 'Wordmark hanya mentransisikan opacity/transform');
+  assert(!/transition\s*:[^;]*\b(fill|filter|width|height|left|stop-color)\b/i.test(wmCssBlock), 'Wordmark hanya mentransisikan opacity/transform');
   assert(!/animation\s*:[^;]*infinite/i.test(wmCssBlock), 'Wordmark tidak menjalankan animasi CSS infinite saat idle');
 
-  for (const tok of ['--wm-dead', '--wm-lit', '--wm-flash', '--dur-wm-fade', '--dur-wm-lit-in', '--dur-wm-lit-out', '--dur-wm-flash-in', '--dur-wm-flash-out']) {
+  for (const tok of ['--wm-dead', '--wm-lit', '--wm-flash', '--dur-wm-fade', '--dur-wm-reset', '--dur-wm-flash-in', '--dur-wm-flash-out']) {
     assert(cssTok.includes(tok), `Token ${tok} tersedia di css/tokens.css`);
   }
-  assert(/--dur-wm-lit-in:\s*0\.001ms/.test(cssTok) && /--dur-wm-flash-in:\s*0\.001ms/.test(cssTok), 'Token durasi wordmark direduksi ke 0.001ms pada prefers-reduced-motion');
+  assert(/--dur-wm-reset:\s*0\.001ms/.test(cssTok) && /--dur-wm-flash-in:\s*0\.001ms/.test(cssTok), 'Token durasi wordmark direduksi ke 0.001ms pada prefers-reduced-motion');
   assert(!cssTok.includes('--dur-wm-sweep') && !cssTok.includes('--ease-wm-sweep'), 'Token usang Tahap 16 (--dur-wm-sweep, --ease-wm-sweep) sudah dihapus');
 
   assert(!cssDesk.includes('mt-wm-') && !cssDesk.includes('data-wm-'), 'Isolasi Desktop: css/desktop.css bebas aturan wordmark APK');
   const swMatch = swSrc.match(/CACHE_NAME\s*=\s*['"]rk-cache-v(\d+)['"]/);
-  assert(swMatch && Number(swMatch[1]) >= 40, 'sw.js CACHE_NAME dinaikkan ke >= rk-cache-v40');
+  assert(swMatch && Number(swMatch[1]) >= 41, 'sw.js CACHE_NAME dinaikkan ke >= rk-cache-v41');
   assert.strictEqual(w.RK_SCHEMA_VER, 3, 'RK_SCHEMA_VER tetap 3');
 
   assert.strictEqual(errs.length, 0, 'Tidak ada runtime error jsdom: ' + errs.join('; '));
-  console.log('OK: Semua asersi Tahap 17 (Wordmark Huruf-per-Huruf + Kilat Kuning + A1) lulus.');
+  console.log('OK: Semua asersi Tahap 17 (diperbarui ke kontrak kontinu Tahap 18 + Kilat Kuning + A1) lulus.');
   process.exit(0);
 })().catch((e) => {
   console.error('GAGAL tahap17_wordmark_letters:', e);

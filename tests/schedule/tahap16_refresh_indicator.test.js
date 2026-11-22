@@ -128,7 +128,7 @@ const ROOT = path.resolve(__dirname, '../..');
   assert.strictEqual(wm.getAttribute('role'), 'img', 'B2: wordmark mempertahankan role="img"');
   assert.strictEqual(wm.getAttribute('aria-label'), 'RenKeu', 'B2: wordmark mempertahankan aria-label="RenKeu"');
   const wmLetters = [...wm.querySelectorAll('g.mt-wm-letter')];
-  assert.strictEqual(wmLetters.length, 6, 'B2: wordmark memuat 6 grup huruf berurutan (Tahap 17)');
+  assert.strictEqual(wmLetters.length, 6, 'B2: wordmark memuat 6 grup huruf berurutan (Pacifico Tahap 18)');
   assert(wmLetters.every((g) => g.getAttribute('aria-hidden') === 'true'), 'B2: semua grup huruf dekoratif memiliki aria-hidden="true"');
 
   // Render ulang berulang tidak menggandakan grup huruf atau ID
@@ -139,7 +139,7 @@ const ROOT = path.resolve(__dirname, '../..');
   assert.strictEqual(wm.querySelectorAll('g.mt-wm-letter').length, 6, 'B2: tepat 6 grup huruf setelah render ulang');
   assert($('m-refresh-status') && $('m-refresh-status').getAttribute('role') === 'status', 'B5: wilayah role="status" untuk pembaca layar tersedia');
 
-  // Helpers sentuh & timer tiruan untuk menguji batas minimum & pengaman maksimum 20 detik
+  // Helpers sentuh & jam tiruan scheduler tunggal untuk menguji lintasan & pengaman maksimum 20 detik
   const fireTouch = (el, type, clientX, clientY) => {
     const ev = new w.Event(type, { bubbles: true, cancelable: true });
     const pt = { clientX, clientY };
@@ -156,18 +156,28 @@ const ROOT = path.resolve(__dirname, '../..');
 
   // Pantau transisi data-refreshing (nyala/mati) memakai MutationObserver pada #mobile-app-shell.
   const scheduledTimers = [];
+  const origClock = w._rkWmClock;
   const origSetTimeout = w.setTimeout;
   const origClearTimeout = w.clearTimeout;
   let timerSeq = 1;
-  w.setTimeout = (fn, ms) => {
+  const pushJob = (fn, ms) => {
     const id = timerSeq++;
     const entry = { id, fn, due: fakeNow + (Number(ms) || 0), cleared: false };
     scheduledTimers.push(entry);
     return id;
   };
-  w.clearTimeout = (id) => {
+  const cancelJob = (id) => {
     const found = scheduledTimers.find((x) => x.id === id);
     if (found) found.cleared = true;
+  };
+  w.setTimeout = pushJob;
+  w.clearTimeout = cancelJob;
+  w._rkWmClock = {
+    now: () => fakeNow,
+    raf: (fn) => pushJob(fn, 16),
+    cancelRaf: cancelJob,
+    setTimeout: pushJob,
+    clearTimeout: cancelJob,
   };
   const advanceTime = (ms) => {
     const target = fakeNow + ms;
@@ -178,7 +188,7 @@ const ROOT = path.resolve(__dirname, '../..');
       if (!next) break;
       next.cleared = true;
       fakeNow = next.due;
-      next.fn();
+      next.fn(fakeNow);
     }
     fakeNow = target;
   };
@@ -190,11 +200,11 @@ const ROOT = path.resolve(__dirname, '../..');
   const obs = new w.MutationObserver((muts) => {
     for (const m of muts) {
       if (m.attributeName === 'data-refreshing') {
-        stateChanges.push(shellRoot.getAttribute('data-refreshing') === '1' ? 'on' : 'off');
+        stateChanges.push(m.oldValue === '1' ? 'off' : 'on');
       }
     }
   });
-  obs.observe(shellRoot, { attributes: true, attributeFilter: ['data-refreshing'] });
+  obs.observe(shellRoot, { attributes: true, attributeOldValue: true, attributeFilter: ['data-refreshing'] });
 
   // PTR kecil / batal -> indikator tidak menyala
   w.switchMobileTab('rincian');
@@ -204,10 +214,11 @@ const ROOT = path.resolve(__dirname, '../..');
   fireTouch($('m-tab-rincian'), 'touchmove', 160, 180);
   fireTouch($('m-tab-rincian'), 'touchend', 160, 180);
   await flushMicrotasks();
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'PTR kecil tidak menyalakan indikator shimmer');
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'PTR kecil tidak menyalakan indikator refresh');
   assert.strictEqual($('m-main').getAttribute('aria-busy'), null, 'PTR kecil tidak menyetel aria-busy');
+  advanceTime(300);
 
-  // PTR melewati ambang -> menyala selama satu lintasan penuh + finale (2300ms) lalu berhenti otomatis
+  // PTR melewati ambang -> menyala selama satu lintasan penuh + finale (~2660ms) lalu berhenti otomatis
   w._rkPtrReset();
   stateChanges.length = 0;
   fireTouch($('m-tab-rincian'), 'touchstart', 160, 120);
@@ -216,9 +227,9 @@ const ROOT = path.resolve(__dirname, '../..');
   assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'PTR dilepas menyalakan data-refreshing="1"');
   assert.strictEqual($('m-main').getAttribute('aria-busy'), 'true', 'Saat refreshing, #m-main memiliki aria-busy="true"');
   assert.strictEqual($('m-refresh-status').textContent, 'Menyegarkan data', 'Pengumuman pembaca layar tampil saat mulai refresh');
-  advanceTime(1200);
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'Mode lokal: indikator tetap aktif selama lintasan huruf berlangsung');
-  advanceTime(1200);
+  advanceTime(1500);
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'Mode lokal: indikator tetap aktif selama lintasan menulis berlangsung');
+  advanceTime(1300);
   assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'Mode lokal: indikator mati setelah lintasan + finale selesai');
   assert.strictEqual($('m-main').getAttribute('aria-busy'), null, 'Setelah selesai, aria-busy dilepas');
 
@@ -238,7 +249,7 @@ const ROOT = path.resolve(__dirname, '../..');
     }
     await flushMicrotasks();
     assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', `Re-tap ${tid} 10x: indikator aktif`);
-    advanceTime(2300);
+    advanceTime(2600);
     await flushMicrotasks();
     assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, `Re-tap ${tid} 10x: indikator berhenti setelah lintasan + finale`);
     assert.deepStrictEqual(stateChanges, ['on', 'off'], `Re-tap ${tid} 10x: hanya 1 transisi nyala dan 1 transisi mati (bukan kedip 10x)`);
@@ -252,7 +263,7 @@ const ROOT = path.resolve(__dirname, '../..');
   w.sbUser = { id: 'u-t16-a', email: 'a@example.com' };
   w.syncMobileCloudUI();
 
-  // 1) pull() sukses lambat + syncMobileCloudUI pengguna sama (A1) -> tetap aktif sampai selesai & sampai u + finale
+  // 1) pull() sukses lambat + syncMobileCloudUI pengguna sama (A1) -> tetap aktif sampai selesai & sampai lintasan + finale usai
   let resPull = null;
   w.pull = () => new Promise((r) => { resPull = () => { w._rkLastPullOk = true; r(); }; });
   w.switchMobileTab('rincian');
@@ -266,9 +277,9 @@ const ROOT = path.resolve(__dirname, '../..');
   assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'Cloud pull lambat: tetap aktif selama pull belum selesai');
   resPull();
   await flushMicrotasks();
-  advanceTime(900);
+  advanceTime(1350);
   await flushMicrotasks();
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'Cloud pull lambat: berhenti setelah u + finale selesai');
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'Cloud pull lambat: berhenti setelah lintasan + finale selesai');
 
   // 2) pull() reject -> langsung berhenti bersih tanpa finale kuning
   let rejPull = null;
@@ -301,7 +312,7 @@ const ROOT = path.resolve(__dirname, '../..');
   advanceTime(900);
   resTabPull();
   await flushMicrotasks();
-  advanceTime(1600);
+  advanceTime(1950);
   await flushMicrotasks();
   assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'Pindah tab: berhenti setelah pull selesai dan lintasan usai');
 
@@ -328,6 +339,7 @@ const ROOT = path.resolve(__dirname, '../..');
 
   // Pulihkan mock
   obs.disconnect();
+  w._rkWmClock = origClock;
   w.setTimeout = origSetTimeout;
   w.clearTimeout = origClearTimeout;
   w.Date.now = origNow;
@@ -335,7 +347,7 @@ const ROOT = path.resolve(__dirname, '../..');
   w.sbUser = origSbUser;
   w.pull = origPull;
 
-  // Audit statis CSS, token, isolasi Desktop, dan sw.js >= v39
+  // Audit statis CSS, token, isolasi Desktop, dan sw.js >= v41
   const cssMob = fs.readFileSync(path.join(ROOT, 'css/mobile.css'), 'utf8');
   const cssTok = fs.readFileSync(path.join(ROOT, 'css/tokens.css'), 'utf8');
   const cssDesk = fs.readFileSync(path.join(ROOT, 'css/desktop.css'), 'utf8');
@@ -343,17 +355,17 @@ const ROOT = path.resolve(__dirname, '../..');
 
   assert(!cssMob.includes('.m-ptr-spin'), 'CSS: aturan .m-ptr-spin sudah dihapus dari css/mobile.css');
   assert(!cssMob.includes('rkPtrSpin'), 'CSS: keyframes rkPtrSpin sudah dihapus dari css/mobile.css');
-  assert(cssTok.includes('--wm-dead') && cssTok.includes('--wm-lit') && cssTok.includes('--wm-flash') && cssTok.includes('--dur-wm-lit-in'), 'Token wordmark Tahap 17 ada di css/tokens.css');
-  assert(/--dur-wm-fade:\s*0\.001ms/.test(cssTok) && /--dur-wm-lit-in:\s*0\.001ms/.test(cssTok), 'Token durasi wordmark direduksi ke 0.001ms pada prefers-reduced-motion');
-  assert(/@media\s*\(\s*prefers-reduced-motion:\s*reduce\s*\)[\s\S]*\.mt-wm-flash[\s\S]*opacity:\s*0/i.test(cssMob), 'CSS: prefers-reduced-motion mematikan cahaya/kilat wordmark');
+  assert(cssTok.includes('--wm-dead') && cssTok.includes('--wm-lit') && cssTok.includes('--wm-flash') && cssTok.includes('--dur-wm-reset'), 'Token wordmark Tahap 18 ada di css/tokens.css');
+  assert(/--dur-wm-fade:\s*0\.001ms/.test(cssTok) && /--dur-wm-reset:\s*0\.001ms/.test(cssTok), 'Token durasi wordmark direduksi ke 0.001ms pada prefers-reduced-motion');
+  assert(/@media\s*\(\s*prefers-reduced-motion:\s*reduce\s*\)[\s\S]*\.mt-wm-flash[\s\S]*opacity:\s*0/i.test(cssMob), 'CSS: prefers-reduced-motion mematikan cahaya/kilat wordmark saat refresh');
 
   assert(!cssDesk.includes('rkWmSweep') && !cssDesk.includes('mt-wm-') && !cssDesk.includes('data-refreshing'), 'Isolasi Desktop: css/desktop.css bebas aturan wordmark APK');
   const swMatch = swSrc.match(/CACHE_NAME\s*=\s*['"]rk-cache-v(\d+)['"]/);
-  assert(swMatch && Number(swMatch[1]) >= 40, 'sw.js CACHE_NAME dinaikkan ke >= rk-cache-v40');
+  assert(swMatch && Number(swMatch[1]) >= 41, 'sw.js CACHE_NAME dinaikkan ke >= rk-cache-v41');
   assert.strictEqual(w.RK_SCHEMA_VER, 3, 'RK_SCHEMA_VER tetap 3');
 
   assert.strictEqual(errs.length, 0, 'Tidak ada runtime error jsdom: ' + errs.join('; '));
-  console.log('OK: Semua asersi Tahap 16 (A1, A2, Shimmer Wordmark, PTR/Re-tap) lulus.');
+  console.log('OK: Semua asersi Tahap 16 (A1, A2, Indikator Wordmark, PTR/Re-tap) lulus.');
   process.exit(0);
 })().catch((e) => {
   console.error('GAGAL tahap16_refresh_indicator:', e);

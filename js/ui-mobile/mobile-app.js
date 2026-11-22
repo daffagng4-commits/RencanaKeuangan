@@ -738,32 +738,67 @@ function syncMobileCloudUI() {
   }
 }
 
-var RK_WORDMARK_LETTERS = [
-  'M1.93 22L1.93 3.52L9.8 3.52Q11.34 3.52 12.6 3.76Q13.86 4 14.83 4.46Q15.79 4.92 16.46 5.58Q17.14 6.24 17.47 7.09Q17.81 7.94 17.81 8.98Q17.81 9.96 17.5 10.74Q17.19 11.53 16.56 12.12Q15.93 12.7 14.98 13.07Q14.03 13.43 12.77 13.6L12.77 14.02Q14.36 14.19 15.25 14.73Q16.13 15.28 16.6 16.18Q17.08 17.07 17.44 18.33L18.51 22L13.5 22L12.68 18.61Q12.43 17.49 12 16.88Q11.56 16.26 10.89 16.02Q10.22 15.78 9.21 15.78L6.44 15.78L6.44 22ZM6.44 12.45L9.49 12.45Q11.2 12.45 12.15 11.78Q13.1 11.11 13.1 9.68Q13.1 8.28 12.24 7.61Q11.37 6.94 9.6 6.94L6.44 6.94Z',
-  'M27.19 22.39Q25.34 22.39 23.88 21.9Q22.43 21.41 21.41 20.46Q20.38 19.51 19.85 18.11Q19.32 16.71 19.32 14.89Q19.32 13.12 19.84 11.64Q20.36 10.16 21.32 9.08Q22.29 8 23.7 7.41Q25.12 6.82 26.88 6.82Q28.67 6.82 30.03 7.4Q31.39 7.97 32.27 9.09Q33.15 10.21 33.57 11.82Q33.99 13.43 33.85 15.5L22.29 15.59L22.29 13.24L31.28 13.15L29.68 14.24Q29.88 12.84 29.51 11.96Q29.15 11.08 28.45 10.67Q27.75 10.27 26.94 10.27Q25.96 10.27 25.21 10.8Q24.47 11.33 24.05 12.34Q23.63 13.35 23.63 14.8Q23.63 17.1 24.63 18.14Q25.62 19.17 27.16 19.17Q27.92 19.17 28.42 18.96Q28.92 18.75 29.25 18.43Q29.57 18.11 29.75 17.72Q29.93 17.32 30.04 16.96L33.96 17.8Q33.74 18.84 33.25 19.68Q32.76 20.52 31.93 21.13Q31.11 21.75 29.95 22.07Q28.78 22.39 27.19 22.39Z',
-  'M35.76 22L35.76 13.1L35.76 7.22L39.4 7.22L39.45 11.56L40.01 11.56Q40.38 9.99 41.05 8.92Q41.72 7.86 42.76 7.34Q43.79 6.82 45.19 6.82Q47.8 6.82 49.15 8.64Q50.51 10.46 50.51 14.44L50.51 22L45.98 22L45.98 14.94Q45.98 12.65 45.32 11.6Q44.66 10.55 43.37 10.55Q42.31 10.55 41.62 11.19Q40.94 11.84 40.6 12.9Q40.26 13.96 40.26 15.28L40.26 22Z',
-  'M53.12 22L53.12 3.52L57.62 3.52L57.62 11.61Q59 11 60.17 10.07Q61.35 9.15 62.26 8.06Q63.17 6.96 63.77 5.8Q64.37 4.64 64.65 3.52L69.86 3.52Q69.52 4.81 68.77 6.14Q68.01 7.47 66.95 8.69Q65.88 9.9 64.67 10.86Q63.45 11.81 62.19 12.37L62.19 12.79Q63.48 12.79 64.47 13.07Q65.46 13.35 66.23 13.94Q67 14.52 67.58 15.41Q68.15 16.29 68.57 17.52L70.17 22L65.04 22L64.01 18.33Q63.67 17.1 63.11 16.39Q62.55 15.67 61.63 15.35Q60.7 15.03 59.25 15.03L57.62 15.03L57.62 22Z',
-  'M78.62 22.39Q76.78 22.39 75.32 21.9Q73.86 21.41 72.84 20.46Q71.82 19.51 71.29 18.11Q70.76 16.71 70.76 14.89Q70.76 13.12 71.27 11.64Q71.79 10.16 72.76 9.08Q73.72 8 75.14 7.41Q76.55 6.82 78.32 6.82Q80.11 6.82 81.47 7.4Q82.82 7.97 83.71 9.09Q84.59 10.21 85.01 11.82Q85.43 13.43 85.29 15.5L73.72 15.59L73.72 13.24L82.71 13.15L81.12 14.24Q81.31 12.84 80.95 11.96Q80.58 11.08 79.88 10.67Q79.18 10.27 78.37 10.27Q77.39 10.27 76.65 10.8Q75.91 11.33 75.49 12.34Q75.07 13.35 75.07 14.8Q75.07 17.1 76.06 18.14Q77.06 19.17 78.6 19.17Q79.35 19.17 79.86 18.96Q80.36 18.75 80.68 18.43Q81 18.11 81.19 17.72Q81.37 17.32 81.48 16.96L85.4 17.8Q85.18 18.84 84.69 19.68Q84.2 20.52 83.37 21.13Q82.54 21.75 81.38 22.07Q80.22 22.39 78.62 22.39Z',
-  'M92.26 22.39Q89.63 22.39 88.3 20.61Q86.97 18.84 86.97 15.2L86.97 7.22L91.5 7.22L91.5 14.61Q91.5 16.68 92.12 17.7Q92.74 18.72 94 18.72Q94.75 18.72 95.3 18.35Q95.84 17.97 96.22 17.28Q96.6 16.6 96.78 15.7Q96.96 14.8 96.96 13.74L96.96 7.22L101.47 7.22L101.47 16.01L101.47 22L97.89 22L97.8 17.44L97.24 17.44Q96.82 19.17 96.19 20.28Q95.56 21.38 94.61 21.89Q93.66 22.39 92.26 22.39Z',
+/* Pacifico (Vernon Adams), SIL Open Font License 1.1 */
+var RK_WM_VIEWBOX = '0 0 132.92 31.78';
+var RK_WM_GLYPHS = [
+  'M33.84 22.96Q34.30 22.96 34.57 23.40Q34.84 23.83 34.84 24.58L34.84 24.58Q34.84 25.99 34.16 26.82L34.16 26.82Q32.43 28.90 30.67 30.04Q28.90 31.17 26.49 31.17L26.49 31.17Q24.15 31.17 22.51 29.91Q20.88 28.65 19.40 25.59L19.40 25.59Q18.21 23.14 17.53 21.97Q16.84 20.80 16.18 20.30Q15.51 19.80 14.54 19.69L14.54 19.69Q14.40 20.44 13.71 24.44L13.71 24.44Q13.42 26.24 13.35 26.64L13.35 26.64Q12.99 28.83 11.91 30.00Q10.83 31.17 8.64 31.17L8.64 31.17Q6.22 31.17 4.37 29.75Q2.52 28.33 1.51 25.79Q0.50 23.25 0.50 20.01L0.50 20.01Q0.50 13.96 2.61 9.57Q4.71 5.18 8.51 2.86Q12.31 0.54 17.28 0.54L17.28 0.54Q20.73 0.54 23.07 1.58Q25.41 2.62 26.55 4.46Q27.68 6.30 27.68 8.60L27.68 8.60Q27.68 10.62 26.73 12.54Q25.77 14.47 23.86 15.94Q21.96 17.42 19.22 18.14L19.22 18.14Q20.95 18.61 21.88 19.65Q22.82 20.70 23.76 22.71L23.76 22.71Q24.76 24.87 25.75 25.88Q26.74 26.89 28.04 26.89L28.04 26.89Q29.19 26.89 30.24 26.11Q31.28 25.34 32.86 23.47L32.86 23.47Q33.30 22.96 33.84 22.96L33.84 22.96ZM8.60 25.05L9.57 19.65Q8.35 19.65 7.90 19.08Q7.45 18.50 7.45 17.78L7.45 17.78Q7.45 16.92 8.01 16.41Q8.56 15.91 9.28 15.91L9.28 15.91L10.18 15.91Q10.76 12.38 11.26 9.82L11.26 9.82Q11.73 7.48 14.29 7.48L14.29 7.48Q16.34 7.48 16.34 9.32L16.34 9.32Q16.34 9.72 16.30 9.93L16.30 9.93L15.22 15.91Q17.17 15.80 18.77 14.97Q20.37 14.14 21.33 12.67Q22.28 11.19 22.28 9.32L22.28 9.32Q22.28 7.05 20.73 5.76Q19.18 4.46 16.20 4.46L16.20 4.46Q12.67 4.46 10.02 6.21Q7.38 7.95 5.90 11.39Q4.42 14.83 4.42 19.76L4.42 19.76Q4.42 22.06 4.89 23.72Q5.36 25.38 6.04 26.20Q6.73 27.03 7.34 27.03L7.34 27.03Q7.81 27.03 8.11 26.56Q8.42 26.10 8.60 25.05L8.60 25.05Z',
+  'M47.76 22.96Q48.23 22.96 48.50 23.40Q48.77 23.83 48.77 24.58L48.77 24.58Q48.77 26.02 48.09 26.82L48.09 26.82Q46.76 28.44 44.33 29.80Q41.90 31.17 39.12 31.17L39.12 31.17Q35.34 31.17 33.26 29.12Q31.17 27.07 31.17 23.50L31.17 23.50Q31.17 21.02 32.21 18.88Q33.26 16.74 35.11 15.48Q36.96 14.22 39.30 14.22L39.30 14.22Q41.39 14.22 42.65 15.46Q43.91 16.70 43.91 18.82L43.91 18.82Q43.91 21.31 42.13 23.09Q40.35 24.87 36.10 25.92L36.10 25.92Q37.00 27.57 39.52 27.57L39.52 27.57Q41.14 27.57 43.21 26.44Q45.28 25.30 46.79 23.47L46.79 23.47Q47.22 22.96 47.76 22.96L47.76 22.96ZM38.69 17.74Q37.36 17.74 36.44 19.29Q35.52 20.84 35.52 23.04L35.52 23.04L35.52 23.11Q37.65 22.60 38.87 21.60Q40.10 20.59 40.10 19.26L40.10 19.26Q40.10 18.57 39.72 18.16Q39.34 17.74 38.69 17.74L38.69 17.74Z',
+  'M48.91 31.17Q47.54 31.17 46.99 29.73Q46.43 28.29 46.43 25.12L46.43 25.12Q46.43 20.44 47.76 16.23L47.76 16.23Q48.08 15.19 48.82 14.70Q49.56 14.22 50.89 14.22L50.89 14.22Q51.61 14.22 51.90 14.40Q52.19 14.58 52.19 15.08L52.19 15.08Q52.19 15.66 51.65 17.67L51.65 17.67Q51.29 19.11 51.07 20.19Q50.86 21.27 50.71 22.86L50.71 22.86Q51.90 19.76 53.38 17.82Q54.85 15.87 56.27 15.04Q57.70 14.22 58.88 14.22L58.88 14.22Q61.22 14.22 61.22 16.56L61.22 16.56Q61.22 17.96 60.43 21.63L60.43 21.63Q59.75 24.76 59.75 25.77L59.75 25.77Q59.75 27.21 60.79 27.21L60.79 27.21Q61.51 27.21 62.50 26.33Q63.49 25.45 65.15 23.47L65.15 23.47Q65.58 22.96 66.12 22.96L66.12 22.96Q66.59 22.96 66.86 23.40Q67.13 23.83 67.13 24.58L67.13 24.58Q67.13 26.02 66.44 26.82L66.44 26.82Q64.90 28.72 63.11 29.95Q61.33 31.17 59.06 31.17L59.06 31.17Q57.23 31.17 56.29 30.11Q55.36 29.05 55.36 27.03L55.36 27.03Q55.36 26.02 55.86 23.43L55.86 23.43Q56.33 21.16 56.33 20.30L56.33 20.30Q56.33 19.72 55.93 19.72L55.93 19.72Q55.46 19.72 54.62 20.93Q53.77 22.14 52.89 24.12Q52.01 26.10 51.47 28.29L51.47 28.29Q51.07 29.98 50.55 30.58Q50.03 31.17 48.91 31.17L48.91 31.17Z',
+  'M100.35 22.96Q100.82 22.96 101.09 23.40Q101.36 23.83 101.36 24.58L101.36 24.58Q101.36 25.99 100.68 26.82L100.68 26.82Q98.95 28.90 97.18 30.04Q95.42 31.17 93.01 31.17L93.01 31.17Q90.34 31.17 88.65 29.61Q86.96 28.04 85.48 24.73L85.48 24.73Q84.40 22.35 83.70 21.18Q83.00 20.01 82.32 19.53Q81.63 19.04 80.59 18.93L80.59 18.93L80.19 21.60Q79.44 26.74 77.26 29.01Q75.08 31.28 71.26 31.28L71.26 31.28Q68.78 31.28 66.85 30.07Q64.93 28.87 64.17 27.00L64.17 27.00Q63.92 26.35 63.92 25.59L63.92 25.59Q63.92 24.51 64.42 23.72Q64.93 22.93 65.72 22.93L65.72 22.93Q66.19 22.93 66.51 23.16Q66.84 23.40 67.12 23.97L67.12 23.97Q68.24 26.06 69.09 26.89Q69.93 27.72 71.19 27.72L71.19 27.72Q72.63 27.72 73.66 26.40Q74.68 25.09 75.12 22.35L75.12 22.35L75.62 18.93L75.04 18.93Q74.22 18.93 73.75 18.46Q73.28 18.00 73.28 17.17L73.28 17.17Q73.28 16.23 73.77 15.67Q74.25 15.12 74.97 15.12L74.97 15.12L76.16 15.12Q76.41 13.35 76.52 12.67L76.52 12.67L77.64 4.57Q76.70 4.46 75.87 4.46L75.87 4.46Q72.81 4.46 71.23 5.52Q69.64 6.58 69.64 8.56L69.64 8.56Q69.64 9.46 69.84 10.02Q70.04 10.58 70.36 11.26L70.36 11.26Q70.51 11.55 70.51 11.91L70.51 11.91Q70.51 12.70 69.77 13.30Q69.03 13.89 68.13 13.89L68.13 13.89Q66.98 13.89 66.44 12.88L66.44 12.88Q65.36 10.98 65.36 8.78L65.36 8.78Q65.36 6.51 66.60 4.64Q67.84 2.77 70.36 1.63Q72.88 0.50 76.59 0.50L76.59 0.50Q78.21 0.50 79.56 0.68Q80.91 0.86 82.53 1.36L82.53 1.36Q84.30 1.90 84.30 3.38L84.30 3.38Q84.30 5.36 82.60 5.36L82.60 5.36L81.20 15.04Q85.41 14.61 88.06 11.43Q90.70 8.24 92.47 2.77L92.47 2.77Q92.79 1.76 93.57 1.22Q94.34 0.68 95.53 0.68L95.53 0.68Q96.54 0.68 97.09 1.13Q97.65 1.58 97.65 2.41L97.65 2.41Q97.65 2.66 97.51 3.24L97.51 3.24Q95.71 9.18 92.36 12.67Q89.01 16.16 85.05 17.31L85.05 17.31Q86.42 17.64 87.30 18.28Q88.18 18.93 88.80 19.89Q89.41 20.84 90.20 22.53L90.20 22.53Q91.32 24.91 92.29 25.90Q93.26 26.89 94.56 26.89L94.56 26.89Q95.71 26.89 96.75 26.11Q97.80 25.34 99.38 23.47L99.38 23.47Q99.81 22.96 100.35 22.96L100.35 22.96Z',
+  'M114.28 22.96Q114.75 22.96 115.02 23.40Q115.29 23.83 115.29 24.58L115.29 24.58Q115.29 26.02 114.60 26.82L114.60 26.82Q113.27 28.44 110.84 29.80Q108.41 31.17 105.64 31.17L105.64 31.17Q101.86 31.17 99.77 29.12Q97.68 27.07 97.68 23.50L97.68 23.50Q97.68 21.02 98.73 18.88Q99.77 16.74 101.63 15.48Q103.48 14.22 105.82 14.22L105.82 14.22Q107.91 14.22 109.17 15.46Q110.43 16.70 110.43 18.82L110.43 18.82Q110.43 21.31 108.65 23.09Q106.86 24.87 102.62 25.92L102.62 25.92Q103.52 27.57 106.04 27.57L106.04 27.57Q107.66 27.57 109.73 26.44Q111.80 25.30 113.31 23.47L113.31 23.47Q113.74 22.96 114.28 22.96L114.28 22.96ZM105.21 17.74Q103.88 17.74 102.96 19.29Q102.04 20.84 102.04 23.04L102.04 23.04L102.04 23.11Q104.16 22.60 105.39 21.60Q106.61 20.59 106.61 19.26L106.61 19.26Q106.61 18.57 106.23 18.16Q105.86 17.74 105.21 17.74L105.21 17.74Z',
+  'M116.54 31.17Q114.92 31.17 113.90 29.68Q112.87 28.18 112.87 25.95L112.87 25.95Q112.87 23.25 113.23 21.00Q113.59 18.75 114.42 16.23L114.42 16.23Q114.78 15.15 115.43 14.68Q116.08 14.22 117.48 14.22L117.48 14.22Q118.27 14.22 118.58 14.47Q118.88 14.72 118.88 15.22L118.88 15.22Q118.88 15.51 118.49 17.17L118.49 17.17Q118.13 18.50 117.91 19.58L117.91 19.58Q117.19 23.36 117.19 24.62L117.19 24.62Q117.19 25.38 117.37 25.68Q117.55 25.99 117.95 25.99L117.95 25.99Q118.49 25.99 119.30 24.91Q120.11 23.83 121.03 21.63Q121.94 19.44 122.81 16.23L122.81 16.23Q123.10 15.15 123.69 14.68Q124.28 14.22 125.47 14.22L125.47 14.22Q126.30 14.22 126.62 14.41Q126.95 14.61 126.95 15.15L126.95 15.15Q126.95 16.05 126.05 20.08L126.05 20.08Q125.04 24.69 125.04 25.77L125.04 25.77Q125.04 26.46 125.33 26.83Q125.62 27.21 126.08 27.21L126.08 27.21Q126.80 27.21 127.79 26.33Q128.78 25.45 130.44 23.47L130.44 23.47Q130.87 22.96 131.41 22.96L131.41 22.96Q131.88 22.96 132.15 23.40Q132.42 23.83 132.42 24.58L132.42 24.58Q132.42 26.02 131.74 26.82L131.74 26.82Q130.19 28.72 128.41 29.95Q126.62 31.17 124.36 31.17L124.36 31.17Q122.63 31.17 121.82 29.84Q121.01 28.51 121.01 26.10L121.01 26.10Q120.40 28.54 119.17 29.86Q117.95 31.17 116.54 31.17L116.54 31.17Z',
 ];
-var RK_WORDMARK_PATH = RK_WORDMARK_LETTERS.join('');
+var RK_WM_BOXES = [
+  { x: 0.15, y: 0.29, w: 35.04, h: 31.14 },
+  { x: 30.82, y: 13.97, w: 18.3, h: 17.46 },
+  { x: 46.08, y: 13.97, w: 21.4, h: 17.46 },
+  { x: 63.57, y: 0.25, w: 38.14, h: 31.28 },
+  { x: 97.33, y: 13.97, w: 18.3, h: 17.46 },
+  { x: 112.52, y: 13.97, w: 20.25, h: 17.46 },
+];
+var RK_WORDMARK_PATH = RK_WM_GLYPHS.join('');
+var _rkWmClipSeq = 0;
+
+function rkWmFill(p, n) {
+  var count = n > 0 ? n : RK_WM_GLYPHS.length;
+  var clampedP = p <= 0 ? 0 : (p >= 1 ? 1 : p);
+  var out = new Array(count);
+  for (var i = 0; i < count; i++) {
+    var v = clampedP * count - i;
+    out[i] = v <= 0 ? 0 : (v >= 1 ? 1 : v);
+  }
+  return out;
+}
+
 if (typeof window !== 'undefined') {
-  window.RK_WORDMARK_LETTERS = RK_WORDMARK_LETTERS;
+  window.RK_WM_VIEWBOX = RK_WM_VIEWBOX;
+  window.RK_WM_GLYPHS = RK_WM_GLYPHS;
+  window.RK_WM_BOXES = RK_WM_BOXES;
   window.RK_WORDMARK_PATH = RK_WORDMARK_PATH;
+  window.rkWmFill = rkWmFill;
 }
 
 function mobWordmarkSvgHtml() {
-  var out = '<svg class="mt-wordmark" viewBox="1.9 2.5 101 21" fill="none" role="img" aria-label="RenKeu">';
-  for (var i = 0; i < RK_WORDMARK_LETTERS.length; i++) {
-    var d = RK_WORDMARK_LETTERS[i];
-    out += '<g class="mt-wm-letter" data-wm-idx="' + i + '" aria-hidden="true">' +
+  _rkWmClipSeq += 1;
+  var pfx = 'rk-wm-c-' + _rkWmClipSeq + '-';
+  var defs = '<defs>';
+  var body = '';
+  for (var i = 0; i < RK_WM_GLYPHS.length; i++) {
+    var d = RK_WM_GLYPHS[i];
+    var b = RK_WM_BOXES[i];
+    var cid = pfx + i;
+    defs += '<clipPath id="' + cid + '">' +
+      '<rect class="mt-wm-clip-rect" data-wm-idx="' + i + '" x="' + b.x + '" y="' + b.y + '" width="' + b.w + '" height="' + b.h + '" style="transform:scaleY(0)"/>' +
+      '</clipPath>';
+    body += '<g class="mt-wm-letter" data-wm-idx="' + i + '" aria-hidden="true">' +
       '<path class="mt-wm-white" d="' + d + '"/>' +
       '<path class="mt-wm-dead" d="' + d + '"/>' +
-      '<path class="mt-wm-lit" d="' + d + '"/>' +
+      '<path class="mt-wm-lit" d="' + d + '" clip-path="url(#' + cid + ')"/>' +
       '<path class="mt-wm-flash" d="' + d + '"/>' +
       '</g>';
   }
-  return out + '</svg>';
+  defs += '</defs>';
+  return '<svg class="mt-wordmark" viewBox="' + RK_WM_VIEWBOX + '" fill="none" role="img" aria-label="RenKeu">' + defs + body + '</svg>';
 }
 
 function mobOsNotifHtml() {
@@ -4088,12 +4123,16 @@ function bindMobileShellEvents(root) {
     var PULL_MAX = 90;
     var PULL_TRIG = 52;
     var LOCK_PX = 8;
+    var WM_DRAG_DEAD_PX = 4;
     var TOP_TOLERANCE_PX = 1;
-    var RK_WM_LETTER_CNT = RK_WORDMARK_LETTERS.length;
-    var RK_WM_STEP_MS = 300;
-    var RK_WM_LOOP_PAUSE_MS = 180;
+    var RK_WM_LETTER_CNT = RK_WM_GLYPHS.length;
+    var RK_WM_FADE_IN_MS = 160;
+    var RK_WM_PASS_MS = 2000;
+    var RK_WM_LOOP_RESET_MS = 200;
     var RK_WM_FLASH_IN_MS = 120;
     var RK_WM_FLASH_OUT_MS = 380;
+    var RK_WM_RETURN_MIN_MS = 80;
+    var RK_WM_RETURN_MAX_MS = 260;
     var RK_WM_REDUCED_MIN_MS = 850;
     var RK_REFRESH_MAX_MS = 20000;
     var ptr = null;
@@ -4103,10 +4142,18 @@ function bindMobileShellEvents(root) {
     var refreshActive = false;
     var refreshDoneOk = false;
     var refreshStartedAt = 0;
-    var wmStep = -1;
+    var wmMode = 'idle';
+    var wmProgress = 0;
     var wmInFinale = false;
-    var wmStepTimer = null;
-    var wmFinaleTimer = null;
+    var wmFlashStage = '';
+    var wmPhaseStart = 0;
+    var wmResetDur = RK_WM_FADE_IN_MS;
+    var wmReturnFrom = 0;
+    var wmReturnDur = RK_WM_RETURN_MIN_MS;
+    var wmRafId = null;
+    var wmClipRects = null;
+    var wmFrameWrites = 0;
+    var wmFrameTimeSum = 0;
     var refreshMinTimer = null;
     var refreshMaxTimer = null;
     var refreshCycleId = 0;
@@ -4115,76 +4162,212 @@ function bindMobileShellEvents(root) {
     var pendingScrollTimer = null;
     var pendingScrollListener = null;
 
-    function syncWmLetterLit(step) {
+    function rkWmNow() {
+      if (typeof window !== 'undefined' && window._rkWmClock && typeof window._rkWmClock.now === 'function') {
+        return window._rkWmClock.now();
+      }
+      if (typeof performance !== 'undefined' && typeof performance.now === 'function') return performance.now();
+      return Date.now();
+    }
+
+    function rkWmSchedule(fn) {
+      if (typeof window !== 'undefined' && window._rkWmClock && typeof window._rkWmClock.raf === 'function') {
+        return window._rkWmClock.raf(fn);
+      }
+      if (typeof requestAnimationFrame === 'function') return requestAnimationFrame(fn);
+      return setTimeout(function () { fn(rkWmNow()); }, 16);
+    }
+
+    function rkWmCancel(id) {
+      if (id == null) return;
+      if (typeof window !== 'undefined' && window._rkWmClock && typeof window._rkWmClock.cancelRaf === 'function') {
+        window._rkWmClock.cancelRaf(id);
+        return;
+      }
+      if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(id);
+      else clearTimeout(id);
+    }
+
+    function rkWmSetTimeout(fn, ms) {
+      if (typeof window !== 'undefined' && window._rkWmClock && typeof window._rkWmClock.setTimeout === 'function') {
+        return window._rkWmClock.setTimeout(fn, ms);
+      }
+      return setTimeout(fn, ms);
+    }
+
+    function rkWmClearTimeout(id) {
+      if (id == null) return;
+      if (typeof window !== 'undefined' && window._rkWmClock && typeof window._rkWmClock.clearTimeout === 'function') {
+        window._rkWmClock.clearTimeout(id);
+        return;
+      }
+      clearTimeout(id);
+    }
+
+    function getWmClipRects() {
+      if (wmClipRects && wmClipRects.length === RK_WM_LETTER_CNT && wmClipRects[0].isConnected) {
+        return wmClipRects;
+      }
+      var shellEl = $('mobile-app-shell');
+      if (!shellEl) return null;
+      var nodes = shellEl.querySelectorAll('svg.mt-wordmark rect.mt-wm-clip-rect');
+      wmClipRects = nodes.length === RK_WM_LETTER_CNT ? nodes : null;
+      return wmClipRects;
+    }
+
+    function applyWmProgress(p) {
+      var clamped = p <= 0 ? 0 : (p >= 1 ? 1 : p);
+      wmProgress = clamped;
+      var rects = getWmClipRects();
+      if (!rects) return;
+      var fills = rkWmFill(clamped, RK_WM_LETTER_CNT);
+      for (var i = 0; i < RK_WM_LETTER_CNT; i++) {
+        var f = fills[i];
+        var s = f <= 0 ? '0' : (f >= 1 ? '1' : f.toFixed(4));
+        rects[i].style.transform = 'scaleY(' + s + ')';
+      }
+    }
+
+    function setWmMode(mode) {
+      wmMode = mode || 'idle';
       var shellEl = $('mobile-app-shell');
       if (!shellEl) return;
-      if (step >= 0 && step < RK_WM_LETTER_CNT) shellEl.setAttribute('data-wm-step', String(step));
-      else shellEl.removeAttribute('data-wm-step');
-      var letters = shellEl.querySelectorAll('g.mt-wm-letter');
-      for (var i = 0; i < letters.length; i++) {
-        letters[i].classList.toggle('is-lit', i === step);
+      if (mode && mode !== 'idle') shellEl.setAttribute('data-wm-mode', mode);
+      else shellEl.removeAttribute('data-wm-mode');
+    }
+
+    function wmStopLoop() {
+      if (wmRafId != null) {
+        rkWmCancel(wmRafId);
+        wmRafId = null;
       }
     }
 
     function clearWmTimers() {
-      clearTimeout(wmStepTimer);
-      wmStepTimer = null;
-      clearTimeout(wmFinaleTimer);
-      wmFinaleTimer = null;
-      clearTimeout(refreshMinTimer);
+      wmStopLoop();
+      rkWmClearTimeout(refreshMinTimer);
       refreshMinTimer = null;
-      clearTimeout(refreshMaxTimer);
+      rkWmClearTimeout(refreshMaxTimer);
       refreshMaxTimer = null;
     }
 
-    function startWmFinale(cid) {
-      if (cid !== refreshCycleId || !refreshActive || wmInFinale) return;
-      var shellEl = $('mobile-app-shell');
-      wmInFinale = true;
-      wmStep = -1;
-      clearTimeout(wmStepTimer);
-      wmStepTimer = null;
-      syncWmLetterLit(-1);
-      if (shellEl) {
-        shellEl.setAttribute('data-wm-finale', '1');
-        shellEl.setAttribute('data-wm-flash', 'in');
-      }
-      clearTimeout(wmFinaleTimer);
-      wmFinaleTimer = setTimeout(function () {
-        if (cid !== refreshCycleId || !wmInFinale) return;
-        if (shellEl) shellEl.setAttribute('data-wm-flash', 'out');
-        wmFinaleTimer = setTimeout(function () {
-          wmFinaleTimer = null;
-          if (cid !== refreshCycleId || !wmInFinale) return;
-          rkSetRefreshIndicator(false);
-        }, RK_WM_FLASH_OUT_MS);
-      }, RK_WM_FLASH_IN_MS);
+    function wmStartLoop() {
+      if (wmRafId != null) return;
+      wmRafId = rkWmSchedule(wmTick);
     }
 
-    function runWmStep(step, cid) {
-      if (cid !== refreshCycleId || !refreshActive || wmInFinale) return;
-      wmStep = step;
-      syncWmLetterLit(step);
-      clearTimeout(wmStepTimer);
-      wmStepTimer = setTimeout(function () {
-        wmStepTimer = null;
-        if (cid !== refreshCycleId || !refreshActive || wmInFinale) return;
-        if (step < RK_WM_LETTER_CNT - 1) {
-          runWmStep(step + 1, cid);
+    function wmTick() {
+      wmRafId = null;
+      var t0 = rkWmNow();
+      var now = t0;
+      if (wmMode === 'return') {
+        var rt = wmReturnDur > 0 ? Math.min(1, Math.max(0, (now - wmPhaseStart) / wmReturnDur)) : 1;
+        var eased = 1 - Math.pow(1 - rt, 3);
+        applyWmProgress(wmReturnFrom * (1 - eased));
+        if (rt >= 1) {
+          applyWmProgress(0);
+          setWmMode('idle');
           return;
         }
-        if (refreshCounter === 0 && !refreshing && !queuedRetapRefresh) {
-          if (refreshDoneOk) startWmFinale(cid);
-          else rkSetRefreshIndicator(false);
+        wmRafId = rkWmSchedule(wmTick);
+        return;
+      }
+      if (wmMode === 'reset') {
+        if (!refreshActive) {
+          applyWmProgress(0);
+          setWmMode('idle');
           return;
         }
-        wmStep = -1;
-        syncWmLetterLit(-1);
-        wmStepTimer = setTimeout(function () {
-          wmStepTimer = null;
-          runWmStep(0, cid);
-        }, RK_WM_LOOP_PAUSE_MS);
-      }, RK_WM_STEP_MS);
+        if (now - wmPhaseStart >= wmResetDur) {
+          applyWmProgress(0);
+          wmPhaseStart = now;
+          wmFrameWrites = 0;
+          wmFrameTimeSum = 0;
+          setWmMode('run');
+        }
+        wmRafId = rkWmSchedule(wmTick);
+        return;
+      }
+      if (wmMode === 'run') {
+        if (!refreshActive) {
+          applyWmProgress(0);
+          setWmMode('idle');
+          return;
+        }
+        var p = RK_WM_PASS_MS > 0 ? Math.min(1, Math.max(0, (now - wmPhaseStart) / RK_WM_PASS_MS)) : 1;
+        applyWmProgress(p);
+        wmFrameWrites += 1;
+        wmFrameTimeSum += Math.max(0, rkWmNow() - t0);
+        if (p >= 1) {
+          if (refreshCounter === 0 && !refreshing && !queuedRetapRefresh) {
+            if (refreshDoneOk) {
+              var shellEl = $('mobile-app-shell');
+              wmInFinale = true;
+              wmFlashStage = 'in';
+              wmPhaseStart = now;
+              setWmMode('finale');
+              if (shellEl) {
+                shellEl.setAttribute('data-wm-finale', '1');
+                shellEl.setAttribute('data-wm-flash', 'in');
+              }
+              wmRafId = rkWmSchedule(wmTick);
+            } else {
+              rkSetRefreshIndicator(false);
+            }
+            return;
+          }
+          wmResetDur = RK_WM_LOOP_RESET_MS;
+          wmPhaseStart = now;
+          setWmMode('reset');
+          wmRafId = rkWmSchedule(wmTick);
+          return;
+        }
+        wmRafId = rkWmSchedule(wmTick);
+        return;
+      }
+      if (wmMode === 'finale') {
+        if (!refreshActive || !wmInFinale) {
+          setWmMode('idle');
+          return;
+        }
+        var el = now - wmPhaseStart;
+        if (wmFlashStage === 'in' && el >= RK_WM_FLASH_IN_MS) {
+          wmFlashStage = 'out';
+          var sh = $('mobile-app-shell');
+          if (sh) sh.setAttribute('data-wm-flash', 'out');
+        }
+        if (el >= RK_WM_FLASH_IN_MS + RK_WM_FLASH_OUT_MS) {
+          rkSetRefreshIndicator(false);
+          return;
+        }
+        wmRafId = rkWmSchedule(wmTick);
+      }
+    }
+
+    function updateWmDrag(pullY) {
+      if (refreshActive) return;
+      if (wmMode !== 'drag' && pullY < WM_DRAG_DEAD_PX) return;
+      wmStopLoop();
+      if (wmMode !== 'drag') setWmMode('drag');
+      var p = Math.min(1, Math.max(0, pullY / PULL_TRIG));
+      applyWmProgress(p);
+    }
+
+    function startWmReturn(immediate) {
+      if (refreshActive) return;
+      if (wmMode !== 'drag' && wmMode !== 'return') return;
+      var isReduced = typeof rkIsReducedMotion === 'function' && rkIsReducedMotion();
+      if (immediate || isReduced || wmProgress <= 0) {
+        wmStopLoop();
+        applyWmProgress(0);
+        setWmMode('idle');
+        return;
+      }
+      wmReturnFrom = wmProgress;
+      wmReturnDur = Math.round(RK_WM_RETURN_MIN_MS + wmProgress * (RK_WM_RETURN_MAX_MS - RK_WM_RETURN_MIN_MS));
+      wmPhaseStart = rkWmNow();
+      setWmMode('return');
+      wmStartLoop();
     }
 
     function forceStopRefreshIndicator() {
@@ -4207,26 +4390,36 @@ function bindMobileShellEvents(root) {
       var isReduced = typeof rkIsReducedMotion === 'function' && rkIsReducedMotion();
       if (on) {
         if (refreshActive && wmInFinale) {
-          clearTimeout(wmFinaleTimer);
-          wmFinaleTimer = null;
+          wmStopLoop();
           wmInFinale = false;
+          wmFlashStage = '';
           refreshDoneOk = false;
-          refreshStartedAt = Date.now();
+          refreshStartedAt = rkWmNow();
           if (shellEl) {
             shellEl.removeAttribute('data-wm-finale');
             shellEl.removeAttribute('data-wm-flash');
           }
-          clearTimeout(refreshMaxTimer);
-          refreshMaxTimer = setTimeout(forceStopRefreshIndicator, RK_REFRESH_MAX_MS);
-          if (!isReduced) runWmStep(0, refreshCycleId);
-          else syncWmLetterLit(-1);
+          rkWmClearTimeout(refreshMaxTimer);
+          refreshMaxTimer = rkWmSetTimeout(forceStopRefreshIndicator, RK_REFRESH_MAX_MS);
+          applyWmProgress(0);
+          if (!isReduced) {
+            wmResetDur = RK_WM_FADE_IN_MS;
+            wmPhaseStart = rkWmNow();
+            setWmMode('reset');
+            wmStartLoop();
+          } else {
+            setWmMode('idle');
+          }
           return;
         }
         if (!refreshActive) {
+          var fromDrag = wmMode === 'drag' && wmProgress > 0;
+          wmStopLoop();
           refreshActive = true;
           refreshDoneOk = false;
           wmInFinale = false;
-          refreshStartedAt = Date.now();
+          wmFlashStage = '';
+          refreshStartedAt = rkWmNow();
           if (shellEl) {
             shellEl.setAttribute('data-refreshing', '1');
             shellEl.removeAttribute('data-wm-finale');
@@ -4234,19 +4427,28 @@ function bindMobileShellEvents(root) {
           }
           if (mainEl) mainEl.setAttribute('aria-busy', 'true');
           if (statusEl) statusEl.textContent = 'Menyegarkan data';
-          clearTimeout(refreshMaxTimer);
-          refreshMaxTimer = setTimeout(forceStopRefreshIndicator, RK_REFRESH_MAX_MS);
-          if (!isReduced) runWmStep(0, refreshCycleId);
-          else syncWmLetterLit(-1);
+          rkWmClearTimeout(refreshMaxTimer);
+          refreshMaxTimer = rkWmSetTimeout(forceStopRefreshIndicator, RK_REFRESH_MAX_MS);
+          if (!isReduced) {
+            if (!fromDrag) applyWmProgress(0);
+            wmResetDur = RK_WM_FADE_IN_MS;
+            wmPhaseStart = rkWmNow();
+            setWmMode('reset');
+            wmStartLoop();
+          } else {
+            applyWmProgress(0);
+            setWmMode('idle');
+          }
         }
         return;
       }
       refreshActive = false;
       refreshDoneOk = false;
       wmInFinale = false;
-      wmStep = -1;
+      wmFlashStage = '';
       clearWmTimers();
-      syncWmLetterLit(-1);
+      applyWmProgress(0);
+      setWmMode('idle');
       if (shellEl) {
         shellEl.removeAttribute('data-refreshing');
         shellEl.removeAttribute('data-wm-finale');
@@ -4257,7 +4459,18 @@ function bindMobileShellEvents(root) {
     }
     if (typeof window !== 'undefined') {
       window.rkSetRefreshIndicator = rkSetRefreshIndicator;
-      window.RK_WM_STEP_MS = RK_WM_STEP_MS;
+      window.RK_WM_PASS_MS = RK_WM_PASS_MS;
+      window._rkWmState = function () {
+        return {
+          mode: wmMode,
+          p: wmProgress,
+          active: refreshActive,
+          finale: wmInFinale,
+          raf: wmRafId != null,
+          frameWrites: wmFrameWrites,
+          avgFrameMs: wmFrameWrites > 0 ? Number((wmFrameTimeSum / wmFrameWrites).toFixed(4)) : 0,
+        };
+      };
     }
 
     function getScrollY() {
@@ -4363,11 +4576,11 @@ function bindMobileShellEvents(root) {
         refreshDoneOk = true;
         var isReduced = typeof rkIsReducedMotion === 'function' && rkIsReducedMotion();
         if (isReduced) {
-          var elapsed = Date.now() - refreshStartedAt;
+          var elapsed = rkWmNow() - refreshStartedAt;
           var remain = RK_WM_REDUCED_MIN_MS - elapsed;
           if (remain > 0) {
-            clearTimeout(refreshMinTimer);
-            refreshMinTimer = setTimeout(function () {
+            rkWmClearTimeout(refreshMinTimer);
+            refreshMinTimer = rkWmSetTimeout(function () {
               refreshMinTimer = null;
               if (refreshCounter === 0 && !refreshing && !queuedRetapRefresh) {
                 rkSetRefreshIndicator(false);
@@ -4376,10 +4589,6 @@ function bindMobileShellEvents(root) {
           } else {
             rkSetRefreshIndicator(false);
           }
-          return;
-        }
-        if (!wmStepTimer && !wmInFinale) {
-          startWmFinale(cid);
         }
       }
     }
@@ -4389,7 +4598,7 @@ function bindMobileShellEvents(root) {
       refreshCounter += 1;
       refreshDoneOk = false;
       var cid = refreshCycleId;
-      clearTimeout(refreshMinTimer);
+      rkWmClearTimeout(refreshMinTimer);
       refreshMinTimer = null;
       resetVisual('is-exiting');
       rkSetRefreshIndicator(true);
@@ -4429,11 +4638,13 @@ function bindMobileShellEvents(root) {
     function onActiveMove(e) {
       if (!ptr || !e.touches || !e.touches.length) {
         clearGesture();
+        startWmReturn(true);
         return;
       }
       if ((typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') || getScrollY() > TOP_TOLERANCE_PX) {
         if (ptr.locked) resetVisual('is-snapping');
         clearGesture();
+        startWmReturn(true);
         return;
       }
       var dx = e.touches[0].clientX - ptr.startX;
@@ -4464,6 +4675,7 @@ function bindMobileShellEvents(root) {
       }
       var ratio = Math.min(1, pullY / PULL_TRIG);
       setPtrVars($('m-ptr-ind'), pullY - 46, Math.min(1, ratio * 1.15), ratio * 180, 0.8 + ratio * 0.2);
+      updateWmDrag(pullY);
     }
 
     function endPtr(cancelled) {
@@ -4473,12 +4685,16 @@ function bindMobileShellEvents(root) {
       }
       var cur = ptr;
       clearGesture();
-      if (!cur.locked) return;
+      if (!cur.locked) {
+        if (!refreshActive && wmMode === 'drag') startWmReturn(true);
+        return;
+      }
       if (!cancelled && cur.pullY >= PULL_TRIG) {
         rkHaptic('refresh');
         runRefresh(false);
       } else {
         resetVisual('is-snapping');
+        startWmReturn(cancelled);
       }
     }
 

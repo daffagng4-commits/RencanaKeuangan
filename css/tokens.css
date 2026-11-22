@@ -231,8 +231,7 @@
   --wm-lit: #FFFFFF;
   --wm-flash: #FDE047;
   --dur-wm-fade: 160ms;
-  --dur-wm-lit-in: 110ms;
-  --dur-wm-lit-out: 200ms;
+  --dur-wm-reset: 200ms;
   --dur-wm-flash-in: 120ms;
   --dur-wm-flash-out: 380ms;
 }
@@ -511,8 +510,7 @@ body, input, button, select, textarea, table, kbd, code {
     --dur-nav-dot: 0.001ms;
     --ease-nav-jelly: linear;
     --dur-wm-fade: 0.001ms;
-    --dur-wm-lit-in: 0.001ms;
-    --dur-wm-lit-out: 0.001ms;
+    --dur-wm-reset: 0.001ms;
     --dur-wm-flash-in: 0.001ms;
     --dur-wm-flash-out: 0.001ms;
     --dur-bell: 0.001ms;

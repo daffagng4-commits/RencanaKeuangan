@@ -283,6 +283,10 @@ body[data-shell="mobile-app"] #mobile-app-shell .mt-wordmark {
   flex-shrink: 0;
   overflow: hidden;
 }
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-clip-rect {
+  transform-box: fill-box;
+  transform-origin: 0 0;
+}
 body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-white {
   fill: var(--wm-lit);
   opacity: 1;
@@ -296,27 +300,36 @@ body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-dead {
 body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-lit {
   fill: var(--wm-lit);
   opacity: 0;
-  transition: opacity var(--dur-wm-lit-out) var(--ease-out);
+  transition: opacity var(--dur-wm-reset) var(--ease-out);
 }
 body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-flash {
   fill: var(--wm-flash);
   opacity: 0;
   transition: opacity var(--dur-wm-flash-out) var(--ease-out);
 }
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="drag"] .mt-wm-white,
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="return"] .mt-wm-white,
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="reset"] .mt-wm-white,
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="run"] .mt-wm-white,
 body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-white {
   opacity: 0;
 }
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="drag"] .mt-wm-dead,
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="return"] .mt-wm-dead,
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="reset"] .mt-wm-dead,
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="run"] .mt-wm-dead,
 body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-dead {
   opacity: 1;
 }
-body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="0"] .mt-wm-letter[data-wm-idx="0"] .mt-wm-lit,
-body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="1"] .mt-wm-letter[data-wm-idx="1"] .mt-wm-lit,
-body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="2"] .mt-wm-letter[data-wm-idx="2"] .mt-wm-lit,
-body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="3"] .mt-wm-letter[data-wm-idx="3"] .mt-wm-lit,
-body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="4"] .mt-wm-letter[data-wm-idx="4"] .mt-wm-lit,
-body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="5"] .mt-wm-letter[data-wm-idx="5"] .mt-wm-lit {
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="drag"] .mt-wm-lit,
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="return"] .mt-wm-lit,
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="run"] .mt-wm-lit {
   opacity: 1;
-  transition: opacity var(--dur-wm-lit-in) var(--ease-out);
+  transition: none;
+}
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="reset"] .mt-wm-lit {
+  opacity: 0;
+  transition: opacity var(--dur-wm-reset) var(--ease-out);
 }
 body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-finale="1"] .mt-wm-white {
   opacity: 1;
