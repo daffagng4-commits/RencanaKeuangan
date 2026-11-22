@@ -463,13 +463,13 @@ body[data-shell="mobile-app"] #mobile-app-shell .acct-popover.open {
     visibility 0s;
 }
 body[data-shell="mobile-app"][data-phone-frame="full"] .acct-popover {
-  top: calc(50px + env(safe-area-inset-top, 0px));
+  top: calc(54px + max(env(safe-area-inset-top, 0px), var(--rk-safe-top, 0px)));
   right: max(12px, calc(50% - 196px));
   width: min(272px, calc(100vw - 24px));
 }
 @media (max-width: 520px) {
   body[data-shell="mobile-app"] #mobile-app-shell .acct-popover {
-    top: calc(50px + env(safe-area-inset-top, 0px));
+    top: calc(54px + max(env(safe-area-inset-top, 0px), var(--rk-safe-top, 0px)));
     right: 12px;
     width: min(272px, calc(100vw - 24px));
   }
@@ -1729,7 +1729,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .notif-popover.open {
 }
 
 body[data-shell="mobile-app"][data-phone-frame="full"] .notif-popover {
-  top: calc(50px + env(safe-area-inset-top, 0px));
+  top: calc(54px + max(env(safe-area-inset-top, 0px), var(--rk-safe-top, 0px)));
   right: max(12px, calc(50% - 196px));
   width: min(310px, calc(100vw - 24px));
 }
@@ -1763,7 +1763,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .m-toast-undo { color: var(--acc
 
 body[data-shell="mobile-app"][data-phone-frame="full"] .toast-box { top: calc(var(--topbar-h) + 12px + env(safe-area-inset-top, 0px)); }
 @media (max-width: 520px) {
-  body[data-shell="mobile-app"] #mobile-app-shell .notif-popover { top: calc(50px + env(safe-area-inset-top, 0px)); right: 12px; width: min(310px, calc(100vw - 24px)); }
+  body[data-shell="mobile-app"] #mobile-app-shell .notif-popover { top: calc(54px + max(env(safe-area-inset-top, 0px), var(--rk-safe-top, 0px))); right: 12px; width: min(310px, calc(100vw - 24px)); }
   body[data-shell="mobile-app"] #mobile-app-shell .toast-box { top: calc(var(--topbar-h) + 12px + env(safe-area-inset-top, 0px)); max-width: calc(100vw - 24px); }
 }
 
@@ -2380,8 +2380,8 @@ body[data-shell="mobile-app"] #mobile-app-shell .m-upd-dot {
 }
 body[data-shell="mobile-app"] #mobile-app-shell #m-btn-more .m-upd-dot {
   position: absolute;
-  top: 12px;
-  right: calc(50% - 16px);
+  top: 8px;
+  right: calc(50% - 21px);
   margin-right: 0;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .m-upd-prog-wrap {

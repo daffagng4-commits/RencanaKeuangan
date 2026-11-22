@@ -1442,6 +1442,10 @@ html.rk-vt-desktop::view-transition-new(root) {
   animation: rkThemeCircleReveal var(--dur-theme-desktop) var(--ease-in-out) both;
 }
 
+html.rk-vt-apk::view-transition {
+  pointer-events: none;
+}
+
 html.rk-vt-apk::view-transition-old(root) {
   animation: rkThemeFadeOut var(--dur-theme-apk) var(--ease-in-out) both;
 }

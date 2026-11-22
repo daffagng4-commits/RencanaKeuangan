@@ -1486,6 +1486,10 @@ html.rk-vt-desktop::view-transition-new(root) {
   animation: rkThemeCircleReveal var(--dur-theme-desktop) var(--ease-in-out) both;
 }
 
+html.rk-vt-apk::view-transition {
+  pointer-events: none;
+}
+
 html.rk-vt-apk::view-transition-old(root) {
   animation: rkThemeFadeOut var(--dur-theme-apk) var(--ease-in-out) both;
 }
@@ -5762,13 +5766,13 @@ body[data-shell="mobile-app"] #mobile-app-shell .acct-popover.open {
     visibility 0s;
 }
 body[data-shell="mobile-app"][data-phone-frame="full"] .acct-popover {
-  top: calc(50px + env(safe-area-inset-top, 0px));
+  top: calc(54px + max(env(safe-area-inset-top, 0px), var(--rk-safe-top, 0px)));
   right: max(12px, calc(50% - 196px));
   width: min(272px, calc(100vw - 24px));
 }
 @media (max-width: 520px) {
   body[data-shell="mobile-app"] #mobile-app-shell .acct-popover {
-    top: calc(50px + env(safe-area-inset-top, 0px));
+    top: calc(54px + max(env(safe-area-inset-top, 0px), var(--rk-safe-top, 0px)));
     right: 12px;
     width: min(272px, calc(100vw - 24px));
   }
@@ -7028,7 +7032,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .notif-popover.open {
 }
 
 body[data-shell="mobile-app"][data-phone-frame="full"] .notif-popover {
-  top: calc(50px + env(safe-area-inset-top, 0px));
+  top: calc(54px + max(env(safe-area-inset-top, 0px), var(--rk-safe-top, 0px)));
   right: max(12px, calc(50% - 196px));
   width: min(310px, calc(100vw - 24px));
 }
@@ -7062,7 +7066,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .m-toast-undo { color: var(--acc
 
 body[data-shell="mobile-app"][data-phone-frame="full"] .toast-box { top: calc(var(--topbar-h) + 12px + env(safe-area-inset-top, 0px)); }
 @media (max-width: 520px) {
-  body[data-shell="mobile-app"] #mobile-app-shell .notif-popover { top: calc(50px + env(safe-area-inset-top, 0px)); right: 12px; width: min(310px, calc(100vw - 24px)); }
+  body[data-shell="mobile-app"] #mobile-app-shell .notif-popover { top: calc(54px + max(env(safe-area-inset-top, 0px), var(--rk-safe-top, 0px))); right: 12px; width: min(310px, calc(100vw - 24px)); }
   body[data-shell="mobile-app"] #mobile-app-shell .toast-box { top: calc(var(--topbar-h) + 12px + env(safe-area-inset-top, 0px)); max-width: calc(100vw - 24px); }
 }
 
@@ -7679,8 +7683,8 @@ body[data-shell="mobile-app"] #mobile-app-shell .m-upd-dot {
 }
 body[data-shell="mobile-app"] #mobile-app-shell #m-btn-more .m-upd-dot {
   position: absolute;
-  top: 12px;
-  right: calc(50% - 16px);
+  top: 8px;
+  right: calc(50% - 21px);
   margin-right: 0;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .m-upd-prog-wrap {
@@ -32133,6 +32137,9 @@ function mobOpenSheet(id) {
   var el = $(id);
   if (!el) return;
   clearTimeout(el._mCloseT);
+  clearTimeout(el._mSnapT);
+  el.hidden = false;
+  if (el.hasAttribute('hidden')) el.removeAttribute('hidden');
   el.classList.remove('is-closing', 'is-dragging');
   var sh = el.querySelector('.modal-sheet');
   if (sh) { sh.style.transform = ''; sh.style.transition = ''; }
@@ -32146,6 +32153,7 @@ function mobOpenSheet(id) {
 function mobCloseSheet(id) {
   var el = $(id);
   if (!el) return;
+  clearTimeout(el._mSnapT);
   if (id === 'm-sheet-trip') mobCloseCalSheet(false);
   if (id === 'm-sheet-trip-xl') MOB_XL_DATA = null;
   var red = typeof rkIsReducedMotion === 'function' && rkIsReducedMotion();
@@ -32438,7 +32446,7 @@ function mobShellTemplate() {
     '<div class="bento-2"><div class="field"><label class="field-label" for="m-kas-amt">Nominal (Rp)</label><input class="input mono" id="m-kas-amt" type="text" inputmode="numeric" data-num-fmt="rp" data-slider-sync="m-kas-slider" placeholder="50.000" required /></div>' +
     '<div class="field"><span class="field-label">Tanggal</span>' + mobDateFieldHtml('m-kas-date', '', true) + '</div></div>' +
     '<div class="slider-wrap"><div class="slider-hd"><span style="font-weight:700">Atur Cepat Nominal</span><span class="slider-val-pill pv" id="m-kas-amt-readout">Rp 0</span></div>' +
-    '<input type="range" class="modern-slider" id="m-kas-slider" min="0" max="5000000" step="25000" value="0" data-num-target="m-kas-amt" /></div>' +
+    '<input type="range" class="modern-slider" id="m-kas-slider" min="0" max="5000000" step="25000" value="0" data-num-target="m-kas-amt" data-haptic="slider" /></div>' +
     '<div class="pill-slider"><button type="button" class="p-chip m-qamt" data-amt="25000">+25rb</button><button type="button" class="p-chip m-qamt" data-amt="50000">+50rb</button><button type="button" class="p-chip m-qamt" data-amt="100000">+100rb</button><button type="button" class="p-chip m-qamt" data-amt="500000">+500rb</button><button type="button" class="p-chip m-qamt" data-amt="1000000">+1jt</button></div>' +
     '<div class="field"><span class="field-label">Kategori</span><div class="bento-2" id="m-kas-cat-pills"></div></div>' +
     '<div class="field"><label class="field-label" for="m-kas-note">Catatan</label><input class="input" id="m-kas-note" maxlength="80" placeholder="Contoh: Makan siang" required /></div>' +
@@ -32483,7 +32491,7 @@ function mobShellTemplate() {
     '<div class="bento-2"><div class="field"><label class="field-label" for="m-item-name">Nama Item</label><input class="input" id="m-item-name" placeholder="WiFi Biznet" /></div>' +
     '<div class="field"><label class="field-label" for="m-item-price">Nominal (Rp)</label><input class="input mono" id="m-item-price" type="text" inputmode="numeric" data-num-fmt="rp" data-slider-sync="m-item-price-slider" placeholder="375.000" /></div></div>' +
     '<div class="slider-wrap"><div class="slider-hd"><span style="font-weight:700">Atur Cepat Harga</span><span class="slider-val-pill pv" id="m-item-price-ro">Rp 0</span></div>' +
-    '<input type="range" class="modern-slider" id="m-item-price-slider" min="25000" max="5000000" step="25000" value="375000" data-num-target="m-item-price" /></div>' +
+    '<input type="range" class="modern-slider" id="m-item-price-slider" min="25000" max="5000000" step="25000" value="375000" data-num-target="m-item-price" data-haptic="slider" /></div>' +
     '<div class="bento-2"><div class="field"><label class="field-label" for="m-item-unit">Siklus</label><select class="input" id="m-item-unit"><option value="bulan">Tiap 1 bulan</option><option value="28hari">Tiap 28 hari</option><option value="minggu">Tiap minggu</option><option value="hari">Tiap hari</option><option value="tahun">Tiap 1 tahun</option><option value="sekali">Sekali saja</option></select></div>' +
     '<div class="field"><span class="field-label">Tanggal</span>' + mobDateFieldHtml('m-item-start', '', true) + '</div></div>' +
     '<div class="bento-2" id="m-item-cat-pills"></div><button type="submit" class="btn btn-primary" id="m-item-save-btn">Simpan Item</button></form></div>' +
@@ -32523,6 +32531,7 @@ function mobShellTemplate() {
     '<label class="switch-row"><span>Saat tepat jatuh tempo (Hari-H)</span><input type="checkbox" id="m-set-notif-today" checked /></label>' +
     '<label class="switch-row"><span>Mendekati jatuh tempo (sesuai horizon)</span><input type="checkbox" id="m-set-notif-soon" checked /></label>' +
     '<label class="switch-row"><span>Tagihan terlewat belum dibayar</span><input type="checkbox" id="m-set-notif-late" checked /></label>' +
+    '<label class="switch-row"><span><strong>Getaran sentuh</strong><div style="font-size:0.71rem;color:var(--text-muted);font-weight:400">Umpan balik getar saat tarik, ketuk tab, grafik, dan slider</div></span><input type="checkbox" id="m-set-haptic-enabled" checked /></label>' +
     '<button type="button" class="btn btn-primary" id="m-btn-test-notif">🔔 Tes Notif Bar HP &amp; Izin Browser</button></div></div>' +
     '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Pengingat Tagihan</h2><div style="font-size:0.71rem;color:var(--text-muted)">Hari ini &amp; mendekati tempo</div></div><span class="badge b-am mono" id="m-rem-cnt-badge">0 item</span></div>' +
     '<div class="stack" style="gap:7px" id="m-settings-rem-list"></div>' +
@@ -32743,6 +32752,70 @@ function rkIsCapacitorNative() {
   return true;
 }
 
+var RK_HAPTICS_LS = 'rk-haptics';
+var RK_HAPTIC_TICK_MS = 40;
+var _rkLastTickHapticAt = 0;
+
+function rkIsHapticsEnabled() {
+  try {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem(RK_HAPTICS_LS) === '0') return false;
+  } catch (e) {}
+  return true;
+}
+
+function rkSetHapticsEnabled(on) {
+  try {
+    if (typeof localStorage !== 'undefined') localStorage.setItem(RK_HAPTICS_LS, on ? '1' : '0');
+  } catch (e) {}
+}
+
+// Satu pintu haptic Mode APK: Capacitor Haptics -> fallback navigator.vibrate -> no-op.
+// Di Android, Haptics.vibrate({ duration: 12 }) dipilih untuk tick karena HapticsSelectionType
+// pada @capacitor/haptics berdurasi 100ms dan mensyaratkan selectionStart().
+function rkHaptic(kind) {
+  if (typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') return false;
+  if (!rkIsHapticsEnabled()) return false;
+  if (kind === 'tick') {
+    var now = Date.now();
+    if (now - _rkLastTickHapticAt < RK_HAPTIC_TICK_MS) return false;
+    _rkLastTickHapticAt = now;
+  }
+  var hp = typeof rkCapPlugin === 'function' ? rkCapPlugin('Haptics') : null;
+  if (hp) {
+    try {
+      var res = null;
+      if (kind === 'arm') {
+        if (typeof hp.impact === 'function') res = hp.impact({ style: 'LIGHT' });
+      } else if (kind === 'refresh' || kind === 'edge') {
+        if (typeof hp.impact === 'function') res = hp.impact({ style: 'MEDIUM' });
+      } else if (kind === 'tick') {
+        if (typeof hp.vibrate === 'function') res = hp.vibrate({ duration: 12 });
+        else if (typeof hp.impact === 'function') res = hp.impact({ style: 'LIGHT' });
+      }
+      if (res && typeof res.catch === 'function') res.catch(function () {});
+      return !!res || res === undefined;
+    } catch (e) {
+      return false;
+    }
+  }
+  if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+    var ms = kind === 'arm' ? 14 : kind === 'refresh' ? 22 : kind === 'edge' ? 24 : 8;
+    try {
+      navigator.vibrate(ms);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  return false;
+}
+
+if (typeof window !== 'undefined') {
+  window.rkHaptic = rkHaptic;
+  window.rkIsHapticsEnabled = rkIsHapticsEnabled;
+  window.rkSetHapticsEnabled = rkSetHapticsEnabled;
+}
+
 function rkHandleAndroidBack() {
   if (!rkIsCapacitorNative()) return false;
   if (typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') return false;
@@ -32954,6 +33027,7 @@ function ensureMobileShell() {
       bnavEl._rkNavRo.observe(bnavEl);
     }
     rkSyncMobNavLayout(true);
+    if (typeof rkSyncUpdateDots === 'function') rkSyncUpdateDots();
     if (typeof requestAnimationFrame === 'function') {
       requestAnimationFrame(function () { rkSyncMobNavLayout(true); });
     }
@@ -33195,16 +33269,25 @@ function renderMobCashflowSvg(P, curBal) {
     cxEl = svg.querySelector('#m-cf-cx'),
     cdEl = svg.querySelector('#m-cf-cd'),
     glow = svg.querySelector('#m-cf-seg-glow');
+  var mTState = { near: false, locked: null, sx: 0, sy: 0, lastIdx: -1 };
 
-  function inspectX(clientX) {
+  function inspectX(clientX, allowHaptic) {
     if (!hit || !coords.length) return;
     var sR = svg.getBoundingClientRect(),
       wR = wrap ? wrap.getBoundingClientRect() : sR,
       sW = sR.width || 320,
       svgX = Math.max(coords[0].x, Math.min(coords[coords.length - 1].x, ((clientX - sR.left) / sW) * W)),
-      nearN = coords.reduce(function (b, c) { return Math.abs(c.x - svgX) < Math.abs(b.x - svgX) ? c : b; }, coords[0]),
+      nearIdx = 0;
+    for (var ci = 1; ci < coords.length; ci++) {
+      if (Math.abs(coords[ci].x - svgX) < Math.abs(coords[nearIdx].x - svgX)) nearIdx = ci;
+    }
+    var nearN = coords[nearIdx],
       isPt = Math.abs(nearN.x - svgX) <= 12 || !samples.length,
       tPt = isPt ? nearN : samples.reduce(function (b, s) { return Math.abs(s.x - svgX) < Math.abs(b.x - svgX) ? s : b; }, samples[0]);
+    if (allowHaptic && nearIdx !== mTState.lastIdx) {
+      mTState.lastIdx = nearIdx;
+      rkHaptic('tick');
+    }
     if (ch) ch.style.display = 'block';
     if (cxEl) { cxEl.setAttribute('x1', tPt.x); cxEl.setAttribute('x2', tPt.x); }
     if (cdEl) { cdEl.setAttribute('cx', tPt.x); cdEl.setAttribute('cy', tPt.y); }
@@ -33221,6 +33304,7 @@ function renderMobCashflowSvg(P, curBal) {
     }
   }
   function hideMobCfHUD() {
+    mTState.lastIdx = -1;
     if (ch) ch.style.display = 'none';
     if (glow) glow.style.display = 'none';
     if (tip) tip.classList.remove('visible');
@@ -33228,7 +33312,6 @@ function renderMobCashflowSvg(P, curBal) {
   if (hit) {
     svg.style.touchAction = 'pan-y';
     hit.style.touchAction = 'pan-y';
-    var mTState = { near: false, locked: null, sx: 0, sy: 0 };
     var isMobNearLine = function (cx, cy) {
       if (!coords.length) return false;
       var sR = svg.getBoundingClientRect(),
@@ -33242,24 +33325,25 @@ function renderMobCashflowSvg(P, curBal) {
           : samples.reduce(function (b, s) { return Math.abs(s.x - svgX) < Math.abs(b.x - svgX) ? s : b; }, samples[0]);
       return Math.abs(svgY - tPt.y) * (sH / H) <= 24;
     };
-    hit.addEventListener('mousemove', function (e) { inspectX(e.clientX); });
-    hit.addEventListener('pointerdown', function (e) { if (e.pointerType === 'mouse') inspectX(e.clientX); });
-    hit.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse' && e.buttons) inspectX(e.clientX); });
+    hit.addEventListener('mousemove', function (e) { inspectX(e.clientX, false); });
+    hit.addEventListener('pointerdown', function (e) { if (e.pointerType === 'mouse') { mTState.lastIdx = -1; inspectX(e.clientX, true); } });
+    hit.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse' && e.buttons) inspectX(e.clientX, true); });
     hit.addEventListener('touchstart', function (e) {
       if (!e.touches || !e.touches[0]) return;
       var t0 = e.touches[0];
       mTState.sx = t0.clientX;
       mTState.sy = t0.clientY;
       mTState.locked = null;
+      mTState.lastIdx = -1;
       mTState.near = isMobNearLine(t0.clientX, t0.clientY);
-      if (mTState.near) inspectX(t0.clientX);
+      if (mTState.near) inspectX(t0.clientX, true);
     }, { passive: true });
     hit.addEventListener('touchmove', function (e) {
       if (!e.touches || !e.touches[0]) return;
       var t0 = e.touches[0];
       if (typeof t0.clientY !== 'number') {
         if (e.cancelable) e.preventDefault();
-        inspectX(t0.clientX);
+        inspectX(t0.clientX, true);
         return;
       }
       if (!mTState.near) return;
@@ -33272,7 +33356,7 @@ function renderMobCashflowSvg(P, curBal) {
       }
       if (mTState.locked === 'h') {
         if (e.cancelable) e.preventDefault();
-        inspectX(t0.clientX);
+        inspectX(t0.clientX, true);
       }
     }, { passive: false });
     hit.addEventListener('touchend', function () { mTState.near = false; mTState.locked = null; hideMobCfHUD(); });
@@ -34437,6 +34521,11 @@ function rkSyncUpdateDots() {
   var show = MOB_UPDATE_STATE.status === 'available' && rkIsCapacitorNative();
   if ($('m-upd-dot')) $('m-upd-dot').style.display = show ? 'inline-block' : 'none';
   if ($('m-more-upd-dot')) $('m-more-upd-dot').style.display = show ? 'inline-block' : 'none';
+  var moreBtn = $('m-btn-more');
+  if (moreBtn) moreBtn.setAttribute('aria-label', show ? 'Menu, ada pembaruan aplikasi' : 'Menu');
+}
+if (typeof window !== 'undefined') {
+  window.rkSyncUpdateDots = rkSyncUpdateDots;
 }
 
 function rkCapPlugin(name) {
@@ -35148,6 +35237,7 @@ function renderMobSettings() {
   }
   syncMobNotifDot();
   if ($('m-set-notif-enabled')) $('m-set-notif-enabled').checked = !!MOB_STATE.notifEnabled;
+  if ($('m-set-haptic-enabled')) $('m-set-haptic-enabled').checked = rkIsHapticsEnabled();
   if ($('m-rem-cnt-badge')) $('m-rem-cnt-badge').textContent = due.length + ' item';
   if ($('m-menu-cnt-rem')) $('m-menu-cnt-rem').textContent = due.length + ' tempo';
   var actBtn = $('m-btn-notif-activate');
@@ -35552,6 +35642,7 @@ function bindMobileShellEvents(root) {
     var TOP_TOLERANCE_PX = 1;
     var ptr = null;
     var refreshing = false;
+    var queuedRetapRefresh = false;
     var cooldownUntil = 0;
     var exitTimer = null;
     var pendingScrollTimer = null;
@@ -35632,16 +35723,23 @@ function bindMobileShellEvents(root) {
       detachActiveMove();
     }
 
-    function finishRefresh(msg) {
+    function finishRefresh(msg, fromRetap) {
       cancelPendingScrollRefresh();
       clearGesture();
       refreshing = false;
-      cooldownUntil = Date.now() + 1000;
+      if (queuedRetapRefresh) {
+        queuedRetapRefresh = false;
+        if ((typeof getShellMode !== 'function' || getShellMode() === 'mobile-app') && !hasOpenOverlay()) {
+          runRefresh(true);
+          return;
+        }
+      }
+      cooldownUntil = fromRetap ? 0 : (Date.now() + 1000);
       resetVisual('is-exiting');
       if (msg) showMobToast(msg);
     }
 
-    function runRefresh() {
+    function runRefresh(fromRetap) {
       refreshing = true;
       var ind = $('m-ptr-ind');
       clearTimeout(exitTimer);
@@ -35655,27 +35753,27 @@ function bindMobileShellEvents(root) {
       var isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
       if (hasCloud && isOffline) {
         if (typeof renderMobileApp === 'function') renderMobileApp();
-        finishRefresh('Offline — menampilkan data lokal');
+        finishRefresh('Offline — menampilkan data lokal', fromRetap);
         return;
       }
       if (hasCloud) {
         var beforeSig = typeof dsig === 'function' ? dsig() : '';
         Promise.resolve(pull()).then(function () {
           if (typeof window !== 'undefined' && window._rkLastPullOk === false) {
-            finishRefresh('Gagal sinkron: ' + (window._rkLastPullErr || 'koneksi'));
+            finishRefresh('Gagal sinkron: ' + (window._rkLastPullErr || 'koneksi'), fromRetap);
             return;
           }
           if (typeof renderMobileApp === 'function') renderMobileApp();
           var afterSig = typeof dsig === 'function' ? dsig() : '';
           if (afterSig !== beforeSig && typeof renderMobCharts === 'function') renderMobCharts();
-          finishRefresh('Data tersinkron');
+          finishRefresh('Data tersinkron', fromRetap);
         }).catch(function () {
-          finishRefresh('Gagal sinkron — cek koneksi');
+          finishRefresh('Gagal sinkron — cek koneksi', fromRetap);
         });
         return;
       }
       if (typeof renderMobileApp === 'function') renderMobileApp();
-      finishRefresh('Data diperbarui');
+      finishRefresh('Data diperbarui', fromRetap);
     }
 
     function onActiveMove(e) {
@@ -35707,6 +35805,13 @@ function bindMobileShellEvents(root) {
       if (e.cancelable) e.preventDefault();
       var pullY = Math.min(PULL_MAX, Math.max(0, dy * 0.5));
       ptr.pullY = pullY;
+      var nowArmed = pullY >= PULL_TRIG;
+      if (nowArmed && !ptr.armed) {
+        ptr.armed = true;
+        rkHaptic('arm');
+      } else if (!nowArmed && ptr.armed) {
+        ptr.armed = false;
+      }
       var ratio = Math.min(1, pullY / PULL_TRIG);
       setPtrVars($('m-ptr-ind'), pullY - 46, Math.min(1, ratio * 1.15), ratio * 180, 0.8 + ratio * 0.2);
     }
@@ -35720,7 +35825,8 @@ function bindMobileShellEvents(root) {
       clearGesture();
       if (!cur.locked) return;
       if (!cancelled && cur.pullY >= PULL_TRIG) {
-        runRefresh();
+        rkHaptic('refresh');
+        runRefresh(false);
       } else {
         resetVisual('is-snapping');
       }
@@ -35729,19 +35835,31 @@ function bindMobileShellEvents(root) {
     function onActiveEnd() { endPtr(false); }
     function onActiveCancel() { endPtr(true); }
 
-    window.rkMobRefresh = function () {
-      if (!canStartRefresh()) return false;
+    window.rkMobRefresh = function (opts) {
+      var isRetap = !!(opts && opts.fromRetap);
+      if (typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') return false;
+      if (hasOpenOverlay()) return false;
+      if (isRetap) {
+        if (pendingScrollTimer) return true;
+        if (refreshing) {
+          queuedRetapRefresh = true;
+          return true;
+        }
+      } else {
+        if (!canStartRefresh()) return false;
+      }
       var sy = getScrollY();
       if (sy <= TOP_TOLERANCE_PX) {
-        runRefresh();
+        runRefresh(isRetap);
         return true;
       }
+      var startTab = MOB_STATE.tab;
       var red = typeof rkIsReducedMotion === 'function' && rkIsReducedMotion();
       var mm = $('m-main');
       if (red) {
         if (mm) mm.scrollTop = 0;
         if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') window.scrollTo(0, 0);
-        runRefresh();
+        runRefresh(isRetap);
         return true;
       }
       refreshing = true;
@@ -35750,8 +35868,8 @@ function bindMobileShellEvents(root) {
         if (started) return;
         started = true;
         cancelPendingScrollRefresh();
-        if (MOB_STATE.tab !== 'rincian') { refreshing = false; return; }
-        runRefresh();
+        if (MOB_STATE.tab !== startTab) { refreshing = false; queuedRetapRefresh = false; return; }
+        runRefresh(isRetap);
       };
       if (mm && mm.scrollTop > TOP_TOLERANCE_PX) {
         if (typeof mm.scrollTo === 'function') mm.scrollTo({ top: 0, behavior: 'smooth' });
@@ -35773,6 +35891,7 @@ function bindMobileShellEvents(root) {
       cancelPendingScrollRefresh();
       clearGesture();
       refreshing = false;
+      queuedRetapRefresh = false;
       cooldownUntil = 0;
       resetVisual('');
     };
@@ -35788,6 +35907,7 @@ function bindMobileShellEvents(root) {
         startY: e.touches[0].clientY,
         pullY: 0,
         locked: false,
+        armed: false,
       };
       root.addEventListener('touchmove', onActiveMove, { passive: false });
       root.addEventListener('touchend', onActiveEnd, { passive: true });
@@ -35870,6 +35990,7 @@ function bindMobileShellEvents(root) {
       if (!sheet) return;
       if (e.target.closest('input, textarea, select, svg, .chart-stage')) return;
       var bdEl = sheet.closest('.modal-backdrop');
+      if (bdEl) clearTimeout(bdEl._mSnapT);
       var bodyEl = sheet.querySelector('.ms-body');
       var fromHandle = !!e.target.closest('.ms-handle, .ms-head');
       if (!fromHandle && bodyEl && bodyEl.scrollTop > 0) return;
@@ -35917,23 +36038,14 @@ function bindMobileShellEvents(root) {
       var dt = Math.max(1, Date.now() - st.t0);
       var vy = st.dy / dt;
       if (st.dy > h * 0.3 || (st.dy > 24 && vy > 0.55)) {
-        st.sheet.style.transition = 'transform var(--dur-sheet-close) var(--ease-in)';
-        st.bd.style.transition = 'opacity var(--dur-sheet-close) var(--ease-in)';
-        st.sheet.style.transform = 'translateY(100%)';
-        st.bd.style.opacity = '0';
-        setTimeout(function () {
-          st.bd.classList.remove('open', 'is-closing');
-          st.sheet.style.transform = '';
-          st.sheet.style.transition = '';
-          st.bd.style.opacity = '';
-          st.bd.style.transition = '';
-        }, 250);
+        mobCloseSheet(st.bd.id);
       } else {
         st.sheet.style.transition = 'transform var(--dur-sheet-snap) var(--ease-spring)';
         st.bd.style.transition = 'opacity var(--dur-sheet-snap) var(--ease-out)';
         st.sheet.style.transform = 'translateY(0)';
         st.bd.style.opacity = '';
-        setTimeout(function () {
+        clearTimeout(st.bd._mSnapT);
+        st.bd._mSnapT = setTimeout(function () {
           st.sheet.style.transform = '';
           st.sheet.style.transition = '';
           st.bd.style.transition = '';
@@ -36046,13 +36158,15 @@ function bindMobileShellEvents(root) {
       return;
     }
     var bd = e.target.classList && e.target.classList.contains('modal-backdrop') ? e.target : null;
-    if (bd) { mobCloseSheet(bd.id); return; }
+    if (bd) { e.stopPropagation(); mobCloseSheet(bd.id); return; }
     var cls = e.target.closest('[data-mclose]');
     if (cls) { mobCloseSheet(cls.getAttribute('data-mclose')); return; }
 
     var pf = e.target.closest('[data-mpframe]');
     if (pf) { setMobPhoneFrame(pf.getAttribute('data-mpframe')); return; }
     if (e.target.closest('#m-bar-theme-btn') || e.target.closest('#m-menu-theme')) {
+      var fromMenuTheme = !!e.target.closest('#m-menu-theme');
+      if (fromMenuTheme) mobCloseSheet('m-sheet-more');
       if ($('thm')) $('thm').click();
       renderMobMetaMenus();
       return;
@@ -36215,8 +36329,11 @@ function bindMobileShellEvents(root) {
     if (navBtn) {
       var mtabId = navBtn.getAttribute('data-mtab');
       var tid = mtabId || navBtn.getAttribute('data-mnav') || navBtn.getAttribute('data-mgo');
-      if (mtabId === 'rincian' && MOB_STATE.tab === 'rincian' && typeof window.rkMobRefresh === 'function') {
-        window.rkMobRefresh();
+      if (mtabId && MOB_STATE.tab === mtabId && (mtabId === 'rincian' || mtabId === 'kas' || mtabId === 'jadwal')) {
+        if (typeof window.rkMobRefresh === 'function') {
+          var didRetap = window.rkMobRefresh({ fromRetap: true });
+          if (didRetap !== false) rkHaptic('refresh');
+        }
         return;
       }
       mobCloseSheet('m-sheet-more');
@@ -37066,10 +37183,41 @@ function bindMobileShellEvents(root) {
     }
   });
 
+  if (!root._rkSliderHapticBound) {
+    root._rkSliderHapticBound = true;
+    var startSliderHaptic = function (e) {
+      var sl = e.target && e.target.closest ? e.target.closest('[data-haptic="slider"]') : null;
+      if (!sl) return;
+      sl._rkHapticActive = true;
+      sl._rkHapticLastVal = Number(sl.value);
+    };
+    var endSliderHaptic = function (e) {
+      var sl = e.target && e.target.closest ? e.target.closest('[data-haptic="slider"]') : null;
+      if (sl) sl._rkHapticActive = false;
+    };
+    root.addEventListener('pointerdown', startSliderHaptic, { passive: true });
+    root.addEventListener('touchstart', startSliderHaptic, { passive: true });
+    root.addEventListener('pointerup', endSliderHaptic, { passive: true });
+    root.addEventListener('pointercancel', endSliderHaptic, { passive: true });
+    root.addEventListener('touchend', endSliderHaptic, { passive: true });
+    root.addEventListener('touchcancel', endSliderHaptic, { passive: true });
+    root.addEventListener('focusout', endSliderHaptic, { passive: true });
+  }
+
   root.addEventListener('input', function (e) {
     var t = e.target;
     if (!t) return;
     if (t.classList && t.classList.contains('modern-slider')) mobPaintSlider(t);
+    if (t.getAttribute && t.getAttribute('data-haptic') === 'slider' && t._rkHapticActive) {
+      var curSv = Number(t.value);
+      var prevSv = typeof t._rkHapticLastVal === 'number' ? t._rkHapticLastVal : curSv;
+      if (curSv !== prevSv) {
+        t._rkHapticLastVal = curSv;
+        var minSv = Number(t.min || 0), maxSv = Number(t.max || 100);
+        if (curSv <= minSv || curSv >= maxSv) rkHaptic('edge');
+        else rkHaptic('tick');
+      }
+    }
     if (t.id === 'm-cf-zoom-scrub') {
       var zSvg = $('m-svg-cf-zoom'), zWrap = $('m-cf-zoom-wrap'), pct = (+t.value || 0) / 100;
       if (zSvg && typeof zSvg._rkInspectPct === 'function') zSvg._rkInspectPct(pct);
@@ -37081,10 +37229,16 @@ function bindMobileShellEvents(root) {
       if ($('m-cfg-saldo-slider')) mobPaintSlider($('m-cfg-saldo-slider'));
     } else if (t.id === 'm-kas-amt' || t.id === 'm-kas-slider') {
       if ($('m-kas-amt-readout')) $('m-kas-amt-readout').textContent = rp(getRpVal('m-kas-amt'));
-      if ($('m-kas-slider')) mobPaintSlider($('m-kas-slider'));
+      if ($('m-kas-slider')) {
+        mobPaintSlider($('m-kas-slider'));
+        if (t.id === 'm-kas-amt') $('m-kas-slider')._rkHapticLastVal = Number($('m-kas-slider').value);
+      }
     } else if (t.id === 'm-item-price' || t.id === 'm-item-price-slider') {
       if ($('m-item-price-ro')) $('m-item-price-ro').textContent = rp(getRpVal('m-item-price'));
-      if ($('m-item-price-slider')) mobPaintSlider($('m-item-price-slider'));
+      if ($('m-item-price-slider')) {
+        mobPaintSlider($('m-item-price-slider'));
+        if (t.id === 'm-item-price') $('m-item-price-slider')._rkHapticLastVal = Number($('m-item-price-slider').value);
+      }
     } else if (t.id === 'm-sim-price' || t.id === 'm-sim-slider') {
       if ($('m-sim-readout')) $('m-sim-readout').textContent = rp(getRpVal('m-sim-price'));
       if ($('m-sim-slider')) mobPaintSlider($('m-sim-slider'));
@@ -37172,6 +37326,8 @@ function bindMobileShellEvents(root) {
       MOB_STATE.notifHorizon = +t.value || 7;
       if (typeof remHz !== 'undefined') { remHz = MOB_STATE.notifHorizon; if (typeof saveRemPrefs === 'function') saveRemPrefs(); }
       renderMobSettings();
+    } else if (t.id === 'm-set-haptic-enabled') {
+      rkSetHapticsEnabled(!!t.checked);
     } else if (t.id === 'm-set-notif-enabled' || t.id === 'm-set-notif-today' || t.id === 'm-set-notif-soon' || t.id === 'm-set-notif-late') {
       MOB_STATE.notifEnabled = !$('m-set-notif-enabled') || $('m-set-notif-enabled').checked;
       MOB_STATE.notifToday = !$('m-set-notif-today') || $('m-set-notif-today').checked;

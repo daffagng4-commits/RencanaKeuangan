@@ -1222,25 +1222,26 @@ const { boot } = require('./ui.js');
   await new Promise((r) => setTimeout(r, 30));
   assert.strictEqual(ptrPullCount, beforeRetap + 1, 'tap ulang tombol Rincian di bottom nav memicu refresh 1x');
   assert.strictEqual(rincianRenderCount, 1, 're-tap Rincian tidak menyebabkan render ulang ganda dari switchMobileTab + PTR');
-  // 23b. Tap beruntun dalam masa cooldown tidak memicu ganda
+  // 23b. Tap beruntun re-tap Rincian tanpa cooldown tetap menjalankan refresh & menggabungkan in-flight secara aman (Tahap 15 Butir 3)
   click(navRincianBtn);
   click(navRincianBtn);
   await new Promise((r) => setTimeout(r, 25));
-  assert.strictEqual(ptrPullCount, beforeRetap + 1, 'tap beruntun dalam masa cooldown tidak memicu refresh ganda');
+  assert.strictEqual(ptrPullCount, beforeRetap + 3, 're-tap beruntun tanpa cooldown menjalankan refresh dan follow-up aman');
   // 23c. Overlay terbuka memblokir re-tap refresh
   w._rkPtrReset();
+  const after23b = ptrPullCount;
   $('m-sheet-periode').classList.add('open');
   click(navRincianBtn);
   $('m-sheet-periode').classList.remove('open');
   await new Promise((r) => setTimeout(r, 25));
-  assert.strictEqual(ptrPullCount, beforeRetap + 1, 'overlay terbuka memblokir refresh saat re-tap Rincian');
+  assert.strictEqual(ptrPullCount, after23b, 'overlay terbuka memblokir refresh saat re-tap Rincian');
   // 23d. Mode Privasi tetap aman selama refresh re-tap
   w._rkPtrReset();
   doc.body.classList.add('privacy-mode');
   doc.body.classList.add('privacy-on');
   click(navRincianBtn);
   await new Promise((r) => setTimeout(r, 25));
-  assert.strictEqual(ptrPullCount, beforeRetap + 2, 're-tap Rincian tetap berfungsi saat Mode Privasi aktif');
+  assert.strictEqual(ptrPullCount, after23b + 1, 're-tap Rincian tetap berfungsi saat Mode Privasi aktif');
   assert(doc.body.classList.contains('privacy-mode') && doc.body.classList.contains('privacy-on'), 'Mode Privasi tidak bocor selama refresh re-tap');
   doc.body.classList.remove('privacy-mode', 'privacy-on');
   // 23e. Re-tap saat tergulir: scroll halus ke atas lalu jalankan refresh 1x
@@ -1253,23 +1254,25 @@ const { boot } = require('./ui.js');
   };
   $('m-main').scrollTop = 180;
   click(navRincianBtn);
-  // Tap beruntun sementara masih menunggu ke atas tidak boleh memicu ganda
+  // Tap beruntun sementara masih menunggu ke atas digabungkan agar tidak memicu pull paralel
   click(navRincianBtn);
   await new Promise((r) => setTimeout(r, 380));
   assert(scrollCalls.length >= 1, 're-tap Rincian saat halaman tergulir memanggil scrollTo ke atas');
-  assert.strictEqual(ptrPullCount, beforeRetap + 3, 're-tap Rincian saat tergulir menjalankan refresh tepat 1x');
+  assert.strictEqual(ptrPullCount, after23b + 2, 're-tap Rincian saat tergulir menjalankan refresh tepat 1x');
   w.scrollTo = origWinScrollTo;
   $('m-main').scrollTop = 0;
-  // 23f. Tab selain Rincian tidak refresh saat ditap ulang; pindah dari tab lain ke Rincian tidak memicu refresh
+  // 23f. Tab lain (Kas) juga menyegarkan saat ditap ulang (Tahap 15 Butir 3); pindah antar tab tidak memicu refresh
   w._rkPtrReset();
   const beforeOtherTab = ptrPullCount;
   click(navKasBtn);
+  assert.strictEqual(ptrPullCount, beforeOtherTab, 'pindah dari Rincian ke Kas tidak memicu refresh');
   click(navKasBtn);
   await new Promise((r) => setTimeout(r, 25));
-  assert.strictEqual(ptrPullCount, beforeOtherTab, 'tap ulang tab selain Rincian (Kas) tidak memicu refresh');
+  assert.strictEqual(ptrPullCount, beforeOtherTab + 1, 're-tap tab Kas saat sudah aktif memicu refresh 1x');
+  const afterKasRetap = ptrPullCount;
   click(navRincianBtn);
   await new Promise((r) => setTimeout(r, 25));
-  assert.strictEqual(ptrPullCount, beforeOtherTab, 'pindah dari tab Kas ke Rincian tidak dihitung re-tap dan tidak memicu refresh');
+  assert.strictEqual(ptrPullCount, afterKasRetap, 'pindah dari tab Kas ke Rincian tidak dihitung re-tap dan tidak memicu refresh');
   // 23g. Mode browser tidak terpengaruh
   w.setShellMode('browser');
   const beforeBrowserRetap = ptrPullCount;
