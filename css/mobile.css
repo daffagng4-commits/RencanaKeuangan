@@ -278,14 +278,10 @@ body[data-shell="mobile-app"] #mobile-app-shell .mob-topbar {
 
 body[data-shell="mobile-app"] #mobile-app-shell .mt-wordmark {
   display: block;
-  height: 22.5px;
+  height: var(--wm-h);
   width: auto;
   flex-shrink: 0;
-  overflow: hidden;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-clip-rect {
-  transform-box: fill-box;
-  transform-origin: 0 0;
+  overflow: visible;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-white {
   fill: var(--wm-lit);
@@ -297,15 +293,53 @@ body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-dead {
   opacity: 0;
   transition: opacity var(--dur-wm-fade) var(--ease-out);
 }
-body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-lit {
-  fill: var(--wm-lit);
-  opacity: 0;
-  transition: opacity var(--dur-wm-reset) var(--ease-out);
-}
 body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-flash {
   fill: var(--wm-flash);
   opacity: 0;
   transition: opacity var(--dur-wm-flash-out) var(--ease-out);
+}
+/* Pengecualian sadar Aturan 3: stroke-dash pada jalur centerline di dalam tubuh huruf saat non-idle tanpa filter blur */
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-strokes {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-wm-reset) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-drawn-grp {
+  opacity: 0.78;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-drawn,
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-trail {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-drawn {
+  stroke: var(--wm-trail);
+  stroke-width: 6.8;
+  stroke-opacity: 1;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-halo-outer {
+  stroke: var(--wm-glow-soft);
+  stroke-width: 9;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-halo-inner {
+  stroke: var(--wm-glow);
+  stroke-width: 7;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-tail-2 {
+  stroke: var(--wm-trail);
+  stroke-width: 6.8;
+  stroke-opacity: 0.42;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-tail-1 {
+  stroke: var(--wm-trail);
+  stroke-width: 6.8;
+  stroke-opacity: 0.74;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-head {
+  stroke: var(--wm-trail);
+  stroke-width: 6.8;
+  stroke-opacity: 1;
 }
 body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="drag"] .mt-wm-white,
 body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="return"] .mt-wm-white,
@@ -321,13 +355,13 @@ body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="run"] .mt-wm-dead,
 body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-dead {
   opacity: 1;
 }
-body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="drag"] .mt-wm-lit,
-body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="return"] .mt-wm-lit,
-body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="run"] .mt-wm-lit {
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="drag"] .mt-wm-strokes,
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="return"] .mt-wm-strokes,
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="run"] .mt-wm-strokes {
   opacity: 1;
   transition: none;
 }
-body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="reset"] .mt-wm-lit {
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="reset"] .mt-wm-strokes {
   opacity: 0;
   transition: opacity var(--dur-wm-reset) var(--ease-out);
 }
@@ -339,7 +373,7 @@ body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-fin
   opacity: 0;
   transition: opacity var(--dur-wm-flash-in) var(--ease-out);
 }
-body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-finale="1"] .mt-wm-lit {
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-finale="1"] .mt-wm-strokes {
   opacity: 0;
   transition: opacity var(--dur-wm-flash-in) var(--ease-out);
 }
@@ -354,11 +388,11 @@ body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-fin
 @media (prefers-reduced-motion: reduce) {
   body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-white,
   body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-dead,
-  body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-lit,
+  body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-strokes,
   body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-flash {
     transition: none;
   }
-  body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-lit,
+  body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-strokes,
   body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-flash {
     opacity: 0;
   }

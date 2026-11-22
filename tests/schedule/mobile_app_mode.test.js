@@ -662,7 +662,7 @@ const { boot } = require('./ui.js');
   assert.deepStrictEqual(actionIds, ['m-acct-btn', 'm-btn-privacy', 'm-btn-notif'], 'v4: urutan tombol kanan header adalah Akun, Privasi, Notifikasi');
   const v4Hero = remountShell.querySelector('.apk-hero-well .wallet-hero');
   assert(v4Hero && !v4Hero.querySelector('#card-eye-btn, .card-eye-btn, #m-btn-privacy'), 'v4: kartu Saldo Realtime putih berada di dalam .apk-hero-well tanpa tombol mata di dalam kartu');
-  assert(/\.mt-wordmark\s*\{[^}]*height:\s*22\.5px/i.test(cssMobSrc), 'v4: ukuran teks logo .mt-wordmark adalah 22.5px');
+  assert(/\.mt-wordmark\s*\{[^}]*height:\s*var\(--wm-h\)/i.test(cssMobSrc), 'v4/T19: ukuran teks logo .mt-wordmark memakai token --wm-h (24.5px)');
   assert(/\.av-btn::before,\s*[\r\n\s]*body\[data-shell="mobile-app"\]\s+#mobile-app-shell\s+\.ico-btn::before\s*\{[^}]*inset:\s*-5px/s.test(cssMobSrc), 'v4: tombol aksi header mempertahankan pseudo touch target 44px via ::before');
   assert.strictEqual(w.$('m-fab-add'), $('m-yr-btn-center'), 'v4: alias m-fab-add di w.$() mengembalikan #m-yr-btn-center yang sama');
   // Ketuk #m-btn-privacy -> satu aksi toggle + status #m-priv-morph

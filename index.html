@@ -271,9 +271,13 @@
   --mob-fab-shadow: 0 10px 22px rgba(31, 99, 204, 0.34), 0 3px 8px rgba(15, 82, 186, 0.20);
   --dur-nav-dot: 320ms;
   --ease-nav-jelly: cubic-bezier(0.34, 1.38, 0.64, 1);
+  --wm-h: 24.5px;
   --wm-dead: #858B94;
   --wm-lit: #FFFFFF;
   --wm-flash: #FDE047;
+  --wm-trail: #FFFFFF;
+  --wm-glow: rgba(255, 255, 255, 0.16);
+  --wm-glow-soft: rgba(255, 255, 255, 0.09);
   --dur-wm-fade: 160ms;
   --dur-wm-reset: 200ms;
   --dur-wm-flash-in: 120ms;
@@ -5592,14 +5596,10 @@ body[data-shell="mobile-app"] #mobile-app-shell .mob-topbar {
 
 body[data-shell="mobile-app"] #mobile-app-shell .mt-wordmark {
   display: block;
-  height: 22.5px;
+  height: var(--wm-h);
   width: auto;
   flex-shrink: 0;
-  overflow: hidden;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-clip-rect {
-  transform-box: fill-box;
-  transform-origin: 0 0;
+  overflow: visible;
 }
 body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-white {
   fill: var(--wm-lit);
@@ -5611,15 +5611,53 @@ body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-dead {
   opacity: 0;
   transition: opacity var(--dur-wm-fade) var(--ease-out);
 }
-body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-lit {
-  fill: var(--wm-lit);
-  opacity: 0;
-  transition: opacity var(--dur-wm-reset) var(--ease-out);
-}
 body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-flash {
   fill: var(--wm-flash);
   opacity: 0;
   transition: opacity var(--dur-wm-flash-out) var(--ease-out);
+}
+/* Pengecualian sadar Aturan 3: stroke-dash pada jalur centerline di dalam tubuh huruf saat non-idle tanpa filter blur */
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-strokes {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-wm-reset) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-drawn-grp {
+  opacity: 0.78;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-drawn,
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-trail {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-drawn {
+  stroke: var(--wm-trail);
+  stroke-width: 6.8;
+  stroke-opacity: 1;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-halo-outer {
+  stroke: var(--wm-glow-soft);
+  stroke-width: 9;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-halo-inner {
+  stroke: var(--wm-glow);
+  stroke-width: 7;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-tail-2 {
+  stroke: var(--wm-trail);
+  stroke-width: 6.8;
+  stroke-opacity: 0.42;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-tail-1 {
+  stroke: var(--wm-trail);
+  stroke-width: 6.8;
+  stroke-opacity: 0.74;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-head {
+  stroke: var(--wm-trail);
+  stroke-width: 6.8;
+  stroke-opacity: 1;
 }
 body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="drag"] .mt-wm-white,
 body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="return"] .mt-wm-white,
@@ -5635,13 +5673,13 @@ body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="run"] .mt-wm-dead,
 body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-dead {
   opacity: 1;
 }
-body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="drag"] .mt-wm-lit,
-body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="return"] .mt-wm-lit,
-body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="run"] .mt-wm-lit {
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="drag"] .mt-wm-strokes,
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="return"] .mt-wm-strokes,
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="run"] .mt-wm-strokes {
   opacity: 1;
   transition: none;
 }
-body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="reset"] .mt-wm-lit {
+body[data-shell="mobile-app"] #mobile-app-shell[data-wm-mode="reset"] .mt-wm-strokes {
   opacity: 0;
   transition: opacity var(--dur-wm-reset) var(--ease-out);
 }
@@ -5653,7 +5691,7 @@ body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-fin
   opacity: 0;
   transition: opacity var(--dur-wm-flash-in) var(--ease-out);
 }
-body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-finale="1"] .mt-wm-lit {
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-finale="1"] .mt-wm-strokes {
   opacity: 0;
   transition: opacity var(--dur-wm-flash-in) var(--ease-out);
 }
@@ -5668,11 +5706,11 @@ body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-fin
 @media (prefers-reduced-motion: reduce) {
   body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-white,
   body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-dead,
-  body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-lit,
+  body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-strokes,
   body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-flash {
     transition: none;
   }
-  body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-lit,
+  body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-strokes,
   body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-flash {
     opacity: 0;
   }
@@ -32405,57 +32443,111 @@ var RK_WM_GLYPHS = [
   'M114.28 22.96Q114.75 22.96 115.02 23.40Q115.29 23.83 115.29 24.58L115.29 24.58Q115.29 26.02 114.60 26.82L114.60 26.82Q113.27 28.44 110.84 29.80Q108.41 31.17 105.64 31.17L105.64 31.17Q101.86 31.17 99.77 29.12Q97.68 27.07 97.68 23.50L97.68 23.50Q97.68 21.02 98.73 18.88Q99.77 16.74 101.63 15.48Q103.48 14.22 105.82 14.22L105.82 14.22Q107.91 14.22 109.17 15.46Q110.43 16.70 110.43 18.82L110.43 18.82Q110.43 21.31 108.65 23.09Q106.86 24.87 102.62 25.92L102.62 25.92Q103.52 27.57 106.04 27.57L106.04 27.57Q107.66 27.57 109.73 26.44Q111.80 25.30 113.31 23.47L113.31 23.47Q113.74 22.96 114.28 22.96L114.28 22.96ZM105.21 17.74Q103.88 17.74 102.96 19.29Q102.04 20.84 102.04 23.04L102.04 23.04L102.04 23.11Q104.16 22.60 105.39 21.60Q106.61 20.59 106.61 19.26L106.61 19.26Q106.61 18.57 106.23 18.16Q105.86 17.74 105.21 17.74L105.21 17.74Z',
   'M116.54 31.17Q114.92 31.17 113.90 29.68Q112.87 28.18 112.87 25.95L112.87 25.95Q112.87 23.25 113.23 21.00Q113.59 18.75 114.42 16.23L114.42 16.23Q114.78 15.15 115.43 14.68Q116.08 14.22 117.48 14.22L117.48 14.22Q118.27 14.22 118.58 14.47Q118.88 14.72 118.88 15.22L118.88 15.22Q118.88 15.51 118.49 17.17L118.49 17.17Q118.13 18.50 117.91 19.58L117.91 19.58Q117.19 23.36 117.19 24.62L117.19 24.62Q117.19 25.38 117.37 25.68Q117.55 25.99 117.95 25.99L117.95 25.99Q118.49 25.99 119.30 24.91Q120.11 23.83 121.03 21.63Q121.94 19.44 122.81 16.23L122.81 16.23Q123.10 15.15 123.69 14.68Q124.28 14.22 125.47 14.22L125.47 14.22Q126.30 14.22 126.62 14.41Q126.95 14.61 126.95 15.15L126.95 15.15Q126.95 16.05 126.05 20.08L126.05 20.08Q125.04 24.69 125.04 25.77L125.04 25.77Q125.04 26.46 125.33 26.83Q125.62 27.21 126.08 27.21L126.08 27.21Q126.80 27.21 127.79 26.33Q128.78 25.45 130.44 23.47L130.44 23.47Q130.87 22.96 131.41 22.96L131.41 22.96Q131.88 22.96 132.15 23.40Q132.42 23.83 132.42 24.58L132.42 24.58Q132.42 26.02 131.74 26.82L131.74 26.82Q130.19 28.72 128.41 29.95Q126.62 31.17 124.36 31.17L124.36 31.17Q122.63 31.17 121.82 29.84Q121.01 28.51 121.01 26.10L121.01 26.10Q120.40 28.54 119.17 29.86Q117.95 31.17 116.54 31.17L116.54 31.17Z',
 ];
-var RK_WM_BOXES = [
-  { x: 0.15, y: 0.29, w: 35.04, h: 31.14 },
-  { x: 30.82, y: 13.97, w: 18.3, h: 17.46 },
-  { x: 46.08, y: 13.97, w: 21.4, h: 17.46 },
-  { x: 63.57, y: 0.25, w: 38.14, h: 31.28 },
-  { x: 97.33, y: 13.97, w: 18.3, h: 17.46 },
-  { x: 112.52, y: 13.97, w: 20.25, h: 17.46 },
+// 9 jalur sumbu tengah (centerline) tulisan tangan Pacifico di dalam tubuh huruf (R:2, e:1, n:1, K:3, e:1, u:1)
+var RK_WM_STROKES = [
+  [
+    { li: 0, d: 'M13.8 8.6Q12.2 18.2 10.2 27.2Q8.2 29.8 5.2 28.0Q2.2 24.8 2.4 19.6Q2.8 11.2 7.8 5.6Q12.6 1.8 18.4 2.4Q24.4 3.4 25.0 8.8Q25.2 14.2 18.2 17.0Q13.4 17.9 8.2 17.8', len: 91.89 },
+    { li: 0, d: 'M14.2 17.8Q19.5 18.8 21.8 24.4Q24.0 29.2 27.6 29.0Q30.8 28.8 33.8 25.0', len: 26.05 },
+  ],
+  [
+    { li: 1, d: 'M33.8 24.4Q39.2 23.6 41.6 20.8Q42.6 18.0 40.4 16.4Q37.4 15.2 34.8 18.4Q32.4 21.8 33.4 26.2Q34.8 29.6 39.4 29.4Q44.0 29.2 47.8 25.0', len: 45.4 },
+  ],
+  [
+    { li: 2, d: 'M49.8 15.6Q48.0 22.8 48.8 29.2Q50.6 22.2 54.4 18.0Q58.6 15.0 58.6 19.2Q57.6 24.4 58.2 28.4Q59.6 30.2 62.6 28.2Q64.8 26.8 66.2 25.0', len: 51.64 },
+  ],
+  [
+    { li: 3, d: 'M68.2 12.2Q66.8 7.8 69.2 4.6Q73.0 1.8 81.2 2.8Q79.6 11.5 78.0 21.2Q76.8 28.4 72.0 29.4Q67.6 29.6 65.8 25.0', len: 58.14 },
+    { li: 3, d: 'M95.2 2.2Q92.6 10.6 86.2 15.2Q81.2 17.2 73.8 17.0', len: 28.72 },
+    { li: 3, d: 'M81.2 17.4Q86.2 19.2 88.6 24.4Q90.8 29.2 94.4 29.0Q97.6 28.8 100.4 25.0', len: 25.83 },
+  ],
+  [
+    { li: 4, d: 'M100.3 24.4Q105.7 23.6 108.1 20.8Q109.1 18.0 106.9 16.4Q103.9 15.2 101.3 18.4Q98.9 21.8 99.9 26.2Q101.3 29.6 105.9 29.4Q110.5 29.2 114.3 25.0', len: 45.4 },
+  ],
+  [
+    { li: 5, d: 'M116.4 15.8Q114.4 23.0 115.6 28.2Q117.4 30.2 120.4 26.2Q123.2 21.8 124.8 15.8Q123.2 22.8 123.2 27.8Q124.2 30.0 127.6 28.2Q129.8 26.8 131.4 25.0', len: 52.11 },
+  ],
 ];
-var RK_WORDMARK_PATH = RK_WM_GLYPHS.join('');
-var _rkWmClipSeq = 0;
-
-function rkWmFill(p, n) {
-  var count = n > 0 ? n : RK_WM_GLYPHS.length;
-  var clampedP = p <= 0 ? 0 : (p >= 1 ? 1 : p);
-  var out = new Array(count);
-  for (var i = 0; i < count; i++) {
-    var v = clampedP * count - i;
-    out[i] = v <= 0 ? 0 : (v >= 1 ? 1 : v);
+var _rkWmGlyphClipSeq = 0;
+var RK_WM_SEGS = [];
+for (var _wli = 0; _wli < RK_WM_STROKES.length; _wli++) {
+  for (var _wci = 0; _wci < RK_WM_STROKES[_wli].length; _wci++) {
+    RK_WM_SEGS.push(RK_WM_STROKES[_wli][_wci]);
   }
-  return out;
+}
+var RK_WORDMARK_PATH = RK_WM_GLYPHS.join('');
+
+function rkWmStrokeState(p, segs) {
+  var list = segs && segs.length ? segs : RK_WM_SEGS;
+  var n = list.length;
+  var totalLen = 0;
+  for (var i = 0; i < n; i++) totalLen += list[i].len;
+  var clamped = p <= 0 ? 0 : (p >= 1 ? 1 : p);
+  var fracs = new Array(n);
+  if (clamped <= 0 || totalLen <= 0) {
+    for (var z = 0; z < n; z++) fracs[z] = 0;
+    return { p: 0, activeIdx: -1, totalLen: totalLen, drawnLen: 0, fracs: fracs };
+  }
+  if (clamped >= 1) {
+    for (var o = 0; o < n; o++) fracs[o] = 1;
+    return { p: 1, activeIdx: -1, totalLen: totalLen, drawnLen: totalLen, fracs: fracs };
+  }
+  var target = clamped * totalLen;
+  var acc = 0;
+  var activeIdx = -1;
+  for (var k = 0; k < n; k++) {
+    var segLen = list[k].len;
+    if (target >= acc + segLen) {
+      fracs[k] = 1;
+      if (Math.abs(target - (acc + segLen)) <= 1e-9 && activeIdx < 0) activeIdx = k;
+    } else if (target <= acc) {
+      fracs[k] = 0;
+    } else {
+      fracs[k] = (target - acc) / segLen;
+      activeIdx = k;
+    }
+    acc += segLen;
+  }
+  return { p: clamped, activeIdx: activeIdx, totalLen: totalLen, drawnLen: target, fracs: fracs };
 }
 
 if (typeof window !== 'undefined') {
   window.RK_WM_VIEWBOX = RK_WM_VIEWBOX;
   window.RK_WM_GLYPHS = RK_WM_GLYPHS;
-  window.RK_WM_BOXES = RK_WM_BOXES;
+  window.RK_WM_STROKES = RK_WM_STROKES;
   window.RK_WORDMARK_PATH = RK_WORDMARK_PATH;
-  window.rkWmFill = rkWmFill;
+  window.rkWmStrokeState = rkWmStrokeState;
 }
 
 function mobWordmarkSvgHtml() {
-  _rkWmClipSeq += 1;
-  var pfx = 'rk-wm-c-' + _rkWmClipSeq + '-';
+  _rkWmGlyphClipSeq += 1;
+  var pfx = 'rk-wm-g-' + _rkWmGlyphClipSeq + '-';
   var defs = '<defs>';
   var body = '';
   for (var i = 0; i < RK_WM_GLYPHS.length; i++) {
     var d = RK_WM_GLYPHS[i];
-    var b = RK_WM_BOXES[i];
-    var cid = pfx + i;
-    defs += '<clipPath id="' + cid + '">' +
-      '<rect class="mt-wm-clip-rect" data-wm-idx="' + i + '" x="' + b.x + '" y="' + b.y + '" width="' + b.w + '" height="' + b.h + '" style="transform:scaleY(0)"/>' +
-      '</clipPath>';
+    defs += '<clipPath class="mt-wm-glyph-clip" id="' + pfx + i + '"><path d="' + d + '"/></clipPath>';
     body += '<g class="mt-wm-letter" data-wm-idx="' + i + '" aria-hidden="true">' +
       '<path class="mt-wm-white" d="' + d + '"/>' +
       '<path class="mt-wm-dead" d="' + d + '"/>' +
-      '<path class="mt-wm-lit" d="' + d + '" clip-path="url(#' + cid + ')"/>' +
       '<path class="mt-wm-flash" d="' + d + '"/>' +
       '</g>';
   }
   defs += '</defs>';
-  return '<svg class="mt-wordmark" viewBox="' + RK_WM_VIEWBOX + '" fill="none" role="img" aria-label="RenKeu">' + defs + body + '</svg>';
+  var strokes = '<g class="mt-wm-strokes" data-wm-clip-pfx="' + pfx + '" aria-hidden="true"><g class="mt-wm-drawn-grp">';
+  for (var k = 0; k < RK_WM_SEGS.length; k++) {
+    var seg = RK_WM_SEGS[k];
+    strokes += '<path class="mt-wm-drawn" data-wm-seg="' + k + '" d="' + seg.d + '" clip-path="url(#' + pfx + seg.li + ')" pathLength="1" style="opacity:0;stroke-dasharray:0 2;stroke-dashoffset:1"/>';
+  }
+  var d0 = RK_WM_SEGS[0].d;
+  var c0 = 'url(#' + pfx + '0)';
+  strokes += '</g>' +
+    '<path class="mt-wm-trail mt-wm-halo-outer" d="' + d0 + '" pathLength="1" style="opacity:0;stroke-dasharray:0 2;stroke-dashoffset:0"/>' +
+    '<path class="mt-wm-trail mt-wm-halo-inner" d="' + d0 + '" pathLength="1" style="opacity:0;stroke-dasharray:0 2;stroke-dashoffset:0"/>' +
+    '<path class="mt-wm-trail mt-wm-tail-2" d="' + d0 + '" clip-path="' + c0 + '" pathLength="1" style="opacity:0;stroke-dasharray:0 2;stroke-dashoffset:0"/>' +
+    '<path class="mt-wm-trail mt-wm-tail-1" d="' + d0 + '" clip-path="' + c0 + '" pathLength="1" style="opacity:0;stroke-dasharray:0 2;stroke-dashoffset:0"/>' +
+    '<path class="mt-wm-trail mt-wm-head" d="' + d0 + '" clip-path="' + c0 + '" pathLength="1" style="opacity:0;stroke-dasharray:0 2;stroke-dashoffset:0"/>' +
+    '</g>';
+  return '<svg class="mt-wordmark" viewBox="' + RK_WM_VIEWBOX + '" fill="none" role="img" aria-label="RenKeu">' + defs + body + strokes + '</svg>';
 }
 
 function mobOsNotifHtml() {
@@ -35782,9 +35874,9 @@ function bindMobileShellEvents(root) {
     var LOCK_PX = 8;
     var WM_DRAG_DEAD_PX = 4;
     var TOP_TOLERANCE_PX = 1;
-    var RK_WM_LETTER_CNT = RK_WM_GLYPHS.length;
+    var RK_WM_SEG_CNT = RK_WM_SEGS.length;
     var RK_WM_FADE_IN_MS = 160;
-    var RK_WM_PASS_MS = 2000;
+    var RK_WM_PASS_MS = 2200;
     var RK_WM_LOOP_RESET_MS = 200;
     var RK_WM_FLASH_IN_MS = 120;
     var RK_WM_FLASH_OUT_MS = 380;
@@ -35792,6 +35884,14 @@ function bindMobileShellEvents(root) {
     var RK_WM_RETURN_MAX_MS = 260;
     var RK_WM_REDUCED_MIN_MS = 850;
     var RK_REFRESH_MAX_MS = 20000;
+    // Lapisan ekor/halo aktif (halo lembut tak terklip di kepala + ekor/kepala terang terklip di dalam tubuh huruf)
+    var RK_WM_TRAIL_SPECS = [
+      { maxFrac: 0.24, arcUnits: 11, clip: false },
+      { maxFrac: 0.14, arcUnits: 6.5, clip: false },
+      { maxFrac: 0.42, arcUnits: 20, clip: true },
+      { maxFrac: 0.24, arcUnits: 11, clip: true },
+      { maxFrac: 0.12, arcUnits: 5.5, clip: true },
+    ];
     var ptr = null;
     var refreshing = false;
     var queuedRetapRefresh = false;
@@ -35808,9 +35908,16 @@ function bindMobileShellEvents(root) {
     var wmReturnFrom = 0;
     var wmReturnDur = RK_WM_RETURN_MIN_MS;
     var wmRafId = null;
-    var wmClipRects = null;
+    var wmDrawnEls = null;
+    var wmTrailEls = null;
+    var wmClipPfx = '';
+    var wmLastFracs = null;
+    var wmLastActiveSeg = -1;
+    var wmLastActiveLi = -1;
+    var wmLastTrailVis = false;
     var wmFrameWrites = 0;
     var wmFrameTimeSum = 0;
+    var wmStyleWritesSum = 0;
     var refreshMinTimer = null;
     var refreshMaxTimer = null;
     var refreshCycleId = 0;
@@ -35861,28 +35968,93 @@ function bindMobileShellEvents(root) {
       clearTimeout(id);
     }
 
-    function getWmClipRects() {
-      if (wmClipRects && wmClipRects.length === RK_WM_LETTER_CNT && wmClipRects[0].isConnected) {
-        return wmClipRects;
+    function getWmStrokeNodes() {
+      if (wmDrawnEls && wmDrawnEls.length === RK_WM_SEG_CNT && wmDrawnEls[0].isConnected && wmTrailEls && wmTrailEls.length === RK_WM_TRAIL_SPECS.length) {
+        return true;
       }
       var shellEl = $('mobile-app-shell');
-      if (!shellEl) return null;
-      var nodes = shellEl.querySelectorAll('svg.mt-wordmark rect.mt-wm-clip-rect');
-      wmClipRects = nodes.length === RK_WM_LETTER_CNT ? nodes : null;
-      return wmClipRects;
+      if (!shellEl) return false;
+      var grp = shellEl.querySelector('svg.mt-wordmark g.mt-wm-strokes');
+      var drawn = shellEl.querySelectorAll('svg.mt-wordmark path.mt-wm-drawn');
+      var trail = shellEl.querySelectorAll('svg.mt-wordmark path.mt-wm-trail');
+      if (!grp || drawn.length !== RK_WM_SEG_CNT || trail.length !== RK_WM_TRAIL_SPECS.length) {
+        wmDrawnEls = null;
+        wmTrailEls = null;
+        return false;
+      }
+      wmClipPfx = grp.getAttribute('data-wm-clip-pfx') || '';
+      wmDrawnEls = drawn;
+      wmTrailEls = trail;
+      wmLastFracs = new Array(RK_WM_SEG_CNT);
+      for (var i = 0; i < RK_WM_SEG_CNT; i++) wmLastFracs[i] = -1;
+      wmLastActiveSeg = -1;
+      wmLastActiveLi = -1;
+      wmLastTrailVis = true;
+      return true;
     }
 
     function applyWmProgress(p) {
       var clamped = p <= 0 ? 0 : (p >= 1 ? 1 : p);
       wmProgress = clamped;
-      var rects = getWmClipRects();
-      if (!rects) return;
-      var fills = rkWmFill(clamped, RK_WM_LETTER_CNT);
-      for (var i = 0; i < RK_WM_LETTER_CNT; i++) {
-        var f = fills[i];
-        var s = f <= 0 ? '0' : (f >= 1 ? '1' : f.toFixed(4));
-        rects[i].style.transform = 'scaleY(' + s + ')';
+      if (!getWmStrokeNodes()) return 0;
+      var st = rkWmStrokeState(clamped, RK_WM_SEGS);
+      var fracs = st.fracs;
+      var writes = 0;
+      for (var i = 0; i < RK_WM_SEG_CNT; i++) {
+        var f = fracs[i];
+        if (wmLastFracs[i] >= 0 && Math.abs(f - wmLastFracs[i]) <= 1e-5) continue;
+        wmLastFracs[i] = f;
+        var el = wmDrawnEls[i];
+        if (f <= 0.0005) {
+          el.style.opacity = '0';
+          el.style.strokeDasharray = '0 2';
+          el.style.strokeDashoffset = '1';
+        } else {
+          el.style.opacity = '1';
+          el.style.strokeDasharray = '1 2';
+          el.style.strokeDashoffset = f >= 0.9995 ? '0' : (1 - f).toFixed(4);
+        }
+        writes += 1;
       }
+      var act = st.activeIdx;
+      var sAct = act >= 0 ? fracs[act] : 0;
+      if (act >= 0 && sAct > 0.0005) {
+        var seg = RK_WM_SEGS[act];
+        if (act !== wmLastActiveSeg) {
+          for (var t0 = 0; t0 < wmTrailEls.length; t0++) {
+            wmTrailEls[t0].setAttribute('d', seg.d);
+          }
+          wmLastActiveSeg = act;
+        }
+        if (seg.li !== wmLastActiveLi && wmClipPfx) {
+          var clipUrl = 'url(#' + wmClipPfx + seg.li + ')';
+          for (var c0 = 0; c0 < wmTrailEls.length; c0++) {
+            if (RK_WM_TRAIL_SPECS[c0].clip) wmTrailEls[c0].setAttribute('clip-path', clipUrl);
+          }
+          wmLastActiveLi = seg.li;
+        }
+        for (var j = 0; j < wmTrailEls.length; j++) {
+          var spec = RK_WM_TRAIL_SPECS[j];
+          var rawL = Math.min(spec.maxFrac, spec.arcUnits / seg.len);
+          var L = Math.min(sAct, rawL);
+          var off = -(sAct - L);
+          var tel = wmTrailEls[j];
+          tel.style.opacity = '1';
+          tel.style.strokeDasharray = L.toFixed(4) + ' 2';
+          tel.style.strokeDashoffset = Math.abs(off) < 1e-5 ? '0' : off.toFixed(4);
+          writes += 1;
+        }
+        wmLastTrailVis = true;
+      } else if (wmLastTrailVis) {
+        for (var h = 0; h < wmTrailEls.length; h++) {
+          wmTrailEls[h].style.opacity = '0';
+          wmTrailEls[h].style.strokeDasharray = '0 2';
+          wmTrailEls[h].style.strokeDashoffset = '0';
+          writes += 1;
+        }
+        wmLastTrailVis = false;
+      }
+      return writes;
     }
 
     function setWmMode(mode) {
@@ -35940,6 +36112,7 @@ function bindMobileShellEvents(root) {
           wmPhaseStart = now;
           wmFrameWrites = 0;
           wmFrameTimeSum = 0;
+          wmStyleWritesSum = 0;
           setWmMode('run');
         }
         wmRafId = rkWmSchedule(wmTick);
@@ -35952,7 +36125,7 @@ function bindMobileShellEvents(root) {
           return;
         }
         var p = RK_WM_PASS_MS > 0 ? Math.min(1, Math.max(0, (now - wmPhaseStart) / RK_WM_PASS_MS)) : 1;
-        applyWmProgress(p);
+        wmStyleWritesSum += applyWmProgress(p);
         wmFrameWrites += 1;
         wmFrameTimeSum += Math.max(0, rkWmNow() - t0);
         if (p >= 1) {
@@ -36126,6 +36299,7 @@ function bindMobileShellEvents(root) {
           raf: wmRafId != null,
           frameWrites: wmFrameWrites,
           avgFrameMs: wmFrameWrites > 0 ? Number((wmFrameTimeSum / wmFrameWrites).toFixed(4)) : 0,
+          avgStyleWrites: wmFrameWrites > 0 ? Number((wmStyleWritesSum / wmFrameWrites).toFixed(2)) : 0,
         };
       };
     }

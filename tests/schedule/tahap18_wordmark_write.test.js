@@ -5,11 +5,6 @@ const { boot } = require('./ui.js');
 
 const ROOT = path.resolve(__dirname, '../..');
 
-function parseScaleY(str) {
-  const m = String(str || '').match(/scaleY\(\s*([0-9.eE+-]+)\s*\)/);
-  return m ? Number(m[1]) : NaN;
-}
-
 function approx(actual, expected, tol = 1e-3, msg = '') {
   assert(
     Math.abs(actual - expected) <= tol,
@@ -42,81 +37,66 @@ function approx(actual, expected, tol = 1e-3, msg = '') {
 
   const shellRoot = $('mobile-app-shell');
 
-  // 1. Fungsi murni rkWmFill(P, 6)
-  assert.strictEqual(typeof w.rkWmFill, 'function', 'window.rkWmFill tersedia');
-  assert.deepStrictEqual([...w.rkWmFill(0, 6)], [0, 0, 0, 0, 0, 0], 'rkWmFill(0, 6) semua 0');
-  assert.deepStrictEqual([...w.rkWmFill(1, 6)], [1, 1, 1, 1, 1, 1], 'rkWmFill(1, 6) semua 1');
-  assert.deepStrictEqual([...w.rkWmFill(0.5, 6)], [1, 1, 1, 0, 0, 0], 'rkWmFill(0.5, 6) huruf 0-2 penuh, 3-5 kosong');
-  assert.deepStrictEqual([...w.rkWmFill(0.25, 6)], [1, 0.5, 0, 0, 0, 0], 'rkWmFill(0.25, 6) huruf 0 penuh, huruf 1 setengah, sisanya 0');
-  assert.deepStrictEqual([...w.rkWmFill(-0.4, 6)], [0, 0, 0, 0, 0, 0], 'rkWmFill menjepit P < 0 ke 0');
-  assert.deepStrictEqual([...w.rkWmFill(1.8, 6)], [1, 1, 1, 1, 1, 1], 'rkWmFill menjepit P > 1 ke 1');
+  // 1. Fungsi murni rkWmStrokeState(P, segs) (diperbarui setara ke kontrak stroke Tahap 19)
+  assert.strictEqual(typeof w.rkWmStrokeState, 'function', 'window.rkWmStrokeState tersedia');
+  const flatSegs = [];
+  for (let li = 0; li < w.RK_WM_STROKES.length; li++) {
+    for (let ci = 0; ci < w.RK_WM_STROKES[li].length; ci++) flatSegs.push(w.RK_WM_STROKES[li][ci]);
+  }
+  assert.strictEqual(flatSegs.length, 9, 'Total 9 kontur stroke Pacifico');
+  assert([...w.rkWmStrokeState(0, flatSegs).fracs].every((v) => v === 0), 'rkWmStrokeState(0) semua 0');
+  assert([...w.rkWmStrokeState(1, flatSegs).fracs].every((v) => v === 1), 'rkWmStrokeState(1) semua 1');
+  assert([...w.rkWmStrokeState(-0.4, flatSegs).fracs].every((v) => v === 0), 'rkWmStrokeState menjepit P < 0 ke 0');
+  assert([...w.rkWmStrokeState(1.8, flatSegs).fracs].every((v) => v === 1), 'rkWmStrokeState menjepit P > 1 ke 1');
 
-  let prevFills = [...w.rkWmFill(0, 6)];
-  let prevSum = 0;
+  let prevFracs = [...w.rkWmStrokeState(0, flatSegs).fracs];
+  let prevLenSum = 0;
   for (let k = 1; k <= 120; k++) {
     const p = k / 120;
-    const cur = [...w.rkWmFill(p, 6)];
-    for (let i = 0; i < 6; i++) {
-      assert(cur[i] >= prevFills[i] - 1e-12, `rkWmFill monoton naik pada huruf ${i} di p=${p}`);
+    const cur = [...w.rkWmStrokeState(p, flatSegs).fracs];
+    for (let i = 0; i < flatSegs.length; i++) {
+      assert(cur[i] >= prevFracs[i] - 1e-12, `rkWmStrokeState monoton naik pada kontur ${i} di p=${p}`);
     }
-    const sum = cur.reduce((a, b) => a + b, 0);
-    assert(sum > prevSum + 1e-6, `rkWmFill tanpa plateau di p=${p} (turunan positif)`);
-    prevFills = cur;
-    prevSum = sum;
+    const lenSum = cur.reduce((a, f, idx) => a + f * flatSegs[idx].len, 0);
+    assert(lenSum > prevLenSum + 1e-4, `rkWmStrokeState tanpa plateau di p=${p} (turunan positif)`);
+    prevFracs = cur;
+    prevLenSum = lenSum;
   }
 
-  // 2. Struktur font Pacifico, kotak batas, aksesibilitas, keunikan ID, tanpa font web
+  // 2. Struktur font Pacifico, kontur stroke, aksesibilitas, keunikan ID, tanpa font web
   assert(Array.isArray(w.RK_WM_GLYPHS) && w.RK_WM_GLYPHS.length === 6, 'RK_WM_GLYPHS berisi 6 path glyph (R,e,n,K,e,u)');
-  assert(Array.isArray(w.RK_WM_BOXES) && w.RK_WM_BOXES.length === 6, 'RK_WM_BOXES berisi 6 kotak batas');
+  assert(Array.isArray(w.RK_WM_STROKES) && w.RK_WM_STROKES.length === 6, 'RK_WM_STROKES berisi 6 entri huruf');
   assert.strictEqual(typeof w.RK_WM_VIEWBOX, 'string', 'RK_WM_VIEWBOX berupa string');
   for (let i = 0; i < 6; i++) {
     const d = w.RK_WM_GLYPHS[i];
     assert(typeof d === 'string' && d.length > 40 && !/NaN|Infinity/i.test(d), `glyph ${i} valid dan non-kosong`);
-    const b = w.RK_WM_BOXES[i];
-    assert(b && b.w > 5 && b.h > 5, `kotak batas glyph ${i} valid`);
   }
   const vbParts = w.RK_WM_VIEWBOX.split(/\s+/).map(Number);
   assert.strictEqual(vbParts.length, 4, 'RK_WM_VIEWBOX punya 4 angka');
-  const minX = Math.min(...[...w.RK_WM_BOXES].map((b) => b.x));
-  const minY = Math.min(...[...w.RK_WM_BOXES].map((b) => b.y));
-  const maxX = Math.max(...[...w.RK_WM_BOXES].map((b) => b.x + b.w));
-  const maxY = Math.max(...[...w.RK_WM_BOXES].map((b) => b.y + b.h));
-  assert(Math.abs(vbParts[0] - minX) <= 2 && Math.abs(vbParts[1] - minY) <= 2, 'Origin viewBox sesuai kotak batas gabungan');
-  assert(Math.abs(vbParts[2] - maxX) <= 2 && Math.abs(vbParts[3] - maxY) <= 2, 'Ukuran viewBox sesuai kotak batas gabungan');
 
   const wm = shellRoot.querySelector('svg.mt-wordmark');
   assert(wm, 'svg.mt-wordmark tersedia');
   assert.strictEqual(wm.getAttribute('role'), 'img', 'wordmark role="img"');
   assert.strictEqual(wm.getAttribute('aria-label'), 'RenKeu', 'wordmark aria-label="RenKeu"');
   assert.strictEqual(wm.getAttribute('viewBox'), w.RK_WM_VIEWBOX, 'viewBox SVG sama dengan RK_WM_VIEWBOX');
-  assert(!wm.querySelector('text'), 'wordmark tidak memakai elemen <text>');
+  assert(!wm.querySelector('text, .mt-wm-clip-rect, filter, feGaussianBlur'), 'wordmark bebas <text>, rect klip lama, dan filter blur');
 
   const letterGroups = [...wm.querySelectorAll('g.mt-wm-letter')];
-  const clipPaths = [...wm.querySelectorAll('defs clipPath')];
-  const clipRects = [...wm.querySelectorAll('defs clipPath rect.mt-wm-clip-rect')];
   assert.strictEqual(letterGroups.length, 6, 'tepat 6 grup huruf g.mt-wm-letter');
-  assert.strictEqual(clipPaths.length, 6, 'tepat 6 clipPath di dalam <defs>');
-  assert.strictEqual(clipRects.length, 6, 'tepat 6 rect klip .mt-wm-clip-rect');
-  const clipIds = new Set();
   letterGroups.forEach((g, idx) => {
     assert.strictEqual(g.getAttribute('data-wm-idx'), String(idx), `grup huruf ${idx} berurutan`);
     assert.strictEqual(g.getAttribute('aria-hidden'), 'true', `grup huruf ${idx} aria-hidden="true"`);
-    const lit = g.querySelector('path.mt-wm-lit');
-    assert(g.querySelector('path.mt-wm-white') && g.querySelector('path.mt-wm-dead') && lit && g.querySelector('path.mt-wm-flash'), `grup huruf ${idx} punya 4 lapisan warna`);
-    const cpId = clipPaths[idx].getAttribute('id');
-    assert(cpId && !clipIds.has(cpId), `clipPath id ${cpId} unik`);
-    clipIds.add(cpId);
-    assert.strictEqual(lit.getAttribute('clip-path'), `url(#${cpId})`, `lapisan .mt-wm-lit ${idx} terhubung ke clipPath #${cpId}`);
+    assert(g.querySelector('path.mt-wm-white') && g.querySelector('path.mt-wm-dead') && g.querySelector('path.mt-wm-flash'), `grup huruf ${idx} punya 3 lapisan isi`);
   });
+  assert.strictEqual(wm.querySelectorAll('g.mt-wm-strokes path.mt-wm-drawn').length, 9, 'tepat 9 path .mt-wm-drawn');
   assert(!doc.querySelector('.m-ptr-spin, .mt-wm-beam, .mt-wm-shimmer-clip, #rk-wm-clip, #rk-wm-grad'), 'elemen sisa Tahap 16 & spinner PTR sudah hilang');
 
-  // Render ulang berulang tidak menggandakan defs/clipPath/grup huruf dan ID tetap unik
+  // Render ulang berulang tidak menggandakan grup huruf / kontur stroke dan ID tetap unik
   w.renderMobileApp();
   w.switchMobileTab('kas');
   w.renderMobileApp();
   w.switchMobileTab('rincian');
-  assert.strictEqual(shellRoot.querySelectorAll('svg.mt-wordmark defs').length, 1, 'tidak ada duplikasi <defs> setelah renderMobileApp berulang');
-  assert.strictEqual(shellRoot.querySelectorAll('svg.mt-wordmark clipPath').length, 6, 'tepat 6 clipPath setelah render ulang');
+  assert.strictEqual(shellRoot.querySelectorAll('g.mt-wm-strokes path.mt-wm-drawn').length, 9, 'tepat 9 path .mt-wm-drawn setelah render ulang');
   assert.strictEqual(shellRoot.querySelectorAll('g.mt-wm-letter').length, 6, 'tepat 6 grup huruf setelah render ulang');
   assert.strictEqual(doc.querySelectorAll('#m-refresh-status').length, 1, '#m-refresh-status tetap unik');
 
@@ -209,9 +189,9 @@ function approx(actual, expected, tol = 1e-3, msg = '') {
   });
   obs.observe(shellRoot, { attributes: true, attributeOldValue: true, attributeFilter: ['data-refreshing', 'data-wm-finale'] });
 
-  const getClipScales = () => [...shellRoot.querySelectorAll('svg.mt-wordmark rect.mt-wm-clip-rect')].map((r) => parseScaleY(r.style.transform));
+  const getDrawnFracs = () => [...shellRoot.querySelectorAll('svg.mt-wordmark path.mt-wm-drawn')].map((p) => (p.style.opacity === '0' ? 0 : 1 - Number(p.style.strokeDashoffset || '1')));
 
-  // 4. Render transform untuk nilai P tertentu lewat helper drag
+  // 4. Keadaan idle & render garis kontur lewat helper drag
   w._rkPtrReset();
   assert.strictEqual(activeTotalCount(), 0, 'Saat idle tidak ada rAF/timer berjalan');
   assert.strictEqual(shellRoot.getAttribute('data-wm-mode'), null, 'Idle: data-wm-mode null');
@@ -255,17 +235,18 @@ function approx(actual, expected, tol = 1e-3, msg = '') {
     assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, `pullY=${cp.pullY}: data-refreshing tidak aktif saat sekadar menarik`);
     assert.strictEqual($('m-main').getAttribute('aria-busy'), null, `pullY=${cp.pullY}: aria-busy tidak aktif saat sekadar menarik`);
     approx(w._rkWmState().p, cp.p, 1e-3, `pullY=${cp.pullY} -> P=${cp.p}`);
-    const expectedFills = [...w.rkWmFill(cp.p, 6)];
-    const actualScales = getClipScales();
-    for (let i = 0; i < 6; i++) {
-      approx(actualScales[i], expectedFills[i], 1e-3, `pullY=${cp.pullY} huruf ${i} scaleY`);
+    const expectedFracs = [...w.rkWmStrokeState(cp.p, flatSegs).fracs];
+    const actualFracs = getDrawnFracs();
+    for (let i = 0; i < flatSegs.length; i++) {
+      approx(actualFracs[i], expectedFracs[i], 1e-3, `pullY=${cp.pullY} kontur ${i} stroke frac`);
     }
   }
   // Mundur ke 26 px -> P sama persis dengan saat maju ke 26 px (0.50), tanpa histeresis
   fireTouch(panel, 'touchmove', 160, 100 + 26 * 2);
   approx(w._rkWmState().p, 0.50, 1e-3, 'Mundur ke pullY=26 menghasilkan P=0.50 identik');
-  const revScales = getClipScales();
-  [1, 1, 1, 0, 0, 0].forEach((exp, i) => approx(revScales[i], exp, 1e-3, `Mundur ke 26px huruf ${i} scaleY`));
+  const revFracs = getDrawnFracs();
+  const expHalfFracs = [...w.rkWmStrokeState(0.5, flatSegs).fracs];
+  expHalfFracs.forEach((exp, i) => approx(revFracs[i], exp, 1e-3, `Mundur ke 26px kontur ${i} stroke frac`));
 
   // Lepas di bawah ambang (pullY=26 < 52): masuk mode return, kembali mulus ke 0, lalu idle tanpa refresh
   hapticLog = [];
@@ -601,11 +582,11 @@ function approx(actual, expected, tol = 1e-3, msg = '') {
 
   assert(!cssDesk.includes('mt-wm-') && !cssDesk.includes('data-wm-') && !cssDesk.includes('rkWm'), 'Isolasi Desktop: css/desktop.css bebas aturan wordmark APK');
   const swMatch = swSrc.match(/CACHE_NAME\s*=\s*['"]rk-cache-v(\d+)['"]/);
-  assert(swMatch && Number(swMatch[1]) >= 41, 'sw.js CACHE_NAME dinaikkan ke >= rk-cache-v41');
+  assert(swMatch && Number(swMatch[1]) >= 42, 'sw.js CACHE_NAME dinaikkan ke >= rk-cache-v42');
   assert.strictEqual(w.RK_SCHEMA_VER, 3, 'RK_SCHEMA_VER tetap 3');
 
   assert.strictEqual(errs.length, 0, 'Tidak ada runtime error jsdom: ' + errs.join('; '));
-  console.log('OK: Semua asersi Tahap 18 (Pacifico + Menulis Kontinu + Progres PTR + A1) lulus.');
+  console.log('OK: Semua asersi Tahap 18 (diperbarui ke kontrak stroke Tahap 19 + Progres PTR + A1) lulus.');
   process.exit(0);
 })().catch((e) => {
   console.error('GAGAL tahap18_wordmark_write:', e);

@@ -218,7 +218,7 @@ const ROOT = path.resolve(__dirname, '../..');
   assert.strictEqual($('m-main').getAttribute('aria-busy'), null, 'PTR kecil tidak menyetel aria-busy');
   advanceTime(300);
 
-  // PTR melewati ambang -> menyala selama satu lintasan penuh + finale (~2660ms) lalu berhenti otomatis
+  // PTR melewati ambang -> menyala selama satu lintasan penuh + finale (~2860ms) lalu berhenti otomatis
   w._rkPtrReset();
   stateChanges.length = 0;
   fireTouch($('m-tab-rincian'), 'touchstart', 160, 120);
@@ -228,8 +228,8 @@ const ROOT = path.resolve(__dirname, '../..');
   assert.strictEqual($('m-main').getAttribute('aria-busy'), 'true', 'Saat refreshing, #m-main memiliki aria-busy="true"');
   assert.strictEqual($('m-refresh-status').textContent, 'Menyegarkan data', 'Pengumuman pembaca layar tampil saat mulai refresh');
   advanceTime(1500);
-  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'Mode lokal: indikator tetap aktif selama lintasan menulis berlangsung');
-  advanceTime(1300);
+  assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'Mode lokal: indikator tetap aktif selama lintasan garis berlangsung');
+  advanceTime(1500);
   assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'Mode lokal: indikator mati setelah lintasan + finale selesai');
   assert.strictEqual($('m-main').getAttribute('aria-busy'), null, 'Setelah selesai, aria-busy dilepas');
 
@@ -249,7 +249,7 @@ const ROOT = path.resolve(__dirname, '../..');
     }
     await flushMicrotasks();
     assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', `Re-tap ${tid} 10x: indikator aktif`);
-    advanceTime(2600);
+    advanceTime(2800);
     await flushMicrotasks();
     assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, `Re-tap ${tid} 10x: indikator berhenti setelah lintasan + finale`);
     assert.deepStrictEqual(stateChanges, ['on', 'off'], `Re-tap ${tid} 10x: hanya 1 transisi nyala dan 1 transisi mati (bukan kedip 10x)`);
@@ -277,7 +277,7 @@ const ROOT = path.resolve(__dirname, '../..');
   assert.strictEqual(shellRoot.getAttribute('data-refreshing'), '1', 'Cloud pull lambat: tetap aktif selama pull belum selesai');
   resPull();
   await flushMicrotasks();
-  advanceTime(1350);
+  advanceTime(1600);
   await flushMicrotasks();
   assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'Cloud pull lambat: berhenti setelah lintasan + finale selesai');
 
@@ -312,7 +312,7 @@ const ROOT = path.resolve(__dirname, '../..');
   advanceTime(900);
   resTabPull();
   await flushMicrotasks();
-  advanceTime(1950);
+  advanceTime(2200);
   await flushMicrotasks();
   assert.strictEqual(shellRoot.getAttribute('data-refreshing'), null, 'Pindah tab: berhenti setelah pull selesai dan lintasan usai');
 
@@ -361,7 +361,7 @@ const ROOT = path.resolve(__dirname, '../..');
 
   assert(!cssDesk.includes('rkWmSweep') && !cssDesk.includes('mt-wm-') && !cssDesk.includes('data-refreshing'), 'Isolasi Desktop: css/desktop.css bebas aturan wordmark APK');
   const swMatch = swSrc.match(/CACHE_NAME\s*=\s*['"]rk-cache-v(\d+)['"]/);
-  assert(swMatch && Number(swMatch[1]) >= 41, 'sw.js CACHE_NAME dinaikkan ke >= rk-cache-v41');
+  assert(swMatch && Number(swMatch[1]) >= 42, 'sw.js CACHE_NAME dinaikkan ke >= rk-cache-v42');
   assert.strictEqual(w.RK_SCHEMA_VER, 3, 'RK_SCHEMA_VER tetap 3');
 
   assert.strictEqual(errs.length, 0, 'Tidak ada runtime error jsdom: ' + errs.join('; '));

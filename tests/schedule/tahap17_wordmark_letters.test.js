@@ -5,11 +5,6 @@ const { boot } = require('./ui.js');
 
 const ROOT = path.resolve(__dirname, '../..');
 
-function parseScaleY(str) {
-  const m = String(str || '').match(/scaleY\(\s*([0-9.eE+-]+)\s*\)/);
-  return m ? Number(m[1]) : NaN;
-}
-
 (async () => {
   const t = boot();
   await t.ready();
@@ -36,10 +31,10 @@ function parseScaleY(str) {
   const shellRoot = $('mobile-app-shell');
   const wm = shellRoot.querySelector('svg.mt-wordmark');
 
-  // Struktur 6 glyph Pacifico berurutan dan invarian path (diperbarui setara ke kontrak Tahap 18)
+  // Struktur 6 glyph Pacifico berurutan & 9 kontur stroke (diperbarui setara ke kontrak Tahap 19)
   assert(Array.isArray(w.RK_WM_GLYPHS) && w.RK_WM_GLYPHS.length === 6, 'RK_WM_GLYPHS berisi tepat 6 path huruf (R,e,n,K,e,u)');
   assert.strictEqual(w.RK_WM_GLYPHS.join(''), w.RK_WORDMARK_PATH, 'Invarian: RK_WM_GLYPHS.join("") === RK_WORDMARK_PATH');
-  assert(Array.isArray(w.RK_WM_BOXES) && w.RK_WM_BOXES.length === 6, 'RK_WM_BOXES berisi tepat 6 kotak batas huruf');
+  assert(Array.isArray(w.RK_WM_STROKES) && w.RK_WM_STROKES.length === 6, 'RK_WM_STROKES berisi tepat 6 entri huruf');
   assert(wm, 'svg.mt-wordmark tersedia');
   assert.strictEqual(wm.getAttribute('role'), 'img', 'wordmark mempertahankan role="img"');
   assert.strictEqual(wm.getAttribute('aria-label'), 'RenKeu', 'wordmark mempertahankan aria-label="RenKeu"');
@@ -48,8 +43,9 @@ function parseScaleY(str) {
   letterGroups.forEach((g, idx) => {
     assert.strictEqual(g.getAttribute('data-wm-idx'), String(idx), `grup huruf ${idx} berurutan`);
     assert.strictEqual(g.getAttribute('aria-hidden'), 'true', `grup huruf ${idx} dekoratif aria-hidden="true"`);
-    assert(g.querySelector('.mt-wm-white') && g.querySelector('.mt-wm-dead') && g.querySelector('.mt-wm-lit') && g.querySelector('.mt-wm-flash'), `grup huruf ${idx} memuat 4 lapisan warna`);
+    assert(g.querySelector('.mt-wm-white') && g.querySelector('.mt-wm-dead') && g.querySelector('.mt-wm-flash'), `grup huruf ${idx} memuat 3 lapisan warna isi`);
   });
+  assert.strictEqual(wm.querySelectorAll('g.mt-wm-strokes path.mt-wm-drawn').length, 9, 'svg.mt-wordmark memuat 9 kontur garis .mt-wm-drawn');
 
   // Sisa Tahap 16/17 lama dan spinner PTR sudah dihapus dari DOM
   assert(!doc.querySelector('.m-ptr-spin, .mt-wm-beam, .mt-wm-shimmer-clip, #rk-wm-clip, #rk-wm-grad'), 'elemen shimmer lama dan spinner PTR tidak ada di DOM');
@@ -115,7 +111,7 @@ function parseScaleY(str) {
     el.dispatchEvent(ev);
     return ev;
   };
-  const getClipScales = () => [...shellRoot.querySelectorAll('svg.mt-wordmark rect.mt-wm-clip-rect')].map((r) => parseScaleY(r.style.transform));
+  const getDrawnFracs = () => [...shellRoot.querySelectorAll('svg.mt-wordmark path.mt-wm-drawn')].map((p) => (p.style.opacity === '0' ? 0 : 1 - Number(p.style.strokeDashoffset || '1')));
 
   // Pantau perubahan data-refreshing dan data-wm-finale lewat MutationObserver
   const refEvents = [];
@@ -150,13 +146,13 @@ function parseScaleY(str) {
   const passMs = w.RK_WM_PASS_MS;
   advanceTime(176);
   assert.strictEqual(shellRoot.getAttribute('data-wm-mode'), 'run', 'masuk fase run kontinu');
+  let prevSum = 0;
   for (let i = 0; i < 6; i++) {
     advanceTime(passMs / 6);
-    const scales = getClipScales();
-    assert(scales[i] > 0.85, `huruf ke-${i} terisi pada lintasan kontinu (scale=${scales[i]})`);
-    for (let j = 0; j < i; j++) {
-      assert(scales[j] >= 0.99, `huruf sebelumnya ${j} tetap penuh kumulatif (scale=${scales[j]})`);
-    }
+    const fracs = getDrawnFracs();
+    const sum = fracs.reduce((a, b) => a + b, 0);
+    assert(sum > prevSum, `garis kontur terus bertambah pada lintasan kontinu tahap ${i} (sum=${sum})`);
+    prevSum = sum;
   }
   advanceTime(32);
   assert.strictEqual(shellRoot.getAttribute('data-wm-finale'), '1', 'setelah P=1 selesai, masuk fase finale kuning');
@@ -375,11 +371,11 @@ function parseScaleY(str) {
 
   assert(!cssDesk.includes('mt-wm-') && !cssDesk.includes('data-wm-'), 'Isolasi Desktop: css/desktop.css bebas aturan wordmark APK');
   const swMatch = swSrc.match(/CACHE_NAME\s*=\s*['"]rk-cache-v(\d+)['"]/);
-  assert(swMatch && Number(swMatch[1]) >= 41, 'sw.js CACHE_NAME dinaikkan ke >= rk-cache-v41');
+  assert(swMatch && Number(swMatch[1]) >= 42, 'sw.js CACHE_NAME dinaikkan ke >= rk-cache-v42');
   assert.strictEqual(w.RK_SCHEMA_VER, 3, 'RK_SCHEMA_VER tetap 3');
 
   assert.strictEqual(errs.length, 0, 'Tidak ada runtime error jsdom: ' + errs.join('; '));
-  console.log('OK: Semua asersi Tahap 17 (diperbarui ke kontrak kontinu Tahap 18 + Kilat Kuning + A1) lulus.');
+  console.log('OK: Semua asersi Tahap 17 (diperbarui ke kontrak stroke Tahap 19 + Kilat Kuning + A1) lulus.');
   process.exit(0);
 })().catch((e) => {
   console.error('GAGAL tahap17_wordmark_letters:', e);

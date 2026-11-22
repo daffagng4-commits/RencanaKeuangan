@@ -35,12 +35,17 @@ function build(opts) {
   return { html, files, buildInfo };
 }
 
-function copyDir(src, dst) {
+function copyDir(src, dst, exclude) {
   if (!fs.existsSync(src)) return;
   fs.mkdirSync(dst, { recursive: true });
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    if (exclude && exclude.has(entry.name)) {
+      const stale = path.join(dst, entry.name);
+      if (fs.existsSync(stale)) fs.rmSync(stale, { recursive: true, force: true });
+      continue;
+    }
     const s = path.join(src, entry.name), d = path.join(dst, entry.name);
-    if (entry.isDirectory()) copyDir(s, d);
+    if (entry.isDirectory()) copyDir(s, d, exclude);
     else fs.copyFileSync(s, d);
   }
 }
@@ -82,7 +87,8 @@ function main() {
     const p = path.join(root, f);
     if (fs.existsSync(p)) fs.copyFileSync(p, path.join(root, 'dist', f));
   });
-  copyDir(path.join(root, 'tools'), path.join(root, 'dist/tools'));
+  // Kecualikan skrip generator pengembangan agar tidak ikut ke dist/ (webDir APK)
+  copyDir(path.join(root, 'tools'), path.join(root, 'dist/tools'), new Set(['gen-wordmark-pacifico.js']));
   console.log('index.html + dist/index.html dibuat (' + Math.round(html.length / 1024) + ' KB, ' + files.length + ' file js) beserta file pendukung');
 }
 
