@@ -1218,7 +1218,7 @@ const { boot } = require('./ui.js');
   const navKasBtn = bnav22.querySelector('[data-mtab="kas"]');
   // 23a. Re-tap saat di Rincian (posisi atas) -> refresh tepat 1x tanpa double render switchMobileTab
   click(navRincianBtn);
-  assert($('m-ptr-ind').classList.contains('is-refreshing'), 'indikator PTR aktif dengan kelas .is-refreshing saat refresh berjalan');
+  assert.strictEqual($('mobile-app-shell').getAttribute('data-refreshing'), '1', 'indikator refresh shimmer wordmark aktif (data-refreshing="1") saat refresh berjalan');
   await new Promise((r) => setTimeout(r, 30));
   assert.strictEqual(ptrPullCount, beforeRetap + 1, 'tap ulang tombol Rincian di bottom nav memicu refresh 1x');
   assert.strictEqual(rincianRenderCount, 1, 're-tap Rincian tidak menyebabkan render ulang ganda dari switchMobileTab + PTR');

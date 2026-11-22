@@ -271,6 +271,14 @@
   --mob-fab-shadow: 0 10px 22px rgba(31, 99, 204, 0.34), 0 3px 8px rgba(15, 82, 186, 0.20);
   --dur-nav-dot: 320ms;
   --ease-nav-jelly: cubic-bezier(0.34, 1.38, 0.64, 1);
+  --wm-dead: #858B94;
+  --wm-lit: #FFFFFF;
+  --wm-flash: #FDE047;
+  --dur-wm-fade: 160ms;
+  --dur-wm-lit-in: 110ms;
+  --dur-wm-lit-out: 200ms;
+  --dur-wm-flash-in: 120ms;
+  --dur-wm-flash-out: 380ms;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -546,6 +554,11 @@ body, input, button, select, textarea, table, kbd, code {
     --dur-nav-label: 0.001ms;
     --dur-nav-dot: 0.001ms;
     --ease-nav-jelly: linear;
+    --dur-wm-fade: 0.001ms;
+    --dur-wm-lit-in: 0.001ms;
+    --dur-wm-lit-out: 0.001ms;
+    --dur-wm-flash-in: 0.001ms;
+    --dur-wm-flash-out: 0.001ms;
     --dur-bell: 0.001ms;
     --dur-badge-pop: 0.001ms;
     --dur-icon-morph: 0.001ms;
@@ -5584,6 +5597,74 @@ body[data-shell="mobile-app"] #mobile-app-shell .mt-wordmark {
   height: 22.5px;
   width: auto;
   flex-shrink: 0;
+  overflow: hidden;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-white {
+  fill: var(--wm-lit);
+  opacity: 1;
+  transition: opacity var(--dur-wm-fade) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-dead {
+  fill: var(--wm-dead);
+  opacity: 0;
+  transition: opacity var(--dur-wm-fade) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-lit {
+  fill: var(--wm-lit);
+  opacity: 0;
+  transition: opacity var(--dur-wm-lit-out) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-flash {
+  fill: var(--wm-flash);
+  opacity: 0;
+  transition: opacity var(--dur-wm-flash-out) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-white {
+  opacity: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-dead {
+  opacity: 1;
+}
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="0"] .mt-wm-letter[data-wm-idx="0"] .mt-wm-lit,
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="1"] .mt-wm-letter[data-wm-idx="1"] .mt-wm-lit,
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="2"] .mt-wm-letter[data-wm-idx="2"] .mt-wm-lit,
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="3"] .mt-wm-letter[data-wm-idx="3"] .mt-wm-lit,
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="4"] .mt-wm-letter[data-wm-idx="4"] .mt-wm-lit,
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="5"] .mt-wm-letter[data-wm-idx="5"] .mt-wm-lit {
+  opacity: 1;
+  transition: opacity var(--dur-wm-lit-in) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-finale="1"] .mt-wm-white {
+  opacity: 1;
+  transition: opacity var(--dur-wm-flash-in) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-finale="1"] .mt-wm-dead {
+  opacity: 0;
+  transition: opacity var(--dur-wm-flash-in) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-finale="1"] .mt-wm-lit {
+  opacity: 0;
+  transition: opacity var(--dur-wm-flash-in) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-finale="1"][data-wm-flash="in"] .mt-wm-flash {
+  opacity: 1;
+  transition: opacity var(--dur-wm-flash-in) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-finale="1"][data-wm-flash="out"] .mt-wm-flash {
+  opacity: 0;
+  transition: opacity var(--dur-wm-flash-out) var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-white,
+  body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-dead,
+  body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-lit,
+  body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-flash {
+    transition: none;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-lit,
+  body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-flash {
+    opacity: 0;
+  }
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .mt-actions {
@@ -5939,31 +6020,10 @@ body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ico {
   display: block;
   transform: rotate(var(--ptr-rot, 0deg));
 }
-body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-spin {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  display: none;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-refreshing .m-ptr-ico { display: none; }
-body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-refreshing .m-ptr-spin {
-  display: block;
-  animation: rkPtrSpin 700ms linear infinite;
-}
-@keyframes rkPtrSpin {
-  to { transform: rotate(360deg); }
-}
 @media (prefers-reduced-motion: reduce) {
   body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-snapping,
   body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-exiting {
     transition: none;
-  }
-  body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-refreshing .m-ptr-spin {
-    animation: none;
-    border-right-color: currentColor;
-    opacity: 0.72;
   }
 }
 
@@ -32246,9 +32306,16 @@ function unmountMobileShell() {
   if (document.body) document.body.removeAttribute('data-phone-frame');
 }
 
+var _rkInRefreshRender = false;
+
 function syncMobileCloudUI() {
   if (typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') return;
   var u = typeof sbUser !== 'undefined' ? sbUser : null;
+  var nextUid = u && u.id ? String(u.id) : '';
+  if (!_rkInRefreshRender && MOB_STATE._lastCloudUid && MOB_STATE._lastCloudUid !== nextUid) {
+    if (typeof window !== 'undefined' && typeof window._rkPtrReset === 'function') window._rkPtrReset();
+  }
+  MOB_STATE._lastCloudUid = nextUid;
   var du = typeof rkDisplayUser === 'function'
     ? rkDisplayUser(u)
     : { loggedIn: !!u, name: u ? 'Pengguna' : 'XXX', initial: u ? 'P' : '' };
@@ -32317,7 +32384,33 @@ function syncMobileCloudUI() {
   }
 }
 
-var RK_WORDMARK_PATH = 'M1.93 22L1.93 3.52L9.8 3.52Q11.34 3.52 12.6 3.76Q13.86 4 14.83 4.46Q15.79 4.92 16.46 5.58Q17.14 6.24 17.47 7.09Q17.81 7.94 17.81 8.98Q17.81 9.96 17.5 10.74Q17.19 11.53 16.56 12.12Q15.93 12.7 14.98 13.07Q14.03 13.43 12.77 13.6L12.77 14.02Q14.36 14.19 15.25 14.73Q16.13 15.28 16.6 16.18Q17.08 17.07 17.44 18.33L18.51 22L13.5 22L12.68 18.61Q12.43 17.49 12 16.88Q11.56 16.26 10.89 16.02Q10.22 15.78 9.21 15.78L6.44 15.78L6.44 22ZM6.44 12.45L9.49 12.45Q11.2 12.45 12.15 11.78Q13.1 11.11 13.1 9.68Q13.1 8.28 12.24 7.61Q11.37 6.94 9.6 6.94L6.44 6.94ZM27.19 22.39Q25.34 22.39 23.88 21.9Q22.43 21.41 21.41 20.46Q20.38 19.51 19.85 18.11Q19.32 16.71 19.32 14.89Q19.32 13.12 19.84 11.64Q20.36 10.16 21.32 9.08Q22.29 8 23.7 7.41Q25.12 6.82 26.88 6.82Q28.67 6.82 30.03 7.4Q31.39 7.97 32.27 9.09Q33.15 10.21 33.57 11.82Q33.99 13.43 33.85 15.5L22.29 15.59L22.29 13.24L31.28 13.15L29.68 14.24Q29.88 12.84 29.51 11.96Q29.15 11.08 28.45 10.67Q27.75 10.27 26.94 10.27Q25.96 10.27 25.21 10.8Q24.47 11.33 24.05 12.34Q23.63 13.35 23.63 14.8Q23.63 17.1 24.63 18.14Q25.62 19.17 27.16 19.17Q27.92 19.17 28.42 18.96Q28.92 18.75 29.25 18.43Q29.57 18.11 29.75 17.72Q29.93 17.32 30.04 16.96L33.96 17.8Q33.74 18.84 33.25 19.68Q32.76 20.52 31.93 21.13Q31.11 21.75 29.95 22.07Q28.78 22.39 27.19 22.39ZM35.76 22L35.76 13.1L35.76 7.22L39.4 7.22L39.45 11.56L40.01 11.56Q40.38 9.99 41.05 8.92Q41.72 7.86 42.76 7.34Q43.79 6.82 45.19 6.82Q47.8 6.82 49.15 8.64Q50.51 10.46 50.51 14.44L50.51 22L45.98 22L45.98 14.94Q45.98 12.65 45.32 11.6Q44.66 10.55 43.37 10.55Q42.31 10.55 41.62 11.19Q40.94 11.84 40.6 12.9Q40.26 13.96 40.26 15.28L40.26 22ZM53.12 22L53.12 3.52L57.62 3.52L57.62 11.61Q59 11 60.17 10.07Q61.35 9.15 62.26 8.06Q63.17 6.96 63.77 5.8Q64.37 4.64 64.65 3.52L69.86 3.52Q69.52 4.81 68.77 6.14Q68.01 7.47 66.95 8.69Q65.88 9.9 64.67 10.86Q63.45 11.81 62.19 12.37L62.19 12.79Q63.48 12.79 64.47 13.07Q65.46 13.35 66.23 13.94Q67 14.52 67.58 15.41Q68.15 16.29 68.57 17.52L70.17 22L65.04 22L64.01 18.33Q63.67 17.1 63.11 16.39Q62.55 15.67 61.63 15.35Q60.7 15.03 59.25 15.03L57.62 15.03L57.62 22ZM78.62 22.39Q76.78 22.39 75.32 21.9Q73.86 21.41 72.84 20.46Q71.82 19.51 71.29 18.11Q70.76 16.71 70.76 14.89Q70.76 13.12 71.27 11.64Q71.79 10.16 72.76 9.08Q73.72 8 75.14 7.41Q76.55 6.82 78.32 6.82Q80.11 6.82 81.47 7.4Q82.82 7.97 83.71 9.09Q84.59 10.21 85.01 11.82Q85.43 13.43 85.29 15.5L73.72 15.59L73.72 13.24L82.71 13.15L81.12 14.24Q81.31 12.84 80.95 11.96Q80.58 11.08 79.88 10.67Q79.18 10.27 78.37 10.27Q77.39 10.27 76.65 10.8Q75.91 11.33 75.49 12.34Q75.07 13.35 75.07 14.8Q75.07 17.1 76.06 18.14Q77.06 19.17 78.6 19.17Q79.35 19.17 79.86 18.96Q80.36 18.75 80.68 18.43Q81 18.11 81.19 17.72Q81.37 17.32 81.48 16.96L85.4 17.8Q85.18 18.84 84.69 19.68Q84.2 20.52 83.37 21.13Q82.54 21.75 81.38 22.07Q80.22 22.39 78.62 22.39ZM92.26 22.39Q89.63 22.39 88.3 20.61Q86.97 18.84 86.97 15.2L86.97 7.22L91.5 7.22L91.5 14.61Q91.5 16.68 92.12 17.7Q92.74 18.72 94 18.72Q94.75 18.72 95.3 18.35Q95.84 17.97 96.22 17.28Q96.6 16.6 96.78 15.7Q96.96 14.8 96.96 13.74L96.96 7.22L101.47 7.22L101.47 16.01L101.47 22L97.89 22L97.8 17.44L97.24 17.44Q96.82 19.17 96.19 20.28Q95.56 21.38 94.61 21.89Q93.66 22.39 92.26 22.39Z';
+var RK_WORDMARK_LETTERS = [
+  'M1.93 22L1.93 3.52L9.8 3.52Q11.34 3.52 12.6 3.76Q13.86 4 14.83 4.46Q15.79 4.92 16.46 5.58Q17.14 6.24 17.47 7.09Q17.81 7.94 17.81 8.98Q17.81 9.96 17.5 10.74Q17.19 11.53 16.56 12.12Q15.93 12.7 14.98 13.07Q14.03 13.43 12.77 13.6L12.77 14.02Q14.36 14.19 15.25 14.73Q16.13 15.28 16.6 16.18Q17.08 17.07 17.44 18.33L18.51 22L13.5 22L12.68 18.61Q12.43 17.49 12 16.88Q11.56 16.26 10.89 16.02Q10.22 15.78 9.21 15.78L6.44 15.78L6.44 22ZM6.44 12.45L9.49 12.45Q11.2 12.45 12.15 11.78Q13.1 11.11 13.1 9.68Q13.1 8.28 12.24 7.61Q11.37 6.94 9.6 6.94L6.44 6.94Z',
+  'M27.19 22.39Q25.34 22.39 23.88 21.9Q22.43 21.41 21.41 20.46Q20.38 19.51 19.85 18.11Q19.32 16.71 19.32 14.89Q19.32 13.12 19.84 11.64Q20.36 10.16 21.32 9.08Q22.29 8 23.7 7.41Q25.12 6.82 26.88 6.82Q28.67 6.82 30.03 7.4Q31.39 7.97 32.27 9.09Q33.15 10.21 33.57 11.82Q33.99 13.43 33.85 15.5L22.29 15.59L22.29 13.24L31.28 13.15L29.68 14.24Q29.88 12.84 29.51 11.96Q29.15 11.08 28.45 10.67Q27.75 10.27 26.94 10.27Q25.96 10.27 25.21 10.8Q24.47 11.33 24.05 12.34Q23.63 13.35 23.63 14.8Q23.63 17.1 24.63 18.14Q25.62 19.17 27.16 19.17Q27.92 19.17 28.42 18.96Q28.92 18.75 29.25 18.43Q29.57 18.11 29.75 17.72Q29.93 17.32 30.04 16.96L33.96 17.8Q33.74 18.84 33.25 19.68Q32.76 20.52 31.93 21.13Q31.11 21.75 29.95 22.07Q28.78 22.39 27.19 22.39Z',
+  'M35.76 22L35.76 13.1L35.76 7.22L39.4 7.22L39.45 11.56L40.01 11.56Q40.38 9.99 41.05 8.92Q41.72 7.86 42.76 7.34Q43.79 6.82 45.19 6.82Q47.8 6.82 49.15 8.64Q50.51 10.46 50.51 14.44L50.51 22L45.98 22L45.98 14.94Q45.98 12.65 45.32 11.6Q44.66 10.55 43.37 10.55Q42.31 10.55 41.62 11.19Q40.94 11.84 40.6 12.9Q40.26 13.96 40.26 15.28L40.26 22Z',
+  'M53.12 22L53.12 3.52L57.62 3.52L57.62 11.61Q59 11 60.17 10.07Q61.35 9.15 62.26 8.06Q63.17 6.96 63.77 5.8Q64.37 4.64 64.65 3.52L69.86 3.52Q69.52 4.81 68.77 6.14Q68.01 7.47 66.95 8.69Q65.88 9.9 64.67 10.86Q63.45 11.81 62.19 12.37L62.19 12.79Q63.48 12.79 64.47 13.07Q65.46 13.35 66.23 13.94Q67 14.52 67.58 15.41Q68.15 16.29 68.57 17.52L70.17 22L65.04 22L64.01 18.33Q63.67 17.1 63.11 16.39Q62.55 15.67 61.63 15.35Q60.7 15.03 59.25 15.03L57.62 15.03L57.62 22Z',
+  'M78.62 22.39Q76.78 22.39 75.32 21.9Q73.86 21.41 72.84 20.46Q71.82 19.51 71.29 18.11Q70.76 16.71 70.76 14.89Q70.76 13.12 71.27 11.64Q71.79 10.16 72.76 9.08Q73.72 8 75.14 7.41Q76.55 6.82 78.32 6.82Q80.11 6.82 81.47 7.4Q82.82 7.97 83.71 9.09Q84.59 10.21 85.01 11.82Q85.43 13.43 85.29 15.5L73.72 15.59L73.72 13.24L82.71 13.15L81.12 14.24Q81.31 12.84 80.95 11.96Q80.58 11.08 79.88 10.67Q79.18 10.27 78.37 10.27Q77.39 10.27 76.65 10.8Q75.91 11.33 75.49 12.34Q75.07 13.35 75.07 14.8Q75.07 17.1 76.06 18.14Q77.06 19.17 78.6 19.17Q79.35 19.17 79.86 18.96Q80.36 18.75 80.68 18.43Q81 18.11 81.19 17.72Q81.37 17.32 81.48 16.96L85.4 17.8Q85.18 18.84 84.69 19.68Q84.2 20.52 83.37 21.13Q82.54 21.75 81.38 22.07Q80.22 22.39 78.62 22.39Z',
+  'M92.26 22.39Q89.63 22.39 88.3 20.61Q86.97 18.84 86.97 15.2L86.97 7.22L91.5 7.22L91.5 14.61Q91.5 16.68 92.12 17.7Q92.74 18.72 94 18.72Q94.75 18.72 95.3 18.35Q95.84 17.97 96.22 17.28Q96.6 16.6 96.78 15.7Q96.96 14.8 96.96 13.74L96.96 7.22L101.47 7.22L101.47 16.01L101.47 22L97.89 22L97.8 17.44L97.24 17.44Q96.82 19.17 96.19 20.28Q95.56 21.38 94.61 21.89Q93.66 22.39 92.26 22.39Z',
+];
+var RK_WORDMARK_PATH = RK_WORDMARK_LETTERS.join('');
+if (typeof window !== 'undefined') {
+  window.RK_WORDMARK_LETTERS = RK_WORDMARK_LETTERS;
+  window.RK_WORDMARK_PATH = RK_WORDMARK_PATH;
+}
+
+function mobWordmarkSvgHtml() {
+  var out = '<svg class="mt-wordmark" viewBox="1.9 2.5 101 21" fill="none" role="img" aria-label="RenKeu">';
+  for (var i = 0; i < RK_WORDMARK_LETTERS.length; i++) {
+    var d = RK_WORDMARK_LETTERS[i];
+    out += '<g class="mt-wm-letter" data-wm-idx="' + i + '" aria-hidden="true">' +
+      '<path class="mt-wm-white" d="' + d + '"/>' +
+      '<path class="mt-wm-dead" d="' + d + '"/>' +
+      '<path class="mt-wm-lit" d="' + d + '"/>' +
+      '<path class="mt-wm-flash" d="' + d + '"/>' +
+      '</g>';
+  }
+  return out + '</svg>';
+}
 
 function mobOsNotifHtml() {
   return (
@@ -32357,7 +32450,7 @@ function mobShellTemplate() {
     '<div class="hdr-inner">' +
     '<div class="phone-status-bar" aria-hidden="true"><span>09:41</span><div class="phone-island"><span class="phone-island-cam"></span></div><div class="phone-sys-icons"><span>5G</span><span>94%</span></div></div>' +
     '<header class="mob-topbar">' +
-    '<svg class="mt-wordmark" viewBox="1.9 2.5 101 21" fill="none" role="img" aria-label="RenKeu"><path d="' + RK_WORDMARK_PATH + '" fill="#FFFFFF"/></svg>' +
+    mobWordmarkSvgHtml() +
     '<div class="mt-actions">' +
     '<button type="button" class="av-btn" id="m-acct-btn" aria-label="Akun, Tahun &amp; Pengaturan" aria-expanded="false" aria-haspopup="true" title="Akun, Tahun &amp; Pengaturan">' +
     '<div class="av-circle anon"><span id="m-acct-ini"></span><span class="av-dot" aria-hidden="true"></span></div>' +
@@ -32392,8 +32485,8 @@ function mobShellTemplate() {
     '</div>' +
     '<div class="m-ptr-ind" id="m-ptr-ind" aria-hidden="true">' +
     '<svg class="m-ptr-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12l7 7 7-7"/></svg>' +
-    '<span class="m-ptr-spin"></span>' +
     '</div>' +
+    '<span class="sr-only" id="m-refresh-status" role="status" aria-live="polite"></span>' +
     '<div class="m-sync-banner" id="m-sync-banner" role="alert" hidden></div>' +
     '<main class="mob-main" id="m-main">' +
     // TAB 1: RINCIAN
@@ -32531,7 +32624,7 @@ function mobShellTemplate() {
     '<label class="switch-row"><span>Saat tepat jatuh tempo (Hari-H)</span><input type="checkbox" id="m-set-notif-today" checked /></label>' +
     '<label class="switch-row"><span>Mendekati jatuh tempo (sesuai horizon)</span><input type="checkbox" id="m-set-notif-soon" checked /></label>' +
     '<label class="switch-row"><span>Tagihan terlewat belum dibayar</span><input type="checkbox" id="m-set-notif-late" checked /></label>' +
-    '<label class="switch-row"><span><strong>Getaran sentuh</strong><div style="font-size:0.71rem;color:var(--text-muted);font-weight:400">Umpan balik getar saat tarik, ketuk tab, grafik, dan slider</div></span><input type="checkbox" id="m-set-haptic-enabled" checked /></label>' +
+    '<label class="switch-row"><span><strong>Getaran sentuh</strong><div style="font-size:0.71rem;color:var(--text-muted);font-weight:400">Umpan balik getar saat tarik, ketuk tab, grafik, dan slider</div></span><input type="checkbox" id="m-set-haptic-enabled"' + (rkIsHapticsEnabled() ? ' checked' : '') + ' /></label>' +
     '<button type="button" class="btn btn-primary" id="m-btn-test-notif">🔔 Tes Notif Bar HP &amp; Izin Browser</button></div></div>' +
     '<div class="card"><div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Pengingat Tagihan</h2><div style="font-size:0.71rem;color:var(--text-muted)">Hari ini &amp; mendekati tempo</div></div><span class="badge b-am mono" id="m-rem-cnt-badge">0 item</span></div>' +
     '<div class="stack" style="gap:7px" id="m-settings-rem-list"></div>' +
@@ -32773,6 +32866,7 @@ function rkSetHapticsEnabled(on) {
 // Di Android, Haptics.vibrate({ duration: 12 }) dipilih untuk tick karena HapticsSelectionType
 // pada @capacitor/haptics berdurasi 100ms dan mensyaratkan selectionStart().
 function rkHaptic(kind) {
+  if (kind !== 'arm' && kind !== 'refresh' && kind !== 'tick' && kind !== 'edge') return false;
   if (typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') return false;
   if (!rkIsHapticsEnabled()) return false;
   if (kind === 'tick') {
@@ -32784,16 +32878,17 @@ function rkHaptic(kind) {
   if (hp) {
     try {
       var res = null;
+      var called = false;
       if (kind === 'arm') {
-        if (typeof hp.impact === 'function') res = hp.impact({ style: 'LIGHT' });
+        if (typeof hp.impact === 'function') { called = true; res = hp.impact({ style: 'LIGHT' }); }
       } else if (kind === 'refresh' || kind === 'edge') {
-        if (typeof hp.impact === 'function') res = hp.impact({ style: 'MEDIUM' });
+        if (typeof hp.impact === 'function') { called = true; res = hp.impact({ style: 'MEDIUM' }); }
       } else if (kind === 'tick') {
-        if (typeof hp.vibrate === 'function') res = hp.vibrate({ duration: 12 });
-        else if (typeof hp.impact === 'function') res = hp.impact({ style: 'LIGHT' });
+        if (typeof hp.vibrate === 'function') { called = true; res = hp.vibrate({ duration: 12 }); }
+        else if (typeof hp.impact === 'function') { called = true; res = hp.impact({ style: 'LIGHT' }); }
       }
       if (res && typeof res.catch === 'function') res.catch(function () {});
-      return !!res || res === undefined;
+      return called;
     } catch (e) {
       return false;
     }
@@ -35640,13 +35735,176 @@ function bindMobileShellEvents(root) {
     var PULL_TRIG = 52;
     var LOCK_PX = 8;
     var TOP_TOLERANCE_PX = 1;
+    var RK_WM_LETTER_CNT = RK_WORDMARK_LETTERS.length;
+    var RK_WM_STEP_MS = 300;
+    var RK_WM_LOOP_PAUSE_MS = 180;
+    var RK_WM_FLASH_IN_MS = 120;
+    var RK_WM_FLASH_OUT_MS = 380;
+    var RK_WM_REDUCED_MIN_MS = 850;
+    var RK_REFRESH_MAX_MS = 20000;
     var ptr = null;
     var refreshing = false;
     var queuedRetapRefresh = false;
+    var refreshCounter = 0;
+    var refreshActive = false;
+    var refreshDoneOk = false;
+    var refreshStartedAt = 0;
+    var wmStep = -1;
+    var wmInFinale = false;
+    var wmStepTimer = null;
+    var wmFinaleTimer = null;
+    var refreshMinTimer = null;
+    var refreshMaxTimer = null;
+    var refreshCycleId = 0;
     var cooldownUntil = 0;
     var exitTimer = null;
     var pendingScrollTimer = null;
     var pendingScrollListener = null;
+
+    function syncWmLetterLit(step) {
+      var shellEl = $('mobile-app-shell');
+      if (!shellEl) return;
+      if (step >= 0 && step < RK_WM_LETTER_CNT) shellEl.setAttribute('data-wm-step', String(step));
+      else shellEl.removeAttribute('data-wm-step');
+      var letters = shellEl.querySelectorAll('g.mt-wm-letter');
+      for (var i = 0; i < letters.length; i++) {
+        letters[i].classList.toggle('is-lit', i === step);
+      }
+    }
+
+    function clearWmTimers() {
+      clearTimeout(wmStepTimer);
+      wmStepTimer = null;
+      clearTimeout(wmFinaleTimer);
+      wmFinaleTimer = null;
+      clearTimeout(refreshMinTimer);
+      refreshMinTimer = null;
+      clearTimeout(refreshMaxTimer);
+      refreshMaxTimer = null;
+    }
+
+    function startWmFinale(cid) {
+      if (cid !== refreshCycleId || !refreshActive || wmInFinale) return;
+      var shellEl = $('mobile-app-shell');
+      wmInFinale = true;
+      wmStep = -1;
+      clearTimeout(wmStepTimer);
+      wmStepTimer = null;
+      syncWmLetterLit(-1);
+      if (shellEl) {
+        shellEl.setAttribute('data-wm-finale', '1');
+        shellEl.setAttribute('data-wm-flash', 'in');
+      }
+      clearTimeout(wmFinaleTimer);
+      wmFinaleTimer = setTimeout(function () {
+        if (cid !== refreshCycleId || !wmInFinale) return;
+        if (shellEl) shellEl.setAttribute('data-wm-flash', 'out');
+        wmFinaleTimer = setTimeout(function () {
+          wmFinaleTimer = null;
+          if (cid !== refreshCycleId || !wmInFinale) return;
+          rkSetRefreshIndicator(false);
+        }, RK_WM_FLASH_OUT_MS);
+      }, RK_WM_FLASH_IN_MS);
+    }
+
+    function runWmStep(step, cid) {
+      if (cid !== refreshCycleId || !refreshActive || wmInFinale) return;
+      wmStep = step;
+      syncWmLetterLit(step);
+      clearTimeout(wmStepTimer);
+      wmStepTimer = setTimeout(function () {
+        wmStepTimer = null;
+        if (cid !== refreshCycleId || !refreshActive || wmInFinale) return;
+        if (step < RK_WM_LETTER_CNT - 1) {
+          runWmStep(step + 1, cid);
+          return;
+        }
+        if (refreshCounter === 0 && !refreshing && !queuedRetapRefresh) {
+          if (refreshDoneOk) startWmFinale(cid);
+          else rkSetRefreshIndicator(false);
+          return;
+        }
+        wmStep = -1;
+        syncWmLetterLit(-1);
+        wmStepTimer = setTimeout(function () {
+          wmStepTimer = null;
+          runWmStep(0, cid);
+        }, RK_WM_LOOP_PAUSE_MS);
+      }, RK_WM_STEP_MS);
+    }
+
+    function forceStopRefreshIndicator() {
+      refreshCycleId += 1;
+      cancelPendingScrollRefresh();
+      clearGesture();
+      refreshing = false;
+      queuedRetapRefresh = false;
+      refreshCounter = 0;
+      rkSetRefreshIndicator(false);
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('[RenKeu] Refresh melebihi batas 20 dtk; indikator dihentikan.');
+      }
+    }
+
+    function rkSetRefreshIndicator(on) {
+      var shellEl = $('mobile-app-shell');
+      var mainEl = $('m-main');
+      var statusEl = $('m-refresh-status');
+      var isReduced = typeof rkIsReducedMotion === 'function' && rkIsReducedMotion();
+      if (on) {
+        if (refreshActive && wmInFinale) {
+          clearTimeout(wmFinaleTimer);
+          wmFinaleTimer = null;
+          wmInFinale = false;
+          refreshDoneOk = false;
+          refreshStartedAt = Date.now();
+          if (shellEl) {
+            shellEl.removeAttribute('data-wm-finale');
+            shellEl.removeAttribute('data-wm-flash');
+          }
+          clearTimeout(refreshMaxTimer);
+          refreshMaxTimer = setTimeout(forceStopRefreshIndicator, RK_REFRESH_MAX_MS);
+          if (!isReduced) runWmStep(0, refreshCycleId);
+          else syncWmLetterLit(-1);
+          return;
+        }
+        if (!refreshActive) {
+          refreshActive = true;
+          refreshDoneOk = false;
+          wmInFinale = false;
+          refreshStartedAt = Date.now();
+          if (shellEl) {
+            shellEl.setAttribute('data-refreshing', '1');
+            shellEl.removeAttribute('data-wm-finale');
+            shellEl.removeAttribute('data-wm-flash');
+          }
+          if (mainEl) mainEl.setAttribute('aria-busy', 'true');
+          if (statusEl) statusEl.textContent = 'Menyegarkan data';
+          clearTimeout(refreshMaxTimer);
+          refreshMaxTimer = setTimeout(forceStopRefreshIndicator, RK_REFRESH_MAX_MS);
+          if (!isReduced) runWmStep(0, refreshCycleId);
+          else syncWmLetterLit(-1);
+        }
+        return;
+      }
+      refreshActive = false;
+      refreshDoneOk = false;
+      wmInFinale = false;
+      wmStep = -1;
+      clearWmTimers();
+      syncWmLetterLit(-1);
+      if (shellEl) {
+        shellEl.removeAttribute('data-refreshing');
+        shellEl.removeAttribute('data-wm-finale');
+        shellEl.removeAttribute('data-wm-flash');
+      }
+      if (mainEl) mainEl.removeAttribute('aria-busy');
+      if (statusEl) statusEl.textContent = '';
+    }
+    if (typeof window !== 'undefined') {
+      window.rkSetRefreshIndicator = rkSetRefreshIndicator;
+      window.RK_WM_STEP_MS = RK_WM_STEP_MS;
+    }
 
     function getScrollY() {
       var mm = $('m-main');
@@ -35685,7 +35943,7 @@ function bindMobileShellEvents(root) {
       var ind = $('m-ptr-ind');
       clearTimeout(exitTimer);
       if (!ind) return;
-      ind.classList.remove('is-refreshing', 'is-snapping', 'is-exiting');
+      ind.classList.remove('is-snapping', 'is-exiting');
       if (cls) ind.classList.add(cls);
       setPtrVars(ind, -48, 0, 0, 0.8);
       if (cls) {
@@ -35723,9 +35981,20 @@ function bindMobileShellEvents(root) {
       detachActiveMove();
     }
 
-    function finishRefresh(msg, fromRetap) {
+    function finishRefresh(msg, fromRetap, cid, ok) {
+      if (cid != null && cid !== refreshCycleId) return;
       cancelPendingScrollRefresh();
       clearGesture();
+      if (ok === false) {
+        refreshCounter = 0;
+        refreshing = false;
+        queuedRetapRefresh = false;
+        cooldownUntil = fromRetap ? 0 : (Date.now() + 1000);
+        if (msg) showMobToast(msg);
+        rkSetRefreshIndicator(false);
+        return;
+      }
+      refreshCounter = Math.max(0, refreshCounter - 1);
       refreshing = false;
       if (queuedRetapRefresh) {
         queuedRetapRefresh = false;
@@ -35735,45 +36004,72 @@ function bindMobileShellEvents(root) {
         }
       }
       cooldownUntil = fromRetap ? 0 : (Date.now() + 1000);
-      resetVisual('is-exiting');
       if (msg) showMobToast(msg);
+      if (refreshCounter === 0 && refreshActive) {
+        refreshDoneOk = true;
+        var isReduced = typeof rkIsReducedMotion === 'function' && rkIsReducedMotion();
+        if (isReduced) {
+          var elapsed = Date.now() - refreshStartedAt;
+          var remain = RK_WM_REDUCED_MIN_MS - elapsed;
+          if (remain > 0) {
+            clearTimeout(refreshMinTimer);
+            refreshMinTimer = setTimeout(function () {
+              refreshMinTimer = null;
+              if (refreshCounter === 0 && !refreshing && !queuedRetapRefresh) {
+                rkSetRefreshIndicator(false);
+              }
+            }, remain);
+          } else {
+            rkSetRefreshIndicator(false);
+          }
+          return;
+        }
+        if (!wmStepTimer && !wmInFinale) {
+          startWmFinale(cid);
+        }
+      }
     }
 
     function runRefresh(fromRetap) {
       refreshing = true;
-      var ind = $('m-ptr-ind');
-      clearTimeout(exitTimer);
-      if (ind) {
-        positionUnderHeader(ind);
-        ind.classList.remove('is-snapping', 'is-exiting');
-        ind.classList.add('is-refreshing');
-        setPtrVars(ind, 12, 1, 180, 1);
+      refreshCounter += 1;
+      refreshDoneOk = false;
+      var cid = refreshCycleId;
+      clearTimeout(refreshMinTimer);
+      refreshMinTimer = null;
+      resetVisual('is-exiting');
+      rkSetRefreshIndicator(true);
+      function safeRefreshRender() {
+        if (typeof renderMobileApp !== 'function') return;
+        _rkInRefreshRender = true;
+        try { renderMobileApp(); } finally { _rkInRefreshRender = false; }
       }
       var hasCloud = typeof sb !== 'undefined' && sb && typeof sbUser !== 'undefined' && sbUser && typeof pull === 'function';
       var isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
       if (hasCloud && isOffline) {
-        if (typeof renderMobileApp === 'function') renderMobileApp();
-        finishRefresh('Offline — menampilkan data lokal', fromRetap);
+        safeRefreshRender();
+        finishRefresh('Offline — menampilkan data lokal', fromRetap, cid, true);
         return;
       }
       if (hasCloud) {
         var beforeSig = typeof dsig === 'function' ? dsig() : '';
         Promise.resolve(pull()).then(function () {
+          if (cid !== refreshCycleId) return;
           if (typeof window !== 'undefined' && window._rkLastPullOk === false) {
-            finishRefresh('Gagal sinkron: ' + (window._rkLastPullErr || 'koneksi'), fromRetap);
+            finishRefresh('Gagal sinkron: ' + (window._rkLastPullErr || 'koneksi'), fromRetap, cid, false);
             return;
           }
-          if (typeof renderMobileApp === 'function') renderMobileApp();
+          safeRefreshRender();
           var afterSig = typeof dsig === 'function' ? dsig() : '';
           if (afterSig !== beforeSig && typeof renderMobCharts === 'function') renderMobCharts();
-          finishRefresh('Data tersinkron', fromRetap);
+          finishRefresh('Data tersinkron', fromRetap, cid, true);
         }).catch(function () {
-          finishRefresh('Gagal sinkron — cek koneksi', fromRetap);
+          finishRefresh('Gagal sinkron — cek koneksi', fromRetap, cid, false);
         });
         return;
       }
-      if (typeof renderMobileApp === 'function') renderMobileApp();
-      finishRefresh('Data diperbarui', fromRetap);
+      safeRefreshRender();
+      finishRefresh('Data diperbarui', fromRetap, cid, true);
     }
 
     function onActiveMove(e) {
@@ -35798,7 +36094,7 @@ function bindMobileShellEvents(root) {
         var ind0 = $('m-ptr-ind');
         if (ind0) {
           positionUnderHeader(ind0);
-          ind0.classList.remove('is-snapping', 'is-exiting', 'is-refreshing');
+          ind0.classList.remove('is-snapping', 'is-exiting');
         }
       }
       // preventDefault hanya dipanggil saat gestur sudah terkunci sebagai tarikan bawah dari posisi scroll 0
@@ -35888,12 +36184,15 @@ function bindMobileShellEvents(root) {
     };
 
     window._rkPtrReset = function () {
+      refreshCycleId += 1;
       cancelPendingScrollRefresh();
       clearGesture();
       refreshing = false;
       queuedRetapRefresh = false;
+      refreshCounter = 0;
       cooldownUntil = 0;
       resetVisual('');
+      rkSetRefreshIndicator(false);
     };
 
     root.addEventListener('touchstart', function (e) {

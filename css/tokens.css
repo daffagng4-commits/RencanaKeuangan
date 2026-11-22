@@ -227,6 +227,14 @@
   --mob-fab-shadow: 0 10px 22px rgba(31, 99, 204, 0.34), 0 3px 8px rgba(15, 82, 186, 0.20);
   --dur-nav-dot: 320ms;
   --ease-nav-jelly: cubic-bezier(0.34, 1.38, 0.64, 1);
+  --wm-dead: #858B94;
+  --wm-lit: #FFFFFF;
+  --wm-flash: #FDE047;
+  --dur-wm-fade: 160ms;
+  --dur-wm-lit-in: 110ms;
+  --dur-wm-lit-out: 200ms;
+  --dur-wm-flash-in: 120ms;
+  --dur-wm-flash-out: 380ms;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -502,6 +510,11 @@ body, input, button, select, textarea, table, kbd, code {
     --dur-nav-label: 0.001ms;
     --dur-nav-dot: 0.001ms;
     --ease-nav-jelly: linear;
+    --dur-wm-fade: 0.001ms;
+    --dur-wm-lit-in: 0.001ms;
+    --dur-wm-lit-out: 0.001ms;
+    --dur-wm-flash-in: 0.001ms;
+    --dur-wm-flash-out: 0.001ms;
     --dur-bell: 0.001ms;
     --dur-badge-pop: 0.001ms;
     --dur-icon-morph: 0.001ms;

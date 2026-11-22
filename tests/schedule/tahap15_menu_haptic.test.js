@@ -116,9 +116,7 @@ function extractBraceBlock(src, startIdx) {
     assert.notStrictEqual(w.getComputedStyle(moreBd).display, 'none', `${label}: #m-sheet-more tidak boleh display:none`);
   };
 
-  // =========================================================================
-  // 1. BUTIR 1: BUG TOMBOL MENU (>= 5 putaran tiap 6 skenario)
-  // =========================================================================
+  // Bug tombol Menu: 6 skenario penutupan, minimal 5 putaran tiap skenario.
   const menuBtn = $('m-btn-more');
 
   // 1a. Menu -> Tutup tombol -> Menu lagi (5x)
@@ -214,9 +212,7 @@ function extractBraceBlock(src, startIdx) {
     assert(!$('m-sheet-periode').classList.contains('open'), `1g #m-top-yr-pill tutup putaran ${i}`);
   }
 
-  // =========================================================================
-  // 2. A2: ARIA-LABEL MENU MENGIKUTI TITIK PEMBARUAN
-  // =========================================================================
+  // Label aksesibilitas tombol Menu mengikuti status titik pembaruan.
   assert.strictEqual(typeof w.rkSyncUpdateDots, 'function', 'A2: window.rkSyncUpdateDots diekspos');
   w.MOB_UPDATE_STATE.status = 'idle';
   w.rkSyncUpdateDots();
@@ -228,9 +224,7 @@ function extractBraceBlock(src, startIdx) {
   w.rkSyncUpdateDots();
   assert.strictEqual(menuBtn.getAttribute('aria-label'), 'Menu', 'A2: saat titik pembaruan disembunyikan kembali, aria-label kembali ke "Menu"');
 
-  // =========================================================================
-  // 3. HELPER HAPTIC (rkHaptic) + KILL-SWITCH
-  // =========================================================================
+  // Helper rkHaptic dan sakelar matikan getaran di Pengaturan.
   assert.strictEqual(typeof w.rkHaptic, 'function', 'C2: window.rkHaptic tersedia');
   assert.strictEqual(w.RK_SCHEMA_VER, 3, 'RK_SCHEMA_VER tetap 3');
 
@@ -306,9 +300,7 @@ function extractBraceBlock(src, startIdx) {
   fire(hapToggle, 'change');
   assert.strictEqual(w.localStorage.getItem('rk-haptics'), '1', 'C5: menyalakan sakelar kembali menyimpan rk-haptics=1');
 
-  // =========================================================================
-  // 4. BUTIR 2: PTR + HAPTIC FEEDBACK (arm & refresh)
-  // =========================================================================
+  // Pull-to-Refresh: haptic arm saat melewati ambang dan refresh saat dilepas.
   w.sbUser = null;
   w.switchMobileTab('rincian');
   $('m-main').scrollTop = 0;
@@ -358,9 +350,7 @@ function extractBraceBlock(src, startIdx) {
   fireTouch($('m-kas-slider'), 'touchend', 160, 440);
   assert.strictEqual(hapticLog.length, 0, 'PTR: target dikecualikan (navbar, sheet terbuka, slider) = 0 haptic');
 
-  // =========================================================================
-  // 5. BUTIR 3: RE-TAP TAB AKTIF TANPA BATAS (10x tiap tab + jaga isian form)
-  // =========================================================================
+  // Re-tap tab aktif tanpa batas (10x tiap tab) sambil menjaga isian form.
   const origRefresh = w.rkMobRefresh;
   let refreshCount = 0;
   w.rkMobRefresh = function () {
@@ -440,9 +430,7 @@ function extractBraceBlock(src, startIdx) {
   w.pull = origPull;
   w.rkMobRefresh = origRefresh;
 
-  // =========================================================================
-  // 6. BUTIR 4: HAPTIC SCRUB GRAFIK PROYEKSI ARUS KAS (#m-cf-hit)
-  // =========================================================================
+  // Haptic scrub titik pada grafik Proyeksi Arus Kas (#m-cf-hit).
   w.switchMobileTab('rincian');
   w.renderMobileApp();
   const cfSvg = $('m-svg-cashflow');
@@ -506,9 +494,7 @@ function extractBraceBlock(src, startIdx) {
     assert.strictEqual(hapticLog.length, 0, 'Modal zoom #m-cf-zoom-scrub tidak memicu haptic');
   }
 
-  // =========================================================================
-  // 7. BUTIR 5: HAPTIC SLIDER OPT-IN (#m-kas-slider & #m-item-price-slider)
-  // =========================================================================
+  // Haptic slider opt-in hanya pada #m-kas-slider dan #m-item-price-slider.
   const optInSliders = [...doc.querySelectorAll('#mobile-app-shell [data-haptic="slider"]')].map((el) => el.id).sort();
   assert.deepStrictEqual(optInSliders, ['m-item-price-slider', 'm-kas-slider'], 'data-haptic="slider" hanya terpasang pada #m-kas-slider dan #m-item-price-slider');
 
@@ -596,9 +582,7 @@ function extractBraceBlock(src, startIdx) {
 
   w.Date.now = origDateNow;
 
-  // =========================================================================
-  // 8. AUDIT STATIS (A3 whitelist color, tokens.css, desktop.css, sw.js, Manifest)
-  // =========================================================================
+  // Audit statis whitelist color navbar, tokens.css, desktop.css, sw.js, dan manifest.
   const cssMob = fs.readFileSync(path.join(ROOT, 'css/mobile.css'), 'utf8');
   const cssTok = fs.readFileSync(path.join(ROOT, 'css/tokens.css'), 'utf8');
   const cssDesk = fs.readFileSync(path.join(ROOT, 'css/desktop.css'), 'utf8');

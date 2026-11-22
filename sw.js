@@ -1,7 +1,7 @@
 /**
  * Service Worker untuk Rencana Keuangan: offline cache & notifikasi lokal tagihan.
  */
-const CACHE_NAME = 'rk-cache-v38';
+const CACHE_NAME = 'rk-cache-v40';
 const STATIC_ASSETS = [
   './',
   './index.html',

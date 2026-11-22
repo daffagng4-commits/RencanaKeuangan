@@ -281,6 +281,74 @@ body[data-shell="mobile-app"] #mobile-app-shell .mt-wordmark {
   height: 22.5px;
   width: auto;
   flex-shrink: 0;
+  overflow: hidden;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-white {
+  fill: var(--wm-lit);
+  opacity: 1;
+  transition: opacity var(--dur-wm-fade) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-dead {
+  fill: var(--wm-dead);
+  opacity: 0;
+  transition: opacity var(--dur-wm-fade) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-lit {
+  fill: var(--wm-lit);
+  opacity: 0;
+  transition: opacity var(--dur-wm-lit-out) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-flash {
+  fill: var(--wm-flash);
+  opacity: 0;
+  transition: opacity var(--dur-wm-flash-out) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-white {
+  opacity: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-dead {
+  opacity: 1;
+}
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="0"] .mt-wm-letter[data-wm-idx="0"] .mt-wm-lit,
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="1"] .mt-wm-letter[data-wm-idx="1"] .mt-wm-lit,
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="2"] .mt-wm-letter[data-wm-idx="2"] .mt-wm-lit,
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="3"] .mt-wm-letter[data-wm-idx="3"] .mt-wm-lit,
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="4"] .mt-wm-letter[data-wm-idx="4"] .mt-wm-lit,
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-step="5"] .mt-wm-letter[data-wm-idx="5"] .mt-wm-lit {
+  opacity: 1;
+  transition: opacity var(--dur-wm-lit-in) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-finale="1"] .mt-wm-white {
+  opacity: 1;
+  transition: opacity var(--dur-wm-flash-in) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-finale="1"] .mt-wm-dead {
+  opacity: 0;
+  transition: opacity var(--dur-wm-flash-in) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-finale="1"] .mt-wm-lit {
+  opacity: 0;
+  transition: opacity var(--dur-wm-flash-in) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-finale="1"][data-wm-flash="in"] .mt-wm-flash {
+  opacity: 1;
+  transition: opacity var(--dur-wm-flash-in) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"][data-wm-finale="1"][data-wm-flash="out"] .mt-wm-flash {
+  opacity: 0;
+  transition: opacity var(--dur-wm-flash-out) var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-white,
+  body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-dead,
+  body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-lit,
+  body[data-shell="mobile-app"] #mobile-app-shell .mt-wm-flash {
+    transition: none;
+  }
+  body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-lit,
+  body[data-shell="mobile-app"] #mobile-app-shell[data-refreshing="1"] .mt-wm-flash {
+    opacity: 0;
+  }
 }
 
 body[data-shell="mobile-app"] #mobile-app-shell .mt-actions {
@@ -636,31 +704,10 @@ body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ico {
   display: block;
   transform: rotate(var(--ptr-rot, 0deg));
 }
-body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-spin {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  display: none;
-}
-body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-refreshing .m-ptr-ico { display: none; }
-body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-refreshing .m-ptr-spin {
-  display: block;
-  animation: rkPtrSpin 700ms linear infinite;
-}
-@keyframes rkPtrSpin {
-  to { transform: rotate(360deg); }
-}
 @media (prefers-reduced-motion: reduce) {
   body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-snapping,
   body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-exiting {
     transition: none;
-  }
-  body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-refreshing .m-ptr-spin {
-    animation: none;
-    border-right-color: currentColor;
-    opacity: 0.72;
   }
 }
 
