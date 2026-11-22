@@ -79,19 +79,19 @@ const { boot } = require('./ui.js');
   const whereRow = mobShell.querySelector('.where-filter-row');
   assert(whereRow && whereRow.querySelector('[data-mwperiod]') && whereRow.querySelector('[data-mwdir]'), 'filter Minggu/Bulan/Tahun dan Keluar/Masuk berada pada satu baris .where-filter-row');
   click($('m-btn-expand-cf'));
-  assert($('m-sheet-cf-zoom').classList.contains('open') && $('m-svg-cf-zoom').querySelector('.cf-node'), 'tombol Perbesar membuka popup grafik mode desktop');
-  assert.strictEqual($('m-svg-cf-zoom').style.touchAction, 'pan-y', 'grafik Perbesar memakai touch-action: pan-y agar scroll vertikal tetap jalan');
-  assert.strictEqual($('m-svg-cf-zoom').getAttribute('viewBox'), '0 0 600 320', 'grafik Perbesar memakai rasio lebih tinggi agar besar dan jelas di HP');
+  assert($('m-sheet-cf-zoom').classList.contains('open') && $('m-svg-cf-zoom').querySelector('.cf-node'), 'tombol Perlebar membuka popup grafik mode lebar');
+  assert.strictEqual($('m-svg-cf-zoom').style.touchAction, 'pan-y', 'grafik Perlebar memakai touch-action: pan-y pada mode Garis agar scroll vertikal tetap jalan');
+  assert.strictEqual($('m-svg-cf-zoom').getAttribute('viewBox'), '0 0 920 340', 'grafik Perlebar langsung memakai rasio lebar 920x340');
+  assert($('m-svg-cf-zoom').classList.contains('is-zoom-wide'), 'grafik Perlebar langsung aktif dalam mode lebar');
+  assert.strictEqual($('m-cf-zoom-wide'), null, 'tombol toggle #m-cf-zoom-wide redundan dihapus');
   $('m-cf-zoom-scrub').value = '75';
   fire($('m-cf-zoom-scrub'), 'input');
   assert($('m-cf-zoom-tip').classList.contains('visible'), 'menggeser #m-cf-zoom-scrub memunculkan tooltip garis grafik');
-  click($('m-cf-zoom-wide'));
-  assert($('m-svg-cf-zoom').classList.contains('is-zoom-wide'), 'tombol Perlebar memperbesar lebar grafik');
   click(mobShell.querySelector('[data-mzmode="pan"]'));
   assert.strictEqual($('m-svg-cf-zoom').style.touchAction, 'pan-x pan-y', 'mode Geser di Perlebar mengizinkan scroll jari horizontal');
   assert($('m-cf-zoom-stage') && $('m-cf-zoom-tip').parentElement === $('m-cf-zoom-stage'), 'tooltip zoom berada di stage luar agar tidak terpotong scroll kanan');
   click($('m-sheet-cf-zoom').querySelector('[data-mclose="m-sheet-cf-zoom"]'));
-  assert(!$('m-sheet-cf-zoom').classList.contains('open'), 'popup grafik Perbesar dapat ditutup');
+  assert(!$('m-sheet-cf-zoom').classList.contains('open'), 'popup grafik Perlebar dapat ditutup');
   // Uji jarak label sumbu X grafik Tahun tidak tumpang tindih dengan Hari ini
   click(mobShell.querySelector('[data-mrange="y"]'));
   const xLabelXs = [...$('m-svg-cashflow').querySelectorAll('text[text-anchor="middle"]')].map((el) => +el.getAttribute('x')).sort((a, b) => a - b);
@@ -1034,10 +1034,11 @@ const { boot } = require('./ui.js');
   doPtr($('m-tab-rincian'), 0, 150);
   await new Promise((r) => setTimeout(r, 20));
   assert.strictEqual(ptrPullCount, 1, 'tarik langsung dalam masa cooldown 1 detik tidak memicu pull() ganda');
-  // 21c. Tarik pendek (<64px): kembali tanpa refresh
+  // 21c. Tarik pendek (<64px): kembali tanpa refresh (di Rincian memakai snap bar atas; di Kas memakai #m-ptr-ind)
   w._rkPtrReset();
   doPtr($('m-tab-rincian'), 0, 70);
-  assert(ptrInd.classList.contains('is-snapping'), 'tarik pendek (<64px) memberi kelas .is-snapping');
+  const liveMobShell21 = $('mobile-app-shell').querySelector('.mob-shell');
+  assert(liveMobShell21 && liveMobShell21.classList.contains('is-ptr-snapping'), 'tarik pendek (<64px) di Rincian memberi kelas .is-ptr-snapping pada shell');
   assert.strictEqual(ptrPullCount, 1, 'tarik pendek tidak memanggil pull()');
   // 21d. scrollTop > 0: tidak aktif
   w._rkPtrReset();
@@ -3940,11 +3941,11 @@ const { boot } = require('./ui.js');
     assert.strictEqual($('m-it-day-err').textContent.trim(), expItErrM, '38.B3 APK Itin: pesan inline persis');
     assert.strictEqual($('m-toast-box').textContent, expItErrM, '38.B3 APK Itin: toast galat persis');
 
-    // Opt-in cal min/max APK
+    // Opt-in cal min/max APK (Tahap 19b: seragam .picker-popover)
     click($('m-it-day-trig'));
-    const mCalDis = $('m-cal-sheet-body').querySelector('[data-mcal-pick$="|2026-12-10"]');
+    const mCalDis = $('m-it-day-cal').querySelector('[data-mcal-pick$="|2026-12-10"]');
     assert.ok(mCalDis && mCalDis.disabled, '38.B3 APK Cal: tanggal di luar rentang disabled');
-    click($('m-cal-sheet-backdrop').querySelector('[data-mcal-close]'));
+    w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     const outMRow = $('m-trip-root').querySelector('[data-it-row="12m-i-out"]');
     assert.ok(outMRow && outMRow.querySelector('.trip-out-range-badge'), '38.B3 APK Itin: badge Di luar rentang tampil');
 
@@ -4618,11 +4619,11 @@ const { boot } = require('./ui.js');
     w.renderMobTrip();
     click($('m-btn-trip-new'));
     click($('m-kp-start-trig'));
-    const csBd = $('m-cal-sheet-backdrop');
-    assert.ok(csBd && csBd.classList.contains('open'), '45.T13 B3: m-kp-start membuka #m-cal-sheet-backdrop');
-    click(csBd.querySelector('[data-mcal-close]'));
-    assert.strictEqual(csBd.classList.contains('open'), false, '45.T13 B3: tombol Batal menutup #m-cal-sheet-backdrop');
-    assert.strictEqual($('m-sheet-trip').classList.contains('open'), true, '45.T13 B3: #m-sheet-trip tetap terbuka setelah Batal kalender');
+    const kpStartPop45 = $('m-kp-start-cal');
+    assert.ok(kpStartPop45 && kpStartPop45.classList.contains('open'), '45.T13 B3 (Tahap 19b): m-kp-start membuka .picker-popover.open seragam');
+    w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    assert.strictEqual(kpStartPop45.classList.contains('open'), false, '45.T13 B3: Esc menutup popover kalender');
+    assert.strictEqual($('m-sheet-trip').classList.contains('open'), true, '45.T13 B3: #m-sheet-trip tetap terbuka setelah tutup kalender');
     w.mobCloseSheet('m-sheet-trip', true);
     delete w.ALL.kas.pr['p-t13-m45'];
     w.MOB_STATE.tripId = null;

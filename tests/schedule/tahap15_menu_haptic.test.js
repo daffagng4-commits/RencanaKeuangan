@@ -485,18 +485,18 @@ function extractBraceBlock(src, startIdx) {
   fireTouch(cfHit, 'touchend', pts[pts.length - 1].x, pts[0].y);
   assert.strictEqual(hapticLog.length, beforeLift, 'Grafik: mengangkat jari (touchend) tidak memicu haptic');
 
-  // Modal zoom (#m-cf-zoom-scrub) tidak memicu haptic
+  // Modal zoom (#m-cf-zoom-scrub) tidak memicu haptic secara programatik tanpa sentuhan aktif
   clearLogs();
   const zScrub = $('m-cf-zoom-scrub');
   if (zScrub) {
     zScrub.value = '50';
     fire(zScrub, 'input');
-    assert.strictEqual(hapticLog.length, 0, 'Modal zoom #m-cf-zoom-scrub tidak memicu haptic');
+    assert.strictEqual(hapticLog.length, 0, 'Modal zoom #m-cf-zoom-scrub tidak memicu haptic saat diubah programatik');
   }
 
-  // Haptic slider opt-in hanya pada #m-kas-slider dan #m-item-price-slider.
+  // Haptic slider opt-in pada #m-cf-zoom-scrub, #m-item-price-slider, dan #m-kas-slider.
   const optInSliders = [...doc.querySelectorAll('#mobile-app-shell [data-haptic="slider"]')].map((el) => el.id).sort();
-  assert.deepStrictEqual(optInSliders, ['m-item-price-slider', 'm-kas-slider'], 'data-haptic="slider" hanya terpasang pada #m-kas-slider dan #m-item-price-slider');
+  assert.deepStrictEqual(optInSliders, ['m-cf-zoom-scrub', 'm-item-price-slider', 'm-kas-slider'], 'data-haptic="slider" terpasang pada #m-cf-zoom-scrub, #m-kas-slider, dan #m-item-price-slider');
 
   const testOptInSlider = (sliderId, inputId, minVal, step1, step2, maxVal) => {
     const sl = $(sliderId);

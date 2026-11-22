@@ -379,7 +379,7 @@ function extractWordmarkCssRules(cssSrc) {
   assert.strictEqual($('m-refresh-status').textContent, 'Menyegarkan data', 'status screen reader aktif');
 
   const passMs = w.RK_WM_PASS_MS;
-  assert(passMs >= 2000 && passMs <= 2400, `RK_WM_PASS_MS dalam 2000..2400ms (${passMs})`);
+  assert(passMs >= 1600 && passMs <= 2000, `RK_WM_PASS_MS dalam 1600..2000ms (${passMs})`);
   advance(180);
   assert.strictEqual(shellRoot.getAttribute('data-wm-mode'), 'run', 'Masuk fase run kontinu');
   let prevP = w._rkWmState().p;

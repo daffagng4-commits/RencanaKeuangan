@@ -460,36 +460,28 @@ const ROOT = path.resolve(__dirname, '../..');
     w.MOB_STATE.tripView = 'list';
     w.renderMobTrip();
     click(w.document.getElementById('m-btn-trip-new'));
-    assert.strictEqual(w.document.getElementById('m-kp-start').getAttribute('data-pk-sheet'), '1', 'B3 Trip sheet: m-kp-start punya data-pk-sheet="1"');
-    assert.strictEqual(w.document.getElementById('m-kp-end').getAttribute('data-pk-sheet'), '1', 'B3 Trip sheet: m-kp-end punya data-pk-sheet="1"');
+    assert.strictEqual(w.document.getElementById('m-kp-start').hasAttribute('data-pk-sheet'), false, 'B3 Trip sheet (Tahap 19b): m-kp-start seragam memakai .picker-popover');
+    assert.strictEqual(w.document.getElementById('m-kp-end').hasAttribute('data-pk-sheet'), false, 'B3 Trip sheet (Tahap 19b): m-kp-end seragam memakai .picker-popover');
 
-    // Buka kalender Mulai -> sheet bottom fixed terbuka dengan judul & Nov 30 tersedia
+    // Buka kalender Mulai -> popover seragam Mode Keuangan terbuka & Nov 30 tersedia
     w.MOB_CAL_VIEW['m-kp-start'] = { y: 2026, m: 10 };
     click(w.document.getElementById('m-kp-start-trig'));
-    const calBd = w.document.getElementById('m-cal-sheet-backdrop');
-    const calSheet = w.document.getElementById('m-cal-sheet');
-    assert.ok(calBd && calBd.classList.contains('open'), 'B3 APK m-kp-start: membuka #m-cal-sheet-backdrop.open');
-    assert.strictEqual(calBd.getAttribute('data-cal-for'), 'm-kp-start', 'B3 APK: data-cal-for terisi m-kp-start');
-    assert.strictEqual(calSheet.getAttribute('role'), 'dialog', 'B3 APK: #m-cal-sheet role=dialog');
-    assert.strictEqual(calSheet.getAttribute('aria-modal'), 'true', 'B3 APK: #m-cal-sheet aria-modal=true');
-    assert.strictEqual(w.document.getElementById('m-cal-sheet-title').textContent.trim(), 'Pilih tanggal mulai', 'B3 APK: judul Mulai persis');
-    assert.ok(calSheet.querySelector('[data-mcal-pick="m-kp-start|2026-11-30"]'), 'B3 APK Nov 2026: tanggal 30 ada di grid');
-    assert.ok(calSheet.querySelector('[data-mcal-close]') && calSheet.querySelector('[data-mcal-pick$="|' + w.todayISO() + '"]'), 'B3 APK: tombol Hari ini & Batal tersedia');
-    assert.strictEqual(w.document.body.getAttribute('data-cal-sheet-open'), '1', 'B3 APK: background scroll lock aktif saat kalender terbuka');
+    const kpStartCal = w.document.getElementById('m-kp-start-cal');
+    assert.ok(kpStartCal && kpStartCal.classList.contains('open'), 'B3 APK m-kp-start: membuka .picker-popover.open seragam');
+    assert.ok(kpStartCal.querySelector('[data-mcal-pick="m-kp-start|2026-11-30"]'), 'B3 APK Nov 2026: tanggal 30 ada di grid');
 
-    // Pilih tanggal 21 Nov 2026 -> memperbarui m-kp-start, tutup sheet, kembalikan fokus ke trigger
-    click(calSheet.querySelector('[data-mcal-pick="m-kp-start|2026-11-21"]'));
+    // Pilih tanggal 21 Nov 2026 -> memperbarui m-kp-start & tutup popover
+    click(kpStartCal.querySelector('[data-mcal-pick="m-kp-start|2026-11-21"]'));
     assert.strictEqual(w.document.getElementById('m-kp-start').value, '2026-11-21', 'B3 APK: memilih tanggal memperbarui nilai m-kp-start');
-    assert.strictEqual(calBd.classList.contains('open'), false, 'B3 APK: sheet kalender menutup setelah memilih tanggal');
-    assert.strictEqual(w.document.body.getAttribute('data-cal-sheet-open'), null, 'B3 APK: scroll lock dilepas saat tutup');
-    assert.strictEqual(w.document.activeElement, w.document.getElementById('m-kp-start-trig'), 'B3 APK: fokus kembali ke trigger Mulai');
+    assert.strictEqual(kpStartCal.classList.contains('open'), false, 'B3 APK: popover kalender menutup setelah memilih tanggal');
 
     // Buka kalender Selesai -> tanggal sebelum Mulai (2026-11-15) disabled (min = Mulai)
     w.MOB_CAL_VIEW['m-kp-end'] = { y: 2026, m: 10 };
     click(w.document.getElementById('m-kp-end-trig'));
-    assert.strictEqual(w.document.getElementById('m-cal-sheet-title').textContent.trim(), 'Pilih tanggal selesai', 'B3 APK: judul Selesai persis');
-    const disEnd15 = calSheet.querySelector('[data-mcal-pick="m-kp-end|2026-11-15"]');
-    const enEnd25 = calSheet.querySelector('[data-mcal-pick="m-kp-end|2026-11-25"]');
+    const kpEndCal = w.document.getElementById('m-kp-end-cal');
+    assert.ok(kpEndCal && kpEndCal.classList.contains('open'), 'B3 APK m-kp-end: membuka .picker-popover.open seragam');
+    const disEnd15 = kpEndCal.querySelector('[data-mcal-pick="m-kp-end|2026-11-15"]');
+    const enEnd25 = kpEndCal.querySelector('[data-mcal-pick="m-kp-end|2026-11-25"]');
     assert.ok(disEnd15 && disEnd15.disabled, 'B3 APK m-kp-end: tanggal sebelum Mulai disabled');
     assert.ok(enEnd25 && !enEnd25.disabled, 'B3 APK m-kp-end: tanggal >= Mulai aktif');
 
@@ -497,31 +489,33 @@ const ROOT = path.resolve(__dirname, '../..');
     w.Capacitor = { isNativePlatform: () => true };
     const r1 = w.rkHandleAndroidBack();
     assert.ok(r1, 'B3 Android Back 1: menangani back saat kalender terbuka');
-    assert.strictEqual(calBd.classList.contains('open'), false, 'B3 Android Back 1: kalender menutup lebih dulu');
+    assert.strictEqual(kpEndCal.classList.contains('open'), false, 'B3 Android Back 1: kalender menutup lebih dulu');
     assert.strictEqual(w.document.getElementById('m-sheet-trip').classList.contains('open'), true, 'B3 Android Back 1: #m-sheet-trip tetap terbuka');
     const r2 = w.rkHandleAndroidBack();
     assert.strictEqual(r2, 'sheet', 'B3 Android Back 2: baru menutup #m-sheet-trip');
     delete w.Capacitor;
 
-    // Itinerary (m-it-day) & Pemesanan (m-bk-start, m-bk-end)
+    // Itinerary (m-it-day) & Pemesanan (m-bk-start, m-bk-end) seragam memakai .picker-popover
     w.MOB_STATE.tripView = 'detail';
     w.MOB_STATE.tripSub = 'itin';
     w.renderMobTrip();
-    assert.strictEqual(w.document.getElementById('m-it-day').getAttribute('data-pk-sheet'), '1', 'B3 APK Itin: m-it-day opt-in data-pk-sheet');
+    assert.strictEqual(w.document.getElementById('m-it-day').hasAttribute('data-pk-sheet'), false, 'B3 APK Itin: m-it-day seragam .picker-popover');
     click(w.document.getElementById('m-it-day-trig'));
-    assert.ok(calBd.classList.contains('open'), 'B3 APK Itin: membuka bottom sheet kalender');
-    assert.strictEqual(calSheet.querySelector('[data-mcal-pick="m-it-day|2026-11-05"]').disabled, true, 'B3 APK Itin: di luar rentang trip disabled');
-    click(calBd); // klik scrim menutup sheet kalender
-    assert.strictEqual(calBd.classList.contains('open'), false, 'B3 APK: ketuk scrim menutup sheet kalender');
+    const itCal = w.document.getElementById('m-it-day-cal');
+    assert.ok(itCal && itCal.classList.contains('open'), 'B3 APK Itin: membuka .picker-popover.open');
+    assert.strictEqual(itCal.querySelector('[data-mcal-pick="m-it-day|2026-11-05"]').disabled, true, 'B3 APK Itin: di luar rentang trip disabled');
+    click(w.document.getElementById('m-trip-root'));
+    assert.strictEqual(itCal.classList.contains('open'), false, 'B3 APK: ketuk luar menutup popover kalender');
 
     w.MOB_STATE.tripSub = 'book';
     w.renderMobTrip();
-    assert.strictEqual(w.document.getElementById('m-bk-start').getAttribute('data-pk-sheet'), '1', 'B3 APK Book: m-bk-start opt-in data-pk-sheet');
-    assert.strictEqual(w.document.getElementById('m-bk-end').getAttribute('data-pk-sheet'), '1', 'B3 APK Book: m-bk-end opt-in data-pk-sheet');
+    assert.strictEqual(w.document.getElementById('m-bk-start').hasAttribute('data-pk-sheet'), false, 'B3 APK Book: m-bk-start seragam .picker-popover');
+    assert.strictEqual(w.document.getElementById('m-bk-end').hasAttribute('data-pk-sheet'), false, 'B3 APK Book: m-bk-end seragam .picker-popover');
     click(w.document.getElementById('m-bk-start-trig'));
-    assert.ok(calBd.classList.contains('open'), 'B3 APK Book start: membuka bottom sheet kalender');
+    const bkStartCal = w.document.getElementById('m-bk-start-cal');
+    assert.ok(bkStartCal && bkStartCal.classList.contains('open'), 'B3 APK Book start: membuka .picker-popover.open');
     w.document.dispatchEvent(new w.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    assert.strictEqual(calBd.classList.contains('open'), false, 'B3 APK: tombol Esc menutup sheet kalender');
+    assert.strictEqual(bkStartCal.classList.contains('open'), false, 'B3 APK: tombol Esc menutup popover kalender');
 
     // CSS guard + sw.js CACHE_NAME >= v36
     const mobCss = fs.readFileSync(path.join(ROOT, 'css/mobile.css'), 'utf8');

@@ -6069,9 +6069,41 @@ body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ico {
   display: block;
   transform: rotate(var(--ptr-rot, 0deg));
 }
+body[data-shell="mobile-app"] #mobile-app-shell .mob-shell[data-mtab-active="rincian"] .m-ptr-ind {
+  display: none !important;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mob-shell[data-mtab-active="rincian"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 84px;
+  background: var(--mob-hdr-top);
+  z-index: 59;
+  pointer-events: none;
+  opacity: 0;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mob-shell[data-mtab-active="rincian"][data-ptr-pull="1"]::before,
+body[data-shell="mobile-app"] #mobile-app-shell .mob-shell[data-mtab-active="rincian"].is-ptr-snapping::before {
+  opacity: 1;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mob-shell[data-mtab-active="rincian"][data-ptr-pull="1"] .apk-header-block,
+body[data-shell="mobile-app"] #mobile-app-shell .mob-shell[data-mtab-active="rincian"][data-ptr-pull="1"] .mob-main,
+body[data-shell="mobile-app"] #mobile-app-shell .mob-shell[data-mtab-active="rincian"].is-ptr-snapping .apk-header-block,
+body[data-shell="mobile-app"] #mobile-app-shell .mob-shell[data-mtab-active="rincian"].is-ptr-snapping .mob-main {
+  transform: translate3d(0, var(--ptr-hdr-y, 0px), 0);
+  will-change: transform;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .mob-shell[data-mtab-active="rincian"].is-ptr-snapping .apk-header-block,
+body[data-shell="mobile-app"] #mobile-app-shell .mob-shell[data-mtab-active="rincian"].is-ptr-snapping .mob-main {
+  transition: transform 280ms var(--ease-spring);
+}
 @media (prefers-reduced-motion: reduce) {
   body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-snapping,
-  body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-exiting {
+  body[data-shell="mobile-app"] #mobile-app-shell .m-ptr-ind.is-exiting,
+  body[data-shell="mobile-app"] #mobile-app-shell .mob-shell[data-mtab-active="rincian"].is-ptr-snapping .apk-header-block,
+  body[data-shell="mobile-app"] #mobile-app-shell .mob-shell[data-mtab-active="rincian"].is-ptr-snapping .mob-main {
     transition: none;
   }
 }
@@ -6762,6 +6794,10 @@ body[data-shell="mobile-app"] #mobile-app-shell .picker-popover {
     visibility 0s linear var(--dur-dd-close);
 }
 body[data-shell="mobile-app"] #mobile-app-shell .picker-popover.align-right { left: auto; right: 0; transform-origin: top right; }
+body[data-shell="mobile-app"] #mobile-app-shell .picker-popover.is-cal-portal {
+  position: fixed;
+  z-index: 230;
+}
 body[data-shell="mobile-app"] #mobile-app-shell .picker-popover.open {
   opacity: 1;
   visibility: visible;
@@ -9004,6 +9040,175 @@ body[data-shell="mobile-app"] #mobile-app-shell .m-cal-sh-foot .btn {
     padding: 6px 14px;
   }
 }
+body[data-shell="mobile-app"] #mobile-app-shell .m-cf-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Force Update Dialog & Lock Mode (APK Native Cold Start) */
+body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 950;
+  background: rgba(7, 16, 36, 0.72);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--dur-dialog-backdrop) var(--ease-out), visibility 0s linear var(--dur-dialog-backdrop);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-backdrop.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity var(--dur-dialog-backdrop) var(--ease-out), visibility 0s;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-dialog {
+  width: min(340px, 100%);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: 20px;
+  padding: 22px 20px 18px;
+  box-shadow: 0 24px 48px -12px rgba(7, 16, 36, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  transform: scale(0.95);
+  transition: transform var(--dur-dialog-open) var(--ease-out);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-backdrop.open .m-fupd-dialog {
+  transform: scale(1);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-ico {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  display: grid;
+  place-items: center;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-title {
+  margin: 2px 0 0;
+  font-size: 1.04rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-desc {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-meta {
+  width: 100%;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.76rem;
+  text-align: left;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-secondary);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-row strong {
+  color: var(--text-primary);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-row strong.m-fupd-new {
+  color: var(--accent-ink);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-note {
+  margin-top: 3px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-actions {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 10px;
+  margin-top: 6px;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-actions .btn {
+  min-height: 44px;
+  font-weight: 700;
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-btn-no {
+  color: var(--crimson);
+}
+body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-lock-banner {
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent-ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+body[data-shell="mobile-app"][data-force-update-popup="1"],
+body[data-shell="mobile-app"][data-force-update-lock="1"] {
+  overflow: hidden !important;
+}
+body[data-shell="mobile-app"][data-force-update-popup="1"] #mobile-app-shell .phone-os-notif,
+body[data-shell="mobile-app"][data-force-update-lock="1"] #mobile-app-shell .phone-os-notif {
+  display: none !important;
+  pointer-events: none !important;
+}
+body[data-shell="mobile-app"][data-force-update-lock="1"] #mobile-app-shell .apk-header-block,
+body[data-shell="mobile-app"][data-force-update-lock="1"] #mobile-app-shell .mob-bottom-nav {
+  pointer-events: none !important;
+  opacity: 0.35;
+  user-select: none;
+}
+body[data-shell="mobile-app"][data-force-update-lock="1"] #mobile-app-shell .m-ptr-ind {
+  display: none !important;
+  pointer-events: none !important;
+}
+body[data-shell="mobile-app"][data-force-update-lock="1"] #mobile-app-shell .mob-main {
+  overflow: hidden !important;
+  touch-action: none !important;
+}
+body[data-shell="mobile-app"][data-force-update-lock="1"] #mobile-app-shell .tab-panel:not(#m-tab-settings) {
+  display: none !important;
+}
+body[data-shell="mobile-app"][data-force-update-lock="1"] #mobile-app-shell #m-tab-settings > .stack > :not(#m-card-settings-update) {
+  display: none !important;
+}
+body[data-shell="mobile-app"][data-force-update-lock="1"] #mobile-app-shell #m-card-settings-update {
+  border: 2px solid var(--accent);
+  pointer-events: auto;
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-backdrop,
+  body[data-shell="mobile-app"] #mobile-app-shell .m-fupd-dialog {
+    transition: none;
+  }
+}
+
 body[data-shell="mobile-app"] #mobile-app-shell [hidden] {
   display: none !important;
 }
@@ -28065,29 +28270,34 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
     var xy = toWrapXY(s.x, s.y);
     brPositionTooltip(wrap, tip, xy.px, xy.py, 16);
   }
-  function inspectAtSvgX(svgX) {
+  function inspectAtSvgX(svgX, allowHaptic) {
     svgX = Math.max(coords[0].x, Math.min(coords[coords.length - 1].x, svgX));
-    var near = coords.reduce(function (b, c) { return Math.abs(c.x - svgX) < Math.abs(b.x - svgX) ? c : b; }, coords[0]);
+    var nearIdx = 0;
+    for (var ci = 1; ci < coords.length; ci++) {
+      if (Math.abs(coords[ci].x - svgX) < Math.abs(coords[nearIdx].x - svgX)) nearIdx = ci;
+    }
+    var near = coords[nearIdx];
+    var meta = { nearIdx: nearIdx, allowHaptic: !!allowHaptic };
     if (Math.abs(near.x - svgX) <= 14 || !samples.length) {
       showPointHUD(near);
-      if (typeof opts.onScrub === 'function') opts.onScrub(near.x / W, near);
+      if (typeof opts.onScrub === 'function') opts.onScrub(near.x / W, near, meta);
       return near;
     }
     var ns = samples.reduce(function (b, c) { return Math.abs(c.x - svgX) < Math.abs(b.x - svgX) ? c : b; }, samples[0]);
     showLineHUD(ns);
-    if (typeof opts.onScrub === 'function') opts.onScrub(ns.x / W, ns);
+    if (typeof opts.onScrub === 'function') opts.onScrub(ns.x / W, ns, meta);
     return ns;
   }
-  function inspectFromX(clientX) {
+  function inspectFromX(clientX, allowHaptic) {
     var r = svg.getBoundingClientRect(),
       w = r.width || 600;
-    inspectAtSvgX(((clientX - r.left) / w) * W);
+    inspectAtSvgX(((clientX - r.left) / w) * W, allowHaptic);
   }
   svg._rkInspectPct = function (pct) {
     var p = Math.max(0, Math.min(1, Number(pct) || 0)),
       x0 = coords[0].x,
       x1 = coords[coords.length - 1].x;
-    return inspectAtSvgX(x0 + p * (x1 - x0));
+    return inspectAtSvgX(x0 + p * (x1 - x0), false);
   };
   var getPin = opts.getPin || function () { return BR_STATE.pinnedCashIdx; };
   var setPin = opts.setPin || function (idx, pt) { BR_STATE.pinnedCashIdx = idx; renderCashInspector(pt); };
@@ -28113,10 +28323,13 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
         return Math.abs(svgY - pt.y) * (sH / H) <= 24;
       };
       hit.addEventListener('pointerdown', function (e) {
-        if (e.pointerType === 'mouse') inspectFromX(e.clientX);
+        if (e.pointerType === 'mouse') {
+          if (typeof opts.onScrubStart === 'function') opts.onScrubStart();
+          inspectFromX(e.clientX, true);
+        }
       });
       hit.addEventListener('pointermove', function (e) {
-        if (e.pointerType === 'mouse' && e.buttons) inspectFromX(e.clientX);
+        if (e.pointerType === 'mouse' && e.buttons) inspectFromX(e.clientX, true);
       });
       hit.addEventListener('touchstart', function (e) {
         if (!e.touches || !e.touches[0]) return;
@@ -28124,15 +28337,16 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
         tState.sx = t0.clientX;
         tState.sy = t0.clientY;
         tState.locked = null;
+        if (typeof opts.onScrubStart === 'function') opts.onScrubStart();
         tState.near = isNearLine(t0.clientX, t0.clientY);
-        if (tState.near) inspectFromX(t0.clientX);
+        if (tState.near) inspectFromX(t0.clientX, true);
       }, { passive: true });
       hit.addEventListener('touchmove', function (e) {
         if (!e.touches || !e.touches[0]) return;
         var t0 = e.touches[0];
         if (typeof t0.clientY !== 'number') {
           if (e.cancelable) e.preventDefault();
-          inspectFromX(t0.clientX);
+          inspectFromX(t0.clientX, true);
           return;
         }
         if (!tState.near) return;
@@ -28143,6 +28357,7 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
           if (dy > dx) {
             tState.locked = 'v';
             tState.near = false;
+            if (typeof opts.onScrubEnd === 'function') opts.onScrubEnd();
             var piV = getPin();
             if (piV === null || !coords[piV]) hideHUD();
             else showPointHUD(coords[piV]);
@@ -28152,12 +28367,13 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
         }
         if (tState.locked === 'h') {
           if (e.cancelable) e.preventDefault();
-          inspectFromX(t0.clientX);
+          inspectFromX(t0.clientX, true);
         }
       }, { passive: false });
       hit.addEventListener('touchend', function () {
         tState.near = false;
         tState.locked = null;
+        if (typeof opts.onScrubEnd === 'function') opts.onScrubEnd();
         var pi = getPin();
         if (pi === null || !coords[pi]) hideHUD();
         else showPointHUD(coords[pi]);
@@ -28165,11 +28381,13 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
       hit.addEventListener('touchcancel', function () {
         tState.near = false;
         tState.locked = null;
+        if (typeof opts.onScrubEnd === 'function') opts.onScrubEnd();
         hideHUD();
       });
     }
-    hit.onmousemove = function (e) { inspectFromX(e.clientX); };
+    hit.onmousemove = function (e) { inspectFromX(e.clientX, false); };
     hit.onmouseleave = function () {
+      if (typeof opts.onScrubEnd === 'function') opts.onScrubEnd();
       var pi = getPin();
       if (segGlow) segGlow.style.display = 'none';
       if (pi === null || !coords[pi]) { ch.style.display = 'none'; tip.classList.remove('visible'); }
@@ -31771,6 +31989,9 @@ var _rkUpdStallTimer = null;
 var _rkUpdLastPaintAt = 0;
 var _rkUpdRunSeq = 0;
 var _rkUpdInFlightPaths = {};
+var _rkColdStartUpdateChecked = false;
+var _rkForceUpdateActive = false;
+var _rkForceUpdateLocked = false;
 var MOB_UPDATE_STATE = {
   checking: false,
   status: 'idle',
@@ -31861,6 +32082,74 @@ function mobBuildCalParts(id) {
     gridHtml: gridHtml,
     title: inp.getAttribute('data-pk-title') || 'Pilih tanggal',
   };
+}
+
+function mobCloseCalPopover(pop) {
+  if (!pop) return;
+  pop.classList.remove('open', 'is-cal-portal');
+  pop.style.top = '';
+  pop.style.left = '';
+  pop.style.right = '';
+  pop.style.bottom = '';
+  pop.style.transformOrigin = '';
+  if (pop._rkOrigParent && pop._rkOrigParent.isConnected && pop.parentNode !== pop._rkOrigParent) {
+    pop._rkOrigParent.appendChild(pop);
+  }
+  pop._rkOrigParent = null;
+  pop._rkTrigEl = null;
+}
+
+function mobCloseAllCalPopovers(exceptPop) {
+  var root = $('mobile-app-shell');
+  if (!root) return;
+  root.querySelectorAll('.picker-popover.open, .picker-popover.is-cal-portal').forEach(function (p) {
+    if (exceptPop && p === exceptPop) return;
+    mobCloseCalPopover(p);
+  });
+}
+
+function mobPositionCalPopover(pop, trigEl) {
+  if (!pop || !trigEl || typeof trigEl.getBoundingClientRect !== 'function') return;
+  var r = trigEl.getBoundingClientRect();
+  if (!r || (r.width === 0 && r.height === 0)) return;
+  var shell = document.querySelector('#mobile-app-shell .mob-shell');
+  var inSheet = !!trigEl.closest('.modal-sheet');
+  var vw = (typeof window !== 'undefined' && window.innerWidth) ? window.innerWidth : 360;
+  var vh = (typeof window !== 'undefined' && window.innerHeight) ? window.innerHeight : 740;
+  var hostRect = shell && typeof shell.getBoundingClientRect === 'function' ? shell.getBoundingClientRect() : null;
+  var usePortal = inSheet || (hostRect && hostRect.width > 0);
+  if (usePortal && shell) {
+    if (pop.parentNode !== shell) {
+      pop._rkOrigParent = pop.parentNode;
+      shell.appendChild(pop);
+    }
+    pop._rkTrigEl = trigEl;
+    pop.classList.add('is-cal-portal');
+    var pad = 12;
+    var isFull = vw <= 520 || (document.body && document.body.getAttribute('data-phone-frame') === 'full');
+    var minX = isFull ? pad : (hostRect ? hostRect.left + pad : pad);
+    var maxX = isFull ? (vw - pad) : (hostRect ? hostRect.right - pad : vw - pad);
+    var minY = isFull ? pad : (hostRect ? hostRect.top + pad : pad);
+    var maxY = isFull ? (vh - pad) : (hostRect ? hostRect.bottom - pad : vh - pad);
+    var popW = Math.min(292, Math.max(220, (maxX - minX)));
+    var popH = pop.offsetHeight || 286;
+    var isRight = pop.classList.contains('align-right');
+    var leftVp = isRight ? (r.right - popW) : r.left;
+    if (leftVp + popW > maxX) leftVp = maxX - popW;
+    if (leftVp < minX) leftVp = minX;
+    var belowSpace = maxY - (r.bottom + 6);
+    var aboveSpace = (r.top - 6) - minY;
+    var openAbove = belowSpace < popH && aboveSpace > belowSpace;
+    var topVp = openAbove ? Math.max(minY, r.top - 6 - popH) : Math.min(maxY - popH, r.bottom + 6);
+    if (topVp < minY) topVp = minY;
+    var refLeft = (!isFull && hostRect) ? hostRect.left : 0;
+    var refTop = (!isFull && hostRect) ? hostRect.top : 0;
+    pop.style.left = Math.round(leftVp - refLeft) + 'px';
+    pop.style.right = 'auto';
+    pop.style.top = Math.round(topVp - refTop) + 'px';
+    pop.style.bottom = 'auto';
+    pop.style.transformOrigin = (openAbove ? 'bottom ' : 'top ') + (isRight ? 'right' : 'left');
+  }
 }
 
 function mobDrawCal(id) {
@@ -32263,7 +32552,10 @@ function mobCloseSheet(id) {
   var el = $(id);
   if (!el) return;
   clearTimeout(el._mSnapT);
-  if (id === 'm-sheet-trip') mobCloseCalSheet(false);
+  if (id === 'm-sheet-trip') {
+    mobCloseCalSheet(false);
+    mobCloseAllCalPopovers();
+  }
   if (id === 'm-sheet-trip-xl') MOB_XL_DATA = null;
   var red = typeof rkIsReducedMotion === 'function' && rkIsReducedMotion();
   var wasOpen = el.classList.contains('open') && el.offsetWidth > 0 && !red;
@@ -32630,7 +32922,7 @@ function mobShellTemplate() {
     // TAB 1: RINCIAN
     '<section class="tab-panel active" id="m-tab-rincian"><div class="stack">' +
     '<div class="card"><div class="card-hd" style="margin-bottom:8px"><h2 class="card-title">Proyeksi Arus Kas</h2>' +
-    '<button type="button" class="btn btn-secondary btn-sm" id="m-btn-expand-cf">⤢ Perbesar</button></div>' +
+    '<button type="button" class="btn btn-secondary btn-sm m-cf-expand-btn" id="m-btn-expand-cf" aria-label="Perlebar grafik proyeksi arus kas"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg><span>Perlebar</span></button></div>' +
     '<div class="seg cf-range-seg" role="group" aria-label="Rentang Grafik">' +
     '<button type="button" class="seg-btn" data-mrange="w">Minggu</button>' +
     '<button type="button" class="seg-btn active" data-mrange="m">Bulan</button>' +
@@ -32806,23 +33098,23 @@ function mobShellTemplate() {
     '</div></div></div>' +
     '<div class="modal-backdrop" id="m-sheet-cf-zoom"><div class="modal-sheet cf-zoom-sheet"><div class="ms-handle"></div>' +
     '<div class="ms-head"><div><strong class="card-title">Kondisi Kas Realtime</strong><div style="font-size:0.72rem;color:var(--text-muted)" class="mono pv" id="m-cf-zoom-sub">Geser grafik ke kanan/kiri · ketuk titik untuk pin</div></div>' +
-    '<div style="display:flex;gap:5px;flex-shrink:0"><button type="button" class="btn btn-secondary btn-sm" id="m-cf-zoom-wide">🔍 Perlebar</button><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-cf-zoom">✕ Tutup</button></div></div>' +
+    '<div style="display:flex;gap:5px;flex-shrink:0"><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-cf-zoom">✕ Tutup</button></div></div>' +
     '<div class="ms-body" style="gap:8px;padding:12px 12px 16px">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap">' +
     '<div class="seg" role="group" aria-label="Rentang Grafik Zoom">' +
     '<button type="button" class="seg-btn" data-mzoom-range="w">Minggu</button>' +
     '<button type="button" class="seg-btn active" data-mzoom-range="m">Bulan</button>' +
     '<button type="button" class="seg-btn" data-mzoom-range="y">Tahun</button></div>' +
-    '<div class="seg" id="m-cf-zoom-touch-seg" style="display:none" role="group" aria-label="Mode Sentuh">' +
-    '<button type="button" class="seg-btn active" data-mzmode="scrub">👆 Garis</button>' +
-    '<button type="button" class="seg-btn" data-mzmode="pan">✋ Geser</button></div>' +
+    '<div class="seg" id="m-cf-zoom-touch-seg" style="display:inline-flex" role="group" aria-label="Mode Sentuh">' +
+    '<button type="button" class="seg-btn active" data-mzmode="scrub">Garis</button>' +
+    '<button type="button" class="seg-btn" data-mzmode="pan">Geser</button></div>' +
     '<div class="cf-legend-bar" style="margin-bottom:0">' +
     '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--accent)"></span>Saldo Hari Ini</span>' +
     '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--emerald)"></span>Masa Depan</span>' +
     '<span class="cf-legend-item"><span class="cf-legend-dot" style="background:var(--crimson)"></span>&lt; Rp 0</span></div></div>' +
-    '<div class="cf-zoom-stage" id="m-cf-zoom-stage"><div class="cf-zoom-scroll" id="m-cf-zoom-wrap"><svg id="m-svg-cf-zoom" viewBox="0 0 600 320"></svg></div><div class="hud-tooltip" id="m-cf-zoom-tip"></div></div>' +
+    '<div class="cf-zoom-stage" id="m-cf-zoom-stage"><div class="cf-zoom-scroll" id="m-cf-zoom-wrap"><svg id="m-svg-cf-zoom" class="is-zoom-wide" viewBox="0 0 920 340"></svg></div><div class="hud-tooltip" id="m-cf-zoom-tip"></div></div>' +
     '<div class="slider-wrap" style="margin-top:2px"><div class="slider-hd"><span style="font-size:0.71rem;color:var(--text-muted);font-weight:700">Geser garis grafik</span><span style="font-size:0.69rem;color:var(--accent-ink);font-weight:700" id="m-cf-zoom-scrub-lbl">Sentuh grafik atau geser &harr;</span></div>' +
-    '<input type="range" class="modern-slider" id="m-cf-zoom-scrub" min="0" max="100" step="1" value="50" /></div>' +
+    '<input type="range" class="modern-slider" id="m-cf-zoom-scrub" min="0" max="100" step="1" value="50" data-haptic="slider" /></div>' +
     '<div id="m-cf-zoom-insp" style="display:none;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border-radius:10px;background:var(--bg-subtle);font-size:0.74rem"></div>' +
     '</div></div></div>' +
     '<div class="modal-backdrop" id="m-sheet-periode"><div class="modal-sheet"><div class="ms-handle"></div>' +
@@ -32857,8 +33149,8 @@ function mobShellTemplate() {
     '<div class="ms-head"><strong class="card-title" id="m-kpt-title">Perjalanan Baru</strong><button type="button" class="btn btn-secondary btn-sm" data-mclose="m-sheet-trip">✕</button></div>' +
     '<form id="m-trip-meta-form" style="display:flex;flex-direction:column;min-height:0;flex:1" novalidate><div class="ms-body">' +
     '<div class="field"><label class="field-label" for="m-kp-name">Nama perjalanan</label><input class="input" id="m-kp-name" maxlength="30" placeholder="mis. Tokyo - Osaka 9D8N" required /></div>' +
-    '<div class="bento-2"><div class="field"><span class="field-label">Mulai</span>' + mobDateFieldHtml('m-kp-start', '', false, { sheet: true, title: 'Pilih tanggal mulai' }) + '</div>' +
-    '<div class="field"><span class="field-label">Selesai</span>' + mobDateFieldHtml('m-kp-end', '', true, { sheet: true, title: 'Pilih tanggal selesai' }) + '</div></div>' +
+    '<div class="bento-2"><div class="field"><span class="field-label">Mulai</span>' + mobDateFieldHtml('m-kp-start', '', false) + '</div>' +
+    '<div class="field"><span class="field-label">Selesai</span>' + mobDateFieldHtml('m-kp-end', '', true) + '</div></div>' +
     '<div class="bento-2"><div class="field"><label class="field-label" for="m-kp-use-budget">Anggaran</label><select class="input" id="m-kp-use-budget"><option value="0" selected>Belum ditentukan</option><option value="1">Tetapkan anggaran</option></select></div>' +
     '<div class="field" id="m-kp-budget-wrap"><label class="field-label" for="m-kp-budget">Anggaran (Rp)</label><input class="input mono" id="m-kp-budget" type="text" inputmode="numeric" data-num-fmt="rp" data-num-only="int" placeholder="mis. 10.000.000" /></div></div>' +
     '<div class="bento-2"><div class="field"><label class="field-label" for="m-kp-cur">Mata uang asing</label><input class="input" id="m-kp-cur" maxlength="3" placeholder="JPY" style="text-transform:uppercase" /></div>' +
@@ -32918,6 +33210,16 @@ function mobShellTemplate() {
     '<div class="m-cal-sh-head"><strong class="card-title" id="m-cal-sheet-title">Pilih tanggal</strong><button type="button" class="btn btn-secondary btn-sm m-cal-sh-x" data-mcal-close="1" aria-label="Tutup kalender">✕</button></div>' +
     '<div class="m-cal-sh-body" id="m-cal-sheet-body"></div>' +
     '<div class="m-cal-sh-foot" id="m-cal-sheet-foot"></div></div></div>' +
+    '<div class="m-fupd-backdrop" id="m-force-upd-backdrop" role="presentation" aria-hidden="true">' +
+    '<div class="m-fupd-dialog" id="m-fupd-dialog" role="alertdialog" aria-modal="true" aria-labelledby="m-fupd-title" aria-describedby="m-fupd-desc">' +
+    '<div class="m-fupd-ico" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 19h14"/></svg></div>' +
+    '<h2 class="m-fupd-title" id="m-fupd-title">Pembaruan Wajib Tersedia</h2>' +
+    '<p class="m-fupd-desc" id="m-fupd-desc">Versi baru RenKeu sudah siap. Perbarui aplikasi sekarang untuk melanjutkan.</p>' +
+    '<div class="m-fupd-meta" id="m-fupd-meta"></div>' +
+    '<div class="m-fupd-actions">' +
+    '<button type="button" class="btn btn-secondary m-fupd-btn-no" id="m-fupd-no">Tidak</button>' +
+    '<button type="button" class="btn btn-primary m-fupd-btn-yes" id="m-fupd-yes">Update</button>' +
+    '</div></div></div>' +
     '<input type="file" id="m-xl-file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" hidden />' +
     '<div class="notif-popover" id="m-notif-popover"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:800;font-size:0.82rem">Pengingat Jatuh Tempo</span>' +
     '<button type="button" class="btn btn-secondary btn-sm" id="m-pop-to-set">Atur Notif &rarr;</button></div><div id="m-pop-os-cta"></div><div class="stack" style="gap:7px" id="m-notif-pop-list"></div>' +
@@ -33052,6 +33354,8 @@ if (typeof window !== 'undefined') {
 function rkHandleAndroidBack() {
   if (!rkIsCapacitorNative()) return false;
   if (typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') return false;
+  if (_rkForceUpdateActive) return 'force-update-blocked';
+  if (_rkForceUpdateLocked) return 'force-update-locked';
 
   // 1. Tutup popover / dropdown yang terbuka (Akun, notifikasi, kalender/dropdown)
   var ap = $('m-acct-popover');
@@ -33070,6 +33374,11 @@ function rkHandleAndroidBack() {
   if (calSheet && calSheet.classList.contains('open')) {
     mobCloseCalSheet(true);
     return 'cal-sheet';
+  }
+  var calPop = document.querySelector('#mobile-app-shell .picker-popover.open');
+  if (calPop) {
+    mobCloseCalPopover(calPop);
+    return 'cal-popover';
   }
   var dd = document.querySelector('#mobile-app-shell .mcal-pop.open, #mobile-app-shell .open[id$="-cal"], #mobile-app-shell .cat-drop.open');
   if (dd) {
@@ -33243,8 +33552,8 @@ function ensureMobileShell() {
       window._rkUpdAutoScheduled = true;
       setTimeout(function () {
         if (typeof rkCleanupApkCacheOnStart === 'function') rkCleanupApkCacheOnStart();
-        if (typeof rkAutoCheckApkUpdate === 'function') rkAutoCheckApkUpdate(false);
-      }, 1500);
+        if (typeof rkCheckForceUpdateOnColdStart === 'function') rkCheckForceUpdateOnColdStart();
+      }, 400);
     }
     var mm = $('m-main');
     if (mm && !mm._mobScrollBound) {
@@ -33279,10 +33588,12 @@ function ensureMobileShell() {
 }
 
 function switchMobileTab(tabId) {
+  if (_rkForceUpdateLocked && tabId !== 'settings') return;
   if (tabId === 'item') {
     tabId = 'jadwal';
     MOB_STATE.jadwalSub = 'add';
   }
+  mobCloseAllCalPopovers();
   var prevMobTab = MOB_STATE.tab;
   MOB_STATE.tab = tabId;
   if (tabId === 'trip' && prevMobTab !== 'trip') {
@@ -33292,7 +33603,14 @@ function switchMobileTab(tabId) {
     MOB_STATE.tripGoalEdit = false;
   }
   var ms = document.querySelector('#mobile-app-shell .mob-shell');
-  if (ms) ms.setAttribute('data-mtab-active', tabId);
+  if (ms) {
+    ms.setAttribute('data-mtab-active', tabId);
+    if (tabId !== 'rincian') {
+      ms.removeAttribute('data-ptr-pull');
+      ms.classList.remove('is-ptr-snapping');
+      ms.style.removeProperty('--ptr-hdr-y');
+    }
+  }
   if (typeof rkSyncHeaderMotif === 'function') rkSyncHeaderMotif(tabId);
   if ($('m-acct-popover') && $('m-acct-popover').classList.contains('open')) {
     $('m-acct-popover').classList.remove('open');
@@ -33618,15 +33936,12 @@ function renderMobCashflowZoom() {
   if (!svg || !stage) return;
   var P = kasLinked(),
     bal = P ? kasBal(P).bal : (+S.saldo || 0),
-    wide = !!MOB_STATE.zoomWide,
-    allowPan = wide && MOB_STATE.zoomTouch === 'pan';
+    allowPan = MOB_STATE.zoomTouch === 'pan',
+    zoomHapticIdx = -1;
+  MOB_STATE.zoomWide = true;
   if ($('m-cf-zoom-sub')) $('m-cf-zoom-sub').textContent = 'Tahun ' + S.year + ' · Saldo saat ini ' + rp(bal);
-  svg.classList.toggle('is-zoom-wide', wide);
-  if ($('m-cf-zoom-wide')) {
-    $('m-cf-zoom-wide').textContent = wide ? '🔍 Normal' : '🔍 Perlebar';
-    $('m-cf-zoom-wide').classList.toggle('active', wide);
-  }
-  if ($('m-cf-zoom-touch-seg')) $('m-cf-zoom-touch-seg').style.display = wide ? 'inline-flex' : 'none';
+  svg.classList.add('is-zoom-wide');
+  if ($('m-cf-zoom-touch-seg')) $('m-cf-zoom-touch-seg').style.display = 'inline-flex';
   document.querySelectorAll('#m-cf-zoom-touch-seg [data-mzmode]').forEach(function (b) {
     b.classList.toggle('active', b.getAttribute('data-mzmode') === MOB_STATE.zoomTouch);
   });
@@ -33638,16 +33953,26 @@ function renderMobCashflowZoom() {
     brRenderCashflowInto(svg, stage, tip, MOB_STATE.zoomRange, {
       prefix: 'mz-',
       allowScroll: allowPan,
-      svgW: wide ? 920 : 600,
-      svgH: wide ? 340 : 320,
-      padL: wide ? 68 : 56,
+      svgW: 920,
+      svgH: 340,
+      padL: 68,
       padR: 0,
-      fontSize: wide ? 13 : 13.5,
+      fontSize: 13,
       dotR: 5.5,
       skipInspector: true,
       getPin: function () { return MOB_STATE.zoomPin; },
-      setPin: function (idx, pt) { MOB_STATE.zoomPin = idx; renderMobZoomInspector(pt); },
-      onScrub: function (ratio, pt) {
+      setPin: function (idx, pt) {
+        MOB_STATE.zoomPin = idx;
+        rkHaptic('tick');
+        renderMobZoomInspector(pt);
+      },
+      onScrubStart: function () { zoomHapticIdx = -1; },
+      onScrubEnd: function () { zoomHapticIdx = -1; },
+      onScrub: function (ratio, pt, meta) {
+        if (meta && meta.allowHaptic && typeof meta.nearIdx === 'number' && meta.nearIdx !== zoomHapticIdx) {
+          zoomHapticIdx = meta.nearIdx;
+          rkHaptic('tick');
+        }
         var sc = $('m-cf-zoom-scrub');
         if (sc) {
           sc.value = String(Math.round(Math.max(0, Math.min(1, ratio)) * 100));
@@ -34251,7 +34576,7 @@ function renderMobTripItin(tr) {
     (EIt ? '<button type="button" class="btn btn-secondary btn-sm" id="m-it-cancel">Batal</button>' : '') + '</div>' +
     '<form id="m-trip-itin-form" class="stack trip-form-layout" novalidate>' +
     '<div class="trip-form-row trip-row-date-time">' +
-    '<div class="field trip-col-date-mob"><span class="field-label">Tanggal</span>' + mobDateFieldHtml('m-it-day', defDay, false, { sheet: true, title: 'Pilih tanggal kegiatan' }) + '</div>' +
+    '<div class="field trip-col-date-mob"><span class="field-label">Tanggal</span>' + mobDateFieldHtml('m-it-day', defDay, false) + '</div>' +
     '<div class="field trip-col-time"><label class="field-label" for="m-it-time">Mulai</label><input class="input mono" id="m-it-time" inputmode="numeric" maxlength="5" placeholder="14.00" value="' + esc(EIt && EIt.time ? EIt.time.replace(':', '.') : '') + '" /></div>' +
     '<div class="field trip-col-time"><label class="field-label" for="m-it-time2">Selesai</label><input class="input mono" id="m-it-time2" inputmode="numeric" maxlength="5" placeholder="16.30" value="' + esc(EIt && EIt.time2 ? EIt.time2.replace(':', '.') : '') + '" /></div></div>' +
     '<div class="trip-field-err" id="m-it-day-err" role="alert" hidden></div>' +
@@ -34405,8 +34730,8 @@ function renderMobTrip() {
       '</select></div><div class="trip-eq-hint mono" id="m-bk-amt-eq"></div></div>' +
       '<div class="field trip-col-full" id="m-bk-rt-wrap" style="display:' + (EBk && EBk.fx && (typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) ? '' : 'none') + '"><label class="field-label" for="m-bk-rt">Kurs' + (EBk && EBk.paid ? ' saat dibayar' : '') + ' (Rp per 1 ' + esc((EBk && typeof tripItemCur === 'function' ? tripItemCur(tr, EBk) : tr.cur) || 'asing') + ')</label><input class="input mono" id="m-bk-rt" type="text" inputmode="decimal" data-num-only="dec" placeholder="' + (tr.rate > 0 ? 'Ikut kurs perjalanan: ' + esc(tr.rate.toLocaleString('id-ID')) : 'Kosong = ikut kurs perjalanan') + '" value="' + (EBk && typeof tripHasValidRt === 'function' && tripHasValidRt(EBk) ? esc(String(EBk.rt)) : '') + '" /><div class="trip-rate-read pv" id="m-bk-rt-read" aria-live="polite" hidden></div><div class="msc-sub">Kosongkan untuk mengikuti kurs perjalanan saat ini.</div></div></div>' +
       '<div class="trip-form-row">' +
-      '<div class="field trip-col-half"><span class="field-label">Mulai / Check-in</span>' + mobDateFieldHtml('m-bk-start', defBkStart, false, { sheet: true, title: 'Pilih tanggal check-in' }) + '</div>' +
-      '<div class="field trip-col-half"><span class="field-label">Selesai / Check-out</span>' + mobDateFieldHtml('m-bk-end', defBkEnd, true, { sheet: true, title: 'Pilih tanggal check-out' }) + '</div></div>' +
+      '<div class="field trip-col-half"><span class="field-label">Mulai / Check-in</span>' + mobDateFieldHtml('m-bk-start', defBkStart, false) + '</div>' +
+      '<div class="field trip-col-half"><span class="field-label">Selesai / Check-out</span>' + mobDateFieldHtml('m-bk-end', defBkEnd, true) + '</div></div>' +
       '<div class="trip-field-err" id="m-bk-date-err" role="alert" hidden></div>' +
       '<div class="trip-form-row"><div class="field trip-col-full"><label class="field-label" for="m-bk-cat">Kategori</label><select class="input" id="m-bk-cat">' + BCAT.map(function (c) { return '<option value="' + esc(c) + '"' + ((EBk ? EBk.cat : 'Transport') === c ? ' selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></div></div>' +
       '<div class="trip-form-row"><div class="field trip-col-full"><label class="field-label" for="m-bk-link">Tautan (opsional)</label><input class="input" id="m-bk-link" inputmode="url" placeholder="https://..." value="' + esc(EBk ? (EBk.link || '') : '') + '" /><div class="trip-field-err" id="m-bk-link-err" role="alert" hidden></div></div></div>' +
@@ -35049,10 +35374,14 @@ function renderMobUpdateCard() {
     }
   }
 
+  var lockNoteHtml = _rkForceUpdateLocked
+    ? '<div class="m-fupd-lock-banner" role="alert">Pembaruan wajib aktif. Selesaikan unduh dan pasang versi terbaru untuk kembali memakai aplikasi.</div>'
+    : '';
   card.innerHTML =
     '<div class="card-hd" style="margin-bottom:8px"><div><h2 class="card-title">Pembaruan Aplikasi</h2><div style="font-size:0.71rem;color:var(--text-muted)">Rilis APK Android via GitHub Releases</div></div>' +
-    (st === 'available' ? '<span class="badge b-am">Tersedia</span>' : (st === 'latest' ? '<span class="badge b-em">Terbaru</span>' : '')) + '</div>' +
+    (st === 'available' ? '<span class="badge b-am">' + (_rkForceUpdateLocked ? 'Wajib' : 'Tersedia') + '</span>' : (st === 'latest' ? '<span class="badge b-em">Terbaru</span>' : '')) + '</div>' +
     '<div class="stack" style="gap:8px">' +
+    lockNoteHtml +
     '<div class="m-upd-meta">' +
     '<div>Versi terpasang: <strong class="mono">' + esc(verText) + '</strong></div>' +
     (lastText ? '<div>Terakhir dicek: <strong>' + esc(lastText) + '</strong></div>' : '') +
@@ -35079,6 +35408,7 @@ function rkResetApkDownloadState() {
 
 function rkCheckApkUpdate(opts) {
   var silent = !!(opts && opts.silent);
+  var fromColdStart = !!(opts && opts.fromColdStart);
   var curPhase = MOB_UPDATE_STATE.phase;
   if (!rkIsCapacitorNative() || MOB_UPDATE_STATE.checking ||
       curPhase === 'downloading' || curPhase === 'verifying' || curPhase === 'installing') {
@@ -35169,7 +35499,9 @@ function rkCheckApkUpdate(opts) {
         MOB_UPDATE_STATE.message = '';
       }
       renderMobUpdateCard();
-      if (silent && !keepDownloaded && typeof showMobToast === 'function') {
+      if (fromColdStart && !meta.isDev && parsed.run > meta.run) {
+        rkShowForceUpdatePopup(MOB_UPDATE_STATE.info);
+      } else if (silent && !keepDownloaded && typeof showMobToast === 'function') {
         showMobToast('Pembaruan APK tersedia: build ' + parsed.run);
       }
     } else {
@@ -35221,6 +35553,110 @@ function rkAutoCheckApkUpdate(forceBypassIdle) {
   } catch (e) { last = 0; }
   if (last > 0 && (Date.now() - last) < RK_UPDATE_INTERVAL_MS) return Promise.resolve(null);
   return rkCheckApkUpdate({ silent: true });
+}
+
+function rkShowForceUpdatePopup(info) {
+  var bd = $('m-force-upd-backdrop');
+  if (!bd || !info) return false;
+  var meta = rkInstalledBuildMeta();
+  var metaBox = $('m-fupd-meta');
+  if (metaBox) {
+    var curTxt = 'build ' + (meta.run || '-') + (meta.sha ? ' (' + meta.sha + ')' : '');
+    var newTxt = 'build ' + info.run + (info.sha ? ' (' + info.sha + ')' : '');
+    var dtTxt = info.builtAt ? rkFormatApkTime(info.builtAt) : '';
+    metaBox.innerHTML =
+      '<div class="m-fupd-row"><span>Terpasang</span><strong class="mono">' + esc(curTxt) + '</strong></div>' +
+      '<div class="m-fupd-row"><span>Terbaru</span><strong class="mono m-fupd-new">' + esc(newTxt) + '</strong></div>' +
+      (dtTxt ? '<div class="m-fupd-row"><span>Dirilis</span><span>' + esc(dtTxt) + '</span></div>' : '') +
+      (info.msg ? '<div class="m-fupd-note">' + esc(info.msg) + '</div>' : '');
+  }
+  mobCloseAllCalPopovers();
+  mobCloseCalSheet(false);
+  if (typeof dismissMobOsNotif === 'function') dismissMobOsNotif(0);
+  _rkForceUpdateActive = true;
+  bd.setAttribute('aria-hidden', 'false');
+  bd.classList.add('open');
+  if (document.body) document.body.setAttribute('data-force-update-popup', '1');
+  return true;
+}
+
+function rkForceCloseApk() {
+  var appPlugin = typeof window !== 'undefined' && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (appPlugin && typeof appPlugin.exitApp === 'function') {
+    appPlugin.exitApp();
+    return true;
+  }
+  return false;
+}
+
+function rkEnterForceUpdateLock() {
+  var bd = $('m-force-upd-backdrop');
+  if (bd) {
+    bd.classList.remove('open');
+    bd.setAttribute('aria-hidden', 'true');
+  }
+  _rkForceUpdateActive = false;
+  _rkForceUpdateLocked = true;
+  if (document.body) {
+    document.body.removeAttribute('data-force-update-popup');
+    document.body.setAttribute('data-force-update-lock', '1');
+  }
+  mobCloseAllCalPopovers();
+  mobCloseCalSheet(false);
+  if (typeof dismissMobOsNotif === 'function') dismissMobOsNotif(0);
+  document.querySelectorAll('#mobile-app-shell .modal-backdrop.open').forEach(function (el) {
+    if (el.id) mobCloseSheet(el.id);
+  });
+  switchMobileTab('settings');
+  renderMobUpdateCard();
+  var mm = $('m-main');
+  if (mm) mm.scrollTop = 0;
+  var card = $('m-card-settings-update');
+  if (card && typeof card.scrollIntoView === 'function') {
+    try { card.scrollIntoView({ block: 'start', behavior: 'auto' }); } catch (e) {}
+  }
+  if (typeof rkInstallApkInApp === 'function' && MOB_UPDATE_STATE.info && MOB_UPDATE_STATE.info.url) {
+    rkInstallApkInApp();
+  }
+  return true;
+}
+
+function rkCheckForceUpdateOnColdStart() {
+  if (!rkIsCapacitorNative()) return Promise.resolve(null);
+  if (_rkColdStartUpdateChecked) return Promise.resolve(null);
+  _rkColdStartUpdateChecked = true;
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return Promise.resolve(null);
+  var meta = rkInstalledBuildMeta();
+  if (meta.isDev) return Promise.resolve(null);
+  return rkCheckApkUpdate({ silent: true, fromColdStart: true });
+}
+
+function rkResetForceUpdateForTest() {
+  _rkColdStartUpdateChecked = false;
+  _rkForceUpdateActive = false;
+  _rkForceUpdateLocked = false;
+  var bd = $('m-force-upd-backdrop');
+  if (bd) {
+    bd.classList.remove('open');
+    bd.setAttribute('aria-hidden', 'true');
+  }
+  if (document.body) {
+    document.body.removeAttribute('data-force-update-popup');
+    document.body.removeAttribute('data-force-update-lock');
+  }
+  rkResetApkDownloadState();
+  MOB_UPDATE_STATE.checking = false;
+  MOB_UPDATE_STATE.status = 'idle';
+  MOB_UPDATE_STATE.message = '';
+  renderMobUpdateCard();
+}
+
+if (typeof window !== 'undefined') {
+  window.rkCheckForceUpdateOnColdStart = rkCheckForceUpdateOnColdStart;
+  window.rkShowForceUpdatePopup = rkShowForceUpdatePopup;
+  window.rkEnterForceUpdateLock = rkEnterForceUpdateLock;
+  window.rkForceCloseApk = rkForceCloseApk;
+  window._rkForceUpdateReset = rkResetForceUpdateForTest;
 }
 
 function rkOpenApkDownload() {
@@ -35876,7 +36312,7 @@ function bindMobileShellEvents(root) {
     var TOP_TOLERANCE_PX = 1;
     var RK_WM_SEG_CNT = RK_WM_SEGS.length;
     var RK_WM_FADE_IN_MS = 160;
-    var RK_WM_PASS_MS = 2200;
+    var RK_WM_PASS_MS = 1750;
     var RK_WM_LOOP_RESET_MS = 200;
     var RK_WM_FLASH_IN_MS = 120;
     var RK_WM_FLASH_OUT_MS = 380;
@@ -36323,6 +36759,47 @@ function bindMobileShellEvents(root) {
       return !!t.closest('.mob-bottom-nav, input, textarea, select, [contenteditable], .modal-backdrop.open, .modal:not([hidden]), .acct-popover.open, .notif-popover.open, .phone-os-notif.show, .mcal-pop.open, .picker-popover.open, .mselect.open .mselect-menu, .ms-body');
     }
 
+    var hdrSnapTimer = null;
+
+    function isRincianPtrTab() {
+      return (MOB_STATE.tab || 'rincian') === 'rincian';
+    }
+
+    function setRincianHdrPull(pullY, mode) {
+      var ms = root.querySelector('.mob-shell');
+      if (!ms) return;
+      clearTimeout(hdrSnapTimer);
+      hdrSnapTimer = null;
+      if (!isRincianPtrTab() || mode === 'clear') {
+        ms.removeAttribute('data-ptr-pull');
+        ms.classList.remove('is-ptr-snapping');
+        ms.style.removeProperty('--ptr-hdr-y');
+        return;
+      }
+      var yPx = Math.min(64, Math.max(0, pullY * 0.72));
+      if (mode === 'snap') {
+        ms.removeAttribute('data-ptr-pull');
+        var reduced = typeof rkIsReducedMotion === 'function' && rkIsReducedMotion();
+        if (reduced || parseFloat(ms.style.getPropertyValue('--ptr-hdr-y') || '0') <= 0) {
+          ms.classList.remove('is-ptr-snapping');
+          ms.style.removeProperty('--ptr-hdr-y');
+          return;
+        }
+        ms.classList.add('is-ptr-snapping');
+        ms.style.setProperty('--ptr-hdr-y', '0.0px');
+        hdrSnapTimer = setTimeout(function () {
+          hdrSnapTimer = null;
+          if (!ms || !ms.isConnected) return;
+          ms.classList.remove('is-ptr-snapping');
+          ms.style.removeProperty('--ptr-hdr-y');
+        }, 290);
+        return;
+      }
+      ms.classList.remove('is-ptr-snapping');
+      ms.setAttribute('data-ptr-pull', '1');
+      ms.style.setProperty('--ptr-hdr-y', yPx.toFixed(1) + 'px');
+    }
+
     function setPtrVars(ind, yPx, op, rotDeg, sc) {
       if (!ind) return;
       ind.style.setProperty('--ptr-y', yPx.toFixed(1) + 'px');
@@ -36338,13 +36815,18 @@ function bindMobileShellEvents(root) {
     }
 
     function resetVisual(cls) {
+      if (isRincianPtrTab()) {
+        setRincianHdrPull(0, cls ? 'snap' : 'clear');
+      } else {
+        setRincianHdrPull(0, 'clear');
+      }
       var ind = $('m-ptr-ind');
       clearTimeout(exitTimer);
       if (!ind) return;
       ind.classList.remove('is-snapping', 'is-exiting');
-      if (cls) ind.classList.add(cls);
+      if (cls && !isRincianPtrTab()) ind.classList.add(cls);
       setPtrVars(ind, -48, 0, 0, 0.8);
-      if (cls) {
+      if (cls && !isRincianPtrTab()) {
         exitTimer = setTimeout(function () {
           if (ind && ind.isConnected) ind.classList.remove(cls);
         }, cls === 'is-exiting' ? 210 : 290);
@@ -36362,6 +36844,7 @@ function bindMobileShellEvents(root) {
     }
 
     function canStartRefresh() {
+      if (_rkForceUpdateActive || _rkForceUpdateLocked) return false;
       if (typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') return false;
       if (refreshing || pendingScrollTimer || Date.now() < cooldownUntil) return false;
       if (hasOpenOverlay()) return false;
@@ -36487,10 +36970,12 @@ function bindMobileShellEvents(root) {
           return;
         }
         ptr.locked = true;
-        var ind0 = $('m-ptr-ind');
-        if (ind0) {
-          positionUnderHeader(ind0);
-          ind0.classList.remove('is-snapping', 'is-exiting');
+        if (!isRincianPtrTab()) {
+          var ind0 = $('m-ptr-ind');
+          if (ind0) {
+            positionUnderHeader(ind0);
+            ind0.classList.remove('is-snapping', 'is-exiting');
+          }
         }
       }
       // preventDefault hanya dipanggil saat gestur sudah terkunci sebagai tarikan bawah dari posisi scroll 0
@@ -36504,8 +36989,12 @@ function bindMobileShellEvents(root) {
       } else if (!nowArmed && ptr.armed) {
         ptr.armed = false;
       }
-      var ratio = Math.min(1, pullY / PULL_TRIG);
-      setPtrVars($('m-ptr-ind'), pullY - 46, Math.min(1, ratio * 1.15), ratio * 180, 0.8 + ratio * 0.2);
+      if (isRincianPtrTab()) {
+        setRincianHdrPull(pullY, 'drag');
+      } else {
+        var ratio = Math.min(1, pullY / PULL_TRIG);
+        setPtrVars($('m-ptr-ind'), pullY - 46, Math.min(1, ratio * 1.15), ratio * 180, 0.8 + ratio * 0.2);
+      }
       updateWmDrag(pullY);
     }
 
@@ -36533,6 +37022,7 @@ function bindMobileShellEvents(root) {
     function onActiveCancel() { endPtr(true); }
 
     window.rkMobRefresh = function (opts) {
+      if (_rkForceUpdateActive || _rkForceUpdateLocked) return false;
       var isRetap = !!(opts && opts.fromRetap);
       if (typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') return false;
       if (hasOpenOverlay()) return false;
@@ -36632,9 +37122,19 @@ function bindMobileShellEvents(root) {
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
       if (typeof getShellMode === 'function' && getShellMode() !== 'mobile-app') return;
+      if (_rkForceUpdateActive || _rkForceUpdateLocked) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       var calBdEsc = $('m-cal-sheet-backdrop');
       if (calBdEsc && calBdEsc.classList.contains('open')) {
         mobCloseCalSheet(true);
+        return;
+      }
+      var openCalPop = document.querySelector('#mobile-app-shell .picker-popover.open');
+      if (openCalPop) {
+        mobCloseCalPopover(openCalPop);
         return;
       }
       var mp = $('m-notif-popover');
@@ -36650,6 +37150,35 @@ function bindMobileShellEvents(root) {
       if ($('m-sheet-actual') && $('m-sheet-actual').classList.contains('open')) {
         mobCloseSheet('m-sheet-actual');
       }
+    });
+  }
+  if (!root._rkForceUpdGuardBound) {
+    root._rkForceUpdGuardBound = true;
+    var guardForceUpdEv = function (e) {
+      if (!_rkForceUpdateActive && !_rkForceUpdateLocked) return;
+      var t = e.target;
+      if (_rkForceUpdateActive) {
+        if (t && t.closest && t.closest('#m-fupd-dialog')) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return;
+      }
+      if (_rkForceUpdateLocked) {
+        if (e.type === 'wheel' || e.type === 'touchmove') {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          return;
+        }
+        if (t && t.closest && t.closest('#m-card-settings-update')) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    };
+    ['click', 'pointerdown', 'touchstart'].forEach(function (evName) {
+      root.addEventListener(evName, guardForceUpdEv, true);
+    });
+    ['wheel', 'touchmove'].forEach(function (evName) {
+      root.addEventListener(evName, guardForceUpdEv, { capture: true, passive: false });
     });
   }
   root.addEventListener('pointerdown', function (e) {
@@ -36769,8 +37298,18 @@ function bindMobileShellEvents(root) {
         if (typeof rkSyncAcctOpenUI === 'function') rkSyncAcctOpenUI();
       }
     }
-    if (!e.target.closest('.picker-wrap')) {
-      root.querySelectorAll('.picker-popover.open').forEach(function (p) { p.classList.remove('open'); });
+    if (e.target.closest('#m-fupd-no')) {
+      e.stopPropagation();
+      rkForceCloseApk();
+      return;
+    }
+    if (e.target.closest('#m-fupd-yes')) {
+      e.stopPropagation();
+      rkEnterForceUpdateLock();
+      return;
+    }
+    if (!e.target.closest('.picker-wrap') && !e.target.closest('.picker-popover')) {
+      mobCloseAllCalPopovers();
     }
     if (!e.target.closest('.mselect')) {
       root.querySelectorAll('.mselect.open').forEach(function (ms) {
@@ -36813,10 +37352,12 @@ function bindMobileShellEvents(root) {
         return;
       }
       var popC = $(cid + '-cal');
-      root.querySelectorAll('.picker-popover.open').forEach(function (p) { if (p !== popC) p.classList.remove('open'); });
-      if (popC) {
+      var wasOpen = !!(popC && popC.classList.contains('open'));
+      mobCloseAllCalPopovers();
+      if (popC && !wasOpen) {
         mobDrawCal(cid);
-        popC.classList.toggle('open');
+        mobPositionCalPopover(popC, mcalT);
+        popC.classList.add('open');
       }
       return;
     }
@@ -36833,6 +37374,10 @@ function bindMobileShellEvents(root) {
           mobDrawCalSheet(idM);
         } else {
           mobDrawCal(idM);
+          var popMv = $(idM + '-cal');
+          if (popMv && popMv.classList.contains('is-cal-portal') && popMv._rkTrigEl) {
+            mobPositionCalPopover(popMv, popMv._rkTrigEl);
+          }
         }
       }
       return;
@@ -36847,7 +37392,7 @@ function bindMobileShellEvents(root) {
       if (calBdPk && calBdPk.classList.contains('open') && calBdPk.getAttribute('data-cal-for') === p2[0]) {
         mobCloseCalSheet(true);
       } else if ($(p2[0] + '-cal')) {
-        $(p2[0] + '-cal').classList.remove('open');
+        mobCloseCalPopover($(p2[0] + '-cal'));
       }
       if (p2[0] === 'm-it-day' && typeof tripSetFieldError === 'function') {
         tripSetFieldError('m-it-day-err', $('m-it-day-trig'), '', true);
@@ -37080,8 +37625,10 @@ function bindMobileShellEvents(root) {
     if (e.target.closest('#m-btn-expand-cf')) {
       MOB_STATE.zoomRange = MOB_STATE.cashRange || 'm';
       MOB_STATE.zoomPin = null;
+      MOB_STATE.zoomWide = true;
       mobOpenSheet('m-sheet-cf-zoom');
       renderMobCashflowZoom();
+      if (typeof rkSyncSegPills === 'function') rkSyncSegPills($('m-sheet-cf-zoom'), false);
       return;
     }
     var mzr = e.target.closest('[data-mzoom-range]');
@@ -37091,12 +37638,6 @@ function bindMobileShellEvents(root) {
       renderMobCashflowZoom();
       if (typeof rkSyncSegPills === 'function' && mzr.closest('.seg')) rkSyncSegPills(mzr.closest('.seg'), true);
       if (typeof rkAnimateChartOnly === 'function') rkAnimateChartOnly($('m-cf-zoom-stage'));
-      return;
-    }
-    if (e.target.closest('#m-cf-zoom-wide')) {
-      MOB_STATE.zoomWide = !MOB_STATE.zoomWide;
-      renderMobCashflowZoom();
-      if (typeof rkSyncSegPills === 'function') rkSyncSegPills($('m-sheet-cf-zoom'), false);
       return;
     }
     var mzm = e.target.closest('[data-mzmode]');

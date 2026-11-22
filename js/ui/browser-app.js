@@ -1567,29 +1567,34 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
     var xy = toWrapXY(s.x, s.y);
     brPositionTooltip(wrap, tip, xy.px, xy.py, 16);
   }
-  function inspectAtSvgX(svgX) {
+  function inspectAtSvgX(svgX, allowHaptic) {
     svgX = Math.max(coords[0].x, Math.min(coords[coords.length - 1].x, svgX));
-    var near = coords.reduce(function (b, c) { return Math.abs(c.x - svgX) < Math.abs(b.x - svgX) ? c : b; }, coords[0]);
+    var nearIdx = 0;
+    for (var ci = 1; ci < coords.length; ci++) {
+      if (Math.abs(coords[ci].x - svgX) < Math.abs(coords[nearIdx].x - svgX)) nearIdx = ci;
+    }
+    var near = coords[nearIdx];
+    var meta = { nearIdx: nearIdx, allowHaptic: !!allowHaptic };
     if (Math.abs(near.x - svgX) <= 14 || !samples.length) {
       showPointHUD(near);
-      if (typeof opts.onScrub === 'function') opts.onScrub(near.x / W, near);
+      if (typeof opts.onScrub === 'function') opts.onScrub(near.x / W, near, meta);
       return near;
     }
     var ns = samples.reduce(function (b, c) { return Math.abs(c.x - svgX) < Math.abs(b.x - svgX) ? c : b; }, samples[0]);
     showLineHUD(ns);
-    if (typeof opts.onScrub === 'function') opts.onScrub(ns.x / W, ns);
+    if (typeof opts.onScrub === 'function') opts.onScrub(ns.x / W, ns, meta);
     return ns;
   }
-  function inspectFromX(clientX) {
+  function inspectFromX(clientX, allowHaptic) {
     var r = svg.getBoundingClientRect(),
       w = r.width || 600;
-    inspectAtSvgX(((clientX - r.left) / w) * W);
+    inspectAtSvgX(((clientX - r.left) / w) * W, allowHaptic);
   }
   svg._rkInspectPct = function (pct) {
     var p = Math.max(0, Math.min(1, Number(pct) || 0)),
       x0 = coords[0].x,
       x1 = coords[coords.length - 1].x;
-    return inspectAtSvgX(x0 + p * (x1 - x0));
+    return inspectAtSvgX(x0 + p * (x1 - x0), false);
   };
   var getPin = opts.getPin || function () { return BR_STATE.pinnedCashIdx; };
   var setPin = opts.setPin || function (idx, pt) { BR_STATE.pinnedCashIdx = idx; renderCashInspector(pt); };
@@ -1615,10 +1620,13 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
         return Math.abs(svgY - pt.y) * (sH / H) <= 24;
       };
       hit.addEventListener('pointerdown', function (e) {
-        if (e.pointerType === 'mouse') inspectFromX(e.clientX);
+        if (e.pointerType === 'mouse') {
+          if (typeof opts.onScrubStart === 'function') opts.onScrubStart();
+          inspectFromX(e.clientX, true);
+        }
       });
       hit.addEventListener('pointermove', function (e) {
-        if (e.pointerType === 'mouse' && e.buttons) inspectFromX(e.clientX);
+        if (e.pointerType === 'mouse' && e.buttons) inspectFromX(e.clientX, true);
       });
       hit.addEventListener('touchstart', function (e) {
         if (!e.touches || !e.touches[0]) return;
@@ -1626,15 +1634,16 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
         tState.sx = t0.clientX;
         tState.sy = t0.clientY;
         tState.locked = null;
+        if (typeof opts.onScrubStart === 'function') opts.onScrubStart();
         tState.near = isNearLine(t0.clientX, t0.clientY);
-        if (tState.near) inspectFromX(t0.clientX);
+        if (tState.near) inspectFromX(t0.clientX, true);
       }, { passive: true });
       hit.addEventListener('touchmove', function (e) {
         if (!e.touches || !e.touches[0]) return;
         var t0 = e.touches[0];
         if (typeof t0.clientY !== 'number') {
           if (e.cancelable) e.preventDefault();
-          inspectFromX(t0.clientX);
+          inspectFromX(t0.clientX, true);
           return;
         }
         if (!tState.near) return;
@@ -1645,6 +1654,7 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
           if (dy > dx) {
             tState.locked = 'v';
             tState.near = false;
+            if (typeof opts.onScrubEnd === 'function') opts.onScrubEnd();
             var piV = getPin();
             if (piV === null || !coords[piV]) hideHUD();
             else showPointHUD(coords[piV]);
@@ -1654,12 +1664,13 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
         }
         if (tState.locked === 'h') {
           if (e.cancelable) e.preventDefault();
-          inspectFromX(t0.clientX);
+          inspectFromX(t0.clientX, true);
         }
       }, { passive: false });
       hit.addEventListener('touchend', function () {
         tState.near = false;
         tState.locked = null;
+        if (typeof opts.onScrubEnd === 'function') opts.onScrubEnd();
         var pi = getPin();
         if (pi === null || !coords[pi]) hideHUD();
         else showPointHUD(coords[pi]);
@@ -1667,11 +1678,13 @@ function brRenderCashflowInto(svg, wrap, tip, range, opts) {
       hit.addEventListener('touchcancel', function () {
         tState.near = false;
         tState.locked = null;
+        if (typeof opts.onScrubEnd === 'function') opts.onScrubEnd();
         hideHUD();
       });
     }
-    hit.onmousemove = function (e) { inspectFromX(e.clientX); };
+    hit.onmousemove = function (e) { inspectFromX(e.clientX, false); };
     hit.onmouseleave = function () {
+      if (typeof opts.onScrubEnd === 'function') opts.onScrubEnd();
       var pi = getPin();
       if (segGlow) segGlow.style.display = 'none';
       if (pi === null || !coords[pi]) { ch.style.display = 'none'; tip.classList.remove('visible'); }
