@@ -433,7 +433,8 @@ body[data-shell="mobile-app"] #mobile-app-shell .av-btn::before,
 body[data-shell="mobile-app"] #mobile-app-shell .ico-btn::before {
   content: "";
   position: absolute;
-  inset: -6px;
+  inset: -5px;
+  margin: -1px;
   border-radius: 50%;
   background: transparent;
 }

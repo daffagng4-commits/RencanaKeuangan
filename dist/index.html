@@ -5752,6 +5752,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .ico-btn::before {
   content: "";
   position: absolute;
   inset: -5px;
+  margin: -1px;
   border-radius: 50%;
   background: transparent;
 }
@@ -6323,10 +6324,11 @@ body[data-shell="mobile-app"] #mobile-app-shell .seg-btn {
 body[data-shell="mobile-app"] #mobile-app-shell .seg-btn::before {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
+  left: 50%;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
+  width: 100%;
+  min-width: var(--tap);
   height: var(--tap);
   min-height: var(--tap);
   background: transparent;
@@ -6663,7 +6665,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .btn-emerald { background: var(-
 body[data-shell="mobile-app"] #mobile-app-shell .btn-secondary { background: var(--bg-surface); border: 1px solid var(--border-strong); color: var(--text-primary); }
 body[data-shell="mobile-app"] #mobile-app-shell .btn-crimson { background: var(--crimson-soft); color: var(--crimson); }
 body[data-shell="mobile-app"] #mobile-app-shell .btn-sm { position: relative; min-height: 36px; padding: 5px 10px; font-size: 0.73rem; border-radius: 8px; }
-body[data-shell="mobile-app"] #mobile-app-shell .btn-sm::after { content: ''; position: absolute; inset: -4px 0; }
+body[data-shell="mobile-app"] #mobile-app-shell .btn-sm::after { content: ''; position: absolute; inset: -5px 0; }
 
 body[data-shell="mobile-app"] #mobile-app-shell .field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 body[data-shell="mobile-app"] #mobile-app-shell .field-label { font-size: 0.73rem; font-weight: 700; color: var(--text-secondary); }
@@ -7277,8 +7279,11 @@ body[data-shell="mobile-app"] #mobile-app-shell .pon-time { font-size: 0.66rem; 
 body[data-shell="mobile-app"] #mobile-app-shell .pon-title { font-size: 0.80rem; font-weight: 800; margin-bottom: 2px; color: #FFFFFF; }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-body { font-size: 0.72rem; line-height: 1.38; color: #CBD5E1; white-space: pre-line; }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-actions { display: flex; gap: 6px; margin-top: 8px; }
-body[data-shell="mobile-app"] #mobile-app-shell .pon-btn { flex: 1; padding: 5px 8px; border-radius: 9px; font-size: 0.70rem; font-weight: 700; text-align: center; background: rgba(255, 255, 255, 0.14); color: #F8FAFC; }
+body[data-shell="mobile-app"] #mobile-app-shell .pon-btn { position: relative; flex: 1; padding: 5px 8px; border-radius: 9px; font-size: 0.70rem; font-weight: 700; text-align: center; background: rgba(255, 255, 255, 0.14); color: #F8FAFC; }
+body[data-shell="mobile-app"] #mobile-app-shell .pon-btn::before { content: ""; position: absolute; inset: -10px 0; background: transparent; }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-btn.primary { background: #10B981; color: #FFFFFF; }
+body[data-shell="mobile-app"] #mobile-app-shell #m-pon-close { position: relative; }
+body[data-shell="mobile-app"] #mobile-app-shell #m-pon-close::before { content: ""; position: absolute; inset: -14px; background: transparent; }
 
 /* Cashflow Expanded + Live Readout Strip */
 body[data-shell="mobile-app"] #mobile-app-shell .cf-strip {
@@ -10609,6 +10614,7 @@ function parseRp(s) {
   else if (/(jt|juta)$/.test(s)) m = 1e6;
   else if (/(rb|ribu|k)$/.test(s)) m = 1e3;
   s = s.replace(/(m|miliar|milyar|jt|juta|rb|ribu|k)$/, '');
+  if (!s || !/^[+-]?[\d.,]+$/.test(s)) return 0;
   var v;
   if (m > 1) {
     v = parseFloat(s.replace(',', '.'));
@@ -11424,8 +11430,13 @@ function emptyAllState(year) {
 
 function rkWriteCache(obj) {
   var k = rkStorageKey();
-  if (!k || typeof localStorage === 'undefined') return;
-  localStorage.setItem(k, JSON.stringify(obj || ALL));
+  if (!k || typeof localStorage === 'undefined') return true;
+  try {
+    localStorage.setItem(k, JSON.stringify(obj || ALL));
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 function save() {
@@ -11439,8 +11450,8 @@ function save() {
       ALL.rev = Date.now();
       schedPush();
     }
-    rkWriteCache(ALL);
-    setSaveStatus(true);
+    var ok = rkWriteCache(ALL);
+    setSaveStatus(ok);
   } catch (e) {
     try {
       localStorage.removeItem('rk-undo');
@@ -12811,21 +12822,32 @@ function resolveNumEl(elOrId) {
 function fmtRpInputStr(raw) {
   if (raw == null) return '';
   var s = String(raw);
-  if (!s || /[^\d.,\s]/.test(s)) return s;
-  var d = s.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
-  if (!d) return '';
-  return d.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  if (!s) return '';
+  var neg = /^\s*-/.test(s);
+  var body = neg ? s.replace(/^\s*-/, '') : s;
+  if (!body || /[^\d.,\s]/.test(body)) return s;
+  var compact = body.replace(/\s/g, '');
+  if (/^\d{1,3}(\.\d{3})+,\d{1,2}$/.test(compact) || /^\d{1,3}(,\d{3})+\.\d{1,2}$/.test(compact) || /^\d+[.,]\d{1,2}$/.test(compact)) {
+    var parsed = typeof parseRp === 'function' ? parseRp(s) : Math.round(parseFloat(compact.replace(/\./g, '').replace(',', '.')));
+    if (Number.isFinite(parsed)) {
+      var absD = String(Math.abs(Math.round(parsed)));
+      return (parsed < 0 ? '-' : '') + absD.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+  }
+  var d = body.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  if (!d) return neg ? '-' : '';
+  return (neg && d !== '0' ? '-' : '') + d.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-/** Format nilai saat input kehilangan fokus (blur): konversi shorthand ('250k', '1,5jt') ke '250.000', '1.500.000'. */
+/** Format nilai saat input kehilangan fokus (blur): konversi shorthand ('250k', '1,5jt') dan desimal ke '250.000', '1.500.000'. */
 function fmtRpBlurStr(raw) {
   if (raw == null) return '';
   var s = String(raw).trim();
   if (!s) return '';
-  if (/[^\d.,\s]/.test(s) && typeof parseRp === 'function') {
+  if (typeof parseRp === 'function' && (/[^\d.,\s]/.test(s) || /[.,]\d{1,2}$/.test(s.replace(/\s/g, '')))) {
     var n = parseRp(s);
-    if (!isNaN(n) && n > 0) return fmtRpInputStr(String(Math.round(n)));
-    if (n === 0 && s === '0') return '0';
+    if (Number.isFinite(n) && n !== 0) return fmtRpInputStr(String(Math.round(n)));
+    if (n === 0 && /^0([.,]0{1,2})?$/.test(s)) return '0';
   }
   return fmtRpInputStr(s);
 }
@@ -18704,7 +18726,7 @@ function doImport(text) {
       .replace(/^\uFEFF/, '')
       .trim();
   if (!t) {
-    setX('Isinya kosong.', 0);
+    setX('Data impor kosong. Tempel teks JSON/CSV atau pilih file terlebih dahulu.', 0);
     return;
   }
   try {
@@ -18790,7 +18812,7 @@ function bindIo() {
       doImport(rd.result);
     };
     rd.onerror = function () {
-      setX('Gagal membaca file.', 0);
+      setX('Gagal membaca file. Pastikan file valid dan tidak rusak.', 0);
     };
     rd.readAsText(f);
     this.value = '';
@@ -19697,6 +19719,7 @@ function pull() {
         finishSync(true);
         return;
       }
+      setSync(rr);
       finishSync(!window._rkBootDataAnimated);
       return push();
     }, function (err) {
@@ -20021,6 +20044,8 @@ function auth(kind) {
     if (typeof brCloseModal === 'function') brCloseModal('lg');
     else $('lg').hidden = true;
     $('lp').value = '';
+  }).catch(function (err) {
+    if ($('lm')) $('lm').textContent = 'Gagal terhubung ke server: ' + ((err && err.message) || 'periksa koneksi internet Anda.');
   });
 }
 
@@ -20065,8 +20090,10 @@ function bindSync() {
     } else if (c === 'local') {
       var cs = snapRaw('Data cloud sebelum ditimpa', JSON.stringify(row.data));
       ALL.rev = Date.now();
+      setSync(+row.rev || 0);
       try {
-        localStorage.setItem(KEY, JSON.stringify(ALL));
+        if (typeof rkWriteCache === 'function') rkWriteCache(ALL);
+        else localStorage.setItem(KEY, JSON.stringify(ALL));
       } catch (e) {}
       push();
       toast('Memakai data perangkat ini.', function () {
@@ -20112,7 +20139,7 @@ function bindSync() {
   }
   $('acct').onclick = function () {
     if (!sb) {
-      toast('Sinkron belum aktif. Isi Supabase di js/config.js.');
+      toast('Sinkron cloud belum aktif. Periksa koneksi atau konfigurasi Supabase.');
       return;
     }
     if (sbUser) {
@@ -23618,8 +23645,8 @@ function renderSim() {
   out +=
     '<div class="card"><h2>Skenario aktif</h2>' + SIM.map(function (x, i) { return '<div class="it2"><div>' + simDesc(x) + '</div><div><button class="g d" data-smdel="' + i + '" aria-label="Hapus skenario">&#10005;</button></div></div>'; }).join('') +
     '<div class="acts mt8"><button class="p" data-smapply="1">Terapkan ke data</button><button class="g d" data-smclear="1">Buang semua</button></div></div>' +
-    '<div class="card"><h2>Dampak</h2><div class="hero m0"><div class="card m0"><div class="sub">Saldo akhir Des ' + S.year + '</div><div class="big' + (B.end < 0 ? ' neg' : '') + '">' + rp(B.end) + '</div><div class="sub">asli ' + rp(A.end) + ' &middot; <b>' + (d >= 0 ? 'naik ' : 'turun ') + rp(Math.abs(d)) + '</b></div></div><div class="card stats m0"><div><span>Saldo terendah asli</span><b>' + rp(la.ak) + '</b><span>' + MON[la.m] +
-    '</span></div><div><span>Saldo terendah simulasi</span><b>' + rp(lb.ak) + '</b><span>' + MON[lb.m] + '</span></div></div></div>' + '<div class="chp ' + (nb.length ? 'cash' : 'on') + '" style="margin:10px 0 6px">' + (nb.length ? 'Saldo negatif di ' + nb.join(', ') : 'Saldo tetap positif sepanjang tahun') + '</div>' + simChart(A, B) + '</div>' +
+    '<div class="card"><h2>Dampak</h2><div class="hero m0"><div class="card m0"><div class="sub">Saldo akhir Des ' + S.year + '</div><div class="big' + (B.end < 0 ? ' neg' : '') + '">' + rp(B.end) + '</div><div class="sub">asli ' + rp(A.end) + ' &middot; <b>' + (d >= 0 ? 'naik ' : 'turun ') + rp(Math.abs(d)) + '</b></div></div><div class="card stats m0"><div><span>Saldo terendah asli</span><b>' + (la ? rp(la.ak) : '—') + '</b><span>' + (la ? MON[la.m] : '') +
+    '</span></div><div><span>Saldo terendah simulasi</span><b>' + (lb ? rp(lb.ak) : '—') + '</b><span>' + (lb ? MON[lb.m] : '') + '</span></div></div></div>' + '<div class="chp ' + (nb.length ? 'cash' : 'on') + '" style="margin:10px 0 6px">' + (nb.length ? 'Saldo negatif di ' + nb.join(', ') : 'Saldo tetap positif sepanjang tahun') + '</div>' + simChart(A, B) + '</div>' +
     '<div class="card"><h2>Per bulan</h2>' + B.rows.map(function (r, i) { var a = A.rows[i].ak, df = r.ak - a; return '<div class="it2"><div><b>' + MON[r.m] + '</b> <span class="sub">asli ' + rp(a) + '</span></div><div><b' + (r.ak < 0 ? ' style="color:var(--wr)"' : '') + '>' + rp(r.ak) + '</b> <span class="sub">' + (df === 0 ? '' : (df > 0 ? '+' : '&minus;') + rp(Math.abs(df))) + '</span></div></div>'; }).join('') + '</div>';
   el.innerHTML = out;
 }
@@ -23628,7 +23655,7 @@ function simApply() {
   var sn = snap('Sebelum menerapkan simulasi'), y = +S.year, KL = kasLinked(), n = 0;
   SIM.forEach(function (x) {
     if (x.k === 'out') S.items.push({ id: Date.now() + n++, name: x.name, price: x.amt, n: 1, unit: x.rep === 'sekali' ? 'sekali' : 'bulan', start: y + '-' + pad2(x.m + 1) + '-01', end: x.rep === 'bulan' ? y + '-12-31' : '', cnt: x.rep === 'n' ? x.n : 0, cat: 'Simulasi', ch: [] });
-    else if (x.k === 'in') simMonths(x).forEach(function (mm) { KL.tx.push({ id: kid('s'), d: y + '-' + pad2(mm + 1) + '-01', t: '+', amt: x.amt, cat: 'Simulasi', note: x.name, pay: '' }); });
+    else if (x.k === 'in') { if (KL && Array.isArray(KL.tx)) simMonths(x).forEach(function (mm) { KL.tx.push({ id: kid('s'), d: y + '-' + pad2(mm + 1) + '-01', t: '+', amt: x.amt, cat: 'Simulasi', note: x.name, pay: '' }); }); }
     else
       S.items.forEach(function (it) {
         if (it.id != x.id) return;
@@ -23654,8 +23681,8 @@ function simAdd() {
     x.amt = parseRp($('sma').value) || 0;
     x.rep = $('smr').value;
     x.n = Math.max(1, Math.min(12, parseInt($('smc').value, 10) || 1));
-    if (!x.name) return err('Isi nama.');
-    if (!(x.amt > 0)) return err('Isi jumlah yang valid.');
+    if (!x.name) return err('Nama skenario belum diisi.');
+    if (!(x.amt > 0)) return err('Nominal harus lebih besar dari 0 (mis. 50.000 atau 200k).');
   } else {
     x.id = $('smi').value;
     if (!x.id) return err(S.items.length ? 'Tidak ada item dengan tagihan tersisa tahun ini (semua sudah lunas atau dilewati).' : 'Belum ada item. Tambahkan item dulu di Kelola Item.');
@@ -23994,16 +24021,17 @@ function xlTime(v) {
   return { a: '', b: '' };
 }
 function xlNum(v) {
-  if (typeof v === 'number') return v;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
   var t = String(v == null ? '' : v).toLowerCase();
   if (/jalan|gratis|free/.test(t)) return 0;
   var m = t.replace(/rp|idr|yen|¥|jpy/g, '').replace(/\s/g, '').match(/[\d.,]+/);
   if (!m) return 0;
   t = m[0];
-  if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
-  else if (/^\d{1,3}(,\d{3})+$/.test(t)) t = t.replace(/,/g, '');
+  if (/^\d{1,3}(\.\d{3})+(,\d{1,2})?$/.test(t)) t = t.replace(/\./g, '').replace(',', '.');
+  else if (/^\d{1,3}(,\d{3})+(\.\d{1,2})?$/.test(t)) t = t.replace(/,/g, '');
   else t = t.replace(',', '.');
-  return parseFloat(t) || 0;
+  var n = parseFloat(t);
+  return Number.isFinite(n) ? n : 0;
 }
 function xlPay(v) {
   var t = String(v == null ? '' : v).toLowerCase();
@@ -25131,7 +25159,9 @@ function repCollect(from, to) {
         var ds = isoD(t);
         if (ds < from || ds > to) return;
         var k = it.id + '|' + ds;
-        bil.push({ d: ds, name: it.name, cat: it.cat || '-', amt: priceAt(it, t), st: S.paid[k] ? 'Lunas' : S.skip[k] ? 'Dilewati' : 'Belum' });
+        var rtx = typeof realTx === 'function' ? realTx(k) : null;
+        var amt = rtx ? (+rtx.amt || 0) : priceAt(it, t);
+        bil.push({ d: ds, name: it.name, cat: it.cat || '-', amt: amt, st: S.paid[k] ? 'Lunas' : S.skip[k] ? 'Dilewati' : 'Belum' });
       });
     });
   var byD = function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; };
@@ -25493,7 +25523,7 @@ function downloadRepPdf(kind) {
       if (typeof setX === 'function') setX('Laporan diunduh: ' + D.filename, 1);
     }
   } catch (err) {
-    if (typeof setX === 'function') setX('Unduh laporan gagal: ' + (err && err.message || err), 0);
+    if (typeof setX === 'function') setX('Gagal mengunduh laporan: ' + (err && err.message || err) + '. Coba ulangi atau periksa izin penyimpanan.', 0);
   }
 }
 
@@ -25973,7 +26003,11 @@ function bindTip() {
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function isoOf(y, m, d) { return y + '-' + pad(m + 1) + '-' + pad(d); }
   function dim(y, m) { return new Date(Date.UTC(y, m + 1, 0)).getUTCDate(); }
-  function tday() { return typeof todayISO === 'function' ? todayISO() : new Date().toISOString().slice(0, 10); }
+  function tday() {
+    if (typeof todayISO === 'function') return todayISO();
+    var d = new Date();
+    return isoOf(d.getFullYear(), d.getMonth(), d.getDate());
+  }
   function mon(y, m) { return (typeof FULL_MON !== 'undefined' ? FULL_MON[m] : MON[m]) + ' ' + y; }
   function lbl(d) { return typeof fmtD === 'function' ? fmtD(d) : d; }
   function shift(d, n) { return new Date(Date.parse(d + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10); }
@@ -29007,7 +29041,7 @@ function renderRincian() {
         '</div></div></div><div class="upcoming-right"><span class="mono pv" style="font-weight:700;font-size:0.86rem;">' + rp(u.price) + '</span>' +
         '<button type="button" class="btn btn-emerald btn-sm" data-br-paid="' + esc(u.key) + '">Lunas</button></div></div>'
       );
-    }).join('') : '<div style="padding:18px;text-align:center;color:var(--emerald);font-weight:600;">Semua tagihan sudah lunas!</div>';
+    }).join('') : '<div style="padding:18px;text-align:center;color:var(--emerald);font-weight:600;">Semua tagihan sudah lunas</div>';
   }
 
   var flowTb = $('monthly-flow-tbody');
@@ -35742,7 +35776,7 @@ function rkCopyApkUpdateUrl() {
       if (typeof showMobToast === 'function') showMobToast('Tautan disalin. Tempel di Chrome/Brave.');
       return true;
     }).catch(function () {
-      if (typeof showMobToast === 'function') showMobToast('Gagal menyalin tautan.');
+      if (typeof showMobToast === 'function') showMobToast('Gagal menyalin tautan. Coba lagi atau buka langsung lewat browser.');
       return false;
     });
   }
@@ -36977,7 +37011,7 @@ function bindMobileShellEvents(root) {
       var isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
       if (hasCloud && isOffline) {
         safeRefreshRender();
-        finishRefresh('Offline — menampilkan data lokal', fromRetap, cid, true);
+        finishRefresh('Offline. Menampilkan data lokal.', fromRetap, cid, true);
         return;
       }
       if (hasCloud) {
@@ -36993,7 +37027,7 @@ function bindMobileShellEvents(root) {
           if (afterSig !== beforeSig && typeof renderMobCharts === 'function') renderMobCharts();
           finishRefresh('Data tersinkron', fromRetap, cid, true);
         }).catch(function () {
-          finishRefresh('Gagal sinkron — cek koneksi', fromRetap, cid, false);
+          finishRefresh('Gagal sinkron. Periksa koneksi internet.', fromRetap, cid, false);
         });
         return;
       }
@@ -37565,7 +37599,7 @@ function bindMobileShellEvents(root) {
       openMobAcctSheet();
       return;
     }
-    if (e.target.closest('#m-lg-google')) { if (typeof authGoogle === 'function') authGoogle(); else showMobToast('Sinkron Google belum aktif'); return; }
+    if (e.target.closest('#m-lg-google')) { if (typeof authGoogle === 'function') authGoogle(); else showMobToast('Login Google belum tersedia saat mode lokal/offline.'); return; }
     if (e.target.closest('#m-acct-sync-now')) { if (typeof pull === 'function') pull(); mobCloseSheet('m-sheet-acct'); return; }
     if (e.target.closest('#m-acct-logout')) {
       var outBtn = e.target.closest('#m-acct-logout');
@@ -38110,7 +38144,7 @@ function bindMobileShellEvents(root) {
           Promise.resolve(navigator.share({ title: trSh.name, text: txtShM }))
             .then(function () { setShSt('Dialog berbagi dibuka.'); showMobToast('Membuka berbagi teks'); })
             .catch(function (err) {
-              if (!err || err.name !== 'AbortError') { setShSt('Berbagi gagal. Gunakan "Salin teks" lalu tempel di WhatsApp.'); showMobToast('Berbagi teks gagal'); }
+              if (!err || err.name !== 'AbortError') { setShSt('Berbagi gagal. Gunakan "Salin teks" lalu tempel di WhatsApp.'); showMobToast('Gagal berbagi teks. Gunakan "Salin teks" sebagai alternatif.'); }
             });
           return;
         }
@@ -38674,7 +38708,7 @@ function bindMobileShellEvents(root) {
         fr.onerror = function () {
           mobSetXlBusy(false);
           MOB_XL_DATA = null;
-          showMobToast('File tidak dapat dibaca.');
+          showMobToast('File tidak dapat dibaca. Pastikan file valid dan tidak rusak.');
         };
         fr.readAsArrayBuffer(fXl);
       }).catch(function (err) {
