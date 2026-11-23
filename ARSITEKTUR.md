@@ -54,8 +54,6 @@ Urutan `<script src>` di `index.dev.html` mengikat. Berkas baru wajib disisipkan
 | 34 | `js/ui/topbar.js` | 71 | Topbar, mode privasi. |
 | 35 | `js/app.js` | 38 | `main()`: `loadState` -> semua `bind*` -> `renderAll` -> `save` -> `bindSync` -> `sbInit`. |
 
-Tidak dimuat: `js/ui/agenda.js` (140 baris) — tidak ada tag `<script>` untuknya di `index.dev.html`; kodenya tidak berjalan.
-
 View di `index.dev.html`: `v-rincian`, `v-jadwal`, `v-kas`, `v-sim`, `v-trip`, `v-rebalance`, `v-ibkr`, `v-item`. Tombol nav bertanda `data-t`: `rincian|kas|jadwal|item|sim`. `tab(id)` menyalakan section lalu memanggil `syncNav()`.
 
 Mode halaman di `localStorage['rk-mode']`: `rencana`, `trip`, `rebalance`, `ibkr`.
@@ -156,6 +154,5 @@ CI (`.github/workflows/ci.yml`): `npm ci`, `npm run check`, `npm test`. Deploy b
 ## 10. Batas yang perlu diketahui
 
 - `tests/e2e/` dan `tests/rebalance/` merah karena harness (bukan regresi logika). `tests/e2e/` kurang `matchMedia`, `ResizeObserver`, dan sebagian elemen baru di `tools/rebalance/index.html`.
-- `js/ui/agenda.js` tidak dimuat `index.dev.html`; 140 baris mati.
 - `js/ui/trip.js` (1.695) dan `js/ui/price-modal.js` (1.062) memegang porsi logika UI terbesar dan paling sedikit tercakup tes.
 - README masih menjelaskan struktur lama; dokumen ini yang dipakai sebagai rujukan.
