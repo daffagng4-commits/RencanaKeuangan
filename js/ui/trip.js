@@ -2718,8 +2718,8 @@ function renderSim() {
   out +=
     '<div class="card"><h2>Skenario aktif</h2>' + SIM.map(function (x, i) { return '<div class="it2"><div>' + simDesc(x) + '</div><div><button class="g d" data-smdel="' + i + '" aria-label="Hapus skenario">&#10005;</button></div></div>'; }).join('') +
     '<div class="acts mt8"><button class="p" data-smapply="1">Terapkan ke data</button><button class="g d" data-smclear="1">Buang semua</button></div></div>' +
-    '<div class="card"><h2>Dampak</h2><div class="hero m0"><div class="card m0"><div class="sub">Saldo akhir Des ' + S.year + '</div><div class="big' + (B.end < 0 ? ' neg' : '') + '">' + rp(B.end) + '</div><div class="sub">asli ' + rp(A.end) + ' &middot; <b>' + (d >= 0 ? 'naik ' : 'turun ') + rp(Math.abs(d)) + '</b></div></div><div class="card stats m0"><div><span>Saldo terendah asli</span><b>' + rp(la.ak) + '</b><span>' + MON[la.m] +
-    '</span></div><div><span>Saldo terendah simulasi</span><b>' + rp(lb.ak) + '</b><span>' + MON[lb.m] + '</span></div></div></div>' + '<div class="chp ' + (nb.length ? 'cash' : 'on') + '" style="margin:10px 0 6px">' + (nb.length ? 'Saldo negatif di ' + nb.join(', ') : 'Saldo tetap positif sepanjang tahun') + '</div>' + simChart(A, B) + '</div>' +
+    '<div class="card"><h2>Dampak</h2><div class="hero m0"><div class="card m0"><div class="sub">Saldo akhir Des ' + S.year + '</div><div class="big' + (B.end < 0 ? ' neg' : '') + '">' + rp(B.end) + '</div><div class="sub">asli ' + rp(A.end) + ' &middot; <b>' + (d >= 0 ? 'naik ' : 'turun ') + rp(Math.abs(d)) + '</b></div></div><div class="card stats m0"><div><span>Saldo terendah asli</span><b>' + (la ? rp(la.ak) : '—') + '</b><span>' + (la ? MON[la.m] : '') +
+    '</span></div><div><span>Saldo terendah simulasi</span><b>' + (lb ? rp(lb.ak) : '—') + '</b><span>' + (lb ? MON[lb.m] : '') + '</span></div></div></div>' + '<div class="chp ' + (nb.length ? 'cash' : 'on') + '" style="margin:10px 0 6px">' + (nb.length ? 'Saldo negatif di ' + nb.join(', ') : 'Saldo tetap positif sepanjang tahun') + '</div>' + simChart(A, B) + '</div>' +
     '<div class="card"><h2>Per bulan</h2>' + B.rows.map(function (r, i) { var a = A.rows[i].ak, df = r.ak - a; return '<div class="it2"><div><b>' + MON[r.m] + '</b> <span class="sub">asli ' + rp(a) + '</span></div><div><b' + (r.ak < 0 ? ' style="color:var(--wr)"' : '') + '>' + rp(r.ak) + '</b> <span class="sub">' + (df === 0 ? '' : (df > 0 ? '+' : '&minus;') + rp(Math.abs(df))) + '</span></div></div>'; }).join('') + '</div>';
   el.innerHTML = out;
 }
@@ -2728,7 +2728,7 @@ function simApply() {
   var sn = snap('Sebelum menerapkan simulasi'), y = +S.year, KL = kasLinked(), n = 0;
   SIM.forEach(function (x) {
     if (x.k === 'out') S.items.push({ id: Date.now() + n++, name: x.name, price: x.amt, n: 1, unit: x.rep === 'sekali' ? 'sekali' : 'bulan', start: y + '-' + pad2(x.m + 1) + '-01', end: x.rep === 'bulan' ? y + '-12-31' : '', cnt: x.rep === 'n' ? x.n : 0, cat: 'Simulasi', ch: [] });
-    else if (x.k === 'in') simMonths(x).forEach(function (mm) { KL.tx.push({ id: kid('s'), d: y + '-' + pad2(mm + 1) + '-01', t: '+', amt: x.amt, cat: 'Simulasi', note: x.name, pay: '' }); });
+    else if (x.k === 'in') { if (KL && Array.isArray(KL.tx)) simMonths(x).forEach(function (mm) { KL.tx.push({ id: kid('s'), d: y + '-' + pad2(mm + 1) + '-01', t: '+', amt: x.amt, cat: 'Simulasi', note: x.name, pay: '' }); }); }
     else
       S.items.forEach(function (it) {
         if (it.id != x.id) return;
