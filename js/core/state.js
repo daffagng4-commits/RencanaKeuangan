@@ -455,8 +455,13 @@ function emptyAllState(year) {
 
 function rkWriteCache(obj) {
   var k = rkStorageKey();
-  if (!k || typeof localStorage === 'undefined') return;
-  localStorage.setItem(k, JSON.stringify(obj || ALL));
+  if (!k || typeof localStorage === 'undefined') return true;
+  try {
+    localStorage.setItem(k, JSON.stringify(obj || ALL));
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 function save() {
@@ -470,8 +475,8 @@ function save() {
       ALL.rev = Date.now();
       schedPush();
     }
-    rkWriteCache(ALL);
-    setSaveStatus(true);
+    var ok = rkWriteCache(ALL);
+    setSaveStatus(ok);
   } catch (e) {
     try {
       localStorage.removeItem('rk-undo');
