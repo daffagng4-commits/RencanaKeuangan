@@ -21,7 +21,9 @@ function repCollect(from, to) {
         var ds = isoD(t);
         if (ds < from || ds > to) return;
         var k = it.id + '|' + ds;
-        bil.push({ d: ds, name: it.name, cat: it.cat || '-', amt: priceAt(it, t), st: S.paid[k] ? 'Lunas' : S.skip[k] ? 'Dilewati' : 'Belum' });
+        var rtx = typeof realTx === 'function' ? realTx(k) : null;
+        var amt = rtx ? (+rtx.amt || 0) : priceAt(it, t);
+        bil.push({ d: ds, name: it.name, cat: it.cat || '-', amt: amt, st: S.paid[k] ? 'Lunas' : S.skip[k] ? 'Dilewati' : 'Belum' });
       });
     });
   var byD = function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; };
