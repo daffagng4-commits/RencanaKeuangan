@@ -375,6 +375,7 @@ function pull() {
         finishSync(true);
         return;
       }
+      setSync(rr);
       finishSync(!window._rkBootDataAnimated);
       return push();
     }, function (err) {
@@ -699,6 +700,8 @@ function auth(kind) {
     if (typeof brCloseModal === 'function') brCloseModal('lg');
     else $('lg').hidden = true;
     $('lp').value = '';
+  }).catch(function (err) {
+    if ($('lm')) $('lm').textContent = 'Gagal terhubung ke server: ' + ((err && err.message) || 'periksa koneksi internet Anda.');
   });
 }
 
@@ -743,8 +746,10 @@ function bindSync() {
     } else if (c === 'local') {
       var cs = snapRaw('Data cloud sebelum ditimpa', JSON.stringify(row.data));
       ALL.rev = Date.now();
+      setSync(+row.rev || 0);
       try {
-        localStorage.setItem(KEY, JSON.stringify(ALL));
+        if (typeof rkWriteCache === 'function') rkWriteCache(ALL);
+        else localStorage.setItem(KEY, JSON.stringify(ALL));
       } catch (e) {}
       push();
       toast('Memakai data perangkat ini.', function () {
