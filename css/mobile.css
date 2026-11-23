@@ -433,7 +433,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .av-btn::before,
 body[data-shell="mobile-app"] #mobile-app-shell .ico-btn::before {
   content: "";
   position: absolute;
-  inset: -5px;
+  inset: -6px;
   border-radius: 50%;
   background: transparent;
 }
@@ -1005,10 +1005,11 @@ body[data-shell="mobile-app"] #mobile-app-shell .seg-btn {
 body[data-shell="mobile-app"] #mobile-app-shell .seg-btn::before {
   content: "";
   position: absolute;
-  left: 0;
-  right: 0;
+  left: 50%;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translate(-50%, -50%);
+  width: 100%;
+  min-width: var(--tap);
   height: var(--tap);
   min-height: var(--tap);
   background: transparent;
@@ -1345,7 +1346,7 @@ body[data-shell="mobile-app"] #mobile-app-shell .btn-emerald { background: var(-
 body[data-shell="mobile-app"] #mobile-app-shell .btn-secondary { background: var(--bg-surface); border: 1px solid var(--border-strong); color: var(--text-primary); }
 body[data-shell="mobile-app"] #mobile-app-shell .btn-crimson { background: var(--crimson-soft); color: var(--crimson); }
 body[data-shell="mobile-app"] #mobile-app-shell .btn-sm { position: relative; min-height: 36px; padding: 5px 10px; font-size: 0.73rem; border-radius: 8px; }
-body[data-shell="mobile-app"] #mobile-app-shell .btn-sm::after { content: ''; position: absolute; inset: -4px 0; }
+body[data-shell="mobile-app"] #mobile-app-shell .btn-sm::after { content: ''; position: absolute; inset: -5px 0; }
 
 body[data-shell="mobile-app"] #mobile-app-shell .field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 body[data-shell="mobile-app"] #mobile-app-shell .field-label { font-size: 0.73rem; font-weight: 700; color: var(--text-secondary); }
@@ -1959,8 +1960,11 @@ body[data-shell="mobile-app"] #mobile-app-shell .pon-time { font-size: 0.66rem; 
 body[data-shell="mobile-app"] #mobile-app-shell .pon-title { font-size: 0.80rem; font-weight: 800; margin-bottom: 2px; color: #FFFFFF; }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-body { font-size: 0.72rem; line-height: 1.38; color: #CBD5E1; white-space: pre-line; }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-actions { display: flex; gap: 6px; margin-top: 8px; }
-body[data-shell="mobile-app"] #mobile-app-shell .pon-btn { flex: 1; padding: 5px 8px; border-radius: 9px; font-size: 0.70rem; font-weight: 700; text-align: center; background: rgba(255, 255, 255, 0.14); color: #F8FAFC; }
+body[data-shell="mobile-app"] #mobile-app-shell .pon-btn { position: relative; flex: 1; padding: 5px 8px; border-radius: 9px; font-size: 0.70rem; font-weight: 700; text-align: center; background: rgba(255, 255, 255, 0.14); color: #F8FAFC; }
+body[data-shell="mobile-app"] #mobile-app-shell .pon-btn::before { content: ""; position: absolute; inset: -10px 0; background: transparent; }
 body[data-shell="mobile-app"] #mobile-app-shell .pon-btn.primary { background: #10B981; color: #FFFFFF; }
+body[data-shell="mobile-app"] #mobile-app-shell #m-pon-close { position: relative; }
+body[data-shell="mobile-app"] #mobile-app-shell #m-pon-close::before { content: ""; position: absolute; inset: -14px; background: transparent; }
 
 /* Cashflow Expanded + Live Readout Strip */
 body[data-shell="mobile-app"] #mobile-app-shell .cf-strip {
