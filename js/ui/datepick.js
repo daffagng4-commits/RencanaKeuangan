@@ -15,7 +15,11 @@
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function isoOf(y, m, d) { return y + '-' + pad(m + 1) + '-' + pad(d); }
   function dim(y, m) { return new Date(Date.UTC(y, m + 1, 0)).getUTCDate(); }
-  function tday() { return typeof todayISO === 'function' ? todayISO() : new Date().toISOString().slice(0, 10); }
+  function tday() {
+    if (typeof todayISO === 'function') return todayISO();
+    var d = new Date();
+    return isoOf(d.getFullYear(), d.getMonth(), d.getDate());
+  }
   function mon(y, m) { return (typeof FULL_MON !== 'undefined' ? FULL_MON[m] : MON[m]) + ' ' + y; }
   function lbl(d) { return typeof fmtD === 'function' ? fmtD(d) : d; }
   function shift(d, n) { return new Date(Date.parse(d + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10); }
