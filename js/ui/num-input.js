@@ -48,21 +48,32 @@ function resolveNumEl(elOrId) {
 function fmtRpInputStr(raw) {
   if (raw == null) return '';
   var s = String(raw);
-  if (!s || /[^\d.,\s]/.test(s)) return s;
-  var d = s.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
-  if (!d) return '';
-  return d.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  if (!s) return '';
+  var neg = /^\s*-/.test(s);
+  var body = neg ? s.replace(/^\s*-/, '') : s;
+  if (!body || /[^\d.,\s]/.test(body)) return s;
+  var compact = body.replace(/\s/g, '');
+  if (/^\d{1,3}(\.\d{3})+,\d{1,2}$/.test(compact) || /^\d{1,3}(,\d{3})+\.\d{1,2}$/.test(compact) || /^\d+[.,]\d{1,2}$/.test(compact)) {
+    var parsed = typeof parseRp === 'function' ? parseRp(s) : Math.round(parseFloat(compact.replace(/\./g, '').replace(',', '.')));
+    if (Number.isFinite(parsed)) {
+      var absD = String(Math.abs(Math.round(parsed)));
+      return (parsed < 0 ? '-' : '') + absD.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+  }
+  var d = body.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+  if (!d) return neg ? '-' : '';
+  return (neg && d !== '0' ? '-' : '') + d.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-/** Format nilai saat input kehilangan fokus (blur): konversi shorthand ('250k', '1,5jt') ke '250.000', '1.500.000'. */
+/** Format nilai saat input kehilangan fokus (blur): konversi shorthand ('250k', '1,5jt') dan desimal ke '250.000', '1.500.000'. */
 function fmtRpBlurStr(raw) {
   if (raw == null) return '';
   var s = String(raw).trim();
   if (!s) return '';
-  if (/[^\d.,\s]/.test(s) && typeof parseRp === 'function') {
+  if (typeof parseRp === 'function' && (/[^\d.,\s]/.test(s) || /[.,]\d{1,2}$/.test(s.replace(/\s/g, '')))) {
     var n = parseRp(s);
-    if (!isNaN(n) && n > 0) return fmtRpInputStr(String(Math.round(n)));
-    if (n === 0 && s === '0') return '0';
+    if (Number.isFinite(n) && n !== 0) return fmtRpInputStr(String(Math.round(n)));
+    if (n === 0 && /^0([.,]0{1,2})?$/.test(s)) return '0';
   }
   return fmtRpInputStr(s);
 }
