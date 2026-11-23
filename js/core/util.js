@@ -70,6 +70,7 @@ function parseRp(s) {
   else if (/(jt|juta)$/.test(s)) m = 1e6;
   else if (/(rb|ribu|k)$/.test(s)) m = 1e3;
   s = s.replace(/(m|miliar|milyar|jt|juta|rb|ribu|k)$/, '');
+  if (!s || !/^[+-]?[\d.,]+$/.test(s)) return 0;
   var v;
   if (m > 1) {
     v = parseFloat(s.replace(',', '.'));
