@@ -24,7 +24,7 @@ function repCollect(from, to) {
         bil.push({ d: ds, name: it.name, cat: it.cat || '-', amt: priceAt(it, t), st: S.paid[k] ? 'Lunas' : S.skip[k] ? 'Dilewati' : 'Belum' });
       });
     });
-  var byD = function (a, b) { return a.d < b.d ? -1 : 1; };
+  var byD = function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; };
   return { tx: tx.sort(byD), bil: bil.sort(byD) };
 }
 
@@ -76,8 +76,16 @@ function repData(p) {
     };
   }
   if (p === 'w') {
-    var to = y === +today.slice(0, 4) ? today : y + today.slice(4),
-      from = addDaysISO(to, -6);
+    var to;
+    if (y === +today.slice(0, 4)) {
+      to = today;
+    } else {
+      var tm = +today.slice(5, 7),
+        td = +today.slice(8, 10),
+        maxD = new Date(Date.UTC(y, tm, 0)).getUTCDate();
+      to = y + '-' + pad2(tm) + '-' + pad2(Math.min(td, maxD));
+    }
+    var from = addDaysISO(to, -6);
     C = repCollect(from, to);
     return {
       filename: 'laporan-mingguan-' + to + '.pdf',

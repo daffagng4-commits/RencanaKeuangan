@@ -213,8 +213,8 @@ function exportFile(name, data, mime) {
     } catch (e) {
       if ($('ta') && typeof data === 'string') $('ta').value = data;
       if ($('dt')) $('dt').open = true;
-      setX('Unduh file gagal.', 0);
-      return { ok: false, method: 'none', done: Promise.resolve({ ok: false, error: (e && e.message) || 'Unduh file gagal.' }) };
+      setX('Gagal mengunduh file. Coba ulangi atau periksa izin penyimpanan.', 0);
+      return { ok: false, method: 'none', done: Promise.resolve({ ok: false, error: (e && e.message) || 'Gagal mengunduh file.' }) };
     }
   }
   DL.save({ filename: name, data: data })

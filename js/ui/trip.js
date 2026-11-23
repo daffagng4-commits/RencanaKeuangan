@@ -1296,7 +1296,7 @@ function tripSyncActualDialogLive(tr, x, isBk, prefix) {
     if (useFx) {
       akHelp.textContent = effRate > 0
         ? ('Kosong = ikut kurs ' + (isItemFx ? 'efektif' : 'perjalanan') + ' (1 ' + (curCode || 'asing') + ' = Rp ' + tripFormatRateIndo(effRate) + ')')
-        : ('Kurs ' + (curCode || 'asing') + ' belum diatur — isi kurs manual');
+        : ('Kurs ' + (curCode || 'asing') + ' belum diatur. Isi kurs manual terlebih dahulu.');
     } else {
       akHelp.textContent = '';
     }
@@ -2105,9 +2105,9 @@ function goalCard(P, pl) {
       '<div class="sub">Sisihkan <b>' + rp(g.per) + '</b> per bulan &middot; ' + monthLbl(g.from) + ' – ' + monthLbl(g.to) + ' &middot; bulan ke ' + Math.min(el, ms.length) + ' dari ' + ms.length + '</div>' +
       '<div class="sub mt6">' + (lk ? 'Tersambung ke Rencana Keuangan: tabungan ini otomatis dihitung sebagai pengeluaran bulanan di <b>Rincian Bulanan</b>.' : 'Tidak tersambung ke Rencana Keuangan: hanya sebagai pencatat, tidak memengaruhi Rincian Bulanan.') + '</div>' +
       (lk && !goalMonthsIn(g, +S.year).length
-        ? '<div" class="chp ic mt8">Bulan menabung ada di tahun ' + Object.keys(ms.reduce(function (o, k) { o[k.slice(0, 4)] = 1; return o; }, {})).join(' & ') + '. Ganti Tahun di mode Rencana untuk melihat dampaknya.</div>'
+        ? '<div class="chp ic mt8">Bulan menabung ada di tahun ' + Object.keys(ms.reduce(function (o, k) { o[k.slice(0, 4)] = 1; return o; }, {})).join(' & ') + '. Ganti Tahun di mode Rencana untuk melihat dampaknya.</div>'
         : '') +
-      (lk && low && goalMonthsIn(g, +S.year).length ? '<div" class="chp ' + (neg.length ? 'cash' : 'on') + ' mt8">' + (neg.length ? 'Saldo Rencana ' + S.year + ' negatif di ' + neg.map(function (r) { return MON[r.m]; }).join(', ') : 'Saldo Rencana ' + S.year + ' tetap positif (terendah ' + rp(low.ak) + ' di ' + MON[low.m] + ')') + '</div>' : '') +
+      (lk && low && goalMonthsIn(g, +S.year).length ? '<div class="chp ' + (neg.length ? 'cash' : 'on') + ' mt8">' + (neg.length ? 'Saldo Rencana ' + S.year + ' negatif di ' + neg.map(function (r) { return MON[r.m]; }).join(', ') : 'Saldo Rencana ' + S.year + ' tetap positif (terendah ' + rp(low.ak) + ' di ' + MON[low.m] + ')') + '</div>' : '') +
       '<div class="acts mt8"><button class="g" data-gedit="1">Ubah target</button><button class="g" data-glink="1">' + (lk ? 'Putuskan dari Rencana' : 'Sambungkan ke Rencana') + '</button><button class="g d" data-gdel="1">Hapus target</button></div></div>'
     );
   }
@@ -2575,7 +2575,7 @@ function simMonths(x) {
 }
 /** Hitung Rincian dengan skenario diterapkan sementara; data asli tidak berubah. */
 function simCalc(list) {
-  var keepS = S, KL = kasLinked(), keepTx = KL.tx, extra = [], C = JSON.parse(JSON.stringify(S)), y = +S.year;
+  var keepS = S, KL = kasLinked(), keepTx = KL ? KL.tx : null, extra = [], C = JSON.parse(JSON.stringify(S)), y = +S.year;
   list.forEach(function (x) {
     if (x.k === 'in' || x.k === 'out') simMonths(x).forEach(function (mm) { extra.push({ d: y + '-' + pad2(mm + 1) + '-01', t: x.k === 'in' ? '+' : '-', amt: x.amt }); });
     else
@@ -2587,8 +2587,8 @@ function simCalc(list) {
       });
   });
   S = C;
-  KL.tx = keepTx.concat(extra);
-  try { return calc(); } finally { S = keepS; KL.tx = keepTx; }
+  if (KL) KL.tx = keepTx.concat(extra);
+  try { return calc(); } finally { S = keepS; if (KL) KL.tx = keepTx; }
 }
 /** Tagihan item di tahun aktif yang BELUM lunas dan tidak dilewati: hanya ini yang masuk akal untuk disimulasikan. */
 function simOpen(it) {
@@ -3269,7 +3269,7 @@ function xlSummaryText(d) {
   var a = 0, b = 0;
   (d.bk || []).forEach(function (x) { if (x.fx) b += x.amt; else a += x.amt; });
   (d.it || []).forEach(function (x) { if (x.pay === 'on') return; if (x.fx) b += x.est; else a += x.est; });
-  var curListTxt = (d.curs && d.curs.length > 1) ? (' Mata uang asing terdeteksi: ' + d.curs.join(', ') + ' (kurs mata uang tambahan dapat diisi di Ubah Perjalanan).') : '';
+  var curListTxt = (d.curs && d.curs.length > 1) ? (' Mata uang asing terdeteksi: ' + d.curs.join(', ') + ' (kurs mata uang tambahan dapat diisi lewat tombol Ubah Perjalanan).') : '';
   return d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan, ' + Object.keys(d.dt || {}).length + ' judul hari' +
     (d.start ? ' · ' + fmtD(d.start) + ' – ' + fmtD(d.end) : '') + '.' +
     ' Perkiraan biaya: ' + rp(a) + (b ? ' + ' + b.toLocaleString('id-ID') + ' dalam mata uang asing' : '') + '.' +

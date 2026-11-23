@@ -52,26 +52,41 @@ function normalisasiNamaItem(namaMentah) {
 
 /** Escape HTML. */
 function esc(t) {
-  return String(t).replace(/[&<>"]/g, function (c) {
-    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  return String(t).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
   });
 }
 
 /** Format rupiah: "Rp 1.250.000". */
 function rp(n) {
-  return 'Rp ' + Math.round(n).toLocaleString('id-ID');
+  var num = Number(n);
+  if (!Number.isFinite(num)) num = 0;
+  return 'Rp ' + Math.round(num).toLocaleString('id-ID');
 }
 
-/** Baca input uang: "200k", "1,5jt", "200.000" -> angka. */
+/** Baca input uang: "200k", "1,5jt", "200.000", "1.500.000,00" -> angka. */
 function parseRp(s) {
+  if (s == null) return 0;
   s = String(s).toLowerCase().replace(/rp|\s/g, '');
   var m = 1;
   if (/(m|miliar|milyar)$/.test(s)) m = 1e9;
   else if (/(jt|juta)$/.test(s)) m = 1e6;
   else if (/(rb|ribu|k)$/.test(s)) m = 1e3;
   s = s.replace(/(m|miliar|milyar|jt|juta|rb|ribu|k)$/, '');
-  var v = m > 1 ? parseFloat(s.replace(',', '.')) : parseInt(s.replace(/[.,]/g, ''), 10);
-  return isNaN(v) ? 0 : Math.round(v * m);
+  var v;
+  if (m > 1) {
+    v = parseFloat(s.replace(',', '.'));
+  } else if (/^[+-]?\d{1,3}(\.\d{3})+(,\d{1,2})?$/.test(s)) {
+    v = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+  } else if (/^[+-]?\d{1,3}(,\d{3})+(\.\d{1,2})?$/.test(s)) {
+    v = parseFloat(s.replace(/,/g, ''));
+  } else if (/^[+-]?\d+[.,]\d{1,2}$/.test(s)) {
+    v = parseFloat(s.replace(',', '.'));
+  } else {
+    v = parseInt(s.replace(/[.,]/g, ''), 10);
+  }
+  var out = Math.round(v * m);
+  return Number.isFinite(out) ? out : 0;
 }
 
 /** Format tanggal (ms UTC) ke bahasa Indonesia. */
@@ -126,13 +141,17 @@ function fmtMonthRange(m1, m2, y) {
   return MON[m1] + ' \u2013 ' + MON[m2] + ' ' + y;
 }
 
-/** Harga singkat: 720rb, 1,5jt. */
+/** Harga singkat: 720rb, 1,5jt, -2,5jt. */
 function shortP(p) {
-  return p >= 1e6
-    ? (p / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + 'jt'
-    : p >= 1000
-      ? Math.round(p / 1000) + 'rb'
-      : String(p);
+  var num = Number(p);
+  if (!Number.isFinite(num)) return '0';
+  var neg = num < 0 ? '-' : '';
+  var a = Math.abs(num);
+  return neg + (a >= 1e6
+    ? (a / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + 'jt'
+    : a >= 1000
+      ? Math.round(a / 1000) + 'rb'
+      : String(Math.round(a)));
 }
 
 /** Dua digit (01, 02, ...). */
@@ -241,9 +260,9 @@ function series(it, endMs) {
     k,
     t,
     s;
-  for (k = 0; k < 4000; k++) {
+  for (k = 0; k < 50000; k++) {
     t = at(it, k);
-    if (t > endMs) break;
+    if (isNaN(t) || t > endMs) break;
     s = schedSegAt(it, isoD(t));
     if (!s) out.push(t);
     if (it.unit === 'sekali') break;
@@ -252,9 +271,9 @@ function series(it, endMs) {
     if (!g.n && !g.unit) return;
     var sub = { start: g.anchor || g.from, n: g.n || it.n, unit: g.unit || it.unit },
       lim = g.to ? Date.parse(g.to + 'T00:00:00Z') : endMs;
-    for (k = 0; k < 4000; k++) {
+    for (k = 0; k < 50000; k++) {
       t = at(sub, k);
-      if (t > endMs || t > lim) break;
+      if (isNaN(t) || t > endMs || t > lim) break;
       if (schedSegAt(it, isoD(t)) === g) out.push(t);
       if (sub.unit === 'sekali') break;
     }
@@ -277,7 +296,9 @@ function series(it, endMs) {
     out = out.filter(function (t) {
       var d = isoD(t);
       if (!mvs[d]) return true;
-      add.push(Date.parse(mvs[d] + 'T00:00:00Z'));
+      var mvMs = Date.parse(mvs[d] + 'T00:00:00Z');
+      if (isNaN(mvMs)) return true;
+      add.push(mvMs);
       return false;
     });
     out = out.concat(add).sort(function (a, b) {
@@ -449,6 +470,7 @@ function calc() {
     spend.push(0);
     investM.push(0);
   }
+  var countedLinkedTx = {};
   S.items.forEach(function (it) {
     var list = occ(it, y).filter(function (t) {
       return t >= from;
@@ -456,12 +478,15 @@ function calc() {
     occs[it.id] = list;
     list.forEach(function (t) {
       var mm = new Date(t).getUTCMonth();
-      if (S.skip[it.id + '|' + isoD(t)]) {
+      var key = it.id + '|' + isoD(t);
+      if (S.skip[key]) {
         skipped[mm].push({ it: it, t: t });
         return;
       }
-      var price = priceAt(it, t),
+      var rtx = typeof realTx === 'function' ? realTx(key) : null;
+      var price = rtx ? (+rtx.amt || 0) : priceAt(it, t),
         cat = it.cat || '';
+      if (rtx && rtx.id) countedLinkedTx[rtx.id] = true;
       events[mm].push({ it: it, t: t });
       spend[mm] += price;
       byCat[cat] = (byCat[cat] || 0) + price;
@@ -489,6 +514,7 @@ function calc() {
   var KL = kasLinked();
   if (KL)
     KL.tx.forEach(function (x) {
+      if (x.id && countedLinkedTx[x.id]) return;
       if (+x.d.slice(0, 4) !== y) return;
       var mm = +x.d.slice(5, 7) - 1,
         v = x.t === '-' ? -x.amt : x.amt;
@@ -1174,7 +1200,7 @@ function parseQuickItem(str, yr) {
   });
 
   var chosen = candidates[0];
-  if (!chosen.val || chosen.val <= 0) return { error: 'Nominal tidak valid.' };
+  if (!chosen.val || chosen.val <= 0) return { error: 'Nominal harus lebih besar dari 0 (mis. 50.000 atau 200k).' };
   var price = chosen.val;
 
   rem = rem.slice(0, chosen.index) + ' ' + rem.slice(chosen.index + chosen.raw.length);

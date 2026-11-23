@@ -46,7 +46,11 @@ function sbStat(t, bad) {
   } else {
     e.style.display = 'none';
     e.textContent = '';
-    if (vi && t) vi.title = (vi.title ? vi.title + ' · ' : '') + t;
+    if (vi && t) {
+      if (vi.dataset && vi.dataset.baseTitle == null) vi.dataset.baseTitle = vi.title || '';
+      var baseT = (vi.dataset && vi.dataset.baseTitle) || '';
+      vi.title = (baseT ? baseT + ' · ' : '') + t;
+    }
   }
   var ts = $('tsync');
   if (ts) ts.textContent = '\u2601 ' + t;
@@ -60,9 +64,14 @@ function clock() {
 
 /** Buat klien Supabase bila SB_URL/SB_KEY valid dan pustaka termuat. */
 function sbInit() {
-  if (!SB_URL || !SB_KEY || !window.supabase) {
+  if (!SB_URL || !SB_KEY) {
     acctUI(null);
-    sbStat('Mode lokal (Supabase belum diisi)');
+    sbStat('Mode lokal (Supabase belum dikonfigurasi)');
+    return;
+  }
+  if (!window.supabase) {
+    acctUI(null);
+    sbStat('Mode lokal (offline, sinkron cloud tidak tersedia)');
     return;
   }
   var u0;
@@ -103,6 +112,8 @@ function sbInit() {
   sb.auth.getSession().then(function (r) {
     var s0 = r && r.data ? r.data.session : null;
     if (s0 || !sbUser) setUser(s0);
+  }).catch(function () {
+    if (!sbUser) setUser(null);
   });
   sb.auth.onAuthStateChange(function (_e, s) {
     setUser(s);

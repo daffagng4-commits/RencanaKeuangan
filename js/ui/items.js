@@ -480,7 +480,7 @@ function parseQuickItem(str, yr) {
   });
 
   var chosen = candidates[0];
-  if (!chosen.val || chosen.val <= 0) return { error: 'Nominal tidak valid.' };
+  if (!chosen.val || chosen.val <= 0) return { error: 'Nominal harus lebih besar dari 0 (mis. 50.000 atau 200k).' };
   var price = chosen.val;
 
   rem = rem.slice(0, chosen.index) + ' ' + rem.slice(chosen.index + chosen.raw.length);

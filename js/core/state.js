@@ -521,8 +521,15 @@ function restoreSnap(t) {
     return x.t === t;
   })[0];
   if (!s) return null;
+  var parsed;
+  try {
+    parsed = JSON.parse(s.d);
+  } catch (e) {
+    if (typeof toast === 'function') toast('Data cadangan rusak dan tidak dapat dipulihkan.');
+    return null;
+  }
   var back = snap('Sebelum memulihkan');
-  ALL = norm(JSON.parse(s.d));
+  ALL = norm(parsed);
   S = ALL.data[ALL.year];
   lastData = '';
   save();

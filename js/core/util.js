@@ -49,26 +49,41 @@ function normalisasiNamaItem(namaMentah) {
 
 /** Escape HTML. */
 function esc(t) {
-  return String(t).replace(/[&<>"]/g, function (c) {
-    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  return String(t).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
   });
 }
 
 /** Format rupiah: "Rp 1.250.000". */
 function rp(n) {
-  return 'Rp ' + Math.round(n).toLocaleString('id-ID');
+  var num = Number(n);
+  if (!Number.isFinite(num)) num = 0;
+  return 'Rp ' + Math.round(num).toLocaleString('id-ID');
 }
 
-/** Baca input uang: "200k", "1,5jt", "200.000" -> angka. */
+/** Baca input uang: "200k", "1,5jt", "200.000", "1.500.000,00" -> angka. */
 function parseRp(s) {
+  if (s == null) return 0;
   s = String(s).toLowerCase().replace(/rp|\s/g, '');
   var m = 1;
   if (/(m|miliar|milyar)$/.test(s)) m = 1e9;
   else if (/(jt|juta)$/.test(s)) m = 1e6;
   else if (/(rb|ribu|k)$/.test(s)) m = 1e3;
   s = s.replace(/(m|miliar|milyar|jt|juta|rb|ribu|k)$/, '');
-  var v = m > 1 ? parseFloat(s.replace(',', '.')) : parseInt(s.replace(/[.,]/g, ''), 10);
-  return isNaN(v) ? 0 : Math.round(v * m);
+  var v;
+  if (m > 1) {
+    v = parseFloat(s.replace(',', '.'));
+  } else if (/^[+-]?\d{1,3}(\.\d{3})+(,\d{1,2})?$/.test(s)) {
+    v = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+  } else if (/^[+-]?\d{1,3}(,\d{3})+(\.\d{1,2})?$/.test(s)) {
+    v = parseFloat(s.replace(/,/g, ''));
+  } else if (/^[+-]?\d+[.,]\d{1,2}$/.test(s)) {
+    v = parseFloat(s.replace(',', '.'));
+  } else {
+    v = parseInt(s.replace(/[.,]/g, ''), 10);
+  }
+  var out = Math.round(v * m);
+  return Number.isFinite(out) ? out : 0;
 }
 
 /** Format tanggal (ms UTC) ke bahasa Indonesia. */
@@ -123,13 +138,17 @@ function fmtMonthRange(m1, m2, y) {
   return MON[m1] + ' \u2013 ' + MON[m2] + ' ' + y;
 }
 
-/** Harga singkat: 720rb, 1,5jt. */
+/** Harga singkat: 720rb, 1,5jt, -2,5jt. */
 function shortP(p) {
-  return p >= 1e6
-    ? (p / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + 'jt'
-    : p >= 1000
-      ? Math.round(p / 1000) + 'rb'
-      : String(p);
+  var num = Number(p);
+  if (!Number.isFinite(num)) return '0';
+  var neg = num < 0 ? '-' : '';
+  var a = Math.abs(num);
+  return neg + (a >= 1e6
+    ? (a / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + 'jt'
+    : a >= 1000
+      ? Math.round(a / 1000) + 'rb'
+      : String(Math.round(a)));
 }
 
 /** Dua digit (01, 02, ...). */

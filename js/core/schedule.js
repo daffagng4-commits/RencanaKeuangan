@@ -56,9 +56,9 @@ function series(it, endMs) {
     k,
     t,
     s;
-  for (k = 0; k < 4000; k++) {
+  for (k = 0; k < 50000; k++) {
     t = at(it, k);
-    if (t > endMs) break;
+    if (isNaN(t) || t > endMs) break;
     s = schedSegAt(it, isoD(t));
     if (!s) out.push(t);
     if (it.unit === 'sekali') break;
@@ -67,9 +67,9 @@ function series(it, endMs) {
     if (!g.n && !g.unit) return;
     var sub = { start: g.anchor || g.from, n: g.n || it.n, unit: g.unit || it.unit },
       lim = g.to ? Date.parse(g.to + 'T00:00:00Z') : endMs;
-    for (k = 0; k < 4000; k++) {
+    for (k = 0; k < 50000; k++) {
       t = at(sub, k);
-      if (t > endMs || t > lim) break;
+      if (isNaN(t) || t > endMs || t > lim) break;
       if (schedSegAt(it, isoD(t)) === g) out.push(t);
       if (sub.unit === 'sekali') break;
     }
@@ -92,7 +92,9 @@ function series(it, endMs) {
     out = out.filter(function (t) {
       var d = isoD(t);
       if (!mvs[d]) return true;
-      add.push(Date.parse(mvs[d] + 'T00:00:00Z'));
+      var mvMs = Date.parse(mvs[d] + 'T00:00:00Z');
+      if (isNaN(mvMs)) return true;
+      add.push(mvMs);
       return false;
     });
     out = out.concat(add).sort(function (a, b) {

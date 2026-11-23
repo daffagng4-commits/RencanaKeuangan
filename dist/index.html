@@ -10588,26 +10588,41 @@ function normalisasiNamaItem(namaMentah) {
 
 /** Escape HTML. */
 function esc(t) {
-  return String(t).replace(/[&<>"]/g, function (c) {
-    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  return String(t).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
   });
 }
 
 /** Format rupiah: "Rp 1.250.000". */
 function rp(n) {
-  return 'Rp ' + Math.round(n).toLocaleString('id-ID');
+  var num = Number(n);
+  if (!Number.isFinite(num)) num = 0;
+  return 'Rp ' + Math.round(num).toLocaleString('id-ID');
 }
 
-/** Baca input uang: "200k", "1,5jt", "200.000" -> angka. */
+/** Baca input uang: "200k", "1,5jt", "200.000", "1.500.000,00" -> angka. */
 function parseRp(s) {
+  if (s == null) return 0;
   s = String(s).toLowerCase().replace(/rp|\s/g, '');
   var m = 1;
   if (/(m|miliar|milyar)$/.test(s)) m = 1e9;
   else if (/(jt|juta)$/.test(s)) m = 1e6;
   else if (/(rb|ribu|k)$/.test(s)) m = 1e3;
   s = s.replace(/(m|miliar|milyar|jt|juta|rb|ribu|k)$/, '');
-  var v = m > 1 ? parseFloat(s.replace(',', '.')) : parseInt(s.replace(/[.,]/g, ''), 10);
-  return isNaN(v) ? 0 : Math.round(v * m);
+  var v;
+  if (m > 1) {
+    v = parseFloat(s.replace(',', '.'));
+  } else if (/^[+-]?\d{1,3}(\.\d{3})+(,\d{1,2})?$/.test(s)) {
+    v = parseFloat(s.replace(/\./g, '').replace(',', '.'));
+  } else if (/^[+-]?\d{1,3}(,\d{3})+(\.\d{1,2})?$/.test(s)) {
+    v = parseFloat(s.replace(/,/g, ''));
+  } else if (/^[+-]?\d+[.,]\d{1,2}$/.test(s)) {
+    v = parseFloat(s.replace(',', '.'));
+  } else {
+    v = parseInt(s.replace(/[.,]/g, ''), 10);
+  }
+  var out = Math.round(v * m);
+  return Number.isFinite(out) ? out : 0;
 }
 
 /** Format tanggal (ms UTC) ke bahasa Indonesia. */
@@ -10662,13 +10677,17 @@ function fmtMonthRange(m1, m2, y) {
   return MON[m1] + ' \u2013 ' + MON[m2] + ' ' + y;
 }
 
-/** Harga singkat: 720rb, 1,5jt. */
+/** Harga singkat: 720rb, 1,5jt, -2,5jt. */
 function shortP(p) {
-  return p >= 1e6
-    ? (p / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + 'jt'
-    : p >= 1000
-      ? Math.round(p / 1000) + 'rb'
-      : String(p);
+  var num = Number(p);
+  if (!Number.isFinite(num)) return '0';
+  var neg = num < 0 ? '-' : '';
+  var a = Math.abs(num);
+  return neg + (a >= 1e6
+    ? (a / 1e6).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + 'jt'
+    : a >= 1000
+      ? Math.round(a / 1000) + 'rb'
+      : String(Math.round(a)));
 }
 
 /** Dua digit (01, 02, ...). */
@@ -10777,9 +10796,9 @@ function series(it, endMs) {
     k,
     t,
     s;
-  for (k = 0; k < 4000; k++) {
+  for (k = 0; k < 50000; k++) {
     t = at(it, k);
-    if (t > endMs) break;
+    if (isNaN(t) || t > endMs) break;
     s = schedSegAt(it, isoD(t));
     if (!s) out.push(t);
     if (it.unit === 'sekali') break;
@@ -10788,9 +10807,9 @@ function series(it, endMs) {
     if (!g.n && !g.unit) return;
     var sub = { start: g.anchor || g.from, n: g.n || it.n, unit: g.unit || it.unit },
       lim = g.to ? Date.parse(g.to + 'T00:00:00Z') : endMs;
-    for (k = 0; k < 4000; k++) {
+    for (k = 0; k < 50000; k++) {
       t = at(sub, k);
-      if (t > endMs || t > lim) break;
+      if (isNaN(t) || t > endMs || t > lim) break;
       if (schedSegAt(it, isoD(t)) === g) out.push(t);
       if (sub.unit === 'sekali') break;
     }
@@ -10813,7 +10832,9 @@ function series(it, endMs) {
     out = out.filter(function (t) {
       var d = isoD(t);
       if (!mvs[d]) return true;
-      add.push(Date.parse(mvs[d] + 'T00:00:00Z'));
+      var mvMs = Date.parse(mvs[d] + 'T00:00:00Z');
+      if (isNaN(mvMs)) return true;
+      add.push(mvMs);
       return false;
     });
     out = out.concat(add).sort(function (a, b) {
@@ -11469,8 +11490,15 @@ function restoreSnap(t) {
     return x.t === t;
   })[0];
   if (!s) return null;
+  var parsed;
+  try {
+    parsed = JSON.parse(s.d);
+  } catch (e) {
+    if (typeof toast === 'function') toast('Data cadangan rusak dan tidak dapat dipulihkan.');
+    return null;
+  }
   var back = snap('Sebelum memulihkan');
-  ALL = norm(JSON.parse(s.d));
+  ALL = norm(parsed);
   S = ALL.data[ALL.year];
   lastData = '';
   save();
@@ -11874,6 +11902,7 @@ function calc() {
     spend.push(0);
     investM.push(0);
   }
+  var countedLinkedTx = {};
   S.items.forEach(function (it) {
     var list = occ(it, y).filter(function (t) {
       return t >= from;
@@ -11881,12 +11910,15 @@ function calc() {
     occs[it.id] = list;
     list.forEach(function (t) {
       var mm = new Date(t).getUTCMonth();
-      if (S.skip[it.id + '|' + isoD(t)]) {
+      var key = it.id + '|' + isoD(t);
+      if (S.skip[key]) {
         skipped[mm].push({ it: it, t: t });
         return;
       }
-      var price = priceAt(it, t),
+      var rtx = typeof realTx === 'function' ? realTx(key) : null;
+      var price = rtx ? (+rtx.amt || 0) : priceAt(it, t),
         cat = it.cat || '';
+      if (rtx && rtx.id) countedLinkedTx[rtx.id] = true;
       events[mm].push({ it: it, t: t });
       spend[mm] += price;
       byCat[cat] = (byCat[cat] || 0) + price;
@@ -11914,6 +11946,7 @@ function calc() {
   var KL = kasLinked();
   if (KL)
     KL.tx.forEach(function (x) {
+      if (x.id && countedLinkedTx[x.id]) return;
       if (+x.d.slice(0, 4) !== y) return;
       var mm = +x.d.slice(5, 7) - 1,
         v = x.t === '-' ? -x.amt : x.amt;
@@ -16997,7 +17030,7 @@ function parseQuickItem(str, yr) {
   });
 
   var chosen = candidates[0];
-  if (!chosen.val || chosen.val <= 0) return { error: 'Nominal tidak valid.' };
+  if (!chosen.val || chosen.val <= 0) return { error: 'Nominal harus lebih besar dari 0 (mis. 50.000 atau 200k).' };
   var price = chosen.val;
 
   rem = rem.slice(0, chosen.index) + ' ' + rem.slice(chosen.index + chosen.raw.length);
@@ -18549,8 +18582,8 @@ function exportFile(name, data, mime) {
     } catch (e) {
       if ($('ta') && typeof data === 'string') $('ta').value = data;
       if ($('dt')) $('dt').open = true;
-      setX('Unduh file gagal.', 0);
-      return { ok: false, method: 'none', done: Promise.resolve({ ok: false, error: (e && e.message) || 'Unduh file gagal.' }) };
+      setX('Gagal mengunduh file. Coba ulangi atau periksa izin penyimpanan.', 0);
+      return { ok: false, method: 'none', done: Promise.resolve({ ok: false, error: (e && e.message) || 'Gagal mengunduh file.' }) };
     }
   }
   DL.save({ filename: name, data: data })
@@ -19335,7 +19368,11 @@ function sbStat(t, bad) {
   } else {
     e.style.display = 'none';
     e.textContent = '';
-    if (vi && t) vi.title = (vi.title ? vi.title + ' · ' : '') + t;
+    if (vi && t) {
+      if (vi.dataset && vi.dataset.baseTitle == null) vi.dataset.baseTitle = vi.title || '';
+      var baseT = (vi.dataset && vi.dataset.baseTitle) || '';
+      vi.title = (baseT ? baseT + ' · ' : '') + t;
+    }
   }
   var ts = $('tsync');
   if (ts) ts.textContent = '\u2601 ' + t;
@@ -19349,9 +19386,14 @@ function clock() {
 
 /** Buat klien Supabase bila SB_URL/SB_KEY valid dan pustaka termuat. */
 function sbInit() {
-  if (!SB_URL || !SB_KEY || !window.supabase) {
+  if (!SB_URL || !SB_KEY) {
     acctUI(null);
-    sbStat('Mode lokal (Supabase belum diisi)');
+    sbStat('Mode lokal (Supabase belum dikonfigurasi)');
+    return;
+  }
+  if (!window.supabase) {
+    acctUI(null);
+    sbStat('Mode lokal (offline, sinkron cloud tidak tersedia)');
     return;
   }
   var u0;
@@ -19392,6 +19434,8 @@ function sbInit() {
   sb.auth.getSession().then(function (r) {
     var s0 = r && r.data ? r.data.session : null;
     if (s0 || !sbUser) setUser(s0);
+  }).catch(function () {
+    if (!sbUser) setUser(null);
   });
   sb.auth.onAuthStateChange(function (_e, s) {
     setUser(s);
@@ -20550,7 +20594,7 @@ function renderKas() {
     '" data-kt="-">&minus; Keluar</button></div><div class="kf"><div><label for="ka">Jumlah</label><div class="dflex g6"><input id="ka" type="text" inputmode="numeric" data-num-fmt="rp" placeholder="50k atau 50.000" value="' +
     (E ? E.amt.toLocaleString('id-ID') : '') +
     '">' +
-    (mode === 'trip' && P.cur && P.rate ? '<select class="wauto" id="kcu"><option value="idr">Rp</option><option value="fx">' + P.cur + '</option></select>' : '') +
+    (mode === 'trip' && P.cur && P.rate ? '<select class="wauto" id="kcu"><option value="idr">Rp</option><option value="fx">' + esc(P.cur) + '</option></select>' : '') +
     '</div></div><div><label for="kd">Tanggal</label><input id="kd" type="date" value="' +
     (E ? E.d : todayISO()) +
     '"></div><div><label for="kc">Kategori</label><input id="kc" list="kcl" maxlength="30" value="' +
@@ -22152,7 +22196,7 @@ function tripSyncActualDialogLive(tr, x, isBk, prefix) {
     if (useFx) {
       akHelp.textContent = effRate > 0
         ? ('Kosong = ikut kurs ' + (isItemFx ? 'efektif' : 'perjalanan') + ' (1 ' + (curCode || 'asing') + ' = Rp ' + tripFormatRateIndo(effRate) + ')')
-        : ('Kurs ' + (curCode || 'asing') + ' belum diatur — isi kurs manual');
+        : ('Kurs ' + (curCode || 'asing') + ' belum diatur. Isi kurs manual terlebih dahulu.');
     } else {
       akHelp.textContent = '';
     }
@@ -22961,9 +23005,9 @@ function goalCard(P, pl) {
       '<div class="sub">Sisihkan <b>' + rp(g.per) + '</b> per bulan &middot; ' + monthLbl(g.from) + ' – ' + monthLbl(g.to) + ' &middot; bulan ke ' + Math.min(el, ms.length) + ' dari ' + ms.length + '</div>' +
       '<div class="sub mt6">' + (lk ? 'Tersambung ke Rencana Keuangan: tabungan ini otomatis dihitung sebagai pengeluaran bulanan di <b>Rincian Bulanan</b>.' : 'Tidak tersambung ke Rencana Keuangan: hanya sebagai pencatat, tidak memengaruhi Rincian Bulanan.') + '</div>' +
       (lk && !goalMonthsIn(g, +S.year).length
-        ? '<div" class="chp ic mt8">Bulan menabung ada di tahun ' + Object.keys(ms.reduce(function (o, k) { o[k.slice(0, 4)] = 1; return o; }, {})).join(' & ') + '. Ganti Tahun di mode Rencana untuk melihat dampaknya.</div>'
+        ? '<div class="chp ic mt8">Bulan menabung ada di tahun ' + Object.keys(ms.reduce(function (o, k) { o[k.slice(0, 4)] = 1; return o; }, {})).join(' & ') + '. Ganti Tahun di mode Rencana untuk melihat dampaknya.</div>'
         : '') +
-      (lk && low && goalMonthsIn(g, +S.year).length ? '<div" class="chp ' + (neg.length ? 'cash' : 'on') + ' mt8">' + (neg.length ? 'Saldo Rencana ' + S.year + ' negatif di ' + neg.map(function (r) { return MON[r.m]; }).join(', ') : 'Saldo Rencana ' + S.year + ' tetap positif (terendah ' + rp(low.ak) + ' di ' + MON[low.m] + ')') + '</div>' : '') +
+      (lk && low && goalMonthsIn(g, +S.year).length ? '<div class="chp ' + (neg.length ? 'cash' : 'on') + ' mt8">' + (neg.length ? 'Saldo Rencana ' + S.year + ' negatif di ' + neg.map(function (r) { return MON[r.m]; }).join(', ') : 'Saldo Rencana ' + S.year + ' tetap positif (terendah ' + rp(low.ak) + ' di ' + MON[low.m] + ')') + '</div>' : '') +
       '<div class="acts mt8"><button class="g" data-gedit="1">Ubah target</button><button class="g" data-glink="1">' + (lk ? 'Putuskan dari Rencana' : 'Sambungkan ke Rencana') + '</button><button class="g d" data-gdel="1">Hapus target</button></div></div>'
     );
   }
@@ -23431,7 +23475,7 @@ function simMonths(x) {
 }
 /** Hitung Rincian dengan skenario diterapkan sementara; data asli tidak berubah. */
 function simCalc(list) {
-  var keepS = S, KL = kasLinked(), keepTx = KL.tx, extra = [], C = JSON.parse(JSON.stringify(S)), y = +S.year;
+  var keepS = S, KL = kasLinked(), keepTx = KL ? KL.tx : null, extra = [], C = JSON.parse(JSON.stringify(S)), y = +S.year;
   list.forEach(function (x) {
     if (x.k === 'in' || x.k === 'out') simMonths(x).forEach(function (mm) { extra.push({ d: y + '-' + pad2(mm + 1) + '-01', t: x.k === 'in' ? '+' : '-', amt: x.amt }); });
     else
@@ -23443,8 +23487,8 @@ function simCalc(list) {
       });
   });
   S = C;
-  KL.tx = keepTx.concat(extra);
-  try { return calc(); } finally { S = keepS; KL.tx = keepTx; }
+  if (KL) KL.tx = keepTx.concat(extra);
+  try { return calc(); } finally { S = keepS; if (KL) KL.tx = keepTx; }
 }
 /** Tagihan item di tahun aktif yang BELUM lunas dan tidak dilewati: hanya ini yang masuk akal untuk disimulasikan. */
 function simOpen(it) {
@@ -24125,7 +24169,7 @@ function xlSummaryText(d) {
   var a = 0, b = 0;
   (d.bk || []).forEach(function (x) { if (x.fx) b += x.amt; else a += x.amt; });
   (d.it || []).forEach(function (x) { if (x.pay === 'on') return; if (x.fx) b += x.est; else a += x.est; });
-  var curListTxt = (d.curs && d.curs.length > 1) ? (' Mata uang asing terdeteksi: ' + d.curs.join(', ') + ' (kurs mata uang tambahan dapat diisi di Ubah Perjalanan).') : '';
+  var curListTxt = (d.curs && d.curs.length > 1) ? (' Mata uang asing terdeteksi: ' + d.curs.join(', ') + ' (kurs mata uang tambahan dapat diisi lewat tombol Ubah Perjalanan).') : '';
   return d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan, ' + Object.keys(d.dt || {}).length + ' judul hari' +
     (d.start ? ' · ' + fmtD(d.start) + ' – ' + fmtD(d.end) : '') + '.' +
     ' Perkiraan biaya: ' + rp(a) + (b ? ' + ' + b.toLocaleString('id-ID') + ' dalam mata uang asing' : '') + '.' +
@@ -25090,7 +25134,7 @@ function repCollect(from, to) {
         bil.push({ d: ds, name: it.name, cat: it.cat || '-', amt: priceAt(it, t), st: S.paid[k] ? 'Lunas' : S.skip[k] ? 'Dilewati' : 'Belum' });
       });
     });
-  var byD = function (a, b) { return a.d < b.d ? -1 : 1; };
+  var byD = function (a, b) { return a.d < b.d ? -1 : a.d > b.d ? 1 : 0; };
   return { tx: tx.sort(byD), bil: bil.sort(byD) };
 }
 
@@ -25142,8 +25186,16 @@ function repData(p) {
     };
   }
   if (p === 'w') {
-    var to = y === +today.slice(0, 4) ? today : y + today.slice(4),
-      from = addDaysISO(to, -6);
+    var to;
+    if (y === +today.slice(0, 4)) {
+      to = today;
+    } else {
+      var tm = +today.slice(5, 7),
+        td = +today.slice(8, 10),
+        maxD = new Date(Date.UTC(y, tm, 0)).getUTCDate();
+      to = y + '-' + pad2(tm) + '-' + pad2(Math.min(td, maxD));
+    }
+    var from = addDaysISO(to, -6);
     C = repCollect(from, to);
     return {
       filename: 'laporan-mingguan-' + to + '.pdf',
@@ -26657,7 +26709,7 @@ function syncNotifBtn() {
   var b = document.getElementById('btn-notif');
   if (b && hasN) {
     b.title = isOn ? 'Pengingat tagihan aktif (ketuk untuk periksa sekarang)'
-      : p === 'denied' ? 'Notifikasi diblokir di browser — ubah di setelan situs'
+      : p === 'denied' ? 'Notifikasi diblokir browser. Aktifkan kembali di setelan situs.'
       : 'Aktifkan pengingat notifikasi tagihan';
     b.setAttribute('aria-label', b.title);
   }
@@ -29381,7 +29433,7 @@ function renderSim() {
   }
   if ($('sim-delta-val')) $('sim-delta-val').textContent = (diff >= 0 ? '+' : '-') + rp(Math.abs(diff));
   if ($('sim-active-cnt')) $('sim-active-cnt').textContent = activeSim.length + ' skenario aktif';
-  if ($('sim-status-hint')) $('sim-status-hint').textContent = B.end >= 0 ? 'Aman · Tidak pernah minus!' : 'Masih defisit — uji penghematan tambahan';
+  if ($('sim-status-hint')) $('sim-status-hint').textContent = B.end >= 0 ? 'Aman · Saldo tidak pernah minus' : 'Masih defisit. Uji penghematan tambahan.';
 
   var listEl = $('sim-scenarios-list');
   if (listEl) {
@@ -30193,7 +30245,7 @@ function brBindEvents() {
       if (!f) return;
       var rd = new FileReader();
       rd.onload = function () { if (typeof doImport === 'function') doImport(rd.result); };
-      rd.onerror = function () { toast('Gagal membaca file.'); };
+      rd.onerror = function () { toast('Gagal membaca file. Pastikan file valid dan tidak rusak.'); };
       rd.readAsText(f);
       this.value = '';
     };
@@ -30235,7 +30287,7 @@ function brBindEvents() {
             ALL.kas.pr[id] = built.profile;
             save(); setMode('trip'); setTrip(id); BR_STATE.tripView = 'detail'; BR_STATE.tripSubTab = 'ring'; renderAll();
             toast('Perjalanan "' + nm + '" diimpor (' + d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan)' + (typeof tripImportOfflineNote === 'function' ? tripImportOfflineNote() : ''));
-          } catch (err) { toast('File Excel tidak dapat dibaca.'); }
+          } catch (err) { toast('File Excel tidak dapat dibaca. Pastikan format sesuai template.'); }
         };
         fr.readAsArrayBuffer(f);
       }).catch(function (err) { toast((err && err.message) || 'Gagal memuat pembaca Excel.'); });
@@ -35943,11 +35995,11 @@ function renderMobSettings() {
   if (remBox) {
     remBox.innerHTML = due.length
       ? due.slice(0, 12).map(function (x) {
-          var iso = isoD(x.t), tag = x.diff < 0 ? '<span class="badge b-cr">Terlewat ' + Math.abs(x.diff) + ' hr</span>' : x.diff === 0 ? '<span class="badge b-am">Hari Ini!</span>' : '<span class="badge b-ac">' + x.diff + ' hari lagi</span>';
+          var iso = isoD(x.t), tag = x.diff < 0 ? '<span class="badge b-cr">Terlewat ' + Math.abs(x.diff) + ' hr</span>' : x.diff === 0 ? '<span class="badge b-am">Hari Ini</span>' : '<span class="badge b-ac">' + x.diff + ' hari lagi</span>';
           return '<div class="list-row"><div style="min-width:0"><div style="font-size:0.80rem;font-weight:700">' + esc(x.it.name) + '</div><div style="font-size:0.69rem;color:var(--text-muted)">' + fmtD(iso) + ' &middot; <strong class="pv">' + rp(x.price) + '</strong></div><div style="margin-top:3px">' + tag + '</div></div>' +
             '<div style="display:flex;gap:5px"><button type="button" class="btn btn-emerald btn-sm" data-mquickpaid="' + esc(x.it.id) + '|' + iso + '">✓ Lunas</button></div></div>';
         }).join('')
-      : '<div style="font-size:0.78rem;color:var(--text-muted);text-align:center;padding:8px">Semua tagihan terdekat aman!</div>';
+      : '<div style="font-size:0.78rem;color:var(--text-muted);text-align:center;padding:8px">Semua tagihan terdekat aman</div>';
   }
   if ($('m-btn-mark-late')) $('m-btn-mark-late').style.display = due.some(function (x) { return x.diff < 0; }) ? 'block' : 'none';
   if ($('m-set-build-ver')) $('m-set-build-ver').textContent = 'Versi build: ' + ((typeof window !== 'undefined' && window.RK_BUILD && window.RK_BUILD.id) ? window.RK_BUILD.id : 'dev');

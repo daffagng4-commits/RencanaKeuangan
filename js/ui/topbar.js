@@ -112,7 +112,7 @@ function syncNotifBtn() {
   var b = document.getElementById('btn-notif');
   if (b && hasN) {
     b.title = isOn ? 'Pengingat tagihan aktif (ketuk untuk periksa sekarang)'
-      : p === 'denied' ? 'Notifikasi diblokir di browser — ubah di setelan situs'
+      : p === 'denied' ? 'Notifikasi diblokir browser. Aktifkan kembali di setelan situs.'
       : 'Aktifkan pengingat notifikasi tagihan';
     b.setAttribute('aria-label', b.title);
   }

@@ -4030,11 +4030,11 @@ function renderMobSettings() {
   if (remBox) {
     remBox.innerHTML = due.length
       ? due.slice(0, 12).map(function (x) {
-          var iso = isoD(x.t), tag = x.diff < 0 ? '<span class="badge b-cr">Terlewat ' + Math.abs(x.diff) + ' hr</span>' : x.diff === 0 ? '<span class="badge b-am">Hari Ini!</span>' : '<span class="badge b-ac">' + x.diff + ' hari lagi</span>';
+          var iso = isoD(x.t), tag = x.diff < 0 ? '<span class="badge b-cr">Terlewat ' + Math.abs(x.diff) + ' hr</span>' : x.diff === 0 ? '<span class="badge b-am">Hari Ini</span>' : '<span class="badge b-ac">' + x.diff + ' hari lagi</span>';
           return '<div class="list-row"><div style="min-width:0"><div style="font-size:0.80rem;font-weight:700">' + esc(x.it.name) + '</div><div style="font-size:0.69rem;color:var(--text-muted)">' + fmtD(iso) + ' &middot; <strong class="pv">' + rp(x.price) + '</strong></div><div style="margin-top:3px">' + tag + '</div></div>' +
             '<div style="display:flex;gap:5px"><button type="button" class="btn btn-emerald btn-sm" data-mquickpaid="' + esc(x.it.id) + '|' + iso + '">✓ Lunas</button></div></div>';
         }).join('')
-      : '<div style="font-size:0.78rem;color:var(--text-muted);text-align:center;padding:8px">Semua tagihan terdekat aman!</div>';
+      : '<div style="font-size:0.78rem;color:var(--text-muted);text-align:center;padding:8px">Semua tagihan terdekat aman</div>';
   }
   if ($('m-btn-mark-late')) $('m-btn-mark-late').style.display = due.some(function (x) { return x.diff < 0; }) ? 'block' : 'none';
   if ($('m-set-build-ver')) $('m-set-build-ver').textContent = 'Versi build: ' + ((typeof window !== 'undefined' && window.RK_BUILD && window.RK_BUILD.id) ? window.RK_BUILD.id : 'dev');

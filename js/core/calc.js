@@ -37,6 +37,7 @@ function calc() {
     spend.push(0);
     investM.push(0);
   }
+  var countedLinkedTx = {};
   S.items.forEach(function (it) {
     var list = occ(it, y).filter(function (t) {
       return t >= from;
@@ -44,12 +45,15 @@ function calc() {
     occs[it.id] = list;
     list.forEach(function (t) {
       var mm = new Date(t).getUTCMonth();
-      if (S.skip[it.id + '|' + isoD(t)]) {
+      var key = it.id + '|' + isoD(t);
+      if (S.skip[key]) {
         skipped[mm].push({ it: it, t: t });
         return;
       }
-      var price = priceAt(it, t),
+      var rtx = typeof realTx === 'function' ? realTx(key) : null;
+      var price = rtx ? (+rtx.amt || 0) : priceAt(it, t),
         cat = it.cat || '';
+      if (rtx && rtx.id) countedLinkedTx[rtx.id] = true;
       events[mm].push({ it: it, t: t });
       spend[mm] += price;
       byCat[cat] = (byCat[cat] || 0) + price;
@@ -77,6 +81,7 @@ function calc() {
   var KL = kasLinked();
   if (KL)
     KL.tx.forEach(function (x) {
+      if (x.id && countedLinkedTx[x.id]) return;
       if (+x.d.slice(0, 4) !== y) return;
       var mm = +x.d.slice(5, 7) - 1,
         v = x.t === '-' ? -x.amt : x.amt;

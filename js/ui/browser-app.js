@@ -2678,7 +2678,7 @@ function renderSim() {
   }
   if ($('sim-delta-val')) $('sim-delta-val').textContent = (diff >= 0 ? '+' : '-') + rp(Math.abs(diff));
   if ($('sim-active-cnt')) $('sim-active-cnt').textContent = activeSim.length + ' skenario aktif';
-  if ($('sim-status-hint')) $('sim-status-hint').textContent = B.end >= 0 ? 'Aman · Tidak pernah minus!' : 'Masih defisit — uji penghematan tambahan';
+  if ($('sim-status-hint')) $('sim-status-hint').textContent = B.end >= 0 ? 'Aman · Saldo tidak pernah minus' : 'Masih defisit. Uji penghematan tambahan.';
 
   var listEl = $('sim-scenarios-list');
   if (listEl) {
@@ -3490,7 +3490,7 @@ function brBindEvents() {
       if (!f) return;
       var rd = new FileReader();
       rd.onload = function () { if (typeof doImport === 'function') doImport(rd.result); };
-      rd.onerror = function () { toast('Gagal membaca file.'); };
+      rd.onerror = function () { toast('Gagal membaca file. Pastikan file valid dan tidak rusak.'); };
       rd.readAsText(f);
       this.value = '';
     };
@@ -3532,7 +3532,7 @@ function brBindEvents() {
             ALL.kas.pr[id] = built.profile;
             save(); setMode('trip'); setTrip(id); BR_STATE.tripView = 'detail'; BR_STATE.tripSubTab = 'ring'; renderAll();
             toast('Perjalanan "' + nm + '" diimpor (' + d.it.length + ' kegiatan, ' + d.bk.length + ' pemesanan)' + (typeof tripImportOfflineNote === 'function' ? tripImportOfflineNote() : ''));
-          } catch (err) { toast('File Excel tidak dapat dibaca.'); }
+          } catch (err) { toast('File Excel tidak dapat dibaca. Pastikan format sesuai template.'); }
         };
         fr.readAsArrayBuffer(f);
       }).catch(function (err) { toast((err && err.message) || 'Gagal memuat pembaca Excel.'); });
