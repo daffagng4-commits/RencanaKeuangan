@@ -335,7 +335,7 @@ function doImport(text) {
       .replace(/^\uFEFF/, '')
       .trim();
   if (!t) {
-    setX('Isinya kosong.', 0);
+    setX('Data impor kosong. Tempel teks JSON/CSV atau pilih file terlebih dahulu.', 0);
     return;
   }
   try {
@@ -421,7 +421,7 @@ function bindIo() {
       doImport(rd.result);
     };
     rd.onerror = function () {
-      setX('Gagal membaca file.', 0);
+      setX('Gagal membaca file. Pastikan file valid dan tidak rusak.', 0);
     };
     rd.readAsText(f);
     this.value = '';

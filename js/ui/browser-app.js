@@ -2252,7 +2252,7 @@ function renderRincian() {
         '</div></div></div><div class="upcoming-right"><span class="mono pv" style="font-weight:700;font-size:0.86rem;">' + rp(u.price) + '</span>' +
         '<button type="button" class="btn btn-emerald btn-sm" data-br-paid="' + esc(u.key) + '">Lunas</button></div></div>'
       );
-    }).join('') : '<div style="padding:18px;text-align:center;color:var(--emerald);font-weight:600;">Semua tagihan sudah lunas!</div>';
+    }).join('') : '<div style="padding:18px;text-align:center;color:var(--emerald);font-weight:600;">Semua tagihan sudah lunas</div>';
   }
 
   var flowTb = $('monthly-flow-tbody');

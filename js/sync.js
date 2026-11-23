@@ -795,7 +795,7 @@ function bindSync() {
   }
   $('acct').onclick = function () {
     if (!sb) {
-      toast('Sinkron belum aktif. Isi Supabase di js/config.js.');
+      toast('Sinkron cloud belum aktif. Periksa koneksi atau konfigurasi Supabase.');
       return;
     }
     if (sbUser) {

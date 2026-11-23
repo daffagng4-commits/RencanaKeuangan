@@ -385,7 +385,7 @@ function downloadRepPdf(kind) {
       if (typeof setX === 'function') setX('Laporan diunduh: ' + D.filename, 1);
     }
   } catch (err) {
-    if (typeof setX === 'function') setX('Unduh laporan gagal: ' + (err && err.message || err), 0);
+    if (typeof setX === 'function') setX('Gagal mengunduh laporan: ' + (err && err.message || err) + '. Coba ulangi atau periksa izin penyimpanan.', 0);
   }
 }
 

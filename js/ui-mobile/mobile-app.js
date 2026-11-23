@@ -3777,7 +3777,7 @@ function rkCopyApkUpdateUrl() {
       if (typeof showMobToast === 'function') showMobToast('Tautan disalin. Tempel di Chrome/Brave.');
       return true;
     }).catch(function () {
-      if (typeof showMobToast === 'function') showMobToast('Gagal menyalin tautan.');
+      if (typeof showMobToast === 'function') showMobToast('Gagal menyalin tautan. Coba lagi atau buka langsung lewat browser.');
       return false;
     });
   }
@@ -5012,7 +5012,7 @@ function bindMobileShellEvents(root) {
       var isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
       if (hasCloud && isOffline) {
         safeRefreshRender();
-        finishRefresh('Offline — menampilkan data lokal', fromRetap, cid, true);
+        finishRefresh('Offline. Menampilkan data lokal.', fromRetap, cid, true);
         return;
       }
       if (hasCloud) {
@@ -5028,7 +5028,7 @@ function bindMobileShellEvents(root) {
           if (afterSig !== beforeSig && typeof renderMobCharts === 'function') renderMobCharts();
           finishRefresh('Data tersinkron', fromRetap, cid, true);
         }).catch(function () {
-          finishRefresh('Gagal sinkron — cek koneksi', fromRetap, cid, false);
+          finishRefresh('Gagal sinkron. Periksa koneksi internet.', fromRetap, cid, false);
         });
         return;
       }
@@ -5600,7 +5600,7 @@ function bindMobileShellEvents(root) {
       openMobAcctSheet();
       return;
     }
-    if (e.target.closest('#m-lg-google')) { if (typeof authGoogle === 'function') authGoogle(); else showMobToast('Sinkron Google belum aktif'); return; }
+    if (e.target.closest('#m-lg-google')) { if (typeof authGoogle === 'function') authGoogle(); else showMobToast('Login Google belum tersedia saat mode lokal/offline.'); return; }
     if (e.target.closest('#m-acct-sync-now')) { if (typeof pull === 'function') pull(); mobCloseSheet('m-sheet-acct'); return; }
     if (e.target.closest('#m-acct-logout')) {
       var outBtn = e.target.closest('#m-acct-logout');
@@ -6145,7 +6145,7 @@ function bindMobileShellEvents(root) {
           Promise.resolve(navigator.share({ title: trSh.name, text: txtShM }))
             .then(function () { setShSt('Dialog berbagi dibuka.'); showMobToast('Membuka berbagi teks'); })
             .catch(function (err) {
-              if (!err || err.name !== 'AbortError') { setShSt('Berbagi gagal. Gunakan "Salin teks" lalu tempel di WhatsApp.'); showMobToast('Berbagi teks gagal'); }
+              if (!err || err.name !== 'AbortError') { setShSt('Berbagi gagal. Gunakan "Salin teks" lalu tempel di WhatsApp.'); showMobToast('Gagal berbagi teks. Gunakan "Salin teks" sebagai alternatif.'); }
             });
           return;
         }
@@ -6709,7 +6709,7 @@ function bindMobileShellEvents(root) {
         fr.onerror = function () {
           mobSetXlBusy(false);
           MOB_XL_DATA = null;
-          showMobToast('File tidak dapat dibaca.');
+          showMobToast('File tidak dapat dibaca. Pastikan file valid dan tidak rusak.');
         };
         fr.readAsArrayBuffer(fXl);
       }).catch(function (err) {

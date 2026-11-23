@@ -2754,8 +2754,8 @@ function simAdd() {
     x.amt = parseRp($('sma').value) || 0;
     x.rep = $('smr').value;
     x.n = Math.max(1, Math.min(12, parseInt($('smc').value, 10) || 1));
-    if (!x.name) return err('Isi nama.');
-    if (!(x.amt > 0)) return err('Isi jumlah yang valid.');
+    if (!x.name) return err('Nama skenario belum diisi.');
+    if (!(x.amt > 0)) return err('Nominal harus lebih besar dari 0 (mis. 50.000 atau 200k).');
   } else {
     x.id = $('smi').value;
     if (!x.id) return err(S.items.length ? 'Tidak ada item dengan tagihan tersisa tahun ini (semua sudah lunas atau dilewati).' : 'Belum ada item. Tambahkan item dulu di Kelola Item.');
