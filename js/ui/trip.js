@@ -3094,16 +3094,17 @@ function xlTime(v) {
   return { a: '', b: '' };
 }
 function xlNum(v) {
-  if (typeof v === 'number') return v;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
   var t = String(v == null ? '' : v).toLowerCase();
   if (/jalan|gratis|free/.test(t)) return 0;
   var m = t.replace(/rp|idr|yen|¥|jpy/g, '').replace(/\s/g, '').match(/[\d.,]+/);
   if (!m) return 0;
   t = m[0];
-  if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
-  else if (/^\d{1,3}(,\d{3})+$/.test(t)) t = t.replace(/,/g, '');
+  if (/^\d{1,3}(\.\d{3})+(,\d{1,2})?$/.test(t)) t = t.replace(/\./g, '').replace(',', '.');
+  else if (/^\d{1,3}(,\d{3})+(\.\d{1,2})?$/.test(t)) t = t.replace(/,/g, '');
   else t = t.replace(',', '.');
-  return parseFloat(t) || 0;
+  var n = parseFloat(t);
+  return Number.isFinite(n) ? n : 0;
 }
 function xlPay(v) {
   var t = String(v == null ? '' : v).toLowerCase();
