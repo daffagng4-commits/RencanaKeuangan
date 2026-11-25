@@ -4163,6 +4163,17 @@ function renderMobScenFields(scen, it) {
   } else {
     box.innerHTML = '<div class="field"><label class="field-label" for="m-sc-month">Berhenti bayar mulai</label><select class="input" id="m-sc-month">' + mobMonthOptsHtml(mDef) + '</select></div>';
   }
+  if (MOB_STATE.scenMode === 'change_price' || MOB_STATE.scenMode === 'temp_price') {
+    var mpInp = $('m-sc-price'), mmSel = $('m-sc-month');
+    if (mpInp && mmSel) {
+      mpInp.addEventListener('input', function () { mpInp.dataset.userEdited = '1'; });
+      mmSel.addEventListener('change', function () {
+        if (mpInp.dataset.userEdited) return;
+        var mv = +mmSel.value;
+        if (!isNaN(mv)) setRpVal(mpInp, priceAt(it, Date.UTC(+S.year, mv, 15)));
+      });
+    }
+  }
 }
 
 function openMobScenarioSheet(it, iso) {
@@ -5923,8 +5934,8 @@ function bindMobileShellEvents(root) {
     if (med) {
       var iid = med.getAttribute('data-medit-it'), itE = item(iid);
       if (!itE) return;
-      MOB_STATE.chipCtx = { id: itE.id, iso: itE.start || (S.year + '-' + pad2(smEff() + 1) + '-01') };
-      openMobScenarioSheet(itE, MOB_STATE.chipCtx.iso);
+      MOB_STATE.chipCtx = { id: itE.id, iso: '' };
+      openMobScenarioSheet(itE);
       return;
     }
     var mscTab = e.target.closest('[data-mscen]');
@@ -5959,8 +5970,7 @@ function bindMobileShellEvents(root) {
             }
             toIso = isoD(Date.UTC(y, mEnd + 1, 0));
           }
-          itU.ch = itU.ch.filter(function (c) { return !(c.from === fromIso && c.to === toIso && !c.mv); });
-          itU.ch.push({ from: fromIso, to: toIso, price: np, n: null, unit: null, cut: false });
+          applyPriceChange(itU, fromIso, toIso, np);
         } else if (scen === 'cycle') {
           var cVal = $('m-sc-cycle') ? $('m-sc-cycle').value : 'tiap bulan';
           var cyc = typeof brCycleToCore === 'function' ? brCycleToCore(cVal) : { n: 1, unit: 'bulan' };
@@ -6782,7 +6792,11 @@ function bindMobileShellEvents(root) {
         var oldIt = item(MOB_STATE.itemEditId), bfOcc = oldIt ? occ(oldIt, S.year) : [];
         S.items = S.items.map(function (x) {
           if (x.id != MOB_STATE.itemEditId) return x;
-          var upd = Object.assign({}, x, { name: nm, price: pr, n: nVal, unit: un, start: st, cat: MOB_STATE.itemCat || 'Tagihan rutin' });
+          var nextChM = x.ch || [];
+          if (pr !== x.price) {
+            nextChM = nextChM.filter(function (c) { return !c || c.mv || c.n || c.unit || c.anchor || c.price == null; });
+          }
+          var upd = Object.assign({}, x, { name: nm, price: pr, n: nVal, unit: un, start: st, cat: MOB_STATE.itemCat || 'Tagihan rutin', ch: nextChM });
           if (typeof remapStatus === 'function') remapStatus(x.id, bfOcc, occ(upd, S.year), [S.paid, S.skip], [S.real || {}]);
           return upd;
         });

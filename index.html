@@ -10967,9 +10967,46 @@ function lastOcc(it) {
   return s.length ? s[s.length - 1] : null;
 }
 
-/** Pembanding pengurutan perubahan berdasarkan tanggal mulai. */
+/** Pembanding pengurutan perubahan berdasarkan tanggal mulai; jika sama, rentang spesifik (promo/tanggal) berada setelah permanen. */
 function cmpFrom(a, b) {
-  return a.from < b.from ? -1 : a.from > b.from ? 1 : 0;
+  if (a.from !== b.from) return a.from < b.from ? -1 : 1;
+  var aSpec = a.dates ? 2 : a.to ? 1 : 0;
+  var bSpec = b.dates ? 2 : b.to ? 1 : 0;
+  return aSpec - bSpec;
+}
+
+/** Terapkan perubahan harga (permanen bila toIso kosong, atau promo sementara) sambil membersihkan override lama yang bertabrakan. */
+function applyPriceChange(it, fromIso, toIso, newPrice) {
+  it.ch = Array.isArray(it.ch) ? it.ch : [];
+  var isPerm = !toIso;
+  var next = [];
+  it.ch.forEach(function (c) {
+    if (!c) return;
+    if (c.mv) { next.push(c); return; }
+    var isPurePrice = !c.n && !c.unit && !c.anchor && c.price != null;
+    if (isPerm) {
+      if (isPurePrice) {
+        if (c.from >= fromIso) return;
+        if (c.to && c.to >= fromIso) {
+          var cutTo = addDaysISO(fromIso, -1);
+          if (cutTo >= c.from) next.push(Object.assign({}, c, { to: cutTo }));
+          return;
+        }
+        next.push(c);
+        return;
+      }
+      if ((c.n || c.unit || c.anchor) && c.price != null && c.from >= fromIso) {
+        next.push(Object.assign({}, c, { price: null }));
+        return;
+      }
+      next.push(c);
+    } else {
+      if (isPurePrice && c.from >= fromIso && c.to && c.to <= toIso) return;
+      next.push(c);
+    }
+  });
+  next.push({ from: fromIso, to: toIso || '', price: newPrice, n: null, unit: null, cut: false });
+  it.ch = next.sort(cmpFrom);
 }
 
 /* ===== js/core/state.js ===== */
@@ -29995,15 +30032,16 @@ function brRenderScenarioFields(scen, it) {
   var box = $('scen-editor-fields');
   if (!box || !it) return;
   var mDef = BR_STATE.scenMonth != null ? BR_STATE.scenMonth : Math.max(smEff(), Math.min(11, +todayISO().slice(5, 7) - 1));
+  var effPrice = priceAt(it, Date.UTC(+S.year, mDef, 15));
   if (scen === 'change_price') {
     box.innerHTML =
       '<div class="grid-2"><div class="field"><label class="field-label" for="scen-new-price">Harga Baru (Rp)</label>' +
-      '<input class="input mono" id="scen-new-price" type="text" inputmode="numeric" data-num-fmt="rp" value="' + fmtRpInputStr(String(it.price || 0)) + '" /></div>' +
+      '<input class="input mono" id="scen-new-price" type="text" inputmode="numeric" data-num-fmt="rp" value="' + fmtRpInputStr(String(effPrice || 0)) + '" /></div>' +
       '<div class="field"><label class="field-label" for="scen-month">Mulai Bulan</label><select class="input" id="scen-month">' + brMonthOptsHtml(mDef) + '</select></div></div>';
   } else if (scen === 'temp_price') {
     box.innerHTML =
       '<div class="grid-3"><div class="field"><label class="field-label" for="scen-new-price">Harga Promo (Rp)</label>' +
-      '<input class="input mono" id="scen-new-price" type="text" inputmode="numeric" data-num-fmt="rp" value="' + fmtRpInputStr(String(it.price || 0)) + '" /></div>' +
+      '<input class="input mono" id="scen-new-price" type="text" inputmode="numeric" data-num-fmt="rp" value="' + fmtRpInputStr(String(effPrice || 0)) + '" /></div>' +
       '<div class="field"><label class="field-label" for="scen-month">Dari Bulan</label><select class="input" id="scen-month">' + brMonthOptsHtml(mDef) + '</select></div>' +
       '<div class="field"><label class="field-label" for="scen-month-end">Sampai Bulan</label><select class="input" id="scen-month-end">' + brMonthOptsHtml(mDef) + '</select></div></div>';
   } else if (scen === 'cycle') {
@@ -30030,6 +30068,17 @@ function brRenderScenarioFields(scen, it) {
   box.dataset.activeScen = scen;
   if ($('ms-err')) $('ms-err').textContent = '';
   initModernSelects(box);
+  if (scen === 'change_price' || scen === 'temp_price') {
+    var pInp = $('scen-new-price'), mSel = $('scen-month');
+    if (pInp && mSel) {
+      pInp.addEventListener('input', function () { pInp.dataset.userEdited = '1'; });
+      mSel.addEventListener('change', function () {
+        if (pInp.dataset.userEdited) return;
+        var mv = +mSel.value;
+        if (!isNaN(mv)) setRpVal(pInp, priceAt(it, Date.UTC(+S.year, mv, 15)));
+      });
+    }
+  }
 }
 
 function brOpenScenarioModal(itemId, iso) {
@@ -30066,8 +30115,7 @@ function brSaveScenario() {
       if (mEnd < m) { rkShakeInvalid($('scen-month-end')); return setErr('Bulan akhir promo tidak boleh sebelum bulan mulai.'); }
       toIso = isoD(Date.UTC(y, mEnd + 1, 0));
     }
-    it.ch = it.ch.filter(function (c) { return !(c.from === fromIso && c.to === toIso && !c.mv); });
-    it.ch.push({ from: fromIso, to: toIso, price: np, n: null, unit: null, cut: false });
+    applyPriceChange(it, fromIso, toIso, np);
   } else if (scen === 'cycle') {
     var cyc = brCycleToCore($('scen-cycle-val') ? $('scen-cycle-val').value : 'tiap bulan');
     it.n = cyc.n;
@@ -31422,7 +31470,11 @@ function brBindEvents() {
         var oldItE = item(BR_STATE.itemEditId), beforeOccE = oldItE ? occ(oldItE, S.year) : [];
         S.items = S.items.map(function (x) {
           if (x.id != BR_STATE.itemEditId) return x;
-          var upd = Object.assign({}, x, objI, { end: x.end || '', cnt: x.cnt || 0, ch: x.ch || [] });
+          var nextCh = x.ch || [];
+          if (priceI !== x.price) {
+            nextCh = nextCh.filter(function (c) { return !c || c.mv || c.n || c.unit || c.anchor || c.price == null; });
+          }
+          var upd = Object.assign({}, x, objI, { end: x.end || '', cnt: x.cnt || 0, ch: nextCh });
           if (typeof remapStatus === 'function') remapStatus(x.id, beforeOccE, occ(upd, S.year), [S.paid, S.skip], [S.real || {}]);
           return upd;
         });
@@ -36162,6 +36214,17 @@ function renderMobScenFields(scen, it) {
   } else {
     box.innerHTML = '<div class="field"><label class="field-label" for="m-sc-month">Berhenti bayar mulai</label><select class="input" id="m-sc-month">' + mobMonthOptsHtml(mDef) + '</select></div>';
   }
+  if (MOB_STATE.scenMode === 'change_price' || MOB_STATE.scenMode === 'temp_price') {
+    var mpInp = $('m-sc-price'), mmSel = $('m-sc-month');
+    if (mpInp && mmSel) {
+      mpInp.addEventListener('input', function () { mpInp.dataset.userEdited = '1'; });
+      mmSel.addEventListener('change', function () {
+        if (mpInp.dataset.userEdited) return;
+        var mv = +mmSel.value;
+        if (!isNaN(mv)) setRpVal(mpInp, priceAt(it, Date.UTC(+S.year, mv, 15)));
+      });
+    }
+  }
 }
 
 function openMobScenarioSheet(it, iso) {
@@ -37922,8 +37985,8 @@ function bindMobileShellEvents(root) {
     if (med) {
       var iid = med.getAttribute('data-medit-it'), itE = item(iid);
       if (!itE) return;
-      MOB_STATE.chipCtx = { id: itE.id, iso: itE.start || (S.year + '-' + pad2(smEff() + 1) + '-01') };
-      openMobScenarioSheet(itE, MOB_STATE.chipCtx.iso);
+      MOB_STATE.chipCtx = { id: itE.id, iso: '' };
+      openMobScenarioSheet(itE);
       return;
     }
     var mscTab = e.target.closest('[data-mscen]');
@@ -37958,8 +38021,7 @@ function bindMobileShellEvents(root) {
             }
             toIso = isoD(Date.UTC(y, mEnd + 1, 0));
           }
-          itU.ch = itU.ch.filter(function (c) { return !(c.from === fromIso && c.to === toIso && !c.mv); });
-          itU.ch.push({ from: fromIso, to: toIso, price: np, n: null, unit: null, cut: false });
+          applyPriceChange(itU, fromIso, toIso, np);
         } else if (scen === 'cycle') {
           var cVal = $('m-sc-cycle') ? $('m-sc-cycle').value : 'tiap bulan';
           var cyc = typeof brCycleToCore === 'function' ? brCycleToCore(cVal) : { n: 1, unit: 'bulan' };
@@ -38781,7 +38843,11 @@ function bindMobileShellEvents(root) {
         var oldIt = item(MOB_STATE.itemEditId), bfOcc = oldIt ? occ(oldIt, S.year) : [];
         S.items = S.items.map(function (x) {
           if (x.id != MOB_STATE.itemEditId) return x;
-          var upd = Object.assign({}, x, { name: nm, price: pr, n: nVal, unit: un, start: st, cat: MOB_STATE.itemCat || 'Tagihan rutin' });
+          var nextChM = x.ch || [];
+          if (pr !== x.price) {
+            nextChM = nextChM.filter(function (c) { return !c || c.mv || c.n || c.unit || c.anchor || c.price == null; });
+          }
+          var upd = Object.assign({}, x, { name: nm, price: pr, n: nVal, unit: un, start: st, cat: MOB_STATE.itemCat || 'Tagihan rutin', ch: nextChM });
           if (typeof remapStatus === 'function') remapStatus(x.id, bfOcc, occ(upd, S.year), [S.paid, S.skip], [S.real || {}]);
           return upd;
         });

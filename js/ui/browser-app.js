@@ -3206,15 +3206,16 @@ function brRenderScenarioFields(scen, it) {
   var box = $('scen-editor-fields');
   if (!box || !it) return;
   var mDef = BR_STATE.scenMonth != null ? BR_STATE.scenMonth : Math.max(smEff(), Math.min(11, +todayISO().slice(5, 7) - 1));
+  var effPrice = priceAt(it, Date.UTC(+S.year, mDef, 15));
   if (scen === 'change_price') {
     box.innerHTML =
       '<div class="grid-2"><div class="field"><label class="field-label" for="scen-new-price">Harga Baru (Rp)</label>' +
-      '<input class="input mono" id="scen-new-price" type="text" inputmode="numeric" data-num-fmt="rp" value="' + fmtRpInputStr(String(it.price || 0)) + '" /></div>' +
+      '<input class="input mono" id="scen-new-price" type="text" inputmode="numeric" data-num-fmt="rp" value="' + fmtRpInputStr(String(effPrice || 0)) + '" /></div>' +
       '<div class="field"><label class="field-label" for="scen-month">Mulai Bulan</label><select class="input" id="scen-month">' + brMonthOptsHtml(mDef) + '</select></div></div>';
   } else if (scen === 'temp_price') {
     box.innerHTML =
       '<div class="grid-3"><div class="field"><label class="field-label" for="scen-new-price">Harga Promo (Rp)</label>' +
-      '<input class="input mono" id="scen-new-price" type="text" inputmode="numeric" data-num-fmt="rp" value="' + fmtRpInputStr(String(it.price || 0)) + '" /></div>' +
+      '<input class="input mono" id="scen-new-price" type="text" inputmode="numeric" data-num-fmt="rp" value="' + fmtRpInputStr(String(effPrice || 0)) + '" /></div>' +
       '<div class="field"><label class="field-label" for="scen-month">Dari Bulan</label><select class="input" id="scen-month">' + brMonthOptsHtml(mDef) + '</select></div>' +
       '<div class="field"><label class="field-label" for="scen-month-end">Sampai Bulan</label><select class="input" id="scen-month-end">' + brMonthOptsHtml(mDef) + '</select></div></div>';
   } else if (scen === 'cycle') {
@@ -3241,6 +3242,17 @@ function brRenderScenarioFields(scen, it) {
   box.dataset.activeScen = scen;
   if ($('ms-err')) $('ms-err').textContent = '';
   initModernSelects(box);
+  if (scen === 'change_price' || scen === 'temp_price') {
+    var pInp = $('scen-new-price'), mSel = $('scen-month');
+    if (pInp && mSel) {
+      pInp.addEventListener('input', function () { pInp.dataset.userEdited = '1'; });
+      mSel.addEventListener('change', function () {
+        if (pInp.dataset.userEdited) return;
+        var mv = +mSel.value;
+        if (!isNaN(mv)) setRpVal(pInp, priceAt(it, Date.UTC(+S.year, mv, 15)));
+      });
+    }
+  }
 }
 
 function brOpenScenarioModal(itemId, iso) {
@@ -3277,8 +3289,7 @@ function brSaveScenario() {
       if (mEnd < m) { rkShakeInvalid($('scen-month-end')); return setErr('Bulan akhir promo tidak boleh sebelum bulan mulai.'); }
       toIso = isoD(Date.UTC(y, mEnd + 1, 0));
     }
-    it.ch = it.ch.filter(function (c) { return !(c.from === fromIso && c.to === toIso && !c.mv); });
-    it.ch.push({ from: fromIso, to: toIso, price: np, n: null, unit: null, cut: false });
+    applyPriceChange(it, fromIso, toIso, np);
   } else if (scen === 'cycle') {
     var cyc = brCycleToCore($('scen-cycle-val') ? $('scen-cycle-val').value : 'tiap bulan');
     it.n = cyc.n;
@@ -4633,7 +4644,11 @@ function brBindEvents() {
         var oldItE = item(BR_STATE.itemEditId), beforeOccE = oldItE ? occ(oldItE, S.year) : [];
         S.items = S.items.map(function (x) {
           if (x.id != BR_STATE.itemEditId) return x;
-          var upd = Object.assign({}, x, objI, { end: x.end || '', cnt: x.cnt || 0, ch: x.ch || [] });
+          var nextCh = x.ch || [];
+          if (priceI !== x.price) {
+            nextCh = nextCh.filter(function (c) { return !c || c.mv || c.n || c.unit || c.anchor || c.price == null; });
+          }
+          var upd = Object.assign({}, x, objI, { end: x.end || '', cnt: x.cnt || 0, ch: nextCh });
           if (typeof remapStatus === 'function') remapStatus(x.id, beforeOccE, occ(upd, S.year), [S.paid, S.skip], [S.real || {}]);
           return upd;
         });

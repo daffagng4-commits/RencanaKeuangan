@@ -221,7 +221,44 @@ function lastOcc(it) {
   return s.length ? s[s.length - 1] : null;
 }
 
-/** Pembanding pengurutan perubahan berdasarkan tanggal mulai. */
+/** Pembanding pengurutan perubahan berdasarkan tanggal mulai; jika sama, rentang spesifik (promo/tanggal) berada setelah permanen. */
 function cmpFrom(a, b) {
-  return a.from < b.from ? -1 : a.from > b.from ? 1 : 0;
+  if (a.from !== b.from) return a.from < b.from ? -1 : 1;
+  var aSpec = a.dates ? 2 : a.to ? 1 : 0;
+  var bSpec = b.dates ? 2 : b.to ? 1 : 0;
+  return aSpec - bSpec;
+}
+
+/** Terapkan perubahan harga (permanen bila toIso kosong, atau promo sementara) sambil membersihkan override lama yang bertabrakan. */
+function applyPriceChange(it, fromIso, toIso, newPrice) {
+  it.ch = Array.isArray(it.ch) ? it.ch : [];
+  var isPerm = !toIso;
+  var next = [];
+  it.ch.forEach(function (c) {
+    if (!c) return;
+    if (c.mv) { next.push(c); return; }
+    var isPurePrice = !c.n && !c.unit && !c.anchor && c.price != null;
+    if (isPerm) {
+      if (isPurePrice) {
+        if (c.from >= fromIso) return;
+        if (c.to && c.to >= fromIso) {
+          var cutTo = addDaysISO(fromIso, -1);
+          if (cutTo >= c.from) next.push(Object.assign({}, c, { to: cutTo }));
+          return;
+        }
+        next.push(c);
+        return;
+      }
+      if ((c.n || c.unit || c.anchor) && c.price != null && c.from >= fromIso) {
+        next.push(Object.assign({}, c, { price: null }));
+        return;
+      }
+      next.push(c);
+    } else {
+      if (isPurePrice && c.from >= fromIso && c.to && c.to <= toIso) return;
+      next.push(c);
+    }
+  });
+  next.push({ from: fromIso, to: toIso || '', price: newPrice, n: null, unit: null, cut: false });
+  it.ch = next.sort(cmpFrom);
 }
