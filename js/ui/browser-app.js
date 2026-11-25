@@ -61,6 +61,31 @@ var BR_CAT_META = {
     grad: ['#16A34A', '#65A30D'],
     svg: '<rect x="3.5" y="6.5" width="17" height="11" rx="2.5" fill="#ECFDF5"/><circle cx="12" cy="12" r="2.8" fill="#16A34A"/><path d="M17 4.5l2.5-1.5M20 7.5l2 0" stroke="#FDE047" stroke-width="2" stroke-linecap="round"/>',
   },
+  Bonus: {
+    hex: '#D97706',
+    grad: ['#F59E0B', '#E11D48'],
+    svg: '<path d="M12 3.5l2.5 5.1 5.6.8-4.1 4 1 5.6L12 16.3 7 19l1-5.6-4.1-4 5.6-.8L12 3.5z" fill="#FFFFFF" fill-opacity="0.96"/><circle cx="18.5" cy="5.5" r="1.7" fill="#FDE047"/>',
+  },
+  Freelance: {
+    hex: '#7C3AED',
+    grad: ['#8B5CF6', '#4F46E5'],
+    svg: '<rect x="4.5" y="5.5" width="15" height="10" rx="2" fill="#FFFFFF" fill-opacity="0.95"/><rect x="7" y="8" width="10" height="5" rx="1" fill="#7C3AED"/><path d="M9.5 10.5h5" stroke="#FDE047" stroke-width="1.8" stroke-linecap="round"/><path d="M2.5 18h19" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/>',
+  },
+  Usaha: {
+    hex: '#EA580C',
+    grad: ['#F97316', '#DC2626'],
+    svg: '<path d="M4 10.5V19a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 20 19v-8.5" fill="#FFFFFF" fill-opacity="0.95"/><path d="M3 10.5l1.6-5h14.8l1.6 5a2.2 2.2 0 0 1-2.2 2.3H5.2A2.2 2.2 0 0 1 3 10.5z" fill="#FEF08A"/><rect x="9.5" y="14.5" width="5" height="6" rx="1" fill="#EA580C"/>',
+  },
+  Hadiah: {
+    hex: '#DB2777',
+    grad: ['#EC4899', '#F43F5E'],
+    svg: '<rect x="4.5" y="10.5" width="15" height="9.5" rx="2" fill="#FFFFFF" fill-opacity="0.95"/><rect x="3.5" y="7.5" width="17" height="3.5" rx="1.2" fill="#FFFFFF"/><path d="M12 7.5V20" stroke="#FDE047" stroke-width="2.4"/><path d="M12 7.5c-1.2-2.6-4.5-2.6-4.5-.6 0 1.4 2.2 1.6 4.5.6 2.3 1 4.5.8 4.5-.6 0-2-3.3-2-4.5.6z" fill="#FDE047"/>',
+  },
+  Refund: {
+    hex: '#0284C7',
+    grad: ['#06B6D4', '#2563EB'],
+    svg: '<path d="M4.5 11.5a7.5 7.5 0 1 1 2.2 5.3" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round"/><path d="M4.5 6.5v5h5" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.6" fill="#FDE047"/>',
+  },
   'Gaji & Pemasukan': {
     hex: '#16A34A',
     grad: ['#16A34A', '#65A30D'],

@@ -21,7 +21,7 @@ var kasAct = (function () {
   kasEdit = null,
   kasT = '-',
   kpMode = 'new';
-var KAS_IN = ['Gaji', 'Transfer', 'Lainnya'],
+var KAS_IN = ['Gaji', 'Bonus', 'Freelance', 'Usaha', 'Investasi', 'Hadiah', 'Refund', 'Transfer', 'Lainnya'],
   KAS_OUT = ['Makanan', 'Transport', 'Belanja', 'Hiburan', 'Penginapan', 'Lainnya'];
 
 /** Profil yang sedang dipakai: perjalanan terpilih (mode Perjalanan) atau profil Rencana. */
